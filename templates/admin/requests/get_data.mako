@@ -55,6 +55,8 @@ $(document).ready(function(){
 
 <h2>Data transfer from Sequencer</h2>
 <h3>Sample "${sample.name}" of Request "${sample.request.name}"</h3>
+<br/>
+<br/>
 
 <ul class="manage-table-actions">
     %if sample.request.submitted() and sample.inprogress_dataset_files():
@@ -131,7 +133,7 @@ $(document).ready(function(){
                     <input type="submit" name="open_folder" value="Open folder"/>
                     <input type="submit" name="folder_up" value="Up"/>
                 </div>
-                    <div class="form-row">
+                <div class="form-row">
                     <select name="files_list" id="files_list" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" onChange="display_file_details(${sample.id}, '${folder_path}')" multiple>
                         %for index, f in enumerate(files):
                             <option value="${f}">${f}</option>

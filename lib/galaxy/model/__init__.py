@@ -1476,6 +1476,9 @@ class RequestEvent( object ):
         self.comment = comment
         
 class RequestType( object ):
+    rename_dataset_options = Bunch( NO = 'Do not rename',
+                                    SAMPLE_NAME = 'Preprend sample name',
+                                    EXPERIMENT_AND_SAMPLE_NAME = 'Prepend experiment and sample name')
     permitted_actions = get_permitted_actions( filter='REQUEST_TYPE' )
     def __init__(self, name=None, desc=None, request_form=None, sample_form=None,
                  datatx_info=None):

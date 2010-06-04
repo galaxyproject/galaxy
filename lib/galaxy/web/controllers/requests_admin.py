@@ -221,7 +221,6 @@ class RequestsAdmin( BaseController ):
 
     @web.json
     def get_file_details( self, trans, id=None, file=None, folder_path=None ):
-        print >> sys.stderr, 'get_file_details', id, file
         def print_ticks(d):
             pass
         # Avoid caching
@@ -1623,7 +1622,7 @@ class RequestsAdmin( BaseController ):
                     else:
                         sample.dataset_files.append(dict(filepath=filepath,
                                                          status=sample.transfer_status.NOT_STARTED,
-                                                         name=filepath.split('/')[-1],
+                                                         name=self.__dataset_name(sample, filepath.split('/')[-1]),
                                                          error_msg='',
                                                          size=sample.dataset_size(filepath)))
                         trans.sa_session.add( sample )
@@ -1638,7 +1637,16 @@ class RequestsAdmin( BaseController ):
                                                           action='show_datatx_page', 
                                                           sample_id=trans.security.encode_id(sample.id),
                                                           folder_path=folder_path))
-
+    
+    def __dataset_name(self, sample, filepath):
+        name = filepath.split('/')[-1]
+        opt = sample.request.type.datatx_info.get('rename_dataset', sample.request.type.rename_dataset_options.NO) 
+        if opt == sample.request.type.rename_dataset_options.NO:
+            return name
+        elif opt == sample.request.type.rename_dataset_options.SAMPLE_NAME:
+            return sample.name+'_'+name
+        elif opt == sample.request.type.rename_dataset_options.EXPERIMENT_AND_SAMPLE_NAME:
+            return sample.request.name+'_'+sample.name+'_'+name
     def __setup_datatx_user(self, trans, library, folder):
         '''
         This method sets up the datatx user:
@@ -1830,7 +1838,8 @@ class RequestsAdmin( BaseController ):
         return trans.fill_template( '/admin/requests/view_request_type.mako', 
                                     request_type=rt,
                                     forms=get_all_forms( trans ),
-                                    states_list=rt.states )
+                                    states_list=rt.states,
+                                    rename_dataset_selectbox=self.__rename_dataset_selectbox(trans, rt) )
     def __view_form(self, trans, **kwd):
         try:
             fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id(kwd['id']) )
@@ -1855,7 +1864,8 @@ class RequestsAdmin( BaseController ):
                                         rt_info_widgets=rt_info,
                                         rt_states_widgets=rt_states,
                                         message=message,
-                                        status=status)
+                                        status=status,
+                                        rename_dataset_selectbox=self.__rename_dataset_selectbox(trans))
         elif params.get( 'remove_state_button', False ):
             rt_info, rt_states = self.__create_request_type_form(trans, **kwd)
             index = int(params.get( 'remove_state_button', '' ).split(" ")[2])
@@ -1864,7 +1874,8 @@ class RequestsAdmin( BaseController ):
                                         rt_info_widgets=rt_info,
                                         rt_states_widgets=rt_states,
                                         message=message,
-                                        status=status)
+                                        status=status,
+                                        rename_dataset_selectbox=self.__rename_dataset_selectbox(trans))
         elif params.get( 'save_request_type', False ):
             rt, message = self.__save_request_type(trans, **kwd)
             if not rt:
@@ -1888,7 +1899,8 @@ class RequestsAdmin( BaseController ):
             rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
                                   username=util.restore_text( params.get( 'username', ''  ) ),
                                   password=params.get( 'password', '' ),
-                                  data_dir=util.restore_text( params.get( 'data_dir', ''  ) )) 
+                                  data_dir=util.restore_text( params.get( 'data_dir', ''  ) ),
+                                  rename_dataset=util.restore_text( params.get('rename_dataset', False) )) 
             trans.sa_session.add( rt )
             trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
@@ -1903,7 +1915,8 @@ class RequestsAdmin( BaseController ):
                                         rt_info_widgets=rt_info,
                                         rt_states_widgets=rt_states,
                                         message=message,
-                                        status=status)
+                                        status=status,
+                                        rename_dataset_selectbox=self.__rename_dataset_selectbox(trans))
     def __create_request_type_form(self, trans, **kwd):
         request_forms=get_all_forms( trans, 
                                      filter=dict(deleted=False),
@@ -1949,6 +1962,19 @@ class RequestsAdmin( BaseController ):
                 break
         return rt_info, rt_states
     
+    def __rename_dataset_selectbox(self, trans, rt=None):
+        if rt:
+            sel_opt = rt.datatx_info.get('rename_dataset', trans.app.model.RequestType.rename_dataset_options.NO)
+        else:
+            sel_opt = trans.app.model.RequestType.rename_dataset_options.NO
+        rename_dataset_selectbox = SelectField('rename_dataset')
+        for opt, opt_name in trans.app.model.RequestType.rename_dataset_options.items():
+            if sel_opt == opt_name: 
+                rename_dataset_selectbox.add_option(opt_name, opt_name, selected=True)
+            else:
+                rename_dataset_selectbox.add_option(opt_name, opt_name)
+        return rename_dataset_selectbox  
+    
     def __save_request_type(self, trans, **kwd):
         params = util.Params( kwd )
         rt = trans.app.model.RequestType() 
@@ -1960,7 +1986,8 @@ class RequestsAdmin( BaseController ):
         rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
                               username=util.restore_text( params.get( 'username', ''  ) ),
                               password=params.get( 'password', '' ),
-                              data_dir=util.restore_text( params.get( 'data_dir', ''  ) )) 
+                              data_dir=util.restore_text( params.get( 'data_dir', ''  ) ),
+                              rename_dataset=util.restore_text( params.get('rename_dataset', '') )) 
         trans.sa_session.add( rt )
         trans.sa_session.flush()
         # set sample states
