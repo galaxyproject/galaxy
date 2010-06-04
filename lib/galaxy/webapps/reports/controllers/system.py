@@ -170,8 +170,7 @@ class System( BaseController ):
     def disk_usage( self, trans, **kwd ):
         file_path = trans.app.config.file_path
         disk_usage = self.get_disk_usage( file_path )
-        #min_file_size = 2**32 # 4 Gb
-        min_file_size = 0
+        min_file_size = 2**32 # 4 Gb
         file_size_str = nice_size( min_file_size )
         datasets = trans.sa_session.query( model.Dataset ) \
                                    .filter( and_( model.Dataset.table.c.purged == False,
