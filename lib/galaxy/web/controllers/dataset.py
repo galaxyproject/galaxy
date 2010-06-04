@@ -133,8 +133,9 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     num_rows_per_page = 50
     def apply_query_filter( self, trans, query, **kwargs ):
         # To filter HDAs by user, need to join HDA and History table and then filter histories by user. This is necessary because HDAs do not have
-        # a user relation.
-        return query.select_from( model.HistoryDatasetAssociation.table.join( model.History.table ) ).filter( model.History.user == trans.user )
+        # a user relation. TODO: move the base of this query to build_initial_query.
+        # Summary: filter by user, and deleted==False for both dataset and history
+        return query.select_from( model.HistoryDatasetAssociation.table.join( model.History.table ) ).filter( model.History.user == trans.user ).filter( self.model_class.deleted==False ).filter( model.History.deleted==False)
 
 class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssociation ):
         
