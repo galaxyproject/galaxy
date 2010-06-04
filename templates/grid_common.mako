@@ -1,5 +1,5 @@
 <%! 
-    from galaxy.web.framework.helpers.grids import TextColumn, GridColumnFilter 
+    from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter 
     from galaxy.web.framework.helpers import iff
 %>
 
@@ -15,81 +15,110 @@
             <td align="left" style="padding-left: 10px">${column_label}:</td>
         %endif
         <td>
-        %if isinstance(column, TextColumn):
-            <form class="text-filter-form" column_key="${column.key}" action="${url( dict() )}" method="get" >
-                ## Carry forward filtering criteria with hidden inputs.
-                %for temp_column in grid.columns:
-                    %if temp_column.key in cur_filter_dict:
-                        <% value = cur_filter_dict[ temp_column.key ] %>
-                        %if value != "All":
-                            <%
-                                if isinstance( temp_column, TextColumn ):
-                                    value = h.to_json_string( value )
-                            %>
-                            <input type="hidden" id="${temp_column.key}" name="f-${temp_column.key}" value='${value}'/>
-                        %endif
-                    %endif
-                %endfor
-                
-                ## Print current filtering criteria and links to delete.
-                <span id="${column.key}-filtering-criteria">
-                %if column.key in cur_filter_dict:
-                    <% column_filter = cur_filter_dict[column.key] %>
-                    %if isinstance( column_filter, basestring ):
-                        %if column_filter != "All":
-                            <span class='text-filter-val'>
-                                ${cur_filter_dict[column.key]}
-                                <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                                <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>                                
-                            </span>
-                        %endif
-                    %elif isinstance( column_filter, list ):
-                        %for i, filter in enumerate( column_filter ):
-                            %if i > 0:
-                                ,
-                            %endif
-                            <span class='text-filter-val'>${filter}
+            %if isinstance(column, TextColumn):
+                <form class="text-filter-form" column_key="${column.key}" action="${url( dict() )}" method="get" >
+                    ## Carry forward filtering criteria with hidden inputs.
+                    %for temp_column in grid.columns:
+                        %if temp_column.key in cur_filter_dict:
+                            <% value = cur_filter_dict[ temp_column.key ] %>
+                            %if value != "All":
                                 <%
-                                    new_filter = list( column_filter )
-                                    del new_filter[ i ]
-                                    new_column_filter = GridColumnFilter( "", { column.key : h.to_json_string( new_filter ) } )
+                                    if isinstance( temp_column, TextColumn ):
+                                        value = h.to_json_string( value )
                                 %>
-                                <a href="${url( new_column_filter.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>
-                            </span>
-                        %endfor
-                                
-                    %endif
-                %endif
-                </span>
-                ## Print input field for column.
-                <span>
-                    <% value = iff( column.filterable == "standard", column.label.lower(), "") %>
-                    <input class="no-padding-or-margin" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="15"/>
-                    <input class='submit-image' type='image' src='${h.url_for('/static/images/mag_glass.png')}' alt='Filter'/>
-                </span>
-            </form>
-        %else:
-            <span id="${column.key}-filtering-criteria">
-            %for i, filter in enumerate( column.get_accepted_filters() ):
-                <% 
-                    # HACK: we know that each filter will have only a single argument, so get that single argument.
-                    for key, arg in filter.args.items():
-                        filter_key = key
-                        filter_arg = arg
-                %>
-                %if i > 0:
-                    |
-                %endif
-                %if column.key in cur_filter_dict and column.key in filter.args and cur_filter_dict[column.key] == filter.args[column.key]:
-                    <span class="categorical-filter ${column.key}-filter current-filter">${filter.label}</span>
-                %else:
-                    <span class="categorical-filter ${column.key}-filter">
-                        <a href="${url( filter.get_url_args() )}" filter_key="${filter_key}" filter_val="${filter_arg}">${filter.label}</a>
+                                <input type="hidden" id="${temp_column.key}" name="f-${temp_column.key}" value='${value}'/>
+                            %endif
+                        %endif
+                    %endfor
+                    
+                    ## Print current filtering criteria and links to delete.
+                    <span id="${column.key}-filtering-criteria">
+                        %if column.key in cur_filter_dict:
+                            <% column_filter = cur_filter_dict[column.key] %>
+                            %if isinstance( column_filter, basestring ):
+                                %if column_filter != "All":
+                                    <span class='text-filter-val'>
+                                        ${cur_filter_dict[column.key]}
+                                        <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
+                                        <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>                                
+                                    </span>
+                                %endif
+                            %elif isinstance( column_filter, list ):
+                                %for i, filter in enumerate( column_filter ):
+                                    %if i > 0:
+                                        ,
+                                    %endif
+                                    <span class='text-filter-val'>${filter}
+                                        <%
+                                            new_filter = list( column_filter )
+                                            del new_filter[ i ]
+                                            new_column_filter = GridColumnFilter( "", { column.key : h.to_json_string( new_filter ) } )
+                                        %>
+                                        <a href="${url( new_column_filter.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>
+                                    </span>
+                                %endfor
+                            %endif
+                        %endif
                     </span>
-                %endif
-            %endfor
-            </span>
-        %endif
+                    ## Print input field for column.
+                    <span>
+                        <% value = iff( column.filterable == "standard", column.label.lower(), "") %>
+                        <input class="no-padding-or-margin" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="15"/>
+                        <input class='submit-image' type='image' src='${h.url_for('/static/images/mag_glass.png')}' alt='Filter'/>
+                    </span>
+                </form>
+            ######################
+            ## TODO: eliminate this elif condition when the categorical-filter style in grid_common.mako is fixed to that it no
+            ## longer mangles the request by eliminating parameters from it before it reaches the server.  Since the categorical-filter
+            ## style is not used here, paging will not work...
+            ######################
+            %elif isinstance( column, StateColumn ):
+            kwargs: ${kwargs}<br/>
+                <span id="${column.key}-filtering-criteria">
+                    %for i, filter in enumerate( column.get_accepted_filters() ):
+                        <% 
+                            # HACK: we know that each filter will have only a single argument, so get that single argument.
+                            for key, arg in filter.args.items():
+                                filter_key = key
+                                filter_arg = arg
+                        %>
+                        %if i > 0:
+                            |
+                        %endif
+                        %if column.key in cur_filter_dict and column.key in filter.args and cur_filter_dict[column.key] == filter.args[column.key]:
+                            <span class="categorical-filter ${column.key}-filter current-filter">${filter.label}</span>
+                        %else:
+                            <%
+                                my_dict = {}
+                                my_dict.update( kwargs )
+                                my_dict.update( filter.get_url_args() )
+                            %>
+                            <a href="${url( my_dict )}" filter_key="${filter_key}" filter_val="${filter_arg}">${filter.label}</a>
+                        %endif
+                    %endfor
+                </span>
+            %else:
+                <span id="${column.key}-filtering-criteria">
+                    %for i, filter in enumerate( column.get_accepted_filters() ):
+                        <% 
+                            # HACK: we know that each filter will have only a single argument, so get that single argument.
+                            for key, arg in filter.args.items():
+                                filter_key = key
+                                filter_arg = arg
+                        %>
+                        %if i > 0:
+                            |
+                        %endif
+                        %if column.key in cur_filter_dict and column.key in filter.args and cur_filter_dict[column.key] == filter.args[column.key]:
+                            <span class="categorical-filter ${column.key}-filter current-filter">${filter.label}</span>
+                        %else:
+                            <span class="categorical-filter ${column.key}-filter">
+                                <a href="${url( filter.get_url_args() )}" filter_key="${filter_key}" filter_val="${filter_arg}">${filter.label}</a>
+                            </span>
+                        %endif
+                    %endfor
+                </span>
+            %endif
         </td>
     </tr>
 </%def>

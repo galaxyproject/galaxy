@@ -161,6 +161,16 @@
             });
             
             // Initialize categorical filters.
+            // ####################
+            // TODO: This style is used in grid_common.mako to wrap the links created for certain GridColumn
+            // subclasses ( e.g., DeletedColumn, StateColumn, etc ) where the link labels are generated in the
+            // class's get_accepted_filters() method.  The problem is that when the link is clicked, this style
+            // will eliminate all request parameters except for those that are included in the cur_filter_dict
+            // dictionary that is used to build the url_args variable in this template.  This process needs to
+            // be corrected so that the only changes made to the request are updating the values of parameters
+            // in the request with the new values obtained from cur_filter_dict, leaving all remaining request
+            // parameters alone.  There is another related TODO in the set_categorical_filter() function below.
+            // ####################
             $('.categorical-filter > a').each( function() {
                 $(this).click( function() {
                     var filter_key = $(this).attr('filter_key');
@@ -397,6 +407,11 @@
         }
         
         // Set new value for categorical filter.
+        // ####################
+        // TODO: this function mangles the initial request by eliminating many of the request parameters
+        // before calling update_grid().  This needs to be fixed - see the TODO in the categorical-filter
+        // style above.
+        // ####################
         function set_categorical_filter(name, new_value) {
             // Update filter hyperlinks to reflect new filter value.
             var category_filter = categorical_filters[name];
@@ -423,7 +438,7 @@
                     $(this).append(t);
                 }
             });
-                        
+            
             // Update grid.
             url_args["f-" + name] = new_value;
             go_page_one();
@@ -498,7 +513,7 @@
                 var href_parms = href_parms_str.split("&");
                 var operation = null;
                 var id = -1;
-                var webapp = 'galaxy'
+                var webapp = 'galaxy';
                 for (var index = 0; index < href_parms.length; index++) {
                     if (href_parms[index].indexOf('operation') != -1) {
                         // Found operation parm; get operation value. 
