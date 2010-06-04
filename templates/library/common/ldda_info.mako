@@ -148,7 +148,7 @@
                 </thead>
                 %for hda in associated_hdas:
                     <tr>
-                        <td><a target="_blank" href="${h.url_for( controller='history', action='view', id=trans.security.encode_id( hda.history.id ) )}">${hda.history.get_display_name()}</a></td>
+                        <td><a target="_blank" href="${h.url_for( controller='history', action='view', id=trans.security.encode_id( hda.history_id ) )}">${hda.history.get_display_name()}</a></td>
                         <td>${hda.get_display_name()}</td>
                         <td>${time_ago( hda.update_time )}</td>
                         <td>
