@@ -24,7 +24,7 @@
                     %else:
                         <tr class="tr">
                     %endif
-                        <td><a href="${h.url_for( controller='users', action='specified_date', specified_date=user[0], day_label=user[3], month_label=month_label, year_label=year_label, day_of_month=user[1] )}">${user[3]},&nbsp;${month_label}&nbsp;${user[1]},&nbsp;${year_label}</a></td>
+                        <td><a href="${h.url_for( controller='users', action='specified_date', specified_date=user[0] )}">${user[3]},&nbsp;${month_label}&nbsp;${user[1]},&nbsp;${year_label}</a></td>
                         <td>${user[2]}</td>
                     </tr>
                     <% ctr += 1 %>

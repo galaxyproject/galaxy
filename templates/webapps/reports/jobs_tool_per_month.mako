@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 %if message:
-    ${render_msg( message, status )}
+    ${render_msg( message, 'done' )}
 %endif
 
 <div class="toolForm">
@@ -25,7 +25,7 @@
                         <tr class="tr">
                     %endif
                         <td>${job[2]}&nbsp;${job[3]}</td>
-                        <td><a href="${h.url_for( controller='jobs', action='tool_for_month', tool_id=tool_id, month=job[0] )}">${job[1]}</a></td>
+                        <td><a href="${h.url_for( controller='jobs', action='tool_for_month', tool_id=tool_id, specified_date=job[0]+'-01' )}">${job[1]}</a></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor

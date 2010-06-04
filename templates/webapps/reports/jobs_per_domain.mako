@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 %if message:
-    ${render_msg( message, status )}
+    ${render_msg( message, 'done' )}
 %endif
 
 <div class="toolForm">

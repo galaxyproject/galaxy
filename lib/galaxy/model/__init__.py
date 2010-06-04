@@ -432,13 +432,19 @@ class Dataset( object ):
                 path = os.path.join( os.path.join( self.file_path, *directory_hash_id( self.id ) ), "dataset_%d_files" % self.id )
         # Make path absolute
         return os.path.abspath( path )
-    def get_size( self ):
+    def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
         if self.file_size:
-            return self.file_size
+            if nice_size:
+                return galaxy.datatypes.data.nice_size( self.file_size )
+            else:
+                return self.file_size
         else:
             try:
-                return os.path.getsize( self.file_name )
+                if nice_size:
+                    return galaxy.datatypes.data.nice_size( os.path.getsize( self.file_name ) )
+                else:
+                    return os.path.getsize( self.file_name )
             except OSError:
                 return 0
     def set_size( self ):

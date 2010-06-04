@@ -1,13 +1,17 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
+<%
+    from galaxy.web.framework.helpers import time_ago
+%>
+
 %if message:
     ${render_msg( message, 'done' )}
 %endif
 
 <div class="toolForm">
     <h3 align="center">Old Histories and Datasets</h3>
-    <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
+    <table align="center" width="90%" class="border" cellpadding="5" cellspacing="5">
         <tr>
             <td>
                 <form method="post" action="system">
@@ -33,10 +37,14 @@
             </td>
         </tr>
     </table>
-    <br clear="left" /><br />
+    <br clear="left" />
     <h3 align="center">Current Disk Space Where Datasets are Stored</h3>
-    <table align="center" width="60%" class="colored">
-        <tr><td colspan="5"><div class="toolFormTitle">Disk Usage for ${file_path}</div></td></tr>
+    <table align="center" width="90%" class="colored">
+        <tr>
+            <td colspan="5">
+                <b>Disk Usage for ${file_path}</b>
+            </td>
+        </tr>
         <tr class="header">
             <td>File System</td>
             <td>Disk Size</td>
@@ -51,16 +59,16 @@
             <td>${disk_usage[3]}</td>
             <td>${disk_usage[4]}</td>
         </tr>
-        %if len( datasets ) == 0:
-            <tr class="header"><td colspan="5">There are no datasets larger than ${file_size_str}</td></tr>
-        %else:
-            <tr><td colspan="5"><div class="toolFormTitle">${len( datasets )} largest datasets over ${file_size_str}</div></td></tr>
+    </table>
+    <br clear="left" />
+    %if datasets.count() > 0:
+        <h3 align="center">${datasets.count()} largest unpurged data files over ${file_size_str}</h3>
+        <table align="center" width="90%" class="colored">
             <tr class="header">
                 <td>File</td>
                 <td>Last Updated</td>
-                <td>History ID</td>
                 <td>Deleted</td>
-                <td>Size on Disk</td>
+                <td>File Size</td>
             </tr>
             <% ctr = 0 %>
             %for dataset in datasets:
@@ -69,14 +77,19 @@
                 %else:
                     <tr class="tr">
                 %endif
-                    <td>dataset_${dataset[0]}.dat</td>
-                    <td>${dataset[1]}</td>
-                    <td>${dataset[2]}</td>
-                    <td>${dataset[3]}</td>
-                    <td>${dataset[4]}</td>
+                    <td>
+                        <% dataset_label = 'dataset%d_.dat' % dataset.id %>
+                        <a href="${h.url_for( controller='system', action='dataset_info', id=trans.security.encode_id( dataset.id ) )}">${dataset_label}</a>
+                    </td>
+                    <td>${time_ago( dataset.update_time )}</td>
+                    <td>${dataset.deleted}</td>
+                    <td>${dataset.file_size}</td>
                 </tr>
                 <% ctr += 1 %>
             %endfor
-        %endif
-    </table>
+        </table>
+        <br clear="left" />
+    %else:
+        <h3 align="center">There are no unpurged data files larger than ${file_size_str}</h3>
+    %endif
 </div>

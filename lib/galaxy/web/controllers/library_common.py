@@ -1904,15 +1904,14 @@ def branch_deleted( folder ):
 def get_containing_library_from_library_dataset( trans, library_dataset ):
     """Given a library_dataset, get the containing library"""
     folder = library_dataset.folder
-    parent = folder
     while folder.parent:
-        parent = folder.parent
-    # We have parent set to the library's root folder, which has the
-    # same name as the library
+        folder = folder.parent
+    # We have folder set to the library's root folder, which has the same name as the library
     for library in trans.sa_session.query( trans.model.Library ) \
                                    .filter( and_( trans.model.Library.table.c.deleted == False,
-                                                  trans.model.Library.table.c.name == parent.name ) ):
-        if library.root_folder == parent:
+                                                  trans.model.Library.table.c.name == folder.name ) ):
+        # Just to double-check
+        if library.root_folder == folder:
             return library
     return None
             

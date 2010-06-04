@@ -63,7 +63,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                     model_class=model.User,
                     link=( lambda item: dict( operation="user_per_month", id=item.id, webapp="reports" ) ),
                     attach_popup=False ),
-        grids.StateColumn( "All", key="state", model_class=model.Job, visible=False, filterable="advanced" )
+        grids.StateColumn( "state", key="state", model_class=model.Job, visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[1], columns[2] ], 
@@ -78,45 +78,59 @@ class SpecifiedDateListGrid( grids.Grid ):
     def build_initial_query( self, trans, **kwd ):
         specified_date = kwd.get( 'specified_date', 'All' )
         if specified_date == 'All':
-            return trans.sa_session.query( self.model_class )
+            return trans.sa_session.query( self.model_class ) \
+                                   .enable_eagerloads( False )
         year, month, day = map( int, specified_date.split( "-" ) )
         start_date = date( year, month, day )
         end_date = start_date + timedelta( days=1 )
-        return trans.sa_session.query( self.model_class ).filter( and_( self.model_class.table.c.create_time >= start_date,
-                                                                        self.model_class.table.c.create_time < end_date ) )
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( and_( self.model_class.table.c.create_time >= start_date,
+                                              self.model_class.table.c.create_time < end_date ) ) \
+                               .enable_eagerloads( False )
 
 class SpecifiedDateInErrorListGrid( SpecifiedDateListGrid ):
     def build_initial_query( self, trans, **kwd ):
         specified_date = kwd.get( 'specified_date', 'All' )
         if specified_date == 'All':
-            return trans.sa_session.query( self.model_class ).filter( self.model_class.table.c.state == model.Job.states.ERROR )
+            return trans.sa_session.query( self.model_class ) \
+                                   .filter( self.model_class.table.c.state == model.Job.states.ERROR ) \
+                                   .enable_eagerloads( False )
         year, month, day = map( int, specified_date.split( "-" ) )
         start_date = date( year, month, day )
         end_date = start_date + timedelta( days=1 )
-        return trans.sa_session.query( self.model_class ).filter( and_( self.model_class.table.c.state == model.Job.states.ERROR,
-                                                                        self.model_class.table.c.create_time >= start_date,
-                                                                        self.model_class.table.c.create_time < end_date ) )
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( and_( self.model_class.table.c.state == model.Job.states.ERROR,
+                                              self.model_class.table.c.create_time >= start_date,
+                                              self.model_class.table.c.create_time < end_date ) ) \
+                               .enable_eagerloads( False )
 
 class AllUnfinishedListGrid( SpecifiedDateListGrid ):
     def build_initial_query( self, trans, **kwd ):
         specified_date = kwd.get( 'specified_date', 'All' )
         if specified_date == 'All':
-            return trans.sa_session.query( self.model_class ).filter( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
-                                                                                 model.Job.table.c.state == model.Job.states.ERROR, 
-                                                                                 model.Job.table.c.state == model.Job.states.DELETED ) ) )
+            return trans.sa_session.query( self.model_class ) \
+                                   .filter( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
+                                                       model.Job.table.c.state == model.Job.states.ERROR, 
+                                                       model.Job.table.c.state == model.Job.states.DELETED ) ) ) \
+                                   .enable_eagerloads( False )
         year, month, day = map( int, specified_date.split( "-" ) )
         start_date = date( year, month, day )
         end_date = start_date + timedelta( days=1 )
-        return trans.sa_session.query( self.model_class ).filter( and_( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
-                                                                                   model.Job.table.c.state == model.Job.states.ERROR, 
-                                                                                   model.Job.table.c.state == model.Job.states.DELETED ) ),
-                                                                        self.model_class.table.c.create_time >= start_date,
-                                                                        self.model_class.table.c.create_time < end_date ) )
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( and_( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
+                                                         model.Job.table.c.state == model.Job.states.ERROR, 
+                                                         model.Job.table.c.state == model.Job.states.DELETED ) ),
+                                              self.model_class.table.c.create_time >= start_date,
+                                              self.model_class.table.c.create_time < end_date ) ) \
+                                .enable_eagerloads( False )
 
 class UserForMonthListGrid( SpecifiedDateListGrid ):
     def build_initial_query( self, trans, **kwd ):
         email = util.restore_text( kwd.get( 'email', '' ) )
-        year, month = map( int, kwd.get( 'month', datetime.utcnow().strftime( "%Y-%m" ) ).split( "-" ) )
+        # If specified_date is not received, we'll default to the current month
+        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
+        specified_month = specified_date[ :7 ]
+        year, month = map( int, specified_month.split( "-" ) )
         start_date = date( year, month, 1 )
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
         return trans.sa_session.query( model.Job ) \
@@ -127,19 +141,22 @@ class UserForMonthListGrid( SpecifiedDateListGrid ):
                                               model.User.table.c.email == email,
                                               model.Job.table.c.create_time >= start_date,
                                               model.Job.table.c.create_time < end_date ) ) \
-                               .order_by( desc( model.Job.table.c.create_time ) )
+                               .enable_eagerloads( False )
 
 class ToolForMonthListGrid( SpecifiedDateListGrid ):
     def build_initial_query( self, trans, **kwd ):
+        # If specified_date is not received, we'll default to the current month
+        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
+        specified_month = specified_date[ :7 ]
         tool_id = util.restore_text( kwd.get( 'tool_id', '' ) )
-        year, month = map( int, kwd.get( 'month', datetime.utcnow().strftime( "%Y-%m" ) ).split( "-" ) )
+        year, month = map( int, specified_month.split( "-" ) )
         start_date = date( year, month, 1 )
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
-        return trans.sa_session.query( model.Job ) \
-                               .filter( and_( model.Job.table.c.tool_id == tool_id,
-                                              model.Job.table.c.create_time >= start_date,
-                                              model.Job.table.c.create_time < end_date ) ) \
-                               .order_by( desc( model.Job.table.c.create_time ) )
+        return trans.sa_session.query( self.model_class ) \
+                               .filter( and_( self.model_class.table.c.tool_id == tool_id,
+                                              self.model_class.table.c.create_time >= start_date,
+                                              self.model_class.table.c.create_time < end_date ) ) \
+                               .enable_eagerloads( False )
 
 class Jobs( BaseController ):
 
@@ -158,8 +175,7 @@ class Jobs( BaseController ):
                                                                   action='job_info',
                                                                   **kwd ) )
             if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
+                # The received id is the job id, so we need to get the jobs tool_id.
                 job_id = kwd.get( 'id', None )
                 job = get_job( trans, job_id )
                 kwd[ 'tool_id' ] = job.tool_id
@@ -194,8 +210,7 @@ class Jobs( BaseController ):
                                                                   action='job_info',
                                                                   **kwd ) )
             if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
+                # The received id is the job id, so we need to get the jobs tool_id.
                 job_id = kwd.get( 'id', None )
                 job = get_job( trans, job_id )
                 kwd[ 'tool_id' ] = job.tool_id
@@ -222,7 +237,10 @@ class Jobs( BaseController ):
         params = util.Params( kwd )
         message = ''
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        year, month = map( int, params.get( 'month', datetime.utcnow().strftime( "%Y-%m" ) ).split( "-" ) )
+        # If specified_date is not received, we'll default to the current month
+        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
+        specified_month = specified_date[ :7 ]
+        year, month = map( int, specified_month.split( "-" ) )
         start_date = date( year, month, 1 )
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
         month_label = start_date.strftime( "%B" )
@@ -254,7 +272,10 @@ class Jobs( BaseController ):
     def specified_month_in_error( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
-        year, month = map( int, params.get( 'month', datetime.utcnow().strftime( "%Y-%m" ) ).split( "-" ) )
+        # If specified_date is not received, we'll default to the current month
+        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
+        specified_month = specified_date[ :7 ]
+        year, month = map( int, specified_month.split( "-" ) )
         start_date = date( year, month, 1 )
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
         month_label = start_date.strftime( "%B" )
@@ -289,8 +310,7 @@ class Jobs( BaseController ):
                                                                   action='job_info',
                                                                   **kwd ) )
             if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
+                # The received id is the job id, so we need to get the jobs tool_id.
                 job_id = kwd.get( 'id', None )
                 job = get_job( trans, job_id )
                 kwd[ 'tool_id' ] = job.tool_id
@@ -332,7 +352,9 @@ class Jobs( BaseController ):
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
-        return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako', jobs=jobs, message=message )
+        return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako',
+                                    jobs=jobs,
+                                    message=message )
     @web.expose
     def per_month_in_error( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -349,7 +371,9 @@ class Jobs( BaseController ):
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
-        return trans.fill_template( '/webapps/reports/jobs_per_month_in_error.mako', jobs=jobs, message=message )
+        return trans.fill_template( '/webapps/reports/jobs_per_month_in_error.mako',
+                                    jobs=jobs,
+                                    message=message )
     @web.expose
     def per_user( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -398,8 +422,7 @@ class Jobs( BaseController ):
                                                                   action='job_info',
                                                                   **kwd ) )
             if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
+                # The received id is the job id, so we need to get the jobs tool_id.
                 job_id = kwd.get( 'id', None )
                 job = get_job( trans, job_id )
                 kwd[ 'tool_id' ] = job.tool_id
@@ -434,12 +457,15 @@ class Jobs( BaseController ):
         for row in q.execute():
             jobs.append( ( row.tool_id, 
                            row.total_jobs ) )
-        return trans.fill_template( '/webapps/reports/jobs_per_tool.mako', jobs=jobs, message=message )
+        return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
+                                    jobs=jobs,
+                                    message=message )
     @web.expose
     def tool_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
         tool_id = params.get( 'tool_id', 'Add a column1' )
+        specified_date = params.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause = model.Job.table.c.tool_id == tool_id, 
@@ -452,7 +478,11 @@ class Jobs( BaseController ):
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
-        return trans.fill_template( '/webapps/reports/jobs_tool_per_month.mako', tool_id=tool_id, jobs=jobs, message=message )
+        return trans.fill_template( '/webapps/reports/jobs_tool_per_month.mako',
+                                    specified_date=specified_date,
+                                    tool_id=tool_id,
+                                    jobs=jobs,
+                                    message=message )
     @web.expose
     def tool_for_month( self, trans, **kwd ):
         if 'operation' in kwd:
@@ -462,8 +492,7 @@ class Jobs( BaseController ):
                                                                   action='job_info',
                                                                   **kwd ) )
             if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
+                # The received id is the job id, so we need to get the jobs tool_id.
                 job_id = kwd.get( 'id', None )
                 job = get_job( trans, job_id )
                 kwd[ 'tool_id' ] = job.tool_id
@@ -497,7 +526,10 @@ class Jobs( BaseController ):
                                    .one()
         # TODO: for some reason the job_info.id is not the same as job_id in the template, so we need to pass job_id
         # This needs to be fixed ASAP!
-        return trans.fill_template( '/webapps/reports/job_info.mako', job_id=job_id, job_info=job_info, message=message )
+        return trans.fill_template( '/webapps/reports/job_info.mako',
+                                    job_id=job_id,
+                                    job_info=job_info,
+                                    message=message )
     @web.expose
     def per_domain( self, trans, **kwd ):
         # TODO: rewrite using alchemy
