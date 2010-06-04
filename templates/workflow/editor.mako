@@ -328,6 +328,7 @@
             type: 'POST',
             dataType: 'json',
             success: function( data ) {
+                workflow.active_form_has_changes = false;
                 node.update_field_data( data );
             },
             beforeSubmit: function( data ) {
