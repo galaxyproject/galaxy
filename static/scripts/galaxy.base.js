@@ -287,9 +287,16 @@ function replace_big_select_inputs(min_length) {
             // case a user may have manually entered a value that needs to be refreshed).
             text_input_elt.bind("result", try_refresh_fn);
             text_input_elt.keyup( function(e) {
-                try_refresh_fn();
+                if ( e.keyCode === 13 ) // Return key
+                    try_refresh_fn();
             });
-
+            
+            // Disable return key so that it does not submit the form automatically. This is done because elememnt should behave like a 
+            // select (enter = select), not text input (enter = submit form).
+            text_input_elt.keydown( function(e) {
+                if ( e.keyCode === 13 ) // Return key
+                    return false;
+            });
         }
     });
 }
