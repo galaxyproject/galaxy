@@ -147,7 +147,7 @@ function naturalSort(a, b){
 // Replace select box with a text input box + autocomplete.
 function replace_big_select_inputs(min_length) {
     // To do replace, jQuery's autocomplete plugin must be loaded.
-    if (typeof jQuery().autocomplete == "undefined")
+    if (!jQuery().autocomplete)
         return;
     
     // Set default for min_length.
@@ -174,10 +174,10 @@ function replace_big_select_inputs(min_length) {
         text_input_elt.attr('id', select_elt.attr('id'));
         text_input_elt.click( function() {
             // Show all. Also provide note that load is happening since this can be slow.
-            var cur_value = $(this).attr('value');
-            $(this).attr('value', 'Loading...');
+            var cur_value = $(this).val();
+            $(this).val('Loading...');
             $(this).showAllInCache();
-            $(this).attr('value', cur_value);
+            $(this).val(cur_value);
             $(this).select();
         });
 
