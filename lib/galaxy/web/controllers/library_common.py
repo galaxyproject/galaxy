@@ -109,6 +109,13 @@ class LibraryCommon( BaseController ):
             comptypes_t = comptypes
             if trans.app.config.nginx_x_archive_files_base:
                 comptypes_t = ['ngxzip']
+            for comptype in trans.app.config.disable_library_comptypes:
+                # TODO: do this once, not every time (we're gonna raise an
+                # exception every time after the first time)
+                try:
+                    comptypes_t.remove( comptype )
+                except:
+                    pass
             return trans.fill_template( '/library/common/browse_library.mako',
                                         cntrller=cntrller,
                                         use_panels=use_panels,

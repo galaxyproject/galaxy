@@ -98,6 +98,7 @@ class Configuration( object ):
         if self.user_library_import_dir is not None and not os.path.exists( self.user_library_import_dir ):
             raise ConfigurationError( "user_library_import_dir specified in config (%s) does not exist" % self.user_library_import_dir )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
+        self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
