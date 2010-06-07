@@ -129,7 +129,7 @@ class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
     model_class = model.HistoryDatasetAssociation
     columns = [
         ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", "tags", model_class=model.HistoryDatasetAssociation, model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn( "Tags", "tags", model.HistoryDatasetAssociation, model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
