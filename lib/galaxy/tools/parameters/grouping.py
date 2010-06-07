@@ -241,8 +241,8 @@ class UploadDataset( Group ):
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             warnings = []
-            space_to_tab = False 
-            if context.get( 'space_to_tab', None ) not in ["None", None]:
+            space_to_tab = False
+            if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
             file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
             if file_bunch.path and url_paste:
@@ -261,7 +261,7 @@ class UploadDataset( Group ):
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             space_to_tab = False
-            if context.get( 'space_to_tab', None ) not in ["None", None]:
+            if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
             warnings = []
             file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )

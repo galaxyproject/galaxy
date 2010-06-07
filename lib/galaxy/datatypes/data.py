@@ -295,7 +295,7 @@ class Data( object ):
     def after_setting_metadata( self, dataset ):
         """This function is called on the dataset after metadata is set."""
         dataset.clear_associated_files( metadata_safe = True )
-    def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, is_binary = False, space_to_tab = True, **kwds ):
+    def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, is_binary = False, space_to_tab = False, **kwds ):
         kwds[ 'name' ] = name
         kwds[ 'optional' ] = optional
         kwds[ 'mimetype' ] = mimetype

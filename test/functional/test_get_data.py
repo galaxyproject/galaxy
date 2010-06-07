@@ -4,20 +4,37 @@ from galaxy.model.mapping import context as sa_session
 from base.twilltestcase import TwillTestCase
 
 class UploadData( TwillTestCase ):
-    def test_0005_upload_file( self ):
-        """Test uploading 1.bed, NOT setting the file format"""
+    def test_0000_setup_upload_tests( self ):
+        """Configuring upload tests, setting admin_user"""
         self.logout()
         self.login( email='test@bx.psu.edu' )
         global admin_user
         admin_user = sa_session.query( galaxy.model.User ) \
                                .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
                                .one()
+    def test_0005_upload_file( self ):               
+        """Test uploading 1.bed, NOT setting the file format"""
         history = sa_session.query( galaxy.model.History ) \
                             .filter( and_( galaxy.model.History.table.c.deleted==False,
                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
                             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                             .first()
         self.upload_file( '1.bed' )
+        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                        .first()
+        assert hda is not None, "Problem retrieving hda from database"
+        self.verify_dataset_correctness( '1.bed', hid=str( hda.hid ) )
+        self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
+        self.delete_history( id=self.security.encode_id( history.id ) )
+    def test_0006_upload_file( self ):               
+        """Test uploading 1.bed.spaces, with space to tab selected, NOT setting the file format"""
+        history = sa_session.query( galaxy.model.History ) \
+                            .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                            .first()
+        self.upload_file( '1.bed.spaces', space_to_tab = True )
         hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
                         .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
                         .first()
@@ -174,15 +191,36 @@ class UploadData( TwillTestCase ):
                             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                             .first()
         # lped data types include a ped_file and a map_file ( which is binary )
-        self.upload_composite_datatype_file( 'lped', ped_file='tinywga.ped', map_file='tinywga.map', base_name='rgenetics' )
+        self.upload_file( None, ftype='lped', metadata = [ { 'name':'base_name', 'value':'rgenetics' } ], composite_data = [ { 'name':'ped_file', 'value':'tinywga.ped' }, { 'name':'map_file', 'value':'tinywga.map'} ] )
         # Get the latest hid for testing
         hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
                         .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
                         .first()
         assert hda is not None, "Problem retrieving hda from database"
         # We'll test against the resulting ped file and map file for correctness
-        self.verify_composite_datatype_file_content( 'rgenetics.ped', str( hda.id ) )
-        self.verify_composite_datatype_file_content( 'rgenetics.map', str( hda.id ) )
+        self.verify_composite_datatype_file_content( 'tinywga.ped', str( hda.id ), base_name = 'rgenetics.ped' )
+        self.verify_composite_datatype_file_content( 'tinywga.map', str( hda.id ), base_name = 'rgenetics.map' )
+        self.check_history_for_string( "rgenetics" )
+        self.delete_history( id=self.security.encode_id( history.id ) )
+    def test_0056_upload_file( self ):
+        """Test uploading lped composite datatype file, manually setting the file format, and using space to tab on one file (tinywga.ped)"""
+        # Logged in as admin_user
+        self.check_history_for_string( 'Your history is empty' )
+        history = sa_session.query( galaxy.model.History ) \
+                            .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                            .first()
+        # lped data types include a ped_file and a map_file ( which is binary )
+        self.upload_file( None, ftype='lped', metadata = [ { 'name':'base_name', 'value':'rgenetics' } ], composite_data = [ { 'name':'ped_file', 'value':'tinywga.ped', 'space_to_tab':True }, { 'name':'map_file', 'value':'tinywga.map'} ] )
+        # Get the latest hid for testing
+        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                        .first()
+        assert hda is not None, "Problem retrieving hda from database"
+        # We'll test against the resulting ped file and map file for correctness
+        self.verify_composite_datatype_file_content( 'tinywga.ped.space_to_tab', str( hda.id ), base_name = 'rgenetics.ped' )
+        self.verify_composite_datatype_file_content( 'tinywga.map', str( hda.id ), base_name = 'rgenetics.map' )
         self.check_history_for_string( "rgenetics" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0060_upload_file( self ):
@@ -195,16 +233,16 @@ class UploadData( TwillTestCase ):
                             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                             .first()
         # pbed data types include a bim_file, a bed_file and a fam_file
-        self.upload_composite_datatype_file( 'pbed', bim_file='tinywga.bim', bed_file='tinywga.bed', fam_file='tinywga.fam', base_name='rgenetics' )
+        self.upload_file( None, ftype='pbed', metadata = [ { 'name':'base_name', 'value':'rgenetics' } ], composite_data = [ { 'name':'bim_file', 'value':'tinywga.bim' }, { 'name':'bed_file', 'value':'tinywga.bed'}, { 'name':'fam_file', 'value':'tinywga.fam' } ] )
         # Get the latest hid for testing
         hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
                         .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
                         .first()
         assert hda is not None, "Problem retrieving hda from database"
         # We'll test against the resulting ped file and map file for correctness
-        self.verify_composite_datatype_file_content( 'rgenetics.bim', str( hda.id ) )
-        self.verify_composite_datatype_file_content( 'rgenetics.bed', str( hda.id ) )
-        self.verify_composite_datatype_file_content( 'rgenetics.fam', str( hda.id ) )
+        self.verify_composite_datatype_file_content( 'tinywga.bim', str( hda.id ), base_name = 'rgenetics.bim' )
+        self.verify_composite_datatype_file_content( 'tinywga.bed', str( hda.id ), base_name = 'rgenetics.bed' )
+        self.verify_composite_datatype_file_content( 'tinywga.fam', str( hda.id ), base_name = 'rgenetics.fam' )
         self.check_history_for_string( "rgenetics" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0065_upload_file( self ):
