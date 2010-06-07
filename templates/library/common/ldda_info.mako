@@ -148,12 +148,21 @@
                 </thead>
                 %for hda in associated_hdas:
                     <tr>
-                        <td><a target="_blank" href="${h.url_for( controller='history', action='view', id=trans.security.encode_id( hda.history_id ) )}">${hda.history.get_display_name()}</a></td>
+                        <td>
+                            <%
+                                hda_hist = trans.sa_session.query( trans.model.History ).get( hda.history_id )
+                            %>
+                            %if hda_hist:
+                                <a target="_blank" href="${h.url_for( controller='history', action='view', id=trans.security.encode_id( hda_hist.id ) )}">${hda_hist.get_display_name()}</a>
+                            %else:
+                                error getting history
+                            %endif
+                        </td>
                         <td>${hda.get_display_name()}</td>
                         <td>${time_ago( hda.update_time )}</td>
                         <td>
-                            %if hda.history.user:
-                                ${hda.history.user.email}
+                            %if hda_hist and hda_hist.user:
+                                ${hda_hist.user.email}
                             %else:
                                 anonymous
                             %endif
