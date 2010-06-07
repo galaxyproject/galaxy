@@ -333,6 +333,7 @@
    <tool file="genetrack/genetrack_indexer.xml" />
    <tool file="genetrack/genetrack_peak_prediction.xml" />
   </section>
+  <label text="RGENETICS" id="rgenetics" />
   <section name="SNP/WGA: Data; Filters" id="rgdat">
   <label text="Data: Import and upload" id="rgimport" />
     <tool file="data_source/upload.xml"/>
