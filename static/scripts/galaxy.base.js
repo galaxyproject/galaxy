@@ -1,7 +1,3 @@
-$(document).ready(function() {
-    replace_big_select_inputs();
-});
-
 $.fn.makeAbsolute = function(rebase) {
     return this.each(function() {
         var el = $(this);
@@ -145,19 +141,22 @@ function naturalSort(a, b){
 }
 
 // Replace select box with a text input box + autocomplete.
-function replace_big_select_inputs(min_length) {
+function replace_big_select_inputs(min_length, max_length) {
     // To do replace, jQuery's autocomplete plugin must be loaded.
     if (!jQuery().autocomplete)
         return;
     
-    // Set default for min_length.
+    // Set default for min_length and max_length
     if (min_length === undefined)
         min_length = 20;
+    if (max_length === undefined)
+        max_length = 3000;
     
     $('select').each( function() {
         var select_elt = $(this);
-        // Skip if # of options < min length.
-        if (select_elt.find('option').length < min_length)
+        // Make sure that options is within range.
+        var num_options = select_elt.find('option').length;
+        if ( (num_options < min_length) || (num_options > max_length) )
             return;
             
         // Skip multi-select because widget cannot handle multi-select.
@@ -211,7 +210,7 @@ function replace_big_select_inputs(min_length) {
             select_options = select_options.sort(naturalSort);
         
         // Do autocomplete.
-        var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: 1000, minChars : 0, hideForLessThanMinChars : false };
+        var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: max_length, minChars : 0, hideForLessThanMinChars : false };
         text_input_elt.autocomplete(select_options, autocomplete_options);
 
         // Replace select with text input.
@@ -481,4 +480,7 @@ $(document).ready( function() {
     }
     // Make popup menus.
     make_popup_menus();
+    
+    // Replace big selects.
+    replace_big_select_inputs(20, 1500);
 });
