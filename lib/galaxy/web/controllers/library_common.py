@@ -1382,7 +1382,7 @@ class LibraryCommon( BaseController ):
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         if trans.app.config.upstream_gzip:
-                            archive = util.streamball.StreamBall( 'w' )
+                            archive = util.streamball.StreamBall( 'w|' )
                             outext = 'tar'
                         else:
                             archive = util.streamball.StreamBall( 'w|gz' )
