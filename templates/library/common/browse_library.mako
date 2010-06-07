@@ -507,11 +507,15 @@
                TIP: Multiple compression options are available for downloading library datasets:
            </p>
            <ul style="padding-left: 1em; list-style-type: disc;">
+               %if 'gz' in comptypes:
+                   <li>gzip: Compression is fastest and yields a larger file, making it more suitable for fast network connections.
+                       %if trans.app.config.upstream_gzip:
+                           NOTE: The file you receive will be an uncompressed .tar file - this is because the Galaxy server compresses it and your browser decompresses it on the fly.
+                       %endif
+                   </li>
+               %endif
                %if 'bz2' in comptypes:
                    <li>bzip2: Compression takes the most time but is better for slower network connections (that transfer slower than the rate of compression) since the resulting file size is smallest.</li>
-               %endif
-               %if 'gz' in comptypes:
-                   <li>gzip: Compression is faster and yields a larger file, making it more suitable for fast network connections.</li>
                %endif
                %if 'zip' in comptypes:
                    <li>ZIP: Not recommended but is provided as an option for those on Windows without WinZip (since WinZip can read .bz2 and .gz files).</li>

@@ -382,15 +382,15 @@
                             # This condition should not contain an else clause because the user is not authorized
                             # to manage dataset permissions unless the default action is 'manage_permissions'
                         %endif
-                        %if 'bz2' in comptypes:
-                            <option value="tbz"
+                        %if 'gz' in comptypes:
+                            <option value="tgz"
                             %if default_action == 'download':
                                 selected
                             %endif>
-                            >Download as a .tar.bz2 file</option>
+                            >Download  as a .tar.gz file</option>
                         %endif
-                        %if 'gz' in comptypes:
-                            <option value="tgz">Download  as a .tar.gz file</option>
+                        %if 'bz2' in comptypes:
+                            <option value="tbz">Download as a .tar.bz2 file</option>
                         %endif
                         %if 'zip' in comptypes:
                             <option value="zip">Download as a .zip file</option>

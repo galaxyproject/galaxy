@@ -1364,14 +1364,22 @@ class LibraryCommon( BaseController ):
                         # Can't use mkstemp - the file must not exist first
                         tmpd = tempfile.mkdtemp()
                         tmpf = os.path.join( tmpd, 'library_download.' + action )
-                        if ziptype == '64':
+                        if ziptype == '64' and trans.app.config.upstream_gzip:
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
+                        elif ziptype == '64':
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+                        elif trans.app.config.upstream_gzip:
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
                         else:
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
-                        archive = util.streamball.StreamBall( 'w|gz' )
-                        outext = 'tgz'
+                        if trans.app.config.upstream_gzip:
+                            archive = util.streamball.StreamBall( 'w' )
+                            outext = 'tar'
+                        else:
+                            archive = util.streamball.StreamBall( 'w|gz' )
+                            outext = 'tgz'
                     elif action == 'tbz':
                         archive = util.streamball.StreamBall( 'w|bz2' )
                         outext = 'tbz2'

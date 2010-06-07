@@ -99,6 +99,7 @@ class Configuration( object ):
             raise ConfigurationError( "user_library_import_dir specified in config (%s) does not exist" % self.user_library_import_dir )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         # Configuration options for taking advantage of nginx features
+        self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
         self.nginx_x_archive_files_base = kwargs.get( 'nginx_x_archive_files_base', False )
