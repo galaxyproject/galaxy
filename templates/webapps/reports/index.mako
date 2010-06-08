@@ -61,6 +61,10 @@
 </%def>
 
 <%def name="left_panel()">
+    <%
+        from datetime import datetime
+        from time import mktime, strftime, localtime
+    %>
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Reports</div>
     </div>
@@ -73,10 +77,10 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='today_all' )}">Today's jobs</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', specified_date=datetime.utcnow().strftime( "%Y-%m-%d" ) )}">Today's jobs</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_all' )}">Jobs per day this month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_in_error' )}">Jobs in error per day this month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='all_unfinished' )}">All unfinished jobs</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', operation='unfinished' )}">All unfinished jobs</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_all' )}">Jobs per month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_in_error' )}">Jobs in error per month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_user' )}">Jobs per user</a></div>

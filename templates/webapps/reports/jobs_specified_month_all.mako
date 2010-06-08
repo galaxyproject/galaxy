@@ -31,7 +31,7 @@
                         <td>${month_label}&nbsp;${job[5]},&nbsp;${year_label}</td>
                         <td>${job[2]}</td>
                         <td>${job[3]}</td>
-                        <td><a href="${h.url_for( controller='jobs', action='specified_date', specified_date=job[1], webapp='reports' )}">${job[4]}</a></td>
+                        <td><a href="${h.url_for( controller='jobs', action='specified_date_handler', specified_date=job[1], webapp='reports' )}">${job[4]}</a></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor

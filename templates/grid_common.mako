@@ -67,36 +67,6 @@
                         <input class='submit-image' type='image' src='${h.url_for('/static/images/mag_glass.png')}' alt='Filter'/>
                     </span>
                 </form>
-            ######################
-            ## TODO: eliminate this elif condition when the categorical-filter style in grid_common.mako is fixed to that it no
-            ## longer mangles the request by eliminating parameters from it before it reaches the server.  Since the categorical-filter
-            ## style is not used here, paging will not work...
-            ######################
-            %elif isinstance( column, StateColumn ):
-            kwargs: ${kwargs}<br/>
-                <span id="${column.key}-filtering-criteria">
-                    %for i, filter in enumerate( column.get_accepted_filters() ):
-                        <% 
-                            # HACK: we know that each filter will have only a single argument, so get that single argument.
-                            for key, arg in filter.args.items():
-                                filter_key = key
-                                filter_arg = arg
-                        %>
-                        %if i > 0:
-                            |
-                        %endif
-                        %if column.key in cur_filter_dict and column.key in filter.args and cur_filter_dict[column.key] == filter.args[column.key]:
-                            <span class="categorical-filter ${column.key}-filter current-filter">${filter.label}</span>
-                        %else:
-                            <%
-                                my_dict = {}
-                                my_dict.update( kwargs )
-                                my_dict.update( filter.get_url_args() )
-                            %>
-                            <a href="${url( my_dict )}" filter_key="${filter_key}" filter_val="${filter_arg}">${filter.label}</a>
-                        %endif
-                    %endfor
-                </span>
             %else:
                 <span id="${column.key}-filtering-criteria">
                     %for i, filter in enumerate( column.get_accepted_filters() ):

@@ -18,13 +18,19 @@ class SpecifiedDateListGrid( grids.Grid ):
     class StateColumn( grids.TextColumn ):
         def get_value( self, trans, grid, job ):
             return job.state
+        def filter( self, trans, user, query, column_filter ):
+            if column_filter == 'Unfinished':
+                return query.filter( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
+                                                model.Job.table.c.state == model.Job.states.ERROR, 
+                                                model.Job.table.c.state == model.Job.states.DELETED ) ) )
+            return query
     class ToolColumn( grids.TextColumn ):
         def get_value( self, trans, grid, job ):
             return job.tool_id
     class CreateTimeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, job ):
             return job.create_time
-    class UserColumn( grids.TextColumn ):
+    class UserColumn( grids.GridColumn ):
         def get_value( self, trans, grid, job ):
             if job.history:
                 if job.history.user:
@@ -32,10 +38,38 @@ class SpecifiedDateListGrid( grids.Grid ):
                 return 'anonymous'
             # TODO: handle libraries...
             return 'no history'
+    class EmailColumn( grids.GridColumn ):
+        def filter( self, trans, user, query, column_filter ):
+            if column_filter == 'All':
+                return query
+            return query.filter( and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
+                                       model.GalaxySession.table.c.user_id == model.User.table.c.id,
+                                       model.User.table.c.email == column_filter ) )
+    class SpecifiedDateColumn( grids.GridColumn ):
+        def filter( self, trans, user, query, column_filter ):
+            if column_filter == 'All':
+                return query
+            # We are either filtering on a date like YYYY-MM-DD or on a month like YYYY-MM,
+            # so we need to figure out which type of date we have
+            if column_filter.count( '-' ) == 2:
+                # We are filtering on a date like YYYY-MM-DD
+                year, month, day = map( int, column_filter.split( "-" ) )
+                start_date = date( year, month, day )
+                end_date = start_date + timedelta( days=1 )
+                return query.filter( and_( self.model_class.table.c.create_time >= start_date,
+                                           self.model_class.table.c.create_time < end_date ) )
+            if column_filter.count( '-' ) == 1:
+                # We are filtering on a month like YYYY-MM
+                year, month = map( int, column_filter.split( "-" ) )
+                start_date = date( year, month, 1 )
+                end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
+                return query.filter( and_( self.model_class.table.c.create_time >= start_date,
+                                           self.model_class.table.c.create_time < end_date ) )
+
     # Grid definition
     use_async = False
     model_class = model.Job
-    title = "Jobs By Date"
+    title = "Jobs"
     template='/webapps/reports/grid.mako'
     default_sort_key = "id"
     columns = [
@@ -54,16 +88,29 @@ class SpecifiedDateListGrid( grids.Grid ):
                     model_class=model.Job,
                     link=( lambda item: dict( operation="tool_per_month", id=item.id, webapp="reports" ) ),
                     attach_popup=False ),
-        CreateTimeColumn( "create_time",
+        CreateTimeColumn( "Creation Time",
                           key="create_time",
                           model_class=model.Job,
                           attach_popup=False ),
-        UserColumn( "user",
+        UserColumn( "User",
                     # Can't sort on this column since it is not a column in self.model_class
                     model_class=model.User,
                     link=( lambda item: dict( operation="user_per_month", id=item.id, webapp="reports" ) ),
                     attach_popup=False ),
-        grids.StateColumn( "state", key="state", model_class=model.Job, visible=False, filterable="advanced" )
+        # Columns that are valid for filtering but are not visible.
+        SpecifiedDateColumn( "Specified Date",
+                             key="specified_date",
+                             model_class=model.Job,
+                             visible=False ),
+        EmailColumn( "Email",
+                     key="email",
+                     model_class=model.User,
+                     visible=False ),
+        grids.StateColumn( "State",
+                           key="state",
+                           model_class=model.Job,
+                           visible=False,
+                           filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[1], columns[2] ], 
@@ -76,113 +123,47 @@ class SpecifiedDateListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
-        specified_date = kwd.get( 'specified_date', 'All' )
-        if specified_date == 'All':
-            return trans.sa_session.query( self.model_class ) \
-                                   .enable_eagerloads( False )
-        year, month, day = map( int, specified_date.split( "-" ) )
-        start_date = date( year, month, day )
-        end_date = start_date + timedelta( days=1 )
         return trans.sa_session.query( self.model_class ) \
-                               .filter( and_( self.model_class.table.c.create_time >= start_date,
-                                              self.model_class.table.c.create_time < end_date ) ) \
-                               .enable_eagerloads( False )
-
-class SpecifiedDateInErrorListGrid( SpecifiedDateListGrid ):
-    def build_initial_query( self, trans, **kwd ):
-        specified_date = kwd.get( 'specified_date', 'All' )
-        if specified_date == 'All':
-            return trans.sa_session.query( self.model_class ) \
-                                   .filter( self.model_class.table.c.state == model.Job.states.ERROR ) \
-                                   .enable_eagerloads( False )
-        year, month, day = map( int, specified_date.split( "-" ) )
-        start_date = date( year, month, day )
-        end_date = start_date + timedelta( days=1 )
-        return trans.sa_session.query( self.model_class ) \
-                               .filter( and_( self.model_class.table.c.state == model.Job.states.ERROR,
-                                              self.model_class.table.c.create_time >= start_date,
-                                              self.model_class.table.c.create_time < end_date ) ) \
-                               .enable_eagerloads( False )
-
-class AllUnfinishedListGrid( SpecifiedDateListGrid ):
-    def build_initial_query( self, trans, **kwd ):
-        specified_date = kwd.get( 'specified_date', 'All' )
-        if specified_date == 'All':
-            return trans.sa_session.query( self.model_class ) \
-                                   .filter( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
-                                                       model.Job.table.c.state == model.Job.states.ERROR, 
-                                                       model.Job.table.c.state == model.Job.states.DELETED ) ) ) \
-                                   .enable_eagerloads( False )
-        year, month, day = map( int, specified_date.split( "-" ) )
-        start_date = date( year, month, day )
-        end_date = start_date + timedelta( days=1 )
-        return trans.sa_session.query( self.model_class ) \
-                               .filter( and_( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
-                                                         model.Job.table.c.state == model.Job.states.ERROR, 
-                                                         model.Job.table.c.state == model.Job.states.DELETED ) ),
-                                              self.model_class.table.c.create_time >= start_date,
-                                              self.model_class.table.c.create_time < end_date ) ) \
-                                .enable_eagerloads( False )
-
-class UserForMonthListGrid( SpecifiedDateListGrid ):
-    def build_initial_query( self, trans, **kwd ):
-        email = util.restore_text( kwd.get( 'email', '' ) )
-        # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
-        specified_month = specified_date[ :7 ]
-        year, month = map( int, specified_month.split( "-" ) )
-        start_date = date( year, month, 1 )
-        end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
-        return trans.sa_session.query( model.Job ) \
                                .join( model.GalaxySession ) \
                                .join( model.User ) \
-                               .filter( and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
-                                              model.GalaxySession.table.c.user_id == model.User.table.c.id,
-                                              model.User.table.c.email == email,
-                                              model.Job.table.c.create_time >= start_date,
-                                              model.Job.table.c.create_time < end_date ) ) \
-                               .enable_eagerloads( False )
-
-class ToolForMonthListGrid( SpecifiedDateListGrid ):
-    def build_initial_query( self, trans, **kwd ):
-        # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
-        specified_month = specified_date[ :7 ]
-        tool_id = util.restore_text( kwd.get( 'tool_id', '' ) )
-        year, month = map( int, specified_month.split( "-" ) )
-        start_date = date( year, month, 1 )
-        end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
-        return trans.sa_session.query( self.model_class ) \
-                               .filter( and_( self.model_class.table.c.tool_id == tool_id,
-                                              self.model_class.table.c.create_time >= start_date,
-                                              self.model_class.table.c.create_time < end_date ) ) \
                                .enable_eagerloads( False )
 
 class Jobs( BaseController ):
 
     specified_date_list_grid = SpecifiedDateListGrid()
-    specified_date_in_error_list_grid = SpecifiedDateInErrorListGrid()
-    all_unfinished_list_grid = AllUnfinishedListGrid()
-    user_for_month_list_grid = UserForMonthListGrid()
-    tool_for_month_list_grid = ToolForMonthListGrid()
 
     @web.expose
-    def specified_date( self, trans, **kwd ):
+    def specified_date_handler( self, trans, **kwd ):
+        # We add params to the keyword dict in this method in order to rename the param
+        # with an "f-" prefix, simulating filtering by clicking a search link.  We have
+        # to take this approach because the "-" character is illegal in HTTP requests.
+        if 'f-specified_date' in kwd and 'specified_date' not in kwd:
+            # The user clicked a State link in the Advanced Search box, so 'specified_date'
+            # will have been eliminated.
+            pass
+        elif 'specified_date' not in kwd:
+            kwd[ 'f-specified_date' ] = 'All'
+        else:
+            kwd[ 'f-specified_date' ] = kwd[ 'specified_date' ]
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "job_info":
                 return trans.response.send_redirect( web.url_for( controller='jobs',
                                                                   action='job_info',
                                                                   **kwd ) )
-            if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the jobs tool_id.
+            elif operation == "tool_for_month":
+                kwd[ 'f-tool_id' ] = kwd[ 'tool_id' ]
+            elif operation == "tool_per_month":
+                # The received id is the job id, so we need to get the job's tool_id.
                 job_id = kwd.get( 'id', None )
                 job = get_job( trans, job_id )
                 kwd[ 'tool_id' ] = job.tool_id
                 return trans.response.send_redirect( web.url_for( controller='jobs',
                                                                   action='tool_per_month',
                                                                   **kwd ) )
-            if operation == "user_per_month":
+            elif operation == "user_for_month":
+                kwd[ 'f-email' ] = util.restore_text( kwd[ 'email' ] )
+            elif operation == "user_per_month":
                 # The received id is the job id, so we need to get the id of the user
                 # that submitted the job.
                 job_id = kwd.get( 'id', None )
@@ -196,42 +177,11 @@ class Jobs( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='jobs',
                                                                   action='user_per_month',
                                                                   **kwd ) )
+            elif operation == "specified_date_in_error":
+                kwd[ 'f-state' ] = 'error'
+            elif operation == "unfinished":
+                kwd[ 'f-state' ] = 'Unfinished'
         return self.specified_date_list_grid( trans, **kwd )
-    @web.expose
-    def today_all( self, trans, **kwd ):
-        kwd[ 'specified_date' ] = datetime.utcnow().strftime( "%Y-%m-%d" )
-        return self.specified_date( trans, **kwd )
-    @web.expose
-    def specified_date_in_error( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "job_info":
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='job_info',
-                                                                  **kwd ) )
-            if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the jobs tool_id.
-                job_id = kwd.get( 'id', None )
-                job = get_job( trans, job_id )
-                kwd[ 'tool_id' ] = job.tool_id
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='tool_per_month',
-                                                                  **kwd ) )
-            if operation == "user_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
-                job_id = kwd.get( 'id', None )
-                job = get_job( trans, job_id )
-                kwd[ 'email' ] = None # For anonymous users
-                if job.history:
-                    if job.history.user:
-                        email = job.history.user.email
-                        kwd[ 'email' ] = email
-                # TODO: handle libraries
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='user_per_month',
-                                                                  **kwd ) )
-        return self.specified_date_in_error_list_grid( trans, **kwd )
     @web.expose
     def specified_month_all( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -301,37 +251,6 @@ class Jobs( BaseController ):
                                     month=month, 
                                     jobs=jobs, 
                                     message=message )
-    @web.expose
-    def all_unfinished( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "job_info":
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='job_info',
-                                                                  **kwd ) )
-            if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the jobs tool_id.
-                job_id = kwd.get( 'id', None )
-                job = get_job( trans, job_id )
-                kwd[ 'tool_id' ] = job.tool_id
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='tool_per_month',
-                                                                  **kwd ) )
-            if operation == "user_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
-                job_id = kwd.get( 'id', None )
-                job = get_job( trans, job_id )
-                kwd[ 'email' ] = None # For anonymous users
-                if job.history:
-                    if job.history.user:
-                        email = job.history.user.email
-                        kwd[ 'email' ] = email
-                # TODO: handle libraries
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='user_per_month',
-                                                                  **kwd ) )
-        return self.all_unfinished_list_grid( trans, **kwd )
     @web.expose
     def per_month_all( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -414,37 +333,6 @@ class Jobs( BaseController ):
                                     email=util.sanitize_text( email ),
                                     jobs=jobs, message=message )
     @web.expose
-    def user_for_month( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "job_info":
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='job_info',
-                                                                  **kwd ) )
-            if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the jobs tool_id.
-                job_id = kwd.get( 'id', None )
-                job = get_job( trans, job_id )
-                kwd[ 'tool_id' ] = job.tool_id
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='tool_per_month',
-                                                                  **kwd ) )
-            if operation == "user_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
-                job_id = kwd.get( 'id', None )
-                job = get_job( trans, job_id )
-                kwd[ 'email' ] = None # For anonymous users
-                if job.history:
-                    if job.history.user:
-                        email = job.history.user.email
-                        kwd[ 'email' ] = email
-                # TODO: handle libraries
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='user_per_month',
-                                                                  **kwd ) )
-        return self.user_for_month_list_grid( trans, **kwd )
-    @web.expose
     def per_tool( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
@@ -484,37 +372,6 @@ class Jobs( BaseController ):
                                     jobs=jobs,
                                     message=message )
     @web.expose
-    def tool_for_month( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "job_info":
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='job_info',
-                                                                  **kwd ) )
-            if operation == "tool_per_month":
-                # The received id is the job id, so we need to get the jobs tool_id.
-                job_id = kwd.get( 'id', None )
-                job = get_job( trans, job_id )
-                kwd[ 'tool_id' ] = job.tool_id
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='tool_per_month',
-                                                                  **kwd ) )
-            if operation == "user_per_month":
-                # The received id is the job id, so we need to get the id of the user
-                # that submitted the job.
-                job_id = kwd.get( 'id', None )
-                job = get_job( trans, job_id )
-                kwd[ 'email' ] = None # For anonymous users
-                if job.history:
-                    if job.history.user:
-                        email = job.history.user.email
-                        kwd[ 'email' ] = email
-                # TODO: handle libraries
-                return trans.response.send_redirect( web.url_for( controller='jobs',
-                                                                  action='user_per_month',
-                                                                  **kwd ) )
-        return self.tool_for_month_list_grid( trans, **kwd )
-    @web.expose
     def job_info( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
@@ -523,9 +380,8 @@ class Jobs( BaseController ):
                                    .filter( and_( model.Job.table.c.id == job_id,
                                                   model.Job.table.c.session_id == model.GalaxySession.table.c.id,
                                                   model.GalaxySession.table.c.user_id == model.User.table.c.id ) ) \
+                                   .enable_eagerloads( False ) \
                                    .one()
-        # TODO: for some reason the job_info.id is not the same as job_id in the template, so we need to pass job_id
-        # This needs to be fixed ASAP!
         return trans.fill_template( '/webapps/reports/job_info.mako',
                                     job_id=job_id,
                                     job_info=job_info,

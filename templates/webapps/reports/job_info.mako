@@ -18,7 +18,6 @@
             </tr>
             <tr>
                 <td>${job_info.state}</td>
-                ## TODO for some reason, job_info.id is not the job.id
                 <td>${job_id}</td>
                 <td>${job_info.create_time}</td>
                 <td>${job_info.update_time}</td>
