@@ -43,7 +43,6 @@ def __main__():
     # Add input files.
         
     # Need to symlink inputs so that output files are written to temp directory.
-    print options.input1
     input1_file_name = tmp_output_dir + "/input1"
     os.symlink( options.input1,  input1_file_name )
     cmd += " %s" % input1_file_name

@@ -68,10 +68,7 @@ def __main__():
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
         cmd += ( " --max-mle-iterations %i" % int ( options.max_mle_iterations ) )
-        
-    # Output/debugging.
-    print cmd
-        
+            
     # Add inputs.
     cmd += " " + options.inputA + " " + options.input1 + " " + options.input2
 
