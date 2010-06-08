@@ -135,7 +135,7 @@
 %if cntrller == 'library_admin':
     %if associated_hdas:
         <p/>
-        <b>History items that use this library dataset's disk file</b>
+        <b>Active (undeleted) history items that use this library dataset's disk file</b>
         <div class="toolForm">
             <table class="grid">
                 <thead>
@@ -172,7 +172,7 @@
     %endif
     %if associated_lddas:
         <p/>
-        <b>Other library datasets that use this library dataset's disk file</b>
+        <b>Other active (undeleted) library datasets that use this library dataset's disk file</b>
         <div class="toolForm">
             <table class="grid">
                 <thead>
@@ -188,13 +188,29 @@
                     <% containing_library = get_containing_library_from_library_dataset( trans, copied_ldda.library_dataset ) %>
                     <tr>
                         <td>
+                            <%
+                                if containing_library:
+                                    library_display_name = containing_library.get_display_name()
+                                else:
+                                    library_display_name = 'no library'
+                            %>
                             %if containing_library:
-                                <a href="${h.url_for( controller='library_common', action='browse_library', id=trans.security.encode_id( containing_library.id ), cntrller=cntrller, use_panels=use_panels )}">${containing_library.get_display_name()}</a>
+                                <a href="${h.url_for( controller='library_common', action='browse_library', id=trans.security.encode_id( containing_library.id ), cntrller=cntrller, use_panels=use_panels )}">${library_display_name}</a>
                             %else:
-                                error finding library
+                                ${library_display_name}
                             %endif
                         </td>
-                        <td>${copied_ldda.library_dataset.folder.get_display_name()}</td>
+                        <td>
+                            <%
+                                library_dataset = copied_ldda.library_dataset
+                                folder = library_dataset.folder
+                                folder_display_name = folder.get_display_name()
+                                if folder_display_name == library_display_name:
+                                    folder_display_name = 'library root'
+                            %>
+                            ${folder_display_name}
+                            ${copied_ldda.library_dataset.folder.get_display_name()}
+                        </td>
                         <td>${copied_ldda.get_display_name()}</td>
                         <td>${time_ago( copied_ldda.update_time )}</td>
                         <td>

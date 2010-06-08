@@ -78,7 +78,7 @@
                     <tr class="tr">
                 %endif
                     <td>
-                        <% dataset_label = 'dataset%d_.dat' % dataset.id %>
+                        <% dataset_label = 'dataset_%d.dat' % dataset.id %>
                         <a href="${h.url_for( controller='system', action='dataset_info', id=trans.security.encode_id( dataset.id ) )}">${dataset_label}</a>
                     </td>
                     <td>${time_ago( dataset.update_time )}</td>

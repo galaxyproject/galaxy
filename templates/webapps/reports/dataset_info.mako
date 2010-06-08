@@ -50,11 +50,17 @@
             </thead>
             %for hda in associated_hdas:
                 <tr>
-                    <td>${hda.history.get_display_name()}</td>
+                    <td>
+                        %if hda.history:
+                            ${hda.history.get_display_name()}
+                        %else:
+                            no history
+                        %endif
+                    </td>
                     <td>${hda.get_display_name()}</td>
                     <td>${time_ago( hda.update_time )}</td>
                     <td>
-                        %if hda.history.user:
+                        %if hda.history and hda.history.user:
                             ${hda.history.user.email}
                         %else:
                             anonymous
@@ -88,7 +94,7 @@
                             if containing_library:
                                 library_display_name = containing_library.get_display_name()
                             else:
-                                library_display_name = 'error finding library'
+                                library_display_name = 'no library'
                         %>
                         ${library_display_name}
                     </td>
