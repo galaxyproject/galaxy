@@ -109,7 +109,7 @@
         <param name="features" value="4"/>
         <param name="sigma" value="0.1"/>
         <param name="degree" value="2"/>
-        <output name="out_file1" file="kcca_out1.tabular"/>
+        <output name="out_file1" file="kcca_out1.tabular" compare="re_match"/>
     </test>
     <test>
         <param name="input1" value="iris.tabular"/>
@@ -118,7 +118,7 @@
         <param name="kernel" value="rbfdot"/>
         <param name="features" value="2"/>
         <param name="sigma" value="0.5"/>
-        <output name="out_file1" file="kcca_out2.tabular"/>
+        <output name="out_file1" file="kcca_out2.tabular" compare="re_match"/>
     </test>
   </tests>
   <help>
