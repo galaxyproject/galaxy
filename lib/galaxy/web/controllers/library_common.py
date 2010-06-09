@@ -932,7 +932,10 @@ class LibraryCommon( BaseController ):
         if params.get( 'link_data_only', False ):
             uploaded_dataset.link_data_only = True
             uploaded_dataset.data.file_name = os.path.abspath( path )
-            trans.sa_session.add( uploaded_dataset.data )
+            # Since we are not copying the file into Galaxy's managed
+            # default file location, the dataset should never be purgable.
+            uploaded_dataset.data.dataset.purgable = False
+            trans.sa_session.add_all( ( uploaded_dataset.data, uploaded_dataset.data.dataset ) )
             trans.sa_session.flush()
         return uploaded_dataset
     def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, err_redirect, message ):
