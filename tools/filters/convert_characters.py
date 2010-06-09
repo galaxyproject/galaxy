@@ -24,7 +24,7 @@ def main():
     except:
         stop_err("Output file cannot be opened for writing.")
     
-    char_dict = {'T':'\t','s':'\s','Dt':'\.','C':',','D':'-','U':'_','P':'\|'}
+    char_dict = {'T':'\t','s':'\s','Dt':'\.','C':',','D':'-','U':'_','P':'\|','Co':':'}
     from_ch = char_dict[from_char] + '+'    #making an RE to match 1 or more occurences.
     skipped = 0
     

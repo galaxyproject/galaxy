@@ -11,6 +11,7 @@
       <option value="D">Dashes</option>
       <option value="U">Underscores</option>
       <option value="P">Pipes</option>
+      <option value="Co">Colons</option>
     </param>
     <param format="txt" name="input" type="data" label="in Query"/>
   </inputs>
