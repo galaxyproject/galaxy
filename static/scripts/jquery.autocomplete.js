@@ -491,11 +491,10 @@ $.Autocompleter.Cache = function(options) {
             var value = options.formatMatch(rawValue, i+1, options.data.length);
             if ( value === false )
                 continue;
-                
-            var firstChar = value.charAt(0).toLowerCase();
-            // if no lookup array for this character exists, look it up now
-            if( !stMatchSets[firstChar] ) 
-                stMatchSets[firstChar] = [];
+            
+            if( !stMatchSets[value] ) {
+                stMatchSets[value] = [];
+            }
 
             // if the match is a string
             var row = {
@@ -505,7 +504,7 @@ $.Autocompleter.Cache = function(options) {
             };
             
             // push the current match into the set list
-            stMatchSets[firstChar].push(row);
+            stMatchSets[value].push(row);
 
             // keep track of minChars zero items
             if ( nullData++ < options.max ) {

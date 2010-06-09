@@ -30,7 +30,7 @@ ${h.css( "history", "autocomplete_tagging" )}
 
 <%def name="center_panel()">
 <div class="unified-panel-header" unselectable="on">
-    <div class="unified-panel-header-inner">Trackster Visualization | ${config['title']}
+    <div class="unified-panel-header-inner" id="title">
         <a id="save-button" class="panel-header-button right-float" href="javascript:void(0);">Save</a>
         <a id="refresh-button" class="panel-header-button right-float" href="javascript:void(0);" onclick="view.update_options();return false;">Refresh</a>
     </div>
@@ -75,7 +75,6 @@ ${h.css( "history", "autocomplete_tagging" )}
         </div>
     </div>
     <form action="#" onsubmit="view.update_options();return false;">
-##        <input name="title" id="title" value="${config.title}" />
         <div id="show-hide-move">
             <ul id="sortable-ul"></ul>
         </div>
@@ -96,6 +95,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
     $(function() {
         
         %if config:
+            $("#title").text("${config.get('title') | h}");
             view = new View( "${config.get('chrom')}", "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
             %for track in config.get('tracks'):
                 view.add_track( 
@@ -106,6 +106,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
         %else:
             continue_fn = function() {
                 view = new View( undefined, $("#new-title").val(), undefined, $("#new-dbkey").val() );
+                $("#title").text($("#new-title").val());
                 init();
                 hide_modal();
             };
