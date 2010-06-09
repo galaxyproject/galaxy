@@ -84,7 +84,10 @@ class DatasetSelectionGrid( grids.Grid ):
              self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
         return query.filter( model.History.user == trans.user ) \
                     .filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) ) \
-                    .filter( model.Dataset.state != "error")
+                    .filter( model.Dataset.state == model.Dataset.states.OK ) \
+                    .filter( model.History.deleted == False ) \
+                    .filter( model.HistoryDatasetAssociation.deleted == False )
+                    
         
 class TracksController( BaseController, UsesVisualization ):
     """
