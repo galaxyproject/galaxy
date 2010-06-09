@@ -231,6 +231,17 @@
         <tool file="fastq/fastq_to_tabular.xml" />
         <tool file="fastq/tabular_to_fastq.xml" />
   </section>
+  <!--
+  Keep this section commented until it includes tools that
+  will be hosted on test/main.  The velvet wrappers have been
+  included in the distribution but will not be hosted on our
+  public servers for the current time.
+  <section name="NGS: Assembly" id="ngs_assembly">
+        <label text="Velvet" id="velvet"/>
+        <tool file="sr_assembly/velvetg.xml" />
+        <tool file="sr_assembly/velveth.xml" />
+  </section>
+  -->
   <section name="NGS: Mapping" id="solexa_tools">
    <tool file="sr_mapping/lastz_wrapper.xml" />
    <tool file="sr_mapping/lastz_paired_reads_wrapper.xml" />
