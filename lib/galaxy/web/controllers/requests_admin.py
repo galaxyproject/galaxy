@@ -220,7 +220,7 @@ class RequestsAdmin( BaseController ):
         return trans.fill_template( "/admin/requests/index.mako" )
 
     @web.json
-    def get_file_details( self, trans, id=None, file=None, folder_path=None ):
+    def get_file_details( self, trans, id=None, folder_path=None ):
         def print_ticks(d):
             pass
         # Avoid caching
@@ -229,16 +229,22 @@ class RequestsAdmin( BaseController ):
         sample = trans.sa_session.query( self.app.model.Sample ).get( int(id) )
         datatx_info = sample.request.type.datatx_info
         cmd  = 'ssh %s@%s "ls -oghp %s"' % ( datatx_info['username'],
-                                           datatx_info['host'],
-                                           os.sep.join([folder_path, file]))
+                                             datatx_info['host'],
+                                             folder_path  )
         output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
                                           pexpect.TIMEOUT:print_ticks}, 
                                           timeout=10)
-        #return output.split('\t')[0]
-        # Create new HTML for any that have changed
-        rval = {}
-        rval['name'] = unicode(output.replace('\n', '<br/>'))
-        return rval
+        return unicode(output.replace('\n', '<br/>'))
+
+    @web.json
+    def open_folder( self, trans, id=None, folder_path=None ):
+        def print_ticks(d):
+            pass
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        sample = trans.sa_session.query( self.app.model.Sample ).get( int(id) )
+        return self.__get_files(trans, sample, folder_path)
 
     
     @web.json
@@ -1498,7 +1504,12 @@ class RequestsAdmin( BaseController ):
         if params.get( 'folder_path', ''  ):
             folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
         else:
-            folder_path = util.restore_text( sample.request.type.datatx_info.get('data_dir', '') )
+            if len(sample.dataset_files):
+                folder_path = os.path.dirname(sample.dataset_files[-1]['filepath'][:-1])
+            else:
+                folder_path = util.restore_text( sample.request.type.datatx_info.get('data_dir', '') )
+        if folder_path[-1] != os.sep:
+            folder_path += os.sep
         return trans.fill_template( '/admin/requests/get_data.mako', 
                                     sample=sample, dataset_files=sample.dataset_files,
                                     message=message, status=status, files=[],
@@ -1571,6 +1582,8 @@ class RequestsAdmin( BaseController ):
         if params.get( 'browse_button', False ):
             # get the filenames from the remote host
             files = self.__get_files(trans, sample, folder_path)
+            if folder_path[-1] != os.sep:
+                folder_path += os.sep
             return trans.fill_template( '/admin/requests/get_data.mako',
                                         sample=sample, files=files, 
                                         dataset_files=sample.dataset_files,
@@ -1580,6 +1593,8 @@ class RequestsAdmin( BaseController ):
                 folder_path = os.path.dirname(folder_path[:-1])
             # get the filenames from the remote host
             files = self.__get_files(trans, sample, folder_path)
+            if folder_path[-1] != os.sep:
+                folder_path += os.sep
             return trans.fill_template( '/admin/requests/get_data.mako',
                                         sample=sample, files=files, 
                                         dataset_files=sample.dataset_files,
@@ -1589,6 +1604,8 @@ class RequestsAdmin( BaseController ):
                 folder_path = os.path.join(folder_path, files_list[0])
             # get the filenames from the remote host
             files = self.__get_files(trans, sample, folder_path)
+            if folder_path[-1] != os.sep:
+                folder_path += os.sep
             return trans.fill_template( '/admin/requests/get_data.mako',
                                         sample=sample, files=files, 
                                         dataset_files=sample.dataset_files,
@@ -1900,7 +1917,9 @@ class RequestsAdmin( BaseController ):
                                   username=util.restore_text( params.get( 'username', ''  ) ),
                                   password=params.get( 'password', '' ),
                                   data_dir=util.restore_text( params.get( 'data_dir', ''  ) ),
-                                  rename_dataset=util.restore_text( params.get('rename_dataset', False) )) 
+                                  rename_dataset=util.restore_text( params.get('rename_dataset', False) ))
+            if rt.datatx_info['data_dir'][-1] != os.sep:
+                rt.datatx_info['data_dir'] = rt.datatx_info['data_dir']+os.sep 
             trans.sa_session.add( rt )
             trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
@@ -1987,7 +2006,9 @@ class RequestsAdmin( BaseController ):
                               username=util.restore_text( params.get( 'username', ''  ) ),
                               password=params.get( 'password', '' ),
                               data_dir=util.restore_text( params.get( 'data_dir', ''  ) ),
-                              rename_dataset=util.restore_text( params.get('rename_dataset', '') )) 
+                              rename_dataset=util.restore_text( params.get('rename_dataset', '') ))
+        if rt.datatx_info['data_dir'][-1] != os.sep:
+             rt.datatx_info['data_dir'] = rt.datatx_info['data_dir']+os.sep
         trans.sa_session.add( rt )
         trans.sa_session.flush()
         # set sample states

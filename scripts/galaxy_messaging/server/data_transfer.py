@@ -16,7 +16,7 @@ import ConfigParser
 import sys, os, time, traceback
 import optparse
 import urllib,urllib2, cookielib, shutil
-import logging, time
+import logging, time, datetime
 import xml.dom.minidom
 
 sp = sys.path[0]
@@ -91,7 +91,7 @@ class DataTransfer(object):
             self.database_connection = config.get("universe_wsgi_config", "database_connection")
             self.import_dir = config.get("universe_wsgi_config", "library_import_dir")
             # create the destination directory within the import directory
-            self.server_dir = os.path.join( self.import_dir, 'datatx_'+str(os.getpid()) )
+            self.server_dir = os.path.join( self.import_dir, 'datatx_'+str(os.getpid())+'_'+datetime.date.today().strftime("%d%b%Y") )
             os.mkdir(self.server_dir)
             if not os.path.exists(self.server_dir):
                 raise Exception

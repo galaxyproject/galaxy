@@ -33,11 +33,45 @@ $(document).ready(function(){
             type: "POST",
             url: "${h.url_for( controller='requests_admin', action='get_file_details' )}",
             dataType: "json",
-            data: { id: sample_id, file: selected_value, folder_path: folder_path },
+            data: { id: sample_id, folder_path: document.get_data.folder_path.value+selected_value },
             success : function ( data ) {
-                cell.html( '<label>'+data.name+'</label>' )
+                cell.html( '<label>'+data+'</label>' )
             }
         });
+       
+   }
+</script>
+
+<script type="text/javascript">
+   function open_folder1(sample_id, folder_path)
+   {
+       var w = document.get_data.files_list.selectedIndex;
+       var selected_value = document.get_data.files_list.options[w].value;
+       if(selected_value.charAt(selected_value.length-1) == '/')
+       {
+           document.get_data.folder_path.value = document.get_data.folder_path.value+selected_value
+           var cell = $("#file_details");
+           //var sample_id = sample.id
+            // Make ajax call
+            $.ajax( {
+                type: "POST",
+                url: "${h.url_for( controller='requests_admin', action='open_folder' )}",
+                dataType: "json",
+                data: { id: sample_id, folder_path: document.get_data.folder_path.value },
+                success : function ( data ) {
+                    document.get_data.files_list.options.length = 0
+                    //alert(data)
+                    //cell.html( '<label>'+data.name+'</label>' )
+                    for(i=0; i<data.length; i++) 
+                    {
+                        var newOpt = new Option(data[i], data[i]);
+                        document.get_data.files_list.options[i] = newOpt;
+                    }
+                    //cell.html( '<label>'+data+'</label>' )
+                    
+                }
+            });
+       }
        
    }
 </script>
@@ -130,11 +164,11 @@ $(document).ready(function(){
                     <label>Folder path on the sequencer:</label>
                     <input type="text" name="folder_path" value="${folder_path}" size="100"/>
                     <input type="submit" name="browse_button" value="List contents"/>
-                    <input type="submit" name="open_folder" value="Open folder"/>
+                    ##<input type="submit" name="open_folder" value="Open folder"/>
                     <input type="submit" name="folder_up" value="Up"/>
                 </div>
                 <div class="form-row">
-                    <select name="files_list" id="files_list" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" onChange="display_file_details(${sample.id}, '${folder_path}')" multiple>
+                    <select name="files_list" id="files_list" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" ondblclick="open_folder1(${sample.id}, '${folder_path}')" onChange="display_file_details(${sample.id}, '${folder_path}')" multiple>
                         %for index, f in enumerate(files):
                             <option value="${f}">${f}</option>
                         %endfor
