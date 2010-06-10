@@ -10,7 +10,7 @@
   <inputs>
     <param format="sam" name="input1" type="data" label="Select dataset to filter" />
     <param name="quality_threshold" type="integer" value="40" label="Quality threshold for adjacent bases" help="You need to give the true value, not offset (see chart below), regardless of source FASTQ type" />
-    <param name="adjacent_bases" type="integer" value="5" label="The number of adjacent bases to match on either side of the indel" help="If one side is shorter than this width, it will still match if the long-enough side matches" />
+    <param name="adjacent_bases" type="integer" value="1" label="The number of adjacent bases to match on either side of the indel" help="If one side is shorter than this width, it will still match if the long-enough side matches" />
   </inputs>
   <outputs>
     <data format="sam" name="out_file1" />
@@ -27,6 +27,12 @@
       <param name="quality_threshold" value="62"/>
       <param name="adjacent_bases" value="5"/>
       <output name="out_file1" file="sam_indel_filter_out2.sam" ftype="sam"/>
+    </test>
+    <test>
+      <param name="input1" value="sam_indel_filter_in2.sam" ftype="sam"/>
+      <param name="quality_threshold" value="40"/>
+      <param name="adjacent_bases" value="1"/>
+      <output name="out_file1" file="sam_indel_filter_out3.sam" ftype="sam"/>
     </test>
   </tests>
   <help>

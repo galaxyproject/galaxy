@@ -27,9 +27,11 @@ def __main__():
     output = open( options.output, 'wb' )
     # patterns
     pat_indel = re.compile( '(?P<before_match>(\d+[MIDNSHP])*)(?P<lmatch>\d+)M(?P<ins_del_width>\d+)(?P<ins_del>[ID])(?P<rmatch>\d+)M' )
-    pat_matches = re.compile( '\d+[MIDNSHP]' )
+    pat_matches = re.compile( '(\d+[MIDNSHP])+' )
     qual_thresh = int( options.quality_threshold )
     adj_bases = int( options.adjacent_bases )
+    # record lines skipped because of more than one indel
+    multi_indel_lines = 0
     # go through all lines in input file
     for line in open( options.input, 'rb' ):
         if line and not line.startswith( '#' ) and not line.startswith( '@' ) :
@@ -39,17 +41,26 @@ def __main__():
             cigar_copy = cigar[:]
             matches = []
             while len( cigar_copy ) >= 6:  # nMnInM or nMnDnM
-                m = pat_indel.match( cigar_copy )
+                m = pat_indel.search( cigar_copy )
                 if not m:
                     break
                 else:
                     parts = m.groupdict()
-                    parts[ 'start' ] = m.start()
+                    pre_left = 0
+                    if m.start() > 0:
+                        pre_left_groups = pat_matches.search( cigar_copy[ : m.start() ] )
+                        if pre_left_groups:
+                            for pl in pre_left_groups.groups():
+                                if pl.endswith( 'M' ) or pl.endswith( 'S' ) or pl.endswith( 'P' ):
+                                    pre_left += int( pl[:-1] )
+                    parts[ 'pre_left' ] = pre_left
                     matches.append( parts )
                     cigar_copy = cigar_copy[ len( parts[ 'lmatch' ] ) : ]
             # see if matches meet filter requirements
-            if len( matches ) == 1:
-                start = int( matches[0][ 'start' ] )
+            if len( matches ) > 1:
+                multi_indel_lines += 1
+            elif len( matches ) == 1:
+                pre_left = matches[0][ 'pre_left' ]
                 left = int( matches[0][ 'lmatch' ] )
                 right = int( matches[0][ 'rmatch' ] )
                 if matches[0][ 'ins_del' ] == 'D':
@@ -59,8 +70,8 @@ def __main__():
                 # if there are enough adjacent bases to check, then do so
                 if left >= adj_bases and right >= adj_bases:
                     qual = split_line[10]
-                    left_bases = qual[ start : start + left + 1 ][ -adj_bases : ]
-                    right_bases = qual[ start + left + middle : start + left + middle + right + 1 ][ : adj_bases ]
+                    left_bases = qual[ pre_left : pre_left + left ][ -adj_bases : ]
+                    right_bases = qual[ pre_left + left + middle - 1 : pre_left + left + middle + right ][ : adj_bases ]
                     qual_thresh_met = True
                     for l in left_bases:
                         if ord( l ) < qual_thresh:
@@ -79,5 +90,8 @@ def __main__():
                 stop_err( 'There is more than one indel present in the alignment:\n%s' % line )
     # close out file
     output.close()
+    # if skipped lines because of more than one indel, output message
+    if multi_indel_lines > 0:
+        sys.stdout.write( '%s alignments were skipped because they contained more than one indel.' % multi_indel_lines )
 
 if __name__=="__main__": __main__()
