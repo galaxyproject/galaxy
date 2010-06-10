@@ -1918,8 +1918,8 @@ class RequestsAdmin( BaseController ):
                                   password=params.get( 'password', '' ),
                                   data_dir=util.restore_text( params.get( 'data_dir', ''  ) ),
                                   rename_dataset=util.restore_text( params.get('rename_dataset', False) ))
-            if rt.datatx_info['data_dir'][-1] != os.sep:
-                rt.datatx_info['data_dir'] = rt.datatx_info['data_dir']+os.sep 
+            if rt.datatx_info.get('data_dir', '') and rt.datatx_info.get('data_dir', '')[-1] != os.sep:
+                rt.datatx_info['data_dir'] = rt.datatx_info['data_dir']+os.sep
             trans.sa_session.add( rt )
             trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
@@ -2007,7 +2007,7 @@ class RequestsAdmin( BaseController ):
                               password=params.get( 'password', '' ),
                               data_dir=util.restore_text( params.get( 'data_dir', ''  ) ),
                               rename_dataset=util.restore_text( params.get('rename_dataset', '') ))
-        if rt.datatx_info['data_dir'][-1] != os.sep:
+        if rt.datatx_info.get('data_dir', '') and rt.datatx_info.get('data_dir', '')[-1] != os.sep:
              rt.datatx_info['data_dir'] = rt.datatx_info['data_dir']+os.sep
         trans.sa_session.add( rt )
         trans.sa_session.flush()
