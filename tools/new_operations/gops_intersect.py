@@ -7,6 +7,7 @@ usage: %prog bed_file_1 bed_file_2 out_file
     -2, --cols2=N,N,N,N: Columns for start, end, strand in second file
     -m, --mincols=N: Require this much overlap (default 1bp)
     -p, --pieces: just print pieces of second set (after padding)
+    -G, --gff: inputs are GFF format, meaning start and end coordinates are 1-based, closed interval
 """
 from galaxy import eggs
 import pkg_resources
@@ -18,6 +19,7 @@ from bx.intervals.io import *
 from bx.intervals.operations.intersect import *
 from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *
+from galaxy.tools.util.gff_util import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -32,17 +34,24 @@ def main():
         chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )      
         if options.mincols: mincols = int( options.mincols )
         pieces = bool( options.pieces )
+        gff_format = bool( options.gff )
         in_fname, in2_fname, out_fname = args
     except:
         doc_optparse.exception()
-    
-    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
+        
+    # Set reader to handle either GFF or default format.
+    if gff_format:
+        reader_wrapper = GFFReaderWrapper
+    else:
+        reader_wrapper = NiceReaderWrapper
+        
+    g1 = reader_wrapper( fileinput.FileInput( in_fname ),
                             chrom_col=chr_col_1,
                             start_col=start_col_1,
                             end_col=end_col_1,
                             strand_col=strand_col_1,
                             fix_strand=True )
-    g2 = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
+    g2 = reader_wrapper( fileinput.FileInput( in2_fname ),
                             chrom_col=chr_col_2,
                             start_col=start_col_2,
                             end_col=end_col_2,
@@ -54,6 +63,8 @@ def main():
     try:
         for line in intersect( [g1,g2], pieces=pieces, mincols=mincols ):
             if type( line ) == GenomicInterval:
+                if gff_format:
+                    line = convert_to_gff_coordinates( line )
                 out_file.write( "%s\n" % "\t".join( line.fields ) )
             else:
                 out_file.write( "%s\n" % line )
