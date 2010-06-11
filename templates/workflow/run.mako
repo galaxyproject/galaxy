@@ -23,6 +23,7 @@
 
 <%
 from galaxy.tools.parameters import DataToolParameter, RuntimeValue
+from galaxy.jobs.actions.post import ActionBox
 %>
 
 <%def name="do_inputs( inputs, values, errors, prefix, step, other_values = None )">
@@ -136,6 +137,23 @@ from galaxy.tools.parameters import DataToolParameter, RuntimeValue
           <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
           <div class="toolFormBody">
               ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
+			% if step.post_job_actions:
+				<hr/>
+				<div class='form-row'>
+				% if len(step.post_job_actions) > 1:
+					<label>Actions:</label>
+				% else:
+					<label>Action:</label>
+				% endif
+				${', '.join([ActionBox.get_short_str(pja) for pja in step.post_job_actions])}
+				</div>
+			% endif
+		% if step.annotations:
+			<hr/>
+			<div class='form-row'>
+			<label>Annotation:</label> ${step.annotations[0].annotation}
+			</div>
+		% endif
           </div>
       </div>
     %else:
@@ -145,6 +163,12 @@ from galaxy.tools.parameters import DataToolParameter, RuntimeValue
           <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name}</div>
           <div class="toolFormBody">
               ${do_inputs( module.get_runtime_inputs(), step.state.inputs, errors.get( step.id, dict() ), "", step )}
+			% if step.annotations:
+				<hr/>
+				<div class='form-row'>
+				<label>Annotation:</label> ${step.annotations[0].annotation}
+				</div>
+			% endif
           </div>
       </div>
     %endif

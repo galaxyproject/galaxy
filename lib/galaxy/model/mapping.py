@@ -369,6 +369,13 @@ JobExternalOutputMetadata.table = Table( "job_external_output_metadata", metadat
     Column( "filename_override_metadata", String( 255 ) ),
     Column( "job_runner_external_pid", String( 255 ) ) )
     
+PostJobAction.table = Table("post_job_action", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False),
+    Column("action_type", String(255), nullable=False),
+    Column("output_name", String(255), nullable=True),
+    Column("action_arguments", JSONType, nullable=True))
+
 Event.table = Table( "event", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1237,6 +1244,9 @@ assign_mapper( context, JobExternalOutputMetadata, JobExternalOutputMetadata.tab
                      history_dataset_association = relation( HistoryDatasetAssociation, lazy = False ),
                      library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, lazy = False ) ) )
 
+assign_mapper( context, PostJobAction, PostJobAction.table,
+    properties=dict(workflow_step = relation( WorkflowStep, backref='post_job_actions', primaryjoin=(WorkflowStep.table.c.id == PostJobAction.table.c.workflow_step_id))))
+
 assign_mapper( context, Job, Job.table, 
     properties=dict( galaxy_session=relation( GalaxySession ),
                      history=relation( History ),
@@ -1309,7 +1319,7 @@ assign_mapper( context, Workflow, Workflow.table,
 assign_mapper( context, WorkflowStep, WorkflowStep.table,
                 properties=dict(
                     tags=relation(WorkflowStepTagAssociation, order_by=WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"), 
-                    annotations=relation( WorkflowStepAnnotationAssociation, order_by=WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) ) 
+                    annotations=relation( WorkflowStepAnnotationAssociation, order_by=WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) )
                 )
 
 assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,

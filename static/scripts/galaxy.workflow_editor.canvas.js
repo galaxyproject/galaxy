@@ -273,6 +273,7 @@ $.extend( Node.prototype, {
         this.tool_errors = data.tool_errors;
         this.tooltip = data.tooltip ? data.tooltip : ""
         this.annotation = data.annotation;
+        this.post_job_actions = data.post_job_actions;
         
         if ( this.tool_errors ) {
             f.addClass( "tool-node-error" );
@@ -309,6 +310,7 @@ $.extend( Node.prototype, {
         this.form_html = data.form_html;
         this.tool_errors = data.tool_errors;
         this.annotation = data['annotation'];
+        this.post_job_actions = $.parseJSON(data.post_job_actions);
         if ( this.tool_errors ) {
                 el.addClass( "tool-node-error" );
         } else {
@@ -400,6 +402,19 @@ $.extend( Workflow.prototype, {
                     input_connections[ t.name ] = { id: c.handle1.node.id, output_name: c.handle1.name };
                 });
             });
+            var post_job_actions = {};
+            if (node.post_job_actions){
+                $.each( node.post_job_actions, function ( i, act ) {
+                    var pja = {
+                        job_id : act.id,
+                        action_type : act.action_type, 
+                        output_name : act.output_name, 
+                        action_arguments : act.action_arguments
+                    }
+                    post_job_actions[ act.type + act.output_name ] = null;
+                    post_job_actions[ act.type + act.output_name ] = pja;
+                });
+            }
             var node_data = {
                 id : node.id,
                 type : node.type,
@@ -408,7 +423,8 @@ $.extend( Workflow.prototype, {
                 tool_errors : node.tool_errors,
                 input_connections : input_connections,
                 position : $(node.element).position(),
-                annotation: node.annotation
+                annotation: node.annotation,
+                post_job_actions: node.post_job_actions
             };
             nodes[ node.id ] = node_data;
         });
