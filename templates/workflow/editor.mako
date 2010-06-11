@@ -128,7 +128,7 @@
             show_modal( "Server error", message, { "Ignore error" : hide_modal } );
             return false;
         });
-        
+         
         make_popupmenu( $("#workflow-options-button"), {
              ##"Create New" : create_new_workflow_dialog,
              "Edit Attributes" : edit_workflow_attributes,
@@ -306,13 +306,63 @@
         });
     };
 
+<%
+    from galaxy.jobs.actions.post import ActionBox
+%>
+
+	// DBTODO Refactor to the post module.
+	// This function preloads how to display known pja's.
+	function display_pja(pja, node){
+		// DBTODO SANITIZE INPUTS.  Way too easy to break the page right now with a change dataset name action.
+		p_str = '';
+		${ActionBox.get_forms(trans)};
+		$("#pja_container").append(p_str);
+		$("#pja_container>.toolForm:last>.toolFormTitle>.buttons").click(function (){
+			action_to_rem = $(this).closest(".toolForm", ".action_tag").children(".action_tag:first").text();
+			$(this).closest(".toolForm").remove();
+			delete workflow.active_node.post_job_actions[action_to_rem];
+			workflow.active_form_has_changes = true;
+		});
+	}
+	
+	function display_pja_list(){
+		return "${ActionBox.get_add_list()}";
+	}
+	
+	function display_file_list(node){
+		addlist = "<select id='node_data_list' name='node_data_list'>";
+		for (var out_terminal in node.output_terminals){
+			addlist += "<option value='" + out_terminal + "'>"+ out_terminal +"</option>";
+		}
+        addlist += "</select>";
+		return addlist;
+	}
+	
+	function new_pja(action_type, target, node){
+		if (node.post_job_actions == undefined){
+			//New tool node, set up dict.
+			node.post_job_actions = {};
+		}
+		if (node.post_job_actions[action_type+target] == undefined){
+			var new_pja = new Object();
+			new_pja.action_type = action_type;
+			new_pja.output_name = target;
+			node.post_job_actions[action_type+target] = null;
+			node.post_job_actions[action_type+target] =  new_pja;
+			display_pja(new_pja, node);
+			workflow.active_form_has_changes = true;
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
     function show_form_for_tool( text, node ) {
         $("#edit-attributes").hide();
         $("#right-content").show().html( text );
-        
         // Add metadata form to tool.
         if (node) {
-            $("#right-content").find(".toolForm").after( "<p><div class='metadataForm'> \
+            $("#right-content").find(".toolForm:first").after( "<p><div class='metadataForm'> \
                 <div class='metadataFormTitle'>Edit Step Attributes</div> \
                 <div class='form-row'> \
                 <label>Annotation / Notes:</label> \
@@ -323,7 +373,23 @@
                 </div> \
                 </div>" );
         }
-        
+		// Add step actions.
+		if (node && node.type=='tool'){
+			pjastr = "<p><div class='metadataForm'><div class='metadataFormTitle'>Edit Step Actions</div><div class='form-row'> \
+                <label>New Actions:</label><br/>" + display_pja_list() + display_file_list(node) + " <div class='action-button' style='border:1px solid black;display:inline;' id='add_pja'>Create</div>\
+                </div><div class='form-row'>\
+				<div style='margin-right: 10px;'><span id='pja_container'></span>";
+			pjastr += "<div class='toolParamHelp'>Add actions to this step; actions are applied when this workflow step completes.</div></div></div></div>";
+			$("#right-content").find(".toolForm").after( pjastr );
+			for (var key in node.post_job_actions){
+				if (key != "undefined"){ //To make sure we haven't just deleted it.
+					display_pja(node.post_job_actions[key], node);
+				}
+			}
+			$("#add_pja").click(function (){
+				new_pja($("#new_pja_list").val(),$("#node_data_list").val(), node);
+			});
+		}
         $("#right-content").find( "form" ).ajaxForm( {
             type: 'POST',
             dataType: 'json',
@@ -355,7 +421,6 @@
                 $(this).remove();
                 make_popupmenu( b, options );
             });
-            
             // Implements auto-saving based on whether the inputs change. We consider
             // "changed" to be when a field is accessed and not necessarily modified
             // because of an issue where "onchange" is not triggered when activating
@@ -612,6 +677,7 @@
     
     .form-row {
     }
+
     div.toolFormInCanvas div.toolFormBody {
         padding: 0;
     }
@@ -630,7 +696,19 @@
         position: absolute;
         z-index: 10000;
     }
-    
+
+	.pjaForm {
+		margin-bottom:10px;
+	}
+	
+	.pjaForm .toolFormBody{
+		padding:10px;
+	}
+	
+	.pjaForm .toolParamHelp{
+		padding:5px;
+	}
+	
     .panel-header-button-group {
         margin-right: 5px;
         padding-right: 5px;

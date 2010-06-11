@@ -17,6 +17,7 @@ from galaxy.workflow.modules import *
 from galaxy import model
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
+from galaxy.jobs.actions.post import *
 
 import urllib2
 
@@ -387,7 +388,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             else:
                 stored.importable = importable
             trans.sa_session.flush()
-
         return
         
     @web.expose
@@ -514,6 +514,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         This is used for the form shown in the right pane when a node
         is selected.
         """
+        
         trans.workflow_building_mode = True
         module = module_factory.from_dict( trans, {
             'type': type,
@@ -521,14 +522,26 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             'tool_state': incoming.pop("tool_state")
         } )
         module.update_state( incoming )
-        return {
-            'tool_state': module.get_state(),
-            'data_inputs': module.get_data_inputs(),
-            'data_outputs': module.get_data_outputs(),
-            'tool_errors': module.get_errors(),
-            'form_html': module.get_config_form(),
-            'annotation': annotation
-        }
+        
+        if type=='tool':
+            return {
+                'tool_state': module.get_state(),
+                'data_inputs': module.get_data_inputs(),
+                'data_outputs': module.get_data_outputs(),
+                'tool_errors': module.get_errors(),
+                'form_html': module.get_config_form(),
+                'annotation': annotation,
+                'post_job_actions': module.get_post_job_actions()
+            }
+        else:
+            return {
+                'tool_state': module.get_state(),
+                'data_inputs': module.get_data_inputs(),
+                'data_outputs': module.get_data_outputs(),
+                'tool_errors': module.get_errors(),
+                'form_html': module.get_config_form(),
+                'annotation': annotation
+            }
         
     @web.json
     def get_new_module_info( self, trans, type, **kwargs ):
@@ -552,7 +565,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             'form_html': module.get_config_form(),
             'annotation': ""
         }
-                
+
     @web.json
     def load_workflow( self, trans, id ):
         """
@@ -613,6 +626,13 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 # Filter
                 # FIXME: this removes connection without displaying a message currently!
                 input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
+                # post_job_actions
+                pja_dict = {}
+                for pja in step.post_job_actions:
+                    pja_dict[pja.action_type+pja.output_name] = dict(action_type = pja.action_type, 
+                                            output_name = pja.output_name,
+                                            action_arguments = pja.action_arguments)
+                step_dict['post_job_actions'] = pja_dict
             # Encode input connections as dictionary
             input_conn_dict = {}
             for conn in input_connections:
@@ -665,7 +685,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             annotation = step_dict[ 'annotation' ]
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans, step, annotation  )
+                self.add_item_annotation( trans, step, annotation )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
@@ -815,7 +835,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             annotation = step_dict[ 'annotation' ]
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans, step, annotation  )
+                self.add_item_annotation( trans, step, annotation )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
@@ -1044,6 +1064,8 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                         # Execute it
                         job, out_data = tool.execute( trans, step.state.inputs )
                         outputs[ step.id ] = out_data
+                        for pja in step.post_job_actions:
+                            ActionBox.execute(trans, pja, job)
                     else:
                         job, out_data = step.module.execute( trans, step.state )
                         outputs[ step.id ] = out_data

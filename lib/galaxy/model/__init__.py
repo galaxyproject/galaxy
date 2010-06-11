@@ -113,6 +113,8 @@ class Job( object ):
         self.info = None
         self.job_runner_name = None
         self.job_runner_external_id = None
+        self.post_job_actions = None
+        
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
     def add_input_dataset( self, name, dataset ):
@@ -183,6 +185,13 @@ class JobToOutputLibraryDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
         self.dataset = dataset
+
+class PostJobAction( object ):
+    def __init__( self, action_type, workflow_step, output_name = None, action_arguments = None):
+        self.action_type = action_type
+        self.output_name = output_name
+        self.action_arguments = action_arguments
+        self.workflow_step = workflow_step
 
 class JobExternalOutputMetadata( object ):
     def __init__( self, job = None, dataset = None ):

@@ -6,7 +6,8 @@ from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import from_json_string, to_json_string
-       
+from galaxy.jobs.actions.post import ActionBox
+from galaxy.model import PostJobAction
 
 class WorkflowModule( object ):
     
@@ -163,6 +164,7 @@ class ToolModule( WorkflowModule ):
         self.trans = trans
         self.tool_id = tool_id
         self.tool = trans.app.toolbox.tools_by_id[ tool_id ]
+        self.post_job_actions = {}
         self.state = None
         self.errors = None
 
@@ -171,6 +173,7 @@ class ToolModule( WorkflowModule ):
         module = Class( trans, tool_id )
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
+        
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         tool_id = d['tool_id']
@@ -178,6 +181,10 @@ class ToolModule( WorkflowModule ):
         module.state = DefaultToolState()
         module.state.decode( d["tool_state"], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
+        if 'post_job_actions' in d and d["post_job_actions"] != []:
+            module.post_job_actions = d["post_job_actions"]
+        else:
+            module.post_job_actions = {}
         return module
         
     @classmethod
@@ -187,6 +194,11 @@ class ToolModule( WorkflowModule ):
         module.state = DefaultToolState()
         module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
         module.errors = step.tool_errors
+        # module.post_job_actions = step.post_job_actions
+        pjadict = {}
+        for pja in step.post_job_actions:
+            pjadict[pja.action_type] = pja
+        module.post_job_actions = pjadict
         return module
 
     def save_to_step( self, step ):
@@ -194,6 +206,17 @@ class ToolModule( WorkflowModule ):
         step.tool_id = self.tool_id
         step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
         step.tool_errors = self.errors
+        for k, v in self.post_job_actions.iteritems():
+            # Must have action_type, step.  output and a_args are optional.
+            if 'output_name' in v:
+                output_name = v['output_name']
+            else:
+                output_name = None
+            if 'action_arguments' in v:
+                action_arguments = v['action_arguments']
+            else:
+                action_arguments = None
+            n_p = PostJobAction(v['action_type'], step, output_name, action_arguments)
 
     def get_name( self ):
         return self.tool.name
@@ -221,15 +244,23 @@ class ToolModule( WorkflowModule ):
         for name, ( format, metadata_source, parent ) in self.tool.outputs.iteritems():
             data_outputs.append( dict( name=name, extension=format ) )
         return data_outputs
+    
+    def get_post_job_actions( self ):
+        return self.post_job_actions
+        
     def get_config_form( self ):
         self.add_dummy_datasets()
         return self.trans.fill_template( "workflow/editor_tool_form.mako", 
             tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
+
     def update_state( self, incoming ):       
         # Build a callback that handles setting an input to be required at
         # runtime. We still process all other parameters the user might have
         # set. We also need to make sure all datasets have a dummy value
         # for dependencies to see
+        
+        self.post_job_actions = ActionBox.handle_incoming(incoming)
+        
         make_runtime_key = incoming.get( 'make_runtime', None )
         make_buildtime_key = incoming.get( 'make_buildtime', None )
         def item_callback( trans, key, input, value, error, old_value, context ):
