@@ -228,7 +228,7 @@ class RequestsAdmin( BaseController ):
         trans.response.headers['Expires'] = '0'
         sample = trans.sa_session.query( self.app.model.Sample ).get( int(id) )
         datatx_info = sample.request.type.datatx_info
-        cmd  = 'ssh %s@%s "ls -oghp %s"' % ( datatx_info['username'],
+        cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( datatx_info['username'],
                                              datatx_info['host'],
                                              folder_path  )
         output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
@@ -1528,7 +1528,7 @@ class RequestsAdmin( BaseController ):
                                                               message=message))
         def print_ticks(d):
             pass
-        cmd  = 'ssh %s@%s "ls -p %s"' % ( datatx_info['username'],
+        cmd  = 'ssh %s@%s "ls -p \'%s\'"' % ( datatx_info['username'],
                                              datatx_info['host'],
                                              folder_path)
         output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
@@ -1541,7 +1541,8 @@ class RequestsAdmin( BaseController ):
                                                               sample_id=trans.security.encode_id(sample.id),
                                                               message=message, status='error',
                                                               folder_path=folder_path )) 
-        return output.split()
+        
+        return output.splitlines()
     
     def __get_files_in_dir(self, trans, sample, folder_path):
         tmpfiles = self.__get_files(trans, sample, folder_path)

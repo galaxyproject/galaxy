@@ -60,14 +60,15 @@ class GalaxyWebInterface(object):
                                         dbkey=dbkey,
                                         show_dataset_id='True',
                                         runtool_btn='Upload to library'))
-        #url = "http://localhost:8080/library_common/upload_library_dataset?cntrller=library_admin&tool_id=upload1&tool_state=None&library_id=adb5f5c93f827949&folder_id=adb5f5c93f827949&upload_option=upload_directory&file_type=auto&server_dir=003&dbkey=%3F&message=&runtool_btn=Upload+to+library"
-        #url = base_url+"/library_common/upload_library_dataset?library_id=adb5f5c93f827949&tool_id=upload1&file_type=auto&server_dir=datatx_22858&dbkey=%3F&upload_option=upload_directory&folder_id=529fd61ab1c6cc36&cntrller=library_admin&tool_state=None&runtool_btn=Upload+to+library"
         url = self.base_url+"/library_common/upload_library_dataset"
-        #print url
-        #print params
-        f = self.opener.open(url, params)
-        if f.read().find("Data Library") == -1:
-            raise Exception("Dataset could not be uploaded to the data library. URL: %s, PARAMS=%s" % (url, params))
+        print url
+        print params
+        try:
+            f = self.opener.open(url, params)
+            if f.read().find("Data Library") == -1:
+                raise Exception("Dataset could not be uploaded to the data library. URL: %s, PARAMS=%s" % (url, params))
+        except:
+            return 'ERROR', url, params
             
     def import_to_history(self, ldda_id, library_id, folder_id):
         params = urllib.urlencode(dict( cntrller='library_admin',
@@ -78,14 +79,10 @@ class GalaxyWebInterface(object):
                                         do_action='import_to_history',
                                         use_panels='False'))
         #url = "http://lion.bx.psu.edu:8080/library_common/act_on_multiple_datasets?library_id=adb5f5c93f827949&show_deleted=False&ldda_ids=adb5f5c93f827949&cntrller=library_admin&do_action=import_to_history&use_panels=False"
-        #url = base_url+"/library_common/upload_library_dataset?library_id=adb5f5c93f827949&tool_id=upload1&file_type=auto&server_dir=datatx_22858&dbkey=%3F&upload_option=upload_directory&folder_id=529fd61ab1c6cc36&cntrller=library_admin&tool_state=None&runtool_btn=Upload+to+library"
         url = self.base_url+"/library_common/act_on_multiple_datasets"
-        #print url
-        #print params
         f = self.opener.open(url, params)
         x = f.read()
         if x.find("1 dataset(s) have been imported into your history.") == -1:
-            #print x
             raise Exception("Dataset could not be imported into history")            
             
     def run_workflow(self, workflow_id, hid, workflow_step):
@@ -94,11 +91,7 @@ class GalaxyWebInterface(object):
                                    'run_workflow': 'Run workflow',
                                    input: hid})
         url = self.base_url+"/workflow/run"
-        #print url+'?'+params
         f = self.opener.open(url, params)
-#            if f.read().find("1 dataset(s) have been imported into your history.") == -1:
-#                raise Exception("Error in running the workflow")
-        
             
     def logout(self):
         # finally logout

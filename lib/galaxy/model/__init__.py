@@ -1543,7 +1543,7 @@ class Sample( object ):
         def print_ticks(d):
             pass
         datatx_info = self.request.type.datatx_info
-        cmd  = 'ssh %s@%s "du -sh %s"' % ( datatx_info['username'],
+        cmd  = 'ssh %s@%s "du -sh \'%s\'"' % ( datatx_info['username'],
                                           datatx_info['host'],
                                           filepath)
         output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 

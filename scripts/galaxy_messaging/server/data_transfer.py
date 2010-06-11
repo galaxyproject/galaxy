@@ -151,11 +151,11 @@ class DataTransfer(object):
         for i, df in enumerate(self.dataset_files):
             self.update_status(Sample.transfer_status.TRANSFERRING, df['index'])
             try:
-                cmd = "scp %s@%s:%s %s/%s" % ( self.username,
+                cmd = "scp %s@%s:'%s' '%s/%s'" % ( self.username,
                                             self.host,
-                                            df['file'],
-                                            self.server_dir,
-                                            df['name'])
+                                            df['file'].replace(' ', '\ '),
+                                            self.server_dir.replace(' ', '\ '),
+                                            df['name'].replace(' ', '\ '))
                 log.debug(cmd)
                 output = pexpect.run(cmd, events={'.ssword:*': self.password+'\r\n', 
                                                   pexpect.TIMEOUT:print_ticks}, 
@@ -182,7 +182,8 @@ class DataTransfer(object):
             galaxyweb = GalaxyWebInterface(self.server_host, self.server_port, 
                                            self.datatx_email, self.datatx_password,
                                            self.config_id_secret)
-            galaxyweb.add_to_library(self.server_dir, self.library_id, self.folder_id)
+            retval = galaxyweb.add_to_library(self.server_dir, self.library_id, self.folder_id)
+            log.debug(str(retval))
             galaxyweb.logout()
         except Exception, e:
             log.debug(e)

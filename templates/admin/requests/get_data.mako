@@ -27,17 +27,24 @@ $(document).ready(function(){
        var w = document.get_data.files_list.selectedIndex;
        var selected_value = document.get_data.files_list.options[w].value;
        var cell = $("#file_details");
-       //var sample_id = sample.id
-        // Make ajax call
-        $.ajax( {
-            type: "POST",
-            url: "${h.url_for( controller='requests_admin', action='get_file_details' )}",
-            dataType: "json",
-            data: { id: sample_id, folder_path: document.get_data.folder_path.value+selected_value },
-            success : function ( data ) {
-                cell.html( '<label>'+data+'</label>' )
-            }
-        });
+       if(selected_value.charAt(selected_value.length-1) != '/')
+       {
+            // Make ajax call
+            $.ajax( {
+                type: "POST",
+                url: "${h.url_for( controller='requests_admin', action='get_file_details' )}",
+                dataType: "json",
+                data: { id: sample_id, folder_path: document.get_data.folder_path.value+selected_value },
+                success : function ( data ) {
+                    cell.html( '<label>'+data+'</label>' )
+                }
+            });
+        }
+        else 
+        {
+            cell.html( '' )
+        }
+        
        
    }
 </script>
@@ -47,11 +54,10 @@ $(document).ready(function(){
    {
        var w = document.get_data.files_list.selectedIndex;
        var selected_value = document.get_data.files_list.options[w].value;
+       var cell = $("#file_details");
        if(selected_value.charAt(selected_value.length-1) == '/')
        {
            document.get_data.folder_path.value = document.get_data.folder_path.value+selected_value
-           var cell = $("#file_details");
-           //var sample_id = sample.id
             // Make ajax call
             $.ajax( {
                 type: "POST",
@@ -60,8 +66,6 @@ $(document).ready(function(){
                 data: { id: sample_id, folder_path: document.get_data.folder_path.value },
                 success : function ( data ) {
                     document.get_data.files_list.options.length = 0
-                    //alert(data)
-                    //cell.html( '<label>'+data.name+'</label>' )
                     for(i=0; i<data.length; i++) 
                     {
                         var newOpt = new Option(data[i], data[i]);
@@ -72,7 +76,10 @@ $(document).ready(function(){
                 }
             });
        }
-       
+        else 
+        {
+            cell.html( '' )
+        }
    }
 </script>
 
