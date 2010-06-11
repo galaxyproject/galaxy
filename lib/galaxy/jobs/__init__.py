@@ -277,6 +277,7 @@ class JobWrapper( object ):
     def __init__(self, job, tool, queue ):
         self.job_id = job.id
         self.session_id = job.session_id
+        self.user_id = job.user_id
         self.tool = tool
         self.queue = queue
         self.app = queue.app

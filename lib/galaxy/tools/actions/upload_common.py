@@ -297,7 +297,11 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, ret
     Create the upload job.
     """
     job = trans.app.model.Job()
-    job.session_id = trans.get_galaxy_session().id
+    galaxy_session = trans.get_galaxy_session()
+    if type( galaxy_session ) == trans.model.GalaxySession:
+        job.session_id = galaxy_session.id
+    if trans.user is not None:
+        job.user_id = trans.user.id
     if folder:
         job.library_folder_id = folder.id
     else:

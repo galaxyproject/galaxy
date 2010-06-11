@@ -308,7 +308,12 @@ class DefaultToolAction( object ):
         trans.sa_session.flush()
         # Create the job object
         job = trans.app.model.Job()
-        job.session_id = trans.get_galaxy_session().id
+        galaxy_session = trans.get_galaxy_session().id
+        # If we're submitting from the API, there won't be a session.
+        if type( galaxy_session ) == trans.model.GalaxySession:
+            job.session_id = galaxy_session.id
+        if trans.user is not None:
+            job.user_id = trans.user.id
         job.history_id = trans.history.id
         job.tool_id = tool.id
         try:

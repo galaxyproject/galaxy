@@ -101,6 +101,7 @@ class Job( object ):
                     DELETED = 'deleted' )
     def __init__( self ):
         self.session_id = None
+        self.user_id = None
         self.tool_id = None
         self.tool_version = None
         self.command_line = None

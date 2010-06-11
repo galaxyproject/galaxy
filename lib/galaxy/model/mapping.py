@@ -330,6 +330,7 @@ Job.table = Table( "job", metadata,
     Column( "stderr", TEXT ),
     Column( "traceback", TEXT ),
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True, nullable=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=True ),
     Column( "job_runner_name", String( 255 ) ),
     Column( "job_runner_external_id", String( 255 ) ) )
     
