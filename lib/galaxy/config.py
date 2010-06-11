@@ -59,7 +59,6 @@ class Configuration( object ):
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
-        self.job_scheduler_policy = kwargs.get("job_scheduler_policy", "FIFO")
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )

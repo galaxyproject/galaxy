@@ -221,12 +221,6 @@ new_user_dataset_access_role_default_private = False
 # running more than one Galaxy server using the same database.
 #enable_job_recovery = True
 
-# Job scheduling policy to be used. 
-# module/package name and classname should be in "module:classname" format.
-# Comment / uncomment the following policies depending upon which is to be used.
-#job_scheduler_policy = FIFO
-job_scheduler_policy = galaxy.jobs.schedulingpolicy.roundrobin:UserRoundRobin
-
 # Job queue cleanup interval in minutes. Currently only used by RoundRobin
 job_queue_cleanup_interval = 30
 

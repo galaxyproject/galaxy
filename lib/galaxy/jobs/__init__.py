@@ -75,30 +75,6 @@ class JobQueue( object ):
         self.sa_session = app.model.context
         # Should we read jobs form the database, or use an in memory queue
         self.track_jobs_in_database = app.config.get_bool( 'track_jobs_in_database', False )
-        # Check if any special scheduling policy should be used. If not, default is FIFO.
-        sched_policy = app.config.get('job_scheduler_policy', 'FIFO')
-        # Parse the scheduler policy string. The policy class implements a special queue. 
-        # Ready-to-run jobs are inserted into this queue
-        if sched_policy != 'FIFO' :
-            try :
-                self.use_policy = True
-                if ":" in sched_policy :
-                    modname , policy_class = sched_policy.split(":")
-                    modfields = modname.split(".")
-                    module = __import__(modname)
-                    for mod in modfields[1:] : module = getattr( module, mod)
-                    # instantiate the policy class
-                    self.squeue = getattr( module , policy_class )(self.app)
-                else :
-                    self.use_policy = False
-                    log.info("Scheduler policy not defined as expected, defaulting to FIFO")
-            except AttributeError, detail: # try may throw AttributeError
-                self.use_policy = False
-                log.exception("Error while loading scheduler policy class, defaulting to FIFO")
-        else :
-            self.use_policy = False
-
-        log.info("job scheduler policy is %s" %sched_policy)
         # Keep track of the pid that started the job manager, only it
         # has valid threads
         self.parent_pid = os.getpid()
@@ -221,13 +197,8 @@ class JobQueue( object ):
                 elif job_state == JOB_INPUT_DELETED:
                     log.info( "job %d unable to run: one or more inputs deleted" % job.job_id )
                 elif job_state == JOB_READY:
-                    # If special queuing is enabled, put the ready jobs in the special queue
-                    if self.use_policy :
-                        self.squeue.put( job ) 
-                        log.debug( "job %d put in policy queue" % job.job_id )
-                    else: # or dispatch the job directly
-                        self.dispatcher.put( job )
-                        log.debug( "job %d dispatched" % job.job_id)
+                    self.dispatcher.put( job )
+                    log.debug( "job %d dispatched" % job.job_id)
                 elif job_state == JOB_DELETED:
                     msg = "job %d deleted by user while still queued" % job.job_id
                     job.info = msg
@@ -244,20 +215,6 @@ class JobQueue( object ):
                 log.exception( "failure running job %d" % job.job_id )
         # Update the waiting list
         self.waiting = new_waiting
-        # If special (e.g. fair) scheduling is enabled, dispatch all jobs
-        # currently in the special queue    
-        if self.use_policy :
-            while 1:
-                try:
-                    sjob = self.squeue.get()
-                    self.dispatcher.put( sjob )
-                    log.debug( "job %d dispatched" % sjob.job_id )
-                except Empty: 
-                    # squeue is empty, so stop dispatching
-                    break
-                except Exception, e: # if something else breaks while dispatching
-                    job.fail( "failure running job %d: %s" % ( sjob.job_id, str( e ) ) )
-                    log.exception( "failure running job %d" % sjob.job_id )
         # Done with the session
         self.sa_session.remove()
         
@@ -319,7 +276,6 @@ class JobWrapper( object ):
     """
     def __init__(self, job, tool, queue ):
         self.job_id = job.id
-        # This is immutable, we cache it for the scheduling policy to use if needed
         self.session_id = job.session_id
         self.tool = tool
         self.queue = queue
