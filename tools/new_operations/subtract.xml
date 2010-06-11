@@ -1,10 +1,10 @@
 <tool id="gops_subtract_1" name="Subtract">
   <description>the intervals of two queries</description>
   <command interpreter="python">gops_subtract.py 
-      #if $inputs.type == "BED":
-            $inputs.bed_input1 $inputs.bed_input2 $output 
-            -1 ${inputs.bed_input1.metadata.chromCol},${inputs.bed_input1.metadata.startCol},${inputs.bed_input1.metadata.endCol},${inputs.bed_input1.metadata.strandCol} 
-            -2 ${inputs.bed_input2.metadata.chromCol},${inputs.bed_input2.metadata.startCol},${inputs.bed_input2.metadata.endCol},${inputs.bed_input2.metadata.strandCol} 
+      #if $inputs.type == "Interval":
+            $inputs.interval_input1 $inputs.interval_input2 $output 
+            -1 ${inputs.interval_input1.metadata.chromCol},${inputs.interval_input1.metadata.startCol},${inputs.interval_input1.metadata.endCol},${inputs.interval_input1.metadata.strandCol} 
+            -2 ${inputs.interval_input2.metadata.chromCol},${inputs.interval_input2.metadata.startCol},${inputs.interval_input2.metadata.endCol},${inputs.interval_input2.metadata.strandCol} 
       #else
           $inputs.gff_input1 $inputs.gff_input2 $output
           ## TODO: can we use metadata like above to set these columns rather than hardcode them?
@@ -17,15 +17,15 @@
   <inputs>
       <conditional name="inputs">
           <param name="type" type="select" label="File Format to Use">
-            <option value="BED">BED</option>
+            <option value="Interval">Interval</option>
             <option value="GFF">GFF</option>
           </param>
-          <when value="BED">
-            <param format="interval" name="bed_input2" type="data" help="Second query">
+          <when value="Interval">
+            <param format="interval" name="interval_input2" type="data" help="Second query">
               <label>Subtract</label>
             </param>
     
-            <param format="interval" name="bed_input1" type="data" help="First query">
+            <param format="interval" name="interval_input1" type="data" help="First query">
               <label>from</label>
             </param>
         </when>
@@ -52,8 +52,8 @@
    </inputs>
   <outputs>
     <data format="input" name="output">
-        #if inputs.type == "BED":
-            metadata_source="inputs.bed_input1"
+        #if inputs.type == "Interval":
+            metadata_source="inputs.interval_input1"
         #else:
             metadata_source="inputs.gff_input1"
         #end if
@@ -62,33 +62,33 @@
   <code file="operation_filter.py"/>
   <tests>
     <test>
-      <param name="type"  value="BED"/>    
-      <param name="bed_input1" value="1.bed" />
-      <param name="bed_input2" value="2.bed" />
+      <param name="type"  value="Interval"/>    
+      <param name="interval_input1" value="1.bed" />
+      <param name="interval_input2" value="2.bed" />
       <param name="min" value="1" />
       <param name="returntype" value="" />
       <output name="output" file="gops-subtract.dat" />
     </test>
     <test>
-      <param name="type"  value="BED"/>
-      <param name="bed_input1" value="1.bed" />
-      <param name="bed_input2" value="2_mod.bed" ftype="interval"/>
+      <param name="type"  value="Interval"/>
+      <param name="interval_input1" value="1.bed" />
+      <param name="interval_input2" value="2_mod.bed" ftype="interval"/>
       <param name="min" value="1" />
       <param name="returntype" value="" />
       <output name="output" file="gops_subtract_diffCols.dat" />
     </test>
     <test>
-      <param name="type"  value="BED"/>
-      <param name="bed_input1" value="gops_subtract_bigint.bed" />
-      <param name="bed_input2" value="2.bed" />
+      <param name="type"  value="Interval"/>
+      <param name="interval_input1" value="gops_subtract_bigint.bed" />
+      <param name="interval_input2" value="2.bed" />
       <param name="min" value="1" />
       <param name="returntype" value="" />
       <output name="output" file="gops-subtract.dat" />
     </test>
     <test>
-      <param name="type"  value="BED"/>
-      <param name="bed_input1" value="1.bed" />
-      <param name="bed_input2" value="2.bed" />
+      <param name="type"  value="Interval"/>
+      <param name="interval_input1" value="1.bed" />
+      <param name="interval_input2" value="2.bed" />
       <param name="min" value="10" />
       <param name="returntype" value="Non-overlapping pieces of intervals" />
       <output name="output" file="gops-subtract-p.dat" />     
