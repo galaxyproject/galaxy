@@ -298,12 +298,22 @@ def add_composite_file( dataset, json_file, output_path, files_path ):
                     file_err( 'A required composite data file was not provided (%s)' % name, dataset, json_file )
                     break
                 elif dataset.composite_file_paths[value.name] is not None:
+                    dp = dataset.composite_file_paths[value.name][ 'path' ]
+                    isurl = dp.find('://') <> -1 # todo fixme
+                    if isurl:
+                       try:
+                           temp_name, dataset.is_multi_byte = sniff.stream_to_file( urllib.urlopen( dp ), prefix='url_paste' )
+                       except Exception, e:
+                           file_err( 'Unable to fetch %s\n%s' % ( dp, str( e ) ), dataset, json_file )
+                           return
+                       dataset.path = temp_name
+                       dp = temp_name
                     if not value.is_binary:
                         if dataset.composite_file_paths[ value.name ].get( 'space_to_tab', value.space_to_tab ):
-                            sniff.convert_newlines_sep2tabs( dataset.composite_file_paths[ value.name ][ 'path' ] )
+                            sniff.convert_newlines_sep2tabs( dp )
                         else:
-                            sniff.convert_newlines( dataset.composite_file_paths[ value.name ][ 'path' ] )
-                    shutil.move( dataset.composite_file_paths[ value.name ][ 'path' ], os.path.join( files_path, name ) )
+                            sniff.convert_newlines( dp )
+                    shutil.move( dp, os.path.join( files_path, name ) )
         # Move the dataset to its "real" path
         shutil.move( dataset.primary_file, output_path )
         # Write the job info
