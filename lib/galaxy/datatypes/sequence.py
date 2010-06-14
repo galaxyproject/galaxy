@@ -424,6 +424,38 @@ class Maf( Alignment ):
         except:
             return False
 
+class MafCustomTrack( data.Text ):
+    file_ext = "mafcustomtrack"
+    
+    MetadataElement( name="vp_chromosome", default='chr1', desc="Viewport Chromosome", readonly=True, optional=True, visible=False, no_value='' )
+    MetadataElement( name="vp_start", default='1', desc="Viewport Start", readonly=True, optional=True, visible=False, no_value='' )
+    MetadataElement( name="vp_end", default='100', desc="Viewport End", readonly=True, optional=True, visible=False, no_value='' )
+    
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        """
+        Parses and sets viewport metadata from MAF file.
+        """
+        max_block_check = 10
+        chrom = None
+        forward_strand_start = float( 'inf' )
+        forward_strand_end = 0
+        maf_file = open( dataset.file_name )
+        maf_file.readline() #move past track line
+        for block in bx.align.maf.Reader( maf_file ):
+            ref_comp = block.get_component_by_src_start( dataset.metadata.dbkey )
+            if ref_comp:
+                ref_chrom = bx.align.maf.src_split( ref_comp.src )[-1]
+                if chrom is None:
+                    chrom = ref_chrom
+                if chrom == ref_chrom:
+                    forward_strand_start = min( forward_strand_start, ref_comp.forward_strand_start )
+                    forward_strand_end = max( forward_strand_end, ref_comp.forward_strand_end )
+        
+        if forward_strand_end > forward_strand_start:
+            dataset.metadata.vp_chromosome = chrom
+            dataset.metadata.vp_start = forward_strand_start
+            dataset.metadata.vp_end = forward_strand_end
+
 class Axt( data.Text ):
     """Class describing an axt alignment"""
     
