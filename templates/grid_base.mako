@@ -223,7 +223,7 @@
             $(".label").each( function() {
                 // If href has an operation in it, do operation when clicked. Otherwise do nothing.
                 var href = $(this).attr('href');
-                if ( href.indexOf('operation=') != -1 ) {
+                if ( href !== undefined && href.indexOf('operation=') != -1 ) {
                     $(this).click( function() {
                         do_operation_from_href( $(this).attr('href') );
                         return false;
