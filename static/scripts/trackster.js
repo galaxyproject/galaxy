@@ -13,6 +13,7 @@ var DENSITY = 200,
     CACHED_TILES_LINE = 30,
     CACHED_DATA = 5,
     CONTEXT = $("<canvas></canvas>").get(0).getContext("2d"),
+    PX_PER_CHAR = CONTEXT.measureText("A").width,
     RIGHT_STRAND, LEFT_STRAND;
     
 var right_img = new Image();
@@ -206,7 +207,7 @@ $.extend( Track.prototype, {
         track.data_queue = {};
         track.tile_cache.clear();
         track.data_cache.clear();
-        track.content_div.css( "height", "30px" );
+        // track.content_div.css( "height", "30px" );
         if (!track.content_div.text()) {
             track.content_div.text(DATA_LOADING);
         }
@@ -252,6 +253,7 @@ $.extend( Track.prototype, {
 });
 
 var TiledTrack = function() {
+    this.left_offset = 200;
 };
 $.extend( TiledTrack.prototype, Track.prototype, {
     draw: function() {
@@ -333,6 +335,75 @@ $.extend( LabelTrack.prototype, Track.prototype, {
     }
 });
 
+var ReferenceTrack = function () {
+    this.track_type = "ReferenceTrack";
+    Track.call( this, null, $("#top-labeltrack") );
+    TiledTrack.call( this );
+    
+    this.hidden = true;
+    this.height_px = 12;
+    this.container_div.addClass( "reference-track" );
+    this.dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d");
+    this.data_queue = {};
+    this.data_cache = new Cache(CACHED_DATA);
+    this.tile_cache = new Cache(CACHED_TILES_LINE);
+};
+$.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
+    get_data: function(resolution, position) {
+        var track = this,
+            low = position * DENSITY * resolution,
+            high = ( position + 1 ) * DENSITY * resolution,
+            key = resolution + "_" + position;
+        
+        if (!track.data_queue[key]) {
+            track.data_queue[key] = true;
+            $.ajax({ 'url': reference_url, 'dataType': 'json', 'data': {  "chrom": this.view.chrom,
+                                    "low": low, "high": high, "dbkey": this.view.dbkey },
+                success: function (seq) {
+                    track.data_cache.set(key, seq);
+                    delete track.data_queue[key];
+                    track.draw();
+                }, error: function(r, t, e) {
+                    console.log(r, t, e);
+                }
+            });
+        }
+    },
+    draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
+        var tile_low = tile_index * DENSITY * resolution,
+            tile_length = DENSITY * resolution,
+            canvas = $("<canvas class='tile'></canvas>"),
+            ctx = canvas.get(0).getContext("2d"),
+            key = resolution + "_" + tile_index;
+        
+        if (w_scale > PX_PER_CHAR) {
+            if (this.data_cache.get(key) === undefined) {
+                this.get_data( resolution, tile_index );
+                return;
+            }
+            
+            var seq = this.data_cache.get(key);
+            if (seq === null) { return; }
+            
+            canvas.get(0).width = Math.ceil( tile_length * w_scale + this.left_offset);
+            canvas.get(0).height = this.height_px;
+            
+            canvas.css( {
+                position: "absolute",
+                top: 0,
+                left: ( tile_low - this.view.low ) * w_scale + this.left_offset
+            });
+            
+            for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                var c_start = Math.round(c * w_scale);
+                ctx.fillText(seq[c], c_start + this.left_offset, 10);
+            }
+            parent_element.append( canvas );
+            return canvas;
+        }
+    }
+});
+
 var LineTrack = function ( name, dataset_id, prefs ) {
     this.track_type = "LineTrack";
     Track.call( this, name, $("#viewport") );
@@ -400,14 +471,14 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             $.ajax({ 'url': data_url, 'dataType': 'json', 'data': {  "chrom": this.view.chrom, 
                                     "low": low, "high": high, "dataset_id": this.dataset_id,
                                     "resolution": this.view.resolution }, 
-            success: function (result) {
-                data = result.data;
-                track.data_cache.set(key, data);
-                delete track.data_queue[key];
-                track.draw();
-            }, error: function(r, t, e) {
-                console.log(r, t, e);
-            } 
+                success: function (result) {
+                    data = result.data;
+                    track.data_cache.set(key, data);
+                    delete track.data_queue[key];
+                    track.draw();
+                }, error: function(r, t, e) {
+                    console.log(r, t, e);
+                } 
             });
         }
     },
@@ -435,7 +506,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             left: ( tile_low - this.view.low ) * w_scale
         });
         
-        canvas.get(0).width = Math.ceil( tile_length * w_scale );
+        canvas.get(0).width = Math.ceil( tile_length * w_scale + this.left_offset);
         canvas.get(0).height = this.height_px;
         var ctx = canvas.get(0).getContext("2d"),
             in_path = false,
@@ -567,7 +638,6 @@ var FeatureTrack = function ( name, dataset_id, prefs ) {
     this.vertical_detail_px = 10;
     this.vertical_nodetail_px = 3;
     this.default_font = "9px Monaco, Lucida Console, monospace";
-    this.left_offset = 200;
     this.inc_slots = {};
     this.data_queue = {};
     this.s_e_by_tile = {};
@@ -718,10 +788,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         return highest_slot;
         
     },
-    rect_or_text: function( ctx, w_scale, px_per_char, tile_low, tile_high, feature_start, name, x, x_len, y_center ) {
+    rect_or_text: function( ctx, w_scale, tile_low, tile_high, feature_start, name, x, x_len, y_center ) {
         ctx.textAlign = "center";
         var gap = Math.round(w_scale / 2);
-        if ( (this.mode === "Pack" || this.mode === "Auto") && name !== undefined && w_scale > px_per_char) {
+        if ( (this.mode === "Pack" || this.mode === "Auto") && name !== undefined && w_scale > PX_PER_CHAR) {
             ctx.fillStyle = this.prefs.block_color;
             ctx.fillRect(x, y_center + 1, x_len, 9);
             ctx.fillStyle = "#eee";
@@ -790,8 +860,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         new_canvas.get(0).height = required_height;
         parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
-        var ctx = new_canvas.get(0).getContext("2d"),
-            px_per_char = ctx.measureText("A").width;
+        var ctx = new_canvas.get(0).getContext("2d");
         ctx.fillStyle = block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
@@ -857,10 +926,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
                         
                         if (feature[4][1] >= tile_low && feature[4][0] <= tile_high) {
-                            this.rect_or_text(ctx, w_scale, px_per_char, tile_low, tile_high, feature[4][0], feature[4][2], b1_start + left_offset, b1_end - b1_start, y_center);
+                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], b1_start + left_offset, b1_end - b1_start, y_center);
                         }
                         if (feature[5][1] >= tile_low && feature[5][0] <= tile_high) {
-                            this.rect_or_text(ctx, w_scale, px_per_char, tile_low, tile_high, feature[5][0], feature[5][2], b2_start + left_offset, b2_end - b2_start, y_center);
+                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], b2_start + left_offset, b2_end - b2_start, y_center);
                         }
                         if (b2_start > b1_end) {
                             ctx.fillStyle = "#999";
@@ -868,7 +937,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         }
                     } else {
                         ctx.fillStyle = block_color;
-                        this.rect_or_text(ctx, w_scale, px_per_char, tile_low, tile_high, feature_start, feature_name, f_start + left_offset, f_end - f_start, y_center);
+                        this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature_start, feature_name, f_start + left_offset, f_end - f_start, y_center);
                     }
                     if (mode !== "Dense" && !no_detail && feature_start > tile_low) {
                         // Draw label

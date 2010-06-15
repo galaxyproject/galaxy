@@ -13,9 +13,10 @@ Problems
    need to support that, but need to make user defined build support better)
 """
 
-import math, re, logging, glob
-log = logging.getLogger(__name__)
+import math, re, logging, glob, pkg_resources
+pkg_resources.require( "bx-python" )
 
+from bx.seq.twobit import TwoBitFile
 from galaxy import model
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.web.base.controller import *
@@ -71,11 +72,9 @@ class DatasetSelectionGrid( grids.Grid ):
         DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
     columns.append( 
-        grids.MulticolFilterColumn(  
-        "Search", 
-        cols_to_filter=[ columns[0], columns[1] ], 
+        grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0], columns[1] ], 
         key="free-text-search", visible=False, filterable="standard" )
-                )
+    )
     
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
@@ -96,6 +95,15 @@ class TracksController( BaseController, UsesVisualization ):
     """
     
     available_tracks = None
+    available_genomes = None
+    
+    def _init_references(self, trans):
+        avail_genomes = {}
+        for line in open( os.path.join( trans.app.config.tool_data_path, "twobit.loc" ) ):
+            if line.startswith("#"): continue
+            key, path = line.split()
+            avail_genomes[key] = path
+        self.available_genomes = avail_genomes
     
     @web.expose
     @web.require_login()
@@ -170,12 +178,16 @@ class TracksController( BaseController, UsesVisualization ):
             # No vis_id, so visualization is new. User is current user, dbkey must be given.
             vis_user = trans.user
             vis_dbkey = dbkey
-            
+        
         # Get chroms data.
         chroms = self._chroms( trans, vis_user, vis_dbkey )
+        
+        # Check for reference chrom
+        if self.available_genomes is None: self._init_references(trans)        
+        
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
-        return to_sort
+        return { 'reference': vis_dbkey in self.available_genomes, 'chrom_info': to_sort }
 
     def _chroms( self, trans, user, dbkey ):
         """
@@ -204,7 +216,24 @@ class TracksController( BaseController, UsesVisualization ):
             fields = line.split("\t")
             manifest[fields[0]] = int(fields[1])
         return manifest
+        
+    @web.json
+    def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
+        if self.available_genomes is None: self._init_references(trans)
 
+        if dbkey not in self.available_genomes: 
+            return None
+        
+        try:
+            twobit = TwoBitFile( open(self.available_genomes[dbkey]) )
+        except IOError:
+            return None
+            
+        if chrom in twobit:
+            return twobit[chrom].get(int(low), int(high))        
+        
+        return None
+        
     @web.json
     def data( self, trans, dataset_id, chrom, low, high, **kwargs ):
         """
