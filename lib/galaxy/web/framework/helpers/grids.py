@@ -511,7 +511,8 @@ class StateColumn( GridColumn ):
         return query
     def get_accepted_filters( self ):
         """Returns a list of accepted filters for this column."""
-        accepted_filters = []
+        all = GridColumnFilter( 'all', { self.key : 'All' } )
+        accepted_filters = [ all ]
         for k, v in self.model_class.states.items():
            args = { self.key: v }
            accepted_filters.append( GridColumnFilter( v, args) )
