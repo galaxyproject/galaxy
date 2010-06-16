@@ -1,4 +1,4 @@
-<tool id="flanking_features_1" name="Fetch closest feature" version="3.0.0">
+<tool id="flanking_features_1" name="Fetch closest feature" version="4.0.0">
   <description>  for every interval</description>
   <command interpreter="python">flanking_features.py $input1 $input2 $out_file1 $direction -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -2 ${input2.metadata.chromCol},${input2.metadata.startCol},${input2.metadata.endCol},${input2.metadata.strandCol}</command>
   <inputs>

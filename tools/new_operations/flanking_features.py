@@ -100,7 +100,7 @@ def proximal_region_finder(readers, region, comments=True):
                     
                 if (strand == '+' and down) or (strand == '-' and up):
                     #downstream +ve strand and upstream -ve strand case
-                    get_closest_feature (root, 0, None, end, None, lambda node: result_down.append( node ))
+                    get_closest_feature (root, 0, None, end-1, None, lambda node: result_down.append( node ))
                 
                 if result_up:
                     outfields = list(interval)
