@@ -1249,7 +1249,8 @@ assign_mapper( context, PostJobAction, PostJobAction.table,
     properties=dict(workflow_step = relation( WorkflowStep, backref='post_job_actions', primaryjoin=(WorkflowStep.table.c.id == PostJobAction.table.c.workflow_step_id))))
 
 assign_mapper( context, Job, Job.table, 
-    properties=dict( galaxy_session=relation( GalaxySession ),
+    properties=dict( user=relation( User.mapper ),
+                     galaxy_session=relation( GalaxySession ),
                      history=relation( History ),
                      library_folder=relation( LibraryFolder ),
                      parameters=relation( JobParameter, lazy=False ),
