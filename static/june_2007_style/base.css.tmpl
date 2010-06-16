@@ -415,9 +415,29 @@ ul.manage-table-actions li {
 
 ## State colors
 
+.state-color-new {
+    border-color: $history_new_border;
+    background: $history_new_bg;
+}
+
+.state-color-upload {
+    border-color: $history_upload_border;
+    background: $history_upload_bg;
+}
+
+.state-color-waiting {
+    border-color: $history_waiting_border;
+    background: $history_waiting_bg;
+}
+
 .state-color-queued {
     border-color: $history_queued_border;
     background: $history_queued_bg;
+}
+
+.state-color-running {
+    border-color: $history_running_border;
+    background: $history_running_bg;
 }
 
 .state-color-ok {
@@ -430,22 +450,41 @@ ul.manage-table-actions li {
     background: $history_error_bg;
 }
 
-.state-color-running {
-    border-color: $history_running_border;
-    background: $history_running_bg;
+.state-color-deleted {
+    border-color: $history_deleted_border;
+    background: $history_deleted_bg;
+}
+
+.state-fg-new {
+    color: #FFB030;
+}
+
+.state-fg-upload {
+    color: #D090D0;
+}
+
+.state-fg-waiting {
+    color: #E8C060;
 }
 
 .state-fg-queued {
     color: #888888;
 }
-.state-fg-ok {
-    color: #66AA66;
-}
+
 .state-fg-running {
     color: #AAAA66;
 }
+
+.state-fg-ok {
+    color: #66AA66;
+}
+
 .state-fg-error {
     color: #AA6666;
+}
+
+.state-fg-deleted {
+    color: #3399FF;
 }
 
 ## Button styles

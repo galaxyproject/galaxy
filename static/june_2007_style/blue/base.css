@@ -73,14 +73,22 @@ span.toolParameterExpandableCollapsable{font-weight:bold;cursor:pointer;}
 ul.toolParameterExpandableCollapsable{list-style:none;}
 ul.manage-table-actions{float:right;margin-top:-2.5em;}
 ul.manage-table-actions li{display:block;float:left;margin-left:0.5em;}
+.state-color-new{border-color:#A86030;background:#FFB030;}
+.state-color-upload{border-color:#990099;background:#D090D0;}
+.state-color-waiting{border-color:#A86030;background:#E8C060;}
 .state-color-queued{border-color:#888888;background:#EEEEEE;}
+.state-color-running{border-color:#AAAA66;background:#FFFFCC;}
 .state-color-ok{border-color:#66AA66;background:#CCFFCC;}
 .state-color-error{border-color:#AA6666;background:#FFCCCC;}
-.state-color-running{border-color:#AAAA66;background:#FFFFCC;}
+.state-color-deleted{border-color:#330066;background:#3399FF;}
+.state-fg-new{color:#FFB030;}
+.state-fg-upload{color:#D090D0;}
+.state-fg-waiting{color:#E8C060;}
 .state-fg-queued{color:#888888;}
-.state-fg-ok{color:#66AA66;}
 .state-fg-running{color:#AAAA66;}
+.state-fg-ok{color:#66AA66;}
 .state-fg-error{color:#AA6666;}
+.state-fg-deleted{color:#3399FF;}
 .action-button{background:transparent;line-height:16px;color:#333;text-decoration:none;font-size:100%;font-weight:bold;display:inline-block;cursor:pointer;padding:2px;border:solid #aaaaaa 1px;padding-right:0.5em;padding-left:0.5em;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em;user-select:none;-moz-user-select:none;-webkit-user-select:none;}
 .action-button > *{vertical-align:middle;}
 .action-button:hover{color:black;background:#dddddd;}
