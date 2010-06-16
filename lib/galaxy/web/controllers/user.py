@@ -907,7 +907,6 @@ class User( BaseController ):
                 trans.sa_session.add( new_len )
                 new_len.name = name
                 new_len.visible = False
-                new_len.history_id = trans.get_history().id
                 new_len.state = trans.app.model.Job.states.OK
                 new_len.info = "custom build .len file"
                 trans.sa_session.flush()
