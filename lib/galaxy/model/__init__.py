@@ -522,6 +522,10 @@ class DatasetInstance( object ):
     def ext( self ):
         return self.extension
     def get_dataset_state( self ):
+        #self._state is currently only used when setting metadata externally
+        #leave setting the state as-is, we'll currently handle this specially in the external metadata code
+        if self._state:
+            return self._state
         return self.dataset.state
     def set_dataset_state ( self, state ):
         self.dataset.state = state

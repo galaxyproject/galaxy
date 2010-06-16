@@ -274,8 +274,10 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                     #prevent modifying datatype when dataset is queued or running as input/output
                     if not __ok_to_edit_metadata( data.id ):
                         return trans.show_error_message( "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them." )
-                    trans.app.datatypes_registry.change_datatype( data, params.datatype )
+                    trans.app.datatypes_registry.change_datatype( data, params.datatype, set_meta = not trans.app.config.set_metadata_externally )
                     trans.sa_session.flush()
+                    if trans.app.config.set_metadata_externally:
+                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
                     return trans.show_ok_message( "Changed the type of dataset '%s' to %s" % ( data.name, params.datatype ), refresh_frames=['history'] )
                 else:
                     return trans.show_error_message( "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype ) )

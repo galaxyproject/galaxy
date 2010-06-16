@@ -292,8 +292,14 @@ class Data( object ):
         if return_output:
             return converted_dataset
         return "The file conversion of %s on data %s has been added to the Queue." % (converter.name, original_dataset.hid)
+    #We need to clear associated files before we set metadata
+    #so that as soon as metadata starts to be set, e.g. implicitly converted datasets are deleted and no longer available 'while' metadata is being set, not just after
+    #We'll also clear after setting metadata, for backwards compatibility
     def after_setting_metadata( self, dataset ):
         """This function is called on the dataset after metadata is set."""
+        dataset.clear_associated_files( metadata_safe = True )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is set."""
         dataset.clear_associated_files( metadata_safe = True )
     def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, is_binary = False, space_to_tab = False, **kwds ):
         kwds[ 'name' ] = name

@@ -8,7 +8,7 @@ log = logging.getLogger( __name__ )
 class SetMetadataToolAction( ToolAction ):
     """Tool action used for setting external metadata on an existing dataset"""
     
-    def execute( self, tool, trans, incoming = {}, set_output_hid = False ):
+    def execute( self, tool, trans, incoming = {}, set_output_hid = False, overwrite = True ):
         for name, value in incoming.iteritems():
             if isinstance( value, trans.app.model.HistoryDatasetAssociation ):
                 dataset = value
@@ -27,7 +27,7 @@ class SetMetadataToolAction( ToolAction ):
             # For backward compatibility, some tools may not have versions yet.
             job.tool_version = tool.version
         except:
-            job.tool_version = "1.0.0"
+            job.tool_version = "1.0.1"
         job.state = job.states.WAITING #we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add( job )
         trans.sa_session.flush() #ensure job.id is available
@@ -45,7 +45,7 @@ class SetMetadataToolAction( ToolAction ):
                                                                       config_root = None,
                                                                       datatypes_config = None,
                                                                       job_metadata = None,
-                                                                      kwds = { 'overwrite' : True } )
+                                                                      kwds = { 'overwrite' : overwrite } )
         incoming[ '__SET_EXTERNAL_METADATA_COMMAND_LINE__' ] = cmd_line
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
@@ -53,11 +53,15 @@ class SetMetadataToolAction( ToolAction ):
         job.add_input_dataset( dataset_name, dataset )
         #Need a special state here to show that metadata is being set and also allow the job to run
         #   i.e. if state was set to 'running' the set metadata job would never run, as it would wait for input (the dataset to set metadata on) to be in a ready state
-        dataset.state = dataset.states.SETTING_METADATA
+        dataset._state = dataset.states.SETTING_METADATA
         job.state = start_job_state #job inputs have been configured, restore initial job state
         trans.sa_session.flush()
         
         # Queue the job for execution
         trans.app.job_queue.put( job.id, tool )
         trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
+        
+        #clear e.g. converted files
+        dataset.datatype.before_setting_metadata( dataset )
+        
         return job, odict()

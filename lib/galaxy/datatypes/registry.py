@@ -268,7 +268,7 @@ class Registry( object ):
             builder = data.Text()
         return builder
 
-    def change_datatype(self, data, ext ):
+    def change_datatype(self, data, ext, set_meta = True ):
         data.extension = ext
         # call init_meta and copy metadata from itself.  The datatype
         # being converted *to* will handle any metadata copying and
@@ -276,8 +276,10 @@ class Registry( object ):
         if data.has_data():
             data.set_size()
             data.init_meta( copy_from=data )
-            data.set_meta( overwrite = False )
-            data.set_peek()
+            if set_meta:
+                #metadata is being set internally
+                data.set_meta( overwrite = False )
+                data.set_peek()
         return data
 
     def old_change_datatype(self, data, ext):
@@ -311,7 +313,7 @@ class Registry( object ):
         #We'll create a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         #Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file 
         tool_xml_text = """
-            <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.0" tool_type="set_metadata">
+            <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
               <type class="SetMetadataTool" module="galaxy.tools"/>
               <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
               <command>$__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>

@@ -1680,7 +1680,11 @@ class SetMetadataTool( Tool ):
             # If setting external metadata has failed, how can we inform the user?
             # For now, we'll leave the default metadata and set the state back to its original.
             dataset.datatype.after_setting_metadata( dataset )
-            dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
+            if job.tool_id == '1.0.0':
+                dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
+            else:
+                dataset._state = None #revert dataset.state to fall back to dataset.dataset.state
+            dataset.set_peek() #need to reset the peek, which may rely on metadata
             self.sa_session.add( dataset )
             self.sa_session.flush()
 
