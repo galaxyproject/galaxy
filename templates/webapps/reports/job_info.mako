@@ -17,21 +17,21 @@
                 <td>Session Id</td>
             </tr>
             <tr>
-                <td>${job_info.state}</td>
-                <td>${job_id}</td>
-                <td>${job_info.create_time}</td>
-                <td>${job_info.update_time}</td>
-                <td>${job_info.session_id}</td>
+                <td><div class="count-box state-color-${job.state}">${job.state}</div></td>
+                <td>${job.id}</td>
+                <td>${job.create_time}</td>
+                <td>${job.update_time}</td>
+                <td>${job.session_id}</td>
             </tr>
                 <tr class="header">
                 <td colspan="3">Tool</td>
                 <td colspan="2">User</td>
             </tr>
             <tr>
-                <td colspan="3">${job_info.tool_id}</td>
+                <td colspan="3">${job.tool_id}</td>
                 <td colspan="2">
-                    %if job_info.email:
-                        ${job_info.email}
+                    %if job.user and job.user.email:
+                        ${job.user.email}
                     %else:
                         anonymous
                     %endif
@@ -41,31 +41,37 @@
                 <td colspan="5">Remote Host</td>
             </tr>
             <tr>
-                <td colspan="5">${job_info.remote_host}</td>
+                <td colspan="5">
+                    %if job.galaxy_session and job.galaxy_session.remote_host:
+                        ${job.galaxy_session.remote_host}
+                    %else:
+                        no remote host
+                    %endif
+                </td>
             </tr>
             <tr class="header">
                 <td colspan="5">Command Line</td>
             </tr>
             <tr>
-                <td colspan="5">${job_info.command_line}</td>
+                <td colspan="5">${job.command_line}</td>
             </tr>
             <tr class="header">
                 <td colspan="5">Stderr</td>
             </tr>
             <tr>
-                <td colspan="5"><pre>${job_info.stderr}</pre></td>
+                <td colspan="5"><pre>${job.stderr}</pre></td>
             </tr>
             <tr class="header">
                 <td colspan="5">Stack Trace</td>
             </tr>
             <tr>
-                <td colspan="5"><pre>${job_info.traceback}</pre></td>
+                <td colspan="5"><pre>${job.traceback}</pre></td>
             </tr>
             <tr class="header">
                 <td colspan="5">Info</td>
             </tr>
             <tr>
-                <td colspan="5">${job_info.info}</td>
+                <td colspan="5">${job.info}</td>
             </tr>
             <tr><td colspan="5">&nbsp;</td></tr>
             <tr><td colspan="5">&nbsp;</td></tr>

@@ -17,7 +17,7 @@ class SpecifiedDateListGrid( grids.Grid ):
             return job.id
     class StateColumn( grids.TextColumn ):
         def get_value( self, trans, grid, job ):
-            return job.state
+            return '<div class="count-box state-color-%s">%s</div>' % ( job.state, job.state )
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'Unfinished':
                 return query.filter( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
@@ -42,8 +42,7 @@ class SpecifiedDateListGrid( grids.Grid ):
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
-            return query.filter( and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
-                                       model.GalaxySession.table.c.user_id == model.User.table.c.id,
+            return query.filter( and_( model.Job.table.c.user_id == model.User.table.c.id,
                                        model.User.table.c.email == column_filter ) )
     class SpecifiedDateColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
@@ -124,7 +123,6 @@ class SpecifiedDateListGrid( grids.Grid ):
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ) \
-                               .join( model.GalaxySession ) \
                                .join( model.User ) \
                                .enable_eagerloads( False )
 
@@ -200,8 +198,7 @@ class Jobs( BaseController ):
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause = sa.and_( model.Job.table.c.create_time >= start_date,
                                               model.Job.table.c.create_time < end_date ),
-                       from_obj = [ sa.outerjoin( model.Job.table, 
-                                                  model.History.table ).outerjoin( model.User.table ) ],
+                       from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
                        group_by = [ 'date' ],
                        order_by = [ sa.desc( 'date' ) ] )
         jobs = []
@@ -235,8 +232,7 @@ class Jobs( BaseController ):
                        whereclause = sa.and_( model.Job.table.c.state == 'error',
                                               model.Job.table.c.create_time >= start_date, 
                                               model.Job.table.c.create_time < end_date ),
-                       from_obj = [ sa.outerjoin( model.Job.table, 
-                                                  model.History.table ).outerjoin( model.User.table ) ],
+                       from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
                        group_by = [ 'date' ],
                        order_by = [ sa.desc( 'date' ) ] )
         jobs = []
@@ -259,8 +255,7 @@ class Jobs( BaseController ):
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
                          sa.func.sum( sa.case( [( model.User.table.c.email == monitor_email, 1 )], else_=0 ) ).label( 'monitor_jobs' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       from_obj = [ sa.outerjoin( model.Job.table, 
-                                                  model.History.table ).outerjoin( model.User.table ) ],
+                       from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
                        group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
                        order_by = [ sa.desc( 'date' ) ] )
         jobs = []
@@ -300,8 +295,7 @@ class Jobs( BaseController ):
         jobs = []
         q = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       from_obj = [ sa.outerjoin( model.Job.table, 
-                                                  model.GalaxySession.table ).outerjoin( model.User.table ) ],
+                       from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
                        group_by = [ 'user_email' ],
                        order_by = [ sa.desc( 'total_jobs' ), 'user_email' ] )
         for row in q.execute():
@@ -319,8 +313,7 @@ class Jobs( BaseController ):
                                               model.GalaxySession.table.c.user_id == model.User.table.c.id,
                                               model.User.table.c.email == email
                                             ),
-                       from_obj = [ sa.join( model.Job.table, 
-                                             model.GalaxySession.table ).join( model.User.table ) ],
+                       from_obj = [ sa.join( model.Job.table, model.User.table ) ],
                        group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
                        order_by = [ sa.desc( 'date' ) ] )
         jobs = []
@@ -375,16 +368,10 @@ class Jobs( BaseController ):
     def job_info( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
-        job_id = trans.security.decode_id( kwd.get( 'id', '' ) )
-        job_info = trans.sa_session.query( model.Job.table.join( model.GalaxySession.table ).join( model.User.table ) ) \
-                                   .filter( and_( model.Job.table.c.id == job_id,
-                                                  model.Job.table.c.session_id == model.GalaxySession.table.c.id,
-                                                  model.GalaxySession.table.c.user_id == model.User.table.c.id ) ) \
-                                   .enable_eagerloads( False ) \
-                                   .one()
+        job = trans.sa_session.query( model.Job ) \
+                              .get( trans.security.decode_id( kwd.get( 'id', '' ) ) )
         return trans.fill_template( '/webapps/reports/job_info.mako',
-                                    job_id=job_id,
-                                    job_info=job_info,
+                                    job=job,
                                     message=message )
     @web.expose
     def per_domain( self, trans, **kwd ):
