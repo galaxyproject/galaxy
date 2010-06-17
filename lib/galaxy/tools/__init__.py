@@ -1453,6 +1453,12 @@ class Tool:
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         pass
 
+    def job_failed( self, job_wrapper, message, exception = False ):
+        """
+        Called when a job has failed
+        """
+        pass
+
     def collect_associated_files( self, output, job_working_directory ):
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
@@ -1680,13 +1686,22 @@ class SetMetadataTool( Tool ):
             # If setting external metadata has failed, how can we inform the user?
             # For now, we'll leave the default metadata and set the state back to its original.
             dataset.datatype.after_setting_metadata( dataset )
-            if job.tool_id == '1.0.0':
+            if job and job.tool_id == '1.0.0':
                 dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
             else:
                 dataset._state = None #revert dataset.state to fall back to dataset.dataset.state
             dataset.set_peek() #need to reset the peek, which may rely on metadata
             self.sa_session.add( dataset )
             self.sa_session.flush()
+    
+    def job_failed( self, job_wrapper, message, exception = False ):
+        job = job_wrapper.sa_session.query( model.Job ).get( job_wrapper.job_id )
+        if job:
+            inp_data = {}
+            for dataset_assoc in job.input_datasets:
+                inp_data[dataset_assoc.name] = dataset_assoc.dataset
+            return self.exec_after_process( job_wrapper.app, inp_data, {}, job_wrapper.get_param_dict(), job = job )
+
 
 #load tool_type to ToolClass mappings
 tool_types = {}

@@ -404,7 +404,9 @@ class JobWrapper( object ):
             job.info = message
             self.sa_session.add( job )
             self.sa_session.flush()
-        # If the job was deleted, just clean up
+        # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
+        if self.tool:
+            self.tool.job_failed( self, message, exception )
         self.cleanup()
         
     def change_state( self, state, info = False ):
