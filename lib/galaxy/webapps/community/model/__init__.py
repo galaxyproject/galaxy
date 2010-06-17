@@ -90,7 +90,7 @@ class Tool( object ):
     states = Bunch( NEW = 'new',
                     ERROR = 'error',
                     DELETED = 'deleted',
-                    WAITING = 'waiting for approval',
+                    WAITING = 'waiting',
                     APPROVED = 'approved',
                     REJECTED = 'rejected',
                     ARCHIVED = 'archived' )

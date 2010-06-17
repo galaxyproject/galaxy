@@ -80,10 +80,10 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_categories' )}">Browse by category</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools' )}">Browse all tools</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_categories', webapp='community' )}">Browse by category</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools', webapp='community' )}">Browse all tools</a></div>
                         %if trans.user:
-                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools_by_user', operation='browse', id=trans.security.encode_id( trans.user.id ) )}">Browse your tools</a></div>
+                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools', operation='my_tools', webapp='community' )}">Browse your tools</a></div>
                         %endif
                     </div>
                 </div>
@@ -91,7 +91,7 @@
                     <div class="toolSectionBg">
                         <div class="toolTitle">
                             %if trans.user:
-                                <a target="galaxy_main" href="${h.url_for( controller='upload', action='upload', type='tool' )}">Upload a tool</a>
+                                <a target="galaxy_main" href="${h.url_for( controller='upload', action='upload', type='tool', webapp='community' )}">Upload a tool</a>
                             %else:
                                 <a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login to upload</a>
                             %endif
@@ -106,9 +106,9 @@
 <%def name="center_panel()">
     <%
         if trans.app.config.require_login and not trans.user:
-            center_url = h.url_for( controller='user', action='login', message=message, status=status )
+            center_url = h.url_for( controller='user', action='login', message=message, status=status, webapp='community' )
         else:
-            center_url = h.url_for( controller='tool', action='browse_categories', message=message, status=status )
+            center_url = h.url_for( controller='tool', action='browse_categories', message=message, status=status, webapp='community' )
     %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

@@ -2,15 +2,14 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
-from common import get_categories, get_category, get_tools, get_event, get_tool, get_versions
+from common import ToolListGrid, CategoryListGrid, get_category, get_tools, get_event, get_tool, get_versions
 import logging
 log = logging.getLogger( __name__ )
 
-# States for passing messages
-SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
-
 class UserListGrid( grids.Grid ):
-    class EmailColumn( grids.TextColumn ):
+    # TODO: move this to an admin_common controller since it is virtually the same
+    # in the galaxy webapp.  NOTE the additional ToolsColumn in this grid though...
+    class UserLoginColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
             return user.email
     class UserNameColumn( grids.TextColumn ):
@@ -47,8 +46,13 @@ class UserListGrid( grids.Grid ):
             return ""
     class ToolsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
-            return '<a href="browse_tools_by_user?operation=browse&id=%s&webapp=community">%s</a>' % ( trans.security.encode_id( user.id ), str( len( user.tools ) ) )
-
+            return len( user.tools )
+    class EmailColumn( grids.GridColumn ):
+        def filter( self, trans, user, query, column_filter ):
+            if column_filter == 'All':
+                return query
+            return query.filter( and_( model.Tool.table.c.user_id == model.User.table.c.id,
+                                       model.User.table.c.email == column_filter ) )
     # Grid definition
     webapp = "community"
     title = "Users"
@@ -56,7 +60,7 @@ class UserListGrid( grids.Grid ):
     template='/admin/user/grid.mako'
     default_sort_key = "email"
     columns = [
-        EmailColumn( "Email",
+        UserLoginColumn( "Email",
                      key="email",
                      model_class=model.User,
                      link=( lambda item: dict( operation="information", id=item.id, webapp="community" ) ),
@@ -74,13 +78,14 @@ class UserListGrid( grids.Grid ):
         StatusColumn( "Status", attach_popup=False ),
         ToolsColumn( "Uploaded Tools",
                      model_class=model.User,
+                     link=( lambda item: dict( operation="tools_by_user", id=item.id, webapp="community" ) ),
                      attach_popup=False,
                      filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" )
+        EmailColumn( "Email",
+                     key="email",
+                     model_class=model.User,
+                     visible=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
@@ -115,6 +120,8 @@ class UserListGrid( grids.Grid ):
         return trans.user
 
 class RoleListGrid( grids.Grid ):
+    # TODO: move this to an admin_common controller since it is virtually the same
+    # in the galaxy webapp.
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
             return role.name
@@ -211,6 +218,8 @@ class RoleListGrid( grids.Grid ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
 
 class GroupListGrid( grids.Grid ):
+    # TODO: move this to an admin_common controller since it is virtually the same
+    # in the galaxy webapp.
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, group ):
             return group.name
@@ -287,43 +296,75 @@ class GroupListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class ManageCategoryListGrid( grids.Grid ):
-    class NameColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, category ):
-            return category.name
-    class DescriptionColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, category ):
-            return category.description
+class AdminToolListGrid( ToolListGrid ):
+    class StateColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            state = tool.state()
+            if state == 'approved':
+                state_color = 'ok'
+            elif state == 'rejected':
+                state_color = 'error'
+            elif state == 'archived':
+                state_color = 'upload'
+            else:
+                state_color = state
+            return '<div class="count-box state-color-%s">%s</div>' % ( state_color, state )
+    class ToolStateColumn( grids.StateColumn ):
+        def filter( self, trans, user, query, column_filter ):
+            """Modify query to filter by state."""
+            if column_filter == "All":
+                pass
+            elif column_filter in [ v for k, v in self.model_class.states.items() ]:
+                # Get all of the latest ToolEventAssociation ids
+                tea_ids = [ tea_id_tup[0] for tea_id_tup in trans.sa_session.query( func.max( model.ToolEventAssociation.table.c.id ) ) \
+                                                                            .group_by( model.ToolEventAssociation.table.c.tool_id ) ]
+                # Get all of the Event ids associated with the latest ToolEventAssociation ids
+                event_ids = [ event_id_tup[0] for event_id_tup in trans.sa_session.query( model.ToolEventAssociation.table.c.event_id ) \
+                                                                                  .filter( model.ToolEventAssociation.table.c.id.in_( tea_ids ) ) ]
+                # Filter our query by state and event ids
+                return query.filter( and_( model.Event.table.c.state == column_filter,
+                                           model.Event.table.c.id.in_( event_ids ) ) )
+            return query
 
-    # Grid definition
-    webapp = "community"
-    title = "Manage Categories"
-    model_class = model.Category
-    template='/webapps/community/category/grid.mako'
-    default_sort_key = "name"
-    columns = [
-        NameColumn( "Name",
-                    key="name",
-                    link=( lambda item: dict( operation="Edit", id=item.id, webapp="community" ) ),
-                    model_class=model.Category,
-                    attach_popup=False,
-                    filterable="advanced" ),
-        DescriptionColumn( "Description",
-                           key="description",
-                           model_class=model.Category,
-                           attach_popup=False,
-                           filterable="advanced" ),
+    columns = [ col for col in ToolListGrid.columns ]
+    columns.append(
+        StateColumn( "Status",
+                     model_class=model.Tool,
+                     link=( lambda item: dict( operation="tools_by_state", id=item.id, webapp="community" ) ),
+                     attach_popup=False ),
+    )
+    columns.append(
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" )
+        ToolStateColumn( "State",
+                         key="state",
+                         model_class=model.Tool,
+                         visible=False,
+                         filterable="advanced" )
+    )
+    operations = [
+        grids.GridOperation( "Edit information",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="common", action="edit_tool", cntrller="admin", webapp="community" ) )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
+
+class AdminCategoryListGrid( CategoryListGrid ):
+    # Override standard filters
+    standard_filters = [
+        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
+
+class ManageCategoryListGrid( CategoryListGrid ):
+    columns = [ col for col in CategoryListGrid.columns ]
+    # Override the NameColumn to include an Edit link
+    columns[ 0 ] = CategoryListGrid.NameColumn( "Name",
+                                                key="name",
+                                                link=( lambda item: dict( operation="Edit", id=item.id, webapp="community" ) ),
+                                                model_class=model.Category,
+                                                attach_popup=False,
+                                                filterable="advanced" )
     global_actions = [
         grids.GridAction( "Add new category",
                           dict( controller='admin', action='manage_categories', operation='create', webapp="community" ) )
@@ -340,205 +381,6 @@ class ManageCategoryListGrid( grids.Grid ):
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
                                         url_args=dict( webapp="community", action="purge_category" ) ) ]
-    standard_filters = [
-        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
-        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
-    ]
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
-
-class ToolsByCategoryListGrid( grids.Grid ):
-    class NameColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, category ):
-            return category.name
-    class DescriptionColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, category ):
-            return category.description
-    class ToolsColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, category ):
-            if category.tools:
-                return len( category.tools )
-            return 0
-
-    # Grid definition
-    webapp = "community"
-    title = "Tools by Category"
-    model_class = model.Category
-    template='/webapps/community/category/grid.mako'
-    default_sort_key = "name"
-    columns = [
-        NameColumn( "Name",
-                     # TODO: we cannot currently sort by columns since the grid may be filtered by tool ids
-                     # and it is not clear if / how that will work.  We need to be able to send to the grid helper
-                     # the list of ids on which to filter when sorting on the column.
-                    #key="name",
-                    model_class=model.Category,
-                    link=( lambda item: dict( operation="Browse Category", id=item.id, webapp="community" ) ),
-                    attach_popup=False
-                    #filterable="advanced" 
-                    ),
-        DescriptionColumn( "Description",
-                           #key="description",
-                           model_class=model.Category,
-                           attach_popup=False
-                           #filterable="advanced" 
-                           ),
-        ToolsColumn( "Tools",
-                     model_class=model.Tool,
-                     attach_popup=False,
-                     filterable="advanced" ),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search",
-                                                #cols_to_filter=[ columns[0], columns[1] ],
-                                                cols_to_filter=[],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-    standard_filters = [
-        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
-        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
-    ]
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
-    def apply_query_filter( self, trans, query, **kwd ):
-        ids = kwd.get( 'ids', False )
-        if ids:
-            if str( ids ).lower() == 'none':
-                # No tools for display
-                return query.filter( model.Tool.id == None )
-            ids = util.listify( ids )
-            query = query.filter( or_( *map( lambda id: self.model_class.id == id, ids ) ) )
-        return query
-
-class ToolListGrid( grids.Grid ):
-    class NameColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            return tool.name
-    class VersionColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            return tool.version
-    class DescriptionColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            return tool.description
-    class CategoryColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            if tool.categories:
-                rval = ''
-                for tca in tool.categories:
-                    rval += '<a href="browse_category?id=%s&webapp=community">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
-                return rval
-            return 'not set'
-    class StateColumn( grids.GridColumn ):
-        def get_value( self, trans, grid, tool ):
-            state = tool.state()
-            if state == tool.states.NEW:
-                return '<div class="count-box state-color-queued">%s</div>' % state
-            if state == tool.states.WAITING:
-                return '<div class="count-box state-color-running">%s</div>' % state
-            if state == tool.states.APPROVED:
-                return '<div class="count-box state-color-ok">%s</div>' % state
-            if state == tool.states.REJECTED or state == tool.states.ERROR:
-                return '<div class="count-box state-color-error">%s</div>' % state
-            return state
-        def get_accepted_filters( self ):
-            """ Returns a list of accepted filters for this column."""
-            accepted_filter_labels_and_vals = [ model.Tool.states.NEW,
-                                                model.Tool.states.WAITING,
-                                                model.Tool.states.APPROVED,
-                                                model.Tool.states.REJECTED,
-                                                model.Tool.states.DELETED,
-                                                "All" ]
-            accepted_filters = []
-            for val in accepted_filter_labels_and_vals:
-                label = val.lower()
-                args = { self.key: val }
-                accepted_filters.append( grids.GridColumnFilter( label, args ) )
-            return accepted_filters
-    class UserColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            return '<a href="browse_tools_by_user?operation=browse&id=%s&webapp=community">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
-    # Grid definition
-    title = "Tools"
-    model_class = model.Tool
-    template='/webapps/community/tool/grid.mako'
-    default_sort_key = "name"
-    columns = [
-        NameColumn( "Name",
-                     # TODO: we cannot currently sort by columns since the grid may be filtered by tool ids
-                     # and it is not clear if / how that will work.  We need to be able to send to the grid helper
-                     # the list of ids on which to filter when sorting on the column.
-                    #key="name",
-                    link=( lambda item: dict( operation="View Tool", id=item.id, cntrller="admin", webapp="community" ) ),
-                    model_class=model.Tool,
-                    attach_popup=True
-                    #filterable="advanced"
-                    ),
-        VersionColumn( "Version",
-                        model_class=model.Tool,
-                        attach_popup=False,
-                        filterable="advanced" ),
-        DescriptionColumn( "Description",
-                           #key="description",
-                           model_class=model.Tool,
-                           attach_popup=False
-                           #filterable="advanced"
-                           ),
-        CategoryColumn( "Category",
-                    model_class=model.Category,
-                    attach_popup=False,
-                    filterable="advanced" ),
-        StateColumn( "Status",
-                     model_class=model.Event,
-                     attach_popup=False ),
-        UserColumn( "Uploaded By",
-                    model_class=model.User,
-                    attach_popup=False,
-                    filterable="advanced" ),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted",
-                             model_class=model.Tool,
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" )
-    ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                #cols_to_filter=[ columns[0], columns[2], columns[5] ],
-                                                cols_to_filter=[],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
-    operations = [
-        grids.GridOperation( "Edit information",
-                             condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( controller="common", action="edit_tool", cntrller="admin", webapp="community" ) )
-    ]
-    standard_filters = [
-        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted='All' ) ),
-    ]
-    default_filter = dict( name="All", deleted="False" )
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
-    def apply_query_filter( self, trans, query, **kwd ):
-        ids = kwd.get( 'ids', False )
-        if ids:
-            if str( ids ).lower() == 'none':
-                # No tools for display
-                return query.filter( model.Tool.id == None )
-            ids = util.listify( ids )
-            query = query.filter( or_( *map( lambda id: self.model_class.id == id, ids ) ) )
-        return query
 
 class AdminController( BaseController, Admin ):
     
@@ -546,12 +388,15 @@ class AdminController( BaseController, Admin ):
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     manage_category_list_grid = ManageCategoryListGrid()
-    tools_by_category_list_grid = ToolsByCategoryListGrid()
-    tool_list_grid = ToolListGrid()
+    category_list_grid = AdminCategoryListGrid()
+    tool_list_grid = AdminToolListGrid()
 
     @web.expose
     @web.require_admin
     def browse_tools( self, trans, **kwd ):
+        # We add params to the keyword dict in this method in order to rename the param
+        # with an "f-" prefix, simulating filtering by clicking a search link.  We have
+        # to take this approach because the "-" character is illegal in HTTP requests.
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "edit tool":
@@ -564,48 +409,57 @@ class AdminController( BaseController, Admin ):
                                                                   action='view_tool',
                                                                   cntrller='admin',
                                                                   **kwd ) )
+            elif operation == "tools_by_user":
+                # Eliminate the current filters if any exist.
+                for k, v in kwd.items():
+                    if k.startswith( 'f-' ):
+                        del kwd[ k ]
+                if 'user_id' in kwd:
+                    user = get_user( trans, kwd[ 'user_id' ] )
+                    kwd[ 'f-email' ] = user.email
+                    del kwd[ 'user_id' ]
+                else:
+                    # The received id is the tool id, so we need to get the id of the user
+                    # that uploaded the tool.
+                    tool_id = kwd.get( 'id', None )
+                    tool = get_tool( trans, tool_id )
+                    kwd[ 'f-email' ] = tool.user.email
+            elif operation == "tools_by_state":
+                # Eliminate the current filters if any exist.
+                for k, v in kwd.items():
+                    if k.startswith( 'f-' ):
+                        del kwd[ k ]
+                if 'state' in kwd:
+                    # Called from the Admin menu
+                    kwd[ 'f-state' ] = kwd[ 'state' ]
+                else:
+                    # Called from the ToolStateColumn link
+                    tool_id = kwd.get( 'id', None )
+                    tool = get_tool( trans, tool_id )
+                    kwd[ 'f-state' ] = tool.state()
+            elif operation == "tools_by_category":
+                # Eliminate the current filters if any exist.
+                for k, v in kwd.items():
+                    if k.startswith( 'f-' ):
+                        del kwd[ k ]
+                category_id = kwd.get( 'id', None )
+                category = get_category( trans, category_id )
+                kwd[ 'f-category' ] = category.name
         # Render the list view
         return self.tool_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
-    def browse_tools_by_category( self, trans, **kwd ):
+    def browse_categories( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
-            if operation == "browse category":
-                return self.browse_category( trans, id=kwd['id'] )
+            if operation in [ "tools_by_category", "tools_by_state", "tools_by_user" ]:
+                # Eliminate the current filters if any exist.
+                for k, v in kwd.items():
+                    if k.startswith( 'f-' ):
+                        del kwd[ k ]
+                return self.browse_tools( trans, **kwd )
         # Render the list view
-        return self.tools_by_category_list_grid( trans, **kwd )
-    @web.expose
-    @web.require_admin
-    def browse_tools_by_user( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "browse":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='browse_tools_by_user',
-                                                                  cntrller='admin',
-                                                                  **kwd ) )
-            elif operation == "browse category":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='browse_category',
-                                                                  cntrller='admin',
-                                                                  **kwd ) )
-            elif operation == "view tool":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='view_tool',
-                                                                  cntrller='admin',
-                                                                  **kwd ) )
-            elif operation == "edit tool":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='edit_tool',
-                                                                  cntrller='admin',
-                                                                  **kwd ) )
-            elif operation == "download tool":
-                return trans.response.send_redirect( web.url_for( controller='tool',
-                                                                  action='download_tool',
-                                                                  **kwd ) )
-        # Render the list view
-        return self.tool_list_grid( trans, **kwd )
+        return self.category_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def manage_categories( self, trans, **kwd ):
@@ -613,44 +467,16 @@ class AdminController( BaseController, Admin ):
             operation = kwd['operation'].lower()
             if operation == "create":
                 return self.create_category( trans, **kwd )
-            if operation == "delete":
+            elif operation == "delete":
                 return self.mark_category_deleted( trans, **kwd )
-            if operation == "undelete":
+            elif operation == "undelete":
                 return self.undelete_category( trans, **kwd )
-            if operation == "purge":
+            elif operation == "purge":
                 return self.purge_category( trans, **kwd )
-            if operation == "edit":
+            elif operation == "edit":
                 return self.edit_category( trans, **kwd )
         # Render the list view
         return self.manage_category_list_grid( trans, **kwd )
-    @web.expose
-    @web.require_admin
-    def browse_tools_by_state( self, trans, state=None, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        if state is None:
-            id = params.get( 'id', None )
-            if not id:
-                return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                                  action='browse_tools',
-                                                                  message='Select a status',
-                                                                  status='error' ) )
-            event = get_event( trans, id )
-            state = event.state
-        ids = get_tools_by_state( trans, state )
-        if not ids:
-            ids = 'none'
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='browse_tools',
-                                                          ids=ids ) )
-    @web.expose
-    @web.require_admin
-    def browse_category( self, trans, **kwd ):
-        return trans.response.send_redirect( web.url_for( controller='common',
-                                                          action='browse_category',
-                                                          cntrller='admin',
-                                                          **kwd ) )
     @web.expose
     @web.require_admin
     def create_category( self, trans, **kwd ):

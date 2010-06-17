@@ -1244,6 +1244,14 @@ class Admin( object ):
                 return self.user_info( trans, **kwargs )
             if operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwargs )
+            if operation == "tools_by_user":
+                # This option is called via the ToolsColumn link in a grid subclass,
+                # so we need to add user_id to kwargs since id in the subclass is tool.id,
+                # and update the current sort filter, using the grid subclass's default
+                # sort filter instead of this class's.
+                kwargs[ 'user_id' ] = kwargs[ 'id' ]
+                kwargs[ 'sort' ] = 'name'
+                return self.browse_tools( trans, **kwargs )
         # Render the list view
         return self.user_list_grid( trans, **kwargs )
     @web.expose

@@ -32,12 +32,9 @@ class SpecifiedDateListGrid( grids.Grid ):
             return job.create_time
     class UserColumn( grids.GridColumn ):
         def get_value( self, trans, grid, job ):
-            if job.history:
-                if job.history.user:
-                    return job.history.user.email
-                return 'anonymous'
-            # TODO: handle libraries...
-            return 'no history'
+            if job.user:
+                return job.user.email
+            return 'anonymous'
     class EmailColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
@@ -166,12 +163,10 @@ class Jobs( BaseController ):
                 # that submitted the job.
                 job_id = kwd.get( 'id', None )
                 job = get_job( trans, job_id )
-                kwd[ 'email' ] = None # For anonymous users
-                if job.history:
-                    if job.history.user:
-                        email = job.history.user.email
-                        kwd[ 'email' ] = email
-                # TODO: handle libraries
+                if job.user:
+                    kwd[ 'email' ] = job.user.email
+                else:
+                    kwd[ 'email' ] = None # For anonymous users
                 return trans.response.send_redirect( web.url_for( controller='jobs',
                                                                   action='user_per_month',
                                                                   **kwd ) )
