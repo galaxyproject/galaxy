@@ -1258,7 +1258,7 @@ def cleanup_param_values( inputs, values ):
     def cleanup( prefix, inputs, values ):
         for key, input in inputs.items():
             if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
-                if input.is_dynamic:
+                if input.is_dynamic and not isinstance( values[key], UnvalidatedValue ):
                     values[key] = UnvalidatedValue( values[key] )
             if isinstance( input, DataToolParameter ):
                 tmp = values[key]
