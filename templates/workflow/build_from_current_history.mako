@@ -98,14 +98,15 @@ into a workflow will be shown in gray.</p>
 
     <%
     cls = "toolForm"
+    tool_name = "Unknown"
     if hasattr( job, 'is_fake' ) and job.is_fake:
-        tool_name = "Unknown"
         cls += " toolFormDisabled"
         disabled = True
     else:    
-        tool = app.toolbox.tools_by_id[ job.tool_id ]
-        tool_name = tool.name
-        if not( tool.is_workflow_compatible ):
+        tool = app.toolbox.tools_by_id.get( job.tool_id, None )
+        if tool:
+            tool_name = tool.name
+        if tool is None or not( tool.is_workflow_compatible ):
             cls += " toolFormDisabled"
             disabled = True
         else:
