@@ -15,7 +15,7 @@
                 -G $reference_annotation.reference_annotation_file
             #end if
             #if $singlePaired.sPaired == "paired":
-                -r $singlePaired.mean_inner_distance
+                -m $singlePaired.mean_inner_distance
                 -s $singlePaired.inner_distance_std_dev
             #end if
     </command>
