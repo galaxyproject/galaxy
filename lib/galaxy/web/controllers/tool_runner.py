@@ -110,6 +110,7 @@ class ToolRunner( BaseController ):
             # Load the tool
             toolbox = self.get_toolbox()
             tool = toolbox.tools_by_id.get( tool_id, None )
+            assert tool is not None, 'Requested tool has not been loaded.'
         except:
             #this is expected, so not an exception
             error( "This dataset was created by an obsolete tool (%s). Can't re-run." % tool_id )
