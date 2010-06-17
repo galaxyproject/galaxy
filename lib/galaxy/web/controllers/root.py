@@ -32,6 +32,10 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         else:
             return trans.fill_template('/root/tool_menu.mako', toolbox=self.get_toolbox() )
 
+    @web.json
+    def tool_search( self, trans, query ):
+        return trans.app.toolbox_search.search( query )
+
     @web.expose
     def tool_help( self, trans, id ):
         """Return help page for tool identified by 'id' if available"""

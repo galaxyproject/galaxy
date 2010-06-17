@@ -51,21 +51,23 @@
         <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
         <link href="${h.url_for('/static/style/tool_menu.css')}" rel="stylesheet" type="text/css" />
 
-        <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
+        ##<script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
+        ${h.js( "jquery", "galaxy.base" )}
 
         <script type="text/javascript">
-            var q = jQuery.noConflict();
-            q(document).ready(function() { 
-                q( "div.toolSectionBody" ).hide();
-                q( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" )
+            $(document).ready(function() { 
+                $( "div.toolSectionBody" ).hide();
+                $( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" )
                 var last_expanded = null;
-                q( "div.toolSectionTitle" ).each( function() { 
-                   var body = q(this).next( "div.toolSectionBody" );
-                   q(this).click( function() {
+                $( "div.toolSectionTitle" ).each( function() { 
+                   var body = $(this).next( "div.toolSectionBody" );
+                   $(this).click( function() {
                        if ( body.is( ":hidden" ) ) {
-                           if ( last_expanded ) last_expanded.slideUp( "fast" );
-                           last_expanded = body;
-                           body.slideDown( "fast" );
+                            if ( last_expanded ) {
+                                last_expanded.slideUp( "fast" );
+                            }
+                            last_expanded = body;
+                            body.slideDown( "fast" );
                        }
                        else {
                            body.slideUp( "fast" );
@@ -74,10 +76,76 @@
                        return false;
                    });
                 });
-                q( "a[minsizehint]" ).click( function() {
+                
+                $( "a[minsizehint]" ).click( function() {
                     if ( parent.handle_minwidth_hint ) {
-                        parent.handle_minwidth_hint( q(this).attr( "minsizehint" ) );
+                        parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
                     }
+                });
+                
+                // Init searching.
+                $("#tool-search-query").click( function (){
+                    $(this).focus();
+                    $(this).select();
+                })
+                .keyup( function () {
+                    // Remove italics.
+                    $(this).css("font-style", "normal");
+                    
+                    // Don't update if same value as last time
+                    if ( this.value.length < 3 ) {
+                        reset_tool_search(false);
+                    } else if ( this.value != this.lastValue ) {
+                        // input.addClass(config.loadingClass);
+                        // Add '*' to facilitate partial matching.
+                        var q = this.value + '*';
+                        // Stop previous ajax-request
+                        if (this.timer) {
+                            clearTimeout(this.timer);
+                        }
+                        // Start a new ajax-request in X ms
+                        $("#search-spinner").show();
+                        this.timer = setTimeout(function () {
+                            $.get( "tool_search", { query: q }, function (data) {
+                                // input.removeClass(config.loadingClass);
+                                // Show live-search if results and search-term aren't empty
+                                $("#search-no-results").hide();
+                                $(".toolSectionWrapper").hide();
+                                $(".toolTitle").hide();
+                                if ( data.length != 0 ) {
+                                    // Map tool ids to element ids and join them.
+                                    var s = $.map( data, function( n, i ) { return "#link-" + n; } ).join( ", " );
+                                    
+                                    // First pass to show matching tools and their parents.
+                                    $(s).parent().show().parent().parent().show().parent().show();
+                                    
+                                    // Hide labels that have no visible children.
+                                    $(".toolPanelLabel").each( function() {
+                                       var this_label = $(this);                                   
+                                       var next = this_label.next();
+                                       var no_visible_tools = true;
+                                       // Look through tools following label and, if none are visible, hide label.
+                                       while (next.length != 0 && next.hasClass("toolTitle"))
+                                       {
+                                           if (next.is(":visible"))
+                                           {
+                                               no_visible_tools = false;
+                                               break;
+                                           }
+                                           else
+                                               next = next.next();
+                                        }
+                                        if (no_visible_tools)
+                                            this_label.hide();
+                                    });
+                                } else {
+                                    $("#search-no-results").show();
+                                }
+                                $("#search-spinner").hide();
+                            }, "json" );
+                        }, 200 );
+                    }
+                    this.lastValue = this.value;
                 });
             });
         </script>
@@ -85,9 +153,16 @@
 
     <body class="toolMenuPage">
         <div class="toolMenu">
-            <div class="toolSectionList">
+            
+                ## Tool search.
+                <div id="tool-search" style="padding-bottom: 5px; position: relative; display: none; width: 100%">
+                    <input type="text" name="query" value="search tools" id="tool-search-query" style="width: 100%; font-style:italic; font-size: inherit"/>
+                    <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>
+                </div>
                 
+                ## Tools.
                 %for key, val in toolbox.tool_panel.items():
+                    <div class="toolSectionWrapper">
                     %if key.startswith( 'tool' ):
                         ${render_tool( val, False )}
                     %elif key.startswith( 'workflow' ):
@@ -114,7 +189,13 @@
                         ${render_label( val )}
                     %endif
                     <div class="toolSectionPad"></div>
+                    </div>
                 %endfor
+                
+                ## Feedback when search returns no results.
+                <div id="search-no-results" style="display: none; padding-top: 5px">
+                    <em><strong>Your search did not match any tools.</strong></em>
+                </div>
                 
                 ## Link to workflow management. The location of this may change, but eventually
                 ## at least some workflows will appear here (the user should be able to

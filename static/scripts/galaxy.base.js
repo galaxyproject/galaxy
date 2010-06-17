@@ -469,6 +469,32 @@ function commatize( number ) {
     return number;
 }
 
+// Reset tool search to start state.
+function reset_tool_search( initValue )
+{
+    // Function may be called in top frame or in tool_menu_frame; 
+    // in either case, get the tool menu frame.
+    var tool_menu_frame = $("#galaxy_tools").contents();
+    if (tool_menu_frame.length == 0)
+        tool_menu_frame = $(document);
+    
+    // Reset visibility of tools and labels.
+    tool_menu_frame.find(".toolSectionBody").hide();
+    tool_menu_frame.find(".toolTitle").show();
+    tool_menu_frame.find(".toolPanelLabel").show();
+    tool_menu_frame.find(".toolSectionWrapper").show();
+    tool_menu_frame.find("#search-no-results").hide();
+    
+    // Reset search input.
+    tool_menu_frame.find("#search-spinner").hide();
+    if (initValue)
+    {
+        var search_input = tool_menu_frame.find("#tool-search-query");
+        search_input.val("search tools");
+        search_input.css("font-style", "italic");
+    }
+}
+
 $(document).ready( function() {
     // Links with confirmation
     $( "a[confirm]" ).click( function() {

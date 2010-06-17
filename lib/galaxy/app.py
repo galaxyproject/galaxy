@@ -1,6 +1,7 @@
 import sys, os, atexit
 
 from galaxy import config, jobs, util, tools, web, cloud
+import galaxy.tools.search
 from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
@@ -37,6 +38,8 @@ class UniverseApplication( object ):
         self.tag_handler = GalaxyTagHandler()
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
+        # Search support for tools
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
         # Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         #load external metadata tool

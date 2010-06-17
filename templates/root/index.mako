@@ -4,6 +4,7 @@
     ${parent.late_javascripts()}
     <script type="text/javascript">
     $(function(){
+        // Init history options.
         $("#history-options-button").css( "position", "relative" );
         make_popupmenu( $("#history-options-button"), {
             "History Lists": null,
@@ -50,6 +51,50 @@
                 galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
             }
         });
+        
+        // Init tool options.
+        make_popupmenu( $("#tools-options-button"), {
+            "Search Tools": function() {
+                // Show/hide menu and update user preference for menu visibility.
+                var tool_menu_frame = $("#galaxy_tools").contents();
+                var menu = tool_menu_frame.find('#tool-search');
+                if (menu.is(":visible"))
+                {
+                    // Hide menu.
+                    pref_value = "False";
+                    menu_option_text = "Search Tools";
+                    menu.toggle();
+                    
+                    // Reset search.
+                    reset_tool_search(true);
+                }
+                else
+                {
+                    // Show menu.
+                    pref_value = "True";
+                    menu_option_text = "Hide Search";
+                    menu.toggle();
+                }
+                
+                // Update menu option.
+                $("#tools-options-button-menu").find("li").first().text(menu_option_text);
+                
+                // TODO: Set user preference.
+                /*
+                TODO: uncomment this when this method is working.
+                $.ajax({
+                    url: "${h.url_for( controller='/user', action='set_user_pref_async' )}",
+                    data: { "pref_name" : "show_tool_search",
+                            "pref_value" : pref_value
+                          },
+                    error: function() { 
+                        alert( "Failed to set user preference." );
+                    },
+                });
+                */
+            }
+        });
+        
     });
     </script>
 </%def>
@@ -76,10 +121,15 @@
 
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>${n_('Tools')}</div>
+        <div class='unified-panel-header-inner'>
+            <div style="float: right">
+                <a class='panel-header-button popup' id="tools-options-button" href="#">${_('Options')}</a>
+            </div>
+            ${n_('Tools')}
+        </div>
     </div>
     <div class="unified-panel-body" style="overflow: hidden;">
-        <iframe name="galaxy_tools" src="${h.url_for( controller='root', action='tool_menu' )}" frameborder="0" style="position: absolute; margin: 0; border: 0 none; height: 100%; width: 100%;"> </iframe>
+        <iframe name="galaxy_tools" id="galaxy_tools" src="${h.url_for( controller='root', action='tool_menu' )}" frameborder="0" style="position: absolute; margin: 0; border: 0 none; height: 100%; width: 100%;"> </iframe>
     </div>
 </%def>
 

@@ -31,7 +31,7 @@ def css( *args ):
     Take a list of stylesheet names (no extension) and return appropriate string
     of link tags.
     
-    TODO: This has a hardcoded "?v=2" to defeat caching. This should be done
+    TODO: This has a hardcoded "?v=X" to defeat caching. This should be done
           in a better way.
     """
     return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css?v=3" ) for name in args ] )
@@ -41,10 +41,10 @@ def js( *args ):
     Take a list of javascript names (no extension) and return appropriate
     string of script tags.
 
-    TODO: This has a hardcoded "?v=2" to defeat caching. This should be done
+    TODO: This has a hardcoded "?v=X" to defeat caching. This should be done
           in a better way.
     """
-    return "\n".join( [ javascript_include_tag( "/static/scripts/" + name + ".js?v=3" ) for name in args ] )
+    return "\n".join( [ javascript_include_tag( "/static/scripts/" + name + ".js?v=4" ) for name in args ] )
     
 # Hashes
 
