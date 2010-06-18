@@ -117,7 +117,7 @@ class InputDataModule( WorkflowModule ):
     def get_data_inputs( self ):
         return []
     def get_data_outputs( self ):
-        return [ dict( name='output', extension='input' ) ]
+        return [ dict( name='output', extensions=['input'] ) ]
     def get_config_form( self ):
         form = web.FormBuilder( title=self.name ) \
             .add_text( "name", "Name", value=self.state['name'] )
@@ -241,8 +241,14 @@ class ToolModule( WorkflowModule ):
         return data_inputs
     def get_data_outputs( self ):
         data_outputs = []
-        for name, ( format, metadata_source, parent ) in self.tool.outputs.iteritems():
-            data_outputs.append( dict( name=name, extension=format ) )
+        for name, tool_output in self.tool.outputs.iteritems():
+            formats = [ tool_output.format ]
+            for change_elem in tool_output.change_format:
+                for when_elem in change_elem.findall( 'when' ):
+                    format = when_elem.get( 'format', None )
+                    if format and format not in formats:
+                        formats.append( format )
+            data_outputs.append( dict( name=name, extensions=formats ) )
         return data_outputs
     
     def get_post_job_actions( self ):

@@ -27,9 +27,9 @@ $.extend( Terminal.prototype, {
     }
 });
 
-function OutputTerminal( element, datatype ) {
+function OutputTerminal( element, datatypes ) {
     Terminal.call( this, element );
-    this.datatype = datatype;
+    this.datatypes = datatypes;
 }
 
 OutputTerminal.prototype = new Terminal();
@@ -45,10 +45,11 @@ $.extend( InputTerminal.prototype, {
     can_accept: function ( other ) {
         if ( this.connectors.length < 1 ) {
             for ( var t in this.datatypes ) {
-                // FIXME: No idea what to do about this case
-                if ( other.datatype == "input" ) { return true; }
-                if ( issubtype( other.datatype, this.datatypes[t] ) ) {
-                    return true;
+                // FIXME: No idea what to do about case when datatype is 'input'
+                for ( var other_datatype_i in other.datatypes ) {
+                    if ( other.datatypes[other_datatype_i] == "input" || issubtype( other.datatypes[other_datatype_i], this.datatypes[t] ) ) {
+                        return true;
+                    }
                 }
             }
         }
@@ -294,10 +295,10 @@ $.extend( Node.prototype, {
         }
         $.each( data.data_outputs, function( i, output ) {
             var t = $( "<div class='terminal output-terminal'></div>" );
-            node.enable_output_terminal( t, output.name, output.extension );
+            node.enable_output_terminal( t, output.name, output.extensions );
             var label = output.name;
-            if ( output.extension != 'input' ) {
-                label = label + " (" + output.extension + ")";
+            if ( output.extensions.indexOf( 'input' ) < 0 ) {
+                label = label + " (" + output.extensions + ")";
             }
             b.append( $("<div class='form-row dataRow'>" + label + "</div>" ).append( t ) );
         });
