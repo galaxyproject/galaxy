@@ -1,10 +1,15 @@
 from galaxy.eggs import require
-require( "Whoosh" )
+# Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
+try:
+    require( "Whoosh" )
 
-from whoosh.filedb.filestore import RamStorage
-from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
-from whoosh.index import Index
-from whoosh.qparser import QueryParser
+    from whoosh.filedb.filestore import RamStorage
+    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
+    from whoosh.index import Index
+    from whoosh.qparser import QueryParser
+    tool_search_enabled = True
+except ImportError, e:
+    tool_search_enabled = False
 
 schema = Schema( id = STORED, title = TEXT, help = TEXT )
 
@@ -19,7 +24,9 @@ class ToolBoxSearch( object ):
         Create a searcher for `toolbox`. 
         """
         self.toolbox = toolbox
-        self.build_index()
+        self.enabled = tool_search_enabled
+        if tool_search_enabled:
+            self.build_index()
         
     def build_index( self ):
         self.storage = RamStorage()
@@ -37,6 +44,8 @@ class ToolBoxSearch( object ):
         writer.commit()
         
     def search( self, query, return_attribute='id' ):
+        if not tool_search_enabled:
+            return []
         searcher = self.index.searcher()
         parser = QueryParser( "help", schema = schema )
         results = searcher.search( parser.parse( query ) )

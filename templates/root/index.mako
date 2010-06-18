@@ -53,48 +53,49 @@
         });
         
         // Init tool options.
-        make_popupmenu( $("#tools-options-button"), {
-            "Search Tools": function() {
-                // Show/hide menu and update user preference for menu visibility.
-                var tool_menu_frame = $("#galaxy_tools").contents();
-                var menu = tool_menu_frame.find('#tool-search');
-                if (menu.is(":visible"))
-                {
-                    // Hide menu.
-                    pref_value = "False";
-                    menu_option_text = "Search Tools";
-                    menu.toggle();
-                    
-                    // Reset search.
-                    reset_tool_search(true);
-                }
-                else
-                {
-                    // Show menu.
-                    pref_value = "True";
-                    menu_option_text = "Hide Search";
-                    menu.toggle();
-                }
+        %if trans.app.toolbox_search.enabled:
+            make_popupmenu( $("#tools-options-button"), {
+                    "Search Tools": function() {
+                    // Show/hide menu and update user preference for menu visibility.
+                    var tool_menu_frame = $("#galaxy_tools").contents();
+                    var menu = tool_menu_frame.find('#tool-search');
+                    if (menu.is(":visible"))
+                    {
+                        // Hide menu.
+                        pref_value = "False";
+                        menu_option_text = "Search Tools";
+                        menu.toggle();
                 
-                // Update menu option.
-                $("#tools-options-button-menu").find("li").first().text(menu_option_text);
-                
-                // TODO: Set user preference.
-                /*
-                TODO: uncomment this when this method is working.
-                $.ajax({
-                    url: "${h.url_for( controller='/user', action='set_user_pref_async' )}",
-                    data: { "pref_name" : "show_tool_search",
-                            "pref_value" : pref_value
-                          },
-                    error: function() { 
-                        alert( "Failed to set user preference." );
-                    },
-                });
-                */
-            }
-        });
-        
+                        // Reset search.
+                        reset_tool_search(true);
+                    }
+                    else
+                    {
+                        // Show menu.
+                        pref_value = "True";
+                        menu_option_text = "Hide Search";
+                        menu.toggle();
+                    }
+            
+                    // Update menu option.
+                    $("#tools-options-button-menu").find("li").first().text(menu_option_text);
+            
+                    // TODO: Set user preference.
+                    /*
+                    TODO: uncomment this when this method is working.
+                    $.ajax({
+                        url: "${h.url_for( controller='/user', action='set_user_pref_async' )}",
+                        data: { "pref_name" : "show_tool_search",
+                                "pref_value" : pref_value
+                              },
+                        error: function() { 
+                            alert( "Failed to set user preference." );
+                        },
+                    });
+                    */
+                }
+            });
+        %endif        
     });
     </script>
 </%def>
