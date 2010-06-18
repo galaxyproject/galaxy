@@ -439,22 +439,27 @@ class MafCustomTrack( data.Text ):
         chrom = None
         forward_strand_start = float( 'inf' )
         forward_strand_end = 0
-        maf_file = open( dataset.file_name )
-        maf_file.readline() #move past track line
-        for block in bx.align.maf.Reader( maf_file ):
-            ref_comp = block.get_component_by_src_start( dataset.metadata.dbkey )
-            if ref_comp:
-                ref_chrom = bx.align.maf.src_split( ref_comp.src )[-1]
-                if chrom is None:
-                    chrom = ref_chrom
-                if chrom == ref_chrom:
-                    forward_strand_start = min( forward_strand_start, ref_comp.forward_strand_start )
-                    forward_strand_end = max( forward_strand_end, ref_comp.forward_strand_end )
-        
-        if forward_strand_end > forward_strand_start:
-            dataset.metadata.vp_chromosome = chrom
-            dataset.metadata.vp_start = forward_strand_start
-            dataset.metadata.vp_end = forward_strand_end
+        try:
+            maf_file = open( dataset.file_name )
+            maf_file.readline() #move past track line
+            for i, block in enumerate( bx.align.maf.Reader( maf_file ) ):
+                ref_comp = block.get_component_by_src_start( dataset.metadata.dbkey )
+                if ref_comp:
+                    ref_chrom = bx.align.maf.src_split( ref_comp.src )[-1]
+                    if chrom is None:
+                        chrom = ref_chrom
+                    if chrom == ref_chrom:
+                        forward_strand_start = min( forward_strand_start, ref_comp.forward_strand_start )
+                        forward_strand_end = max( forward_strand_end, ref_comp.forward_strand_end )
+                if i > max_block_check:
+                    break
+            
+            if forward_strand_end > forward_strand_start:
+                dataset.metadata.vp_chromosome = chrom
+                dataset.metadata.vp_start = forward_strand_start
+                dataset.metadata.vp_end = forward_strand_end
+        except:
+            pass
 
 class Axt( data.Text ):
     """Class describing an axt alignment"""
