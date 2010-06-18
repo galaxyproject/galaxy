@@ -47,7 +47,7 @@
             <tr>
                 %if data_state != 'ok':
                     <td style="width: 20px;">
-                        <div style='padding-right: 5px;'><img src="${h.url_for( '/static/style/data_%s.png' % data_state )}" border="0" align="middle"></div>
+                        <div style='padding-right: 5px;'><img src="${h.url_for( str( '/static/style/data_%s.png' % data_state ) )}" border="0" align="middle"></div>
                     </td>
                 %endif
                 <td>
