@@ -313,6 +313,8 @@ class JobWrapper( object ):
             os.mkdir( self.working_directory )
         # Restore parameters from the database
         job = self.sa_session.query( model.Job ).get( self.job_id )
+        if job.user is None and job.galaxy_session is None:
+            raise Exception( 'Job %s has no user and no session.' % job.id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
         # Do any validation that could not be done at job creation
@@ -710,10 +712,10 @@ class JobWrapper( object ):
     @property
     def user( self ):
         job = self.sa_session.query( model.Job ).get( self.job_id )
-        if not job.history:
-            return 'non_history_job'
-        elif job.history.user is None:
+        if job.user is None and job.galaxy_session is not None:
             return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
+        elif job.user is None:
+            return 'anonymous@unknown'
         else:
             return job.history.user.email
 
