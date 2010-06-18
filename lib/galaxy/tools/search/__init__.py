@@ -8,10 +8,10 @@ try:
     from whoosh.index import Index
     from whoosh.qparser import QueryParser
     tool_search_enabled = True
+    schema = Schema( id = STORED, title = TEXT, help = TEXT )
 except ImportError, e:
     tool_search_enabled = False
-
-schema = Schema( id = STORED, title = TEXT, help = TEXT )
+    schema = None
 
 class ToolBoxSearch( object ):
     """
