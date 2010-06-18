@@ -12,6 +12,13 @@
       parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history' )}";
       inside_galaxy_frameset = true;
   }
+
+  %if trans.user:  
+      if (inside_galaxy_frameset)
+      {
+            parent.frames.galaxy_tools.update_recently_used();
+      }
+  %endif
   
   if ( parent.handle_minwidth_hint ) {
       parent.handle_minwidth_hint( -1 );
@@ -29,7 +36,7 @@
 
   function refresh() {
     top.location.href = '${h.url_for( "/" )}';
-  }
+  }  
 
 </script>
 

@@ -149,7 +149,56 @@
                     }
                     this.lastValue = this.value;
                 });
-            });
+            });            
+
+            // Update recently used tools menu. Function inserts a new item and removes the last item.
+            function update_recently_used()
+            {
+                $.ajax({
+                    url: "${h.url_for( controller='/user', action='get_most_recently_used_tool_async' )}",
+                    dataType: 'json',
+                    error: function() { 
+                        console.log( "Failed to update recently used list." );
+                    },
+                    success: function(new_tool_info) {
+                        var recently_used_elts = $("#recently_used").find(".toolTitle");
+                        var first_elt = $(recently_used_elts.first());
+                        var found_in_list = false;
+            
+                        // Look for new tool in current list. If found, rearrange list to move tool to top.
+                        recently_used_elts.each( function(index) {
+                            var anchor = $(this).find("a");
+                            var tool_id = anchor.attr("id").split("-")[1];
+                            if (tool_id == new_tool_info.id)
+                            {
+                                found_in_list = true;
+                    
+                                // If tool is first, do nothing.
+                                if (index == 0)
+                                    return;
+                                else 
+                                {
+                                    // Tool not first; reorder.
+                                    $(this).remove();
+                                    first_elt.before($(this));
+                                }
+                            }
+                        });
+            
+                        // If tool not in list, create new element, remove last element, and put new element first in list.
+                        if (!found_in_list)
+                        {
+                            new_tool_elt = $("<div class='toolTitle'> \
+                                                <a id='link-" + new_tool_info.id + "' href='" + new_tool_info.link + "' target='" + 
+                                                new_tool_info.target + "' minsizehint='" + new_tool_info.minsizehint + "'>" +
+                                                new_tool_info.name + "</a> " + new_tool_info.description + " \
+                                              </div>");
+                            recently_used_elts.last().remove();
+                            recently_used_elts.first().before(new_tool_elt);                            
+                        }
+                    }
+                });                
+            }
         </script>
     </head>
 
@@ -161,6 +210,29 @@
                     <input type="text" name="query" value="search tools" id="tool-search-query" style="width: 100%; font-style:italic; font-size: inherit"/>
                     <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>
                 </div>
+                
+                ## Recently used tools.
+                %if trans.user:
+                    <%
+                        if 'show_recently_used_menu' in trans.user.preferences and trans.user.preferences['show_recently_used_menu'] == 'True':
+                            display = "block"
+                        else:
+                            display = "none"
+                    %>
+                    <div class="toolSectionWrapper" id="recently_used_wrapper" style="display: ${display}; padding-bottom: 5px">
+                        <div class="toolSectionTitle">
+                            <span>Recently Used</span>
+                        </div>
+                        <div id="recently_used" class="toolSectionBody">
+                            <div class="toolSectionBg">
+                                %for tool in recent_tools:
+                                    ${render_tool( tool, True )}
+                                %endfor
+                            </div>
+                        </div>
+                        <div class="toolSectionPad"></div>
+                    </div>
+                %endif
                 
                 ## Tools.
                 %for key, val in toolbox.tool_panel.items():

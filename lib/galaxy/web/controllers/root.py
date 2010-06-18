@@ -6,6 +6,7 @@ from cgi import escape, FieldStorage
 from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.odict import odict
 from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
@@ -30,7 +31,23 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         if trans.app.config.require_login and not trans.user:
             return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy tools.' )
         else:
-            return trans.fill_template('/root/tool_menu.mako', toolbox=self.get_toolbox() )
+            ## Get most recently used tools.
+            toolbox = self.get_toolbox()
+            recent_tool_ids = odict()
+            if trans.user:
+                for row in trans.sa_session.query( self.app.model.Job.tool_id ).join( self.app.model.History ). \
+                                                            filter( self.app.model.GalaxySession.user==trans.user ). \
+                                                            order_by( self.app.model.Job.create_time.desc() ):
+                    tool_id = row[0]
+                    recent_tool_ids[tool_id] = tool_id
+                    ## TODO: make number of recently used tools a user preference.
+                    if len ( recent_tool_ids ) == 5:
+                        break
+            
+            # Create list of recently used tools.
+            recent_tools = [ toolbox.tools_by_id[ tool_id ] for tool_id in recent_tool_ids.keys() ]
+            
+            return trans.fill_template('/root/tool_menu.mako', toolbox=toolbox, recent_tools=recent_tools )
 
     @web.json
     def tool_search( self, trans, query ):

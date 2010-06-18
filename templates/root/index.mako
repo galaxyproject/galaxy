@@ -53,12 +53,12 @@
         });
         
         // Init tool options.
-        %if trans.app.toolbox_search.enabled:
-            make_popupmenu( $("#tools-options-button"), {
-                    "Search Tools": function() {
+        make_popupmenu( $("#tools-options-button"), {
+            ## Search tools menu item.
+            %if trans.app.toolbox_search.enabled:
+                "Search Tools": function() {
                     // Show/hide menu and update user preference for menu visibility.
-                    var tool_menu_frame = $("#galaxy_tools").contents();
-                    var menu = tool_menu_frame.find('#tool-search');
+                    var menu = $("#galaxy_tools").contents().find('#tool-search');
                     if (menu.is(":visible"))
                     {
                         // Hide menu.
@@ -78,24 +78,48 @@
                     }
             
                     // Update menu option.
-                    $("#tools-options-button-menu").find("li").first().text(menu_option_text);
+                    $("#tools-options-button-menu").find("li").eq(0).text(menu_option_text);
             
                     // TODO: Set user preference.
-                    /*
-                    TODO: uncomment this when this method is working.
-                    $.ajax({
-                        url: "${h.url_for( controller='/user', action='set_user_pref_async' )}",
-                        data: { "pref_name" : "show_tool_search",
-                                "pref_value" : pref_value
-                              },
-                        error: function() { 
-                            alert( "Failed to set user preference." );
-                        },
-                    });
-                    */
+                },
+            %endif
+            ## Recently used tools menu.
+            %if trans.user:
+                <%
+                    if 'show_recently_used_menu' in trans.user.preferences and trans.user.preferences['show_recently_used_menu'] == 'True':
+                        action = "Hide"
+                    else:
+                        action = "Show"
+                %>
+                "${action} Recently Used": function() {
+                    // Show/hide menu.
+                    var ru_menu = $('#galaxy_tools').contents().find('#recently_used_wrapper');
+                    var ru_menu_body = ru_menu.find(".toolSectionBody");
+                    var pref_value = null;
+                    var menu_option_text = null;
+                    if (ru_menu.is(":visible"))
+                    {
+                        // Hide menu.
+                        ru_menu_body.slideUp();
+                        ru_menu.slideUp();
+                        pref_value = "False";
+                        menu_option_text = "Show Recently Used";
+                    }
+                    else
+                    {
+                        // Show menu.
+                        ru_menu.slideDown();
+                        pref_value = "True";
+                        menu_option_text = "Hide Recently Used";
+                    }
+                 
+                    // Update menu option.
+                    $("#tools-options-button-menu").find("li").eq(1).text(menu_option_text);
+
+                    // TODO: Set user preference.
                 }
-            });
-        %endif        
+            %endif
+        });
     });
     </script>
 </%def>

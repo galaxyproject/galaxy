@@ -8,6 +8,7 @@ import logging, os, string, re
 from random import choice
 from galaxy.web.form_builder import * 
 from galaxy.util.json import from_json_string, to_json_string
+from galaxy.web.framework.helpers import iff
 
 log = logging.getLogger( __name__ )
 
@@ -650,6 +651,31 @@ class User( BaseController ):
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )
+                    
+    @web.expose
+    @web.require_login( "to get most recently used tool" )
+    @web.json_pretty
+    def get_most_recently_used_tool_async( self, trans ):
+        """ Returns information about the most recently used tool. """
+        
+        # Get most recently used tool.
+        query = trans.sa_session.query( self.app.model.Job.tool_id ).join( self.app.model.History ). \
+                                        filter( self.app.model.History.user==trans.user ). \
+                                        order_by( self.app.model.Job.create_time.desc() ).limit(1)
+        tool_id = query[0][0] # Get first element in first row of query.
+        tool = self.get_toolbox().tools_by_id[ tool_id ]
+        
+        # Return tool info.
+        tool_info = { 
+            "id" : tool.id, 
+            "link" : url_for( controller='tool_runner', tool_id=tool.id ),
+            "target" : tool.target,
+            "name" : tool.name, ## TODO: translate this using _()
+            "minsizehint" : tool.uihints.get( 'minwidth', -1 ),
+            "description" : tool.description
+        }
+        return tool_info
+                    
     @web.expose
     def manage_addresses(self, trans, **kwd):
         if trans.user:
