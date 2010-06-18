@@ -110,8 +110,10 @@
                                 // input.removeClass(config.loadingClass);
                                 // Show live-search if results and search-term aren't empty
                                 $("#search-no-results").hide();
+                                // Hide all tool sections.
                                 $(".toolSectionWrapper").hide();
-                                $(".toolTitle").hide();
+                                // This hides all tools but not workflows link (which is in a .toolTitle div).
+                                $(".toolSectionWrapper").find(".toolTitle").hide();
                                 if ( data.length != 0 ) {
                                     // Map tool ids to element ids and join them.
                                     var s = $.map( data, function( n, i ) { return "#link-" + n; } ).join( ", " );
