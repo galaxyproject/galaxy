@@ -35,8 +35,8 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             toolbox = self.get_toolbox()
             recent_tool_ids = odict()
             if trans.user:
-                for row in trans.sa_session.query( self.app.model.Job.tool_id ).join( self.app.model.History ). \
-                                                            filter( self.app.model.GalaxySession.user==trans.user ). \
+                for row in trans.sa_session.query( self.app.model.Job.tool_id ). \
+                                                            filter( self.app.model.Job.user==trans.user ). \
                                                             order_by( self.app.model.Job.create_time.desc() ):
                     tool_id = row[0]
                     recent_tool_ids[tool_id] = tool_id
