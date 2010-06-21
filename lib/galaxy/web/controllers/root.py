@@ -51,6 +51,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
 
     @web.json
     def tool_search( self, trans, query ):
+        trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query } )
         return trans.app.toolbox_search.search( query )
 
     @web.expose

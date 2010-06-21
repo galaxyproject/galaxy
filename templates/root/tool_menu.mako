@@ -52,10 +52,15 @@
         <link href="${h.url_for('/static/style/tool_menu.css')}" rel="stylesheet" type="text/css" />
 
         ##<script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-        ${h.js( "jquery", "galaxy.base" )}
+        ${h.js( "jquery", "galaxy.base", "json2" )}
 
         <script type="text/javascript">
+            // Set up GalaxyAsync object.
+            var galaxy_async = new GalaxyAsync(${str(trans.app.config.log_actions).lower()});
+            galaxy_async.set_func_url(galaxy_async.log_user_action, "${h.url_for( controller='user', action='log_user_action_async' )}");
+        
             $(document).ready(function() { 
+                // Init showing/hiding of tool sections.
                 $( "div.toolSectionBody" ).hide();
                 $( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" )
                 var last_expanded = null;
@@ -75,6 +80,18 @@
                        }
                        return false;
                    });
+                });
+                
+                // Log clicks on tools.
+                $("div.toolTitle > a").click( function() 
+                {
+                    var tool_title = $(this).attr('id').split("-")[1];
+                    var section_title = $(this).parents("div.toolSectionWrapper").find("div.toolSectionTitle").text().trim();
+                    var search_active = $(this).parents("div.toolTitle").hasClass("search_match");
+                    
+                    // Log action.
+                    galaxy_async.log_user_action("tool_menu_click." + tool_title, section_title, 
+                                                    JSON.stringify({"search_active" : search_active}));
                 });
                 
                 $( "a[minsizehint]" ).click( function() {
@@ -119,7 +136,22 @@
                                     var s = $.map( data, function( n, i ) { return "#link-" + n; } ).join( ", " );
                                     
                                     // First pass to show matching tools and their parents.
-                                    $(s).parent().show().parent().parent().show().parent().show();
+                                    $(s).each( function() {
+                                        // Add class to denote match.
+                                        $(this).parent().addClass("search_match");
+                                        if ($(this).parents("#recently_used_wrapper").length == 0)
+                                            // Default behavior.
+                                            $(this).parent().show().parent().parent().show().parent().show();
+                                        else if ($(this).parents(".user_pref_visible").length != 0)
+                                            // RU menu is visible, so filter it as normal.
+                                            $(this).parent().show().parent().parent().show().parent().show();
+                                        else 
+                                        {
+                                            // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
+                                            // aleady in place.
+                                            $(this).parent().show();
+                                        }
+                                    });
                                     
                                     // Hide labels that have no visible children.
                                     $(".toolPanelLabel").each( function() {
@@ -148,7 +180,7 @@
                         }, 200 );
                     }
                     this.lastValue = this.value;
-                });
+                });                
             });            
 
             // Update recently used tools menu. Function inserts a new item and removes the last item.
@@ -158,7 +190,7 @@
                     url: "${h.url_for( controller='/user', action='get_most_recently_used_tool_async' )}",
                     dataType: 'json',
                     error: function() { 
-                        console.log( "Failed to update recently used list." );
+                        // console.log( "Failed to update recently used list." );
                     },
                     success: function(new_tool_info) {
                         var recently_used_elts = $("#recently_used").find(".toolTitle");
@@ -206,7 +238,17 @@
         <div class="toolMenu">
             
                 ## Tool search.
-                <div id="tool-search" style="padding-bottom: 5px; position: relative; display: none; width: 100%">
+                <%
+                    show_tool_search = False
+                    if trans.user:
+                        show_tool_search = trans.user.preferences.get( "show_tool_search", "False" )
+                    
+                    if show_tool_search == "True":
+                        display = "block"
+                    else:
+                        display = "none"
+                %>
+                <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
                     <input type="text" name="query" value="search tools" id="tool-search-query" style="width: 100%; font-style:italic; font-size: inherit"/>
                     <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>
                 </div>
@@ -214,12 +256,15 @@
                 ## Recently used tools.
                 %if trans.user:
                     <%
-                        if 'show_recently_used_menu' in trans.user.preferences and trans.user.preferences['show_recently_used_menu'] == 'True':
-                            display = "block"
-                        else:
-                            display = "none"
+                    if trans.user.preferences.get( 'show_recently_used_menu', 'False' ) == 'True':
+                        display = "block"
+                        pref_class = "user_pref_visible"
+                    else:
+                        display = "none"
+                        pref_class = "user_pref_hidden"
                     %>
-                    <div class="toolSectionWrapper" id="recently_used_wrapper" style="display: ${display}; padding-bottom: 5px">
+                    <div class="toolSectionWrapper ${pref_class}" id="recently_used_wrapper" 
+                            style="display: ${display}; padding-bottom: 5px">
                         <div class="toolSectionTitle">
                             <span>Recently Used</span>
                         </div>

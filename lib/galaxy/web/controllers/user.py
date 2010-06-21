@@ -902,6 +902,20 @@ class User( BaseController ):
                                                           status='done') )
     
     @web.expose
+    def set_user_pref_async( self, trans, pref_name, pref_value ):
+        """ Set a user preference asynchronously. If user is not logged in, do nothing. """
+        if trans.user:
+            trans.log_action( trans.get_user(), "set_user_pref", "", { pref_name : pref_value } )
+            trans.user.preferences[pref_name] = pref_value
+            trans.sa_session.flush()
+      
+    @web.expose
+    def log_user_action_async( self, trans, action, context, params ):
+        """ Log a user action asynchronously. If user is not logged in, do nothing. """
+        if trans.user:
+            trans.log_action( trans.get_user(), action, context, params )
+        
+    @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
         user = trans.get_user()
