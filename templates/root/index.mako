@@ -124,10 +124,7 @@
                     else
                     {
                         // "Show" menu.
-                        var tool_search_query = $('#galaxy_tools').contents().find('#tool-search-query');
-                        var tool_search_active = tool_search_query.is(":visible") && tool_search_query.val().length > 3;
-                        
-                        if (!tool_search_active)
+                        if (!$('#galaxy_tools').contents().find('#tool-search-query').hasClass("search_active"))
                             // Default.
                             ru_menu.slideDown();
                         else

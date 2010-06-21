@@ -478,7 +478,8 @@ function reset_tool_search( initValue )
     if (tool_menu_frame.length == 0)
         tool_menu_frame = $(document);
         
-    // Remove matching class.
+    // Remove classes that indicate searching is active.
+    $(this).removeClass("search_active");
     tool_menu_frame.find(".toolTitle").removeClass("search_match");
     
     // Reset visibility of tools and labels.

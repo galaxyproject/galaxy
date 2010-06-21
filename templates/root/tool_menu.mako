@@ -113,6 +113,8 @@
                     if ( this.value.length < 3 ) {
                         reset_tool_search(false);
                     } else if ( this.value != this.lastValue ) {
+                        // Add class to denote that searching is active.
+                        $(this).addClass("search_active");
                         // input.addClass(config.loadingClass);
                         // Add '*' to facilitate partial matching.
                         var q = this.value + '*';
