@@ -220,10 +220,19 @@ class GalaxyRBACAgent( RBACAgent ):
         if not item_actions:
             return action.model == 'restrict'
         ret_val = False
-        for item_action in item_actions:
-            if item_action.role in roles:
+        # For DATASET_ACCESS only, user must have ALL associated roles
+        if action == self.permitted_actions.DATASET_ACCESS:
+            for item_action in item_actions:
+                if item_action.role not in roles:
+                    break
+            else:
                 ret_val = True
-                break
+        # For remaining actions, user must have any associated role
+        else:
+            for item_action in item_actions:
+                if item_action.role in roles:
+                    ret_val = True
+                    break
         return ret_val
     def can_access_dataset( self, roles, dataset ):
         return self.dataset_is_public( dataset ) or self.allow_action( roles, self.permitted_actions.DATASET_ACCESS, dataset )
@@ -231,6 +240,18 @@ class GalaxyRBACAgent( RBACAgent ):
         return self.allow_action( roles, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset )
     def can_access_library( self, roles, library ):
         return self.library_is_public( library ) or self.allow_action( roles, self.permitted_actions.LIBRARY_ACCESS, library )
+    def can_access_library_item( self, roles, item, user ):
+        if type( item ) == self.model.Library:
+            return self.can_access_library( roles, item )
+        elif type( item ) == self.model.LibraryFolder:
+            return self.can_access_library( roles, item.parent_library ) and self.check_folder_contents( user, roles, item )[0]
+        elif type( item ) == self.model.LibraryDataset:
+            return self.can_acess_library( roles, item.folder.parent_library ) and self.can_access_dataset( roles, item.library_dataset_dataset_association.dataset )
+        elif type( item ) == self.model.LibraryDatasetDatasetAssociation:
+            return self.can_access_library( roles, item.library_dataset.folder.parent_library ) and self.can_access_dataset( roles, item.dataset )
+        else:
+            log.warning( 'Unknown library item type: %s' % type ( item ) )
+            return False
     def can_add_library_item( self, roles, item ):
         return self.allow_action( roles, self.permitted_actions.LIBRARY_ADD, item )
     def can_modify_library_item( self, roles, item ):
@@ -732,6 +753,9 @@ class GalaxyRBACAgent( RBACAgent ):
         This method does not necessarily scan the entire library as it returns when it finds the first
         folder that is accessible to user.
         """
+        # If a folder is writeable, it's accessable and we need not go further
+        if self.can_add_library_item( roles, folder ):
+            return True, ''
         action = self.permitted_actions.DATASET_ACCESS
         lddas = self.sa_session.query( self.model.LibraryDatasetDatasetAssociation ) \
                                .join( "library_dataset" ) \

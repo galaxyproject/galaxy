@@ -22,7 +22,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Edit folder name and description</div>
     <div class="toolFormBody">
-        %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, folder ):
+        %if ( trans.user_is_admin() and cntrller == 'library_admin' ) or trans.app.security_agent.can_modify_library_item( current_user_roles, folder ):
             <form name="folder" action="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, use_panels=use_panels, show_deleted=show_deleted )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>

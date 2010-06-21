@@ -6,12 +6,15 @@
             item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
         elif item_type == 'ldda':
             item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-        if cntrller == 'library':
-            current_user_roles = trans.get_current_user_roles()
-            can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, item )
+        if trans.user_is_admin() and cntrller == 'library_admin':
+            can_modify = True
+        elif cntrller == 'library':
+            can_modify = trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item )
+        else:
+            can_modify = False
     %>
     %if widgets:
-        %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+        %if editable and can_modify:
             <p/>
             <div class="toolForm">
                 <div class="toolFormTitle">
@@ -20,7 +23,7 @@
                     %else:
                         Other information
                     %endif
-                    %if info_association and not inherited and ( cntrller == 'library_admin' or can_modify ):
+                    %if info_association and not inherited and can_modify:
                         ## "inherited" will be true only if the info_association is not associated with the current item,
                         ## in which case we do not want to render the following popup menu.
                         <a id="item-${item.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
@@ -154,7 +157,7 @@
                         </div>
                     %elif upload_option == 'upload_directory':
                         <%
-                            if cntrller == 'library_admin':
+                            if ( trans.user_is_admin() and cntrller == 'library_admin' ):
                                 import_dir = trans.app.config.library_import_dir
                             else:
                                 # Directories of files from the Data Libraries view are restricted to a
@@ -184,7 +187,7 @@
                                             %endif
                                         %endfor
                                     %else:
-                                        %if cntrller == 'library_admin':
+                                        %if ( trans.user_is_admin() and cntrller == 'library_admin' ):
                                             <option>${import_dir}</option>
                                         %else:
                                             <option>${trans.user.email}</option>
@@ -368,7 +371,7 @@
             <td colspan="4" style="padding-left: 42px;">
                 For selected items:
                 <select name="do_action" id="action_on_selected_items">
-                    %if cntrller=='library_admin':
+                    %if ( trans.user_is_admin() and cntrller=='library_admin' ):
                         <option value="manage_permissions">Edit permissions</option>
                         <option value="delete">Delete</option>
                     %elif cntrller=='library':

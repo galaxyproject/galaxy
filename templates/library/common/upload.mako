@@ -27,7 +27,7 @@
     <a id="upload-librarydataset--popup" class="popup-arrow" style="display: none;">&#9660;</a>
     <div popupmenu="upload-librarydataset--popup">
         <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller,library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_file', show_deleted=show_deleted )}">Upload files</a>
-        %if cntrller == 'library_admin':
+        %if ( trans.user_is_admin() and cntrller == 'library_admin' ):
             %if trans.app.config.library_import_dir and os.path.exists( trans.app.config.library_import_dir ):
                 <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_directory', show_deleted=show_deleted )}">Upload directory of files</a>
             %endif

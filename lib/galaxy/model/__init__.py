@@ -961,6 +961,12 @@ class LibraryFolder( object ):
         if isinstance( name, str ):
             name = unicode( name, 'utf-8' )
         return name
+    @property
+    def parent_library( self ):
+        f = self
+        while f.parent:
+            f = f.parent
+        return f.library_root[0]
 
 class LibraryDataset( object ):
     # This class acts as a proxy to the currently selected LDDA

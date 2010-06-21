@@ -81,25 +81,30 @@ class LibraryCommon( BaseController ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         library_id = params.get( 'id', None )
         if not library_id:
             # To handle bots
             message = "You must specify a library id."
             status = 'error'
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        if not library:
-            # To handle bots
-            message = "Invalid library id ( %s )." % str( library_id )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+        except:
+            # Protect against attempts to phish for valid keys that return libraries
+            library = None
+        # Most security for browsing libraries is handled in the template, but do a basic check here.
+        if not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
+            message = "Invalid library id ( %s ) specified." % str( library_id )
             status = 'error'
         else:
             # If use_panels is True, the library is being accessed via an external link
             # which did not originate from within the Galaxy instance, and the library will
             # be displayed correctly with the mast head.
-            use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
             show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
             created_ldda_ids = params.get( 'created_ldda_ids', '' )
             hidden_folder_ids = util.listify( params.get( 'hidden_folder_ids', '' ) )
-            current_user_roles = trans.get_current_user_roles()
             if created_ldda_ids and not message:
                 message = "%d datasets are uploading in the background to the library '%s' (each is selected).  "  % \
                     ( len( created_ldda_ids.split( ',' ) ), library.name )
@@ -139,14 +144,36 @@ class LibraryCommon( BaseController ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
         library_id = params.get( 'id', None )
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+        try:
+            library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+        except:
+            library = None
+        # Deny that the library exists if the user does not have the LIBRARY_ACCESS permission.
+        if not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
+            message = "Invalid library id ( %s ) specified." % str( library_id )
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_libraries',
+                                                              use_panels=use_panels,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         # See if we have any associated templates
         info_association, inherited = library.get_info_association()
         widgets = library.get_template_widgets( trans )
-        current_user_roles = trans.get_current_user_roles()
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         if params.get( 'library_info_button', False ):
+            # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission.
+            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library ) ):
+                message = "You are not authorized to modify library '%s'." % library.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  id=library_id,
+                                                                  use_panels=use_panels,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
             old_name = library.name
             new_name = util.restore_text( params.get( 'name', 'No name' ) )
             if not new_name:
@@ -165,7 +192,7 @@ class LibraryCommon( BaseController ):
                 library.root_folder.description = new_description
                 trans.sa_session.add_all( ( library, library.root_folder ) )
                 trans.sa_session.flush()
-                message = "The information has been updated."
+                message = "Information updated for library '%s'." % library.name
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='library_info',
                                                                   cntrller=cntrller,
@@ -191,10 +218,32 @@ class LibraryCommon( BaseController ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        library_id = params.get( 'id', None )
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        current_user_roles = trans.get_current_user_roles()
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        library_id = params.get( 'id', None )
+        try:
+            library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+        except:
+            library = None
+        # Deny that the library exists if the user does not have the LIBRARY_ACCESS permission.
+        if not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
+            message = "Invalid library id ( %s ) specified." % str( library_id )
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_libraries',
+                                                              use_panels=use_panels,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
+        # Deny access (even to view) if the user is not an admin and does not have the LIBRARY_MANAGE permission.
+        if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, library ) ):
+            message = "You are not authorized to manage permissions on library '%s'." % library.name
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         if params.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
@@ -205,7 +254,7 @@ class LibraryCommon( BaseController ):
             trans.sa_session.refresh( library )
             # Copy the permissions to the root folder
             trans.app.security_agent.copy_library_permissions( library, library.root_folder )
-            message = "Permissions updated for library '%s'" % library.name
+            message = "Permissions updated for library '%s'." % library.name
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='library_permissions',
                                                               cntrller=cntrller,
@@ -231,9 +280,35 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        parent_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( parent_id ) )
-        if not parent_folder:
-            message = "Invalid parent folder id (%s) specified" % str( parent_id )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            parent_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( parent_id ) )
+        except:
+            parent_folder = None
+        # Check the library which actually contains the user-supplied parent folder, not the user-supplied
+        # library, which could be anything.
+        if parent_folder:
+            parent_library = parent_folder.parent_library
+        # Deny that the parent folder exists if the user does not have the LIBRARY_ACCESS permission on
+        # its parent library, or if they are not able to see the folder's contents.
+        if not parent_folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, parent_folder, trans.user ) ):
+            message = "Invalid parent folder id ( %s ) specified." % str( parent_id )
+            # This doesn't give away the library's existence since
+            # browse_library will simply punt to browse_libraries if the
+            # user-supplied id is invalid or inaccessible.
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
+        # Deny access (even to view) if the user is not an admin and does not have the LIBRARY_ADD permission.
+        if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, parent_folder ) ):
+            message = "You are not authorized to create a folder in parent folder '%s'." % parent_folder.name
+            # Redirect to the real parent library since we know we have access to it.
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -261,7 +336,6 @@ class LibraryCommon( BaseController ):
             if info_association and ( not( inherited ) or info_association.inheritable ):
                 widgets = new_folder.get_template_widgets( trans )
             if info_association:
-                current_user_roles = trans.get_current_user_roles()
                 message = "The new folder named '%s' has been added to the data library.  " % new_folder.name
                 message += "Additional information about this folder may be added using the inherited template."
                 return trans.fill_template( '/library/common/folder_info.mako',
@@ -303,31 +377,61 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
+        try:
+            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
+        except:
+            folder = None
+        # Deny that the parent folder exists if the user does not have the LIBRARY_ACCESS permission on
+        # its parent library, or if they are not able to see the folder's contents.
+        if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
+            message = "Invalid folder id ( %s ) specified." % str( id )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         # See if we have any associated templates
         widgets = []
         info_association, inherited = folder.get_info_association()
         if info_association and ( not( inherited ) or info_association.inheritable ):
             widgets = folder.get_template_widgets( trans )
         if params.get( 'rename_folder_button', False ):
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, folder ):
-                old_name = folder.name
-                new_name = util.restore_text( params.name )
-                new_description = util.restore_text( params.description )
-                if not new_name:
-                    message = 'Enter a valid name'
-                    status='error'
-                else:
-                    folder.name = new_name
-                    folder.description = new_description
-                    trans.sa_session.add( folder )
-                    trans.sa_session.flush()
-                    message = "The information has been updated."
-                    status='done'
-            else:
-                message = "You are not authorized to edit this folder"
+            # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission
+            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, folder ) ):
+                message = "You are not authorized to modify folder '%s'." % folder.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  id=library_id,
+                                                                  use_panels=use_panels,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            old_name = folder.name
+            new_name = util.restore_text( params.name )
+            new_description = util.restore_text( params.description )
+            if not new_name:
+                message = 'Enter a valid name'
                 status='error'
+            else:
+                folder.name = new_name
+                folder.description = new_description
+                trans.sa_session.add( folder )
+                trans.sa_session.flush()
+                message = "Information updated for folder '%s'." % folder.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='folder_info',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=id,
+                                                                  library_id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='done' ) )
         return trans.fill_template( '/library/common/folder_info.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
@@ -347,9 +451,16 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
-        if not folder:
-            message = "Invalid folder specified, id: %s" % str( id )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
+        except:
+            folder = None
+        # Deny that the parent folder exists if the user does not have the LIBRARY_ACCESS permission on
+        # its parent library, or if they are not able to see the folder's contents.
+        if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
+            message = "Invalid folder id ( %s ) specified." % str( id )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -358,24 +469,28 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        current_user_roles = trans.get_current_user_roles()
+        # Deny access (even to view) if the user is not an admin and does not have the LIBRARY_MANAGE permission.
+        if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) ):
+            message = "You are not authorized to manage permissions on folder id ( %s )." % str( id )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         if params.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
-            if cntrller == 'library_admin' or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ):
-                permissions = {}
-                for k, v in trans.app.model.Library.permitted_actions.items():
-                    if k != 'LIBRARY_ACCESS':
-                        # LIBRARY_ACCESS is a special permission set only at the library level
-                        # and it is not inherited.
-                        in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( int( x ) ) for x in util.listify( params.get( k + '_in', [] ) ) ]
-                        permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                trans.app.security_agent.set_all_library_permissions( folder, permissions )
-                trans.sa_session.refresh( folder )
-                message = 'Permissions updated for folder %s' % folder.name
-                status='done'
-            else:
-                message = "You are not authorized to manage permissions on this folder"
-                status = "error"
+            permissions = {}
+            for k, v in trans.app.model.Library.permitted_actions.items():
+                if k != 'LIBRARY_ACCESS':
+                    # LIBRARY_ACCESS is a special permission set only at the library level
+                    # and it is not inherited.
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( int( x ) ) for x in util.listify( params.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+            trans.app.security_agent.set_all_library_permissions( folder, permissions )
+            trans.sa_session.refresh( folder )
+            message = "Permissions updated for folder '%s'." % folder.name
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='folder_permissions',
                                                               cntrller=cntrller,
@@ -384,11 +499,11 @@ class LibraryCommon( BaseController ):
                                                               library_id=library_id,
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
-                                                              status=status ) )
-        # If the library is public all roles are legitimate, but if the library is restricted, only those
-        # roles associated with the LIBRARY_ACCESS permission are legitimate.
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
+                                                              status='done' ) )
+        # If the library is public all roles are legitimate, but if the library
+        # is restricted, only those roles associated with the LIBRARY_ACCESS
+        # permission are legitimate.
+        roles = trans.app.security_agent.get_legitimate_roles( trans, folder.parent_library, cntrller )
         return trans.fill_template( '/library/common/folder_permissions.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
@@ -406,9 +521,16 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
-        if not ldda:
-            message = "Invalid LibraryDatasetDatasetAssociation specified, id: %s" % str( id )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
+        except:
+            ldda = None
+        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+        # its parent library, or if they are not able to view the dataset itself.
+        if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
+            message = "Invalid library dataset id ( %s ) specified." % str( id )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -417,10 +539,19 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
+        # Deny access (even to view) if the user is not an admin and does not have the LIBRARY_MODIFY permission.
+        if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ) ):
+            message = "You are not authorized to modify library dataset '%s'." % ldda.name
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         dbkey = params.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             dbkey = dbkey[0]
-        current_user_roles = trans.get_current_user_roles()
         file_formats = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         file_formats.sort()
         # See if we have any associated templates
@@ -430,74 +561,61 @@ class LibraryCommon( BaseController ):
             widgets = ldda.get_template_widgets( trans )
         if params.get( 'change', False ):
             # The user clicked the Save button on the 'Change data type' form
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
-                if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
-                    trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
-                    trans.sa_session.flush()
-                    message = "Data type changed for library dataset '%s'" % ldda.name
-                    status = 'done'
-                else:
-                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype )
-                    status = 'error'
+            if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
+                trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
+                trans.sa_session.flush()
+                message = "Data type changed for library dataset '%s'." % ldda.name
+                status = 'done'
             else:
-                message = "You are not authorized to change the data type of dataset '%s'" % ldda.name
+                message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype )
                 status = 'error'
         elif params.get( 'save', False ):
             # The user clicked the Save button on the 'Edit Attributes' form
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
-                old_name = ldda.name
-                new_name = util.restore_text( params.get( 'name', '' ) )
-                new_info = util.restore_text( params.get( 'info', '' ) )
-                new_message = util.restore_text( params.get( 'message', '' ) )
-                if not new_name:
-                    message = 'Enter a valid name'
-                    status = 'error'
-                else:
-                    ldda.name = new_name
-                    ldda.info = new_info
-                    ldda.message = new_message
-                    # The following for loop will save all metadata_spec items
-                    for name, spec in ldda.datatype.metadata_spec.items():
-                        if spec.get("readonly"):
-                            continue
-                        optional = params.get( "is_" + name, None )
-                        if optional and optional == 'true':
-                            # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
-                            setattr( ldda.metadata, name, None )
-                        else:
-                            setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
-                    ldda.metadata.dbkey = dbkey
-                    ldda.datatype.after_setting_metadata( ldda )
-                    trans.sa_session.flush()
-                    message = 'Attributes updated for library dataset %s' % ldda.name
-                    status = 'done'
-            else:
-                message = "You are not authorized to edit the attributes of dataset '%s'" % ldda.name
+            old_name = ldda.name
+            new_name = util.restore_text( params.get( 'name', '' ) )
+            new_info = util.restore_text( params.get( 'info', '' ) )
+            new_message = util.restore_text( params.get( 'message', '' ) )
+            if not new_name:
+                message = 'Enter a valid name'
                 status = 'error'
-        elif params.get( 'detect', False ):
-            # The user clicked the Auto-detect button on the 'Edit Attributes' form
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
+            else:
+                ldda.name = new_name
+                ldda.info = new_info
+                ldda.message = new_message
+                # The following for loop will save all metadata_spec items
                 for name, spec in ldda.datatype.metadata_spec.items():
-                    # We need to be careful about the attributes we are resetting
-                    if name not in [ 'name', 'info', 'dbkey' ]:
-                        if spec.get( 'default' ):
-                            setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                ldda.datatype.set_meta( ldda )
+                    if spec.get("readonly"):
+                        continue
+                    optional = params.get( "is_" + name, None )
+                    if optional and optional == 'true':
+                        # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
+                        setattr( ldda.metadata, name, None )
+                    else:
+                        setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
+                ldda.metadata.dbkey = dbkey
                 ldda.datatype.after_setting_metadata( ldda )
                 trans.sa_session.flush()
-                message = 'Attributes updated for library dataset %s' % ldda.name
+                message = "Attributes updated for library dataset '%s'." % ldda.name
                 status = 'done'
-            else:
-                message = "You are not authorized to edit the attributes of dataset '%s'" % ldda.name
-                status = 'error'
-        if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
-            if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
-                # Copy dbkey into metadata, for backwards compatability
-                # This looks like it does nothing, but getting the dbkey
-                # returns the metadata dbkey unless it is None, in which
-                # case it resorts to the old dbkey.  Setting the dbkey
-                # sets it properly in the metadata
-                ldda.metadata.dbkey = ldda.dbkey
+        elif params.get( 'detect', False ):
+            # The user clicked the Auto-detect button on the 'Edit Attributes' form
+            for name, spec in ldda.datatype.metadata_spec.items():
+                # We need to be careful about the attributes we are resetting
+                if name not in [ 'name', 'info', 'dbkey' ]:
+                    if spec.get( 'default' ):
+                        setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
+            ldda.datatype.set_meta( ldda )
+            ldda.datatype.after_setting_metadata( ldda )
+            trans.sa_session.flush()
+            message = "Information updated for library dataset '%s'." % ldda.name
+            status = 'done'
+        if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
+            # Copy dbkey into metadata, for backwards compatability
+            # This looks like it does nothing, but getting the dbkey
+            # returns the metadata dbkey unless it is None, in which
+            # case it resorts to the old dbkey.  Setting the dbkey
+            # sets it properly in the metadata
+            ldda.metadata.dbkey = ldda.dbkey
         return trans.fill_template( "/library/common/ldda_edit_info.mako",
                                     cntrller=cntrller,
                                     use_panels=use_panels,
@@ -518,9 +636,16 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
-        if not ldda:
-            message = "Invalid LibraryDatasetDatasetAssociation specified, id: %s" % str( id )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
+        except:
+            ldda = None
+        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+        # its parent library, or if they are not able to view the dataset itself.
+        if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
+            message = "Invalid library dataset id ( %s ) specified." % str( id )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -529,8 +654,7 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        if cntrller == 'library_admin':
+        if ( trans.user_is_admin() and cntrller == 'library_admin' ):
             # Get all associated hdas and lddas that use the same disk file.
             associated_hdas = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
                                               .filter( and_( trans.model.HistoryDatasetAssociation.deleted == False,
@@ -549,12 +673,11 @@ class LibraryCommon( BaseController ):
         info_association, inherited = ldda.get_info_association()
         if info_association and ( not( inherited ) or info_association.inheritable ):
             widgets = ldda.get_template_widgets( trans )
-        current_user_roles = trans.get_current_user_roles()
         return trans.fill_template( '/library/common/ldda_info.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
                                     ldda=ldda,
-                                    library=library,
+                                    library=ldda.library_dataset.folder.parent_library,
                                     associated_hdas=associated_hdas,
                                     associated_lddas=associated_lddas,
                                     show_deleted=show_deleted,
@@ -573,20 +696,53 @@ class LibraryCommon( BaseController ):
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         ids = util.listify( id )
         lddas = []
-        for id in [ trans.security.decode_id( id ) for id in ids ]:
-            ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( id )
-            if ldda is None:
-                message = 'You specified an invalid LibraryDatasetDatasetAssociation id: %s' %str( id )
-                trans.response.send_redirect( web.url_for( controller='library_common',
-                                                           action='browse_library',
-                                                           cntrller=cntrller,
-                                                           use_panels=use_panels,
-                                                           id=library_id,
-                                                           show_deleted=show_deleted,
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
+        libraries = []
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        for id in ids:
+            try:
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
+            except:
+                ldda = None
+            if ldda:
+                library = ldda.library_dataset.folder.parent_library
+            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+            # its parent library, or if they are not able to view the dataset itself.
+            if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
+                message = "Invalid library dataset id ( %s ) specified." % str( id )
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            # Deny access (even to view) if the user is not an admin and does not
+            # have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
+            if not ( is_admin or \
+                     ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and 
+                       trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) ) ):
+                message = "You are not authorized to manage permissions on library dataset '%s'." % ldda.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  id=library_id,
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
             lddas.append( ldda )
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+            libraries.append( library )
+        library = libraries[0]
+        if filter( lambda x: x != library, libraries ):
+            message = "Library datasets specified span multiple libraries."
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         # If access to the dataset is restricted, then use the roles associated with the DATASET_ACCESS permission to
         # determine the legitimate roles.  If the dataset is public, see if access to the library is restricted.  If
         # it is, use the roles associated with the LIBRARY_ACCESS permission to determine the legitimate roles.  If both
@@ -599,41 +755,38 @@ class LibraryCommon( BaseController ):
         else:
             roles = trans.app.security_agent.get_legitimate_roles( trans, ldda.dataset, cntrller )
         if params.get( 'update_roles_button', False ):
-            current_user_roles = trans.get_current_user_roles()
-            if cntrller=='library_admin' or ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and \
-                                              trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) ):
-                a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
-                permissions, in_roles, error, message = \
-                    trans.app.security_agent.derive_roles_from_access( trans, trans.app.security.decode_id( library_id ), cntrller, library=True, **kwd )
-                for ldda in lddas:
-                    # Set the DATASET permissions on the Dataset.
-                    if error:
-                        # Keep the original role associations for the DATASET_ACCESS permission on the ldda.
-                        permissions[ a ] = ldda.get_access_roles( trans )
-                    trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
-                    trans.sa_session.refresh( ldda.dataset )
-                # Set the LIBRARY permissions on the LibraryDataset.  The LibraryDataset and
-                # LibraryDatasetDatasetAssociation will be set with the same permissions.
-                permissions = {}
-                for k, v in trans.app.model.Library.permitted_actions.items():
-                    if k != 'LIBRARY_ACCESS':
-                        # LIBRARY_ACCESS is a special permission set only at the library level and it is not inherited.
-                        in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                        permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                for ldda in lddas:
-                    trans.app.security_agent.set_all_library_permissions( ldda.library_dataset, permissions )
-                    trans.sa_session.refresh( ldda.library_dataset )
-                    # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
-                    trans.app.security_agent.set_all_library_permissions( ldda, permissions )
-                    trans.sa_session.refresh( ldda )
+            a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
+            permissions, in_roles, error, message = \
+                trans.app.security_agent.derive_roles_from_access( trans, trans.app.security.decode_id( library_id ), cntrller, library=True, **kwd )
+            for ldda in lddas:
+                # Set the DATASET permissions on the Dataset.
                 if error:
-                    status = 'error'
-                else:
-                    message = 'Permissions have been updated on %d datasets.' % len( lddas )
-                    status= 'done'
-            else:
-                message = "You are not authorized to change the permissions of dataset '%s'" % ldda.name
+                    # Keep the original role associations for the DATASET_ACCESS permission on the ldda.
+                    permissions[ a ] = ldda.get_access_roles( trans )
+                trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
+                trans.sa_session.refresh( ldda.dataset )
+            # Set the LIBRARY permissions on the LibraryDataset.  The LibraryDataset and
+            # LibraryDatasetDatasetAssociation will be set with the same permissions.
+            permissions = {}
+            for k, v in trans.app.model.Library.permitted_actions.items():
+                if k != 'LIBRARY_ACCESS':
+                    # LIBRARY_ACCESS is a special permission set only at the library level and it is not inherited.
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+            for ldda in lddas:
+                trans.app.security_agent.set_all_library_permissions( ldda.library_dataset, permissions )
+                trans.sa_session.refresh( ldda.library_dataset )
+                # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
+                trans.app.security_agent.set_all_library_permissions( ldda, permissions )
+                trans.sa_session.refresh( ldda )
+            if error:
                 status = 'error'
+            else:
+                if len( lddas ) == 1:
+                    message = "Permissions updated for dataset '%s'." % ldda.name
+                else:
+                    message = 'Permissions updated for %d datasets.' % len( lddas )
+                status= 'done'
             return trans.fill_template( "/library/common/ldda_permissions.mako",
                                         cntrller=cntrller,
                                         use_panels=use_panels,
@@ -686,121 +839,176 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         deleted = util.string_as_bool( params.get( 'deleted', False ) )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         dbkey = params.get( 'dbkey', '?' )
+        replace_id = params.get( 'replace_id', None )
+        replace_dataset = None
+        upload_option = params.get( 'upload_option', 'upload_file' )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-        if folder and last_used_build in [ 'None', None, '?' ]:
-            last_used_build = folder.genome_build
-        replace_id = params.get( 'replace_id', None )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
         if replace_id not in [ None, 'None' ]:
-            replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
-            # The name is separately - by the time the new ldda is created,
-            # replace_dataset.name will point to the new ldda, not the one it's
-            # replacing.
+            try:
+                replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
+            except:
+                replace_dataset = None
+            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+            # its parent library, or if they are not able to view the dataset itself.
+            if not replace_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, replace_dataset, trans.user ) ):
+                message = "Invalid library dataset id ( %s ) to replace specified." % replace_id
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
+            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, replace_dataset ) ):
+                message = "You are not authorized to replace library dataset '%s'." % replace_dataset.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            library = replace_dataset.folder.parent_library
+            folder = replace_dataset.folder
+            # The name is stored - by the time the new ldda is created, replace_dataset.name
+            # will point to the new ldda, not the one it's replacing.
             replace_dataset_name = replace_dataset.name
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
             # Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
             upload_option = 'upload_file'
         else:
-            replace_dataset = None
-            upload_option = params.get( 'upload_option', 'upload_file' )
-        if cntrller == 'library':
-            current_user_roles = trans.get_current_user_roles()
-        if cntrller == 'library_admin' or \
-            ( trans.app.security_agent.can_add_library_item( current_user_roles, folder ) or \
-              ( replace_dataset and trans.app.security_agent.can_modify_library_item( current_user_roles, replace_dataset ) ) ):
-            if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ):
-                # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
-                # on the dataset that would cause accessibility issues.
-                roles = params.get( 'roles', False )
-                error = None
-                if roles:
-                    vars = dict( DATASET_ACCESS_in=roles )
-                    permissions, in_roles, error, message = \
-                        trans.app.security_agent.derive_roles_from_access( trans, trans.app.security.decode_id( library_id ), cntrller, library=True, **vars )
-                if error:
-                    status = 'error'
-                    trans.response.send_redirect( web.url_for( controller='library_common',
-                                                               action='upload_library_dataset',
-                                                               cntrller=cntrller,
-                                                               library_id=library_id,
-                                                               folder_id=folder_id,
-                                                               replace_id=replace_id,
-                                                               upload_option=upload_option,
-                                                               show_deleted=show_deleted,
-                                                               message=util.sanitize_text( message ),
-                                                               status='error' ) )
+            try:
+                folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            except:
+                folder = None
+            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+            # its parent library, or if they are not able to see the folder's contents.
+            if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
+                message = "Invalid parent folder id ( %s ) specified." % str( folder_id )
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
+            if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, folder ) ):
+                message = "You are not authorized to create a library dataset in parent folder '%s'." % folder.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            library = folder.parent_library
+        if folder and last_used_build in [ 'None', None, '?' ]:
+            last_used_build = folder.genome_build
+        if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ):
+            # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
+            # on the dataset that would cause accessibility issues.
+            roles = params.get( 'roles', False )
+            error = None
+            if upload_option == 'upload_paths' and not trans.app.config.allow_library_path_paste:
+                error = True
+                message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
+            elif roles:
+                vars = dict( DATASET_ACCESS_in=roles )
+                permissions, in_roles, error, message = \
+                    trans.app.security_agent.derive_roles_from_access( trans, library.id, cntrller, library=True, **vars )
+            if error:
+                status = 'error'
+                trans.response.send_redirect( web.url_for( controller='library_common',
+                                                           action='upload_library_dataset',
+                                                           cntrller=cntrller,
+                                                           library_id=library_id,
+                                                           folder_id=folder_id,
+                                                           replace_id=replace_id,
+                                                           upload_option=upload_option,
+                                                           show_deleted=show_deleted,
+                                                           message=util.sanitize_text( message ),
+                                                           status='error' ) )
 
+            else:
+                # See if we have any inherited templates, but do not inherit contents.
+                info_association, inherited = folder.get_info_association( inherited=True )
+                if info_association and info_association.inheritable:
+                    template_id = str( info_association.template.id )
+                    widgets = folder.get_template_widgets( trans, get_contents=False )
                 else:
-                    # See if we have any inherited templates, but do not inherit contents.
-                    info_association, inherited = folder.get_info_association( inherited=True )
-                    if info_association and info_association.inheritable:
-                        template_id = str( info_association.template.id )
-                        widgets = folder.get_template_widgets( trans, get_contents=False )
+                    template_id = 'None'
+                    widgets = []
+                created_outputs_dict = trans.webapp.controllers[ 'library_common' ].upload_dataset( trans,
+                                                                                                    cntrller=cntrller,
+                                                                                                    library_id=trans.security.encode_id( library.id ),
+                                                                                                    folder_id=trans.security.encode_id( folder.id ),
+                                                                                                    template_id=template_id,
+                                                                                                    widgets=widgets,
+                                                                                                    replace_dataset=replace_dataset,
+                                                                                                    **kwd )
+                if created_outputs_dict:
+                    total_added = len( created_outputs_dict.keys() )
+                    ldda_id_list = [ str( v.id ) for k, v in created_outputs_dict.items() ]
+                    created_ldda_ids=",".join( ldda_id_list )
+                    if replace_dataset:
+                        message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset_name, folder.name )
                     else:
-                        template_id = 'None'
-                        widgets = []
-                    created_outputs_dict = trans.webapp.controllers[ 'library_common' ].upload_dataset( trans,
-                                                                                                        cntrller=cntrller,
-                                                                                                        library_id=library_id,
-                                                                                                        folder_id=folder_id,
-                                                                                                        template_id=template_id,
-                                                                                                        widgets=widgets,
-                                                                                                        replace_dataset=replace_dataset,
-                                                                                                        **kwd )
-                    if created_outputs_dict:
-                        total_added = len( created_outputs_dict.keys() )
-                        ldda_id_list = [ str( v.id ) for k, v in created_outputs_dict.items() ]
-                        created_ldda_ids=",".join( ldda_id_list )
-                        if replace_dataset:
-                            message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset_name, folder.name )
+                        if not folder.parent:
+                            # Libraries have the same name as their root_folder
+                            message = "Added %d datasets to the library '%s' (each is selected).  " % ( total_added, folder.name )
                         else:
-                            if not folder.parent:
-                                # Libraries have the same name as their root_folder
-                                message = "Added %d datasets to the library '%s' (each is selected).  " % ( total_added, folder.name )
-                            else:
-                                message = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, folder.name )
-                            if cntrller == 'library_admin':
-                                message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
-                                status='done'
-                            else:
-                                # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
-                                # to check one of them to see if the current user can manage permissions on them.
-                                check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id_list[0] )
-                                if trans.app.security_agent.can_manage_library_item( current_user_roles, check_ldda ):
-                                    if replace_dataset:
-                                        default_action = ''
-                                    else:
-                                        message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
-                                        default_action = 'manage_permissions'
+                            message = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, folder.name )
+                        if cntrller == 'library_admin':
+                            message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
+                            status='done'
+                        else:
+                            # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
+                            # to check one of them to see if the current user can manage permissions on them.
+                            check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id_list[0] )
+                            if trans.app.security_agent.can_manage_library_item( current_user_roles, check_ldda ):
+                                if replace_dataset:
+                                    default_action = ''
                                 else:
-                                    default_action = 'add'
-                                trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                           action='browse_library',
-                                                                           cntrller=cntrller,
-                                                                           id=library_id,
-                                                                           default_action=default_action,
-                                                                           created_ldda_ids=created_ldda_ids,
-                                                                           show_deleted=show_deleted,
-                                                                           message=util.sanitize_text( message ), 
-                                                                           status='done' ) )
-                        
-                    else:
-                        created_ldda_ids = ''
-                        message = "Upload failed"
-                        status='error'
-                    trans.response.send_redirect( web.url_for( controller='library_common',
-                                                               action='browse_library',
-                                                               cntrller=cntrller,
-                                                               id=library_id,
-                                                               created_ldda_ids=created_ldda_ids,
-                                                               show_deleted=show_deleted,
-                                                               message=util.sanitize_text( message ),
-                                                               status=status ) )
+                                    message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
+                                    default_action = 'manage_permissions'
+                            else:
+                                default_action = 'add'
+                            trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                       action='browse_library',
+                                                                       cntrller=cntrller,
+                                                                       id=library_id,
+                                                                       default_action=default_action,
+                                                                       created_ldda_ids=created_ldda_ids,
+                                                                       show_deleted=show_deleted,
+                                                                       message=util.sanitize_text( message ), 
+                                                                       status='done' ) )
+                    
+                else:
+                    created_ldda_ids = ''
+                    message = "Upload failed"
+                    status='error'
+                trans.response.send_redirect( web.url_for( controller='library_common',
+                                                           action='browse_library',
+                                                           cntrller=cntrller,
+                                                           id=library_id,
+                                                           created_ldda_ids=created_ldda_ids,
+                                                           show_deleted=show_deleted,
+                                                           message=util.sanitize_text( message ),
+                                                           status=status ) )
         # See if we have any inherited templates, but do not inherit contents.
         info_association, inherited = folder.get_info_association( inherited=True )
         if info_association and info_association.inheritable:
@@ -819,7 +1027,6 @@ class LibraryCommon( BaseController ):
         # Send list of legitimate roles to the form so the dataset can be associated with 1 or more of them.
         # If the library is public, all active roles are legitimate.  If the library is restricted by the
         # LIBRARY_ACCESS permission, only those roles associated with that permission are legitimate.
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
@@ -1022,14 +1229,74 @@ class LibraryCommon( BaseController ):
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
         params = util.Params( kwd )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
         replace_id = params.get( 'replace_id', None )
-        if replace_id:
-            replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
+        replace_dataset = None
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        if replace_id not in [ None, 'None' ]:
+            try:
+                replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
+            except:
+                replace_dataset = None
+            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+            # its parent library, or if they are not able to view the dataset itself.
+            if not replace_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, replace_dataset, trans.user ) ):
+                message = "Invalid library dataset id ( %s ) to replace specified." % replace_id
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
+            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, replace_dataset ) ):
+                message = "You are not authorized to replace library dataset '%s'." % replace_dataset.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            library = replace_dataset.folder.parent_library
+            folder = replace_dataset.folder
+            last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
         else:
-            replace_dataset = None
+            try:
+                folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            except:
+                folder = None
+            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+            # its parent library, or if they are not able to see the folder's contents.
+            if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
+                message = "Invalid parent folder id ( %s ) specified." % str( folder_id )
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
+            if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, folder ) ):
+                message = "You are not authorized to create a library dataset in parent folder '%s'." % folder.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            library = folder.parent_library
+            last_used_build = folder.genome_build
         # See if the current history is empty
         history = trans.get_history()
         trans.sa_session.refresh( history )
@@ -1048,20 +1315,15 @@ class LibraryCommon( BaseController ):
                 dataset_names = []
                 created_ldda_ids = ''
                 for hda_id in hda_ids:
-                    hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
-                    if hda:
-                        ldda = hda.to_library_dataset_dataset_association( target_folder=folder, replace_dataset=replace_dataset )
-                        created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
-                        dataset_names.append( ldda.name )
-                        if not replace_dataset:
-                            # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
-                            # LDDA and LibraryDataset.
-                            trans.app.security_agent.copy_library_permissions( folder, ldda )
-                            trans.app.security_agent.copy_library_permissions( folder, ldda.library_dataset )
-                        # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
-                        trans.app.security_agent.copy_library_permissions( ldda.library_dataset, ldda )
-                    else:
-                        message = "The requested HistoryDatasetAssociation id %s is invalid" % str( hda_id )
+                    try:
+                        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
+                    except:
+                        hda = None
+                    # Deny that the dataset exists if the user does not have the DATASET_ACCESS permission.
+                    if not hda or \
+                       not ( trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ) and \
+                             hda.history.user == trans.user ):
+                        message = "Invalid history dataset id ( %s ) specified." % hda_id
                         return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                           action='browse_library',
                                                                           cntrller=cntrller,
@@ -1069,6 +1331,16 @@ class LibraryCommon( BaseController ):
                                                                           show_deleted=show_deleted,
                                                                           message=util.sanitize_text( message ),
                                                                           status='error' ) )
+                    ldda = hda.to_library_dataset_dataset_association( target_folder=folder, replace_dataset=replace_dataset )
+                    created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
+                    dataset_names.append( ldda.name )
+                    if not replace_dataset:
+                        # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
+                        # LDDA and LibraryDataset.
+                        trans.app.security_agent.copy_library_permissions( folder, ldda )
+                        trans.app.security_agent.copy_library_permissions( folder, ldda.library_dataset )
+                    # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
+                    trans.app.security_agent.copy_library_permissions( ldda.library_dataset, ldda )
                 if created_ldda_ids:
                     created_ldda_ids = created_ldda_ids.lstrip( ',' )
                     ldda_id_list = created_ldda_ids.split( ',' )
@@ -1087,7 +1359,6 @@ class LibraryCommon( BaseController ):
                             # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                             # to check one of them to see if the current user can manage permissions on them.
                             check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id_list[0] ) )
-                            current_user_roles = trans.get_current_user_roles()
                             if trans.app.security_agent.can_manage_library_item( current_user_roles, check_ldda ):
                                 if replace_dataset:
                                     default_action = ''
@@ -1107,7 +1378,6 @@ class LibraryCommon( BaseController ):
             else:
                 message = 'Select at least one dataset from the list of active datasets in your current history'
                 status = 'error'
-                last_used_build = folder.genome_build
                 upload_option = params.get( 'upload_option', 'import_from_history' )
                 # Send list of data formats to the form so the "extension" select list can be populated dynamically
                 file_formats = trans.app.datatypes_registry.upload_file_formats
@@ -1117,7 +1387,6 @@ class LibraryCommon( BaseController ):
                         yield build_name, dbkey, ( dbkey==last_used_build )
                 dbkeys = get_dbkey_options( last_used_build )
                 # Send list of legitimate roles to the form so the dataset can be associated with 1 or more of them.
-                library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
                 roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
                 return trans.fill_template( "/library/common/upload.mako",
                                             action='add_history_datasets_to_library',
@@ -1141,31 +1410,44 @@ class LibraryCommon( BaseController ):
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         params = util.Params( kwd )        
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
-        if not ldda.dataset:
-            message = 'Invalid LibraryDatasetDatasetAssociation id %s received for file download' % str( id )
-            status = 'error'
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
+        except:
+            ldda = None
+        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+        # its parent library, or if they are not able to view the dataset itself.
+        if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
+            message = "Invalid library dataset id ( %s ) specified." % str( id )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+        ext = ldda.extension
+        if ext in composite_extensions:
+            # is composite - must return a zip of contents and the html file itself - ugh - should be reversible at upload!
+            # use act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ) since it does what we need
+            kwd['do_action'] = 'zip'
+            return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=[id,], **kwd )
         else:
-            composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
-            ext = ldda.extension
-            if ext in composite_extensions: 
-                # is composite - must return a zip of contents and the html file itself - ugh - should be reversible at upload!
-                # use act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ) since it does what we need
-                kwd['do_action'] = 'zip'
-                return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=[id,], **kwd )
-            else:
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
-                trans.response.set_content_type( mime )
-                fStat = os.stat( ldda.file_name )
-                trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = ldda.name
-                fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
-                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( id ), fname )
-                try:
-                    return open( ldda.file_name )
-                except: 
-                    message = 'This dataset contains no content'
+            mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
+            trans.response.set_content_type( mime )
+            fStat = os.stat( ldda.file_name )
+            trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
+            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            fname = ldda.name
+            fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
+            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( id ), fname )
+            try:
+                return open( ldda.file_name )
+            except: 
+                message = 'This dataset contains no content'
         return trans.response.send_redirect( web.url_for( controller='library_common',
                                                           action='browse_library',
                                                           cntrller=cntrller,
@@ -1181,9 +1463,16 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( id ) )
-        if not library_dataset:
-            message = "Invalid library dataset specified, id: %s" %str( id )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( id ) )
+        except:
+            library_dataset = None
+        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+        # its parent library, or if they are not able to view the dataset itself.
+        if not library_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, library_dataset, trans.user ) ):
+            message = "Invalid library dataset id ( %s ) specified." % str( id )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -1192,31 +1481,35 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        current_user_roles = trans.get_current_user_roles()
         # See if we have any associated templates
         widgets = []
         info_association, inherited = library_dataset.library_dataset_dataset_association.get_info_association()
         if info_association and ( not( inherited ) or info_association.inheritable ):
             widgets = library_dataset.library_dataset_dataset_association.get_template_widgets( trans )
         if params.get( 'edit_attributes_button', False ):
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ):
-                if params.get( 'edit_attributes_button', False ):
-                    old_name = library_dataset.name
-                    new_name = util.restore_text( params.get( 'name', '' ) )
-                    new_info = util.restore_text( params.get( 'info', '' ) )
-                    if not new_name:
-                        message = 'Enter a valid name'
-                        status = 'error'
-                    else:
-                        library_dataset.name = new_name
-                        library_dataset.info = new_info
-                        trans.sa_session.add( library_dataset )
-                        trans.sa_session.flush()
-                        message = "The information has been updated."
-                        status = 'done'
+            # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
+            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ) ):
+                message = "You are not authorized to modify library dataset '%s'." % ldda.name
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  id=library_id,
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status = 'error' ) )
+            old_name = library_dataset.name
+            new_name = util.restore_text( params.get( 'name', '' ) )
+            new_info = util.restore_text( params.get( 'info', '' ) )
+            if not new_name:
+                message = 'Enter a valid name'
+                status = 'error'
             else:
-                message = "You are not authorized to change the attributes of this dataset"
-                status = "error"
+                library_dataset.name = new_name
+                library_dataset.info = new_info
+                trans.sa_session.add( library_dataset )
+                trans.sa_session.flush()
+                message = "Information updated for library dataset '%s'." % library_dataset.name
+                status = 'done'
         return trans.fill_template( '/library/common/library_dataset_info.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
@@ -1236,9 +1529,16 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( id )
-        if not library_dataset:
-            message = "Invalid library dataset specified, id: %s" %str( id )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( id ) )
+        except:
+            library_dataset = None
+        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
+        # its parent library, or if they are not able to view the dataset itself.
+        if not library_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, library_dataset, trans.user ) ):
+            message = "Invalid library dataset id ( %s ) specified." % str( id )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -1247,30 +1547,37 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        current_user_roles = trans.get_current_user_roles()
+        # Deny access (even to view) if the user is not an admin and does not
+        # have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
+        if not ( is_admin or \
+                 ( trans.app.security_agent.can_manage_library_item( current_user_roles, library_dataset ) and 
+                   trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset ) ) ):
+            message = "You are not authorized to manage permissions on library dataset '%s'." % library_dataset.name
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         if params.get( 'update_roles_button', False ):
-            if cntrller == 'library_admin' or trans.app.security_agent.can_manage_library_item( current_user_roles, library_dataset ):
-                # The user clicked the Save button on the 'Associate With Roles' form
-                permissions = {}
-                for k, v in trans.app.model.Library.permitted_actions.items():
-                    if k != 'LIBRARY_ACCESS':
-                        # LIBRARY_ACCESS is a special permission set only at the library level
-                        # and it is not inherited.
-                        in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                        permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                # Set the LIBRARY permissions on the LibraryDataset
-                # NOTE: the LibraryDataset and LibraryDatasetDatasetAssociation will be set with the same permissions
-                trans.app.security_agent.set_all_library_permissions( library_dataset, permissions )
-                trans.sa_session.refresh( library_dataset )
-                # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
-                trans.app.security_agent.set_all_library_permissions( library_dataset.library_dataset_dataset_association, permissions )
-                trans.sa_session.refresh( library_dataset.library_dataset_dataset_association )
-                message = 'Permissions and roles have been updated for library dataset %s' % library_dataset.name
-                status = 'done'
-            else:
-                message = "You are not authorized to managed the permissions of this dataset"
-                status = "error"
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+            # The user clicked the Save button on the 'Associate With Roles' form
+            permissions = {}
+            for k, v in trans.app.model.Library.permitted_actions.items():
+                if k != 'LIBRARY_ACCESS':
+                    # LIBRARY_ACCESS is a special permission set only at the library level
+                    # and it is not inherited.
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+            # Set the LIBRARY permissions on the LibraryDataset
+            # NOTE: the LibraryDataset and LibraryDatasetDatasetAssociation will be set with the same permissions
+            trans.app.security_agent.set_all_library_permissions( library_dataset, permissions )
+            trans.sa_session.refresh( library_dataset )
+            # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
+            trans.app.security_agent.set_all_library_permissions( library_dataset.library_dataset_dataset_association, permissions )
+            trans.sa_session.refresh( library_dataset.library_dataset_dataset_association )
+            message = "Permisisons updated for library dataset '%s'." % library_dataset.name
+            status = 'done'
         roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
         return trans.fill_template( '/library/common/library_dataset_permissions.mako',
                                     cntrller=cntrller,
@@ -1305,199 +1612,224 @@ class LibraryCommon( BaseController ):
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         action = params.get( 'do_action', None )
+        lddas = []
+        error = False
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        current_user_roles = trans.get_current_user_roles()
         if not ldda_ids:
-            message = "You must select at least one dataset"
-            status = 'error'
+            error = True
+            message = 'You must select at least one dataset.'
         elif not action:
-            message = "You must select an action to perform on selected datasets"
-            status = 'error'
+            error = True
+            message = 'You must select an action to perform on the selected datasets.'
         else:
+            # Set up the list of lddas for later, and get permission checks out of the way so we don't have to do it in multiple places later.
             ldda_ids = util.listify( ldda_ids )
-            if action == 'import_to_history' or action == 'add':
-                history = trans.get_history()
-                if history is None:
-                    # Must be a bot sending a request without having a history.
-                    message = "You do not have a current history"
-                    return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                      action='browse_library',
-                                                                      cntrller=cntrller,
-                                                                      use_panels=use_panels,
-                                                                      id=library_id,
-                                                                      show_deleted=show_deleted,
-                                                                      message=util.sanitize_text( message ),
-                                                                      status='error' ) )
-                total_imported_lddas = 0
-                message = ''
-                status = 'done'
-                for ldda_id in ldda_ids:
-                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                    if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
-                        message += "Cannot import dataset (%s) since it's state is (%s).  " % ( ldda.name, ldda.dataset.state )
-                        status = 'error'
-                    elif ldda.dataset.state in [ 'ok', 'error' ]:
-                        hda = ldda.to_history_dataset_association( target_history=history, add_to_history=True )
-                        total_imported_lddas += 1
-                if total_imported_lddas:
-                    trans.sa_session.add( history )
-                    trans.sa_session.flush()
-                    message += "%i dataset(s) have been imported into your history.  " % total_imported_lddas
-            elif action == 'manage_permissions':
-                # We need the folder containing the LibraryDatasetDatasetAssociation(s)
-                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_ids[0] ) )
-                trans.response.send_redirect( web.url_for( controller='library_common',
-                                                           action='ldda_permissions',
-                                                           cntrller=cntrller,
-                                                           use_panels=use_panels,
-                                                           library_id=library_id,
-                                                           folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ),
-                                                           id=",".join( ldda_ids ),
-                                                           show_deleted=show_deleted,
-                                                           message=util.sanitize_text( message ),
-                                                           status=status ) )
-            elif action == 'delete':
-                for ldda_id in ldda_ids:
-                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                    # Do not delete the association, just delete the library_dataset.  The
-                    # cleanup_datasets.py script handles everything else.
-                    ld = ldda.library_dataset
-                    ld.deleted = True
-                    trans.sa_session.add( ld )
-                trans.sa_session.flush()
-                message = "The selected datasets have been removed from this data library"
-            elif action in ['zip','tgz','tbz','ngxzip']:
-                error = False
-                killme = string.punctuation + string.whitespace
-                trantab = string.maketrans(killme,'_'*len(killme))
+            for ldda_id in ldda_ids:
                 try:
-                    outext = 'zip'
-                    if action == 'zip':
-                        # Can't use mkstemp - the file must not exist first
-                        tmpd = tempfile.mkdtemp()
-                        tmpf = os.path.join( tmpd, 'library_download.' + action )
-                        if ziptype == '64' and trans.app.config.upstream_gzip:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
-                        elif ziptype == '64':
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                        elif trans.app.config.upstream_gzip:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
-                        else:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
-                        archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
-                    elif action == 'tgz':
-                        if trans.app.config.upstream_gzip:
-                            archive = util.streamball.StreamBall( 'w|' )
-                            outext = 'tar'
-                        else:
-                            archive = util.streamball.StreamBall( 'w|gz' )
-                            outext = 'tgz'
-                    elif action == 'tbz':
-                        archive = util.streamball.StreamBall( 'w|bz2' )
-                        outext = 'tbz2'
-                    elif action == 'ngxzip':
-                        archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
-                except (OSError, zipfile.BadZipFile):
-                    error = True
-                    log.exception( "Unable to create archive for download" )
-                    message = "Unable to create archive for download, please report this error"
-                    status = 'error'
+                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
                 except:
-                     error = True
-                     log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0])
-                     message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
-                     status = 'error'
+                    ldda = None
+                if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
+                    error = True
+                    message = "Invalid library dataset id ( %s ) specified." % str( ldda_id )
+                    break
+                lddas.append( ldda )
+            if action == 'import_to_history' or action == 'add':
+                if trans.get_history() is None:
+                    # Must be a bot sending a request without having a history.
+                    error = True
+                    message = "You do not have a current history"
+            elif action == 'manage_permissions':
+                if not is_admin:
+                    for ldda in lddas:
+                        if not ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and \
+                                 trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) ):
+                            error = True
+                            message = "You are not authorized to manage permissions on library dataset '%s'." % ldda.name
+                            break
+            elif action == 'delete':
+                if not is_admin:
+                    for ldda in lddas:
+                        if not trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
+                            error = True
+                            message = "You are not authorized to modify library dataset '%s'." % ldda.name
+                            break
+        if error:
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
+        if action == 'import_to_history' or action == 'add':
+            history = trans.get_history()
+            total_imported_lddas = 0
+            message = ''
+            status = 'done'
+            for ldda in lddas:
+                if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
+                    message += "Cannot import dataset '%s' since its state is '%s'.  " % ( ldda.name, ldda.dataset.state )
+                    status = 'error'
+                elif ldda.dataset.state in [ 'ok', 'error' ]:
+                    hda = ldda.to_history_dataset_association( target_history=history, add_to_history=True )
+                    total_imported_lddas += 1
+            if total_imported_lddas:
+                trans.sa_session.add( history )
+                trans.sa_session.flush()
+                message += "%i dataset(s) have been imported into your history.  " % total_imported_lddas
+        elif action == 'manage_permissions':
+            trans.response.send_redirect( web.url_for( controller='library_common',
+                                                       action='ldda_permissions',
+                                                       cntrller=cntrller,
+                                                       use_panels=use_panels,
+                                                       library_id=library_id,
+                                                       folder_id=trans.security.encode_id( lddas[0].library_dataset.folder.id ),
+                                                       id=",".join( ldda_ids ),
+                                                       show_deleted=show_deleted,
+                                                       message=util.sanitize_text( message ),
+                                                       status=status ) )
+        elif action == 'delete':
+            for ldda in lddas:
+                # Do not delete the association, just delete the library_dataset.  The
+                # cleanup_datasets.py script handles everything else.
+                ld = ldda.library_dataset
+                ld.deleted = True
+                trans.sa_session.add( ld )
+            trans.sa_session.flush()
+            message = "The selected datasets have been removed from this data library"
+        elif action in ['zip','tgz','tbz','ngxzip']:
+            error = False
+            killme = string.punctuation + string.whitespace
+            trantab = string.maketrans(killme,'_'*len(killme))
+            try:
+                outext = 'zip'
+                if action == 'zip':
+                    # Can't use mkstemp - the file must not exist first
+                    tmpd = tempfile.mkdtemp()
+                    tmpf = os.path.join( tmpd, 'library_download.' + action )
+                    if ziptype == '64' and trans.app.config.upstream_gzip:
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
+                    elif ziptype == '64':
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+                    elif trans.app.config.upstream_gzip:
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
+                    else:
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                    archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
+                elif action == 'tgz':
+                    if trans.app.config.upstream_gzip:
+                        archive = util.streamball.StreamBall( 'w|' )
+                        outext = 'tar'
+                    else:
+                        archive = util.streamball.StreamBall( 'w|gz' )
+                        outext = 'tgz'
+                elif action == 'tbz':
+                    archive = util.streamball.StreamBall( 'w|bz2' )
+                    outext = 'tbz2'
+                elif action == 'ngxzip':
+                    archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
+            except (OSError, zipfile.BadZipFile):
+                error = True
+                log.exception( "Unable to create archive for download" )
+                message = "Unable to create archive for download, please report this error"
+                status = 'error'
+            except:
+                 error = True
+                 log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0])
+                 message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
+                 status = 'error'
+            if not error:
+                composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+                seen = []
+                for ldda in lddas:
+                    if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
+                        continue
+                    ext = ldda.extension
+                    is_composite = ext in composite_extensions
+                    path = ""
+                    parent_folder = ldda.library_dataset.folder
+                    while parent_folder is not None:
+                        # Exclude the now-hidden "root folder"
+                        if parent_folder.parent is None:
+                            path = os.path.join( parent_folder.library_root[0].name, path )
+                            break
+                        path = os.path.join( parent_folder.name, path )
+                        parent_folder = parent_folder.parent
+                    path += ldda.name
+                    while path in seen:
+                        path += '_'
+                    seen.append( path )
+                    zpath = os.path.split(path)[-1] # comes as base_name/fname
+                    outfname,zpathext = os.path.splitext(zpath)
+                    if is_composite:
+                        # need to add all the components from the extra_files_path to the zip
+                        if zpathext == '':
+                            zpath = '%s.html' % zpath # fake the real nature of the html file 
+                        try:
+                            archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
+                        except IOError:
+                            error = True
+                            log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
+                            message = "Unable to create archive for download, please report this error"
+                            status = 'error'
+                            continue                                
+                        flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
+                        for fpath in flist:
+                            efp,fname = os.path.split(fpath)
+                            if fname > '':
+                                fname = fname.translate(trantab)
+                            try:
+                                archive.add( fpath,fname )
+                            except IOError:
+                                error = True
+                                log.exception( "Unable to add %s to temporary library download archive %s" % (fname,outfname))
+                                message = "Unable to create archive for download, please report this error"
+                                status = 'error'
+                                continue
+                    else: # simple case
+                        try:
+                            archive.add( ldda.dataset.file_name, path )
+                        except IOError:
+                            error = True
+                            log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
+                            message = "Unable to create archive for download, please report this error"
+                            status = 'error'                            
                 if not error:
-                    composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
-                    seen = []
-                    current_user_roles = trans.get_current_user_roles()
-                    for ldda_id in ldda_ids:
-                        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                        if not ldda \
-                            or not trans.app.security_agent.can_access_dataset( current_user_roles, ldda.dataset ) \
-                            or ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
-                            continue
-                        ext = ldda.extension
-                        is_composite = ext in composite_extensions
-                        path = ""
-                        parent_folder = ldda.library_dataset.folder
-                        while parent_folder is not None:
-                            # Exclude the now-hidden "root folder"
-                            if parent_folder.parent is None:
-                                path = os.path.join( parent_folder.library_root[0].name, path )
-                                break
-                            path = os.path.join( parent_folder.name, path )
-                            parent_folder = parent_folder.parent
-                        path += ldda.name
-                        while path in seen:
-                            path += '_'
-                        seen.append( path )
-                        zpath = os.path.split(path)[-1] # comes as base_name/fname
-                        outfname,zpathext = os.path.splitext(zpath)
-                        if is_composite:
-                            # need to add all the components from the extra_files_path to the zip
-                            if zpathext == '':
-                                zpath = '%s.html' % zpath # fake the real nature of the html file 
-                            try:
-                                archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
-                            except IOError:
-                                error = True
-                                log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
-                                message = "Unable to create archive for download, please report this error"
-                                status = 'error'
-                                continue                                
-                            flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
-                            for fpath in flist:
-                                efp,fname = os.path.split(fpath)
-                                if fname > '':
-                                    fname = fname.translate(trantab)
-                                try:
-                                    archive.add( fpath,fname )
-                                except IOError:
-                                    error = True
-                                    log.exception( "Unable to add %s to temporary library download archive %s" % (fname,outfname))
-                                    message = "Unable to create archive for download, please report this error"
-                                    status = 'error'
-                                    continue
-                        else: # simple case
-                            try:
-                                archive.add( ldda.dataset.file_name, path )
-                            except IOError:
-                                error = True
-                                log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
-                                message = "Unable to create archive for download, please report this error"
-                                status = 'error'                            
-                    if not error:
-                        lname = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) ).name
-                        fname = lname.replace( ' ', '_' ) + '_files'
-                        if action == 'zip':
-                            archive.close()
-                            tmpfh = open( tmpf )
-                            # clean up now
-                            try:
-                                os.unlink( tmpf )
-                                os.rmdir( tmpd )
-                            except OSError:
-                                error = True
-                                log.exception( "Unable to remove temporary library download archive and directory" )
-                                message = "Unable to create archive for download, please report this error"
-                                status = 'error'
-                            if not error:
-                                trans.response.set_content_type( "application/x-zip-compressed" )
-                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
-                                return tmpfh
-                        elif action == 'ngxzip':
-                            trans.response.set_content_type( "application/zip" )
+                    lname = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) ).name
+                    fname = lname.replace( ' ', '_' ) + '_files'
+                    if action == 'zip':
+                        archive.close()
+                        tmpfh = open( tmpf )
+                        # clean up now
+                        try:
+                            os.unlink( tmpf )
+                            os.rmdir( tmpd )
+                        except OSError:
+                            error = True
+                            log.exception( "Unable to remove temporary library download archive and directory" )
+                            message = "Unable to create archive for download, please report this error"
+                            status = 'error'
+                        if not error:
+                            trans.response.set_content_type( "application/x-zip-compressed" )
                             trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
-                            trans.response.headers[ "X-Archive-Files" ] = "zip"
-                            return archive
-                        else:
-                            trans.response.set_content_type( "application/x-tar" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
-                            archive.wsgi_status = trans.response.wsgi_status()
-                            archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                            return archive.stream
-            else: # unknown action
-                message = '### unknown action = %s in act_on_multiple_datasets' % action		
-
+                            return tmpfh
+                    elif action == 'ngxzip':
+                        trans.response.set_content_type( "application/zip" )
+                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                        trans.response.headers[ "X-Archive-Files" ] = "zip"
+                        return archive
+                    else:
+                        trans.response.set_content_type( "application/x-tar" )
+                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                        archive.wsgi_status = trans.response.wsgi_status()
+                        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                        return archive.stream
+        else:
+            status = 'error'
+            message = 'Invalid action ( %s ) specified.' % action
         return trans.response.send_redirect( web.url_for( controller='library_common',
                                                           action='browse_library',
                                                           cntrller=cntrller,
@@ -1506,30 +1838,44 @@ class LibraryCommon( BaseController ):
                                                           show_deleted=show_deleted,
                                                           message=util.sanitize_text( message ),
                                                           status=status ) )
-    def get_item_and_stuff( self, trans, item_type, library_id, folder_id, ldda_id ):
+    def get_item_and_stuff( self, trans, item_type, library_id, folder_id, ldda_id, is_admin ):
         # Return an item, description, action and an id based on the item_type.
+        message = None
+        current_user_roles = trans.get_current_user_roles()
         if item_type == 'library':
-            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+            try:
+                item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+            except:
+                item = None
             item_desc = 'data library'
             action = 'library_info'
             id = library_id
         elif item_type == 'folder':
-            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            try:
+                item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            except:
+                item = None
             item_desc = 'folder'
             action = 'folder_info'
             id = folder_id
         elif item_type == 'ldda':
-            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+            try:
+                item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+            except:
+                item = None
             item_desc = 'dataset'
             action = 'ldda_edit_info'
             id = ldda_id
         else:
+            item = None
             message = "Invalid library item type ( %s )" % str( item_type )
+        if not item or not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ) ):
+            if message is None:
+                message = "Invalid %s id ( %s ) specified." % ( item_desc, str( id ) )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
-                                                              cntrller=cntrller,
+                                                              cntrller='library', # cheating a bit here
                                                               id=library_id,
-                                                              show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
         return item, item_desc, action, id
@@ -1541,50 +1887,64 @@ class LibraryCommon( BaseController ):
                                form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE )
         if not forms:
             message = "There are no forms on which to base the template, so create a form and then add the template."
-            trans.response.send_redirect( web.url_for( controller='forms',
-                                                       action='new',
-                                                       message=message,
-                                                       status='done',
-                                                       form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE ) )
-        else:
-            params = util.Params( kwd )
-            show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-            use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-            message = util.restore_text( params.get( 'message', ''  ) )
-            action = ''
-            status = params.get( 'status', 'done' )
-            item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
-            # If the inheritable checkbox is checked, the param will be in the request
-            inheritable = CheckboxField.is_checked( params.get( 'inheritable', '' ) )
-            if params.get( 'add_template_button', False ):
-                form_id = params.get( 'form_id', 'none' )
-                if form_id not in [ None, 'None', 'none' ]:
-                    form = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( form_id ) )
-                    form_values = trans.app.model.FormValues( form, [] )
-                    trans.sa_session.add( form_values )
-                    trans.sa_session.flush()
-                    if item_type == 'library':
-                        assoc = trans.app.model.LibraryInfoAssociation( item, form, form_values, inheritable=inheritable )
-                    elif item_type == 'folder':
-                        assoc = trans.app.model.LibraryFolderInfoAssociation( item, form, form_values, inheritable=inheritable )
-                    elif item_type == 'ldda':
-                        assoc = trans.app.model.LibraryDatasetDatasetInfoAssociation( item, form, form_values )
-                    trans.sa_session.add( assoc )
-                    trans.sa_session.flush()
-                    message = 'A template based on the form "%s" has been added to this %s.' % ( form.name, item_desc )
-                    trans.response.send_redirect( web.url_for( controller='library_common',
-                                                               action=action,
-                                                               cntrller=cntrller,
-                                                               use_panels=use_panels,
-                                                               library_id=library_id,
-                                                               folder_id=folder_id,
-                                                               id=id,
-                                                               show_deleted=show_deleted,
-                                                               message=message,
-                                                               status='done' ) )
-                else:
-                    message = "Select a form on which to base the template."
-                    status = "error"
+            return trans.response.send_redirect( web.url_for( controller='forms',
+                                                              action='new',
+                                                              message=message,
+                                                              status='done',
+                                                              form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE ) )
+        params = util.Params( kwd )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        action = ''
+        status = params.get( 'status', 'done' )
+        is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id, is_admin )
+        except ValueError:
+            # At this point, the client has already redirected, so this is just here to prevent the unnecessary traceback
+            return None
+        if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            message = "You are not authorized to modify %s '%s'." % ( item_desc, item.name )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
+        # If the inheritable checkbox is checked, the param will be in the request
+        inheritable = CheckboxField.is_checked( params.get( 'inheritable', '' ) )
+        if params.get( 'add_template_button', False ):
+            form_id = params.get( 'form_id', 'none' )
+            if form_id not in [ None, 'None', 'none' ]:
+                form = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( form_id ) )
+                form_values = trans.app.model.FormValues( form, [] )
+                trans.sa_session.add( form_values )
+                trans.sa_session.flush()
+                if item_type == 'library':
+                    assoc = trans.app.model.LibraryInfoAssociation( item, form, form_values, inheritable=inheritable )
+                elif item_type == 'folder':
+                    assoc = trans.app.model.LibraryFolderInfoAssociation( item, form, form_values, inheritable=inheritable )
+                elif item_type == 'ldda':
+                    assoc = trans.app.model.LibraryDatasetDatasetInfoAssociation( item, form, form_values )
+                trans.sa_session.add( assoc )
+                trans.sa_session.flush()
+                message = 'A template based on the form "%s" has been added to this %s.' % ( form.name, item_desc )
+                trans.response.send_redirect( web.url_for( controller='library_common',
+                                                           action=action,
+                                                           cntrller=cntrller,
+                                                           use_panels=use_panels,
+                                                           library_id=library_id,
+                                                           folder_id=folder_id,
+                                                           id=id,
+                                                           show_deleted=show_deleted,
+                                                           message=message,
+                                                           status='done' ) )
+            else:
+                message = "Select a form on which to base the template."
+                status = "error"
         def generate_template_stuff( trans, forms, form_id ):
             # Returns the following:
             # - a list of template ids
@@ -1638,7 +1998,21 @@ class LibraryCommon( BaseController ):
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
+        is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id, is_admin )
+        except ValueError:
+            return None
+        if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            message = "You are not authorized to modify %s '%s'." % ( item_desc, item.name )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         info_association, inherited = item.get_info_association( restrict=True )
         if info_association:
             if info_association.inheritable:
@@ -1666,7 +2040,21 @@ class LibraryCommon( BaseController ):
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
+        is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id, is_admin )
+        except ValueError:
+            return None
+        if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            message = "You are not authorized to modify %s '%s'." % ( item_desc, item.name )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         # An info_association must exist at this point
         info_association, inherited = item.get_info_association( restrict=True )
         template = info_association.template
@@ -1710,7 +2098,21 @@ class LibraryCommon( BaseController ):
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
+        is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id, is_admin )
+        except ValueError:
+            return None
+        if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            message = "You are not authorized to modify %s '%s'." % ( item_desc, item.name )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         # Save updated template field contents
         field_contents = []
         for index in range( int( num_widgets ) ):
@@ -1775,7 +2177,21 @@ class LibraryCommon( BaseController ):
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
+        is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
+        current_user_roles = trans.get_current_user_roles()
+        try:
+            item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id, is_admin )
+        except ValueError:
+            return None
+        if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            message = "You are not authorized to modify %s '%s'." % ( item_desc, item.name )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
         info_association, inherited = item.get_info_association()
         if not info_association:
             message = "There is no template for this %s" % item_type
@@ -1809,6 +2225,8 @@ class LibraryCommon( BaseController ):
         item_types = { 'library': trans.app.model.Library,
                        'folder': trans.app.model.LibraryFolder,
                        'library_dataset': trans.app.model.LibraryDataset }
+        is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
+        current_user_roles = trans.get_current_user_roles()
         if item_type not in item_types:
             message = 'Bad item_type specified: %s' % str( item_type )
             status = 'error'
@@ -1817,12 +2235,22 @@ class LibraryCommon( BaseController ):
                 item_desc = 'Dataset'
             else:
                 item_desc = item_type.capitalize()
-            library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
-            library_item.deleted = True
-            trans.sa_session.add( library_item )
-            trans.sa_session.flush()
-            message = util.sanitize_text( "%s '%s' has been marked deleted" % ( item_desc, library_item.name ) )
-            status = 'done'
+            try:
+                library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
+            except:
+                library_item = None
+            if not library_item or not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, library_item, trans.user ) ):
+                message = 'Invalid %s id ( %s ) specifield.' % ( item_desc, item_id )
+                status = 'error'
+            elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+                message = "You are not authorized to delete %s '%s'." % ( item_desc, library_item.name )
+                status = 'error'
+            else:
+                library_item.deleted = True
+                trans.sa_session.add( library_item )
+                trans.sa_session.flush()
+                message = util.sanitize_text( "%s '%s' has been marked deleted" % ( item_desc, library_item.name ) )
+                status = 'done'
         if item_type == 'library':
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_libraries',
@@ -1843,6 +2271,8 @@ class LibraryCommon( BaseController ):
         item_types = { 'library': trans.app.model.Library,
                        'folder': trans.app.model.LibraryFolder,
                        'library_dataset': trans.app.model.LibraryDataset }
+        is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
+        current_user_roles = trans.get_current_user_roles()
         if item_type not in item_types:
             message = 'Bad item_type specified: %s' % str( item_type )
             status = ERROR
@@ -1851,10 +2281,19 @@ class LibraryCommon( BaseController ):
                 item_desc = 'Dataset'
             else:
                 item_desc = item_type.capitalize()
-            library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
-            if library_item.purged:
+            try:
+                library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
+            except:
+                library_item = None
+            if not library_item or not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, library_item, trans.user ) ):
+                message = 'Invalid %s id ( %s ) specifield.' % ( item_desc, item_id )
+                status = 'error'
+            elif library_item.purged:
                 message = '%s %s has been purged, so it cannot be undeleted' % ( item_desc, library_item.name )
                 status = ERROR
+            elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+                message = "You are not authorized to delete %s '%s'." % ( item_desc, library_item.name )
+                status = 'error'
             else:
                 library_item.deleted = False
                 trans.sa_session.add( library_item )
@@ -1932,4 +2371,3 @@ def get_containing_library_from_library_dataset( trans, library_dataset ):
         if library.root_folder == folder:
             return library
     return None
-            
