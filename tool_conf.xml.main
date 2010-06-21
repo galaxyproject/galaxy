@@ -128,6 +128,7 @@
     <tool file="plotting/boxplot.xml" />
     <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/build_ucsc_custom_track.xml" />
+    <tool file="maf/vcf_to_maf_customtrack.xml" />
   </section>
   <section name="Regional Variation" id="regVar">
     <tool file="regVariation/windowSplitter.xml" />
