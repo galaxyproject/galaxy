@@ -136,7 +136,7 @@ class SetMetadataAction(DefaultJobAction):
 
 ACTIONS = { "RenameDatasetAction" : RenameDatasetAction,
             "HideDatasetAction" : HideDatasetAction,
-            "ChangeDatatypeAction": ChangeDatatypeAction, 
+            # "ChangeDatatypeAction": ChangeDatatypeAction, 
             # "SetMetadataAction" : SetMetadataAction, 
              }
             
