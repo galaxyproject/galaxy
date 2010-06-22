@@ -48,6 +48,27 @@ def add_controllers( webapp, app ):
                 if isclass( T ) and T is not BaseController and issubclass( T, BaseController ):
                     webapp.add_controller( name, T( app ) )
 
+def add_api_controllers( webapp, app ):
+    from galaxy.web.base.controller import BaseController
+    from galaxy.web.base.controller import ControllerUnavailable
+    import galaxy.web.api
+    controller_dir = galaxy.web.api.__path__[0]
+    for fname in os.listdir( controller_dir ):
+        if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
+            name = fname[:-3]
+            module_name = "galaxy.web.api." + name
+            try:
+                module = __import__( module_name )
+            except ControllerUnavailable, exc:
+                log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                continue
+            for comp in module_name.split( "." )[1:]:
+                module = getattr( module, comp )
+            for key in dir( module ):
+                T = getattr( module, key )
+                if isclass( T ) and T is not BaseController and issubclass( T, BaseController ):
+                    webapp.add_api_controller( name, T( app ) )
+
 def app_factory( global_conf, **kwargs ):
     """
     Return a wsgi application serving the root object
@@ -80,6 +101,11 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
+    # If enabled, add the web API
+    if asbool( kwargs.get( 'enable_api', False ) ):
+        add_api_controllers( webapp, app )
+        webapp.api_mapper.resource( 'content', 'contents', path_prefix='/api/libraries/:library_id', parent_resources=dict( member_name='library', collection_name='libraries' ) )
+        webapp.api_mapper.resource( 'library', 'libraries', path_prefix='/api' )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):

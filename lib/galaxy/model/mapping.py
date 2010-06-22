@@ -889,6 +889,12 @@ UserAction.table = Table( "user_action", metadata,
     Column( "context", Unicode( 512 ) ),
     Column( "params", Unicode( 1024 ) ) )
 
+APIKeys.table = Table( "api_keys", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "key", TrimmedString( 32 ), index=True, unique=True ) )
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -1067,8 +1073,9 @@ assign_mapper( context, User, User.table,
                      _preferences=relation( UserPreference, backref="user", collection_class=attribute_mapped_collection('name')),
 #                     addresses=relation( UserAddress,
 #                                         primaryjoin=( User.table.c.id == UserAddress.table.c.user_id ) )
-                      values=relation( FormValues,
-                                       primaryjoin=( User.table.c.form_values_id == FormValues.table.c.id ) ),
+                     values=relation( FormValues,
+                                      primaryjoin=( User.table.c.form_values_id == FormValues.table.c.id ) ),
+                     api_keys=relation( APIKeys, backref="user", order_by=desc( APIKeys.table.c.create_time ) ),
                      ) )
                      
 # Set up proxy so that this syntax is possible:
@@ -1484,6 +1491,9 @@ assign_mapper( context, UserPreference, UserPreference.table,
 assign_mapper( context, UserAction, UserAction.table, 
   properties = dict( user=relation( User.mapper ) )
             )
+
+assign_mapper( context, APIKeys, APIKeys.table, 
+    properties = {} )
 
 def db_next_hid( self ):
     """

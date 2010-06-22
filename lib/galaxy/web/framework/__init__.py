@@ -30,6 +30,7 @@ from babel.support import Translations
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
+from sqlalchemy.orm.exc import NoResultFound
 
 pkg_resources.require( "pexpect" )
 pkg_resources.require( "amqplib" )
@@ -87,6 +88,43 @@ def require_login( verb="perform this action", use_panels=False, webapp='galaxy'
         return decorator
     return argcatcher
     
+def expose_api( func ):
+    def decorator( self, trans, *args, **kwargs ):
+        def error( environ, start_response ):
+            start_response( error_status, [('Content-type', 'text/plain')] )
+            return error_message
+        error_status = '403 Forbidden'
+        if 'key' not in kwargs:
+            error_message = 'No API key provided with request, please consult the API documentation.'
+            return error
+        try:
+            provided_key = trans.sa_session.query( trans.app.model.APIKeys ).filter( trans.app.model.APIKeys.table.c.key == kwargs['key'] ).one()
+        except NoResultFound:
+            error_message = 'Provided API key is not valid.'
+            return error
+        newest_key = provided_key.user.api_keys[0]
+        if newest_key.key != provided_key.key:
+            error_message = 'Provided API key has expired.'
+            return error
+        if trans.request.body:
+            try:
+                payload = util.recursively_stringify_dictionary_keys( simplejson.loads( trans.request.body ) )
+                kwargs['payload'] = payload
+            except ValueError:
+                error_status = '400 Bad Request'
+                error_message = 'Your request did not appear to be valid JSON, please consult the API documentation'
+                return error
+        trans.response.set_content_type( "application/json" )
+        trans.set_user( provided_key.user )
+        if trans.debug:
+            return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
+        else:
+            return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+    if not hasattr(func, '_orig'):
+        decorator._orig = func
+    decorator.exposed = True
+    return decorator
+
 def require_admin( func ):
     def decorator( self, trans, *args, **kwargs ):
         admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
@@ -119,7 +157,7 @@ def form( *args, **kwargs ):
 class WebApplication( base.WebApplication ):
     def __init__( self, galaxy_app, session_cookie='galaxysession' ):
         base.WebApplication.__init__( self )
-        self.set_transaction_factory( lambda e: UniverseWebTransaction( e, galaxy_app, self, session_cookie ) )
+        self.set_transaction_factory( lambda e: self.transaction_chooser( e, galaxy_app, session_cookie ) )
         # Mako support
         self.mako_template_lookup = mako.lookup.TemplateLookup(
             directories = [ galaxy_app.config.template_path ] ,
@@ -135,21 +173,21 @@ class WebApplication( base.WebApplication ):
         if isinstance( body, FormBuilder ):
             body = trans.show_form( body )
         return base.WebApplication.make_body_iterable( self, trans, body )
+    def transaction_chooser( self, environ, galaxy_app, session_cookie ):
+        if 'is_api_request' in environ:
+            return GalaxyWebAPITransaction( environ, galaxy_app, self )
+        else:
+            return GalaxyWebUITransaction( environ, galaxy_app, self, session_cookie )
     
-class UniverseWebTransaction( base.DefaultWebTransaction ):
+class GalaxyWebTransaction( base.DefaultWebTransaction ):
     """
-    Encapsulates web transaction specific state for the Universe application
+    Encapsulates web transaction specific state for the Galaxy application
     (specifically the user's "cookie" session and history)
     """
-    def __init__( self, environ, app, webapp, session_cookie ):
+    def __init__( self, environ, app, webapp ):
         self.app = app
         self.webapp = webapp
         self.security = webapp.security
-        # FIXME: the following 3 attributes are not currently used
-        #        Remove them if they are not going to be...
-        self.__user = NOT_SET
-        self.__history = NOT_SET
-        self.__galaxy_session = NOT_SET
         base.DefaultWebTransaction.__init__( self, environ )
         self.setup_i18n()
         self.sa_session.expunge_all()
@@ -158,13 +196,6 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
-        # Always have a valid galaxy session
-        self.__ensure_valid_session( session_cookie )
-        # Prevent deleted users from accessing Galaxy
-        if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
-            self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
-        if self.app.config.require_login:
-            self.__ensure_logged_in_user( environ )
     def setup_i18n( self ):
         if 'HTTP_ACCEPT_LANGUAGE' in self.environ:
             # locales looks something like: ['en', 'en-us;q=0.7', 'ja;q=0.3']
@@ -252,12 +283,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         tstamp = time.localtime ( time.time() + 3600 * 24 * age )
         self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp ) 
         self.response.cookies[name]['version'] = version
-    #@property
-    #def galaxy_session( self ):
-    #    if not self.__galaxy_session:
-    #        self.__ensure_valid_session()
-    #    return self.__galaxy_session  
-    def __ensure_valid_session( self, session_cookie ):
+    def _ensure_valid_session( self, session_cookie ):
         """
         Ensure that a valid Galaxy session exists and is available as
         trans.session (part of initialization)
@@ -344,7 +370,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         # If the old session was invalid, get a new history with our new session
         if invalidate_existing_session:
             self.new_history()
-    def __ensure_logged_in_user( self, environ ):
+    def _ensure_logged_in_user( self, environ ):
         allowed_paths = (
             url_for( controller='root', action='index' ),
             url_for( controller='root', action='tool_menu' ),
@@ -537,15 +563,6 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.add_all( ( self.galaxy_session, history ) )
         self.sa_session.flush()
         return history
-    def get_user( self ):
-        """Return the current user if logged in or None."""
-        return self.galaxy_session.user
-    def set_user( self, user ):
-        """Set the current user."""
-        self.galaxy_session.user = user
-        self.sa_session.add( self.galaxy_session )
-        self.sa_session.flush()
-    user = property( get_user, set_user )
     def get_current_user_roles( self ):
         user = self.get_user()
         if user:
@@ -734,6 +751,53 @@ class FormInput( object ):
         self.error = error
         self.help = help
         self.use_label = use_label
+
+class GalaxyWebAPITransaction( GalaxyWebTransaction ):
+    def __init__( self, environ, app, webapp ):
+        GalaxyWebTransaction.__init__( self, environ, app, webapp )
+        self.__user = None
+        self._ensure_valid_session( None )
+    def _ensure_valid_session( self, session_cookie ):
+        self.galaxy_session = Bunch()
+        self.galaxy_session.history = self.galaxy_session.current_history = Bunch()
+        self.galaxy_session.history.genome_build = None
+        self.galaxy_session.is_api = True
+    def get_user( self ):
+        """Return the current user (the expose_api decorator ensures that it is set)."""
+        return self.__user
+    def set_user( self, user ):
+        """Compatibility method"""
+        self.__user = user
+    user = property( get_user, set_user )
+    @property
+    def db_builds( self ):
+        dbnames = []
+        if 'dbkeys' in self.user.preferences:
+            user_keys = from_json_string( self.user.preferences['dbkeys'] )
+            for key, chrom_dict in user_keys.iteritems():
+                dbnames.append((key, "%s (%s) [Custom]" % (chrom_dict['name'], key) ))
+        dbnames.extend( util.dbnames )
+        return dbnames
+
+class GalaxyWebUITransaction( GalaxyWebTransaction ):
+    def __init__( self, environ, app, webapp, session_cookie ):
+        GalaxyWebTransaction.__init__( self, environ, app, webapp )
+        # Always have a valid galaxy session
+        self._ensure_valid_session( session_cookie )
+        # Prevent deleted users from accessing Galaxy
+        if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
+            self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
+        if self.app.config.require_login:
+            self._ensure_logged_in_user( environ )
+    def get_user( self ):
+        """Return the current user if logged in or None."""
+        return self.galaxy_session.user
+    def set_user( self, user ):
+        """Set the current user."""
+        self.galaxy_session.user = user
+        self.sa_session.add( self.galaxy_session )
+        self.sa_session.flush()
+    user = property( get_user, set_user )
 
 class SelectInput( FormInput ):
     """ A select form input. """

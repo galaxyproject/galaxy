@@ -112,6 +112,9 @@ gbrowse_display_sites = wormbase,tair,modencode_worm,modencode_fly
 # Define your GeneTrack servers in tool-data/shared/genetrack/genetrack_sites.txt
 #genetrack_display_sites =
 
+# Enable the (experimental! beta!) Web API.  Documentation forthcoming.
+#enable_api = False
+
 # Serving static files (needed if running standalone)
 static_enabled = True
 static_cache_time = 360

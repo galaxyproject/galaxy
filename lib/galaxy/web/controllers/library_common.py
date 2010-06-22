@@ -280,7 +280,7 @@ class LibraryCommon( BaseController ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
         try:
             parent_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( parent_id ) )
@@ -294,6 +294,8 @@ class LibraryCommon( BaseController ):
         # its parent library, or if they are not able to see the folder's contents.
         if not parent_folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, parent_folder, trans.user ) ):
             message = "Invalid parent folder id ( %s ) specified." % str( parent_id )
+            if cntrller == 'api':
+                return 400, message
             # This doesn't give away the library's existence since
             # browse_library will simply punt to browse_libraries if the
             # user-supplied id is invalid or inaccessible.
@@ -309,6 +311,8 @@ class LibraryCommon( BaseController ):
         if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, parent_folder ) ):
             message = "You are not authorized to create a folder in parent folder '%s'." % parent_folder.name
             # Redirect to the real parent library since we know we have access to it.
+            if cntrller == 'api':
+                return 403, message
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -317,7 +321,7 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        if params.get( 'new_folder_button', False ):
+        if params.get( 'new_folder_button', False ) or cntrller == 'api':
             new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
                                                         description=util.restore_text( params.description ) )
             # We are associating the last used genome build with folders, so we will always
@@ -329,6 +333,9 @@ class LibraryCommon( BaseController ):
             trans.sa_session.flush()
             # New folders default to having the same permissions as their parent folder
             trans.app.security_agent.copy_library_permissions( parent_folder, new_folder )
+            # If we're creating in the API, we're done
+            if cntrller == 'api':
+                return 200, dict( created=new_folder )
             # If we have an inheritable template, redirect to the folder_info page so information
             # can be filled in immediately.
             widgets = []
@@ -654,7 +661,7 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        if ( trans.user_is_admin() and cntrller == 'library_admin' ):
+        if is_admin:
             # Get all associated hdas and lddas that use the same disk file.
             associated_hdas = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
                                               .filter( and_( trans.model.HistoryDatasetAssociation.deleted == False,
@@ -848,7 +855,7 @@ class LibraryCommon( BaseController ):
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
         if replace_id not in [ None, 'None' ]:
             try:
@@ -859,6 +866,8 @@ class LibraryCommon( BaseController ):
             # its parent library, or if they are not able to view the dataset itself.
             if not replace_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, replace_dataset, trans.user ) ):
                 message = "Invalid library dataset id ( %s ) to replace specified." % replace_id
+                if cntrller == 'api':
+                    return 400, message
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='browse_library',
                                                                   cntrller=cntrller,
@@ -870,6 +879,8 @@ class LibraryCommon( BaseController ):
             # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
             if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, replace_dataset ) ):
                 message = "You are not authorized to replace library dataset '%s'." % replace_dataset.name
+                if cntrller == 'api':
+                    return 403, message
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='browse_library',
                                                                   cntrller=cntrller,
@@ -896,6 +907,8 @@ class LibraryCommon( BaseController ):
             # its parent library, or if they are not able to see the folder's contents.
             if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
                 message = "Invalid parent folder id ( %s ) specified." % str( folder_id )
+                if cntrller == 'api':
+                    return 400, message
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='browse_library',
                                                                   cntrller=cntrller,
@@ -907,6 +920,8 @@ class LibraryCommon( BaseController ):
             # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
             if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, folder ) ):
                 message = "You are not authorized to create a library dataset in parent folder '%s'." % folder.name
+                if cntrller == 'api':
+                    return 403, message
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='browse_library',
                                                                   cntrller=cntrller,
@@ -918,7 +933,7 @@ class LibraryCommon( BaseController ):
             library = folder.parent_library
         if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
-        if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ):
+        if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ) or cntrller == 'api':
             # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
             # on the dataset that would cause accessibility issues.
             roles = params.get( 'roles', False )
@@ -931,7 +946,8 @@ class LibraryCommon( BaseController ):
                 permissions, in_roles, error, message = \
                     trans.app.security_agent.derive_roles_from_access( trans, library.id, cntrller, library=True, **vars )
             if error:
-                status = 'error'
+                if cntrller == 'api':
+                    return 400, message
                 trans.response.send_redirect( web.url_for( controller='library_common',
                                                            action='upload_library_dataset',
                                                            cntrller=cntrller,
@@ -961,6 +977,11 @@ class LibraryCommon( BaseController ):
                                                                                                     replace_dataset=replace_dataset,
                                                                                                     **kwd )
                 if created_outputs_dict:
+                    if cntrller == 'api':
+                        # created_outputs_dict can only ever be a string if cntrller == 'api'
+                        if type( created_outputs_dict ) == str:
+                            return 400, created_outputs_dict
+                        return 200, created_outputs_dict
                     total_added = len( created_outputs_dict.keys() )
                     ldda_id_list = [ str( v.id ) for k, v in created_outputs_dict.items() ]
                     created_ldda_ids=",".join( ldda_id_list )
@@ -1001,6 +1022,9 @@ class LibraryCommon( BaseController ):
                     created_ldda_ids = ''
                     message = "Upload failed"
                     status='error'
+                    if cntrller == 'api':
+                        return 400, message
+                    response_code = 400
                 trans.response.send_redirect( web.url_for( controller='library_common',
                                                            action='browse_library',
                                                            cntrller=cntrller,
@@ -1068,7 +1092,6 @@ class LibraryCommon( BaseController ):
         # Library-specific params
         params = util.Params( kwd ) # is this filetoolparam safe?
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        library_bunch = upload_common.handle_library_params( trans, params, folder_id, replace_dataset )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         server_dir = util.restore_text( params.get( 'server_dir', '' ) )
@@ -1077,11 +1100,11 @@ class LibraryCommon( BaseController ):
         else:
             replace_id = None
         upload_option = params.get( 'upload_option', 'upload_file' )
-        err_redirect = False
+        response_code = 200
         if upload_option == 'upload_directory':
             if server_dir in [ None, 'None', '' ]:
-                err_redirect = True
-            if cntrller == 'library_admin':
+                response_code = 400
+            if cntrller == 'library_admin' or ( cntrller == 'api' and trans.user_is_admin ):
                 import_dir = trans.app.config.library_import_dir
                 import_dir_desc = 'library_import_dir'
                 full_dir = os.path.join( import_dir, server_dir )
@@ -1095,21 +1118,35 @@ class LibraryCommon( BaseController ):
             if import_dir:
                 message = 'Select a directory'
             else:
+                response_code = 403
                 message = '"%s" is not defined in the Galaxy configuration file' % import_dir_desc
-        # Proceed with (mostly) regular upload processing
-        precreated_datasets = upload_common.get_precreated_datasets( trans, tool_params, trans.app.model.LibraryDatasetDatasetAssociation, controller=cntrller )
-        if upload_option == 'upload_file':
-            tool_params = upload_common.persist_uploads( tool_params )
-            uploaded_datasets = upload_common.get_uploaded_datasets( trans, cntrller, tool_params, precreated_datasets, dataset_upload_inputs, library_bunch=library_bunch )
-        elif upload_option == 'upload_directory':
-            uploaded_datasets, err_redirect, message = self.get_server_dir_uploaded_datasets( trans, cntrller, params, full_dir, import_dir_desc, library_bunch, err_redirect, message )
         elif upload_option == 'upload_paths':
-            uploaded_datasets, err_redirect, message = self.get_path_paste_uploaded_datasets( trans, cntrller, params, library_bunch, err_redirect, message )
-        upload_common.cleanup_unused_precreated_datasets( precreated_datasets )
-        if upload_option == 'upload_file' and not uploaded_datasets:
-            message = 'Select a file, enter a URL or enter text'
-            err_redirect = True
-        if err_redirect:
+            if not trans.app.config.allow_library_path_paste:
+                response_code = 403
+                message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
+        # Some error handling should be added to this method.
+        try:
+            library_bunch = upload_common.handle_library_params( trans, params, folder_id, replace_dataset )
+        except:
+            response_code = 500
+            message = "Unable to parse upload parameters, please report this error."
+        # Proceed with (mostly) regular upload processing if we're still errorless
+        if response_code == 200:
+            precreated_datasets = upload_common.get_precreated_datasets( trans, tool_params, trans.app.model.LibraryDatasetDatasetAssociation, controller=cntrller )
+            if upload_option == 'upload_file':
+                tool_params = upload_common.persist_uploads( tool_params )
+                uploaded_datasets = upload_common.get_uploaded_datasets( trans, cntrller, tool_params, precreated_datasets, dataset_upload_inputs, library_bunch=library_bunch )
+            elif upload_option == 'upload_directory':
+                uploaded_datasets, response_code, message = self.get_server_dir_uploaded_datasets( trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message )
+            elif upload_option == 'upload_paths':
+                uploaded_datasets, response_code, message = self.get_path_paste_uploaded_datasets( trans, cntrller, params, library_bunch, response_code, message )
+            upload_common.cleanup_unused_precreated_datasets( precreated_datasets )
+            if upload_option == 'upload_file' and not uploaded_datasets:
+                response_code = 400
+                message = 'Select a file, enter a URL or enter text'
+        if response_code != 200:
+            if cntrller == 'api':
+                return ( response_code, message )
             trans.response.send_redirect( web.url_for( controller='library_common',
                                                        action='upload_library_dataset',
                                                        cntrller=cntrller,
@@ -1145,7 +1182,7 @@ class LibraryCommon( BaseController ):
             trans.sa_session.add_all( ( uploaded_dataset.data, uploaded_dataset.data.dataset ) )
             trans.sa_session.flush()
         return uploaded_dataset
-    def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, err_redirect, message ):
+    def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message ):
         files = []
         try:
             for entry in os.listdir( full_dir ):
@@ -1173,22 +1210,22 @@ class LibraryCommon( BaseController ):
                     files.append( path )
         except Exception, e:
             message = "Unable to get file list for configured %s, error: %s" % ( import_dir_desc, str( e ) )
-            err_redirect = True
-            return None, err_redirect, message
+            response_code = 500
+            return None, response_code, message
         if not files:
             message = "The directory '%s' contains no valid files" % full_dir
-            err_redirect = True
-            return None, err_redirect, message
+            response_code = 400
+            return None, response_code, message
         uploaded_datasets = []
         for file in files:
             name = os.path.basename( file )
             uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, file, 'server_dir', library_bunch ) )
-        return uploaded_datasets, None, None
-    def get_path_paste_uploaded_datasets( self, trans, cntrller, params, library_bunch, err_redirect, message ):
+        return uploaded_datasets, 200, None
+    def get_path_paste_uploaded_datasets( self, trans, cntrller, params, library_bunch, response_code, message ):
         if params.get( 'filesystem_paths', '' ) == '':
             message = "No paths entered in the upload form"
-            err_redirect = True
-            return None, err_redirect, message
+            response_code = 400
+            return None, response_code, message
         preserve_dirs = True
         if params.get( 'dont_preserve_dirs', False ):
             preserve_dirs = False
@@ -1222,8 +1259,8 @@ class LibraryCommon( BaseController ):
                                                                                       in_folder ) )
         if bad_paths:
             message = "Invalid paths:<br><ul><li>%s</li></ul>" % "</li><li>".join( bad_paths )
-            err_redirect = True
-            return None, err_redirect, message
+            response_code = 400
+            return None, response_code, message
         return uploaded_datasets, None, None
     @web.expose
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
