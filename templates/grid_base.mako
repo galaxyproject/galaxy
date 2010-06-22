@@ -245,14 +245,13 @@
         %endfor
             
         // Initialize URL args with filter arguments.
-        var url_args = ${h.to_json_string( cur_filter_dict )};
+        var url_args_init = ${h.to_json_string( cur_filter_dict )},
+            url_args = {};
         
         // Place "f-" in front of all filter arguments.
-        for (arg in url_args)
-        {
-            value = url_args[arg];
-            delete url_args[arg];
-            url_args["f-" + arg] = value;
+        
+        for (arg in url_args_init) {
+            url_args["f-" + arg] = url_args_init[arg];
         }
         
         // Add sort argument to URL args.
