@@ -829,6 +829,8 @@ class HistoryDatasetAssociationDisplayAtAuthorization( object ):
 
 class Library( object ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'name', 'description', 'synopsys' )
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
@@ -870,8 +872,21 @@ class Library( object ):
         if isinstance( name, str ):
             name = unicode( name, 'utf-8' )
         return name
+    def get_api_value( self, view='collection' ):
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[key] = self.__getattribute__( key )
+            except AttributeError:
+                rval[key] = None
+        return rval
 
 class LibraryFolder( object ):
+    api_element_visible_keys = ( 'name', 'description', 'item_count', 'genome_build' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
@@ -961,6 +976,24 @@ class LibraryFolder( object ):
         if isinstance( name, str ):
             name = unicode( name, 'utf-8' )
         return name
+    def get_api_value( self, view='collection' ):
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[key] = self.__getattribute__( key )
+            except AttributeError:
+                rval[key] = None
+        return rval
+    @property
+    def parent_library( self ):
+        f = self
+        while f.parent:
+            f = f.parent
+        return f.library_root[0]
 
 class LibraryDataset( object ):
     # This class acts as a proxy to the currently selected LDDA
@@ -1005,6 +1038,28 @@ class LibraryDataset( object ):
         if not purged and self.purged:
             raise Exception( "Cannot unpurge once purged" )
     purged = property( get_purged, set_purged )
+    def get_api_value( self, view='collection' ):
+        # Since this class is a proxy to rather complex attributes we want to
+        # display in other objects, we can't use the simpler method used by
+        # other model classes.
+        ldda = self.library_dataset_dataset_association
+        rval = dict( name = ldda.name,
+                     uploaded_by = ldda.user.email,
+                     message = ldda.message,
+                     date_uploaded = ldda.create_time.isoformat(),
+                     file_size = int( ldda.get_size() ),
+                     data_type = ldda.ext,
+                     genome_build = ldda.dbkey,
+                     misc_info = ldda.info,
+                     misc_blurb = ldda.blurb )
+        for name, spec in ldda.metadata.spec.items():
+            val = ldda.metadata.get( name )
+            if isinstance( val, MetadataFile ):
+                val = val.file_name
+            elif isinstance( val, list ):
+                val = ', '.join( val )
+            rval['metadata_' + name] = val
+        return rval
 
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def __init__( self,
@@ -1728,6 +1783,9 @@ class UserAction( object ):
         self.params = params
         self.context = context
 
+class APIKeys( object ):
+    pass
+
 ## ---- Utility methods -------------------------------------------------------
 
 def directory_hash_id( id ):
@@ -1742,5 +1800,3 @@ def directory_hash_id( id ):
     padded = padded[:-3]
     # Break into chunks of three
     return [ padded[i*3:(i+1)*3] for i in range( len( padded ) // 3 ) ]
-
-

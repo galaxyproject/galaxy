@@ -231,7 +231,8 @@ class TestLibrarySecurity( TwillTestCase ):
                                 self.security.encode_id( ldda_one.id ),
                                 role_ids_str,
                                 permissions_in,
-                                permissions_out )
+                                permissions_out,
+                                ldda_name=ldda_one.name )
         # admin_user should now be able to see 1.bed from the analysis view's access libraries
         self.browse_library( 'library',
                              self.security.encode_id( library_one.id ),
@@ -370,7 +371,7 @@ class TestLibrarySecurity( TwillTestCase ):
                                ldda_ids,
                                str( role_one.id ),
                                permissions_in=[ 'DATASET_ACCESS', 'LIBRARY_MANAGE' ],
-                               check_str1='Permissions have been updated on 3 datasets' )
+                               check_str1='Permissions updated for 3 datasets.' )
         # Make sure the permissions have been correctly updated for the 3 datasets.  Permissions should 
         # be all of the above on any of the 3 datasets that are imported into a history.
         def check_edit_page( lddas, check_str1='', check_str2='', check_str3='', check_str4='',
@@ -417,7 +418,7 @@ class TestLibrarySecurity( TwillTestCase ):
                                ldda_ids,
                                str( role_one.id ),
                                permissions_in=[ 'DATASET_ACCESS' ],
-                               check_str1='Permissions have been updated on 3 datasets' )
+                               check_str1='Permissions updated for 3 datasets.' )
         check_edit_page( latest_3_lddas,
                          check_str1='View Permissions',
                          not_displayed1='Manage dataset permissions on',

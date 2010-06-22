@@ -6,7 +6,6 @@ from cgi import escape, FieldStorage
 from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.odict import odict
 from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
@@ -33,24 +32,24 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         else:
             ## Get most recently used tools.
             toolbox = self.get_toolbox()
-            recent_tool_ids = odict()
+            recent_tools = []
             if trans.user:
-                for row in trans.sa_session.query( self.app.model.Job.tool_id ).join( self.app.model.History ). \
-                                                            filter( self.app.model.GalaxySession.user==trans.user ). \
+                for row in trans.sa_session.query( self.app.model.Job.tool_id ). \
+                                                            filter( self.app.model.Job.user==trans.user ). \
                                                             order_by( self.app.model.Job.create_time.desc() ):
                     tool_id = row[0]
-                    recent_tool_ids[tool_id] = tool_id
-                    ## TODO: make number of recently used tools a user preference.
-                    if len ( recent_tool_ids ) == 5:
-                        break
-            
-            # Create list of recently used tools.
-            recent_tools = [ toolbox.tools_by_id[ tool_id ] for tool_id in recent_tool_ids.keys() ]
-            
+                    a_tool = toolbox.tools_by_id.get( tool_id, None )
+                    if a_tool and a_tool not in recent_tools:
+                        recent_tools.append( a_tool )
+                        ## TODO: make number of recently used tools a user preference.
+                        if len ( recent_tools ) == 5:
+                            break
+                        
             return trans.fill_template('/root/tool_menu.mako', toolbox=toolbox, recent_tools=recent_tools )
 
     @web.json
     def tool_search( self, trans, query ):
+        trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query } )
         return trans.app.toolbox_search.search( query )
 
     @web.expose

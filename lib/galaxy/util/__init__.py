@@ -417,6 +417,14 @@ def stringify_dictionary_keys( in_dict ):
         out_dict[ str( key ) ] = value
     return out_dict
 
+def recursively_stringify_dictionary_keys( d ):
+    if isinstance(d, dict):
+        return dict([(k.encode('utf-8'), recursively_stringify_dictionary_keys(v)) for k,v in d.iteritems()])
+    elif isinstance(d, list):
+        return [recursively_stringify_dictionary_keys(x) for x in d]
+    else:
+        return d
+
 def mkstemp_ln( src, prefix='mkstemp_ln_' ):
     """
     From tempfile._mkstemp_inner, generate a hard link in the same dir with a

@@ -14,9 +14,13 @@
         uploaded_by = ldda.user.email
     else:
         uploaded_by = 'anonymous'
-    if cntrller in [ 'library', 'requests' ]:
+    if trans.user_is_admin() and cntrller == 'library_admin':
+        can_modify = can_manage = True
+    elif cntrller in [ 'library', 'requests' ]:
         can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset )
         can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, ldda.library_dataset )
+    else:
+        can_modify = can_manage = False
 %>
 
 %if current_version:
@@ -42,7 +46,7 @@
         %if not library.deleted and not branch_deleted( ldda.library_dataset.folder ) and not ldda.library_dataset.deleted:
             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="dataset-${ldda.id}-popup">
-                %if cntrller=='library_admin' or can_modify:
+                %if can_modify:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                     %if not info_association:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add template</a>
@@ -51,10 +55,10 @@
                         <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Delete template</a>
                     %endif
                 %endif
-                %if cntrller=='library_admin' or can_manage:
+                %if can_manage:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                 %endif
-                %if current_version and ( cntrller=='library_admin' or can_modify ):
+                %if current_version and can_modify:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), replace_id=trans.security.encode_id( ldda.library_dataset.id ) )}">Upload a new version of this dataset</a>
                 %endif
                 %if cntrller=='library' and ldda.has_data:
@@ -132,7 +136,7 @@
 %if widgets:
     ${render_template_info( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, info_association=info_association, inherited=inherited, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), editable=False )}
 %endif
-%if cntrller == 'library_admin':
+%if trans.user_is_admin() and cntrller == 'library_admin':
     %if associated_hdas:
         <p/>
         <b>Active (undeleted) history items that use this library dataset's disk file</b>

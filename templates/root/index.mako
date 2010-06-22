@@ -3,6 +3,10 @@
 <%def name="late_javascripts()">
     ${parent.late_javascripts()}
     <script type="text/javascript">
+    // Set up GalaxyAsync object.
+    var galaxy_async = new GalaxyAsync();
+    galaxy_async.set_func_url(galaxy_async.set_user_pref, "${h.url_for( controller='user', action='set_user_pref_async' )}");
+    
     $(function(){
         // Init history options.
         $("#history-options-button").css( "position", "relative" );
@@ -56,8 +60,18 @@
         make_popupmenu( $("#tools-options-button"), {
             ## Search tools menu item.
             %if trans.app.toolbox_search.enabled:
-                "Search Tools": function() {
-                    // Show/hide menu and update user preference for menu visibility.
+                <% 
+                    show_tool_search = False
+                    if trans.user:
+                        show_tool_search = trans.user.preferences.get( "show_tool_search", "False" )
+                        
+                    if show_tool_search == "True":
+                        initial_text = "Hide Search"
+                    else:
+                        initial_text = "Search Tools"
+                %>
+                "${initial_text}": function() {
+                    // Show/hide menu and update vars, user preferences.
                     var menu = $("#galaxy_tools").contents().find('#tool-search');
                     if (menu.is(":visible"))
                     {
@@ -65,7 +79,7 @@
                         pref_value = "False";
                         menu_option_text = "Search Tools";
                         menu.toggle();
-                
+                        
                         // Reset search.
                         reset_tool_search(true);
                     }
@@ -80,13 +94,13 @@
                     // Update menu option.
                     $("#tools-options-button-menu").find("li").eq(0).text(menu_option_text);
             
-                    // TODO: Set user preference.
+                    galaxy_async.set_user_pref("show_tool_search", pref_value);
                 },
             %endif
             ## Recently used tools menu.
             %if trans.user:
                 <%
-                    if 'show_recently_used_menu' in trans.user.preferences and trans.user.preferences['show_recently_used_menu'] == 'True':
+                    if trans.user.preferences.get( 'show_recently_used_menu', 'False' ) == 'True':
                         action = "Hide"
                     else:
                         action = "Show"
@@ -97,26 +111,40 @@
                     var ru_menu_body = ru_menu.find(".toolSectionBody");
                     var pref_value = null;
                     var menu_option_text = null;
-                    if (ru_menu.is(":visible"))
+                    if (ru_menu.hasClass("user_pref_visible"))
                     {
                         // Hide menu.
                         ru_menu_body.slideUp();
                         ru_menu.slideUp();
+                        
+                        // Set vars used below and in tool menu frame.
                         pref_value = "False";
                         menu_option_text = "Show Recently Used";
                     }
                     else
                     {
-                        // Show menu.
-                        ru_menu.slideDown();
+                        // "Show" menu.
+                        if (!$('#galaxy_tools').contents().find('#tool-search-query').hasClass("search_active"))
+                            // Default.
+                            ru_menu.slideDown();
+                        else
+                            // Search active: tf there are matching tools in RU menu, show menu.
+                            if ( ru_menu.find(".toolTitle.search_match").length != 0 )
+                            {
+                                ru_menu.slideDown();
+                                ru_menu_body.slideDown();
+                            }
+                        
+                        // Set vars used below and in tool menu frame.
                         pref_value = "True";
                         menu_option_text = "Hide Recently Used";
                     }
                  
-                    // Update menu option.
+                    // Update menu class and option.
+                    ru_menu.toggleClass("user_pref_hidden user_pref_visible");
                     $("#tools-options-button-menu").find("li").eq(1).text(menu_option_text);
 
-                    // TODO: Set user preference.
+                    galaxy_async.set_user_pref("show_recently_used_menu", pref_value);
                 }
             %endif
         });

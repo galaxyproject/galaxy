@@ -902,6 +902,20 @@ class User( BaseController ):
                                                           status='done') )
     
     @web.expose
+    def set_user_pref_async( self, trans, pref_name, pref_value ):
+        """ Set a user preference asynchronously. If user is not logged in, do nothing. """
+        if trans.user:
+            trans.log_action( trans.get_user(), "set_user_pref", "", { pref_name : pref_value } )
+            trans.user.preferences[pref_name] = pref_value
+            trans.sa_session.flush()
+      
+    @web.expose
+    def log_user_action_async( self, trans, action, context, params ):
+        """ Log a user action asynchronously. If user is not logged in, do nothing. """
+        if trans.user:
+            trans.log_action( trans.get_user(), action, context, params )
+        
+    @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
         user = trans.get_user()
@@ -965,3 +979,25 @@ class User( BaseController ):
                                     lines_skipped=lines_skipped )
                                     
                                     
+    @web.expose
+    def new_api_key( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        admin_view = util.string_as_bool( params.get( 'admin_view', False ) )
+        error = ''
+        user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'user_id', None ) ) )
+        if params.get( 'new_api_key_button', None  ) == 'Generate a new key now':
+            new_key = trans.app.model.APIKeys()
+            new_key.user_id = user.id
+            new_key.key = trans.app.security.get_new_guid()
+            trans.sa_session.add( new_key )
+            trans.sa_session.flush()
+            message = "Generated a new web API key"
+            status = "done"
+        return trans.response.send_redirect( web.url_for( controller='user',
+                                                          action='show_info',
+                                                          admin_view=admin_view,
+                                                          user_id=user.id,
+                                                          message=message,
+                                                          status=status ) )

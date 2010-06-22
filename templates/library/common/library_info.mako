@@ -4,10 +4,14 @@
 
 <%
     from cgi import escape
-    if cntrller in [ 'library', 'requests' ]:
+    if trans.user_is_admin() and cntrller == 'library_admin':
+        can_add = can_modify = can_manage = True
+    elif cntrller in [ 'library', 'requests' ]:
         can_add = trans.app.security_agent.can_add_library_item( current_user_roles, library )
         can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, library )
         can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, library )
+    else:
+        can_add = can_modify = can_manage = False
     library_name = escape( str( library.name ), quote=True )
     library_description = escape( str( library.description ), quote=True )
     library_synopsis = escape( str( library.synopsis ), quote=True )
@@ -25,31 +29,31 @@
 %endif
 
 <div class="toolForm">
-    %if cntrller == 'library_admin' or can_add or can_modify or can_manage:
-        <div class="toolFormTitle">
-            <a href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
+    <div class="toolFormTitle">
+        <a href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
+        %if can_add or can_modify or can_manage:
             <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="library-${library.id}-popup">
                 %if not library.deleted:
-                    %if ( cntrller == 'library_admin' or can_add ) and not library.info_association:
+                    %if can_add and not library.info_association:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add template</a>
                     %endif
-                    %if cntrller == 'library_admin' or can_manage:
+                    %if can_manage:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                     %endif
-                    %if cntrller == 'library_admin' or can_modify:
+                    %if can_modify:
                         <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Delete this data library</a>
                     %endif
-                %elif ( cntrller == 'library_admin' or can_modify ) and not library.purged:
+                %elif can_modify and not library.purged:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='undelete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Undelete this data library</a>
                 %elif library.purged:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">This data library has been purged</a>
                 %endif
             </div>
-        </div>
-    %endif
+        %endif
+    </div>
     <div class="toolFormBody">
-        %if not library.deleted and ( cntrller == 'library_admin' or can_modify ):
+        %if not library.deleted and can_modify:
             <form name="library" action="${h.url_for( controller='library_common', action='library_info', id=trans.security.encode_id( library.id ), cntrller=cntrller, use_panels=use_panels, show_deleted=show_deleted )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>

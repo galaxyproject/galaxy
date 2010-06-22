@@ -1675,7 +1675,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( '1', 'description', new_description )
             tc.fv( '1', 'synopsis', new_synopsis )
             tc.submit( 'library_info_button' )
-            self.check_page_for_string( "The information has been updated." )
+            self.check_page_for_string( "Information updated for library" )
         # If there is a template, then there are 2 forms on this page and the template is the 2nd form
         if ele_1_field_name and ele_1_contents and ele_2_field_name and ele_2_contents:
             tc.fv( '2', ele_1_field_name, ele_1_contents )
@@ -1687,7 +1687,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
     def library_permissions( self, library_id, library_name, role_ids_str, permissions_in, permissions_out, cntrller='library_admin' ):
         # role_ids_str must be a comma-separated string of role ids
-        url = "library_common/library_permissions?id=%s&cntrller=%slibrary_admin&update_roles_button=Save" % ( library_id, cntrller )
+        url = "library_common/library_permissions?id=%s&cntrller=%s&update_roles_button=Save" % ( library_id, cntrller )
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, role_ids_str )
@@ -1696,7 +1696,7 @@ class TwillTestCase( unittest.TestCase ):
             url ="%s&%s=%s" % ( url, key, role_ids_str )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
-        check_str = "Permissions updated for library '%s'" % library_name
+        check_str = "Permissions updated for library '%s'." % library_name
         self.check_page_for_string( check_str )
         self.home()
 
@@ -1776,7 +1776,7 @@ class TwillTestCase( unittest.TestCase ):
         self.library_wait( library_id )
         self.home()
     def ldda_permissions( self, cntrller, library_id, folder_id, id, role_ids_str,
-                          permissions_in=[], permissions_out=[], check_str1='' ):
+                          permissions_in=[], permissions_out=[], check_str1='', ldda_name='' ):
         # role_ids_str must be a comma-separated string of role ids
         url = "%s/library_common/ldda_permissions?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
             ( self.url, cntrller, library_id, folder_id, id )
@@ -1792,7 +1792,7 @@ class TwillTestCase( unittest.TestCase ):
         if check_str1:
             check_str = check_str1
         else:
-            check_str = "Permissions have been updated on 1 datasets"
+            check_str = "Permissions updated for dataset '%s'." % ldda_name
         self.check_page_for_string( check_str )
         self.home()
     def ldda_edit_info( self, cntrller, library_id, folder_id, ldda_id, ldda_name, new_ldda_name='',
@@ -1808,7 +1808,7 @@ class TwillTestCase( unittest.TestCase ):
         if new_ldda_name:
             tc.fv( '1', 'name', new_ldda_name )
             tc.submit( 'save' )
-            check_str = 'Attributes updated for library dataset %s' % new_ldda_name
+            check_str = "Attributes updated for library dataset '%s'." % new_ldda_name
             self.check_page_for_string( check_str )
         # There are 4 forms on this page and the template is the 4th form
         if ele_1_field_name and ele_1_contents:

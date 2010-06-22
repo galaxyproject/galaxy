@@ -19,7 +19,7 @@
     ${render_msg( message, status )}
 %endif
 
-%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ):
+%if ( trans.user_is_admin() and cntrller=='library_admin' ) or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
         <div class="toolFormBody">

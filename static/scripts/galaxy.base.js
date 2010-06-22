@@ -477,12 +477,22 @@ function reset_tool_search( initValue )
     var tool_menu_frame = $("#galaxy_tools").contents();
     if (tool_menu_frame.length == 0)
         tool_menu_frame = $(document);
+        
+    // Remove classes that indicate searching is active.
+    $(this).removeClass("search_active");
+    tool_menu_frame.find(".toolTitle").removeClass("search_match");
     
     // Reset visibility of tools and labels.
     tool_menu_frame.find(".toolSectionBody").hide();
     tool_menu_frame.find(".toolTitle").show();
     tool_menu_frame.find(".toolPanelLabel").show();
-    tool_menu_frame.find(".toolSectionWrapper").show();
+    tool_menu_frame.find(".toolSectionWrapper").each( function() {
+        if ($(this).attr('id') != 'recently_used_wrapper')
+            // Default action.
+            $(this).show();
+        else if ($(this).hasClass("user_pref_visible"))
+            $(this).show();
+    });
     tool_menu_frame.find("#search-no-results").hide();
     
     // Reset search input.
@@ -494,6 +504,48 @@ function reset_tool_search( initValue )
         search_input.css("font-style", "italic");
     }
 }
+
+// Create GalaxyAsync object.
+function GalaxyAsync(log_action) 
+{
+    this.url_dict = {};
+    this.log_action = (log_action === undefined ? false : log_action);
+}
+
+GalaxyAsync.prototype.set_func_url = function( func_name, url )
+{
+    this.url_dict[func_name] = url;   
+};
+
+// Set user preference asynchronously.
+GalaxyAsync.prototype.set_user_pref = function( pref_name, pref_value )
+{
+    // Get URL.
+    var url = this.url_dict[arguments.callee];
+    if (url === undefined) { return false; }
+    $.ajax({                   
+        url: url,
+        data: { "pref_name" : pref_name, "pref_value" : pref_value },
+        error: function() { return false; },
+        success: function() { return true; }                                           
+    });
+};
+
+// Log user action asynchronously.
+GalaxyAsync.prototype.log_user_action = function( action, context, params )
+{
+    if (!this.log_action) { return; }
+        
+    // Get URL.
+    var url = this.url_dict[arguments.callee];
+    if (url === undefined) { return false; }
+    $.ajax({                   
+        url: url,
+        data: { "action" : action, "context" : context, "params" : params },
+        error: function() { return false; },
+        success: function() { return true; }                                           
+    });
+};
 
 $(document).ready( function() {
     // Links with confirmation

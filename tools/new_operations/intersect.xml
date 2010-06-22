@@ -54,7 +54,7 @@
   <outputs>
       <data format="input" name="output">
           #if inputs.type == "Interval":
-              metadata_source="inputs.bed_input1"
+              metadata_source="inputs.interval_input1"
           #else:
               metadata_source="inputs.gff_input1"
           #end if

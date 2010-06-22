@@ -42,7 +42,7 @@
     </select>
 </%def>
 
-%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ):
+%if ( trans.user_is_admin() and cntrller=='library_admin' ) or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">

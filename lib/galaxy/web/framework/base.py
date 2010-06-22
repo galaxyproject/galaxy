@@ -45,7 +45,13 @@ class WebApplication( object ):
         and `__call__` to handle a request (WSGI style). 
         """
         self.controllers = dict()
+        self.api_controllers = dict()
         self.mapper = routes.Mapper() 
+        # FIXME: The following two options are deprecated and should be
+        # removed.  Consult the Routes documentation.
+        self.mapper.minimization = True
+        self.mapper.explicit = False
+        self.api_mapper = routes.Mapper()
         self.transaction_factory = DefaultWebTransaction
     def add_controller( self, controller_name, controller ):
         """
@@ -56,6 +62,10 @@ class WebApplication( object ):
         log.debug( "Enabling '%s' controller, class: %s", 
             controller_name, controller.__class__.__name__ )
         self.controllers[ controller_name ] = controller
+    def add_api_controller( self, controller_name, controller ):
+        log.debug( "Enabling '%s' API controller, class: %s",
+            controller_name, controller.__class__.__name__ )
+        self.api_controllers[ controller_name ] = controller
     def add_route( self, route, **kwargs ):
         """
         Add a route to match a URL with a method. Accepts all keyword
@@ -80,6 +90,7 @@ class WebApplication( object ):
         """
         # Create/compile the regular expressions for route mapping
         self.mapper.create_regs( self.controllers.keys() )
+        self.api_mapper.create_regs( self.api_controllers.keys() )
     def __call__( self, environ, start_response ):
         """
         Call interface as specified by WSGI. Wraps the environment in user
@@ -88,12 +99,20 @@ class WebApplication( object ):
         """
         # Map url using routes
         path_info = environ.get( 'PATH_INFO', '' )
-        map = self.mapper.match( path_info )
+        map = self.mapper.match( path_info, environ )
+        if map is None:
+            environ[ 'is_api_request' ] = True
+            map = self.api_mapper.match( path_info, environ )
+            mapper = self.api_mapper
+            controllers = self.api_controllers
+        else:
+            mapper = self.mapper
+            controllers = self.controllers
         if map == None:
             raise httpexceptions.HTTPNotFound( "No route for " + path_info )
         # Setup routes
         rc = routes.request_config()
-        rc.mapper = self.mapper
+        rc.mapper = mapper
         rc.mapper_dict = map
         rc.environ = environ
         # Setup the transaction
@@ -101,7 +120,7 @@ class WebApplication( object ):
         rc.redirect = trans.response.send_redirect
         # Get the controller class
         controller_name = map.pop( 'controller', None )
-        controller = self.controllers.get( controller_name, None )
+        controller = controllers.get( controller_name, None )
         if controller_name is None:
             raise httpexceptions.HTTPNotFound( "No controller for " + path_info )
         # Resolve action method on controller
@@ -112,7 +131,7 @@ class WebApplication( object ):
         if method is None:
             raise httpexceptions.HTTPNotFound( "No action for " + path_info )
         # Is the method exposed
-        if not getattr( method, 'exposed', False ): 
+        if not getattr( method, 'exposed', False ):
             raise httpexceptions.HTTPNotFound( "Action not exposed for " + path_info )
         # Is the method callable
         if not callable( method ):
