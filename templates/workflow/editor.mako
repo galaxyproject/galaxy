@@ -313,9 +313,9 @@
 	// DBTODO Refactor to the post module.
 	// This function preloads how to display known pja's.
 	function display_pja(pja, node){
-		// DBTODO SANITIZE INPUTS.  Way too easy to break the page right now with a change dataset name action.
+		// DBTODO SANITIZE INPUTS.
 		p_str = '';
-		${ActionBox.get_forms(trans)};
+		${ActionBox.get_forms(trans)}
 		$("#pja_container").append(p_str);
 		$("#pja_container>.toolForm:last>.toolFormTitle>.buttons").click(function (){
 			action_to_rem = $(this).closest(".toolForm", ".action_tag").children(".action_tag:first").text();
@@ -376,7 +376,7 @@
 		// Add step actions.
 		if (node && node.type=='tool'){
 			pjastr = "<p><div class='metadataForm'><div class='metadataFormTitle'>Edit Step Actions</div><div class='form-row'> \
-                <label>New Actions:</label><br/>" + display_pja_list() + display_file_list(node) + " <div class='action-button' style='border:1px solid black;display:inline;' id='add_pja'>Create</div>\
+                " + display_pja_list() + " <br/> "+ display_file_list(node) + " <div class='action-button' style='border:1px solid black;display:inline;' id='add_pja'>Create</div>\
                 </div><div class='form-row'>\
 				<div style='margin-right: 10px;'><span id='pja_container'></span>";
 			pjastr += "<div class='toolParamHelp'>Add actions to this step; actions are applied when this workflow step completes.</div></div></div></div>";
