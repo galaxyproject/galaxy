@@ -13,9 +13,20 @@ subdirectories.
 
 In Galaxy, create an account that matches the address you put in 'admin_users',
 then browse to that user's preferences and generate a new API Key.  Copy the
-key to your clipboard.  Create a new library (doing this via the API is not yet
-implemented).  Then take your API Key and use the scripts in scripts/api/ to do
-things:
+key to your clipboard and then use these scripts:
+
+% ./display.py my_key http://localhost:4096/api/libraries
+Collection Members
+------------------
+
+0 elements in collection
+
+% ./library_create_library.py my_key http://localhost:4096/api/libraries api_test 'API Test Library'
+Response
+--------
+/api/libraries/f3f73e481f432006
+  name: api_test
+  id: f3f73e481f432006
 
 % ./display.py my_key http://localhost:4096/api/libraries
 Collection Members
@@ -27,7 +38,7 @@ Collection Members
 % ./display.py my_key http://localhost:4096/api/libraries/f3f73e481f432006
 Member Information
 ------------------
-synopsys: None
+synopsis: None
 contents_url: /api/libraries/f3f73e481f432006/contents
 description: API Test Library
 name: api_test

@@ -60,3 +60,33 @@ class LibrariesController( BaseController ):
         item = library.get_api_value( view='element' )
         item['contents_url'] = url_for( 'contents', library_id=library_id )
         return item
+
+    @web.expose_api
+    def create( self, trans, payload, **kwd ):
+        """
+        POST /api/libraries
+        Creates a new library.
+        """
+        if not trans.user_is_admin():
+            trans.response.status = 403
+            return "You are not authorized to create a new library."
+        params = util.Params( payload )
+        name = util.restore_text( params.get( 'name', None ) )
+        if not name:
+            trans.response.status = 400
+            return "Missing required parameter 'name'."
+        description = util.restore_text( params.get( 'description', '' ) )
+        synopsis = util.restore_text( params.get( 'synopsis', '' ) )
+        if synopsis in [ 'None', None ]:
+            synopsis = ''
+        library = trans.app.model.Library( name=name, description=description, synopsis=synopsis )
+        root_folder = trans.app.model.LibraryFolder( name=name, description='' )
+        library.root_folder = root_folder
+        trans.sa_session.add_all( ( library, root_folder ) )
+        trans.sa_session.flush()
+        encoded_id = trans.security.encode_id( library.id )
+        rval = {}
+        rval['url'] = url_for( 'libraries', id=encoded_id )
+        rval['name'] = name
+        rval['id'] = encoded_id
+        return [ rval ]

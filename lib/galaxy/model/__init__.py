@@ -830,7 +830,7 @@ class HistoryDatasetAssociationDisplayAtAuthorization( object ):
 class Library( object ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'name', 'description', 'synopsys' )
+    api_element_visible_keys = ( 'name', 'description', 'synopsis' )
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
