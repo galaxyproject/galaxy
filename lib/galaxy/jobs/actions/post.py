@@ -67,7 +67,7 @@ class EmailAction(DefaultJobAction):
     def execute(cls, trans, action, job):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this galaxy instance, workflow action aborted." )
+            log.error("Mail is not configured for this galaxy instance.  Workflow action aborted.")
         # Build the email message
         msg = MIMEText( "Your job '%s' at Galaxy instance %s is complete as of %s." % (job.history.name, trans.request.host, job.update_time))
         msg[ 'To' ] = job.user.email
@@ -78,9 +78,8 @@ class EmailAction(DefaultJobAction):
             s.connect( smtp_server )
             s.sendmail( frm, [ to ], msg.as_string() )
             s.close()
-            return trans.show_ok_message( "Your error report has been sent" )
         except Exception, e:
-            return trans.show_error_message( "An error occurred sending the report by email: %s" % str( e ) )
+            log.error("EmailAction PJA Failed, exception: %s" % e)
 
     @classmethod
     def get_config_form(cls, trans):
