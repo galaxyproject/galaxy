@@ -82,7 +82,7 @@ class EmailAction(DefaultJobAction):
             s.close()
         except Exception, e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
-L
+            
     @classmethod
     def get_config_form(cls, trans):
         form = """
