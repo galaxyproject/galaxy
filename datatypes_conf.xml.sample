@@ -25,7 +25,6 @@
             <converter file="bed_to_genetrack_converter.xml" target_datatype="genetrack"/>
         </datatype>
         <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" />
-        <datatype extension="binseq.zip" type="galaxy.datatypes.binary:Binseq" mimetype="application/zip" display_in_upload="true"/>
         <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
             <!-- no converters yet -->
         </datatype>
@@ -97,7 +96,6 @@
         <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
         <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
         <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" display_in_upload="true"/>
-        <datatype extension="txtseq.zip" type="galaxy.datatypes.data:Txtseq" mimetype="application/zip" display_in_upload="true"/>
         <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
         <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
             <converter file="wiggle_to_array_tree_converter.xml" target_datatype="array_tree"/>

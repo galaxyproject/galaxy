@@ -5,21 +5,13 @@ input: read file and quality score file
 output: trimmed read file
 """
 
-import os, sys, math, tempfile, zipfile, re
+import os, sys, math, tempfile, re
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
-
-def unzip( filename ):
-    zip_file = zipfile.ZipFile( filename, 'r' )
-    tmpfilename = tempfile.NamedTemporaryFile().name
-    for name in zip_file.namelist():
-        file( tmpfilename, 'a' ).write( zip_file.read( name ) )
-    zip_file.close()
-    return tmpfilename
 
 def append_to_outfile( outfile_name, seq_title, segments ):
     segments = segments.split( ',' )
@@ -91,16 +83,8 @@ def __main__():
     infile_score_name = sys.argv[5].strip()
     arg = sys.argv[6].strip()
 
-    infile_seq_is_zipped = False
-    if zipfile.is_zipfile( infile_seq_name ):
-        infile_seq_is_zipped = True
-        seq_infile_name = unzip( infile_seq_name ) 
-    else: seq_infile_name = infile_seq_name
-    infile_score_is_zipped = False
-    if zipfile.is_zipfile( infile_score_name ):
-        infile_score_is_zipped = True 
-        score_infile_name = unzip(infile_score_name)
-    else: score_infile_name = infile_score_name
+    seq_infile_name = infile_seq_name
+    score_infile_name = infile_score_name
     
 
     # Determine quailty score format: tabular or fasta format within the first 100 lines
@@ -247,10 +231,4 @@ def __main__():
     else:
         stop_err( "Cannot locate sequence file '%s'or score file '%s'." % ( seq_infile_name, score_infile_name ) )    
 
-    # Need to delete temporary files created when we unzipped the input file archives                    
-    if infile_seq_is_zipped and os.path.exists( seq_infile_name ):
-        os.remove( seq_infile_name )
-    if infile_score_is_zipped and os.path.exists( score_infile_name ):
-        os.remove( score_infile_name )
-    
 if __name__ == "__main__": __main__()

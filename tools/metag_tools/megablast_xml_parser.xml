@@ -18,12 +18,6 @@
 </tests>
 <help>
 
-.. class:: warningmark 
-
-Blast XML output **must** be uploaded to Galaxy in zipped form.
- 
------
-	
 **What it does**
 
 This tool processes the XML output of any NCBI blast tool (if you run your own blast jobs, the XML output can be generated with **-m 7** option).

@@ -3,7 +3,7 @@
     <command interpreter="python">solid_qual_stats.py $input $output1</command>
 
     <inputs>
-        <param format="qualsolid, txtseq.zip" name="input" type="data" label="SOLiD qual file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
+        <param format="qualsolid" name="input" type="data" label="SOLiD qual file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
     </inputs>
     <outputs>
         <data format="txt" name="output1" metadata_source="input" />

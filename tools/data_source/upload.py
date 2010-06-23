@@ -114,24 +114,9 @@ def check_gzip( temp_name ):
         return ( True, False )
     return ( True, True )
 def check_zip( temp_name ):
-    if not zipfile.is_zipfile( temp_name ):
-        return ( False, False, None )
-    zip_file = zipfile.ZipFile( temp_name, "r" )
-    # Make sure the archive consists of valid files.  The current rules are:
-    # 1. Archives can only include .ab1, .scf or .txt files
-    # 2. All file extensions within an archive must be the same
-    name = zip_file.namelist()[0]
-    try:
-        test_ext = name.split( "." )[1].strip().lower()
-    except:
-        return ( True, False, None )
-    if not ( test_ext in unsniffable_binary_formats or test_ext == 'txt' ):
-        return ( True, False, test_ext )
-    for name in zip_file.namelist():
-        ext = name.split( "." )[1].strip().lower()
-        if ext != test_ext:
-            return ( True, False, test_ext )
-    return ( True, True, test_ext )
+    if zipfile.is_zipfile( temp_name ):
+        return True
+    return False
 def parse_outputs( args ):
     rval = {}
     for arg in args:
@@ -142,6 +127,7 @@ def add_file( dataset, json_file, output_path ):
     data_type = None
     line_count = None
     converted_path = None
+    stdout = None
 
     if dataset.type == 'url':
         try:
@@ -204,24 +190,29 @@ def add_file( dataset, json_file, output_path ):
             data_type = 'gzip'
         if not data_type:
             # See if we have a zip archive
-            is_zipped, is_valid, test_ext = check_zip( dataset.path )
-            if is_zipped and not is_valid:
-                file_err( 'The zipped uploaded file contains inappropriate content', dataset, json_file )
-                return
-            elif is_zipped and is_valid:
-                # Currently, we force specific tools to handle this case.  We also require the user
-                # to manually set the incoming file_type
-                if ( test_ext in unsniffable_binary_formats ) and dataset.file_type != 'binseq.zip':
-                    file_err( "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'", dataset, json_file )
-                    return
-                elif test_ext == 'txt' and dataset.file_type != 'txtseq.zip':
-                    file_err( "Invalid 'File Format' for archive consisting of text files - use 'Txtseq.zip'", dataset, json_file )
-                    return
-                if not ( dataset.file_type == 'binseq.zip' or dataset.file_type == 'txtseq.zip' ):
-                    file_err( "You must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files", dataset, json_file )
-                    return
-                data_type = 'zip'
-                ext = dataset.file_type
+            is_zipped = check_zip( dataset.path )
+            if is_zipped:
+                unzipped = False
+                z = zipfile.ZipFile( dataset.path )
+                for name in z.namelist():
+                    if name.endswith('/'):
+                        continue
+                    if unzipped:
+                        stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
+                        break
+                    fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_zip_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
+                    try:
+                        outfile = open( uncompressed, 'wb' )
+                        outfile.write( z.read( name ) )
+                        outfile.close()
+                        shutil.move( uncompressed, dataset.path )
+                        dataset.name = name
+                        unzipped = True
+                    except IOError:
+                        os.close( fd )
+                        os.remove( uncompressed )
+                        file_err( 'Problem decompressing zipped data', dataset, json_file )
+                        return
         if not data_type:
             if check_binary( dataset.path ):
                 # We have a binary dataset, but it is not Bam or Sff
@@ -242,7 +233,7 @@ def add_file( dataset, json_file, output_path ):
             if check_html( dataset.path ):
                 file_err( 'The uploaded file contains inappropriate HTML content', dataset, json_file )
                 return
-        if data_type != 'binary' and data_type != 'zip':
+        if data_type != 'binary':
             # don't convert newlines on data we're only going to symlink
             if not dataset.get( 'link_data_only', False ):
                 in_place = True
@@ -278,10 +269,11 @@ def add_file( dataset, json_file, output_path ):
     else:
         shutil.move( dataset.path, output_path )
     # Write the job info
+    stdout = stdout or 'uploaded %s file' % data_type
     info = dict( type = 'dataset',
                  dataset_id = dataset.dataset_id,
                  ext = ext,
-                 stdout = 'uploaded %s file' % data_type,
+                 stdout = stdout,
                  name = dataset.name,
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )

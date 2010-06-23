@@ -63,12 +63,6 @@ A binary file compressed in the BGZF format with a '.bam' file extension.
 
 -----
 
-**Binseq.zip**
-
-A zipped archive consisting of binary sequence files in either 'ab1' or 'scf' format.  All files in this archive must have the same file extension which is one of '.ab1' or '.scf'.  You must manually select this 'File Format' when uploading the file.
-
------
-
 **Bed**
 
 * Tab delimited format (tabular)
@@ -196,12 +190,6 @@ A binary file in 'Standard Flowgram Format' with a '.sff' file extension.
 **Tabular (tab delimited)**
 
 Any data in tab delimited format (tabular)
-
------
-
-**Txtseq.zip**
-
-A zipped archive consisting of flat text sequence files.  All files in this archive must have the same file extension of '.txt'.  You must manually select this 'File Format' when uploading the file.
 
 -----
 

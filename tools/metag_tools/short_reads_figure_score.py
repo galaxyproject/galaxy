@@ -8,7 +8,7 @@ boxplot:
 - The smallest/largest value that is not an outlier is connected to the box by with a horizontal line.
 """
 
-import os, sys, math, tempfile, zipfile, re
+import os, sys, math, tempfile, re
 from rpy import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
@@ -16,14 +16,6 @@ assert sys.version_info[:2] >= ( 2, 4 )
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
-
-def unzip( filename ):
-    zip_file = zipfile.ZipFile( filename, 'r' )
-    tmpfilename = tempfile.NamedTemporaryFile().name
-    for name in zip_file.namelist():
-        file( tmpfilename, 'a' ).write( zip_file.read( name ) )
-    zip_file.close()
-    return tmpfilename
 
 def merge_to_20_datapoints( score ):
     number_of_points = 20
@@ -68,12 +60,7 @@ def __main__():
     infile_score_name = sys.argv[1].strip()
     outfile_R_name = sys.argv[2].strip()
 
-    infile_is_zipped = False
-    if zipfile.is_zipfile( infile_score_name ):
-        infile_is_zipped = True
-        infile_name = unzip( infile_score_name )
-    else:
-        infile_name = infile_score_name
+    infile_name = infile_score_name
 
     # Determine tabular or fasta format within the first 100 lines
     seq_method = None
@@ -248,10 +235,6 @@ def __main__():
             x_new_range.append( i )
         r.axis( 1, x_old_range, x_new_range )
     r.dev_off()
-
-    if infile_is_zipped and os.path.exists( infile_name ):
-        # Need to delete temporary file created when we unzipped the infile archive
-        os.remove( infile_name )
 
     if invalid_scores > 0:
         print 'Skipped %d invalid scores. ' % invalid_scores

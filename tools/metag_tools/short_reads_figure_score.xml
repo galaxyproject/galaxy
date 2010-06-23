@@ -5,7 +5,7 @@
 
 <inputs>
 <page>
-    <param name="input1" type="data" format="qualsolexa, qual454, txtseq.zip" label="Quality score file" help="No dataset? Read tip below"/>
+    <param name="input1" type="data" format="qualsolexa, qual454" label="Quality score file" help="No dataset? Read tip below"/>
 </page>
 </inputs>
 
