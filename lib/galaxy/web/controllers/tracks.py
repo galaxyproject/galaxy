@@ -101,8 +101,10 @@ class TracksController( BaseController, UsesVisualization ):
         avail_genomes = {}
         for line in open( os.path.join( trans.app.config.tool_data_path, "twobit.loc" ) ):
             if line.startswith("#"): continue
-            key, path = line.split()
-            avail_genomes[key] = path
+            val = line.split()
+            if len(val) == 2:
+                key, path = val
+                avail_genomes[key] = path
         self.available_genomes = avail_genomes
     
     @web.expose
