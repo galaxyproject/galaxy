@@ -1,46 +1,33 @@
 <tool id="gops_subtract_1" name="Subtract">
   <description>the intervals of two queries</description>
   <command interpreter="python">gops_subtract.py 
-      #if $inputs.type == "Interval":
-            $inputs.interval_input1 $inputs.interval_input2 $output 
-            -1 ${inputs.interval_input1.metadata.chromCol},${inputs.interval_input1.metadata.startCol},${inputs.interval_input1.metadata.endCol},${inputs.interval_input1.metadata.strandCol} 
-            -2 ${inputs.interval_input2.metadata.chromCol},${inputs.interval_input2.metadata.startCol},${inputs.interval_input2.metadata.endCol},${inputs.interval_input2.metadata.strandCol} 
-      #else
-          $inputs.gff_input1 $inputs.gff_input2 $output
-          ## TODO: can we use metadata like above to set these columns rather than hardcode them?
-          -1 1,4,5,7
-          -2 1,4,5,7
-          --gff
+      $input1 $input2 $output
+
+      ##if $input1.ext in ['gff','gtf','gff3']:
+      #if isinstance( $input1.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
+        -1 1,4,5,7 --gff1
+      #else:
+        -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol}
       #end if
+
+      #if isinstance( $input2.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
+        -2 1,4,5,7 --gff2
+      #else:
+          -2 ${input2.metadata.chromCol},${input2.metadata.startCol},${input2.metadata.endCol},${input2.metadata.strandCol} 
+      #end if
+
       -m $min $returntype
   </command>
   <inputs>
-      <conditional name="inputs">
-          <param name="type" type="select" label="File Format to Use">
-            <option value="Interval">Interval</option>
-            <option value="GFF">GFF</option>
-          </param>
-          <when value="Interval">
-            <param format="interval" name="interval_input2" type="data" help="Second query">
-              <label>Subtract</label>
-            </param>
-    
-            <param format="interval" name="interval_input1" type="data" help="First query">
-              <label>from</label>
-            </param>
-        </when>
-        <when value="GFF">
-            <param format="gff" name="gff_input2" type="data" help="Second query">
-              <label>Subtract</label>
-            </param>
-    
-            <param format="gff" name="gff_input1" type="data" help="First query">
-              <label>from</label>
-            </param>
-        </when>
-    </conditional>
+    <param format="interval,gff" name="input2" type="data" help="Second query">
+      <label>Subtract</label>
+    </param>
 
-<param name="returntype" type="select" label="Return" help="of the first query (see figure below)">
+    <param format="interval,gff" name="input1" type="data" help="First query">
+      <label>from</label>
+    </param>
+
+    <param name="returntype" type="select" label="Return" help="of the first query (see figure below)">
       <option value="">Intervals with no overlap</option>
       <option value="-p">Non-overlapping pieces of intervals</option>
     </param>
@@ -48,59 +35,57 @@
     <param name="min" size="4" type="integer" value="1" help="(bp)">
       <label>where minimal overlap is</label>
     </param>
-
    </inputs>
   <outputs>
-    <data format="input" name="output">
-        #if inputs.type == "Interval":
-            metadata_source="inputs.interval_input1"
-        #else:
-            metadata_source="inputs.gff_input1"
-        #end if
-    </data>
+    <data format="input" name="output" metadata_source="input1"/>
   </outputs>
   <code file="operation_filter.py"/>
   <tests>
     <test>
-      <param name="type"  value="Interval"/>    
-      <param name="interval_input1" value="1.bed" />
-      <param name="interval_input2" value="2.bed" />
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
       <param name="min" value="1" />
       <param name="returntype" value="" />
       <output name="output" file="gops-subtract.dat" />
     </test>
     <test>
-      <param name="type"  value="Interval"/>
-      <param name="interval_input1" value="1.bed" />
-      <param name="interval_input2" value="2_mod.bed" ftype="interval"/>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2_mod.bed" ftype="interval"/>
       <param name="min" value="1" />
       <param name="returntype" value="" />
       <output name="output" file="gops_subtract_diffCols.dat" />
     </test>
     <test>
-      <param name="type"  value="Interval"/>
-      <param name="interval_input1" value="gops_subtract_bigint.bed" />
-      <param name="interval_input2" value="2.bed" />
+      <param name="input1" value="gops_subtract_bigint.bed" />
+      <param name="input2" value="2.bed" />
       <param name="min" value="1" />
       <param name="returntype" value="" />
       <output name="output" file="gops-subtract.dat" />
     </test>
     <test>
-      <param name="type"  value="Interval"/>
-      <param name="interval_input1" value="1.bed" />
-      <param name="interval_input2" value="2.bed" />
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
       <param name="min" value="10" />
       <param name="returntype" value="Non-overlapping pieces of intervals" />
       <output name="output" file="gops-subtract-p.dat" />     
     </test>
+    <!-- Subtract two GFF files. -->
     <test>
-        <param name="type"  value="GFF"/>
-        <param name="gff_input1" value="gops_subtract_in1.gff" />
-        <param name="gff_input2" value="gops_subtract_in2.gff" />
+        <param name="input1" value="gops_subtract_in1.gff" />
+        <param name="input2" value="gops_subtract_in2.gff" />
         <param name="min" value="1" />
         <param name="returntype" value="" />
-        <output name="output" file="gops_subtract_out1.gff" />        
+        <output name="output" file="gops_subtract_out1.gff" />
     </test>
+    <!-- Subtract BED file from GFF file. -->
+    <test>
+        <param name="input1" value="gops_subtract_in1.gff" />
+        <param name="input2" value="gops_subtract_in2.bed" />
+        <param name="min" value="1" />
+        <param name="returntype" value="" />
+        <output name="output" file="gops_subtract_out1.gff" />
+    </test>
+    
   </tests>
   <help>
 

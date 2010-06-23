@@ -28,13 +28,17 @@ def validate_input( trans, error_map, param_values, page_param_map ):
                 # check meta data
                 try:
                     param = param_values[name]
-                    startCol = int( param.metadata.startCol )
-                    endCol = int( param.metadata.endCol )
-                    chromCol = int( param.metadata.chromCol )
-                    if param.metadata.strandCol is not None:
-                        strandCol = int ( param.metadata.strandCol )
-                    else:
-                        strandCol = 0
+                    if isinstance( param.datatype, trans.app.datatypes_registry.get_datatype_by_extension( 'gff' ).__class__ ):
+                        # TODO: currently cannot validate GFF inputs b/c they are not derived from interval.
+                        pass
+                    else: # Validate interval datatype.
+                        startCol = int( param.metadata.startCol )
+                        endCol = int( param.metadata.endCol )
+                        chromCol = int( param.metadata.chromCol )
+                        if param.metadata.strandCol is not None:
+                            strandCol = int ( param.metadata.strandCol )
+                        else:
+                            strandCol = 0
                 except:
                     error_msg = "The attributes of this dataset are not properly set. " + \
                     "Click the pencil icon in the history item to set the chrom, start, end and strand columns."

@@ -8,7 +8,8 @@ usage: %prog bed_file_1 bed_file_2 out_file
     -2, --cols2=N,N,N,N: Columns for start, end, strand in second file
     -m, --mincols=N: Require this much overlap (default 1bp)
     -p, --pieces: just print pieces of second set (after padding)
-    -G, --gff: inputs are GFF format, meaning start and end coordinates are 1-based, closed interval
+    -G, --gff1: input 1 is GFF format, meaning start and end coordinates are 1-based, closed interval
+    -H, --gff2: input 2 is GFF format, meaning start and end coordinates are 1-based, closed interval
 """
 from galaxy import eggs
 import pkg_resources
@@ -35,24 +36,29 @@ def main():
         chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )      
         if options.mincols: mincols = int( options.mincols )
         pieces = bool( options.pieces )
-        gff_format = bool( options.gff )
+        in1_gff_format = bool( options.gff1 )
+        in2_gff_format = bool( options.gff2 )
         in_fname, in2_fname, out_fname = args
     except:
         doc_optparse.exception()
 
-    # Set reader to handle either GFF or default format.
-    if gff_format:
-        reader_wrapper = GFFReaderWrapper
+    # Set readers to handle either GFF or default format.
+    if in1_gff_format:
+        in1_reader_wrapper = GFFReaderWrapper
     else:
-        reader_wrapper = NiceReaderWrapper
+        in1_reader_wrapper = NiceReaderWrapper
+    if in2_gff_format:
+        in2_reader_wrapper = GFFReaderWrapper
+    else:
+        in2_reader_wrapper = NiceReaderWrapper
         
-    g1 = reader_wrapper( fileinput.FileInput( in_fname ),
+    g1 = in1_reader_wrapper( fileinput.FileInput( in_fname ),
                             chrom_col=chr_col_1,
                             start_col=start_col_1,
                             end_col=end_col_1,
                             strand_col=strand_col_1,
                             fix_strand=True )
-    g2 = reader_wrapper( fileinput.FileInput( in2_fname ),
+    g2 = in2_reader_wrapper( fileinput.FileInput( in2_fname ),
                             chrom_col=chr_col_2,
                             start_col=start_col_2,
                             end_col=end_col_2,
@@ -64,7 +70,7 @@ def main():
     try:
         for line in subtract( [g1,g2], pieces=pieces, mincols=mincols ):
             if type( line ) is GenomicInterval:
-                if gff_format:
+                if in1_gff_format:
                     line = convert_to_gff_coordinates( line )
                 out_file.write( "%s\n" % "\t".join( line.fields ) )
             else:
