@@ -69,9 +69,11 @@ class EmailAction(DefaultJobAction):
         if smtp_server is None:
             log.error("Mail is not configured for this galaxy instance.  Workflow action aborted.")
         # Build the email message
+        frm = 'galaxy-noreply@%s' % trans.request.host
+        to  = job.user.email
         msg = MIMEText( "Your job '%s' at Galaxy instance %s is complete as of %s." % (job.history.name, trans.request.host, job.update_time))
-        msg[ 'To' ] = job.user.email
-        msg[ 'From' ] = job.user.email
+        msg[ 'To' ] = to
+        msg[ 'From' ] = frm
         msg[ 'Subject' ] = "Galaxy workflow step notification '%s'"
         try:
             s = smtplib.SMTP()
@@ -80,7 +82,7 @@ class EmailAction(DefaultJobAction):
             s.close()
         except Exception, e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
-
+L
     @classmethod
     def get_config_form(cls, trans):
         form = """
