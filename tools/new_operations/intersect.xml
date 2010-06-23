@@ -1,131 +1,110 @@
 <tool id="gops_intersect_1" name="Intersect">
   <description>the intervals of two queries</description>
   <command interpreter="python">gops_intersect.py 
-      #if $inputs.type == "Interval":
-            $inputs.interval_input1 $inputs.interval_input2 $output 
-            -1 ${inputs.interval_input1.metadata.chromCol},${inputs.interval_input1.metadata.startCol},${inputs.interval_input1.metadata.endCol},${inputs.interval_input1.metadata.strandCol} 
-            -2 ${inputs.interval_input2.metadata.chromCol},${inputs.interval_input2.metadata.startCol},${inputs.interval_input2.metadata.endCol},${inputs.interval_input2.metadata.strandCol} 
-            $inputs.interval_returntype
-      #else
-          $inputs.gff_input1 $inputs.gff_input2 $output
-          ## TODO: can we use metadata like above to set these columns rather than hardcode them?
-          -1 1,4,5,7
-          -2 1,4,5,7
-          --gff
-          $inputs.gff_returntype
+      $input1 $input2 $output
+
+      #if isinstance( $input1.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
+        -1 1,4,5,7 --gff1
+      #else:
+        -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol}
       #end if
-      -m $min
+
+      #if isinstance( $input2.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
+        -2 1,4,5,7 --gff2
+      #else:
+          -2 ${input2.metadata.chromCol},${input2.metadata.startCol},${input2.metadata.endCol},${input2.metadata.strandCol} 
+      #end if
+
+      -m $min $returntype
   </command>
   <inputs>
-      <conditional name="inputs">
-          <param name="type" type="select" label="File Format to Use">
-              <option value="Interval">Interval</option>
-              <option value="GFF">GFF</option>
-          </param>
-          <when value="Interval">
-              <param name="interval_returntype" type="select" label="Return" help="(see figure below)">
-                  <option value="">Overlapping Intervals</option>
-                  <option value="-p">Overlapping pieces of Intervals</option>
-              </param>
-              <param format="interval" name="interval_input1" type="data" help="First query">
-                  <label>of</label>
-              </param>
-              <param format="interval" name="interval_input2" type="data" help="Second query">
-                  <label>that intersect</label>
-              </param>              
-          </when>
-          <when value="GFF">
-              <param name="gff_returntype" type="select" label="Return" help="(see figure below)">
-                  <option value="">Overlapping Intervals</option>
-                  <option value="-p">Overlapping pieces of Intervals</option>
-              </param>
-              <param format="gff" name="gff_input1" type="data" help="First query">
-                  <label>of</label>
-              </param>
-              <param format="gff" name="gff_input2" type="data" help="Second query">
-                  <label>that intersect</label>
-              </param>              
-          </when>
-      </conditional>    
+      <param name="returntype" type="select" label="Return" help="(see figure below)">
+          <option value="">Overlapping Intervals</option>
+          <option value="-p">Overlapping pieces of Intervals</option>
+      </param>
+      <param format="interval,gff" name="input1" type="data" help="First query">
+          <label>of</label>
+      </param>
+      <param format="interval,gff" name="input2" type="data" help="Second query">
+          <label>that intersect</label>
+      </param>
       <param name="min" size="4" type="integer" value="1" help="(bp)">
           <label>for at least</label>
       </param>
   </inputs>
   <outputs>
-      <data format="input" name="output">
-          #if inputs.type == "Interval":
-              metadata_source="inputs.interval_input1"
-          #else:
-              metadata_source="inputs.gff_input1"
-          #end if
-      </data>
+      <data format="input" name="output" metadata_source="input1"/>
   </outputs>
   <code file="operation_filter.py"/>
   <tests>
     <test>
       <param name="type" value="Interval"/>
-      <param name="interval_input1" value="1.bed" />
-      <param name="interval_input2" value="2.bed" />
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
       <param name="min" value="1" />
-      <param name="interval_returntype" value="" />
+      <param name="returntype" value="" />
       <output name="output" file="gops_intersect_out.bed" />
     </test>
     <test>
       <param name="type" value="Interval"/>  
-      <param name="interval_input1" value="1.bed" />
-      <param name="interval_input2" value="2_mod.bed" ftype="interval"/>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2_mod.bed" ftype="interval"/>
       <param name="min" value="1" />
-      <param name="interval_returntype" value="" />
+      <param name="returntype" value="" />
       <output name="output" file="gops_intersect_diffCols.bed" />
     </test>
     <test>
-      <param name="type" value="Interval"/>
-      <param name="interval_input1" value="1.bed" />
-      <param name="interval_input2" value="2_mod.bed" ftype="interval"/>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2_mod.bed" ftype="interval"/>
       <param name="min" value="1" />
-      <param name="interval_returntype" value="Overlapping pieces of Intervals" />
+      <param name="returntype" value="Overlapping pieces of Intervals" />
       <output name="output" file="gops_intersect_p_diffCols.bed" />
     </test>
     <test>
-      <param name="type" value="Interval"/>
-      <param name="interval_input1" value="1.bed" />
-      <param name="interval_input2" value="2.bed" />
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="2.bed" />
       <param name="min" value="10" />
-      <param name="interval_returntype" value="Overlapping pieces of Intervals" />
+      <param name="returntype" value="Overlapping pieces of Intervals" />
       <output name="output" file="gops_intersect_p_out.bed" />     
     </test>
     <test>
-      <param name="type" value="Interval"/>
-      <param name="interval_input1" value="gops_bigint.interval" ftype="interval" />
-      <param name="interval_input2" value="gops_bigint2.interval" ftype="interval" />
+      <param name="input1" value="gops_bigint.interval" ftype="interval" />
+      <param name="input2" value="gops_bigint2.interval" ftype="interval" />
       <param name="min" value="1" />
-      <param name="interval_returntype" value="" />
+      <param name="returntype" value="" />
       <output name="output" file="gops_intersect_bigint_out.interval" />     
     </test>
     <test>
-      <param name="type" value="Interval"/>
-      <param name="interval_input1" value="gops_bigint2.interval" ftype="interval" />
-      <param name="interval_input2" value="gops_bigint.interval" ftype="interval" />
+      <param name="input1" value="gops_bigint2.interval" ftype="interval" />
+      <param name="input2" value="gops_bigint.interval" ftype="interval" />
       <param name="min" value="1" />
-      <param name="interval_returntype" value="" />
+      <param name="returntype" value="" />
       <output name="output" file="gops_intersect_bigint_out.interval" />     
     </test>
     <test>
-      <param name="type" value="Interval"/>
-      <param name="interval_input1" value="12.bed" ftype="bed" />
-      <param name="interval_input2" value="1.bed" ftype="bed" />
+      <param name="input1" value="12.bed" ftype="bed" />
+      <param name="input2" value="1.bed" ftype="bed" />
       <param name="min" value="1" />
-      <param name="interval_returntype" value="" />
+      <param name="returntype" value="" />
       <output name="output" file="gops_intersect_no_strand_out.bed" />     
     </test>
+    <!-- Intersect two GFF files. -->
     <test>
-        <param name="type" value="GFF"/>
-        <param name="gff_input1" value="gops_subtract_in1.gff" />
-        <param name="gff_input2" value="gops_subtract_in2.gff" />
+        <param name="input1" value="gops_subtract_in1.gff" />
+        <param name="input2" value="gops_subtract_in2.gff" />
         <param name="min" value="1" />
-        <param name="gff_returntype" value="" />
+        <param name="returntype" value="" />
         <output name="output" file="gops_intersect_out2.gff" />        
     </test>
+    <!-- Intersect GFF file and bed file. -->
+    <test>
+        <param name="input1" value="gops_subtract_in1.gff" />
+        <param name="input2" value="gops_subtract_in2.bed" />
+        <param name="min" value="1" />
+        <param name="returntype" value="" />
+        <output name="output" file="gops_intersect_out2.gff" />        
+    </test>
+    
   </tests>
   <help>
 

@@ -3,7 +3,6 @@
   <command interpreter="python">gops_subtract.py 
       $input1 $input2 $output
 
-      ##if $input1.ext in ['gff','gtf','gff3']:
       #if isinstance( $input1.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
         -1 1,4,5,7 --gff1
       #else:
