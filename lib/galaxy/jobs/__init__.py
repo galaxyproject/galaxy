@@ -712,12 +712,16 @@ class JobWrapper( object ):
     @property
     def user( self ):
         job = self.sa_session.query( model.Job ).get( self.job_id )
-        if job.user is None and job.galaxy_session is not None:
-            return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
-        elif job.user is None:
-            return 'anonymous@unknown'
-        else:
+        if job.user is not None:
+            return job.user.email
+        elif job.galaxy_session is not None and job.galaxy_session.user is not None:
+            return job.galaxy_session.user.email
+        elif job.history is not None and job.history.user is not None:
             return job.history.user.email
+        elif job.galaxy_session is not None:
+            return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
+        else:
+            return 'anonymous@unknown'
 
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
