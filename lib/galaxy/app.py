@@ -1,6 +1,6 @@
 import sys, os, atexit
 
-from galaxy import config, jobs, util, tools, web, cloud
+from galaxy import config, jobs, util, tools, web
 import galaxy.tools.search
 from galaxy.web import security
 import galaxy.model
