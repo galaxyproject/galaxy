@@ -3,14 +3,14 @@
 """
 This tool takes a tab-delimited text file as input and creates filters on columns based on certain properties. The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
 
-usage: %prog output input1 input2 column1[,column2[,column3[,...]]] hinge1[,hinge2[,hinge3[,...]]] [other_input1 [other_input2 [other_input3 ...]]]
-    output: the output pileup
-    input1: the pileup file to start with
-    input2: the second pileup file to join
-    hinge: the columns to be used for matching
-    columns: the columns that should appear in the output
+usage: %prog -o output -1 input1 -2 input2 -c column1[,column2[,column3[,...]]] -g hinge1[,hinge2[,hinge3[,...]]] -f <fill_options_file> [other_input1 [other_input2 [other_input3 ...]]]
+    -o, output=0: the output pileup
+    -1, input1=1: the pileup file to start with
+    -2, input2=2: the second pileup file to join
+    -g, hinge=h: the columns to be used for matching
+    -c, columns=c: the columns that should appear in the output
+    -f, fill_options_file=f: the file specifying the fill value to use
     other_inputs: the other input files to join
-
 """
 
 import optparse, os, re, struct, sys, tempfile
@@ -31,63 +31,87 @@ def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
 
+def split_nums( text ):
+    """
+    Splits a string into pieces of numbers and non-numbers, like 'abc23B3' --> [ 'abc', 23, 'B', 3 ]
+    """
+    split_t = []
+    c = ''
+    n = ''
+    for ch in text:
+        try:
+            v = int( ch )
+            n += ch
+            if c:
+                split_t.append( ''.join( c ) )
+                c = ''
+        except ValueError:
+            c += ch
+            if n:
+                split_t.append( int( ''.join( n ) ) )
+                n = ''
+    if c:
+        split_t.append( ''.join( c ) )
+    if n:
+        split_t.append( int( ''.join( n ) ) )
+    return split_t
+
 def hinge_compare( hinge1, hinge2 ):
     """
     Compares items like 'chr10' and 'chrM' or 'scaffold2' and scaffold10' so that
     first part handled as text but last part as number
     """
-    pat = re.compile( '(?P<text>\D*)(?P<number>\d+)?' )
     split_hinge1 = hinge1.split( '\t' )
     split_hinge2 = hinge2.split( '\t' )
-    for i in range( len( split_hinge1 ) ):
-        if split_hinge1[ i ] == split_hinge2[ i ]:
-            continue
-        try:
-            if int( split_hinge1[ i ] ) > int( split_hinge2[ i ] ):
-                return 1
-            else:
-                return -1
-        except ValueError:
-            try:
-                if float( split_hinge1[ i ] ) > float( split_hinge2[ i ] ):
-                    return 1
-                else:
-                    return -1
-            except ValueError:
-                return ref_compare( split_hinge1[ i ], split_hinge2[ i ])
-    return 0
-
-def ref_compare( ref1, ref2 ):
-    """
-    Compares items like 'chr10' and 'chrM' or 'scaffold2' and scaffold10' so that
-    first part handled as text but last part as number
-    """
-    pat = re.compile( '(?P<text>\D*)(?P<number>\d+)?' )
-    r1 = pat.match( ref1 )
-    r2 = pat.match( ref2 )
-    if not r2:
-        return 1
-    elif not r1:
-        return -1
-    text1, num1 = r1.groupdict()[ 'text' ].strip(), r1.groupdict()[ 'number' ]
-    text2, num2 = r2.groupdict()[ 'text' ].strip(), r2.groupdict()[ 'number' ]
-    if text2 == '' and ( num2 == '' or num2 is None ):
-        return 1
-    elif text1 == '' and ( num1 == '' or num1 is None ):
-        return -1
-    if text1 > text2:
-        return 1
-    elif text1 == text2:
-        if not ( num1 is None or num2 is None ):
-            num1 = int( num1 )
-            num2 = int( num2 )
-        if num1 > num2:
+    # quick check if either hinge is empty
+    if not ''.join( split_hinge2 ):
+        if ''.join( split_hinge1 ):
             return 1
-        elif num1 == num2:
+        elif not ''.join( split_hinge1 ):
             return 0
-        elif num1 < num2:
+    else:
+        if not ''.join( split_hinge1 ):
             return -1
-    elif text1 < text2:
+    # go through all parts of the hinges and compare
+    for i, sh1 in enumerate( split_hinge1 ):
+        # if these hinge segments are the same, just move on to the next ones
+        if sh1 == split_hinge2[ i ]:
+            continue
+        # check all parts of each hinge
+        h1 = split_nums( sh1 )
+        h2 = split_nums( split_hinge2[ i ] )
+        for j, h in enumerate( h1 ):
+            # if second hinge has no more parts, first is considered larger
+            if j > 0 and len( h2 ) <= j:
+                return 1
+            # if these two parts are the same, move on to next
+            if h == h2[ j ]:
+                continue
+            # do actual comparison, depending on whether letter or number
+            if type( h ) == int:
+                if type( h2[ j ] ) == int:
+                    if h > h2[ j ]:
+                        return 1
+                    elif h < h2[ j ]:
+                        return -1
+                # numbers are less than letters
+                elif type( h2[ j ] ) == str:
+                    return -1
+            elif type( h ) == str:
+                if type( h2[ j ] ) == str:
+                    if h > h2[ j ]:
+                        return 1
+                    elif h < h2[ j ]:
+                        return -1
+                # numbers are less than letters
+                elif type( h2[ j ] ) == int:
+                    return 1
+    # if all else has failed, just do basic string comparison
+    if hinge1 > hinge2:
+        return 1
+    elif hinge1 == hinge2:
+        return 0
+    elif hinge1 < hinge2:
         return -1
 
 def hinge_sort( infile, outfile, hinge ):
@@ -119,49 +143,18 @@ def hinge_sort( infile, outfile, hinge ):
     fout.close()
     fin.close()
 
-def min_chr_pos( chr_pos ):
-    """Given line and hinge, identifies the 'smallest' one, from left to right"""
-    if len( chr_pos ) == 0 and ''.join( chr_pos ):
-        return ''
-    min_loc = len( chr_pos )
-    min_hinge = []
-    loc = 0
-    for c_pos in chr_pos:
-        if c_pos.strip():
-            split_c = c_pos.split( '\t' )
-            
-            
-            ref, pos = c_pos.split( '\t' )[:2]
-            pos = int( pos )
-            if not min_hinge:
-                min_hinge = split_c
-                min_loc = loc
-            else:
-                ref_comp = ref_compare( ref, min_ref_pos[0] )
-                if ref_comp < 0:
-                    min_ref_pos = [ ref, pos ]
-                    min_loc = loc
-                elif ref_comp == 0 and pos < min_ref_pos[1]:
-                    min_ref_pos[1] = pos
-                    min_loc = loc
-        loc += 1
-    return '%s\t%s' % tuple( min_ref_pos ), min_loc
-
 def __main__():
     parser = optparse.OptionParser()
-    parser.add_option( '', '--output', dest='output', help='' )
-    parser.add_option( '', '--input1', dest='input1', help='' )
-    parser.add_option( '', '--input2', dest='input2', help='' )
-    parser.add_option( '', '--hinge', dest='hinge', help='' )
-    parser.add_option( '', '--columns', dest='columns', help='' )
-    parser.add_option( '', '--fill_options_file', dest='fill_options_file', default=None, help='' )
+    parser.add_option( '-o', '--output', dest='output', help='The name of the output file' )
+    parser.add_option( '-1', '--input1', dest='input1', help='The name of the first input file' )
+    parser.add_option( '-2', '--input2', dest='input2', help='The name of the second input file' )
+    parser.add_option( '-g', '--hinge', dest='hinge', help='The "hinge" to use (the value to compare)' )
+    parser.add_option( '-c', '--columns', dest='columns', help='The columns to include in the output file' )
+    parser.add_option( '-f', '--fill_options_file', dest='fill_options_file', default=None, help='The file specifying the fill value to use' )
     (options, args) = parser.parse_args()
-    output = options.output
-    input1 = options.input1
-    input2 = options.input2
     hinge = int( options.hinge )
     cols = [ int( c ) for c in str( options.columns ).split( ',' ) if int( c ) > hinge ]
-    inputs = [ input1, input2 ]
+    inputs = [ options.input1, options.input2 ]
     if options.fill_options_file == "None":
         inputs.extend( args )
     else:
@@ -201,7 +194,7 @@ def __main__():
         tmp_input_files.append( tmp_file )
     # cycle through files, getting smallest line of all files one at a time
     # also have to keep track of vertical position of extra columns
-    fout = file( output, 'w' )
+    fout = file( options.output, 'w' )
     old_current = ''
     first_line = True
     current_lines = [ f.readline() for f in tmp_input_files ]
@@ -272,5 +265,6 @@ def __main__():
     fout.close()
     for f in tmp_input_files:
         os.unlink( f.name )
+    file('/afs/bx.psu.edu/user/kpvincent/galaxy-commit/actual_out', 'w').write(file(fout.name,'r').read())
 
 if __name__ == "__main__" : __main__()

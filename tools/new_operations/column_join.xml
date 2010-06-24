@@ -92,7 +92,7 @@ ${simplejson.dumps( __fill_options )}
       <param name="input" value="column_join_in6.pileup" ftype="pileup" />
       <output name="output" file="column_join_out2.pileup" ftype="tabular" />
     </test>
-<!--  This test is failing for an unclear reason (the column values do not get 
+<!--  This test is failing for an unclear reason (the column values do not get
       passed into the script), but passes in the browser
     <test>
       <param name="input1" value="column_join_in7.pileup" ftype="tabular" />
@@ -106,7 +106,17 @@ ${simplejson.dumps( __fill_options )}
       <param name="input" value="column_join_in9.pileup" ftype="tabular" />
       <output name="output" file="column_join_out3.pileup" ftype="tabular" />
     </test>
--->  </tests>
+-->
+    <test>
+      <param name="input1" value="column_join_in10.pileup" ftype="pileup" />
+      <param name="hinge" value="1" />
+      <param name="columns" value="2,7" />
+      <param name="fill_empty_columns_switch" value="no_fill" />
+      <param name="input2" value="column_join_in11.pileup" ftype="pileup" />
+      <param name="input" value="column_join_in12.pileup" ftype="pileup" />
+      <output name="output" file="column_join_out4.pileup" ftype="tabular" />
+    </test>
+    </tests>
   <help>
 **What it does**
 
@@ -204,5 +214,3 @@ To join on columns 3 and 4 combining on columns 1 and 2, columns 1-4 should be s
 
   </help>
 </tool>
-
-
