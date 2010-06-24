@@ -265,6 +265,5 @@ def __main__():
     fout.close()
     for f in tmp_input_files:
         os.unlink( f.name )
-    file('/afs/bx.psu.edu/user/kpvincent/galaxy-commit/actual_out', 'w').write(file(fout.name,'r').read())
 
 if __name__ == "__main__" : __main__()
