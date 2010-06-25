@@ -73,6 +73,7 @@ class JobQueue( object ):
         """Start the job manager"""
         self.app = app
         self.sa_session = app.model.context
+        self.job_lock = False
         # Should we read jobs form the database, or use an in memory queue
         self.track_jobs_in_database = app.config.get_bool( 'track_jobs_in_database', False )
         # Keep track of the pid that started the job manager, only it
@@ -197,8 +198,13 @@ class JobQueue( object ):
                 elif job_state == JOB_INPUT_DELETED:
                     log.info( "job %d unable to run: one or more inputs deleted" % job.job_id )
                 elif job_state == JOB_READY:
-                    self.dispatcher.put( job )
-                    log.debug( "job %d dispatched" % job.job_id)
+                    if self.job_lock:
+                        log.info("Job dispatch attempted for %s, but prevented by administrative lock." % job.job_id)
+                        if not self.track_jobs_in_database:
+                            new_waiting.append( job )
+                    else:
+                        self.dispatcher.put( job )
+                        log.debug( "job %d dispatched" % job.job_id)
                 elif job_state == JOB_DELETED:
                     msg = "job %d deleted by user while still queued" % job.job_id
                     job.info = msg

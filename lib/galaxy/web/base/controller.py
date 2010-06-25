@@ -1404,7 +1404,8 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, **kwd ):
+    def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, job_lock = None, **kwd ):
+        # DBTODO admin job lock.
         deleted = []
         msg = None
         status = None
@@ -1425,6 +1426,10 @@ class Admin( object ):
             msg += ' for deletion: '
             msg += ', '.join( deleted )
             status = 'done'
+        if job_lock == 'lock':
+            trans.app.job_manager.job_queue.job_lock = True
+        elif job_lock == 'unlock':
+            trans.app.job_manager.job_queue.job_lock = False
         cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
         jobs = trans.sa_session.query( trans.app.model.Job ) \
                                .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1445,7 +1450,8 @@ class Admin( object ):
                                     last_updated = last_updated,
                                     cutoff = cutoff,
                                     msg = msg,
-                                    status = status )
+                                    status = status,
+                                    job_lock = trans.app.job_manager.job_queue.job_lock )
 
 ## ---- Utility methods -------------------------------------------------------
         

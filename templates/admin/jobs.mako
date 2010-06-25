@@ -110,5 +110,30 @@
             </div>
         </div>
     </div>
+	<p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">
+            Administrative Job Lock
+        </div>
+        <div class="toolFormBody">
+	%if job_lock==True:
+            <div class="form-row">
+				<p>All job execution is currently locked.  Click here to unlock.</p>
+				<input type='hidden' name='job_lock' value='unlock'/>
+            </div>
+            <div class="form-row">
+                <input type="submit" class="primary-button" name="submit" value="Unlock">
+            </div>
+	%else:
+		    <div class="form-row">
+				<p>To prevent new jobs from dispatching, you can lock down the job queue here.</p>
+				<input type='hidden' name='job_lock' value='lock'/>
+		    </div>
+		    <div class="form-row">
+		        <input type="submit" class="primary-button" name="submit" value="Lock">
+		    </div>
+	%endif
+        </div>
+    </div>
 
 </form>
