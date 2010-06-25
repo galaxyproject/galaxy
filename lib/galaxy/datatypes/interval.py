@@ -854,9 +854,83 @@ class Gff3( Gff ):
 class Gtf( Gff ):
     """Tab delimited data in Gtf format"""
     file_ext = "gtf"
+    column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes' ]
+    
+    """Add metadata elements"""
+    MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+    
     
     def sniff( self, filename ):
-        return False
+        """
+        Determines whether the file is in gtf format
+        
+        GTF lines have nine required fields that must be tab-separated. The first eight GTF fields are the same as GFF. 
+        The group field has been expanded into a list of attributes. Each attribute consists of a type/value pair. 
+        Attributes must end in a semi-colon, and be separated from any following attribute by exactly one space.
+        The attribute list must begin with the two mandatory attributes:
+
+            gene_id value - A globally unique identifier for the genomic source of the sequence.
+            transcript_id value - A globally unique identifier for the predicted transcript.
+        
+        For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format4
+        
+        >>> fname = get_test_fname( '1.bed' )
+        >>> Gtf().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'test.gff' )
+        >>> Gtf().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'test.gtf' )
+        >>> Gtf().sniff( fname )
+        True
+        """
+        headers = get_headers( filename, '\t' )
+        try:
+            if len(headers) < 2:
+                return False
+            for hdr in headers:
+                if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '2' ) < 0:
+                    return False
+                if hdr and hdr[0] and not hdr[0].startswith( '#' ):
+                    if len(hdr) != 9:
+                        return False
+                    try:
+                        int( hdr[3] )
+                        int( hdr[4] )
+                    except:
+                        return False
+                    if hdr[5] != '.':
+                        try:
+                            score = float( hdr[5] )
+                        except:
+                            return False
+                    if hdr[6] not in data.valid_strand:
+                        return False
+
+                    # Check attributes for gene_id, transcript_id
+                    attributes = hdr[8].split(";")
+                    if len( attributes ) >= 2:
+                        try:
+                            # Imprecise: should check for a single space per the spec.
+                            attr_name, attr_value = attributes[0].split(" ")
+                            if attr_name != 'gene_id':
+                                return False
+                        except:
+                            return False
+                        try:
+                            # Imprecise: should check for a single space per the spec.
+                            attr_name, attr_value = attributes[1][1:].split(" ")
+                            if attr_name != 'transcript_id':
+                                return False
+                        except:
+                            return False
+                    else:
+                        return False
+            return True
+        except:
+            return False
+
 
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""

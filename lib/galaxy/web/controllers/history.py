@@ -724,6 +724,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         """Import another user's history via a shared URL"""
         msg = ""
         user = trans.get_user()
+        user_history = trans.get_history()
         # Set referer message
         if 'referer' in kwd:
             referer = kwd['referer']

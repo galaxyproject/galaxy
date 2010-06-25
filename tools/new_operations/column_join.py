@@ -157,11 +157,8 @@ def __main__():
     inputs = [ options.input1, options.input2 ]
     if options.fill_options_file == "None":
         inputs.extend( args )
-    else:
-        try:
-            col = int( args[0] )
-        except ValueError:
-            inputs.extend( args )
+    elif len( args ) > 0:
+        inputs.extend( args )
     fill_options = None
     if options.fill_options_file != "None" and options.fill_options_file is not None:
         try:
