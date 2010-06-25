@@ -238,6 +238,9 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     >>> fname = get_test_fname('file.html')
     >>> guess_ext(fname)
     'html'
+    >>> fname = get_test_fname('test.gtf')
+    >>> guess_ext(fname)
+    'gtf'
     >>> fname = get_test_fname('test.gff')
     >>> guess_ext(fname)
     'gff'
