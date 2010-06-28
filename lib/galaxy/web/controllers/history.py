@@ -476,12 +476,24 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 history_attrs = from_json_string( history_attr_str )
             
                 # Create history.
-                # TODO: set tags, annotations.
-                new_history = model.History( name='imported: %s' % history_attrs['name'].encode( 'utf-8' ), user=trans.user )
+                new_history = model.History( name='imported from archive: %s' % history_attrs['name'].encode( 'utf-8' ), user=trans.user )
                 trans.sa_session.add( new_history )
-                trans.sa_session.flush()
-                # TODO: Ignore hid_counter for now since it just artificially increases the hid for all the history's HDAs.
-                #new_history.hid_counter = history_attrs['hid_counter']
+                
+                # Builds a tag string for a tag, value pair.
+                def get_tag_str( tag, value ):
+                    if not value:
+                        return tag
+                    else:
+                        return tag + ":" + value
+                                
+                # Add annotation, tags.
+                if trans.user:
+                    self.add_item_annotation( trans, new_history, history_attrs[ 'annotation' ] )
+                    for tag, value in history_attrs[ 'tags' ].items():
+                        trans.app.tag_handler.apply_item_tags( trans, trans.user, new_history, get_tag_str( tag, value ) )
+                
+                # Ignore hid_counter since it artificially increases the hid for all HDAs?
+                # new_history.hid_counter = history_attrs['hid_counter']
                 new_history.genome_build = history_attrs['genome_build']
                 trans.sa_session.flush()
             
@@ -515,7 +527,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                                                                      metadata = metadata, 
                                                                      history = new_history,
                                                                      create_dataset = True,
-                                                                     sa_session = trans.sa_session )
+                                                                     sa_session = trans.sa_session )                     
                     hda.state = hda.states.OK
                     trans.sa_session.add( hda )
                     trans.sa_session.flush()
@@ -528,7 +540,12 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                     temp_dataset_name = '%s/datasets/%s' % ( temp_output_dir, dataset_attrs['file_name'] )
                     shutil.copyfile( temp_dataset_name, hda.file_name )
                 
-                    # TODO: set tags, annotations.
+                    # Set tags, annotations.
+                    if trans.user:
+                        self.add_item_annotation( trans, hda, dataset_attrs[ 'annotation' ] )
+                        for tag, value in dataset_attrs[ 'tags' ].items():
+                            trans.app.tag_handler.apply_item_tags( trans, trans.user, hda, get_tag_str( tag, value ) )
+                        trans.sa_session.flush()
             
                 # Cleanup.
                 if os.path.exists( temp_output_dir ):
@@ -537,7 +554,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 return trans.show_ok_message( message="History '%s' has been imported. " % history_attrs['name'] )
             except Exception, e:
                 return trans.show_error_message( 'Error importing history archive. ' + str( e ) )  
-        
+                
             
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Import a History from an Archive", submit_text="Submit" )
@@ -567,7 +584,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             
             # Create archive and stream back to client.
             
-            # Simple method to convert strings to unicode in utf-8 format. Method should be used for all user input.
+            # Convert strings to unicode in utf-8 format. Method should be used for all user input.
             def unicode_wrangler( a_string ):
                 a_string_type = type ( a_string )
                 if a_string_type is str:
@@ -575,18 +592,28 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 elif a_string_type is unicode:
                     return a_string.encode( 'utf-8' )
             
+            # Create dictionary of an item's tags.
+            def get_item_tag_dict( item ):
+                tags = {}
+                for tag in item.tags:
+                    tag_user_tname = unicode_wrangler( tag.user_tname )
+                    tag_user_value = unicode_wrangler( tag.user_value )
+                    tags[ tag_user_tname ] = tag_user_value
+                return tags
+            
             try:    
                 # Use temporary directory for temp output files.
                 temp_output_dir = tempfile.mkdtemp()
                 
                 # Write history attributes to file.
-                # TODO: include tags, annotations.
                 history_attrs = {
                     "create_time" : history.create_time.__str__(),
                     "update_time" : history.update_time.__str__(),
                     "name" : unicode_wrangler( history.name ),
                     "hid_counter" : history.hid_counter,
-                    "genome_build" : history.genome_build
+                    "genome_build" : history.genome_build,
+                    "annotation" : unicode_wrangler( self.get_item_annotation_str( trans, history.user, history ) ),
+                    "tags" : get_item_tag_dict( history )
                 }
                 history_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
                 history_attrs_out = open( history_attrs_file_name, 'w' )
@@ -597,7 +624,6 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 history_attrs_file_name = new_name
                 
                 # Write datasets' attributes to file.
-                # TODO: include tags, annotations.
                 datasets = self.get_history_datasets( trans, history )
                 datasets_attrs = []
                 for dataset in datasets:
@@ -615,7 +641,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                         "designation" : dataset.designation,
                         "deleted" : dataset.deleted,
                         "visible" : dataset.visible,
-                        "file_name" : dataset.file_name.split('/')[-1]
+                        "file_name" : dataset.file_name.split('/')[-1],
+                        "annotation" : unicode_wrangler( self.get_item_annotation_str( trans, history.user, dataset ) ),
+                        "tags" : get_item_tag_dict( dataset )
                     }
                     datasets_attrs.append( attribute_dict )
                 datasets_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
