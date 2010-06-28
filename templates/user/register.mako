@@ -72,13 +72,15 @@
                     letters, numbers, and the '-' character.
                 </div>
             </div>
-            <div class="form-row">
-                <label>Subscribe to mailing list:</label>
-                %if subscribe_checked:
-                    <% subscribe_check_box.checked = True %>
-                %endif
-                ${subscribe_check_box.get_html()}
-            </div>
+            %if trans.app.config.smtp_server:
+                <div class="form-row">
+                    <label>Subscribe to mailing list:</label>
+                    %if subscribe_checked:
+                        <% subscribe_check_box.checked = True %>
+                    %endif
+                    ${subscribe_check_box.get_html()}
+                </div>
+            %endif
             %if user_info_select:
                 <div class="form-row">
                     <label>User type</label>

@@ -4,8 +4,9 @@ Contains the user interface in the Universe class
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy import util
-import logging, os, string, re
+import logging, os, string, re, smtplib, socket
 from random import choice
+from email.MIMEText import MIMEText
 from galaxy.web.form_builder import * 
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.framework.helpers import iff
@@ -152,10 +153,20 @@ class User( BaseController ):
                     self.__save_user_info( trans, user, action='create', new_user=True, **kwd )
                     if subscribe_checked:
                         # subscribe user to email list
-                        mail = os.popen( "%s -t" % trans.app.config.sendmail_path, 'w' )
-                        mail.write( "To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % ( trans.app.config.mailing_join_addr,email ) )
-                        if mail.close():
-                            error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+                        if trans.app.config.smtp_server is None:
+                            error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance."
+                        else:
+                            msg = MIMEText( 'Join Mailing list.\n' )
+                            to = msg[ 'To' ] = trans.app.config.mailing_join_addr
+                            frm = msg[ 'From' ] = email
+                            msg[ 'Subject' ] = 'Join Mailing List'
+                            try:
+                                s = smtplib.SMTP()
+                                s.connect( trans.app.config.smtp_server )
+                                s.sendmail( frm, [ to ], msg.as_string() )
+                                s.close()
+                            except:
+                                error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
                     if not error and not admin_view:
                         # The handle_user_login() method has a call to the history_set_default_permissions() method
                         # (needed when logging in with a history), user needs to have default permissions set before logging in
@@ -594,6 +605,8 @@ class User( BaseController ):
                                                               webapp=webapp ) )
     @web.expose
     def reset_password( self, trans, email=None, webapp='galaxy', **kwd ):
+        if trans.app.config.smtp_server is None:
+            return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact an administrator." )
         message = util.restore_text( kwd.get( 'message', '' ) )
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
@@ -608,20 +621,30 @@ class User( BaseController ):
                     new_pass = ""
                     for i in range(15):
                         new_pass = new_pass + choice(chars)
-                    mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
-                    mail.write("To: %s\nFrom: no-reply@nowhere.edu\nSubject: Galaxy Password Reset\n\nYour password has been reset to \"%s\" (no quotes)." % (email, new_pass) )
-                    if mail.close():
-                        message = 'Failed to reset password.  If this problem persists, please submit a bug report.'
+                    host = trans.request.host.split(':')[0]
+                    if host == 'localhost':
+                        host = socket.getfqdn()
+                    msg = MIMEText( 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass ) )
+                    to = msg[ 'To' ] = email
+                    frm = msg[ 'From' ] = 'galaxy-no-reply@' + host
+                    msg[ 'Subject' ] = 'Galaxy Password Reset'
+                    try:
+                        s = smtplib.SMTP()
+                        s.connect( trans.app.config.smtp_server )
+                        s.sendmail( frm, [ to ], msg.as_string() )
+                        s.close()
+                        reset_user.set_password_cleartext( new_pass )
+                        trans.sa_session.add( reset_user )
+                        trans.sa_session.flush()
+                        trans.log_event( "User reset password: %s" % email )
+                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) )
+                    except Exception, e:
+                        message = 'Failed to reset password: %s' % str( e )
                         status = 'error'
-                    reset_user.set_password_cleartext( new_pass )
-                    trans.sa_session.add( reset_user )
-                    trans.sa_session.flush()
-                    trans.log_event( "User reset password: %s" % email )
-                    message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) )
                     return trans.response.send_redirect( web.url_for( controller='user',
                                                                       action='reset_password',
                                                                       message=message,
-                                                                      status='done' ) )
+                                                                      status=status ) )
             elif email != None:
                 message = "The specified user does not exist"
                 status = 'error'
