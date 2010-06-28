@@ -30,6 +30,7 @@
                 <value galaxy_value="interval" remote_value="tab" />
                 <value galaxy_value="html" remote_value="hyperlinks" />
                 <value galaxy_value="fasta" remote_value="sequence" />
+                <value galaxy_value="gtf" remote_value="gff" />
             </value_translation>
         </request_param>
 	</request_param_translation>
