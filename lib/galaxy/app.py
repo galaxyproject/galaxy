@@ -64,10 +64,6 @@ class UniverseApplication( object ):
             from galaxy.util import memdump
             if memdump.Memdump:
                 self.memdump = memdump.Memdump()
-        # Enable memory_usage logging if configured
-        if self.config.log_memory_usage:
-            from galaxy.util import memory_usage
-            self.memory_usage = memory_usage
         # Start the job queue
         self.job_manager = jobs.JobManager( self )
         # FIXME: These are exposed directly for backward compatibility
