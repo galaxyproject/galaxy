@@ -474,8 +474,7 @@ class Forms( BaseController ):
             return trans.response.send_redirect( web.url_for( controller='forms',
                                                               action='new',
                                                               status='error',
-                                                              message='Error in importing <b>%s</b> file' % csv_file,
-                                                              **kwd))
+                                                              message='Error in importing <b>%s</b> file' % csv_file.file))
         self.__imported_from_file = True
         return fields, list(layouts)
     def __validate_form(self, **kwd):

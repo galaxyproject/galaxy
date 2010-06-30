@@ -1485,14 +1485,13 @@ class TwillTestCase( unittest.TestCase ):
             url ="%s&%s=%s" % ( url, key, role_ids_str )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
-        print url
         check_str = "Permissions updated for request type '%s'" % request_type_name
         self.check_page_for_string( check_str )
         self.home()
     def create_request( self, request_type_id, name, desc, fields ):
         self.home()
-        self.visit_url( "%s/requests/new?create=True&select_request_type=%i" % ( self.url, 
-                                                                                 request_type_id ) )
+        self.visit_url( "%s/requests_common/new?select_request_type=%i&refresh=true&cntrller=requests" % ( self.url, 
+                                                                                                           request_type_id ) )
         self.check_page_for_string( 'Add a new request' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "desc", desc )
@@ -1514,21 +1513,20 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( new_desc )
     def add_samples( self, request_id, request_name, samples ):
         self.home()
-        url = "%s/requests/list?sort=-create_time&operation=show_request&id=%s" % ( self.url, self.security.encode_id( request_id ) )
+        url = "%s/requests/list?operation=show&id=%s" % ( self.url, self.security.encode_id( request_id ) )
         self.visit_url( url )
         self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
         self.check_page_for_string( 'There are no samples.' )
         # this redundant stmt below is add so that the second form in 
         # the page gets selected
-        tc.fv( "3", "request_id", request_id )
+        url = ["%s/requests_common/request_page?cntrller=requests&edit_mode=False&id=%s" % ( self.url, self.security.encode_id( request_id ) )]
         for sample_index, sample in enumerate(samples):
-            tc.submit( "add_sample_button" )
-            self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
             sample_name, fields = sample
-            tc.fv( "3", "sample_%i_name" % sample_index, sample_name )
+            url.append("sample_%i_name=%s" % (sample_index, sample_name.replace(' ', '+')))
             for field_index, field_value in enumerate(fields):
-                tc.fv( "3", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
-        tc.submit( "save_samples_button" )
+                url.append("sample_%i_field_%i=%s" % ( sample_index, field_index , field_value.replace(' ', '+') ))
+        url.append("save_samples_button=Save")
+        self.visit_url('&'.join(url))
         for sample_name, fields in samples:
             self.check_page_for_string( sample_name )
             self.check_page_for_string( 'Unsubmitted' )
@@ -1549,19 +1547,24 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "comment", comment )
         tc.submit( "reject_button" )
         self.check_page_for_string( 'Request <b>%s</b> has been rejected.' % request_name )
-        self.visit_url( "%s/requests/list?sort=-create_time&operation=show_request&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
+        self.visit_url( "%s/requests/list?&operation=show&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
         self.check_page_for_string( comment )
-    def add_bar_codes( self, request_id, request_name, bar_codes ):
+    def add_bar_codes( self, request_id, request_name, bar_codes, samples ):
         self.home()
-        self.visit_url( "%s/requests_admin/bar_codes?request_id=%i" % (self.url, request_id) )
-        self.check_page_for_string( 'Bar codes for Samples of Request "%s"' % request_name )
+        url = "%s/requests/list?operation=show&id=%s" % ( self.url, self.security.encode_id( request_id ) )
+        self.visit_url( url )
+        self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
+        url = ["%s/requests_common/request_page?save_samples_button=Save&cntrller=requests&edit_mode=True&id=%s" % ( self.url, self.security.encode_id( request_id ) )]
         for index, bar_code in enumerate(bar_codes):
-            tc.fv( "1", "sample_%i_bar_code" % index, bar_code )
-        tc.submit( "save_bar_codes" )
-        self.check_page_for_string( 'Bar codes have been saved for this request' )
+            url.append("sample_%i_barcode=%s" % (index, bar_code ))
+            url.append("sample_%i_name=%s" % (index, samples[index].name.replace(' ', '+') ))
+        self.visit_url('&'.join(url))
+        self.check_page_for_string( 'Changes made to the sample(s) are saved.' )
+        for index, bar_code in enumerate(bar_codes):
+            self.check_page_for_string( bar_code )
     def change_sample_state( self, sample_name, sample_id, new_state_id, new_state_name, comment='' ):
         self.home()
-        self.visit_url( "%s/requests_admin/show_events?sample_id=%i" % (self.url, sample_id) )
+        self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%i" % (self.url, sample_id) )
         self.check_page_for_string( 'Events for Sample "%s"' % sample_name )
         tc.fv( "1", "select_state", str(new_state_id) )
         tc.fv( "1", "comment", comment )

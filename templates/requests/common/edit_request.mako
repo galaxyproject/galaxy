@@ -24,41 +24,31 @@ $( function() {
             refresh = true;
         }
         if ( refresh ){
-            $( "#new_request" ).submit();
+            $( "#edit_request" ).submit();
         }
     });
 });
 </script>
 
-<%def name="javascripts()">
-   ${parent.javascripts()}
-   ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
-</%def>
-
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging" )}
-</%def>
-
 <br/>
 <br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button"  href="${h.url_for( controller='requests_admin', action='list')}">
+        <a class="action-button"  href="${h.url_for( controller=cntrller, cntrller=cntrller, action='list')}">
         <span>Browse requests</span></a>
     </li>
 </ul>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Add a new request</div>
+    <div class="toolFormTitle">Edit request "${request.name}"</div>
     %if len(select_request_type.options) == 1:
         There are no request types created for a new request.
     %else:
         <div class="toolFormBody">
-            <form name="new_request" id="new_request" action="${h.url_for( controller='requests_admin', action='new', create=True )}" method="post" >
+            <form name="edit_request" id="edit_request" action="${h.url_for( controller='requests_common', cntrller=cntrller, action='edit', id=trans.security.encode_id(request.id))}" method="post" >
                 <div class="form-row">
                     <label>
-                        Select Request Type
+                        Select Request Type:
                     </label>
                     ${select_request_type.get_html()}
                 </div>
@@ -68,7 +58,7 @@ $( function() {
                         <div class="form-row">
                             <label>${field['label']}</label>
                             ${field['widget'].get_html()}
-                            %if field['label'] == 'Library' and new_library:
+                            %if field['label'] == 'Data library' and new_library:
                                 ${new_library.get_html()}
                             %endif
                             <div class="toolParamHelp" style="clear: both;">
@@ -84,8 +74,8 @@ $( function() {
                       <div style="clear: both"></div>
                     </div>
                     <div class="form-row">
-                        <input type="submit" name="create_request_button" value="Save"/> 
-                        <input type="submit" name="create_request_samples_button" value="Add samples"/>
+                        <input type="submit" name="save_changes_request_button" value="Save changes"/> 
+                        ##<input type="submit" name="edit_samples_button" value="Edit samples"/>
                     </div>
                %endif
         </form>

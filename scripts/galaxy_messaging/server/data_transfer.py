@@ -194,7 +194,7 @@ class DataTransfer(object):
         Update the data transfer status for this dataset in the database
         '''
         try:
-            log.debug('Setting status "%s" for dataset "%s"' % ( status, str(dataset_index) ) )
+            log.debug('Setting status "%s" for dataset "%s" of sample "%s"' % ( status, str(dataset_index), str(self.sample_id) ) )
             df = from_json_string(self.galaxydb.get_sample_dataset_files(self.sample_id))
             if dataset_index == 'All':
                 for dataset in self.dataset_files:
