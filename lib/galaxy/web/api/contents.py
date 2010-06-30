@@ -26,7 +26,7 @@ class ContentsController( BaseController ):
             for subfolder in folder.active_folders:
                 if not admin:
                     can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
-                if admin or can_access:
+                if (admin or can_access) and not subfolder.deleted:
                     subfolder.api_path = folder.api_path + '/' + subfolder.name
                     subfolder.api_type = 'folder'
                     rval.append( subfolder )
@@ -34,7 +34,7 @@ class ContentsController( BaseController ):
             for ld in folder.datasets:
                 if not admin:
                     can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ld.library_dataset_dataset_association.dataset )
-                if admin or can_access:
+                if (admin or can_access) and not ld.deleted:
                     ld.api_path = folder.api_path + '/' + ld.name
                     ld.api_type = 'file'
                     rval.append( ld )
