@@ -673,6 +673,8 @@ class RequestsAdmin( BaseController ):
             return sample.name+'_'+name
         elif opt == sample.request.type.rename_dataset_options.EXPERIMENT_AND_SAMPLE_NAME:
             return sample.request.name+'_'+sample.name+'_'+name
+        elif opt == sample.request.type.rename_dataset_options.EXPERIMENT_NAME:
+            return sample.request.name+'_'+name
     def __setup_datatx_user(self, trans, library, folder):
         '''
         This method sets up the datatx user:
