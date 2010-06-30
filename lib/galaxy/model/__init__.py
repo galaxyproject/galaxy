@@ -115,6 +115,7 @@ class Job( object ):
         self.job_runner_name = None
         self.job_runner_external_id = None
         self.post_job_actions = None
+        self.imported = False
         
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )

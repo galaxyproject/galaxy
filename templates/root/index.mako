@@ -40,9 +40,9 @@
             "Show structure": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
             },
-            "Export to File": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
-            },
+            ##"Export to File": function() {
+            ##    galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
+            ##},
             "Delete": function()
             {
                 if ( confirm( "Really delete the current history?" ) )
@@ -50,10 +50,10 @@
                     galaxy_main.location = "${h.url_for( controller='history', action='delete_current' )}";
                 }
             },
-            "Other Actions": null,
-            "Import from File": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
-            }
+            ##"Other Actions": null,
+            ##"Import from File": function() {
+            ##    galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
+            ##}
         });
         
         // Init tool options.
