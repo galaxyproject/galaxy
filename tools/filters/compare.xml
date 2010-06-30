@@ -1,4 +1,4 @@
-<tool id="comp1" name="Compare two Queries" version="1.0.1">
+<tool id="comp1" name="Compare two Queries" version="1.0.2">
   <description>to find common or distinct rows</description>
   <command interpreter="python">joinWrapper.py $input1 $input2 $field1 $field2 $mode $out_file1</command>
   <inputs>
@@ -26,6 +26,15 @@
       <param name="field2" value="2"/>
       <param name="mode" value="N"/>
       <output name="out_file1" file="fs-compare.dat"/>
+    </test>
+    <!--test case with duplicated key values-->
+    <test>
+      <param name="input1" value="1.bed"/>
+      <param name="input2" value="3.bed"/>
+      <param name="field1" value="1"/>
+      <param name="field2" value="1"/>
+      <param name="mode" value="V"/>
+      <output name="out_file1" file="fs-compare-2.dat"/>
     </test>
   </tests>
   <help>
