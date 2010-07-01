@@ -23,6 +23,7 @@ class ConfigurationError( Exception ):
     pass
 
 class Configuration( object ):
+    deprecated_options = ( 'database_file', )
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
@@ -31,7 +32,7 @@ class Configuration( object ):
         os.umask( self.umask ) # can't get w/o set, so set it back
         self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
         # Database related configuration
-        self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
+        self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )                        
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
@@ -68,7 +69,6 @@ class Configuration( object ):
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.job_walltime = kwargs.get( 'job_walltime', None )
         self.admin_users = kwargs.get( "admin_users", "" )
-        self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
@@ -80,8 +80,8 @@ class Configuration( object ):
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "" )
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
         self.use_memdump = string_as_bool( kwargs.get( 'use_memdump', 'False' ) )
-        self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
-        self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
+        self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'True' ) )
+        self.log_events = string_as_bool( kwargs.get( 'log_events', 'True' ) )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,tair,modencode_worm,modencode_fly" ).lower().split(",")
         self.genetrack_display_sites = kwargs.get( 'genetrack_display_sites', "main,test" ).lower().split(",")
@@ -159,7 +159,11 @@ class Configuration( object ):
                     raise eggs.EggNotFetchable( 'You must scramble the %s egg to use the %s job runner.  Instructions are available at:\n  http://bitbucket.org/galaxy/galaxy-central/wiki/Config/Cluster' % ( runner_to_egg[runner], runner ) )
                 except KeyError:
                     raise Exception( 'No such job runner: %s.  Please double-check the value of start_job_runners in universe_wsgi.ini' % runner )
-                
+        # Check for deprecated options.
+        for key in self.config_dict.keys():
+            if key in self.deprecated_options:
+                log.warning( "Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key ) 
+               
     def is_admin_user( self,user ):
         """
         Determine if the provided user is listed in `admin_users`.
