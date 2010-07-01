@@ -4,9 +4,10 @@ from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import model, util
 from galaxy.util.streamball import StreamBall
-import logging, tempfile, zipfile, tarfile, os, sys, subprocess
+import logging, tempfile, zipfile, tarfile, os, sys, subprocess, smtplib, socket
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
+from email.MIMEText import MIMEText
 from galaxy.web.controllers.forms import get_all_forms
 from sqlalchemy.sql.expression import func, and_
 from sqlalchemy.sql import select
@@ -474,13 +475,21 @@ class RequestsAdmin( BaseController ):
             trans.sa_session.flush()
             # now that the request is complete send the email notification to the 
             # the user
-            if request.notify:
-                mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
-                subject = "Galaxy Sample Tracking: '%s' sequencing request in complete." % request.name
-                body = "The '%s' sequencing request (type: %s) is now complete. Datasets from all the samples are now available for analysis or download from the respective data libraries in Galaxy."  % (request.name, request.type.name)
-                email_content = "To: %s\nFrom: no-reply@nowhere.edu\nSubject: %s\n\n%s" % (request.user.email, subject, body)
-                mail.write( email_content )
-                x = mail.close()
+            if request.notify and trans.app.config.smtp_server is not None:
+                host = trans.request.host.split(':')[0]
+                if host == 'localhost':
+                    host = socket.getfqdn()
+                msg = MIMEText( "The '%s' sequencing request (type: %s) is now complete. Datasets from all the samples are now available for analysis or download from the respective data libraries in Galaxy."  % ( request.name, request.type.name ) )
+                to = msg[ 'To' ] = request.user.email
+                frm = msg[ 'From' ] = 'galaxy-no-reply@' + host
+                msg[ 'Subject' ] = "Galaxy Sample Tracking: '%s' sequencing request in complete." % request.name
+                try:
+                    s = smtplib.SMTP()
+                    s.connect( trans.app.config.smtp_server )
+                    s.sendmail( frm, [ to ], msg.as_string() )
+                    s.close()
+                except:
+                    pass
 
     @web.expose
     @web.require_admin
