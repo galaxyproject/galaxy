@@ -824,8 +824,8 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_url( "%s/user/show_info" % self.url )
         self.check_page_for_string( "Manage User Information" )
-        tc.fv( "1", "email", new_email )
-        tc.fv( "1", "username", new_username )
+        tc.fv( "login_info", "email", new_email )
+        tc.fv( "login_info", "username", new_username )
         tc.submit( "login_info_button" )
         if check_str1:
             self.check_page_for_string( check_str1 )
@@ -833,9 +833,9 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_page( "user/show_info" )
         self.check_page_for_string( "Manage User Information" )
-        tc.fv( "2", "current", password )
-        tc.fv( "2", "password", new_password )
-        tc.fv( "2", "confirm", new_password )
+        tc.fv( "change_password", "current", password )
+        tc.fv( "change_password", "password", new_password )
+        tc.fv( "change_password", "confirm", new_password )
         tc.submit( "change_password_button" )
         self.check_page_for_string( 'The password has been changed.' )
     def edit_user_info( self, info_values ):
@@ -843,7 +843,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "user/show_info" )
         self.check_page_for_string( "Manage User Information" )
         for index, info_value in enumerate(info_values):
-            tc.fv( "3", "field_%i" % index, info_value )
+            tc.fv( "user_info", "field_%i" % index, info_value )
         tc.submit( "edit_user_info_button" )
         self.check_page_for_string( "The user information has been updated with the changes." )
         for value in info_values:

@@ -69,7 +69,7 @@ ${render_user_info()}
 <p/>
 
 <div class="toolForm">
-    <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='new_address', user_id=user.id, admin_view=admin_view )}" method="post" >
+    <form name="user_addresses" id="user_addresses" action="${h.url_for( controller='user', action='new_address', user_id=user.id, admin_view=admin_view )}" method="post" >
         <div class="toolFormTitle">User Addresses</div>
         <div class="toolFormBody">
             %if user.addresses:
@@ -125,7 +125,7 @@ ${render_user_info()}
 
 %if trans.app.config.enable_api:
     <div class="toolForm">
-        <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='new_api_key', user_id=user.id, admin_view=admin_view )}" method="post" >
+        <form name="user_api_keys" id="user_api_keys" action="${h.url_for( controller='user', action='new_api_key', user_id=user.id, admin_view=admin_view )}" method="post" >
             <div class="toolFormTitle">Web API Key</div>
             <div class="toolFormBody">
                 <div class="form-row">
