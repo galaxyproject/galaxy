@@ -141,28 +141,6 @@ class Bam( Binary ):
     def get_track_type( self ):
         return "ReadTrack", {"data": "bai", "index": "summary_tree"}
     
-class Binseq( Binary ):
-    """Class describing a zip archive of binary sequence files"""
-    file_ext = "binseq.zip"
-
-    def set_peek( self, dataset, is_multi_byte=False ):
-        if not dataset.dataset.purged:
-            zip_file = zipfile.ZipFile( dataset.file_name, "r" )
-            num_files = len( zip_file.namelist() )
-            dataset.peek  = "Archive of %s binary sequence files" % ( str( num_files ) )
-            dataset.blurb = data.nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    def display_peek( self, dataset ):
-        try:
-            return dataset.peek
-        except:
-            return "Binary sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
-    def get_mime( self ):
-        """Returns the mime type of the datatype"""
-        return 'application/zip'
-
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     file_ext = "scf"
