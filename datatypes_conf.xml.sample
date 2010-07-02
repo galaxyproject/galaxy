@@ -79,7 +79,7 @@
         <datatype extension="mafcustomtrack" type="galaxy.datatypes.sequence:MafCustomTrack">
             <display file="ucsc/maf_customtrack.xml" />
         </datatype>
-        <datatype extension="pdf" type="galaxy.datatypes.images:Image" mimetype="application/pdf"/>
+        <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf"/>
         <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true" />
         <datatype extension="png" type="galaxy.datatypes.images:Image" mimetype="image/png"/>
         <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" />
@@ -260,6 +260,7 @@
         <sniffer type="galaxy.datatypes.sequence:Fastq"/>
         <sniffer type="galaxy.datatypes.interval:Wiggle"/>
         <sniffer type="galaxy.datatypes.images:Html"/>
+        <sniffer type="galaxy.datatypes.images:Pdf"/>
         <sniffer type="galaxy.datatypes.sequence:Axt"/>
         <sniffer type="galaxy.datatypes.interval:Bed"/>
         <sniffer type="galaxy.datatypes.interval:CustomTrack"/>

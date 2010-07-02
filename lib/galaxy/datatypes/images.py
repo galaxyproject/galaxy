@@ -23,6 +23,19 @@ class Image( data.Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+class Pdf( Image ):
+    def sniff(self, filename):
+        """Determine if the file is in pdf format.
+        """
+        headers = get_headers(filename, None, 1)
+        try:
+            if headers[0][0].startswith("%PDF"):
+                return True
+            else:
+                return False
+        except IndexError:
+            return False
+
 def create_applet_tag_peek( class_name, archive, params ):
     text = """
 <!--[if !IE]>-->
