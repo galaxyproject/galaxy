@@ -9,9 +9,18 @@ CSS processor for Galaxy style sheets. Supports the following features:
 
 """
 
-import sys, string, os.path
+import sys, string, os.path, os
+
+new_path = [ os.path.join( os.getcwd(), '..', '..', "lib" ) ]
+new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+sys.path = new_path
+
+from galaxy import eggs
+import pkg_resources
+from galaxy.util.odict import odict
+
 from pyparsing import *
-from odict import odict
+#from odict import odict
 
 try:
     import Image

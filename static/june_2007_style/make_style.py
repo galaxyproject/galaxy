@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 
-#from galaxy import eggs
-#import pkg_resources
-#pkg_resources.require("Cheetah")
-
 import sys, string, os.path, tempfile, subprocess
-#from galaxy import eggs
-# import pkg_resources
-# pkg_resources.require( "Cheetah" )
 
 # from Cheetah.Template import Template
 from subprocess import Popen, PIPE
@@ -15,7 +8,12 @@ from subprocess import Popen, PIPE
 assert sys.version_info[:2] >= ( 2, 4 )
 
 # To create a new style ( this is an example ):
-# python make_style.py blue_colors.ini blue
+# In case you have not yet installed required packages:
+# % sudo easy_install pyparsing 
+# % sudo easy_install http://effbot.org/downloads/Imaging-1.1.7.tar.gz
+# When you have the above installed, add whatever new style you want to /static/june_2007_style/blue_colors.ini and then:
+# % cd ~/static/june_2007_style/
+# % python make_style.py blue_colors.ini blue
 
 def run( cmd ):
     return Popen( cmd, stdout=PIPE).communicate()[0]
@@ -29,7 +27,8 @@ templates = [ ( "base.css.tmpl", "base.css" ),
               ( "iphone.css.tmpl", "iphone.css" ),
               ( "reset.css.tmpl", "reset.css" ),
               ( "autocomplete_tagging.css.tmpl", "autocomplete_tagging.css") ]
-              
+
+# TODO: Are these images still being used?  If not, clean this code up!
 images = [ 
            ( "./gradient.py 9 30 $panel_header_bg_top - $panel_header_bg_bottom 0 0 $panel_header_bg_bottom 1 1", "panel_header_bg.png" ),
            ( "./gradient.py 9 30 $panel_header_bg_bottom - $panel_header_bg_top 0 0 $panel_header_bg_top 1 1", "panel_header_bg_pressed.png" ),
@@ -49,6 +48,7 @@ images = [
            ( "./circle.py 12 #FFFFFF #D8B365 none> workflow_circle_drag.png" ),
            ]
 
+# TODO: Are these shared_images still being used?  If not, clean this code up!
 shared_images = [ 
     # Dialog boxes
     ( "ok_large.png", "done_message_bg", "done_message_icon.png" ),
