@@ -12,8 +12,8 @@
 <%def name="stylesheets()">
 ${parent.stylesheets()}
 
-${h.css( "history", "autocomplete_tagging" )}
-<link rel="stylesheet" type="text/css" href="${h.url_for('/static/trackster.css')}" />
+${h.css( "history", "autocomplete_tagging", "trackster" )}
+
 <style type="text/css">
     #center {
         overflow: auto;

@@ -73,7 +73,7 @@ span.toolParameterExpandableCollapsable{font-weight:bold;cursor:pointer;}
 ul.toolParameterExpandableCollapsable{list-style:none;}
 ul.manage-table-actions{float:right;margin-top:-2.5em;}
 ul.manage-table-actions li{display:block;float:left;margin-left:0.5em;}
-.state-color-new{border-color:#A86030;background:FFB030;}
+.state-color-new{border-color:#A86030;background:#FFB030;}
 .state-color-upload{border-color:#6666AA;background:#CCCCFF;}
 .state-color-waiting{border-color:#A86030;background:#E8C060;}
 .state-color-queued{border-color:#888888;background:#EEEEEE;}

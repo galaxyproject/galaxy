@@ -71,8 +71,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging", "embed_item" )}
-    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/trackster.css')}" />
+    ${h.css( "autocomplete_tagging", "embed_item", "trackster" )}
     
     <style type="text/css">
         .page-body {

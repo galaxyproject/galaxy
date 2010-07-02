@@ -20,13 +20,14 @@ def run( cmd ):
 
 templates = [ ( "base.css.tmpl", "base.css" ),
               ( "panel_layout.css.tmpl", "panel_layout.css" ),
-              ( "masthead.css.tmpl", "masthead.css"),
-              ( "library.css.tmpl", "library.css"),
+              ( "masthead.css.tmpl", "masthead.css" ),
+              ( "library.css.tmpl", "library.css" ),
               ( "history.css.tmpl", "history.css" ),
               ( "tool_menu.css.tmpl", "tool_menu.css" ),
               ( "iphone.css.tmpl", "iphone.css" ),
               ( "reset.css.tmpl", "reset.css" ),
-              ( "autocomplete_tagging.css.tmpl", "autocomplete_tagging.css") ]
+              ( "autocomplete_tagging.css.tmpl", "autocomplete_tagging.css" ),
+              ( "trackster.css.tmpl", "trackster.css" ) ]
 
 # TODO: Are these images still being used?  If not, clean this code up!
 images = [ 
