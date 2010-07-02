@@ -15,6 +15,9 @@ ${parent.stylesheets()}
 ${h.css( "history", "autocomplete_tagging" )}
 <link rel="stylesheet" type="text/css" href="${h.url_for('/static/trackster.css')}" />
 <style type="text/css">
+    #center {
+        overflow: auto;
+    }
     ul#sortable-ul {
         list-style: none;
         padding: 0;
@@ -24,6 +27,12 @@ ${h.css( "history", "autocomplete_tagging" )}
         display: block;
         margin: 5px 0;
         background: #eee;
+    }
+    .nav-container {
+        position: fixed;
+        width: 100%;
+        left: 0;
+        bottom: 0;
     }
 </style>
 </%def>
@@ -36,37 +45,7 @@ ${h.css( "history", "autocomplete_tagging" )}
         <a id="refresh-button" class="panel-header-button right-float" href="javascript:void(0);" onclick="view.update_options();return false;">Refresh</a>
     </div>
 </div>
-<div id="content">
-    <div id="top-labeltrack" style="position: relative;"></div>
-    <div id="viewport-container" style="overflow-x: hidden; overflow-y: auto;">
-        <div id="viewport"></div>
-    </div>
-</div>
-<div id="nav-container" style="width:100%;">
-    <div id="nav-labeltrack"></div>
-    <div id="nav">
-        <div id="overview">
-            <div id="overview-viewport">
-                <div id="overview-box"></div>
-            </div>
-        </div>
-        <div id="nav-controls">
-            <form action="#">
-                <select id="chrom" name="chrom" style="width: 15em;">
-                    <option value="">Loading</option>
-                </select>
-            <input id="low" size="12" />:<input id="high" size="12" />
-            <input type="hidden" name="id" value="${config.get('vis_id', '')}" />
-                <a href="#" onclick="javascript:view.zoom_in();view.redraw();">
-                    <img src="${h.url_for('/static/images/fugue/magnifier-zoom.png')}" />
-                </a>
-                <a href="#" onclick="javascript:view.zoom_out();view.redraw();">
-                    <img src="${h.url_for('/static/images/fugue/magnifier-zoom-out.png')}" />
-                </a>
-            </form>
-        </div>
-    </div>
-</div>
+
 </%def>
 
 <%def name="right_panel()">
@@ -86,21 +65,22 @@ ${h.css( "history", "autocomplete_tagging" )}
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
 
 <script type="text/javascript">
 
-    var data_url = "${h.url_for( action='data' )}";
-    var reference_url = "${h.url_for( action='reference' )}";
-    var view;
+    var data_url = "${h.url_for( action='data' )}",
+    	reference_url = "${h.url_for( action='reference' )}",
+		chrom_url = "${h.url_for( action='chroms' )}",
+    	view;
     
     $(function() {
         
         %if config:
-            view = new View( "${config.get('chrom')}", "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
+            view = new View( $("#center"), "${config.get('chrom')}", "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
             %for track in config.get('tracks'):
-                view.add_track( 
-                    new ${track["track_type"]}( "${track['name'] | h}", ${track['dataset_id']}, ${track['prefs']} ) 
+                view.add_track(
+                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['prefs']} )
                 );
             %endfor
             init();
@@ -124,14 +104,22 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 }
             });
         %endif
-        
-        window.onbeforeunload = function() {
-            if ( view.has_changes ) {
-                return "There are unsaved changes to your visualization which will be lost.";
-            }
+		
+		$(document).bind( "redraw", function( e ) {
+			view.redraw();
+        });
+
+        // To adjust the size of the viewport to fit the fixed-height footer
+        var refresh = function( e ) {
+            view.viewport_container.height( $(window).height() - 100 );
+            view.nav_container.width( $("#center").width() );
+            view.redraw();
         };
+        $(window).bind( "resize", function(e) { refresh(e); } );
+        $("#right-border").bind( "click dragend", function(e) { refresh(e); } );
+        $(window).trigger( "resize" );
         
-        // Execute this when everything is ready
+        // Execute initializer for EDITOR specific javascript
         function init() {
             $("#title").text(view.title + " (" + view.dbkey + ")");
             $("ul#sortable-ul").sortable({
@@ -142,68 +130,11 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 }
             });
             
-            $(document).bind( "redraw", function( e ) {
-                view.redraw();
-            });
-
-            $("#content").bind("mousewheel", function( e, delta ) {
-                if (Math.abs(delta) < 0.5) {
-                    return;
+            window.onbeforeunload = function() {
+                if ( view.has_changes ) {
+                    return "There are unsaved changes to your visualization which will be lost.";
                 }
-                if (delta > 0) {
-                    view.zoom_in(e.pageX, $("#viewport-container"));
-                } else {
-                    view.zoom_out();
-                }
-                e.preventDefault();
-            });
-
-            $("#content").bind("dblclick", function( e ) {
-                view.zoom_in(e.pageX, $("#viewport-container"));
-            });
-
-            // To let the overview box be draggable
-            $("#overview-box").bind("dragstart", function( e ) {
-                this.current_x = e.offsetX;
-            }).bind("drag", function( e ) {
-                var delta = e.offsetX - this.current_x;
-                this.current_x = e.offsetX;
-
-                var delta_chrom = Math.round(delta / $(document).width() * view.span);
-                view.high += delta_chrom;
-                view.low += delta_chrom;
-                view.redraw();
-            });
-
-            // To adjust the size of the viewport to fit the fixed-height footer
-            var refresh = function( e ) {
-                $("#viewport-container").height( $(window).height() - 100 );
-                $("#nav-container").width( $("#center").width() );
-                view.redraw();
             };
-            $(window).bind( "resize", function(e) { refresh(e); } );
-            $("#right-border").bind( "click dragend", function(e) { refresh(e); } );
-            $(window).trigger( "resize" );
-
-            $("#viewport-container").bind( "dragstart", function( e ) {
-                this.original_low = view.low;
-                this.current_height = e.clientY;
-                this.current_x = e.offsetX;
-            }).bind( "drag", function( e ) {
-                var container = $(this);
-                var delta = e.offsetX - this.current_x;
-                var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
-                if ( new_scroll < container.get(0).scrollHeight - container.height() ) {
-                    container.scrollTop(new_scroll);
-                }
-                this.current_height = e.clientY;
-                this.current_x = e.offsetX;
-
-                var delta_chrom = Math.round(delta / $("#viewport-container").width() * (view.high - view.low));
-                view.high -= delta_chrom;
-                view.low -= delta_chrom;
-                view.redraw();
-            });
 
             // Use a popup grid to add more tracks
             $("#add-track").bind( "click", function(e) {
@@ -222,20 +153,10 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                                         dataType: "json",
                                         error: function() {},
                                         success: function(track_data) {
-                                            var new_track;
-                                            var td = track_data;
-                                            switch(track_data.track_type) {
-                                                case "LineTrack":
-                                                    new_track = new LineTrack( track_data.name, track_data.dataset_id, track_data.prefs );
-                                                    break;
-                                                case "FeatureTrack":
-                                                    new_track = new FeatureTrack( track_data.name, track_data.dataset_id, track_data.prefs );
-                                                    break;
-                                                case "ReadTrack":
-                                                    new_track = new ReadTrack( track_data.name, track_data.dataset_id, track_data.prefs );
-                                                    break;
-                                            }
-                                            view.add_track(new_track);
+                                            var td = track_data,
+												track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack };
+                                            
+                                            view.add_track(new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs) );
                                             view.has_changes = true;
                                             sidebar_box(new_track);
                                         }
@@ -286,80 +207,6 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                     },
                     error: function() { alert("Could not save visualization"); }
                 });
-            });
-            
-            view.add_label_track( new LabelTrack( $("#top-labeltrack") ) );
-            view.add_label_track( new LabelTrack( $("#nav-labeltrack") ) );
-            
-            $("#top-labeltrack").bind( "dragstart", function(e) {
-                this.drag_origin_x = e.clientX;
-                this.drag_origin_pos = e.clientX / $("#viewport-container").width() * (view.high - view.low) + view.low;
-                this.drag_div = $("<div />").css( { 
-                    "height": $("#viewport-container").height(), "top": "0px", "position": "absolute", 
-                    "background-color": "#cfc", "border": "1px solid #6a6", "opacity": 0.5
-                } ).appendTo( $(this) );
-            }).bind( "drag", function(e) {
-                var min = Math.min(e.clientX, this.drag_origin_x),
-                    max = Math.max(e.clientX, this.drag_origin_x),
-                    span = (view.high - view.low),
-                    width = $("#viewport-container").width();
-                
-                $("#low").val(commatize(Math.round(min / width * span) + view.low));
-                $("#high").val(commatize(Math.round(max / width * span) + view.low));
-                this.drag_div.css( { "left": min + "px", "width": (max - min) + "px" } );
-            }).bind( "dragend", function(e) {
-                var min = Math.min(e.clientX, this.drag_origin_x),
-                    max = Math.max(e.clientX, this.drag_origin_x),
-                    span = (view.high - view.low),
-                    width = $("#viewport-container").width(),
-                    old_low = view.low;
-                    
-                view.low = Math.round(min / width * span) + old_low;
-                view.high = Math.round(max / width * span) + old_low;
-                this.drag_div.remove();
-                view.redraw();
-            });
-            
-            $.ajax({
-                url: "${h.url_for( action='chroms' )}", 
-                %if config.get('vis_id'):
-                    data: { vis_id: view.vis_id },
-                %else:
-                    data: { dbkey: view.dbkey },
-                %endif
-                dataType: "json",
-                success: function ( result ) {
-                    if (result['reference']) {
-                        view.add_label_track( new ReferenceTrack() );
-                    }
-                    view.chrom_data = result['chrom_info'];
-                    var chrom_options = '<option value="">Select Chrom/Contig</option>';
-                    for (i in view.chrom_data) {
-                        var chrom = view.chrom_data[i]['chrom'];
-                        chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
-                    }
-                    $("#chrom").html(chrom_options);
-                    $("#chrom").bind( "change", function () {
-                        view.chrom = $("#chrom").val();
-                        var found = $.grep(view.chrom_data, function(v, i) {
-                            return v.chrom === view.chrom;
-                        })[0];
-                        view.max_high = found.len;
-                        view.reset();
-                        view.redraw(true);
-                    
-                        for (var track_id in view.tracks) {
-                            var track = view.tracks[track_id];
-                            if (track.init) {
-                                track.init();
-                            }
-                        }
-                        view.redraw();
-                    });
-                },
-                error: function() {
-                    alert( "Could not load chroms for this dbkey:", view.dbkey );
-                }
             });
             
             function sidebar_box(track) {

@@ -39,8 +39,8 @@
 
 <%def name="render_item_links( history )">
     <a 
-        href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}"     
-        class="icon-button import" 
+        href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}"
+        class="icon-button import"
         ## Needed to overwide initial width so that link is floated left appropriately.
         style="width: 100%"
         title="Import history">Import history</a>
