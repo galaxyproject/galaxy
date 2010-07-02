@@ -75,6 +75,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # [filter:proxy-prefix] section above.
 #filter-with = proxy-prefix
 
+# If proxy-prefix is enabled and you're running more than one Galaxy instance
+# behind one hostname, you will want to set this to the same path as the prefix
+# in the filter above.  This value becomes the "path" attribute set in the
+# cookie so the cookies from each instance will not clobber each other.
+#cookie_path = None
+
 # -- Database
 
 # By default, Galaxy uses a SQLite database at 'database/universe.sqlite'.  You
@@ -92,6 +98,15 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # If using MySQL and the server logs the error "MySQL server has gone away",
 # you will want to set this to some positive value (7200 should work).
 #database_engine_option_pool_recycle = -1
+
+# If large database query results are causing memory or response time issues in
+# the Galaxy process, leave the result on the server instead.  This option is
+# only available for PostgreSQL and is highly recommended.
+#database_engine_option_server_side_cursors = False
+
+# Create only one connection to the database per thread, to reduce the
+# connection overhead.  Recommended when not using SQLite:
+#database_engine_option_strategy = threadlocal
 
 # -- Files and directories
 
