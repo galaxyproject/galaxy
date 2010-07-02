@@ -33,7 +33,6 @@ class UploadController( BaseController ):
                                                               message='No categories have been configured in this instance of the Galaxy Community.  An administrator needs to create some via the Administrator control panel before anything can be uploaded',
                                                               status='error' ) )
         if params.get( 'upload_button', False ):
-
             url_paste = params.get( 'url', '' ).strip()
             file_data = params.get( 'file_data', '' )
             if file_data == '' and url_paste == '':
@@ -66,19 +65,24 @@ class UploadController( BaseController ):
                         obj = datatype.create_model_object( meta )
                         trans.sa_session.add( obj )
                         if isinstance( obj, trans.app.model.Tool ):
-                            existing = trans.sa_session.query( trans.app.model.Tool ).filter_by( tool_id = meta.id ).first()
-                            if existing and replace_id is None:
-                                raise UploadError( 'A tool with the same ID already exists.  If you are trying to update this tool to a new version, please use the upload form on the "Edit Tool" page.  Otherwise, please choose a new ID.' )
-                            elif existing:
+                            existing = trans.sa_session.query( trans.app.model.Tool ) \
+                                                       .filter_by( tool_id = meta.id ) \
+                                                       .first()
+                            if replace_id:
                                 replace_version = trans.sa_session.query( trans.app.model.Tool ).get( trans.security.decode_id( replace_id ) )
+                            if existing and not replace_id:
+                                raise UploadError( 'A tool with the same ID already exists.  If you are trying to update this tool to a new version, please use the upload form on the "Edit Tool" page.  Otherwise, please choose a new ID.' )
+                            elif replace_id and not existing:
+                                raise UploadError( 'Tool ids must match when uploading a new version of a tool.  The new tool id does not match the old tool id (%s).  Check the tool XML files.' % str( replace_version.tool_id ) )
+                            elif existing and replace_id:
                                 if replace_version.newer_version:
                                     # If the user has picked an old version, switch to the newest version
-                                    replace_version = get_versions( trans, replace_version )[0]
+                                    replace_version = get_versions( replace_version )[0]
                                 if replace_version.tool_id != meta.id:
-                                    raise UploadError( 'The new tool id (%s) does not match the old tool id (%s).  Check the tool XML file' % ( meta.id, replace_version.tool_id ) )
-                                for old_version in get_versions( trans, replace_version ):
+                                    raise UploadError( 'Tool ids must match when uploading a new version of a tool.  The new tool id (%s) does not match the old tool id (%s).  Check the tool XML files.' % ( str( meta.id ), str( replace_version.tool_id ) ) )
+                                for old_version in get_versions( replace_version ):
                                     if old_version.version == meta.version:
-                                        raise UploadError( 'The new version (%s) matches an old version.  Check your version in the tool XML file' % meta.version )
+                                        raise UploadError( 'The new version (%s) matches an old version.  Check your version in the tool XML file.' % str( meta.version ) )
                                     if old_version.is_new():
                                         raise UploadError( 'There is an existing version of this tool which has not yet been submitted for approval, so either <a href="%s">submit or delete it</a> before uploading a new version.' % url_for( controller='common',
                                                                                                                                                                                                                                                 action='view_tool',
@@ -86,7 +90,7 @@ class UploadController( BaseController ):
                                                                                                                                                                                                                                                 id=trans.security.encode_id( old_version.id ) ) )
                                     if old_version.is_waiting():
                                         raise UploadError( 'There is an existing version of this tool which is waiting for administrative approval, so contact an administrator for help.' )
-                                # Defer setting the id since the newer version id doesn't exist until the new Tool object is flushed
+                                    # Defer setting the id since the newer version id doesn't exist until the new Tool object is flushed
                             if category_ids:
                                 for category_id in category_ids:
                                     category = trans.app.model.Category.get( trans.security.decode_id( category_id ) )
@@ -123,7 +127,7 @@ class UploadController( BaseController ):
             elif replace_id is not None:
                 replace_version = trans.sa_session.query( trans.app.model.Tool ).get( int( trans.app.security.decode_id( replace_id ) ) )
                 old_version = None
-                for old_version in get_versions( trans, replace_version ):
+                for old_version in get_versions( replace_version ):
                     if old_version.is_new():
                         message = 'There is an existing version of this tool which has not been submitted for approval, so either submit or delete it before uploading a new version.'
                         break
