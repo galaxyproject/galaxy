@@ -1657,7 +1657,7 @@ class DataSourceTool( Tool ):
             data.extension = param_dict.get( 'data_type', data.extension )
         #TODO: these should be possible as part of data_source.py and external set_meta, see the upload tool:
         if data.extension in [ 'txt', 'tabular' ]:
-            data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order )
+            data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order, is_multi_byte=self.is_multi_byte )
             if data.extension != data_type:
                 data.change_datatype( data_type )
         elif not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
