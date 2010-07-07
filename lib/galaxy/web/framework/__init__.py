@@ -27,6 +27,7 @@ import mako.runtime
 
 pkg_resources.require( "Babel" )
 from babel.support import Translations
+from babel import Locale
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
@@ -200,7 +201,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         if 'HTTP_ACCEPT_LANGUAGE' in self.environ:
             # locales looks something like: ['en', 'en-us;q=0.7', 'ja;q=0.3']
             locales = self.environ['HTTP_ACCEPT_LANGUAGE'].split( ',' )
-            locales = [ l.split( ';' )[0] for l in locales ]
+            locales = [ Locale.parse(l.split( ';' )[0], sep='-').language for l in locales ]
         else:
             # Default to English
             locales = 'en'
