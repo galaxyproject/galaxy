@@ -231,13 +231,17 @@ def rst_to_html( s ):
                 log.warn( str )
     return docutils.core.publish_string( s, writer=HTMLFragWriter(), settings_overrides=dict( warning_stream=FakeStream() ) )
 
-def xml_text(root, name):
+def xml_text(root, name=None):
     """Returns the text inside an element"""
-    # Try attribute first
-    val = root.get(name)
-    if val: return val
-    # Then try as element
-    elem = root.find(name)    
+    if name is not None:
+        # Try attribute first
+        val = root.get(name)
+        if val:
+            return val
+        # Then try as element
+        elem = root.find(name)
+    else:
+        elem = root
     if elem is not None and elem.text:
         text = ''.join(elem.text.splitlines())
         return text.strip()

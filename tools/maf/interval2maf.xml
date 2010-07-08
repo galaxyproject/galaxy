@@ -32,22 +32,24 @@
       </when>
       <when value="cached">
         <param name="mafType" type="select" label="Choose alignments">
-          <options from_file="maf_index.loc">
+          <options from_data_table="indexed_maf_files">
+            <!--
             <column name="name" index="0"/>
             <column name="value" index="1"/>
             <column name="dbkey" index="2"/>
             <column name="species" index="3"/>
-            <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
+            -->
+            <filter type="data_meta" ref="input1" key="dbkey" column="dbkey" multiple="True" separator=","/>
             <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
           </options>
         </param>
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
-          <options from_file="maf_index.loc">
+          <options from_data_table="indexed_maf_files">
             <column name="uid" index="1"/>
             <column name="value" index="3"/>
             <column name="name" index="3"/>
-            <filter type="param_value" ref="mafType" name="uid" column="1"/>
-            <filter type="multiple_splitter" column="3" separator=","/>
+            <filter type="param_value" ref="mafType" column="uid"/>
+            <filter type="multiple_splitter" column="name" separator=","/>
           </options>
         </param>
       </when>

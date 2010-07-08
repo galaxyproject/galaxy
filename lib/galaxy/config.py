@@ -48,6 +48,7 @@ class Configuration( object ):
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )
+        self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
