@@ -1,0 +1,6 @@
+<tables>
+    <table name="indexed_maf_files">
+        <column_names>name, value, dbkey, species</column_names>
+        <file name="tool-data/maf_index.loc" />
+    </table>
+</tables>
