@@ -6,23 +6,37 @@ from bx.intervals.io import NiceReaderWrapper, GenomicInterval
 
 class GFFReaderWrapper( NiceReaderWrapper ):
     """
-    Reader wrapper converts GFF format--starting and ending coordinates are 1-based, closed--to the 'traditional' interval format--0 based, 
-    half-open. This is useful when using GFF files as inputs to tools that expect traditional interval format.
+    Reader wrapper converts GFF format--starting and ending coordinates are 1-based, closed--to the 
+    'traditional'/BED interval format--0 based, half-open. This is useful when using GFF files as inputs 
+    to tools that expect traditional interval format.
     """
     def parse_row( self, line ):
-        interval = GenomicInterval( self, line.split( "\t" ), self.chrom_col, self.start_col, self.end_col, self.strand_col, self.default_strand, fix_strand=self.fix_strand )
-        # Change from 1-based to 0-based format.
-        interval.start -= 1
-        # Add 1 to end to move from closed to open format for end coordinate.
-        interval.end += 1
+        interval = GenomicInterval( self, line.split( "\t" ), self.chrom_col, self.start_col, self.end_col, \
+                                    self.strand_col, self.default_strand, fix_strand=self.fix_strand )
+        interval = convert_gff_coords_to_bed( interval )
         return interval
         
-def convert_to_gff_coordinates( interval ):
+def convert_bed_coords_to_gff( interval ):
     """
-    Converts a GenomicInterval's coordinates to GFF format.
+    Converts an interval object's coordinates from BED format to GFF format. Accepted object types include 
+    GenomicInterval and list (where the first element in the list is the interval's start, and the second 
+    element is the interval's end).
     """
     if type( interval ) is GenomicInterval:
         interval.start += 1
-        interval.end -= 1
-        return interval
+    elif type ( interval ) is list:
+        interval[ 0 ] += 1
     return interval
+    
+def convert_gff_coords_to_bed( interval ):
+    """
+    Converts an interval object's coordinates from GFF format to BED format. Accepted object types include 
+    GenomicInterval and list (where the first element in the list is the interval's start, and the second 
+    element is the interval's end).
+    """
+    if type( interval ) is GenomicInterval:
+        interval.start -= 1
+    elif type ( interval ) is list:
+        interval[ 0 ] -= 1
+    return interval
+    

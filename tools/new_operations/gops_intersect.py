@@ -70,7 +70,7 @@ def main():
         for line in intersect( [g1,g2], pieces=pieces, mincols=mincols ):
             if type( line ) == GenomicInterval:
                 if in1_gff_format:
-                    line = convert_to_gff_coordinates( line )
+                    line = convert_bed_coords_to_gff( line )
                 out_file.write( "%s\n" % "\t".join( line.fields ) )
             else:
                 out_file.write( "%s\n" % line )

@@ -5,6 +5,7 @@ usage: %prog $input $out_file1
     -d, --dbkey=N: Genome build of input file
     -o, --output_format=N: the data type of the output file
     -g, --GALAXY_DATA_INDEX_DIR=N: the directory containing alignseq.loc
+    -G, --gff: input and output file, when it is interval, coordinates are treated as GFF format (1-based, half-open) rather than 'traditional' 0-based, closed format.
 """
 from galaxy import eggs
 import pkg_resources
@@ -14,6 +15,7 @@ from bx.cookbook import doc_optparse
 import bx.seq.nib
 import bx.seq.twobit
 from galaxy.tools.util.galaxyops import *
+from galaxy.tools.util.gff_util import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
     
@@ -50,6 +52,7 @@ def __main__():
         chrom_col, start_col, end_col, strand_col = parse_cols_arg( options.cols )
         dbkey = options.dbkey
         output_format = options.output_format
+        gff_format = options.gff
         GALAXY_DATA_INDEX_DIR = options.GALAXY_DATA_INDEX_DIR
         input_filename, output_filename = args
     except:
@@ -80,6 +83,8 @@ def __main__():
                 chrom = fields[chrom_col]
                 start = int( fields[start_col] )
                 end = int( fields[end_col] )
+                if gff_format:
+                    start, end = convert_gff_coords_to_bed( [start, end] )
                 if includes_strand_col:
                     strand = fields[strand_col]
             except:
@@ -162,7 +167,11 @@ def __main__():
                     c = b
             else: # output_format == "interval"
                 meta_data = "\t".join( fields )
-                fout.write( "%s\t%s\n" % ( meta_data, str( sequence ) ) )
+                if gff_format:
+                    format_str = "%s seq \"%s\";\n"
+                else:
+                    format_str = "%s\t%s\n"
+                fout.write( format_str % ( meta_data, str( sequence ) ) )
 
     fout.close()
 
