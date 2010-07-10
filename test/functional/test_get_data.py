@@ -90,35 +90,36 @@ class UploadData( TwillTestCase ):
         self.check_history_for_string( "File Format' to 'Scf' when uploading scf files" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0025_upload_file( self ):
-        """Test uploading 1.scf.zip, manually setting the file format"""
+        """Test uploading 4.bed.zip, manually setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
         history = sa_session.query( galaxy.model.History ) \
                             .filter( and_( galaxy.model.History.table.c.deleted==False,
                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
                             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                             .first()
-        self.upload_file( '1.scf.zip', ftype='binseq.zip' )
+        self.upload_file( '4.bed.zip', ftype='bed' )
         hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
                         .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
                         .first()
         assert hda is not None, "Problem retrieving hda from database"
-        self.verify_dataset_correctness( '1.scf.zip', hid=str( hda.hid ) )
-        self.check_history_for_string( "Archive of 1 binary sequence files</pre>" )
+        self.verify_dataset_correctness( '4.bed', hid=str( hda.hid ) )
+        self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0030_upload_file( self ):
-        """Test uploading 1.scf.zip, NOT setting the file format"""
+        """Test uploading 4.bed.zip, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
         history = sa_session.query( galaxy.model.History ) \
                             .filter( and_( galaxy.model.History.table.c.deleted==False,
                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
                             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                             .first()
-        self.upload_file( '1.scf.zip' )
+        self.upload_file( '4.bed.zip' )
         hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
                         .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
                         .first()
         assert hda is not None, "Problem retrieving hda from database"
-        self.check_history_for_string( "'File Format' for archive consisting of binary files - use 'Binseq.zip'" )
+        self.verify_dataset_correctness( '4.bed', hid=str( hda.hid ) )
+        self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0035_upload_file( self ):
         """Test uploading 1.sam NOT setting the file format"""

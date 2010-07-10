@@ -1251,7 +1251,9 @@ class Admin( object ):
                 # sort filter instead of this class's.
                 kwargs[ 'user_id' ] = kwargs[ 'id' ]
                 kwargs[ 'sort' ] = 'name'
-                return self.browse_tools( trans, **kwargs )
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='browse_tools',
+                                                                  **kwargs ) )
         # Render the list view
         return self.user_list_grid( trans, **kwargs )
     @web.expose

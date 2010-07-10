@@ -1,39 +1,32 @@
-#content {
-    width: 100%;
-}
-
-#center {
-    overflow: auto;
-}
-
-#nav-container {
-    position: fixed;
-    left: 0;
-    bottom: 0;
+.viewport-container {
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 /*canvas{ 
     border-left: 1px solid green;
     border-right: 1px solid red; } /* debugging */
-#nav {
+.nav {
     padding: 0 0;
     color:#333;font-weight:bold;
 }
 
-#nav-controls {
+.nav-controls {
     text-align: center;
     background:#cccccc;
     background-image:url(style/panel_header_bg.png);
     background-position:top center;
     background-repeat:repeat-x;
-    padding-bottom: 5px;
+    padding: 2px 0;
+}
+.nav-controls input {
+    margin: 0 5px;
+}
+.nav-controls a {
+    padding: 0 0.4em;
 }
 
-#nav-controls a {
-    padding: 5px 0.4em;
-}
-
-#overview {
+.overview {
     width: 100%;
     margin: 0px;
     color: white;
@@ -41,7 +34,7 @@
     margin-bottom: -4px;
 }
 
-#overview-viewport {
+.overview-viewport {
     position: relative;
     height: 14px;
 /*    border-top: solid #666 1px;*/
@@ -51,7 +44,7 @@
     border-bottom: solid gray 1px;
     margin: 5px 0;
 }
-#overview-box {
+.overview-box {
     position: absolute;
     margin-top: 0px;
     height: 14px;
@@ -59,14 +52,14 @@
     /*border-style: outset;*/
 }
 
-#viewport {
+.viewport {
 /*    overflow-x: hidden;*/
     background-color: #fff;
 /*    overflow: scroll;*/
 /*    border-bottom: 2px solid black;*/
 }
 
-#viewport-canvas {
+.viewport-canvas {
     width: 100%;
     height: 100px;
 }
@@ -122,11 +115,11 @@
     margin-left: 5px;
 }
 
-#top-labeltrack {
+.top-labeltrack {
     border-bottom: solid #999 1px;
 }
 
-#nav-labeltrack {
+.nav-labeltrack {
     border-top: solid #999 1px;
     border-bottom: solid #999 1px;
 }

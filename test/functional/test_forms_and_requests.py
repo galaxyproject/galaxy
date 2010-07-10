@@ -189,7 +189,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # Make sure the request_type is not accessible by regular_user2 since regular_user2 does not have Role1.
         self.logout()
         self.login( email=regular_user2.email )
-        self.visit_url( '%s/requests/new?create=True&select_request_type=%i' % (self.url, request_type.id) )
+        self.visit_url( '%s/requests_common/new?cntrller=requests&select_request_type=True' % self.url )
         try:
             self.check_page_for_string( 'There are no request types created for a new request.' )
             raise AssertionError, 'The request_type %s is accessible by %s when it should be restricted' % ( request_type.name, regular_user2.email )
@@ -304,12 +304,12 @@ class TestFormsAndRequests( TwillTestCase ):
         self.logout()
         self.login( email='test@bx.psu.edu' )
         self.check_request_admin_grid(state=request_one.states.SUBMITTED, request_name=request_one.name)
-        self.visit_url( "%s/requests_admin/list?sort=-create_time&operation=show_request&id=%s" \
+        self.visit_url( "%s/requests_admin/list?operation=show&id=%s" \
                         % ( self.url, self.security.encode_id( request_one.id ) ))
         self.check_page_for_string( 'Sequencing Request "%s"' % request_one.name )
         # set bar codes for the samples
         bar_codes = [ '1234567890', '0987654321' ]
-        self.add_bar_codes( request_one.id, request_one.name, bar_codes )
+        self.add_bar_codes( request_one.id, request_one.name, bar_codes, request_one.samples )
         # change the states of all the samples of this request
         for sample in request_one.samples:
             self.change_sample_state( sample.name, sample.id, request_type.states[1].id, request_type.states[1].name )
@@ -328,11 +328,12 @@ class TestFormsAndRequests( TwillTestCase ):
         self.login( email='test@bx.psu.edu' )
         request_name = "RequestTwo"
         # simulate request creation
-        url_str = '%s/requests_admin/new?create=True&create_request_button=Save&select_request_type=%i&select_user=%i&name=%s&library_id=%i&folder_id=%i&refresh=True&field_2=%s&field_0=%s&field_1=%i' \
-                  % ( self.url, request_type.id, regular_user.id, request_name, library_one.id, library_one.root_folder.id, "field_2_value", 'option1', user_address.id )
+        url_str = '%s/requests_common/new?cntrller=requests_admin&create_request_button=Save&select_request_type=%i&select_user=%i&name=%s&refresh=True&field_2=%s&field_0=%s&field_1=%i' \
+                  % ( self.url, request_type.id, regular_user.id, request_name, "field_2_value", 'option1', user_address.id )
+        print url_str
         self.home()
         self.visit_url( url_str )
-        self.check_page_for_string( "The new request named %s has been created" % request_name )
+        self.check_page_for_string( "The new request named <b>%s</b> has been created" % request_name )
         global request_two
         request_two = sa_session.query( galaxy.model.Request ) \
                                 .filter( and_( galaxy.model.Request.table.c.name==request_name,
@@ -370,44 +371,44 @@ class TestFormsAndRequests( TwillTestCase ):
         # check if the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.REJECTED )
-    def test_055_reset_data_for_later_test_runs( self ):
-        """Reseting data to enable later test runs to pass"""
-        # Logged in as admin_user
-        # remove the request_type permissions
-        rt_actions = sa_session.query( galaxy.model.RequestTypePermissions ) \
-                               .filter(and_(galaxy.model.RequestTypePermissions.table.c.request_type_id==request_type.id) ) \
-                               .order_by( desc( galaxy.model.RequestTypePermissions.table.c.create_time ) ) \
-                               .all()
-        for a in rt_actions:
-            sa_session.delete( a )
-        sa_session.flush()
-        ##################
-        # Purge all libraries
-        ##################
-        for library in [ library_one ]:
-            self.delete_library_item( 'library_admin',
-                                      self.security.encode_id( library.id ),
-                                      self.security.encode_id( library.id ),
-                                      library.name,
-                                      item_type='library' )
-            self.purge_library( self.security.encode_id( library.id ), library.name )
-        ##################
-        # Eliminate all non-private roles
-        ##################
-        for role in [ role_one, role_two ]:
-            self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
-            self.purge_role( self.security.encode_id( role.id ), role.name )
-            # Manually delete the role from the database
-            sa_session.refresh( role )
-            sa_session.delete( role )
-            sa_session.flush()
-        ##################
-        # Eliminate all groups
-        ##################
-        for group in [ group_one ]:
-            self.mark_group_deleted( self.security.encode_id( group.id ), group.name )
-            self.purge_group( self.security.encode_id( group.id ), group.name )
-            # Manually delete the group from the database
-            refresh( group )
-            sa_session.delete( group )
-            sa_session.flush()
+#    def test_055_reset_data_for_later_test_runs( self ):
+#        """Reseting data to enable later test runs to pass"""
+#        # Logged in as admin_user
+#        # remove the request_type permissions
+#        rt_actions = sa_session.query( galaxy.model.RequestTypePermissions ) \
+#                               .filter(and_(galaxy.model.RequestTypePermissions.table.c.request_type_id==request_type.id) ) \
+#                               .order_by( desc( galaxy.model.RequestTypePermissions.table.c.create_time ) ) \
+#                               .all()
+#        for a in rt_actions:
+#            sa_session.delete( a )
+#        sa_session.flush()
+#        ##################
+#        # Purge all libraries
+#        ##################
+#        for library in [ library_one ]:
+#            self.delete_library_item( 'library_admin',
+#                                      self.security.encode_id( library.id ),
+#                                      self.security.encode_id( library.id ),
+#                                      library.name,
+#                                      item_type='library' )
+#            self.purge_library( self.security.encode_id( library.id ), library.name )
+#        ##################
+#        # Eliminate all non-private roles
+#        ##################
+#        for role in [ role_one, role_two ]:
+#            self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
+#            self.purge_role( self.security.encode_id( role.id ), role.name )
+#            # Manually delete the role from the database
+#            sa_session.refresh( role )
+#            sa_session.delete( role )
+#            sa_session.flush()
+#        ##################
+#        # Eliminate all groups
+#        ##################
+#        for group in [ group_one ]:
+#            self.mark_group_deleted( self.security.encode_id( group.id ), group.name )
+#            self.purge_group( self.security.encode_id( group.id ), group.name )
+#            # Manually delete the group from the database
+#            refresh( group )
+#            sa_session.delete( group )
+#            sa_session.flush()

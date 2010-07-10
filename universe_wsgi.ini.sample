@@ -1,121 +1,188 @@
+#
+# Galaxy is configured by default to be useable in a single-user development
+# environment.  To tune the application for a multi-user production
+# environment, see the documentation at:
+#
+# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/ProductionServer
+#
+
+# Throughout this sample configuration file, except where stated otherwise,
+# uncommented values override the default if left unset, whereas commented
+# values are set to the default value.
+# examples of many of these options are explained in more detail in the wiki:
+#
+# Config hackers are encouraged to check there before asking for help.
+
 # ---- HTTP Server ----------------------------------------------------------
+
+# Configuration of the internal HTTP server.
 
 [server:main]
 
+# The internal HTTP server to use.  Currently only Paste is provided.  This
+# option is required.
 use = egg:Paste#http
-port = 8080
-host = 127.0.0.1
-use_threadpool = true
-threadpool_workers = 10
 
-# ---- HTTP gzip compression ----
-# If planning to run Galaxy as a production service, we recommend running Galaxy 
-# through a proxy and enabling gzip compression there (instructions at 
-# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/ProductionServer )
-# but you may also turn on Paste's built-in gzip compressor by uncommenting the following lines
-# and also the 'filter-with = gzip' line under [app:main]. This will reduce network traffic
-# and should speed up the interface, especially the visualization module.
-# [filter:gzip]
-# use = egg:Paste#gzip
+# The port on which to listen.
+#port = 8080
 
-# ---- Galaxy Web Interface -------------------------------------------------
+# The address on which to listen.  By default, only listen to localhost (Galaxy
+# will not be accessible over the network).  Use '0.0.0.0' to listen on all
+# available network interfaces.
+#host = 127.0.0.1
+
+# Use a threadpool for the web server instead of creating a thread for each
+# request.
+use_threadpool = True
+
+# Number of threads in the web server thread pool.
+#threadpool_workers = 10
+
+# ---- Filters --------------------------------------------------------------
+
+# Filters sit between Galaxy and the HTTP server.
+
+# These filters are disabled by default.  They can be enabled with
+# 'filter-with' in the [app:main] section below.
+
+# Define the gzip filter.
+[filter:gzip]
+use = egg:Paste#gzip
+
+# Define the proxy-prefix filter.
+[filter:proxy-prefix]
+use = egg:PasteDeploy#prefix
+prefix = /galaxy
+
+# ---- Galaxy ---------------------------------------------------------------
+
+# Configuration of the Galaxy application.
+
 [app:main]
 
-# Uncomment following line to enable Paste gzip compression
-# filter-with = gzip
+# -- Application and filtering
 
-# Uncomment following line below to enable visualization module
-# enable_tracks = True
-
-# Specifies the factory for the universe WSGI application
+# The factory for the WSGI application.  This should not be changed.
 paste.app_factory = galaxy.web.buildapp:app_factory
 
-# By default, Galaxy uses a SQLite database found here
-database_file = database/universe.sqlite
+# If not running behind a proxy server, you may want to enable gzip compression
+# to decrease the size of data transferred over the network.  If using a proxy
+# server, please enable gzip compression there instead.
+#filter-with = gzip
 
-# You may use a SQLAlchemy connection string to specify an external database
-# instead.  PostgreSQL and MySQL are supported.
-#database_connection = postgres:///galaxy
-#database_engine_option_echo = true
-#database_engine_option_echo_pool = true
-#database_engine_option_pool_size = 10
-#database_engine_option_max_overflow = 20
+# If running behind a proxy server and Galaxy is served from a subdirectory,
+# enable the proxy-prefix filter and set the prefix in the
+# [filter:proxy-prefix] section above.
+#filter-with = proxy-prefix
 
-# If using MySQL, see:
-# http://rapd.wordpress.com/2008/03/02/sqlalchemy-sqlerror-operationalerror-2006-mysql-server-has-gone-away/
-# To handle this issue, try the following setting:
-#database_engine_option_pool_recycle = 7200
+# If proxy-prefix is enabled and you're running more than one Galaxy instance
+# behind one hostname, you will want to set this to the same path as the prefix
+# in the filter above.  This value becomes the "path" attribute set in the
+# cookie so the cookies from each instance will not clobber each other.
+#cookie_path = None
 
-# Where dataset files are saved
-file_path = database/files
-# Temporary storage for additional datasets, this should be shared through the cluster
-new_file_path = database/tmp
+# -- Database
 
-# Tools
-tool_config_file = tool_conf.xml
-tool_path = tools
-tool_data_path = tool-data
+# By default, Galaxy uses a SQLite database at 'database/universe.sqlite'.  You
+# may use a SQLAlchemy connection string to specify an external database
+# instead.  This string takes many options which are explained in detail in the
+# config file documentation.
+#database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
-# Datatype converters
-datatype_converters_config_file = datatype_converters_conf.xml
-datatype_converters_path = %(here)s/lib/galaxy/datatypes/converters
+# If the server logs errors about not having enough database pool connections,
+# you will want to increase these values, or consider running more Galaxy
+# processes.
+#database_engine_option_pool_size = 5
+#database_engine_option_max_overflow = 10
 
-# Datatype indexers
-datatype_indexers_path = %(here)s/lib/galaxy/datatypes/indexers
-# Metadata
-set_metadata_externally = False
+# If using MySQL and the server logs the error "MySQL server has gone away",
+# you will want to set this to some positive value (7200 should work).
+#database_engine_option_pool_recycle = -1
 
-# Session support (beaker)
-use_beaker_session = True
-session_type = file
-session_data_dir = %(here)s/database/beaker_sessions
-session_key = galaxysessions
-session_secret = changethisinproduction
+# If large database query results are causing memory or response time issues in
+# the Galaxy process, leave the result on the server instead.  This option is
+# only available for PostgreSQL and is highly recommended.
+#database_engine_option_server_side_cursors = False
 
-# Galaxy session security
-id_secret = changethisinproductiontoo
+# Create only one connection to the database per thread, to reduce the
+# connection overhead.  Recommended when not using SQLite:
+#database_engine_option_strategy = threadlocal
 
-# Directories of files contained in the following directory can be uploaded to
-# a library from the Admin view
-#library_import_dir = /var/opt/galaxy/import
+# -- Files and directories
 
-# The following can be configured to allow non-admin users to upload a
-# directory of files.  The configured directory must contain sub-directories
-# named the same as the non-admin user's Galaxy login ( email ).  The non-admin
-# user is restricted to uploading files or sub-directories of files contained
-# in their directory.
-#user_library_import_dir = /var/opt/galaxy/import/users
+# Dataset files are stored in this directory.
+#file_path = database/files
 
-# The admin library upload tool may contain a box allowing admins to paste
-# filesystem paths to files and directories to add to a library.  Set to True
-# to enable.  Please note the security implication that this will give Galaxy
-# Admins access to anything your Galaxy user has access to.
-#allow_library_path_paste = False
+# Temporary files are stored in this directory.
+#new_file_path = database/tmp
 
-# path to sendmail
-sendmail_path = /usr/sbin/sendmail
+# Tool config file, defines what tools are available in Galaxy.
+#tool_config_file = tool_conf.xml
 
-# Address to join mailing list
-mailing_join_addr = galaxy-user-join@bx.psu.edu
+# Path to the directory containing the tools defined in the config.
+#tool_path = tools
 
-# For use by 'report this error' link on error-state datasets
-#smtp_server = smtp.example.org
-#error_email_to = galaxy-bugs@example.org
+# Directory where data used by tools is located, see the samples in that
+# directory and the wiki for help:
+# http://bitbucket.org/galaxy/galaxy-central/wiki/DataIntegration
+#tool_data_path = tool-data
 
-# Use the new iframe / javascript based layout
-use_new_layout = true
+# Datatypes config file, defines what data (file) types are available in
+# Galaxy.
+#datatypes_config_file = datatypes_conf.xml
 
-# Comma separated list of bx / UCSC / gbrowse / GeneTrack browsers to use for viewing
-bx_display_sites = main
-ucsc_display_sites = main,test,archaea,ucla
-gbrowse_display_sites = wormbase,tair,modencode_worm,modencode_fly
-# Define your GeneTrack servers in tool-data/shared/genetrack/genetrack_sites.txt
-#genetrack_display_sites =
+# -- Mail and notification
 
-# Enable the (experimental! beta!) Web API.  Documentation forthcoming.
-#enable_api = False
+# Galaxy sends mail for various things: Subscribing users to the mailing list
+# if they request it, emailing password resets, notification from the Galaxy
+# Sample Tracking system, and reporting dataset errors.  To do this, it needs
+# to send mail through an SMTP server, which you may define here.
+#smtp_server = None
 
-# Serving static files (needed if running standalone)
+# On the user registration form, users may choose to join the mailing list.
+# This is the address of the list they'll be subscribed to.
+#mailing_join_addr = galaxy-user-join@bx.psu.edu
+
+# Datasets in an error state include a link to report the error.  Those reports
+# will be sent to this address.  Error reports are disabled if no address is set.
+#error_email_to = None
+
+# -- Display sites
+
+# Galaxy can display data at various external browsers.  These options specify
+# which browsers should be available.  URLs and builds available at these
+# browsers are defined in the specifield files.
+
+# UCSC browsers: tool-data/shared/ucsc/ucsc_build_sites.txt
+#ucsc_display_sites = main,test,archaea,ucla
+
+# GBrowse servers: tool-data/shared/gbrowse/gbrowse_build_sites.txt
+#gbrowse_display_sites = wormbase,tair,modencode_worm,modencode_fly
+
+# GeneTrack servers: tool-data/shared/genetrack/genetrack_sites.txt
+#genetrack_display_sites = main,test
+
+# -- UI Localization
+
+# Append "/{brand}" to the "Galaxy" text in the masthead.
+#brand = None
+
+# The URL linked by the "Galaxy/brand" text.
+#logo_url = /
+
+# The URL linked by the "Galaxy Wiki" link in the "Help" menu.
+#wiki_url = http://bitbucket.org/galaxy/galaxy-central/wiki
+
+# The URL linked by the "Email comments..." link in the "Help" menu.
+#bugs_email = None
+
+# The URL linked by the "How to Cite..." link in the "Help" menu.
+#citation_url = http://bitbucket.org/galaxy/galaxy-central/wiki/Citations
+
+# Serve static content, which must be enabled if you're not serving it via a
+# proxy server.  These options should be self explanatory and so are not
+# documented individually.  You can use these paths (or ones in the proxy
+# server) to point to your own styles.
 static_enabled = True
 static_cache_time = 360
 static_dir = %(here)s/static/
@@ -124,94 +191,148 @@ static_favicon_dir = %(here)s/static/favicon.ico
 static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
 
-## Leave these commented out for the defaults at the main galaxy site
-## Uncomment and adjust these to change locally configurable items in the masthead
-## for a local mirror where you are doing private software development
-##
-## Brand: appends "/[brand]" to the "Galaxy" text in the masthead
-## logo_url: replaces the default "Galaxy + brand" link url
-## wiki_url: replaces the default galaxy main wiki
-## bugs_email: replaces the default galaxy bugs email list
-##citation_url: point to a URL listing citations
-#brand = Private local mirror
-#logo_url = /
-#wiki_url = /path/to/my/local/wiki
-#bugs_email = mailto:galaxy-bugs@example.org
-#citation_url = /path/to/my/citations
+# -- Logging and Debugging
 
-# ---- Logging and Debugging ------------------------------------------------
+# Verbosity of console log messages.  Acceptable values can be found here:
+# http://docs.python.org/library/logging.html#logging-levels
+#log_level = DEBUG
 
-# Verbosity of log messages
-log_level = DEBUG
+# Print database operations to the server log (warning, quite verbose!).
+#database_engine_option_echo = False
 
-# Log memory usage
-log_memory_usage = False
+# Print database pool operations to the server log (warning, quite verbose!).
+#database_engine_option_echo_pool = False
 
-# Log events
-log_events = True
+# Turn on logging of application events and some user events to the database.
+#log_events = True
 
-# Log user actions
-log_actions = True
+# Turn on logging of user actions to the database. Actions currently logged are
+# grid views, tool searches, and use of "recently" used tools menu.  The
+# log_events and log_actions functionality will eventually be merged.
+#log_actions = True
 
-# Configuration for debugging middleware
+# Debug enables access to various config options useful for development and
+# debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
+# also causes the files used by PBS/SGE (submission script, output, and error)
+# to remain on disk after the job is complete.  Debug mode is disabled if
+# commented, but is uncommented by default in the sample config.
 debug = True
-use_lint = False
 
-# Interactive debugging - NEVER enable this on a public site
-use_interactive = True
+# Check for WSGI compliance.
+#use_lint = False
 
-# Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
-#use_heartbeat = False
-
-# Enable the memory debugging interface (careful, negatively impacts server performance)
-#use_memdump = False
-
-# Profiling middleware (cProfile based)
+# Run the Python profiler on each request.
 #use_profile = False
 
-# ---- Users and Security ---------------------------------------------------
+# Intercept print statements and show them on the returned page.
+#use_printdebug = True
+
+# Enable live debugging in your browser.  This should NEVER be enabled on a
+# public site.  Enabled in the sample config for development.
+use_interactive = True
+
+# Write thread status periodically to 'heartbeat.log',  (careful, uses disk
+# space rapidly!).  Useful to determine why your processes may be consuming a
+# lot of CPU.
+#use_heartbeat = False
+
+# Enable the memory debugging interface (careful, negatively impacts server
+# performance).
+#use_memdump = False
+
+# -- Data Libraries
+
+# These library upload options are described in much more detail in the wiki:
+# http://bitbucket.org/galaxy/galaxy-central/wiki/DataLibraries/UploadingFiles
+
+# Add an option to the library upload form which allows administrators to
+# upload a directory of files.
+#library_import_dir = None
+
+# Add an option to the library upload form which allows authorized
+# non-administrators to upload a directory of files.  The configured directory
+# must contain sub-directories named the same as the non-admin user's Galaxy
+# login ( email ).  The non-admin user is restricted to uploading files or
+# sub-directories of files contained in their directory.
+#user_library_import_dir = None
+
+# Add an option to the admin library upload tool allowing admins to paste
+# filesystem paths to files and directories in a box, and these paths will be
+# added to a library.  Set to True to enable.  Please note the security
+# implication that this will give Galaxy Admins access to anything your Galaxy
+# user has access to.
+#allow_library_path_paste = False
+
+# -- Users and Security
+
+# Galaxy encodes various internal values when these values will be output in
+# some format (for example, in a URL or cookie).  You should set a key to be
+# used by the algorithm that encodes and decodes these values.  It can be any
+# string.  If left unchanged, anyone could construct a cookie that would grant
+# them access to others' sessions.
+#id_secret = USING THE DEFAULT IS NOT SECURE!
 
 # User authentication can be delegated to an upstream proxy server (usually
-# Apache).  This is explained on the Galaxy wiki:
-#
-# http://g2.trac.bx.psu.edu/wiki/HowToInstall/ApacheProxy
-
-# Use user provided in an upstream server's $REMOTE_USER variable
+# Apache).  The upstream proxy should set a REMOTE_USER header in the request.
+# Enabling remote user disables regular logins.  For more information, see:
+# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/ApacheProxy
 #use_remote_user = False
 
 # If use_remote_user is enabled and your external authentication
-# method just returns bare usernames, set a default mail domain
-#remote_user_maildomain = example.org
+# method just returns bare usernames, set a default mail domain to be appended
+# to usernames, to become your Galaxy usernames (email addresses).
+#remote_user_maildomain = None
 
-# If use_remote_user is enabled, set a logout anchor href option
-#remote_user_logout_href = /logout
+# If use_remote_user is enabled, you can set this to a URL that will log your
+# users out.
+#remote_user_logout_href = None
 
-# this should be a comma-separated list of valid Galaxy users
-#admin_users = user1@example.org,user2@example.org
+# Administrative users - set this to a comma-separated list of valid Galaxy
+# users (email addresses).  These users will have access to the Admin section
+# of the server, and will have access to create users, groups, roles,
+# libraries, and more.  For more information, see:
+# http://bitbucket.org/galaxy/galaxy-central/wiki/Admin/AdminInterface
+#admin_users = None
 
-# Force everyone to log in (disable anonymous access)
+# Force everyone to log in (disable anonymous access).
 #require_login = False
 
-# Can users register new accounts?
+# Allow unregistered users to create new accounts (otherwise, they will have to
+# be created by an admin).
 #allow_user_creation = True
 
-# Can an admin user delete user accounts?
+# Allow administrators to delete accounts.
 #allow_user_deletion = False
 
-# Should default dataset access permissions be private for new users; default is False (datasets are public)
-new_user_dataset_access_role_default_private = False
+# By default, users' data will be public, but setting this to True will cause
+# it to be private.  Does not affect existing users and data, only ones created
+# after this option is set.  Users may still change their default back to
+# public.
+#new_user_dataset_access_role_default_private = False
 
-# ---- Job Execution --------------------------------------------------------
+# -- Beta features
+
+# Enable Galaxy's built-in visualization module, Trackster.
+#enable_tracks = False
+
+# Enable Galaxy Pages. Pages are custom webpages that include embedded Galaxy items, 
+# such as datasets, histories, workflows, and visualizations; pages are useful for 
+# documenting and sharing multiple analyses or workflows. Pages are created using a 
+# WYSIWYG editor that is very similar to a word processor.
+#enable_pages = False
+
+# Enable the (experimental! beta!) Web API.  Documentation forthcoming.
+#enable_api = False
+
+# -- Job Execution
 
 # If running multiple Galaxy processes, one can be designated as the job
 # runner.  For more information, see:
 # http://bitbucket.org/galaxy/galaxy-central/wiki/Config/LoadBalancing
 #enable_job_running = True
 
-# Number of concurrent jobs to run (local job runner)
-#local_job_queue_workers = 5
-
-# Should jobs be tracked through the database, rather than in memory
+# Should jobs be tracked through the database, rather than in memory.
+# Necessary if you're running the load balanced setup.
 #track_jobs_in_database = False
 
 # Enable job recovery (if Galaxy is restarted while cluster jobs are running,
@@ -219,47 +340,50 @@ new_user_dataset_access_role_default_private = False
 # running more than one Galaxy server using the same database.
 #enable_job_recovery = True
 
-# Job queue cleanup interval in minutes. Currently only used by RoundRobin
-job_queue_cleanup_interval = 30
+# Setting metadata on job outputs to in a separate process (or if using a
+# cluster, on the cluster).  Thanks to Python's Global Interpreter Lock and the
+# hefty expense that setting metadata incurs, your Galaxy process may become
+# unresponsive when this operation occurs internally.
+#set_metadata_externally = False
+
+# Number of concurrent jobs to run (local job runner)
+#local_job_queue_workers = 5
 
 # Jobs can be killed after a certain amount of execution time.  Format is in
-# hh:mm:ss.  Currently only implemented for PBS.  Leave commented for
-# unlimited.
-#job_walltime = 10:00:00
+# hh:mm:ss.  Currently only implemented for PBS.
+#job_walltime = None
 
-# Clustering Galaxy is not a straightforward process and requires a lot of
-# pre-configuration.  See the ClusteringGalaxy Wiki before attempting to set
-# any of these options:
-#
-# http://g2.trac.bx.psu.edu/wiki/ClusteringGalaxy
-#
-# If running normally (without a cluster), do not change anything in this
-# section.
+# Clustering Galaxy is not a straightforward process and requires some
+# pre-configuration.  See the the wiki before attempting to set any of these
+# options:
+# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/Cluster
 
 # Comma-separated list of job runners to start.  local is always started.  If
 # left commented, no jobs will be run on the cluster, even if a cluster URL is
 # explicitly defined in the [galaxy:tool_runners] section below.  The runners
 # currently available are 'pbs' and 'sge'.
-#start_job_runners = pbs
+#start_job_runners = None
 
 # The URL for the default runner to use when a tool doesn't explicity define a
-# runner below.  For help on the cluster URL format, see the ClusteringGalaxy
-# Wiki.  Leave commented if not using a cluster job runner.
-#default_cluster_job_runner = pbs:///
+# runner below.
+#default_cluster_job_runner = local:///
 
 # The cluster runners have their own thread pools used to prepare and finish
-# jobs (so that these operations do not block normal queue operation).  The
-# value here is the number of worker threads available to each runner.
+# jobs (so that these sometimes lengthy operations do not block normal queue
+# operation).  The value here is the number of worker threads available to each
+# started runner.
 #cluster_job_queue_workers = 3
 
-# The PBS options are described in detail in the Galaxy Configuration section of
-# the ClusteringGalaxy Wiki, and are only necessary when using file staging.
+# These options are only used when using file staging with PBS.
 #pbs_application_server = 
 #pbs_stage_path = 
 #pbs_dataset_server = 
 
+# ---- Tool Job Runners -----------------------------------------------------
+
 # Individual per-tool job runner overrides.  If not listed here, a tool will
 # run with the runner defined with default_cluster_job_runner.
+
 [galaxy:tool_runners]
 
 biomart = local:///
@@ -271,8 +395,8 @@ ucsc_table_direct_archaea1 = local:///
 ucsc_table_direct_test1 = local:///
 upload1 = local:///
 
+# ---- Galaxy Message Queue -------------------------------------------------
 
-# Galaxy Message Queue
 # Galaxy uses AMQ protocol to receive messages from external sources like 
 # bar code scanners. Galaxy has been tested against RabbitMQ AMQP implementation.
 # For Galaxy to receive messages from a message queue the RabbitMQ server has 
@@ -280,6 +404,7 @@ upload1 = local:///
 # and 'port' fields should point to where the RabbitMQ server is running. 
 
 [galaxy_amqp]
+
 #host = 127.0.0.1
 #port = 5672
 #userid = galaxy

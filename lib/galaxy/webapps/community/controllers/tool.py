@@ -97,7 +97,9 @@ class ToolController( BaseController ):
                 for k, v in kwd.items():
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
-                return self.browse_tools( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='tool',
+                                                                  action='browse_tools',
+                                                                  **kwd ) )
         # Render the list view
         return self.category_list_grid( trans, **kwd )
     @web.expose
@@ -107,19 +109,20 @@ class ToolController( BaseController ):
         # to take this approach because the "-" character is illegal in HTTP requests.
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
-            if operation == "view tool":
+            if operation == "view_tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='view_tool',
                                                                   cntrller='tool',
                                                                   **kwd ) )
-            elif operation == "edit tool":
+            elif operation == "edit_tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='edit_tool',
                                                                   cntrller='tool',
                                                                   **kwd ) )
             elif operation == "download tool":
-                return trans.response.send_redirect( web.url_for( controller='tool',
+                return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='download_tool',
+                                                                  cntrller='tool',
                                                                   **kwd ) )
             elif operation == "tools_by_user":
                 # Eliminate the current filters if any exist.
@@ -153,20 +156,6 @@ class ToolController( BaseController ):
                 kwd[ 'f-category' ] = category.name
         # Render the list view
         return self.tool_list_grid( trans, **kwd )
-    @web.expose
-    def download_tool( self, trans, **kwd ):
-        params = util.Params( kwd )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller='tool',
-                                                              action='browse_tools',
-                                                              message='Select a tool to download',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        trans.response.set_content_type( tool.mimetype )
-        trans.response.headers['Content-Length'] = int( os.stat( tool.file_name ).st_size )
-        trans.response.headers['Content-Disposition'] = 'attachment; filename=%s' % tool.download_file_name
-        return open( tool.file_name )
     @web.expose
     def view_tool_file( self, trans, **kwd ):
         params = util.Params( kwd )

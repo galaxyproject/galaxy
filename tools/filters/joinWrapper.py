@@ -3,7 +3,7 @@
 """
 This tool provides the UNIX "join" functionality.
 """
-import sys, os, tempfile
+import sys, os, tempfile, subprocess
 
 def stop_err(msg):
     sys.stderr.write(msg)
@@ -22,8 +22,8 @@ def main():
     
     try:
         #Sort the two files based on specified fields
-        os.system("sort -t $'\t' -k %d -o %s %s" %(field1, tmpfile1.name, infile1))
-        os.system("sort -t $'\t' -k %d -o %s %s" %(field2, tmpfile2.name, infile2))
+        os.system("sort -t $'\t' -k %d,%d -o %s %s" %(field1, field1, tmpfile1.name, infile1))
+        os.system("sort -t $'\t' -k %d,%d -o %s %s" %(field2, field2, tmpfile2.name, infile2))
     except Exception, exc:
         stop_err( 'Initialization error -> %s' %str(exc) )
         
@@ -39,10 +39,28 @@ def main():
                     option = option + ",1." + str(j) 
             break
     
-    if mode == "V":
-        cmdline = "join -t $'\t' -v 1 -o %s -1 %d -2 %d %s %s > %s" %(option, field1, field2, tmpfile1.name, tmpfile2.name, outfile)
+    #check if join has --version option. BSD join doens't have this option, while GNU join does. 
+    #The return value in the latter case will be 0, and non-zero in the latter case.
+    ret = subprocess.call('join --version 2>/dev/null', shell=True) 
+    # check if we are a version later than 7 of join. If so, we want to skip
+    # checking the order since join will raise an error with duplicated items in
+    # the two files being joined.
+    if ret == 0: 
+        cl = subprocess.Popen(["join", "--version"], stdout=subprocess.PIPE)
+        (stdout, _) = cl.communicate()
+        version_line = stdout.split("\n")[0]
+        (version, _) = version_line.split()[-1].split(".")
+        if int(version) >= 7:
+            flags = "--nocheck-order"
+        else:
+            flags = ""
     else:
-        cmdline = "join -t $'\t' -o %s -1 %d -2 %d %s %s > %s" %(option, field1, field2, tmpfile1.name, tmpfile2.name, outfile)
+        flags = ""
+
+    if mode == "V":
+        cmdline = "join %s -t $'\t' -v 1 -o %s -1 %d -2 %d %s %s > %s" %(flags, option, field1, field2, tmpfile1.name, tmpfile2.name, outfile)
+    else:
+        cmdline = "join %s -t $'\t' -o %s -1 %d -2 %d %s %s > %s" %(flags, option, field1, field2, tmpfile1.name, tmpfile2.name, outfile)
     
     try:
         os.system(cmdline) 

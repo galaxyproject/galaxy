@@ -115,6 +115,7 @@ class Job( object ):
         self.job_runner_name = None
         self.job_runner_external_id = None
         self.post_job_actions = None
+        self.imported = False
         
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
@@ -964,16 +965,16 @@ class LibraryFolder( object ):
             intermed.sort()
             return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
          # This needs to be a list
-        active_library_datasets = [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.deleted ]
+        active_library_datasets = [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.deleted ]
         return sort_by_attr( [ ld for ld in active_library_datasets ], 'name' ) 
     @property
     def activatable_library_datasets( self ):
          # This needs to be a list
-        return [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.dataset.deleted ]
+        return [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.dataset.deleted ]
     @property
     def active_datasets( self ):
         # This needs to be a list
-        return [ ld.library_dataset_dataset_association.dataset for ld in self.datasets if not ld.library_dataset_dataset_association.deleted ]
+        return [ ld.library_dataset_dataset_association.dataset for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.deleted ]
     def get_display_name( self ):
         # Library folder name can be either a string or a unicode object. If string, 
         # convert to unicode object assuming 'utf-8' format.
@@ -1558,6 +1559,7 @@ class RequestEvent( object ):
 class RequestType( object ):
     rename_dataset_options = Bunch( NO = 'Do not rename',
                                     SAMPLE_NAME = 'Preprend sample name',
+                                    EXPERIMENT_NAME = 'Prepend experiment name',
                                     EXPERIMENT_AND_SAMPLE_NAME = 'Prepend experiment and sample name')
     permitted_actions = get_permitted_actions( filter='REQUEST_TYPE' )
     def __init__(self, name=None, desc=None, request_form=None, sample_form=None,

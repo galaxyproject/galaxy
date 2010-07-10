@@ -139,7 +139,9 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # upstream server
     if asbool(conf.get( 'use_remote_user', False )):
         from galaxy.web.framework.middleware.remoteuser import RemoteUser
-        app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ), ucsc_display_sites=conf.get( 'ucsc_display_sites', [] ) )
+        app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
+                               ucsc_display_sites=conf.get( 'ucsc_display_sites', [] ),
+                               admin_users=conf.get( 'admin_users', '' ).split( ',' ) )
         log.debug( "Enabling 'remote user' middleware" )
     # The recursive middleware allows for including requests in other 
     # requests or forwarding of requests, all on the server side.
@@ -152,13 +154,13 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # performance
     if debug:
         # Middleware to check for WSGI compliance
-        if asbool( conf.get( 'use_lint', True ) ):
+        if asbool( conf.get( 'use_lint', False ) ):
             from paste import lint
             app = lint.make_middleware( app, conf )
             log.debug( "Enabling 'lint' middleware" )
         # Middleware to run the python profiler on each request
         if asbool( conf.get( 'use_profile', False ) ):
-            import profile
+            from paste.debug import profile
             app = profile.ProfileMiddleware( app, conf )
             log.debug( "Enabling 'profile' middleware" )
         # Middleware that intercepts print statements and shows them on the

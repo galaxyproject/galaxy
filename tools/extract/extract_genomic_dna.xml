@@ -1,20 +1,27 @@
 <tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.1">
   <description>using coordinates from assembled/unassembled genomes</description>
-  <command interpreter="python">extract_genomic_dna.py $input $out_file1 -1 ${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol} -d $dbkey -o $out_format -g ${GALAXY_DATA_INDEX_DIR}</command>
+  <command interpreter="python">
+      extract_genomic_dna.py $input $out_file1 -d $dbkey -o $out_format -g ${GALAXY_DATA_INDEX_DIR}
+      #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
+        -1 1,4,5,7 --gff
+      #else:
+        -1 ${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol}
+      #end if
+  </command>
   <inputs>
-    <param format="interval" name="input" type="data" label="Fetch sequences corresponding to Query">
-      <validator type="unspecified_build" />
-      <validator type="dataset_metadata_in_file" filename="alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="seq" />
+    <param format="interval,gff" name="input" type="data" label="Fetch sequences corresponding to Query">
+        <validator type="unspecified_build" />
+        <validator type="dataset_metadata_in_file" filename="alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="seq" />
     </param>
 	<param name="out_format" type="select" label="Output data type">
-	<option value="fasta">FASTA</option>
-	<option value="interval">Interval</option>
+    	<option value="fasta">FASTA</option>
+    	<option value="interval">Interval</option>
 	</param>
   </inputs>
   <outputs>
-    <data format="fasta" name="out_file1" metadata_source="input">
+    <data format="input" name="out_file1" metadata_source="input">
       <change_format>
-        <when input="out_format" value="interval" format="interval" />
+        <when input="out_format" value="fasta" format="fasta" />
       </change_format>
     </data>
   </outputs>
@@ -33,6 +40,17 @@
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
       <param name="out_format" value="interval"/>
       <output name="out_file1" file="extract_genomic_dna_out3.interval" />
+    </test>
+    <!-- Test GFF file support. -->
+    <test>
+      <param name="input" value="gff_filtering_out1.gff" dbkey="mm9" ftype="gff" />
+      <param name="out_format" value="interval"/>
+      <output name="out_file1" file="extract_genomic_dna_out4.gff" />
+    </test>
+    <test>
+      <param name="input" value="gff_filtering_out1.gff" dbkey="mm9" ftype="gff" />
+      <param name="out_format" value="fasta"/>
+      <output name="out_file1" file="extract_genomic_dna_out5.fasta" />
     </test>
   </tests>
   <help>
@@ -90,7 +108,7 @@ Extracting sequences with **FASTA** output data type returns::
     CACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCAC
     ACACG
 
-Extrracting sequences with **Interval** output data type returns::
+Extracting sequences with **Interval** output data type returns::
 
     chr7    127475281       127475310       NM_000230       0       +       GTAGGAATCGCAGCGCCAGCGGTTGCAAG
     chr7    127485994       127486166       NM_000230       0       +       GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG

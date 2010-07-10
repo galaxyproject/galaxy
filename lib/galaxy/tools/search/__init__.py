@@ -8,7 +8,7 @@ try:
     from whoosh.index import Index
     from whoosh.qparser import QueryParser
     tool_search_enabled = True
-    schema = Schema( id = STORED, title = TEXT, help = TEXT )
+    schema = Schema( id = STORED, title = TEXT, description = TEXT, help = TEXT )
 except ImportError, e:
     tool_search_enabled = False
     schema = None
@@ -40,7 +40,7 @@ class ToolBoxSearch( object ):
                 else:
                     return a_basestr
 
-            writer.add_document( id=id, title=to_unicode(tool.name), help=to_unicode(tool.help) )
+            writer.add_document( id=id, title=to_unicode(tool.name), description=to_unicode(tool.description), help=to_unicode(tool.help) )
         writer.commit()
         
     def search( self, query, return_attribute='id' ):
@@ -48,5 +48,8 @@ class ToolBoxSearch( object ):
             return []
         searcher = self.index.searcher()
         parser = QueryParser( "help", schema = schema )
-        results = searcher.search( parser.parse( query ) )
+        # Set query to search title, description, and help.
+        query = "title:query OR description:query OR help:query".replace( "query", query ) 
+        results = searcher.search( parser.parse( query ), minscore=1.5 )
+        print results.scores
         return [ result[ return_attribute ] for result in results ]

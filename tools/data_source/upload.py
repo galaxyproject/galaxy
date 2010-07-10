@@ -10,6 +10,7 @@ from galaxy import eggs
 import galaxy.model
 from galaxy.datatypes import sniff
 from galaxy.datatypes.binary import *
+from galaxy.datatypes.images import Pdf
 from galaxy.datatypes.registry import Registry
 from galaxy import util
 from galaxy.util.json import *
@@ -85,6 +86,8 @@ def check_bam( temp_name ):
     return Bam().sniff( temp_name )
 def check_sff( temp_name ):
     return Sff().sniff( temp_name )
+def check_pdf( temp_name ):
+    return Pdf().sniff( temp_name )
 def check_gzip( temp_name ):
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
     # Make sure we have a gzipped file
@@ -160,6 +163,9 @@ def add_file( dataset, json_file, output_path ):
     elif check_sff( dataset.path ):
         ext = 'sff'
         data_type = 'sff'
+    elif check_pdf( dataset.path ):
+        ext = 'pdf'
+        data_type = 'pdf'
     else:
         # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
         is_gzipped, is_valid = check_gzip( dataset.path )
@@ -215,7 +221,7 @@ def add_file( dataset, json_file, output_path ):
                         return
         if not data_type:
             if check_binary( dataset.path ):
-                # We have a binary dataset, but it is not Bam or Sff
+                # We have a binary dataset, but it is not Bam, Sff or Pdf
                 data_type = 'binary'
                 #binary_ok = False
                 parts = dataset.name.split( "." )

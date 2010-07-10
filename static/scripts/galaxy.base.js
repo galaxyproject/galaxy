@@ -156,12 +156,18 @@ function replace_big_select_inputs(min_length, max_length) {
         var select_elt = $(this);
         // Make sure that options is within range.
         var num_options = select_elt.find('option').length;
-        if ( (num_options < min_length) || (num_options > max_length) )
+        if ( (num_options < min_length) || (num_options > max_length) ) {
             return;
+        }
             
         // Skip multi-select because widget cannot handle multi-select.
-        if (select_elt.attr('multiple') == true)
+        if (select_elt.attr('multiple') == true) {
             return;
+        }
+            
+        if (select_elt.hasClass("no-autocomplete")) {
+            return;
+        }
         
         // Replace select with text + autocomplete.
         var start_value = select_elt.attr('value');

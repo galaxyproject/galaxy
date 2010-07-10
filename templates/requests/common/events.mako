@@ -4,11 +4,14 @@
 <h2>History of Sequencing Request "${request.name}"</h2>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_admin', action='list', operation='show_request', id=trans.security.encode_id(request.id) )}">
+        <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='show_request', id=trans.security.encode_id(request.id) )}">
         <span>Browse this request</span></a>
     </li>
+    <li>
+        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list')}">
+        <span>Browse all requests</span></a>
+    </li>
 </ul>
-<h3>User: ${request.user.email}</h3>
 
 %if message:
     ${render_msg( message, status )}

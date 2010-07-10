@@ -399,15 +399,20 @@ class AdminController( BaseController, Admin ):
         # to take this approach because the "-" character is illegal in HTTP requests.
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
-            if operation == "edit tool":
+            if operation == "edit_tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='edit_tool',
                                                                   cntrller='admin',
                                                                   **kwd ) )
-            elif operation == "view tool":
+            elif operation == "view_tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='view_tool',
                                                                   cntrller='admin',
+                                                                  **kwd ) )
+            elif operation == 'tool_history':
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  cntrller='admin',
+                                                                  action='events',
                                                                   **kwd ) )
             elif operation == "tools_by_user":
                 # Eliminate the current filters if any exist.
@@ -457,7 +462,9 @@ class AdminController( BaseController, Admin ):
                 for k, v in kwd.items():
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
-                return self.browse_tools( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='browse_tools',
+                                                                  **kwd ) )
         # Render the list view
         return self.category_list_grid( trans, **kwd )
     @web.expose
@@ -481,16 +488,26 @@ class AdminController( BaseController, Admin ):
     @web.require_admin
     def create_category( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'community' )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         if params.get( 'create_category_button', False ):
             name = util.restore_text( params.name )
             description = util.restore_text( params.description )
+            error = False
             if not name or not description:
-                message = "Enter a valid name and a description"
-            elif trans.sa_session.query( trans.app.model.Category ).filter( trans.app.model.Category.table.c.name==name ).first():
-                message = "A category with that name already exists"
+                message = 'Enter a valid name and a description'
+                error = True
+            elif trans.sa_session.query( trans.app.model.Category ) \
+                                 .filter( trans.app.model.Category.table.c.name==name ) \
+                                 .first():
+                message = 'A category with that name already exists'
+                error = True
+            if error:
+                return trans.fill_template( '/webapps/community/category/create_category.mako',
+                                            name=name,
+                                            description=description,
+                                            message=message,
+                                            status='error' )
             else:
                 # Create the category
                 category = trans.app.model.Category( name=name, description=description )
@@ -499,26 +516,27 @@ class AdminController( BaseController, Admin ):
                 trans.sa_session.flush()
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='manage_categories',
-                                                           webapp=webapp,
                                                            message=util.sanitize_text( message ),
                                                            status='done' ) )
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='create_category',
-                                                       webapp=webapp,
                                                        message=util.sanitize_text( message ),
                                                        status='error' ) )
+        else:
+            name = ''
+            description = ''
         return trans.fill_template( '/webapps/community/category/create_category.mako',
-                                    webapp=webapp,
+                                    name=name,
+                                    description=description,
                                     message=message,
                                     status=status )
     @web.expose
     @web.require_admin
     def set_tool_state( self, trans, state, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        redirect = params.get( 'no_redirect', True )
+        comments = util.restore_text( params.get( 'comments', '' ) )
         id = params.get( 'id', None )
         if not id:
             message = "No tool id received for setting status"
@@ -526,32 +544,130 @@ class AdminController( BaseController, Admin ):
         else:
             tool = get_tool( trans, id )
             if state == trans.app.model.Tool.states.APPROVED:
-                # If we're approving a tool, all previous versions must be set to archived
-                for version in get_versions( trans, tool ):
+                # If we're approving a tool, all previously approved versions must be set to archived
+                for version in get_versions( tool ):
+                    # TODO: get latest approved version instead of all versions
                     if version != tool and version.is_approved():
-                        self.set_tool_state( trans,
-                                             trans.app.model.Tool.states.ARCHIVED,
-                                             id=trans.security.encode_id( version.id ),
-                                             redirect='False' )
-            event = trans.model.Event( state )
-            # Flush so we an get an id
-            trans.sa_session.add( event )
-            trans.sa_session.flush()
-            tea = trans.model.ToolEventAssociation( tool, event )
-            trans.sa_session.add( tea )
-            trans.sa_session.flush()
+                        # Create an event with state ARCHIVED for the previously approved version of this tool
+                        self.__create_tool_event( trans,
+                                                  version,
+                                                  trans.app.model.Tool.states.ARCHIVED )
+                # Create an event with state APPROVED for this tool
+                self.__create_tool_event( trans, tool, state, comments )
+            elif state == trans.app.model.Tool.states.REJECTED:
+                # If we're rejecting a tool, comments about why are necessary.
+                return trans.fill_template( '/webapps/community/admin/reject_tool.mako',
+                                            tool=tool,
+                                            cntrller='admin' )
             message = "State of tool '%s' is now %s" % ( tool.name, state )
-        if redirect:
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_tools',
+                                                   message=message,
+                                                   status=status ) )
+    @web.expose
+    @web.require_admin
+    def reject_tool( self, trans, **kwd ):
+        params = util.Params( kwd )
+        if params.get( 'cancel_reject_button', False ):
+            # Fix up the keyword dict to include params to view the current tool
+            # since that is the page from which we originated.
+            del kwd[ 'cancel_reject_button' ]
+            del kwd[ 'comments' ]
+            kwd[ 'webapp' ] = 'community'
+            kwd[ 'operation' ] = 'view_tool'
+            message = 'Tool rejection cancelled'
+            status = 'done'
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_tools',
+                                                              message=message,
+                                                              status=status,
+                                                              **kwd ) )
+        id = params.get( 'id', None )
+        if not id:
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_tools',
+                                                              message='No tool id received for rejecting',
+                                                              status='error' ) )
+        tool = get_tool( trans, id )
+        if not trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), 'admin', tool ):
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_tools',
+                                                              message='You are not allowed to reject this tool',
+                                                              status='error' ) )
+        # Comments are required when rejecting a tool.
+        comments = util.restore_text( params.get( 'comments', '' ) )
+        if not comments:
+            message = 'The reason for rejection is required when rejecting a tool.'
+            return trans.fill_template( '/webapps/community/admin/reject_tool.mako',
+                                        tool=tool,
+                                        cntrller='admin',
+                                        message=message,
+                                        status='error' )
+        # Create an event with state REJECTED for this tool
+        self.__create_tool_event( trans, tool, trans.app.model.Tool.states.REJECTED, comments )
+        message = 'The tool "%s" has been rejected.' % tool.name
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='browse_tools',
+                                                          operation='tools_by_state',
+                                                          state='rejected',
+                                                          message=message,
+                                                          status='done' ) )
+    def __create_tool_event( self, trans, tool, state, comments='' ):
+        event = trans.model.Event( state, comments )
+        # Flush so we can get an id
+        trans.sa_session.add( event )
+        trans.sa_session.flush()
+        tea = trans.model.ToolEventAssociation( tool, event )
+        trans.sa_session.add( tea )
+        trans.sa_session.flush()
+    @web.expose
+    @web.require_admin
+    def purge_tool( self, trans, **kwd ):
+        # This method completely removes a tool record and all associated foreign key rows
+        # from the database, so it must be used carefully.
+        # This method should only be called for a tool that has previously been deleted.
+        # Purging a deleted tool deletes all of the following from the database:
+        # - ToolCategoryAssociations
+        # - ToolEventAssociations and associated Events
+        # TODO: when we add tagging for tools, we'll have to purge them as well
+        params = util.Params( kwd )
+        id = kwd.get( 'id', None )
+        if not id:
+            message = "No tool ids received for purging"
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='browse_tools',
-                                                       webapp=webapp,
-                                                       message=message,
-                                                       status=status ) )
+                                                       message=util.sanitize_text( message ),
+                                                       status='error' ) )
+        ids = util.listify( id )
+        message = "Purged %d tools: " % len( ids )
+        for tool_id in ids:
+            tool = get_tool( trans, tool_id )
+            message += " %s " % tool.name
+            if not tool.deleted:
+                message = "Tool '%s' has not been deleted, so it cannot be purged." % tool.name
+                trans.response.send_redirect( web.url_for( controller='admin',
+                                                           action='browse_tools',
+                                                           message=util.sanitize_text( message ),
+                                                           status='error' ) )
+            # Delete ToolCategoryAssociations
+            for tca in tool.categories:
+                trans.sa_session.delete( tca )
+            # Delete ToolEventAssociations and associated events
+            for tea in tool.events:
+                event = tea.event
+                trans.sa_session.delete( event )
+                trans.sa_session.delete( tea )
+            # Delete the tool
+            trans.sa_session.delete( tool )
+            trans.sa_session.flush()
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_tools',
+                                                   message=util.sanitize_text( message ),
+                                                   status='done' ) )
     @web.expose
     @web.require_admin
     def edit_category( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         id = params.get( 'id', None )
@@ -559,7 +675,6 @@ class AdminController( BaseController, Admin ):
             message = "No category ids received for editing"
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='manage_categories',
-                                                       webapp=webapp,
                                                        message=message,
                                                        status='error' ) )
         category = get_category( trans, id )
@@ -582,25 +697,21 @@ class AdminController( BaseController, Admin ):
                     message = "The information has been saved for category '%s'" % ( category.name )
                     return trans.response.send_redirect( web.url_for( controller='admin',
                                                                       action='manage_categories',
-                                                                      webapp=webapp,
                                                                       message=util.sanitize_text( message ),
                                                                       status='done' ) )
         return trans.fill_template( '/webapps/community/category/edit_category.mako',
                                     category=category,
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
     @web.require_admin
     def mark_category_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
         id = kwd.get( 'id', None )
         if not id:
             message = "No category ids received for deleting"
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='manage_categories',
-                                                       webapp=webapp,
                                                        message=message,
                                                        status='error' ) )
         ids = util.listify( id )
@@ -613,20 +724,17 @@ class AdminController( BaseController, Admin ):
             message += " %s " % category.name
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
-                                                   webapp=webapp,
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
     @web.expose
     @web.require_admin
     def undelete_category( self, trans, **kwd ):
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
         id = kwd.get( 'id', None )
         if not id:
             message = "No category ids received for undeleting"
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='manage_categories',
-                                                       webapp=webapp,
                                                        message=message,
                                                        status='error' ) )
         ids = util.listify( id )
@@ -638,7 +746,6 @@ class AdminController( BaseController, Admin ):
                 message = "Category '%s' has not been deleted, so it cannot be undeleted." % category.name
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='manage_categories',
-                                                           webapp=webapp,
                                                            message=util.sanitize_text( message ),
                                                            status='error' ) )
             category.deleted = False
@@ -649,7 +756,6 @@ class AdminController( BaseController, Admin ):
         message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
-                                                   webapp=webapp,
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
     @web.expose
@@ -659,13 +765,11 @@ class AdminController( BaseController, Admin ):
         # Purging a deleted Category deletes all of the following from the database:
         # - ToolCategoryAssociations where category_id == Category.id
         params = util.Params( kwd )
-        webapp = params.get( 'webapp', 'galaxy' )
         id = kwd.get( 'id', None )
         if not id:
             message = "No category ids received for purging"
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='manage_categories',
-                                                       webapp=webapp,
                                                        message=util.sanitize_text( message ),
                                                        status='error' ) )
         ids = util.listify( id )
@@ -676,7 +780,6 @@ class AdminController( BaseController, Admin ):
                 message = "Category '%s' has not been deleted, so it cannot be purged." % category.name
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='manage_categories',
-                                                           webapp=webapp,
                                                            message=util.sanitize_text( message ),
                                                            status='error' ) )
             # Delete ToolCategoryAssociations
@@ -686,7 +789,6 @@ class AdminController( BaseController, Admin ):
             message += " %s " % category.name
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
-                                                   webapp=webapp,
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
 

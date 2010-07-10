@@ -32,7 +32,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstore", "jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstore", "jquery.autocomplete", "autocomplete_tagging", "trackster" )}
 
     <script type="text/javascript">
         
@@ -71,7 +71,8 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging", "embed_item" )}
+    ${h.css( "autocomplete_tagging", "embed_item", "trackster" )}
+    
     <style type="text/css">
         .page-body {
             padding: 10px;

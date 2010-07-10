@@ -414,27 +414,6 @@ class Text( Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-class Txtseq( Data ):
-    """Class describing a zip archive of text sequence files"""
-    file_ext = "txtseq.zip"
-    def set_peek( self, dataset, is_multi_byte=False ):
-        if not dataset.dataset.purged:
-            zip_file = zipfile.ZipFile( dataset.file_name, "r" )
-            num_files = len( zip_file.namelist() )
-            dataset.peek  = "Archive of %s text sequence files" % ( str( num_files ) )
-            dataset.blurb = data.nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except:
-            return "Text sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'application/zip'
-
 class Newick( Text ):
     pass
 

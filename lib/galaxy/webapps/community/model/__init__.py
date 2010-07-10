@@ -164,6 +164,21 @@ class Tool( object ):
         return self.state() == self.states.REJECTED
     def is_archived( self ):
         return self.state() == self.states.ARCHIVED
+    def get_state_message( self ):
+        if self.is_new():
+            return '<font color="red"><b><i>This is an unsubmitted version of this tool</i></b></font>'
+        if self.is_error():
+            return '<font color="red"><b><i>This tool is in an error state</i></b></font>'
+        if self.is_deleted():
+            return '<font color="red"><b><i>This is a deleted version of this tool</i></b></font>'
+        if self.is_waiting():
+            return '<font color="red"><b><i>This version of this tool is awaiting administrative approval</i></b></font>'
+        if self.is_approved():
+            return '<b><i>This is the latest approved version of this tool</i></b>'
+        if self.is_rejected():
+            return '<font color="red"><b><i>This version of this tool has been rejected by an administrator</i></b></font>'
+        if self.is_archived():
+            return '<font color="red"><b><i>This is an archived version of this tool</i></b></font>'
     @property
     def extension( self ):
         # if instantiated via a query, this unmapped property won't exist
@@ -240,7 +255,6 @@ class ToolAnnotationAssociation( object ):
     pass
 
 ## ---- Utility methods -------------------------------------------------------
-
 def sort_by_attr( seq, attr ):
     """
     Sort the sequence of objects by object's attribute
@@ -256,7 +270,6 @@ def sort_by_attr( seq, attr ):
     intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
     intermed.sort()
     return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
-
 def directory_hash_id( id ):
     s = str( id )
     l = len( s )
@@ -269,5 +282,3 @@ def directory_hash_id( id ):
     padded = padded[:-3]
     # Break into chunks of three
     return [ padded[i*3:(i+1)*3] for i in range( len( padded ) // 3 ) ]
-
-

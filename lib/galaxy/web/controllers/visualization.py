@@ -283,7 +283,16 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
     @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
-        return "TODO: visualization content"
+        
+        # Get visualization, making sure it's accessible.
+        visualization = self.get_visualization( trans, id, False, True)
+        if visualization is None:
+            raise web.httpexceptions.HTTPNotFound()
+        
+        # Return content.
+        visualization_config = self.get_visualization_config( trans, visualization )    
+        return trans.fill_template_mako( "visualization/item_content.mako", encoded_id=trans.security.encode_id(visualization.id), 
+                                            item=visualization, item_data=visualization_config, content_only=True )
         
     @web.expose
     @web.require_login( "create visualizations" )

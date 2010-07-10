@@ -1,1 +1,0 @@
-main	http://main.genome-browser.bx.psu.edu/cgi-bin/hgTracks?	hg18,hg19,mm8,mm9	bx-main

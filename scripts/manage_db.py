@@ -23,7 +23,7 @@ if cp.has_option( "app:main", "database_connection" ):
 elif cp.has_option( "app:main", "database_file" ):
     db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % cp.get( "app:main", "database_file" )
 else:
-    db_url = None
+    db_url = "sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE"
 
 dialect_to_egg = {
     "sqlite" : "pysqlite>=2",

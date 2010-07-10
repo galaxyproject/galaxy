@@ -69,7 +69,8 @@ $.extend( Cache.prototype, {
     }
 });
 
-var View = function( chrom, title, vis_id, dbkey ) {
+var View = function( container, chrom, title, vis_id, dbkey ) {
+    this.container = container;
     this.vis_id = vis_id;
     this.dbkey = dbkey;
     this.title = title;
@@ -82,22 +83,184 @@ var View = function( chrom, title, vis_id, dbkey ) {
     this.zoom_factor = 3;
     this.min_separation = 30;
     this.has_changes = false;
+    this.init();
     this.reset();
 };
 $.extend( View.prototype, {
-    add_track: function ( track ) {
+    init: function() {
+        // Create DOM elements
+        var parent_element = this.container,
+            view = this;
+        
+        this.content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
+        this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.content_div);
+        this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
+        this.viewport = $("<div/>").addClass("viewport").appendTo(this.viewport_container);
+        
+        this.nav_container = $("<div/>").addClass("nav-container").appendTo(parent_element);
+        this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.nav_container);
+        this.nav = $("<div/>").addClass("nav").appendTo(this.nav_container);
+        this.overview = $("<div/>").addClass("overview").appendTo(this.nav);
+        this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
+        this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
+        
+        this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
+        this.chrom_form = $("<form/>").attr("action", function() { void(0); } ).appendTo(this.nav_controls);
+        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").addClass("no-autocomplete").append("<option value=''>Loading</option>").appendTo(this.chrom_form);
+        this.low_input = $("<input/>").addClass("low").css("width", "10em").appendTo(this.chrom_form);
+        $("<span/>").text(" - ").appendTo(this.chrom_form);
+        this.high_input = $("<input/>").addClass("high").css("width", "10em").appendTo(this.chrom_form);
+        this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.chrom_form);
+        this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw() }).html('<img src="/images/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);
+        this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw() }).html('<img src="/images/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);;
+        
+        var data_d = (this.vis_id !== undefined ? { vis_id: this.vis_id } : { dbkey: this.dbkey });
+        
+        $.ajax({
+            url: chrom_url, 
+            data: data_d,
+            dataType: "json",
+            success: function ( result ) {
+                if (result['reference']) {
+                    view.add_label_track( new ReferenceTrack(view) );
+                }
+                view.chrom_data = result['chrom_info'];
+                var chrom_options = '<option value="">Select Chrom/Contig</option>';
+                for (i in view.chrom_data) {
+                    var chrom = view.chrom_data[i]['chrom'];
+                    chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
+                }
+                view.chrom_select.html(chrom_options);
+                view.chrom_select.bind( "change", function () {
+                    view.chrom = view.chrom_select.val();
+                    var found = $.grep(view.chrom_data, function(v, i) {
+                        return v.chrom === view.chrom;
+                    })[0];
+                    view.max_high = found.len;
+                    view.reset();
+                    view.redraw(true);
+                
+                    for (var track_id in view.tracks) {
+                        var track = view.tracks[track_id];
+                        if (track.init) {
+                            track.init();
+                        }
+                    }
+                    view.redraw();
+                });
+            },
+            error: function() {
+                alert( "Could not load chroms for this dbkey:", view.dbkey );
+            }
+        });
+        
+        this.content_div.bind("mousewheel", function( e, delta ) {
+            if (Math.abs(delta) < 0.5) {
+                return;
+            }
+            if (delta > 0) {
+                view.zoom_in(e.pageX, this.viewport_container);
+            } else {
+                view.zoom_out();
+            }
+            e.preventDefault();
+        });
+
+        this.content_div.bind("dblclick", function( e ) {
+            view.zoom_in(e.pageX, this.viewport_container);
+        });
+
+        // To let the overview box be draggable
+        this.overview_box.bind("dragstart", function( e ) {
+            this.current_x = e.offsetX;
+        }).bind("drag", function( e ) {
+            var delta = e.offsetX - this.current_x;
+            this.current_x = e.offsetX;
+
+            var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low) );
+            view.move_delta(-2*delta_chrom);
+        });
+        
+        this.viewport_container.bind( "dragstart", function( e ) {
+            this.original_low = view.low;
+            this.current_height = e.clientY;
+            this.current_x = e.offsetX;
+        }).bind( "drag", function( e ) {
+            var container = $(this);
+            var delta = e.offsetX - this.current_x;
+            var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
+            if ( new_scroll < container.get(0).scrollHeight - container.height() ) {
+                container.scrollTop(new_scroll);
+            }
+            this.current_height = e.clientY;
+            this.current_x = e.offsetX;
+
+            var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
+            view.move_delta(delta_chrom);
+        });
+        
+        this.top_labeltrack.bind( "dragstart", function(e) {
+            this.drag_origin_x = e.clientX;
+            this.drag_origin_pos = e.clientX / view.viewport_container.width() * (view.high - view.low) + view.low;
+            this.drag_div = $("<div />").css( { 
+                "height": view.content_div.height(), "top": "0px", "position": "absolute", 
+                "background-color": "#cfc", "border": "1px solid #6a6", "opacity": 0.5
+            } ).appendTo( $(this) );
+        }).bind( "drag", function(e) {
+            var min = Math.min(e.clientX, this.drag_origin_x),
+                max = Math.max(e.clientX, this.drag_origin_x),
+                span = (view.high - view.low),
+                width = view.viewport_container.width();
+            
+            view.low_input.val(commatize(Math.round(min / width * span) + view.low));
+            view.high_input.val(commatize(Math.round(max / width * span) + view.low));
+            this.drag_div.css( { "left": min + "px", "width": (max - min) + "px" } );
+        }).bind( "dragend", function(e) {
+            var min = Math.min(e.clientX, this.drag_origin_x),
+                max = Math.max(e.clientX, this.drag_origin_x),
+                span = (view.high - view.low),
+                width = view.viewport_container.width(),
+                old_low = view.low;
+                
+            view.low = Math.round(min / width * span) + old_low;
+            view.high = Math.round(max / width * span) + old_low;
+            this.drag_div.remove();
+            view.redraw();
+        });
+        
+        this.add_label_track( new LabelTrack( this, this.top_labeltrack ) );
+        this.add_label_track( new LabelTrack( this, this.nav_labeltrack ) );
+        
+    },
+    move_delta: function(delta_chrom) {
+        var view = this;
+        var current_chrom_span = view.high - view.low;
+        // Check for left and right boundaries
+        if (view.low - delta_chrom < view.max_low) {
+            view.low = view.max_low;
+            view.high = view.max_low + current_chrom_span;
+        } else if (view.high - delta_chrom > view.max_high) {
+            view.high = view.max_high;
+            view.low = view.max_high - current_chrom_span;
+        } else {
+            view.high -= delta_chrom;
+            view.low -= delta_chrom;
+        }
+        view.redraw();
+    },
+    add_track: function(track) {
         track.view = this;
         track.track_id = this.track_id_counter;
-        this.tracks.push( track );
+        this.tracks.push(track);
         if (track.init) { track.init(); }
         track.container_div.attr('id', 'track_' + track.track_id);
         this.track_id_counter += 1;
     },
-    add_label_track: function ( label_track ) {
+    add_label_track: function (label_track) {
         label_track.view = this;
-        this.label_tracks.push( label_track );
+        this.label_tracks.push(label_track);
     },
-    remove_track: function( track ) {
+    remove_track: function(track) {
         this.has_changes = true;
         track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[this.tracks.indexOf(track)];
@@ -107,7 +270,7 @@ $.extend( View.prototype, {
         var sorted = $("ul#sortable-ul").sortable('toArray');
         for (var id_i in sorted) {
             var id = sorted[id_i].split("_li")[0].split("track_")[1];
-            $("#viewport").append( $("#track_" + id) );
+            this.viewport.append( $("#track_" + id) );
         }
         
         for (var track_id in view.tracks) {
@@ -120,7 +283,7 @@ $.extend( View.prototype, {
     reset: function() {
         this.low = this.max_low;
         this.high = this.max_high;
-        $(".yaxislabel").remove();
+        this.viewport_container.find(".yaxislabel").remove();
     },        
     redraw: function(nodraw) {
         var span = this.high - this.low,
@@ -144,20 +307,20 @@ $.extend( View.prototype, {
         this.zoom_res = Math.pow( FEATURE_LEVELS, Math.max(0,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) )));
         
         // Overview
-        $("#overview-box").css( {
-            left: ( this.low / (this.max_high - this.max_low) ) * $("#overview-viewport").width(),
+        this.overview_box.css( {
+            left: ( this.low / (this.max_high - this.max_low) ) * this.overview_viewport.width(),
             // Minimum width for usability
-            width: Math.max( 12, (this.high - this.low)/(this.max_high - this.max_low) * $("#overview-viewport").width() )
+            width: Math.max( 12, (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width() )
         }).show();
-        $("#low").val( commatize(this.low) );
-        $("#high").val( commatize(this.high) );
+        this.low_input.val( commatize(this.low) );
+        this.high_input.val( commatize(this.high) );
         if (!nodraw) {
-            for ( var i = 0, len = this.tracks.length; i < len; i++ ) {
+            for (var i = 0, len = this.tracks.length; i < len; i++) {
                 if (this.tracks[i] && this.tracks[i].enabled) {
                     this.tracks[i].draw();
                 }
             }
-            for ( var i = 0, len = this.label_tracks.length; i < len; i++ ) {
+            for (var i = 0, len = this.label_tracks.length; i < len; i++) {
                 this.label_tracks[i].draw();
             }
         }
@@ -170,7 +333,7 @@ $.extend( View.prototype, {
             cur_center = span / 2 + this.low,
             new_half = (span / this.zoom_factor) / 2;
         if (point) {
-            cur_center = point / container.width() * (this.high - this.low) + this.low;
+            cur_center = point / this.viewport_container.width() * (this.high - this.low) + this.low;
         }
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
@@ -189,9 +352,10 @@ $.extend( View.prototype, {
     }
 });
 
-var Track = function ( name, parent_element ) {
+var Track = function (name, view, parent_element) {
     this.name = name;
     this.parent_element = parent_element;
+    this.view = view;
     this.init_global();
 };
 $.extend( Track.prototype, {
@@ -307,8 +471,8 @@ $.extend( TiledTrack.prototype, Track.prototype, {
     }
 });
 
-var LabelTrack = function ( parent_element ) {
-    Track.call( this, null, parent_element );
+var LabelTrack = function (view, parent_element) {
+    Track.call( this, null, view, parent_element );
     this.track_type = "LabelTrack";
     this.hidden = true;
     this.container_div.addClass( "label-track" );
@@ -335,9 +499,9 @@ $.extend( LabelTrack.prototype, Track.prototype, {
     }
 });
 
-var ReferenceTrack = function () {
+var ReferenceTrack = function (view) {
     this.track_type = "ReferenceTrack";
-    Track.call( this, null, $("#top-labeltrack") );
+    Track.call( this, null, view, view.nav_labeltrack );
     TiledTrack.call( this );
     
     this.hidden = true;
@@ -404,9 +568,9 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var LineTrack = function ( name, dataset_id, prefs ) {
+var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.track_type = "LineTrack";
-    Track.call( this, name, $("#viewport") );
+    Track.call( this, name, view, view.viewport_container );
     TiledTrack.call( this );
     
     this.height_px = 100;
@@ -624,12 +788,12 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var FeatureTrack = function ( name, dataset_id, prefs ) {
+var FeatureTrack = function ( name, view, dataset_id, prefs ) {
     this.track_type = "FeatureTrack";
-    Track.call( this, name, $("#viewport") );
+    Track.call( this, name, view, view.viewport_container );
     TiledTrack.call( this );
     
-    this.height_px = 100;
+    this.height_px = 0;
     this.container_div.addClass( "feature-track" );
     this.dataset_id = dataset_id;
     this.zo_slots = {};
@@ -1065,8 +1229,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var ReadTrack = function ( name, dataset_id, prefs ) {
-    FeatureTrack.call( this, name, dataset_id, prefs );
+var ReadTrack = function ( name, view, dataset_id, prefs ) {
+    FeatureTrack.call( this, name, view, dataset_id, prefs );
     this.track_type = "ReadTrack";
     this.vertical_detail_px = 10;
     this.vertical_nodetail_px = 5;

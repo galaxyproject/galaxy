@@ -11,7 +11,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='show_datatx_page', cntrller='requests_admin', sample_id=trans.security.encode_id(sample.id) )}">
         <span>Dataset transfer page</span></a>
     </li>
 </ul>

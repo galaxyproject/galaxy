@@ -150,7 +150,6 @@ class Registry( object ):
                 'axt'         : sequence.Axt(),
                 'bam'         : binary.Bam(),
                 'bed'         : interval.Bed(), 
-                'binseq.zip'  : binary.Binseq(),
                 'blastxml'    : xml.BlastXml(),
                 'coverage'    : coverage.LastzCoverage(),
                 'customtrack' : interval.CustomTrack(),
@@ -176,7 +175,6 @@ class Registry( object ):
                 'tabular'     : tabular.Tabular(),
                 'taxonomy'    : tabular.Taxonomy(),
                 'txt'         : data.Text(),
-                'txtseq.zip'  : data.Txtseq(),
                 'wig'         : interval.Wiggle()
             }
             self.mimetypes_by_extension = { 
@@ -184,7 +182,6 @@ class Registry( object ):
                 'axt'         : 'text/plain',
                 'bam'         : 'application/octet-stream',
                 'bed'         : 'text/plain', 
-                'binseq.zip'  : 'application/zip',
                 'blastxml'    : 'text/plain', 
                 'customtrack' : 'text/plain',
                 'csfasta'     : 'text/plain',
@@ -208,7 +205,6 @@ class Registry( object ):
                 'tabular'     : 'text/plain',
                 'taxonomy'    : 'text/plain',
                 'txt'         : 'text/plain',
-                'txtseq.zip'  : 'application/zip',
                 'wig'         : 'text/plain'
             }
         # Default values - the order in which we attempt to determine data types is critical

@@ -50,11 +50,12 @@ UCSC_ARCHAEA_SERVERS = (
 )
 
 class RemoteUser( object ):
-    def __init__( self, app, maildomain=None, ucsc_display_sites=[] ):
+    def __init__( self, app, maildomain=None, ucsc_display_sites=[], admin_users=[] ):
         self.app = app
         self.maildomain = maildomain
         self.allow_ucsc_main = False
         self.allow_ucsc_archaea = False
+        self.admin_users = admin_users
         if 'main' in ucsc_display_sites or 'test' in ucsc_display_sites:
             self.allow_ucsc_main = True
         if 'archaea' in ucsc_display_sites:
@@ -76,14 +77,7 @@ class RemoteUser( object ):
         # un-authenticated.  Any other possible values need to go here as well.
         if environ.has_key( 'HTTP_REMOTE_USER' ) and environ[ 'HTTP_REMOTE_USER' ] != '(null)':
             path_info = environ.get('PATH_INFO', '')
-            if path_info.startswith( '/user' ):
-                title = "Access to Galaxy user controls is disabled"
-                message = """
-                    User controls are disabled when Galaxy is configured
-                    for external authentication.
-                """
-                return self.error( start_response, title, message )
-            elif not environ[ 'HTTP_REMOTE_USER' ].count( '@' ):
+            if not environ[ 'HTTP_REMOTE_USER' ].count( '@' ):
                 if self.maildomain is not None:
                     environ[ 'HTTP_REMOTE_USER' ] += '@' + self.maildomain
                 else:
@@ -99,6 +93,15 @@ class RemoteUser( object ):
                         before you may access Galaxy.
                     """
                     return self.error( start_response, title, message )
+            if path_info.startswith( '/user/create' ) and environ[ 'HTTP_REMOTE_USER' ] in self.admin_users:
+                pass # admins can create users
+            elif path_info.startswith( '/user' ):
+                title = "Access to Galaxy user controls is disabled"
+                message = """
+                    User controls are disabled when Galaxy is configured
+                    for external authentication.
+                """
+                return self.error( start_response, title, message )
             return self.app( environ, start_response )
         else:
             title = "Access to Galaxy is denied"
