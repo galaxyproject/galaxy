@@ -76,7 +76,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         return trans.fill_template_mako( "/my_data.mako" )
 
     @web.expose
-    def history( self, trans, as_xml=False, show_deleted=False, hda_id=None ):
+    def history( self, trans, as_xml=False, show_deleted=False, show_hidden=False, hda_id=None ):
         """
         Display the current history, creating a new history if necessary.
         NOTE: No longer accepts "id" or "template" options for security reasons.
@@ -86,16 +86,21 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         history = trans.get_history( create=True )
         if as_xml:
             trans.response.set_content_type('text/xml')
-            return trans.fill_template_mako( "root/history_as_xml.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
+            return trans.fill_template_mako( "root/history_as_xml.mako", 
+                                              history=history, 
+                                              show_deleted=util.string_as_bool( show_deleted ),
+                                              show_hidden=util.string_as_bool( show_hidden ) )
         else:
             show_deleted = util.string_as_bool( show_deleted )
-            datasets = self.get_history_datasets( trans, history, show_deleted )
+            show_hidden = util.string_as_bool( show_hidden )
+            datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden )
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans, trans.user, history ),
                                                datasets = datasets,
                                                hda_id = hda_id,
-                                               show_deleted = show_deleted )
+                                               show_deleted = show_deleted,
+                                               show_hidden=show_hidden )
 
     @web.expose
     def dataset_state ( self, trans, id=None, stamp=None ):

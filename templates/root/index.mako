@@ -37,6 +37,9 @@
             "Show Deleted Datasets": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
             },
+            "Show Hidden Datasets": function() {
+                galaxy_history.location = "${h.url_for( controller='root', action='history', show_hidden=True)}";
+            },
             "Show structure": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
             },

@@ -631,12 +631,39 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             trans.log_event( "Dataset id %s has been undeleted" % str(id) )
             return True
         return False
+
+    def _unhide( self, trans, id ):
+        try:
+            id = int( id )
+        except ValueError, e:
+            return False
+        history = trans.get_history()
+        data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+        if data:
+            # Walk up parent datasets to find the containing history
+            topmost_parent = data
+            while topmost_parent.parent:
+                topmost_parent = topmost_parent.parent
+            assert topmost_parent in history.datasets, "Data does not belong to current history"
+            # Mark undeleted
+            data.mark_unhidden()
+            trans.sa_session.flush()
+            trans.log_event( "Dataset id %s has been unhidden" % str(id) )
+            return True
+        return False
     
     @web.expose
     def undelete( self, trans, id ):
         if self._undelete( trans, id ):
             return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
         raise "Error undeleting"
+
+    @web.expose
+    def unhide( self, trans, id ):
+        if self._unhide( trans, id ):
+            return trans.response.send_redirect( web.url_for( controller='root', action='history', show_hidden = True ) )
+        raise "Error unhiding"
+
 
     @web.expose
     def undelete_async( self, trans, id ):

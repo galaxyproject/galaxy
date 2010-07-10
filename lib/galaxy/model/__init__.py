@@ -685,6 +685,11 @@ class DatasetInstance( object ):
         if include_children:
             for child in self.children:
                 child.mark_undeleted()
+    def mark_unhidden( self, include_children=True ):
+        self.visible = True
+        if include_children:
+            for child in self.children:
+                child.mark_unhidden()
     def undeletable( self ):
         if self.purged:
             return False

@@ -279,7 +279,7 @@ class UsesHistory( SharableItemSecurity ):
             err+msg( "History not found" )
         else:
             return self.security_check( trans.get_user(), history, check_ownership, check_accessible )
-    def get_history_datasets( self, trans, history, show_deleted=False ):
+    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False):
         """ Returns history's datasets. """
         query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
             .filter( trans.model.HistoryDatasetAssociation.history == history ) \

@@ -338,6 +338,12 @@ div.form-row {
 </div>
 %endif
 
+%if show_hidden:
+<div class="historyLinks">
+    <a href="${h.url_for('history', show_hidden=False)}">${_('hide hidden')}</a>
+</div>
+%endif
+
 <div id="history-name-area" class="historyLinks">
     
     %if trans.get_user():
@@ -385,7 +391,7 @@ div.form-row {
 
     ## Render requested datasets, ordered from newest to oldest
     %for data in reversed( datasets ):
-        %if data.visible:
+        %if data.visible or show_hidden:
             <div class="historyItemContainer" id="historyItemContainer-${data.id}">
                 ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing = True )}
             </div>

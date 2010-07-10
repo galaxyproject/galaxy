@@ -21,6 +21,13 @@
         </div>
     %endif
 
+    %if data.visible is False:
+        <div class="warningmessagesmall">
+            <strong>This dataset has been hidden. Click <a href="${h.url_for( controller='dataset', action='unhide', id=data.id )}" class="historyItemUnhide" id="historyItemUnhider-${data.id}" target="galaxy_history">here</a> to unhide.</strong>
+        </div>
+    %endif
+
+
     ## Header row for history items (name, state, action buttons)
     <div style="overflow: hidden;" class="historyItemTitleBar">     
         <div class="historyItemButtons">
