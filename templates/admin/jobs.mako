@@ -126,7 +126,7 @@
             </div>
 	%else:
 		    <div class="form-row">
-				<p>To prevent new jobs from dispatching, you can lock down the job queue here.</p>
+				<p>To prevent new jobs from dispatching, you can lock the job queue here.</p>
 				<input type='hidden' name='job_lock' value='lock'/>
 		    </div>
 		    <div class="form-row">
