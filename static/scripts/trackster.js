@@ -111,8 +111,8 @@ $.extend( View.prototype, {
         $("<span/>").text(" - ").appendTo(this.chrom_form);
         this.high_input = $("<input/>").addClass("high").css("width", "10em").appendTo(this.chrom_form);
         this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.chrom_form);
-        this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw() }).html('<img src="/images/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);
-        this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw() }).html('<img src="/images/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);;
+        this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw() }).html('<img src="../images/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);
+        this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw() }).html('<img src="../images/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);;
         
         var data_d = (this.vis_id !== undefined ? { vis_id: this.vis_id } : { dbkey: this.dbkey });
         
