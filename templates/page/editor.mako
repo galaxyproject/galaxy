@@ -104,12 +104,13 @@
                 item_plural = "Pages";
                 item_controller = "page";
                 item_class = "Page";
+                break;
             case( Galaxy.ITEM_VISUALIZATION ):
                 item_singular = "Visualization";
                 item_plural = "Visualizations";
                 item_controller = "visualization";
                 item_class = "Visualization";
-            break;
+                break;
         }
         
         // Build ajax URL that lists items for selection.
