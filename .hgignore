@@ -38,3 +38,9 @@ run_functional_tests.html
 
 # Chrom len files
 *.len
+
+# Misc
+*.orig
+.DS_Store
+*.rej
+

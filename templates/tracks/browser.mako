@@ -85,8 +85,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             %endfor
             init();
         %else:
-            continue_fn = function() {
-                view = new View( undefined, $("#new-title").val(), undefined, $("#new-dbkey").val() );
+            var continue_fn = function() {
+                view = new View( $("#center"), undefined, $("#new-title").val(), undefined, $("#new-dbkey").val() );
                 init();
                 hide_modal();
             };
@@ -105,18 +105,20 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             });
         %endif
 		
-		$(document).bind( "redraw", function( e ) {
+		$(document).bind( "redraw", function() {
 			view.redraw();
         });
 
         // To adjust the size of the viewport to fit the fixed-height footer
-        var refresh = function( e ) {
-            view.viewport_container.height( $(window).height() - 100 );
-            view.nav_container.width( $("#center").width() );
-            view.redraw();
+        var refresh = function() {
+            if (view !== undefined) {
+                view.viewport_container.height( $(window).height() - 100 );
+                view.nav_container.width( $("#center").width() );
+                view.redraw();
+            }
         };
-        $(window).bind( "resize", function(e) { refresh(e); } );
-        $("#right-border").bind( "click dragend", function(e) { refresh(e); } );
+        $(window).bind( "resize", function() { refresh(); } );
+        $("#right-border").bind( "click dragend", function() { refresh(); } );
         $(window).trigger( "resize" );
         
         // Execute initializer for EDITOR specific javascript
@@ -154,9 +156,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                                         error: function() {},
                                         success: function(track_data) {
                                             var td = track_data,
-												track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack };
-                                            
-                                            view.add_track(new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs) );
+												track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
+												new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs);
+												
+                                            view.add_track(new_track);
                                             view.has_changes = true;
                                             sidebar_box(new_track);
                                         }
