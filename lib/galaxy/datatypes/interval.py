@@ -332,6 +332,56 @@ class BedGraph( Interval ):
 
     def get_track_type( self ):
         return "LineTrack", {"data": "array_tree"}
+        
+    def as_ucsc_display_file( self, dataset, **kwd ):
+        """
+            Returns file contents as is with no modifications. 
+            TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
+        """
+        return open( dataset.file_name )
+        
+    def get_estimated_display_viewport( self, dataset ):
+        """
+            Set viewport based on dataset's first 100 lines.
+        """
+        if dataset.has_data() and dataset.state == dataset.states.OK:
+            try:
+                # Set seqid, start, stop.
+                seqid = None
+                start = 2147483647  # Maximum value of a signed 32 bit integer ( 2**31 - 1 )
+                stop = 0
+                for i, line in enumerate( file( dataset.file_name ) ):
+                    line = line.rstrip( '\r\n' )
+                    if not line:
+                        continue
+                    elts = line.split('\t')
+                    if len( elts ) == 4:
+                        # Update seq id, start, end.
+                        if not seqid:
+                            # We can only set the viewport for a single chromosome
+                            seqid = elems[0]
+                        if seqid == elems[0]:
+                            # Make sure we have not spanned chromosomes
+                            start = min( start, int( elems[1] ) )
+                            stop = max( stop, int( elems[2] ) )
+                        else:
+                            # We've spanned a chromosome
+                            break
+                    else:
+                        continue
+                    # Only look through 100 lines.
+                    if i > 100:
+                        break
+                        
+                # Set valid values for start, stop if necessary.
+                if start == 2147483647:
+                    start = 0
+                if stop == 0:
+                    stop = 1
+                return ( seqid, str( start ), str( stop ) )
+            except:
+                return( '', '', '' )
+        return( '', '', '' )
 
 class Bed( Interval ):
     """Tab delimited data in BED format"""
