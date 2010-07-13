@@ -354,8 +354,8 @@ class BedGraph( Interval ):
                     line = line.rstrip( '\r\n' )
                     if not line:
                         continue
-                    elts = line.split('\t')
-                    if len( elts ) == 4:
+                    elems = line.split('\t')
+                    if len( elems ) == 4:
                         # Update seq id, start, end.
                         if not seqid:
                             # We can only set the viewport for a single chromosome
