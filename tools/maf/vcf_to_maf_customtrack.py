@@ -1,5 +1,6 @@
 #Dan Blankenberg
 from optparse import OptionParser
+import sys
 import galaxy_utils.sequence.vcf
 
 from galaxy import eggs
@@ -57,11 +58,14 @@ def main():
     parser.add_option( "-p", "--population", action="store_true", dest="population", default=False, help="Create MAF on a per population basis")
     parser.add_option( "-s", "--sample", action="store_true", dest="sample", default=False, help="Create MAF on a per sample basis")
     parser.add_option( "-n", "--name", dest="name", default='Unknown Custom Track', help="Name for Custom Track")
+    parser.add_option( "-g", "--galaxy", action="store_true", dest="galaxy", default=False, help="Tool is being executed by Galaxy (adds extra error messaging).")
     
 
     ( options, args ) = parser.parse_args()
     
     if len ( args ) < 3:
+        if options.galaxy:
+            print >>sys.stderr, "It appears that you forgot to specify an input VCF file, click 'Add new VCF...' to add at least input.\n"
         parser.error( "Need to specify an output file, a dbkey and at least one input file" )
     
     if not ( options.population ^ options.sample ):
