@@ -17,22 +17,22 @@ var DENSITY = 200,
     RIGHT_STRAND, LEFT_STRAND;
     
 var right_img = new Image();
-right_img.src = "/static/images/visualization/strand_right.png";
+right_img.src = image_path + "/visualization/strand_right.png";
 right_img.onload = function() {
     RIGHT_STRAND = CONTEXT.createPattern(right_img, "repeat");
 };
 var left_img = new Image();
-left_img.src = "/static/images/visualization/strand_left.png";
+left_img.src = image_path + "/visualization/strand_left.png";
 left_img.onload = function() {
     LEFT_STRAND = CONTEXT.createPattern(left_img, "repeat");
 };
 var right_img_inv = new Image();
-right_img_inv.src = "/static/images/visualization/strand_right_inv.png";
+right_img_inv.src = image_path + "/visualization/strand_right_inv.png";
 right_img_inv.onload = function() {
     RIGHT_STRAND_INV = CONTEXT.createPattern(right_img_inv, "repeat");
 };
 var left_img_inv = new Image();
-left_img_inv.src = "/static/images/visualization/strand_left_inv.png";
+left_img_inv.src = image_path + "/visualization/strand_left_inv.png";
 left_img_inv.onload = function() {
     LEFT_STRAND_INV = CONTEXT.createPattern(left_img_inv, "repeat");
 };
@@ -113,8 +113,8 @@ $.extend( View.prototype, {
         if (this.vis_id !== undefined) {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.chrom_form);
         }
-        this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw() }).html('<img src="../images/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);
-        this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw() }).html('<img src="../images/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);;
+        this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw() }).html('<img src="'+image_path+'/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);
+        this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw() }).html('<img src="'+image_path+'/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);;
         
         $.ajax({
             url: chrom_url, 
@@ -230,7 +230,6 @@ $.extend( View.prototype, {
         
         this.add_label_track( new LabelTrack( this, this.top_labeltrack ) );
         this.add_label_track( new LabelTrack( this, this.nav_labeltrack ) );
-        
     },
     move_delta: function(delta_chrom) {
         var view = this;
@@ -296,7 +295,7 @@ $.extend( View.prototype, {
         if (high > this.max_high) {
             high = this.max_high;
         }
-        if (span < this.min_separation) {
+        if (this.high !== 0 && span < this.min_separation) {
             high = low + this.min_separation;
         }
         this.low = Math.floor(low);
