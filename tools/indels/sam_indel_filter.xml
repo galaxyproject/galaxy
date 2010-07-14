@@ -10,7 +10,7 @@
   <inputs>
     <param format="sam" name="input1" type="data" label="Select dataset to filter" />
     <param name="quality_threshold" type="integer" value="40" label="Quality threshold for adjacent bases" help="Takes Phred value assuming Sanger scale; usually between 0 and 40, but up to 93" />
-    <param name="adjacent_bases" type="integer" value="1" label="The number of adjacent bases to match on either side of the indel" help="If one side is shorter than this width, it will still match if the long-enough side matches" />
+    <param name="adjacent_bases" type="integer" value="1" label="The number of adjacent bases to match on either side of the indel" help="If one side is shorter than this width, the read will be excluded" />
   </inputs>
   <outputs>
     <data format="sam" name="out_file1" />
@@ -39,7 +39,7 @@
 
 **What it does**
 
-Allows extracting indels from SAM. Currently it can handle SAM with alignments with only one insertion or one deletion, and will skip that alignment if it encounters one with more than one indel. It matches CIGAR strings (column 6 in the SAM file) like 5M3I5M or 4M2D10M, so there must be a match or mismatch of sufficient length on either side of the indel.
+Allows extracting indels from SAM produced by BWA. Currently it can handle SAM with alignments that have only one insertion or one deletion, and will skip that alignment if it encounters one with more than one indel. It matches CIGAR strings (column 6 in the SAM file) like 5M3I5M or 4M2D10M, so there must be a match or mismatch of sufficient length on either side of the indel.
 
 -----
 
@@ -47,24 +47,24 @@ Allows extracting indels from SAM. Currently it can handle SAM with alignments w
 
 Suppose you have the following::
 
- r770    89  ref        116   37  17M1I5M          =   72131356   0   CACACTGTGACAGACAGCGCAGC   00/02!!0//1200210AA44/1  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r770    89  ref        116   37  17M1I5M          =   72131356   0   CACACTGTGACAGACAGCGCAGC   00/02!!0//1200210AA44/1  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
  r770   181  ref        116    0      24M          =   72131356   0  TTGGTGCGCGCGGTTGAGGGTTGG  $$(#%%#$%#%####$%%##$###
  r1945  177  ref   41710908    0      23M  190342418  181247988   0   AGAGAGAGAGAGAGAGAGAGAGA   SQQWZYURVYWX]]YXTSY]]ZM  XT:A:R  CM:i:0  SM:i:0   AM:i:0  X0:i:163148            XM:i:0  XO:i:0  XG:i:0  MD:Z:23
  r3671  117  ref  190342418    0      24M          =  190342418   0  CTGGCGTTCTCGGCGTGGATGGGT  #####$$##$#%#%%###%$#$##
- r3671  153  ref  190342418   37  16M1I6M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0///////00/!!0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r3671  153  ref  190342418   37  16M1I6M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0///////00/!!0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
  r3824  117  ref   80324999    0      24M          =   80324999   0  TCCAGTCGCGTTGTTAGGTTCGGA  #$#$$$#####%##%%###**#+/
- r3824  153  ref   80324999   37  8M1I14M          =   80324999   0   TTTAGCCCGAAATGCCTAGAGCA   4;6//11!"11100110////00  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r4795   81  ref   26739130    0      23M   57401793   57401793   0   TGGCATTCCTGTAGGCAGAGAGG   AZWWZS]!"QNXZ]VQ]]]/2]]  XT:A:R  CM:i:2  SM:i:0   AM:i:0       X0:i:3    X1:i:0  XM:i:2  XO:i:0  XG:i:0  MD:Z:23
- r4795  161  ref   57401793   37      23M   26739130   26739130   0   GATCACCCAGGTGATGTAACTCC   ]WV]]]]WW]]]]]]]]]]PU]]  XT:A:U  CM:i:0  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:23
- r4800   16  ref        241  255  15M1D8M          *          0   0   CGTGGCCGGCGGGCCGAAGGCAT   IIIIIIIIIICCCCIII?IIIII
- r5377  170  ref   59090793   37      23M   26739130   26739130   0   TATCAATAAGGTGATGTAACTCG   ]WV]ABAWW]]]]]P]P//GU]]  XT:A:U  CM:i:0  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:23
- r5612  151  ref  190342418   37  19M1I3M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0/4//7//00/BC0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r3824  153  ref   80324999   37  8M1I14M          =   80324999   0   TTTAGCCCGAAATGCCTAGAGCA   4;6//11!"11100110////00  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r4795   81  ref   26739130    0      23M   57401793   57401793   0   TGGCATTCCTGTAGGCAGAGAGG   AZWWZS]!"QNXZ]VQ]]]/2]]  XT:A:R  CM:i:2  SM:i:0   AM:i:0  X0:i:3    X1:i:0  XM:i:2  XO:i:0  XG:i:0  MD:Z:23
+ r4795  161  ref   57401793   37      23M   26739130   26739130   0   GATCACCCAGGTGATGTAACTCC   ]WV]]]]WW]]]]]]]]]]PU]]  XT:A:U  CM:i:0  SM:i:37  AM:i:0  X0:i:1    X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:23
+ r4800   16  ref        241  255  15M1D8M          =          0   0   CGTGGCCGGCGGGCCGAAGGCAT   IIIIIIIIIICCCCIII?IIIII  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r5377  170  ref   59090793   37      23M   26739130   26739130   0   TATCAATAAGGTGATGTAACTCG   ]WV]ABAWW]]]]]P]P//GU]]  XT:A:U  CM:i:0  SM:i:37  AM:i:0  X0:i:1    X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:23
+ r5612  151  ref  190342418   37  19M1I3M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0/4//7//00/BC0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
 
 
 To select only alignments with indels, you need to determine the minimum quality you want the adjacent bases to have, as well as the number of adjacent bases to check. If you set the quality threshold to 47 and the number of bases to check to 2, you will get the following output::
 
  r770    89  ref        116   37  17M1I5M          =   72131356   0   CACACTGTGACAGACAGCGCAGC   00/02!!0//1200210AA44/1  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r4800   16  ref        241  255  15M1D8M          *          0   0   CGTGGCCGGCGGGCCGAAGGCAT   IIIIIIIIIICCCCIII?IIIII
+ r4800   16  ref        241  255  15M1D8M          =          0   0   CGTGGCCGGCGGGCCGAAGGCAT   IIIIIIIIIICCCCIII?IIIII  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
  r5612  151  ref  190342418   37  19M1I3M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0/4//7//00/BC0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
 
 

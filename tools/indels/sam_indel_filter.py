@@ -44,8 +44,6 @@ def __main__():
     multi_indel_lines = 0
     # go through all lines in input file
     for i,line in enumerate(open( options.input, 'rb' )):
-        if i > 1000:
-            break
         if line and not line.startswith( '#' ) and not line.startswith( '@' ) :
             split_line = line.split( '\t' )
             cigar = split_line[5]
@@ -58,15 +56,16 @@ def __main__():
                     break
                 else:
                     parts = m.groupdict()
-                    pre_left = 0
-                    if m.start() > 0:
-                        pre_left_groups = pat_matches.search( cigar_copy[ : m.start() ] )
-                        if pre_left_groups:
-                            for pl in pre_left_groups.groups():
-                                if pl.endswith( 'M' ) or pl.endswith( 'S' ) or pl.endswith( 'P' ):
-                                    pre_left += pl[:-1]
-                    parts[ 'pre_left' ] = pre_left
-                    matches.append( parts )
+                    if parts[ 'lmatch' ] and parts[ 'ins_del_width' ] and parts[ 'rmatch' ]:
+                        pre_left = 0
+                        if m.start() > 0:
+                            pre_left_groups = pat_matches.search( cigar_copy[ : m.start() ] )
+                            if pre_left_groups:
+                                for pl in pre_left_groups.groups():
+                                    if pl.endswith( 'M' ) or pl.endswith( 'S' ) or pl.endswith( 'P' ):
+                                        pre_left += pl[:-1]
+                        parts[ 'pre_left' ] = pre_left
+                        matches.append( parts )
                     cigar_copy = cigar_copy[ len( parts[ 'lmatch' ] ) + 1 : ]
             # see if matches meet filter requirements
             if len( matches ) > 1:

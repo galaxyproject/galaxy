@@ -1,0 +1,121 @@
+<tool id="indel_sam2interval" name="Convert SAM to interval/BED" version="1.0.0">
+  <description>for indels</description>
+  <command interpreter="python">
+    indel_sam2interval.py
+      --input=$input1
+      --include_base=$include_base
+      --collapse=$collapse
+      --int_out=$output1
+      #if $ins_out.include_ins_out == "true"
+        --bed_ins_out=$output2
+      #else
+        --bed_ins_out="None"
+      #end if
+      #if $del_out.include_del_out == "true"
+        --bed_del_out=$output3
+      #else
+        --bed_del_out="None"
+      #end if
+  </command>
+  <inputs>
+    <param format="sam" name="input1" type="data" label="Select dataset to convert" />
+    <param name="include_base" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Include the relevant base(s) for each insertion (and a dash (-) for deletions)" />
+    <param name="collapse" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Collapse repeated locations onto single line with counts" />
+    <conditional name="ins_out">
+      <param name="include_ins_out" type="select" label="Include insertions output bed file?">
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </param>
+      <when value="true" />
+      <when value="false" />
+    </conditional>
+    <conditional name="del_out">
+      <param name="include_del_out" type="select" label="Include insertions output bed file?">
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </param>
+      <when value="true" />
+      <when value="false" />
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="interval" name="output1" />
+    <data format="bed" name="output2">
+      <filter>ins_out[ "include_ins_out" ] = "true"</filter>
+    </data>
+    <data format="bed" name="output3">
+      <filter>del_out[ "include_del_out" ] = "true"</filter>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="indel_sam2interval_in1.sam" ftype="sam"/>
+      <param name="include_base" value="true"/>
+      <param name="collapse" value="true"/>
+      <param name="include_ins_out" value="true" />
+      <param name="include_del_out" value="true" />
+      <output name="output1" file="indel_sam2interval_out1.interval" ftype="interval"/>
+      <output name="output2" file="indel_sam2interval_out2.bed" ftype="bed"/>
+      <output name="output3" file="indel_sam2interval_out3.bed" ftype="bed"/>
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+Given a SAM file containing indels, converts these to an interval file with a column indicating whether it is an insertion or a deletion, and then also can create a BED file for each type (one for insertions, one for deletions). The interval file can be combined with other like files to create a table useful for analysis with the Indel Analysis Table tool. The BED files can be useful for visualizing the reads.
+
+-----
+
+**Example**
+
+Suppose you have the following::
+
+ r770    89  ref        116   37  17M1I5M          =   72131356   0   CACACTGTGACAGACAGCGCAGC   00/02!!0//1200210AA44/1  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r780   181  ref       4567    0      24M          =   72131356   0  TTGGTGCGCGCGGTTGAGGGTTGG  $$(#%%#$%#%####$%%##$###  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r1231   69    *          0    0        *          *           0  0  AGACCGGGCGGGGTGGCGTTCGGT  %##+'#######%###$#$##$(#
+ r1563  133    *          0    0        *          *           0  0  GTTCGTGGCCGGTGGGTGTTTGGG  ###$$#$#$&amp;#####$'$#$###$
+ r1945  177  ref      71908    0      23M  190342418  181247988   0   AGAGAGAGAGAGAGAGAGAGAGA   SQQWZYURVYWX]]YXTSY]]ZM  XT:A:R  CM:i:0  SM:i:0   AM:i:0  X0:i:163148            XM:i:0  XO:i:0  XG:i:0  MD:Z:23
+ r3671  117  ref   31903418    0      24M          =  190342418   0  CTGGCGTTCTCGGCGTGGATGGGT  #####$$##$#%#%%###%$#$##  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r3673  153  ref   48819768   37  16M1I6M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0///////00/!!0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r3824  117  ref   80729921    0      24M          =   80324999   0  TCCAGTCGCGTTGTTAGGTTCGGA  #$#$$$#####%##%%###**#+/  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r3911  153  ref   87824718   37  8M1I14M          =   80324999   0   TTTAGCCCGAAATGCCTAGAGCA   4;6//11!"11100110////00  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r4795   81  ref  126739130    0      23M   57401793   57401793   0   TGGCATTCCTGTAGGCAGAGAGG   AZWWZS]!"QNXZ]VQ]]]/2]]  XT:A:R  CM:i:2  SM:i:0   AM:i:0       X0:i:3    X1:i:0  XM:i:2  XO:i:0  XG:i:0  MD:Z:23
+ r4797  161  ref   57401793   37      23M   26739130   26739130   0   GATCACCCAGGTGATGTAACTCC   ]WV]]]]WW]]]]]]]]]]PU]]  XT:A:U  CM:i:0  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:23
+ r4800   16  ref        241  255  15M2D8M          =       1550   0   CGTGGCCGGCGGGCCGAAGGCAT   IIIIIIIIIICCCCIII?IIIII  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r5377  170  ref   52090793   37      23M   26739130   26739130   0   TATCAATAAGGTGATGTAACTCG   ]WV]ABAWW]]]]]P]P//GU]]  XT:A:U  CM:i:0  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:23
+ r5612  151  ref  190341152   37  19M1D4M          =  190342418   0  TCTAACTTAGCCTCATAATGCTAA   /&lt;&lt;!"0/4/*/7//00/BC0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r5623  151  ref  188841418   37  19M1I3M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0/4//7//00/BC0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
+ r7899   69     *          0    0        *          *          0   0  CTGCGTGTTGGTGTCTACTGGGGT  #%#'##$#$##&amp;%#%$$$%#%#'#
+ r9192  133     *          0    0        *          *          0   0  GTGCGTCGGGGAGGGTGCTGTCGG  ######%#$%#$$###($###&amp;&amp;%
+
+
+The following three files will be produced (Interval, Insertions BED and Deletions BED)::
+
+ ref         133         134   I   C   1
+ ref         256         258   D   -   1
+ ref    48819784    48819785   I   A   1
+ ref    87824726    87824727   I   G   1
+ ref   188841437   188841419   I   T   1
+ ref   190341171   190341172   D   -   1
+
+ ref         133         134
+ ref    48819784    48819785
+ ref    87824726    87824727
+ ref   188841437   188841419
+
+ ref         256         258
+ ref   190341171   190341172
+
+
+
+
+
+
+For more information on SAM, please consult the `SAM format description`__.
+
+.. __: http://www.ncbi.nlm.nih.gov/pubmed/19505943
+
+
+  </help>
+</tool>

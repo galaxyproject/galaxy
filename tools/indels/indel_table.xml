@@ -1,0 +1,122 @@
+<tool id="indel_table" name="Indel Analysis Table" version="1.0.0">
+  <description>for combining indel interval data</description>
+  <command interpreter="python">
+    indel_table.py
+      --input1=$input1
+      --sum1=$sum1
+      --input2=$input2
+      --sum2=$sum2
+      --output=$output1
+      #for $i in $inputs
+        ${i.input}
+        ${i.sum}
+      #end for
+  </command>
+  <inputs>
+    <param format="interval" name="input1" type="data" label="Select first file to add" />
+    <param name="sum1" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Include first file's totals in overall total" />
+    <param format="interval" name="input2" type="data" label="Select second file to add" />
+    <param name="sum2" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Include second file's totals in overall total" />
+    <repeat name="inputs" title="Input Files">
+      <param name="input" label="Add file" type="data" format="interval" />
+      <param name="sum" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Include file's totals in overall total" />
+    </repeat>
+  </inputs>
+  <outputs>
+    <data format="interval" name="output1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="indel_table_in1.interval" ftype="interval" />
+      <param name="sum1" value="true"/>
+      <param name="input2" value="indel_table_in2.interval" ftype="interval" />
+      <param name="sum2" value="true" />
+      <param name="input" value="indel_table_in3.interval" ftype="interval" />
+      <param name="sum" value="true" />
+      <output name="output1" file="indel_table_out1.interval" ftype="interval" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+Creates a table allowing for analysis and comparison of indel data. Combines any number of interval files that have been produced by the tool that converts indel SAM data to interval format. Includes overall total counts for all or some files. The tool has the option to not include a given file's counts in the total column. This could be useful for combined data if the counts for certain indels might be included more than once.
+
+The exact columns of the output will depend on the columns of the input. Here is the detailed specification of the output columns::
+
+                          Column  Description
+ -------------------------------  ----------------------------------------------------------------------------------
+  1 ... m                "Indel"  All the "indel" columns, which contain the info that will be checked for equality
+  m + 1        Total Occurrences  Total number of occurrences of this indel across all (included) files
+  m + 2   Occurrences for File 1  Number of occurrences of this indel for first file
+  m + 3   Occurrences for File 2  Number of occurrences of this indel for second file
+  [m + ...]                [...]  [Number of occurrences of this indel for ... file]
+
+The most likely columns would be from the output of the Convert SAM to Interval/BED tool, so: Chromosome, Start position, End position, I/D (Insertion/Deletion), -/&lt;base(s)&gt; (Deletion/Inserted base(s)), Total Occurrences (across files), Occurrences for File 1, Occurrences for File 2, etc. See below for an example.
+
+
+-----
+
+**Example**
+
+Suppose you have the following 4 files::
+
+ chrM    300    301   D   -    6
+ chrM    303    304   D   -   19
+ chrM    359    360   D   -    1
+ chrM    410    411   D   -    1
+ chrM    435    436   D   -    1
+
+ chrM    410    411   D   -    1
+ chrM    714    715   D   -    1
+ chrM    995    997   D   -    1
+ chrM   1168   1169   I   A    1
+ chrM   1296   1297   D   -    1
+
+ chrM    300    301   D   -    8
+ chrM    525    526   D   -    1
+ chrM    958    959   D   -    1
+ chrM    995    996   D   -    3
+ chrM   1168   1169   I   C    1
+ chrM   1296   1297   D   -    1
+
+ chrM    303    304   D   -   22
+ chrM    410    411   D   -    1
+ chrM    435    436   D   -    1
+ chrM    714    715   D   -    1
+ chrM    753    754   I   A    1
+ chrM   1168   1169   I   A    1
+
+and the fifth file::
+
+ chrM    303    304   D   -   22
+ chrM    410    411   D   -    2
+ chrM    435    436   D   -    1
+ chrM    714    715   D   -    2
+ chrM    753    754   I   A    1
+ chrM    995    997   D   -    1
+ chrM   1168   1169   I   A    2
+ chrM   1296   1297   D   -    1
+
+The following will be produced if you include the first four files in the sum, but not the fifth::
+
+ chrM    300    301   D   -   14    6   0   8    0    0
+ chrM    303    304   D   -   41   19   0   0   22   22
+ chrM    359    360   D   -    1    1   0   0    0    0
+ chrM    410    411   D   -    3    1   1   0    1    2
+ chrM    435    436   D   -    2    1   0   0    1    2
+ chrM    525    526   D   -    1    0   0   1    0    0
+ chrM    714    715   D   -    2    0   1   0    1    2
+ chrM    753    754   I   A    1    0   0   0    1    1
+ chrM    958    959   D   -    1    0   0   1    0    0
+ chrM    995    996   D   -    3    0   0   3    0    0
+ chrM    995    997   D   -    1    0   1   0    0    1
+ chrM   1168   1169   I   A    2    0   1   0    1    2
+ chrM   1168   1169   I   C    1    0   0   1    0    0
+ chrM   1296   1297   D   -    2    0   1   1    0    1
+
+The first numeric column includes the total or the next four columns, but not the fifth.
+
+
+  </help>
+</tool>

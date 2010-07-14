@@ -3,7 +3,7 @@
   <section name="Get Data" id="getext">
     <tool file="data_source/upload.xml"/>
     <tool file="data_source/ucsc_tablebrowser.xml" />
-    <tool file="data_source/ucsc_tablebrowser_test.xml" /> 
+    <tool file="data_source/ucsc_tablebrowser_test.xml" />
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
     <tool file="data_source/bx_browser.xml" />
     <tool file="data_source/microbial_import.xml" />
@@ -23,7 +23,7 @@
     <tool file="data_source/encode_db.xml" />
     <tool file="data_source/epigraph_import.xml" />
     <tool file="data_source/epigraph_import_test.xml" />
-    <tool file="data_source/hbvar.xml" /> 
+    <tool file="data_source/hbvar.xml" />
     <tool file="validation/fix_errors.xml" />
   </section>
   <section name="Send Data" id="send">
@@ -112,7 +112,7 @@
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
-    <tool file="new_operations/intersect.xml" />  
+    <tool file="new_operations/intersect.xml" />
     <tool file="new_operations/subtract.xml" />
     <tool file="new_operations/merge.xml" />
     <tool file="new_operations/concat.xml" />
@@ -213,7 +213,7 @@
         <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
         <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
         <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
-        <tool file="metag_tools/split_paired_reads.xml" 
+        <tool file="metag_tools/split_paired_reads.xml"
         <tool file="fastx_toolkit/fastq_to_fasta.xml" />
     -->
     <label text="Roche-454 data" id="454" />
@@ -255,6 +255,12 @@
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="sr_mapping/PerM.xml" />
   </section>
+  <section name="NGS: Indel Analysis" id="indel_analysis">
+   <tool file="indels/sam_indel_filter.xml" />
+   <tool file="indels/indel_sam2interval.xml" />
+   <tool file="indels/indel_table.xml" />"
+   <tool file="indels/indel_analysis.xml" />
+  </section>
   <section name="NGS: Expression Analysis" id="ngs-rna-tools">
    <label text="RNA-seq" id="rna_seq" />
       <tool file="ngs_rna/tophat_wrapper.xml" />
@@ -267,7 +273,6 @@
   </section>
   <section name="NGS: SAM Tools" id="samtools">
    <tool file="samtools/sam_bitwise_flag_filter.xml" />
-   <tool file="samtools/sam_indel_filter.xml" />
    <tool file="samtools/sam2interval.xml" />
    <tool file="samtools/sam_to_bam.xml" />
    <tool file="samtools/sam_merge.xml" />
@@ -309,12 +314,12 @@
     <tool file="rgenetics/rgManQQ.xml"/>
   </section>
 <!--
-  TODO: uncomment the following EMBOSS section whenever 
-  moving to test, but comment it in .sample to eliminate 
-  it from buildbot functional tests since these tools 
+  TODO: uncomment the following EMBOSS section whenever
+  moving to test, but comment it in .sample to eliminate
+  it from buildbot functional tests since these tools
   rarely change.
 -->
-<!-- 
+<!--
   <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss_5/emboss_antigenic.xml" />
     <tool file="emboss_5/emboss_backtranseq.xml" />
@@ -329,13 +334,13 @@
     <tool file="emboss_5/emboss_chips.xml" />
     <tool file="emboss_5/emboss_cirdna.xml" />
     <tool file="emboss_5/emboss_codcmp.xml" />
-    <tool file="emboss_5/emboss_coderet.xml" /> 
+    <tool file="emboss_5/emboss_coderet.xml" />
     <tool file="emboss_5/emboss_compseq.xml" />
-    <tool file="emboss_5/emboss_cpgplot.xml" /> 
+    <tool file="emboss_5/emboss_cpgplot.xml" />
     <tool file="emboss_5/emboss_cpgreport.xml" />
     <tool file="emboss_5/emboss_cusp.xml" />
     <tool file="emboss_5/emboss_cutseq.xml" />
-    <tool file="emboss_5/emboss_dan.xml" /> 
+    <tool file="emboss_5/emboss_dan.xml" />
     <tool file="emboss_5/emboss_degapseq.xml" />
     <tool file="emboss_5/emboss_descseq.xml" />
     <tool file="emboss_5/emboss_diffseq.xml" />
@@ -351,7 +356,7 @@
     <tool file="emboss_5/emboss_etandem.xml" />
     <tool file="emboss_5/emboss_extractfeat.xml" />
     <tool file="emboss_5/emboss_extractseq.xml" />
-    <tool file="emboss_5/emboss_freak.xml" /> 
+    <tool file="emboss_5/emboss_freak.xml" />
     <tool file="emboss_5/emboss_fuzznuc.xml" />
     <tool file="emboss_5/emboss_fuzzpro.xml" />
     <tool file="emboss_5/emboss_fuzztran.xml" />
@@ -372,7 +377,7 @@
     <tool file="emboss_5/emboss_merger.xml" />
     <tool file="emboss_5/emboss_msbar.xml" />
     <tool file="emboss_5/emboss_needle.xml" />
-    <tool file="emboss_5/emboss_newcpgreport.xml" /> 
+    <tool file="emboss_5/emboss_newcpgreport.xml" />
     <tool file="emboss_5/emboss_newcpgseek.xml" />
     <tool file="emboss_5/emboss_newseq.xml" />
     <tool file="emboss_5/emboss_noreturn.xml" />
@@ -400,7 +405,7 @@
     <tool file="emboss_5/emboss_revseq.xml" />
     <tool file="emboss_5/emboss_seqmatchall.xml" />
     <tool file="emboss_5/emboss_seqret.xml" />
-    <tool file="emboss_5/emboss_showfeat.xml" /> 
+    <tool file="emboss_5/emboss_showfeat.xml" />
     <tool file="emboss_5/emboss_shuffleseq.xml" />
     <tool file="emboss_5/emboss_sigcleave.xml" />
     <tool file="emboss_5/emboss_sirna.xml" />
@@ -422,7 +427,7 @@
     <tool file="emboss_5/emboss_water.xml" />
     <tool file="emboss_5/emboss_wobble.xml" />
     <tool file="emboss_5/emboss_wordcount.xml" />
-    <tool file="emboss_5/emboss_wordmatch.xml" /> 
-  </section> 
+    <tool file="emboss_5/emboss_wordmatch.xml" />
+  </section>
 -->
 </toolbox>
