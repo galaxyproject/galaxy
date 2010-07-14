@@ -614,6 +614,11 @@ class Tool:
                 group.name = elem.get( "name" )
                 group.title = elem.get( "title" ) 
                 group.inputs = self.parse_input_elem( elem, enctypes, context )
+                group.default = int( elem.get( "default", 0 ) )
+                group.min = int( elem.get( "min", 0 ) )
+                group.max = float( elem.get( "max", "inf" ) ) #use float instead of int so that 'inf' can be used for no max
+                assert group.min <= group.max, ValueError( "Min repeat count must be less-than-or-equal to the max." )
+                group.default = min( max( group.default, group.min ), group.max ) #force default to be within min-max range
                 rval[group.name] = group
             elif elem.tag == "conditional":
                 group = Conditional()
@@ -914,7 +919,7 @@ class Tool:
             key = prefix + input.name
             if isinstance( input, Repeat ):
                 group_state = state[input.name]
-                group_errors = []
+                group_errors = [ {} for i in range( len( group_state ) ) ] #create list of empty errors for each previously existing state
                 group_old_errors = old_errors.get( input.name, None )
                 any_group_errors = False
                 # Check any removals before updating state -- only one
@@ -922,10 +927,16 @@ class Tool:
                 for i, rep_state in enumerate( group_state ):
                     rep_index = rep_state['__index__']
                     if key + "_" + str(rep_index) + "_remove" in incoming:
-                        del group_state[i]
-                        if group_old_errors:
-                            del group_old_errors[i]
-                        break
+                        if len( group_state ) > input.min:
+                            del group_state[i]
+                            del group_errors[i]
+                            if group_old_errors:
+                                del group_old_errors[i]
+                            break
+                        else:
+                            group_errors[i] = { '__index__': 'Cannot remove repeat (min size=%i).' % input.min }
+                            any_group_errors = True
+                            break #only need to find one that can't be removed due to size, since only one removal is processed at a time anyway
                 # Update state
                 max_index = -1
                 for i, rep_state in enumerate( group_state ):
@@ -947,17 +958,18 @@ class Tool:
                                                     item_callback=item_callback )
                     if rep_errors:
                         any_group_errors = True
-                        group_errors.append( rep_errors )
-                    else:
-                        group_errors.append( {} )
+                        group_errors[i].update( rep_errors )
                 # Check for addition
                 if key + "_add" in incoming:
-                    new_state = {}
-                    new_state['__index__'] = max_index + 1
-                    self.fill_in_new_state( trans, input.inputs, new_state, context )
-                    group_state.append( new_state )
-                    if any_group_errors:
+                    if len( group_state ) < input.max:
+                        new_state = {}
+                        new_state['__index__'] = max_index + 1
+                        self.fill_in_new_state( trans, input.inputs, new_state, context )
+                        group_state.append( new_state )
                         group_errors.append( {} )
+                    else:
+                        group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
+                        any_group_errors = True
                 # Were there *any* errors for any repetition?
                 if any_group_errors:
                     errors[input.name] = group_errors

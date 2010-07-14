@@ -41,6 +41,9 @@ class Repeat( Group ):
         Group.__init__( self )
         self.title = None
         self.inputs = None
+        self.default = 0
+        self.min = None
+        self.max = None
     @property
     def title_plural( self ):
         if self.title.endswith( "s" ):
@@ -87,7 +90,13 @@ class Repeat( Group ):
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
     def get_initial_value( self, trans, context ):
-        return []
+        rval = []
+        for i in range( self.default ):
+            rval_dict = { '__index__': i}
+            for input in self.inputs.itervalues():
+                rval_dict[ input.name ] = input.get_initial_value( trans, context )
+            rval.append( rval_dict )
+        return rval
 
 class UploadDataset( Group ):
     type = "upload_dataset"

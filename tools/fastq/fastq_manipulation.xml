@@ -7,7 +7,7 @@
     <page>
       <param name="input_file" type="data" format="fastqsanger,fastqcssanger" label="FASTQ File" help="Requires groomed data: if your data does not appear here try using the FASTQ groomer."/>
       <!-- Match Reads -->
-      <repeat name="match_blocks" title="Match Reads" min="1">
+      <repeat name="match_blocks" title="Match Reads">
         <conditional name="match_type">
           <param name="match_type_selector" type="select" label="Match Reads by">
             <option value="identifier">Name/Identifier</option>
@@ -47,7 +47,7 @@
         </conditional>
       </repeat>
       <!-- Manipulate Matched Reads -->
-      <repeat name="manipulate_blocks" title="Manipulate Reads" min="1">
+      <repeat name="manipulate_blocks" title="Manipulate Reads">
         <conditional name="manipulation_type">
           <param name="manipulation_type_selector" type="select" label="Manipulate Reads on">
             <option value="identifier">Name/Identifier</option>
