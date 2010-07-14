@@ -772,6 +772,10 @@ class Gff( Tabular, _RemoteCallMixin ):
             return True
         except:
             return False
+            
+    def get_track_type( self ):
+        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree"}
+            
 
 class Gff3( Gff ):
     """Tab delimited data in Gff3 format"""
