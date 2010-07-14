@@ -246,7 +246,7 @@ class GalaxyRBACAgent( RBACAgent ):
         elif type( item ) == self.model.LibraryFolder:
             return self.can_access_library( roles, item.parent_library ) and self.check_folder_contents( user, roles, item )[0]
         elif type( item ) == self.model.LibraryDataset:
-            return self.can_acess_library( roles, item.folder.parent_library ) and self.can_access_dataset( roles, item.library_dataset_dataset_association.dataset )
+            return self.can_access_library( roles, item.folder.parent_library ) and self.can_access_dataset( roles, item.library_dataset_dataset_association.dataset )
         elif type( item ) == self.model.LibraryDatasetDatasetAssociation:
             return self.can_access_library( roles, item.library_dataset.folder.parent_library ) and self.can_access_dataset( roles, item.dataset )
         else:

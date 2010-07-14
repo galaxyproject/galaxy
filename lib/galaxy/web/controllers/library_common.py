@@ -1395,7 +1395,7 @@ class LibraryCommon( BaseController ):
                         else:
                             # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                             # to check one of them to see if the current user can manage permissions on them.
-                            check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id_list[0] ) )
+                            check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id_list[0] )
                             if trans.app.security_agent.can_manage_library_item( current_user_roles, check_ldda ):
                                 if replace_dataset:
                                     default_action = ''
@@ -1526,7 +1526,7 @@ class LibraryCommon( BaseController ):
         if params.get( 'edit_attributes_button', False ):
             # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
             if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ) ):
-                message = "You are not authorized to modify library dataset '%s'." % ldda.name
+                message = "You are not authorized to modify library dataset '%s'." % library_dataset.name
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='browse_library',
                                                                   id=library_id,
@@ -1615,7 +1615,7 @@ class LibraryCommon( BaseController ):
             trans.sa_session.refresh( library_dataset.library_dataset_dataset_association )
             message = "Permisisons updated for library dataset '%s'." % library_dataset.name
             status = 'done'
-        roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
+        roles = trans.app.security_agent.get_legitimate_roles( trans, library_dataset, cntrller )
         return trans.fill_template( '/library/common/library_dataset_permissions.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
@@ -1768,7 +1768,7 @@ class LibraryCommon( BaseController ):
                     outext = 'tbz2'
                 elif action == 'ngxzip':
                     archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
-            except (OSError, zipfile.BadZipFile):
+            except (OSError, zipfile.BadZipfile):
                 error = True
                 log.exception( "Unable to create archive for download" )
                 message = "Unable to create archive for download, please report this error"
@@ -2279,7 +2279,7 @@ class LibraryCommon( BaseController ):
             if not library_item or not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, library_item, trans.user ) ):
                 message = 'Invalid %s id ( %s ) specifield.' % ( item_desc, item_id )
                 status = 'error'
-            elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_item ) ):
                 message = "You are not authorized to delete %s '%s'." % ( item_desc, library_item.name )
                 status = 'error'
             else:
@@ -2328,7 +2328,7 @@ class LibraryCommon( BaseController ):
             elif library_item.purged:
                 message = '%s %s has been purged, so it cannot be undeleted' % ( item_desc, library_item.name )
                 status = ERROR
-            elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            elif not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_item ) ):
                 message = "You are not authorized to delete %s '%s'." % ( item_desc, library_item.name )
                 status = 'error'
             else:
