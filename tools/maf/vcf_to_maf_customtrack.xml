@@ -23,13 +23,13 @@
         <option value="-s">Per Sample</option>
       </param>
       <when value="-p">
-        <repeat name="vcf_file" title="VCF population file">
+        <repeat name="vcf_file" title="VCF population file" min="1">
           <param format="tabular" name="vcf_input" type="data" label="VCF file"/>
           <param name="population_name" type="text" label="Name for this population" value=""/>
         </repeat>
       </when>
       <when value="-s">
-        <repeat name="vcf_file" title="VCF sample file">
+        <repeat name="vcf_file" title="VCF sample file" min="1">
           <param format="tabular" name="vcf_input" type="data" label="VCF file"/>
           <!-- add column count validator >= 8? -->
         </repeat>
