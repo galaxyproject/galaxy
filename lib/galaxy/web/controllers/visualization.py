@@ -373,13 +373,12 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 visualization_slug_err = "Visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
             elif visualization_slug != visualization.slug and trans.sa_session.query( model.Visualization ).filter_by( user=user, slug=visualization_slug, deleted=False ).first():
                 visualization_slug_err = "Visualization id must be unique"
-            elif not visualization_annotation:
-                visualization_annotation_err = "Visualization annotation is required"
             else:
                 visualization.title = visualization_title
                 visualization.slug = visualization_slug
-                visualization_annotation = sanitize_html( visualization_annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans, visualization, visualization_annotation )
+                if visualization_annotation != "":
+                    visualization_annotation = sanitize_html( visualization_annotation, 'utf-8', 'text/html' )
+                    self.add_item_annotation( trans, visualization, visualization_annotation )
                 session.flush()
                 # Redirect to visualization list.
                 return trans.response.send_redirect( web.url_for( action='list' ) )
