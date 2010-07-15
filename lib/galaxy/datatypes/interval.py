@@ -54,10 +54,8 @@ class Interval( Tabular ):
         """Initialize interval datatype, by adding UCSC display apps"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
-    
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
-    
     def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
@@ -76,9 +74,8 @@ class Interval( Tabular ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
     def set_meta( self, dataset, overwrite = True, first_line_is_header = False, **kwd ):
-        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 0 )
-        
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
+        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 0 )
         if dataset.has_data():
             empty_line_count = 0
             num_check_lines = 100 # only check up to this many non empty lines
@@ -138,11 +135,20 @@ class Interval( Tabular ):
                             break # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
                 else:
                     empty_line_count += 1
-    
-
+    def displayable( self, dataset ):
+        try:
+            return dataset.has_data() \
+                and dataset.state == dataset.states.OK \
+                and dataset.metadata.columns > 0 \
+                and dataset.metadata.data_lines > 0 \
+                and dataset.metadata.chromCol \
+                and dataset.metadata.startCol \
+                and dataset.metadata.endCol
+        except:
+            return False
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
-        if dataset.has_data() and dataset.state == dataset.states.OK:
+        if self.displayable( dataset ):
             try:
                 c, s, e = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol
                 c, s, e = int(c)-1, int(s)-1, int(e)-1
@@ -156,20 +162,17 @@ class Interval( Tabular ):
                         peek.append( line.rstrip( '\n\r' ).split() )
                         if idx > 100 and idx > skipme: # viewport should have at least 100 features
                             break
-
                 chr, start, stop = peek[skipme][c], int( peek[skipme][s] ), int( peek[skipme][e] )
-                
                 for p in peek[(skipme+1):]:
                     if p[0] == chr:
                         start = min( start, int( p[s] ) )
                         stop  = max( stop, int( p[e] ) )
             except Exception, exc:
-                log.error( 'Viewport generation error -> %s ' % str(exc) )
-                (chr, start, stop) = 'chr1', 1, 1000
+                log.exception( str(exc) )
+                return ( None, None, None )
             return (chr, str( start ), str( stop )) 
         else:
-            return ('', '', '')
-
+            return ( None, None, None )
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data"""
         fd, temp_name = tempfile.mkstemp()
@@ -195,7 +198,6 @@ class Interval( Tabular ):
                 os.write(fd, '%s\n' % '\t'.join(tmp) )    
         os.close(fd)
         return open(temp_name)
-
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -223,30 +225,24 @@ class Interval( Tabular ):
         except Exception, exc:
             out = "Can't create peek %s" % str( exc )
         return out
-
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
-        if dataset.has_data:
-            viewport_tuple = self.get_estimated_display_viewport(dataset)
-            if viewport_tuple:
-                chrom = viewport_tuple[0]
-                start = viewport_tuple[1]
-                stop = viewport_tuple[2]
-                for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
-                    if site_name in app.config.ucsc_display_sites:
-                        # HACK: UCSC doesn't support https, so force http even
-                        # if our URL scheme is https.  Making this work
-                        # requires additional hackery in your upstream proxy.
-                        # If UCSC ever supports https, remove this hack.
-                        internal_url = "%s" % url_for( controller='/dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
-                        if base_url.startswith( 'https://' ):
-                            base_url = base_url.replace( 'https', 'http', 1 )
-                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
-                        redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )
-                        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
-                        ret_val.append( (site_name, link) )
+        chrom, start, stop = self.get_estimated_display_viewport( dataset )
+        if chrom is not None:
+            for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
+                if site_name in app.config.ucsc_display_sites:
+                    # HACK: UCSC doesn't support https, so force http even
+                    # if our URL scheme is https.  Making this work
+                    # requires additional hackery in your upstream proxy.
+                    # If UCSC ever supports https, remove this hack.
+                    internal_url = "%s" % url_for( controller='/dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
+                    if base_url.startswith( 'https://' ):
+                        base_url = base_url.replace( 'https', 'http', 1 )
+                    display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
+                    redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )
+                    link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
+                    ret_val.append( (site_name, link) )
         return ret_val
-
     def validate( self, dataset ):
         """Validate an interval file using the bx GenomicIntervalReader"""
         errors = list()
@@ -344,7 +340,7 @@ class BedGraph( Interval ):
         """
             Set viewport based on dataset's first 100 lines.
         """
-        if dataset.has_data() and dataset.state == dataset.states.OK:
+        if self.displayable( dataset ):
             try:
                 # Set seqid, start, stop.
                 seqid = None
@@ -379,9 +375,10 @@ class BedGraph( Interval ):
                 if stop == 0:
                     stop = 1
                 return ( seqid, str( start ), str( stop ) )
-            except:
-                return( '', '', '' )
-        return( '', '', '' )
+            except Exception, exc:
+                log.exception( str( exc ) )
+                return ( None, None, None )
+        return ( None, None, None )
 
 class Bed( Interval ):
     """Tab delimited data in BED format"""
@@ -647,7 +644,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
         formats.  This function should correctly handle both...
         """
-        if dataset.has_data() and dataset.state == dataset.states.OK:
+        if self.displayable( dataset ):
             try:
                 seqid = ''
                 start = 2147483647  # Maximum value of a signed 32 bit integer ( 2**31 - 1 )
@@ -698,39 +695,33 @@ class Gff( Tabular, _RemoteCallMixin ):
                         break
             except Exception, e:
                 log.exception( str( e ) )
-                seqid, start, stop = ( '', '', '' ) 
+                return ( None, None, None )
             return ( seqid, str( start ), str( stop ) )
         else:
-            return ( '', '', '' )
+            return ( None, None, None )
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
-        if dataset.has_data:
-            seqid, start, stop = self.get_estimated_display_viewport( dataset )
-            if seqid and start and stop:
-                for site_name, site_url in util.get_ucsc_by_build( dataset.dbkey ):
-                    if site_name in app.config.ucsc_display_sites:
-                        redirect_url = urllib.quote_plus(
-                                "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
-                                ( site_url, dataset.dbkey, seqid, start, stop ) )
-                        link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
-                        ret_val.append( ( site_name, link ) )
+        seqid, start, stop = self.get_estimated_display_viewport( dataset )
+        if seqid is not None:
+            for site_name, site_url in util.get_ucsc_by_build( dataset.dbkey ):
+                if site_name in app.config.ucsc_display_sites:
+                    redirect_url = urllib.quote_plus(
+                            "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
+                            ( site_url, dataset.dbkey, seqid, start, stop ) )
+                    link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
+                    ret_val.append( ( site_name, link ) )
         return ret_val
-
     def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
-        if dataset.has_data:
-            viewport_tuple = self.get_estimated_display_viewport( dataset )
-            seqid = viewport_tuple[0]
-            start = viewport_tuple[1]
-            stop = viewport_tuple[2]
-            if seqid and start and stop:
-                for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
-                    if site_name in app.config.gbrowse_display_sites:
-                        # Old method, the one uncommented below now seems to be the way GBrowse wants the request
-                        # redirect_url = urllib.quote_plus( "%s%s/?ref=%s&start=%s&stop=%s&eurl=%%s" % ( site_url, dataset.dbkey, seqid, start, stop ) )
-                        redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s" % ( site_url, seqid, start, stop ) )
-                        link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
-                        ret_val.append( ( site_name, link ) )
+        seqid, start, stop = self.get_estimated_display_viewport( dataset )
+        if seqid is not None:
+            for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
+                if site_name in app.config.gbrowse_display_sites:
+                    # Old method, the one uncommented below now seems to be the way GBrowse wants the request
+                    # redirect_url = urllib.quote_plus( "%s%s/?ref=%s&start=%s&stop=%s&eurl=%%s" % ( site_url, dataset.dbkey, seqid, start, stop ) )
+                    redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s" % ( site_url, seqid, start, stop ) )
+                    link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
+                    ret_val.append( ( site_name, link ) )
         return ret_val
     def sniff( self, filename ):
         """
@@ -974,53 +965,45 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         self.add_display_app( 'gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
     def get_estimated_display_viewport( self, dataset ):
-        num_check_lines = 100 # only check up to this many non empty lines
-        vstart = None
-        vend = 0
-        vwig_chr = '?'
-        value = None
-        for i, line in enumerate( file( dataset.file_name ) ):
-            line = line.rstrip( '\r\n' )
-            if line:
-                if line.startswith( "browser" ):
-                    chr_info = line.split()[-1]
-                    wig_chr, coords = chr_info.split( ":" )
-                    start, end = coords.split( "-" )
-                    value = ( wig_chr, start, end )
+        if self.displayable( dataset ):
+            num_check_lines = 100 # only check up to this many non empty lines
+            vstart = None
+            vend = 0
+            vwig_chr = '?'
+            value = None
+            for i, line in enumerate( file( dataset.file_name ) ):
+                line = line.rstrip( '\r\n' )
+                if line:
+                    if line.startswith( "browser" ):
+                        chr_info = line.split()[-1]
+                        wig_chr, coords = chr_info.split( ":" )
+                        start, end = coords.split( "-" )
+                        value = ( wig_chr, start, end )
+                        break
+                    # variableStep chrom=chr20
+                    if line and (line.lower().startswith( "variablestep" ) or line.lower().startswith( "fixedstep" )):
+                        c = line.split("chr")[-1]
+                        c = c.split()[0]
+                        vwig_chr = 'chr%s' % c
+                    else:
+                        try:
+                            offset = line.split()[0]
+                            offset = int(offset)
+                            vend = max(vend,offset)
+                            if not vstart:
+                                vstart = offset # first
+                        except:
+                            pass                    
+                if i > num_check_lines:
                     break
-                # variableStep chrom=chr20
-                if line and (line.lower().startswith( "variablestep" ) or line.lower().startswith( "fixedstep" )):
-		    c = line.split("chr")[-1]
-                    c = c.split()[0]
-                    vwig_chr = 'chr%s' % c
-                else:
-                    try:
-		        offset = line.split()[0]
-                        offset = int(offset)
-                        vend = max(vend,offset)
-                        if not vstart:
-			    vstart = offset # first
-                    except:
-		         pass                    
-            if i > num_check_lines:
-                break
-        if value == None:
-	    value = (vwig_chr, vstart, vend)
-        return value
-
-    def _get_viewer_range( self, dataset ):
-        """Retrieve the chromosome, start, end for an external viewer."""
-        if dataset.has_data:
-            viewport_tuple = self.get_estimated_display_viewport( dataset )
-            if viewport_tuple:
-                chrom = viewport_tuple[0]
-                start = viewport_tuple[1]
-                stop = viewport_tuple[2]
-                return ( chrom, start, stop )
-        return ( None, None, None )
+            if value == None:
+                value = (vwig_chr, vstart, vend)
+            return value
+        else:
+            return ( None, None, None )
     def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
-        chrom, start, stop = self._get_viewer_range( dataset )
+        chrom, start, stop = self.get_estimated_display_viewport( dataset )
         if chrom is not None:
             for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
                 if site_name in app.config.gbrowse_display_sites:
@@ -1030,7 +1013,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         return ret_val
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
-        chrom, start, stop = self._get_viewer_range( dataset )
+        chrom, start, stop = self.get_estimated_display_viewport( dataset )
         if chrom is not None:
             for site_name, site_url in util.get_ucsc_by_build( dataset.dbkey ):
                 if site_name in app.config.ucsc_display_sites:
@@ -1137,59 +1120,56 @@ class CustomTrack ( Tabular ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
     def get_estimated_display_viewport( self, dataset ):
-        try:
-            wiggle_format = False
-            for line in open(dataset.file_name):
-                if (line.startswith("chr") or line.startswith("scaffold")):  
-                    line = line.rstrip( '\n\r' )
-                    start = line.split("\t")[1].replace(",","")   
-                    end = line.split("\t")[2].replace(",","")
-
-                    if int(start) < int(end):
-                        value = ( line.split("\t")[0], start, end )
-                    else:
-                        value = ( line.split("\t")[0], end, start )
-
-                    break
-
-                elif (line.startswith('variableStep')):
-                    # wiggle format
-                    wiggle_format = True
-                    wig_chr = line.split()[1].split('=')[1]
-                    if not wig_chr.startswith("chr"):
-                        value = ('', '', '')
+        if self.displayable( dataset ):
+            try:
+                wiggle_format = False
+                for line in open(dataset.file_name):
+                    if (line.startswith("chr") or line.startswith("scaffold")):  
+                        line = line.rstrip( '\n\r' )
+                        start = line.split("\t")[1].replace(",","")   
+                        end = line.split("\t")[2].replace(",","")
+    
+                        if int(start) < int(end):
+                            value = ( line.split("\t")[0], start, end )
+                        else:
+                            value = ( line.split("\t")[0], end, start )
+    
                         break
-                elif wiggle_format:
-                    # wiggle format
-                    if line.split("\t")[0].isdigit():
-                        start = line.split("\t")[0]
-                        end = str(int(start) + 1)
-                        value = (wig_chr, start, end)
-                    else:
-                        value = (wig_chr, '', '')
-                    break
-                            
-            return value #returns the co-ordinates of the 1st track/dataset
-        except:
-            #return "."
-            return ('', '', '')
+    
+                    elif (line.startswith('variableStep')):
+                        # wiggle format
+                        wiggle_format = True
+                        wig_chr = line.split()[1].split('=')[1]
+                        if not wig_chr.startswith("chr"):
+                            value = ('', '', '')
+                            break
+                    elif wiggle_format:
+                        # wiggle format
+                        if line.split("\t")[0].isdigit():
+                            start = line.split("\t")[0]
+                            end = str(int(start) + 1)
+                            value = (wig_chr, start, end)
+                        else:
+                            value = (wig_chr, '', '')
+                        break       
+                return value #returns the co-ordinates of the 1st track/dataset
+            except:
+                return ( None, None, None )
+        else:
+            return ( None, None, None )
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
-        if dataset.has_data:
-            viewport_tuple = self.get_estimated_display_viewport(dataset)
-            if viewport_tuple:
-                chrom = viewport_tuple[0]
-                start = viewport_tuple[1]
-                stop = viewport_tuple[2]
-                for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
-                    if site_name in app.config.ucsc_display_sites:
-                        internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
-                        if base_url.startswith( 'https://' ):
-                            base_url = base_url.replace( 'https', 'http', 1 )
-                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
-                        redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )
-                        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
-                        ret_val.append( (site_name, link) )
+        chrom, start, stop = self.get_estimated_display_viewport(dataset)
+        if chrom is not None:
+            for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
+                if site_name in app.config.ucsc_display_sites:
+                    internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
+                    if base_url.startswith( 'https://' ):
+                        base_url = base_url.replace( 'https', 'http', 1 )
+                    display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
+                    redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )
+                    link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
+                    ret_val.append( (site_name, link) )
         return ret_val
     def sniff( self, filename ):
         """

@@ -80,7 +80,7 @@ class GenomeGraphs( Tabular ):
         ggtail = 'hgGenome_doSubmitUpload=submit'
         if not dataset.dbkey:
               dataset.dbkey = 'hg18' # punt!
-        if dataset.has_data:
+        if dataset.has_data():
               for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
                     if site_name in app.config.ucsc_display_sites:
                         site_url = site_url.replace('/hgTracks?','/hgGenome?') # for genome graphs

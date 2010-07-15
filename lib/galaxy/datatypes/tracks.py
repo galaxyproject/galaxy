@@ -20,7 +20,7 @@ class GeneTrack( binary.Binary ):
         return binary.Binary.get_display_links( self, dataset, type, app, base_url, target_frame=target_frame, **kwd )
     def genetrack_link( self, hda, type, app, base_url ):
         ret_val = []
-        if hda.has_data:
+        if hda.dataset.has_data():
             # Get the disk file name and data id
             file_name = hda.dataset.get_file_name()
             data_id  = quote_plus( str( hda.id ) )

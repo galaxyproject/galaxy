@@ -210,6 +210,14 @@ class Tabular( data.Text ):
     def display_peek( self, dataset ):
         """Returns formatted html of peek"""
         return self.make_html_table( dataset )
+    def displayable( self, dataset ):
+        try:
+            return dataset.has_data() \
+                and dataset.state == dataset.states.OK \
+                and dataset.metadata.columns > 0 \
+                and dataset.metadata.data_lines > 0
+        except:
+            return False
     def as_gbrowse_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
     def as_ucsc_display_file( self, dataset, **kwd ):

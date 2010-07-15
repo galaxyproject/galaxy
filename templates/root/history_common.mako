@@ -114,7 +114,7 @@
             <div class="info">${_('Info: ')}${data.display_info()}</div>
             <div> 
                 <% dataset_id=trans.security.encode_id( data.id ) %>
-                %if data.has_data:
+                %if data.has_data():
                     <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Save" class="icon-button disk tooltip"></a>
                     %if for_editing:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
