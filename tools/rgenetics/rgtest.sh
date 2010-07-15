@@ -35,7 +35,7 @@ TOOL="rgManQQ"
 NPRE=${TOOL}test1
 OUTPATH="$OROOT/$TOOL"
 mkdir $OUTPATH
-CL="python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.html $OUTPATH 1 2 5,7 0"
+CL="python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.html $OUTPATH 1 2 7 0"
 # rgManQQ.py '$input_file' "$name" '$out_html' '$out_html.files_path' '$chrom_col' '$offset_col' 
 # '$pval_col'
 #python /opt/galaxy/tools/rgenetics/rgManQQ.py /opt/galaxy/test-data/smallwgaP.xls rgManQQtest1 

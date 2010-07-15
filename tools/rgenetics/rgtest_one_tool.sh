@@ -2,7 +2,7 @@
 # script to generate all functional test outputs for each rgenetics tool
 # could be run at installation to ensure all dependencies are in place?
 case $# in 0) echo "USAGE: ${0##*/} TooltoTest galaxyRoot outRoot"; exit 1;;
-           [1-3]*) echo "Need ToolToTest and paths for galaxyRoot outRoot as parameters"; exit 2;;
+           [1-2]*) echo "Need ToolToTest and paths for galaxyRoot outRoot as parameters"; exit 2;;
            [5-10]*) echo "Too many arguments - ToolToTest and paths for galaxyRoot outRoot as parameters"; exit 2;;
            *)
 esac
@@ -22,13 +22,13 @@ TOOL="rgManQQ"
 NPRE=${TOOL}test1
 OUTPATH="$OROOT/$TOOL"
 rm -rf $OUTPATH/*
-CL="python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.html $OUTPATH 1 2 5,7 0"
+CL="python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.html $OUTPATH 1 2 7 0"
 # rgManQQ.py '$input_file' "$name" '$out_html' '$out_html.files_path' '$chrom_col' '$offset_col' 
 # '$pval_col'
 #python /opt/galaxy/tools/rgenetics/rgManQQ.py /opt/galaxy/test-data/smallwgaP.xls rgManQQtest1 
 #/opt/galaxy/test-data/rgtestouts/rgManQQ/rgManQQtest1.html /opt/galaxy/test-data/rgtestouts/rgManQQ 1 2 5,7 
 echo "Testing $TOOL using $CL"
-python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.html $OUTPATH 1 2 5,7 0
+python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.html $OUTPATH 1 2 7 0
 ;;
 
 'rgfakePhe')
