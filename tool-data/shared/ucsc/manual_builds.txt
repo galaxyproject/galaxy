@@ -669,3 +669,4 @@ arabidopsis	Arabidopsis thaliana TAIR9
 arabidopsis_tair8	Arabidopsis thaliana TAIR8
 araTha1	Arabidopsis thaliana TAIR7
 mm5	Mouse May 2004 (mm5)
+Sscrofa9.58	Pig May 2010 (SGSC Sscrofa9.58)
