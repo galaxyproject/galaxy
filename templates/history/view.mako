@@ -68,8 +68,10 @@
     <%
         ##TODO: is there a better way to create this URL? Can't use 'f-username' as a key b/c it's not a valid identifier.
         href_to_published_histories = h.url_for( controller='/history', action='list_published')
-        href_to_user_histories = h.url_for( controller='/history', action='list_published', xxx=history.user.username)
-        href_to_user_histories = href_to_user_histories.replace( 'xxx', 'f-username')
+        if history.user is not None:
+            href_to_user_histories = h.url_for( controller='/history', action='list_published', xxx=history.user.username).replace( 'xxx', 'f-username')
+        else:
+            href_to_user_histories = h.url_for( controller='/history', action='list_published' )##should this instead be be None or empty string?
     %>
     
     <div class="unified-panel-header" unselectable="on">
