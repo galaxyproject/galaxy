@@ -280,12 +280,11 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         return return_dict
 
     @web.expose
-    @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
         
         # Get visualization, making sure it's accessible.
-        visualization = self.get_visualization( trans, id, False, True)
+        visualization = self.get_visualization( trans, id, False, True )
         if visualization is None:
             raise web.httpexceptions.HTTPNotFound()
         
