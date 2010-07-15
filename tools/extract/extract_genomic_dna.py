@@ -158,6 +158,8 @@ def __main__():
             if output_format == "fasta" :
                 l = len( sequence )        
                 c = 0
+                if gff_format:
+                    start, end = convert_bed_coords_to_gff( [ start, end ] )
                 fields = [dbkey, str( chrom ), str( start ), str( end ), strand]
                 meta_data = "_".join( fields )
                 fout.write( ">%s\n" % meta_data )
