@@ -1,24 +1,24 @@
-<tool id="plot_for_lda_output1" name="Draw ROC">
+<tool id="plot_for_lda_output1" name="Draw ROC" version="1.0.1">
 	<description>Receiver Operating Characteristic plot</description>
 	<command interpreter="sh">r_wrapper.sh $script_file</command>
 
 	<inputs>
-		<param format="text" name="input" type="data" label="Source file"/>
-		<param name="my_title" size="30" type="text" value="ROC" label="Title of your plot" help="See syntax below">
-		</param>
-
+		<param format="text" name="input" type="data" label="Source file"> </param>
+		<param name="my_title" size="30" type="text" value="My Figure" label="Title of your plot" help="See syntax below"> </param>
+		<param name="X_axis" size="30" type="text" value="Text for X axis" label="Legend of X axis in your plot" help="See syntax below"> </param>
+		<param name="Y_axis" size="30" type="text" value="Text for Y axis" label="Legend of Y axis in your plot" help="See syntax below"> </param>
 	</inputs>
 	<outputs>
 		<data format="pdf" name="pdf_output" />
-        <data format="txt" name="desc_output" />
 	</outputs>
 
 	<tests>
 		<test>
 			<param name="input" value="lda_analy_output.txt"/>
-			<param name="my_title" value="Test Plot"/>
+			<param name="my_title" value="Test Plot1"/>
+			<param name="X_axis" value="Test Plot2"/>
+			<param name="Y_axis" value="Test Plot3"/>
 			<output name="pdf_output" file="plot_for_lda_output.pdf"/>
-			<output name="desc_output" file="empty_file.dat"/>
 		</test>
 	</tests>
 
@@ -203,7 +203,7 @@
 	for (i in 1:nfiles) {
 		r&lt;-rez_ext[[i]]
 		#tr
-		rate&lt;-rbind(rate, c(files_alias[i]," "," "," ") )
+	#	rate&lt;-rbind(rate, c(files_alias[i]," "," "," ") )
 		mm&lt;-which((r[3,])==max(r[3,]))
 
 		m_tr[i]&lt;-mm[1]
@@ -213,9 +213,9 @@
 
 	pdf(file= paste("${pdf_output}"))
 
-	plot(rez_ext[[i]][2,]~rez_ext[[i]][3,], xlim=c(0,100), ylim=c(0,100), xlab="X", ylab="Y", type="l", lty=1, col="blue", xaxt='n', yaxt='n')
+	plot(rez_ext[[i]][2,]~rez_ext[[i]][3,], xlim=c(0,100), ylim=c(0,100), xlab="${X_axis}   [1-FP(False Positive)]", ylab="${Y_axis}   [1-FP(False Positive)]", type="l", lty=1, col="blue", xaxt='n', yaxt='n')
 	for (i in 1:nfiles) {
-		lines(rez_ext[[i]][2,]~rez_ext[[i]][3,], xlab="X", ylab="Y", type="l", lty=1, col=i)   
+		lines(rez_ext[[i]][2,]~rez_ext[[i]][3,], xlab="${X_axis}   [1-FP(False Positive)]", ylab="${Y_axis}   [1-FP(False Positive)]", type="l", lty=1, col=i)   
 		# pt=c(r,)
 		points(x=rez_ext[[i]][3,m_tr[i]],y=rez_ext[[i]][2,m_tr[i]], pch=16, col=i)  
 	}
@@ -236,27 +236,6 @@
 
 	<help>
 
-.. class:: infomark
-
-**What it does**
-
-This tool consists of the module to perform the Linear Discriminant Analysis as described in Carrel et al., 2006 (PMID: 17009873)
-
-*Carrel L, Park C, Tyekucheva S, Dunn J, Chiaromonte F, et al. (2006) Genomic Environment Predicts Expression Patterns on the Human 	Inactive X Chromosome. PLoS Genet 2(9): e151. doi:10.1371/journal.pgen.0020151*
-
------
-
-**Example**
-
-- Input file
-
-	A output file from "LDA" tool is used to perform it. 
-
-- Output file
-
-	There are two files produced:
-	(1) A summary file for LDA classification success rates with optimal tau
-	(2) An image file for plot
 
 </help>
 

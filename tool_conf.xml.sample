@@ -129,7 +129,7 @@
     <tool file="stats/gsummary.xml" />
     <tool file="filters/uniq.xml" />
     <tool file="stats/cor.xml" />
-    <tool file="stats/pca_for_lda.xml" />
+    <tool file="stats/generate_matrix_for_pca_lda.xml" />
     <tool file="stats/lda_analy.xml" />
     <tool file="stats/plot_from_lda.xml" />
     <tool file="regVariation/t_test_two_samples.xml" />

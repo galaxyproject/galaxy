@@ -1,9 +1,9 @@
-<tool id="lda_analy1" name="Perform LDA">
+<tool id="lda_analy1" name="Perform LDA" version="1.0.1">
 	<description>Linear Discriminant Analysis</description>
 	<command interpreter="sh">r_wrapper.sh $script_file</command>
 	<inputs>
 		<param format="tabular" name="input" type="data" label="Source file"/>
-		<param name="cond" size="30" type="integer" value="3" label="Number of principal components" help="See syntax below">
+		<param name="cond" size="30" type="integer" value="3" label="Number of principal components" help="See TIP below">
 			<validator type="empty_field" message="Enter a valid number of principal components, see syntax below for examples"/>
 		</param>
 
@@ -14,7 +14,7 @@
 
 	<tests>
 		<test>
-			<param name="input" value="pca_and_lda_analy_for_lda_input.tabular"/>
+			<param name="input" value="matrix_generator_for_pc_and_lda_output.tabular"/>
 			<output name="output" file="lda_analy_output.txt"/>
 			<param name="cond" value="2"/>
 
@@ -47,10 +47,10 @@
             resp1&lt;-as.vector(data[,ncol(data)])
                 resp=numeric(length(resp1))
             for (i in 1:length(resp1)) {
-                if (resp1[i]=="Control ") {
+                if (resp1[i]=="Y ") {
                     resp[i] = 0
                 }
-                if (resp1[i]=="XLMR ") {
+                if (resp1[i]=="X ") {
                     resp[i] = 1
                 }
             }
@@ -258,6 +258,12 @@
 
 .. class:: infomark
 
+**TIP:** If you want to perform Principal Component Analysis (PCA) on the give numeric input data (which corresponds to the "Source file First in "Generate A Matrix" tool), please use *Multivariate Analysis/Principal Component Analysis*
+
+-----
+
+.. class:: infomark
+
 **What it does**
 
 This tool consists of the module to perform the Linear Discriminant Analysis as described in Carrel et al., 2006 (PMID: 17009873)
@@ -266,16 +272,13 @@ This tool consists of the module to perform the Linear Discriminant Analysis as 
 
 -----
 
-**Example**
+.. class:: warningmark
 
-- Input file
+**Note**
 
-.. image:: ../static/images/tools/lda/LDA_Input.png
+- Output from "Generate A Matrix" tool is used as input file for this tool 
+- Output of this tool contains LDA classification success rates for different values of the turning parameter tau (from 0 to 1 with 0.005 interval). This output file will be used to establish the ROC plot, and you can obtain more detail information from this plot. 
 
-- Output file
-
-	LDA classification success rates for different values of the turning parameter tau (from 0 to 1 with 0.005 interval). 
-	This output file will be used to establish the ROC plot.
 
 </help>
 

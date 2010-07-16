@@ -1,0 +1,48 @@
+<tool id="generate_matrix_for_pca_and_lda1" name="Generate A Matrix">
+    <description>for using PC and LDA</description>
+    <command interpreter="perl">generate_matrix_for_pca_lda.pl $input_1 $input_2 $output</command>
+
+    <inputs>
+        <param format="tabular" name="input_1" type="data" label="Source file First: a matrix (samples/observations in rows and variables/features in columns)"> </param>
+        <param format="tabular" name="input_2" type="data" label="Source file Second: a table (samples/observations with response/class label)"> </param>
+    </inputs>
+
+    <outputs>
+        <data format="tabular" name="output" />
+    </outputs>
+
+    <tests>
+        <test>
+            <param name="input_1" value="matrix_generator_for_pc_and_lda_input_1.tabular"/>
+            <param name="input_2" value="matrix_generator_for_pc_and_lda_input_2.tabular"/>
+            <output name="output" file="matrix_generator_for_pc_and_lda_output.tabular"/>
+        </test>
+    </tests>
+
+    <help>
+
+.. class:: infomark
+
+**What it does**
+
+This tool consists of a module to generate a matrix to be used for running the Linear Discriminant Analysis as described in Carrel et al., 2006 (PMID: 17009873)
+
+*Carrel L, Park C, Tyekucheva S, Dunn J, Chiaromonte F, et al. (2006) Genomic Environment Predicts Expression Patterns on the Human     Inactive X Chromosome. PLoS Genet 2(9): e151. doi:10.1371/journal.pgen.0020151*
+
+-----
+
+**Example**
+
+- Input file (Source file First)
+
+.. image:: ../static/images/tools/lda/first_matrix_generator_example_file.png
+
+
+- Input file (Source file Second)
+
+.. image:: ../static/images/tools/lda/second_matrix_generator_example_file.png
+
+
+</help>
+
+</tool>
