@@ -34,8 +34,8 @@ $( function() {
 <br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button"  href="${h.url_for( controller=cntrller, cntrller=cntrller, action='list')}">
-        <span>Browse requests</span></a>
+        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='show', id=trans.security.encode_id(request.id))}">
+        <span>Browse this request</span></a>
     </li>
 </ul>
 

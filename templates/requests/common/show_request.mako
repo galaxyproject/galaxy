@@ -30,6 +30,31 @@ $( function() {
 });
 </script>
 
+<script type="text/javascript">
+function showContent(vThis)
+{
+    // http://www.javascriptjunkie.com
+    // alert(vSibling.className + " " + vDef_Key);
+    vParent = vThis.parentNode;
+    vSibling = vParent.nextSibling;
+    while (vSibling.nodeType==3) { 
+        // Fix for Mozilla/FireFox Empty Space becomes a TextNode or Something
+        vSibling = vSibling.nextSibling;
+    };
+    if(vSibling.style.display == "none")
+    {
+        vThis.src="/static/images/fugue/toggle.png";
+        vThis.alt = "Hide";
+        vSibling.style.display = "block";
+    } else {
+        vSibling.style.display = "none";
+        vThis.src="/static/images/fugue/toggle-expand.png";
+        vThis.alt = "Show";
+    }
+    return;
+}
+</script>
+
 
 <script type="text/javascript">
 $(document).ready(function(){
@@ -37,7 +62,7 @@ $(document).ready(function(){
     $(".msg_body").hide();
     //toggle the componenet with class msg_body
     $(".msg_head").click(function(){
-        $(this).next(".msg_body").slideToggle(450);
+        $(this).next(".msg_body").slideToggle(0);
     });
 });
 </script>
@@ -153,47 +178,43 @@ $(document).ready(function(){
     ${render_msg( message, status )}
 %endif
 
-
-
-
-<div class="toolForm">
-    <div class="form-row">
-        <div class="msg_list">
-            <h4 class="msg_head"><u>Request Information</u></h4>
-            <div class="msg_body">
-                %for index, rd in enumerate(request_details):
-                    <div class="form-row">
-                        <label>${rd['label']}</label>
-                        %if not rd['value']:
-                            <i>None</i>
-                        %else:                      
-                            %if rd['label'] == 'State':
-                                <a href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
-                            %else:
-                                ${rd['value']}     
-                            %endif
-                        %endif
-                    </div>
-                    <div style="clear: both"></div>
-                %endfor
-                <div class="form-row">
-                <ul class="manage-table-actions">
-                    <li>
-                        <a class="action-button"  href="${h.url_for( controller='requests_admin', action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
-                        <span>Edit request details</span></a>
-                    </li>
-                </ul>
-                </div>
-            </div>
+<div>
+<h3><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);" style="cursor:pointer;"/> Request Information</h3>
+<div style="display:none;"  >
+    %for index, rd in enumerate(request_details):
+        <div class="form-row">
+            <label>${rd['label']}</label>
+            %if not rd['value']:
+                <i>None</i>
+            %else:                      
+                %if rd['label'] == 'State':
+                    <a href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
+                %else:
+                    ${rd['value']}     
+                %endif
+            %endif
         </div>
+        <div style="clear: both"></div>
+    %endfor
+    <div class="form-row">
+    <ul class="manage-table-actions">
+        <li>
+            <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
+            <span>Edit request details</span></a>
+        </li>
+    </ul>
     </div>
 </div>
+</div>
+
+
+
 
 <br/>
 
-<div class="toolForm">
+##<div class="toolForm">
     <form id="show_request" name="show_request" action="${h.url_for( controller='requests_common', cntrller=cntrller, action='request_page', edit_mode=edit_mode )}"  method="post" >
-        <div class="form-row">
+        ##<div class="form-row">
             %if current_samples:
                 ## first render the basic info grid 
                 ${render_basic_info_grid()}
@@ -201,12 +222,11 @@ $(document).ready(function(){
                 <% trans.sa_session.refresh( request.type.sample_form ) %>
                 %for grid_index, grid_name in enumerate(request.type.sample_form.layout):
                     ${render_grid( grid_index, grid_name, request.type.sample_form.fields_of_grid( grid_index ) )}
-                    <br/>
                 %endfor
             %else:
                 <label>There are no samples.</label>
             %endif
-        </div>      
+        ##</div>      
         %if request.samples and request.submitted():
             <script type="text/javascript">
                 // Updater
@@ -253,97 +273,94 @@ $(document).ready(function(){
                     <input type="submit" name="save_samples_button" value="Save"/>
                     <input type="submit" name="cancel_changes_button" value="Cancel"/>
                 </div>
-            %elif request.unsubmitted():
+            %elif edit_mode == 'True' or len(current_samples) > len(request.samples):
                 <div class="form-row">
                     <input type="submit" name="save_samples_button" value="Save"/>
+                    <input type="submit" name="cancel_changes_button" value="Cancel"/>
                 </div>
             %endif
             
         %endif
         <input type="hidden" name="id" value="${trans.security.encode_id(request.id)}" />
     </form>
-</div>
+##</div>
 
 <br/>
 
 %if request.unsubmitted():
-<div class="toolForm">
     <form id="import" name="import" action="${h.url_for( controller='requests_common', action='request_page', edit_mode=edit_mode, request_id=trans.security.encode_id(request.id) )}" enctype="multipart/form-data" method="post" >
-        <div class="form-row">
-            <div class="msg_list">
-                <h4 class="msg_head"><u>Import samples from csv file</u></h4>
-                <div class="msg_body">
-                    <input type="file" name="file_data" />
-                    <input type="submit" name="import_samples_button" value="Import samples"/>
-                    <br/>
-                    <div class="toolParamHelp" style="clear: both;">
-                        The csv file must be in the following format:<br/>
-                        SampleName,DataLibrary,DataLibraryFolder,FieldValue1,FieldValue2...
-                    </div>
-                </div>
+        <h4><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);"  style="cursor:pointer;"/> Import samples</h4>
+        <div style="display:none;">
+            <input type="file" name="file_data" />
+            <input type="submit" name="import_samples_button" value="Import samples"/>
+            <br/>
+            <div class="toolParamHelp" style="clear: both;">
+                The csv file must be in the following format:<br/>
+                SampleName,DataLibrary,DataLibraryFolder,FieldValue1,FieldValue2...
             </div>
         </div>
-##        <input type="hidden" name="request_id" value="${request.id}" />
     </form>
-</div>
+##</div>
 %endif
+
+
 
 <%def name="render_grid( grid_index, grid_name, fields_dict )">
     <br/>
-    <div class="msg_list">
-    %if grid_name:
-        <h4 class="msg_head"><u>${grid_name}</u></h4>
-    %else:
-        <h4>Grid ${grid_index}</h4>
-    %endif
-    %if edit_mode == 'False' or len(current_samples) <= len(request.samples):
-        <div class="msg_body">
-    %else:
-        <div class="msg_body2">
-    %endif
-    <table class="grid">
-        <thead>
-            <tr>
-                <th>Name</th>
-                %for index, field in fields_dict.items():
-                    <th>
-                        ${field['label']}
-                        <div class="toolParamHelp" style="clear: both;">
-                            <i>${field['helptext']}</i>
-                        </div>
-                    </th>
-                %endfor
-                <th></th>
-            </tr>
-        <thead>
-        <tbody>
-            <%
-            trans.sa_session.refresh( request )
-            %>
-            %for sample_index, sample in enumerate(current_samples):
-                %if edit_mode == 'True':
+    <% if not grid_name:
+          grid_name = "Grid "+ grid_index
+    %>
+    <div>
+        %if edit_mode == 'True' or len(current_samples) > len(request.samples):
+            <h4><img src="/static/images/fugue/toggle.png" alt="Show" onclick="showContent(this);"  style="cursor:pointer;"/> ${grid_name}</h4>
+            <div>
+        %else:
+            <h4><img src="/static/images/fugue/toggle-expand.png" alt="Hide" onclick="showContent(this);"  style="cursor:pointer;"/> ${grid_name}</h4>
+            <div style="display:none;">
+        %endif
+            <table class="grid">
+                <thead>
                     <tr>
-                        ${render_sample_form( sample_index, sample['name'], sample['field_values'], fields_dict)}
-                    </tr>      
-                %else:
-                    <tr>
-                        %if sample_index in range(len(request.samples)):
-                            ${render_sample( sample_index, sample['name'], sample['field_values'], fields_dict )}
-                        %else:                                                            
-                            ${render_sample_form( sample_index, sample['name'], sample['field_values'], fields_dict)}
+                        <th>Name</th>
+                        %for index, field in fields_dict.items():
+                            <th>
+                                ${field['label']}
+                                <div class="toolParamHelp" style="clear: both;">
+                                    <i>${field['helptext']}</i>
+                                </div>
+                            </th>
+                        %endfor
+                        <th></th>
+                    </tr>
+                <thead>
+                <tbody>
+                    <%
+                    trans.sa_session.refresh( request )
+                    %>
+                    %for sample_index, sample in enumerate(current_samples):
+                        %if edit_mode == 'True':
+                            <tr>
+                                ${render_sample_form( sample_index, sample['name'], sample['field_values'], fields_dict)}
+                            </tr>      
+                        %else:
+                            <tr>
+                                %if sample_index in range(len(request.samples)):
+                                    ${render_sample( sample_index, sample['name'], sample['field_values'], fields_dict )}
+                                %else:                                                            
+                                    ${render_sample_form( sample_index, sample['name'], sample['field_values'], fields_dict)}
+                                %endif
+                            </tr>  
                         %endif
-                    </tr>  
-                %endif
-            %endfor
-        </tbody>
-    </table>
-    </div>
+                    %endfor
+                </tbody>
+            </table>
+        </div>
     </div>
 </%def>
 
 ## This function displays the "Basic Information" grid
 <%def name="render_basic_info_grid()">
-    <h4>Sample Information</h4>
+    <h3>Sample Information</h3>
     <table class="grid">
         <thead>
             <tr>
@@ -408,7 +425,7 @@ $(document).ready(function(){
                                 %if sample:
                                     %if sample.request.unsubmitted():
                                         <a class="action-button" href="${h.url_for( controller='requests_common', cntrller=cntrller, action='delete_sample', request_id=request.id, sample_id=sample_index )}">
-                                        <img src="${h.url_for('/static/images/delete_icon.png')}" />
+                                        <img src="${h.url_for('/static/images/delete_icon.png')}"  style="cursor:pointer;"/>
                                         <span></span></a>
                                     %endif
                                 %endif

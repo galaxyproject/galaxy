@@ -128,82 +128,77 @@ $(document).ready(function(){
     </li>
 </ul>
 
-<div class="toolForm">
-    %if len(dataset_files):
-        <div class="form-row">
-            <h4>Sample Dataset(s)</h4>
-            %if sample.untransferred_dataset_files() and cntrller == 'requests_admin':
-                <div class="form-row">
-                    <ul class="manage-table-actions">
-                        <li>
-                            <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', start_transfer_button=True, sample_id=sample.id )}">
-                            <span>Start transfer</span></a>
-                        </li>
-                    </ul>
-                 </div>
-             %endif
-            <div class="form-row">
-                <table class="grid">
-                <thead>
-                    <tr>
-                        <th>Dataset File</th>
-                        <th>Transfer Status</th>
-                        <th></th>
-                    </tr>
-                <thead>
-                    <tbody>
-                        %for dataset_index, dataset_file in enumerate(dataset_files):
-                            ${sample_dataset_files( dataset_index, dataset_file['name'], dataset_file['status'] )}
-                        %endfor
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    %else:
-        <div class="form-row">
-            There are no dataset files associated with this sample.
-        </div>
-    %endif
-    
-    <br/>
-    <br/>
 
-    %if cntrller == 'requests_admin' and trans.user_is_admin():
-        <form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', cntrller=cntrller, action='get_data', sample_id=sample.id)}" method="post" >
-            <div class="form-row">
-                ##<div class="toolFormTitle">Select files for transfer</div>
-                <h4>Select files for transfer</h4>
-                <div style="width: 60%;">
-                    <div class="form-row">
-                        <label>Folder path on the sequencer:</label>
-                        <input type="text" name="folder_path" value="${folder_path}" size="100"/>
-                        <input type="submit" name="browse_button" value="List contents"/>
-                        ##<input type="submit" name="open_folder" value="Open folder"/>
-                        <input type="submit" name="folder_up" value="Up"/>
-                    </div>
-                    <div class="form-row">
-                        <select name="files_list" id="files_list" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" ondblclick="open_folder1(${sample.id}, '${folder_path}')" onChange="display_file_details(${sample.id}, '${folder_path}')" multiple>
-                            %for index, f in enumerate(files):
-                                <option value="${f}">${f}</option>
-                            %endfor
-                        </select> 
-                        <br/>
-                        <div id="file_details" class="toolParamHelp" style="clear: both;">
-                            
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="toolParamHelp" style="clear: both;">
-                            After selecting dataset(s), be sure to click on the <b>Start transfer</b> button. 
-                            Once the transfer is complete the dataset(s) will show up on this page.
-                        </div>
-                        <input type="submit" name="select_files_button" value="Select"/>
+%if len(dataset_files):
+    <h3>Sample Dataset(s)</h3>
+    %if sample.untransferred_dataset_files() and cntrller == 'requests_admin':
+        <div class="form-row">
+            <ul class="manage-table-actions">
+                <li>
+                    <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', start_transfer_button=True, sample_id=sample.id )}">
+                    <span>Start transfer</span></a>
+                </li>
+            </ul>
+         </div>
+     %endif
+    <div class="form-row">
+        <table class="grid">
+        <thead>
+            <tr>
+                <th>Dataset File</th>
+                <th>Transfer Status</th>
+                <th></th>
+            </tr>
+        <thead>
+            <tbody>
+                %for dataset_index, dataset_file in enumerate(dataset_files):
+                    ${sample_dataset_files( dataset_index, dataset_file['name'], dataset_file['status'] )}
+                %endfor
+            </tbody>
+        </table>
+    </div>
+%else:
+    <div class="form-row">
+        There are no dataset files associated with this sample.
+    </div>
+%endif
+
+<br/>
+<br/>
+
+%if cntrller == 'requests_admin' and trans.user_is_admin():
+    <form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', cntrller=cntrller, action='get_data', sample_id=sample.id)}" method="post" >
+            <div class="toolFormTitle">Select files for transfer</div>
+            ##<h4>Select files for transfer</h4>
+            <div class="toolForm">
+                <div class="form-row">
+                    <label>Folder path on the sequencer:</label>
+                    <input type="text" name="folder_path" value="${folder_path}" size="100"/>
+                    <input type="submit" name="browse_button" value="List contents"/>
+                    ##<input type="submit" name="open_folder" value="Open folder"/>
+                    <input type="submit" name="folder_up" value="Up"/>
+                </div>
+                <div class="form-row">
+                    <select name="files_list" id="files_list" style="max-width: 60%; width: 98%; height: 150px; font-size: 100%;" ondblclick="open_folder1(${sample.id}, '${folder_path}')" onChange="display_file_details(${sample.id}, '${folder_path}')" multiple>
+                        %for index, f in enumerate(files):
+                            <option value="${f}">${f}</option>
+                        %endfor
+                    </select> 
+                    <br/>
+                    <div id="file_details" class="toolParamHelp" style="clear: both;">
+                        
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="toolParamHelp" style="clear: both;">
+                        After selecting dataset(s), be sure to click on the <b>Start transfer</b> button. 
+                        Once the transfer is complete the dataset(s) will show up on this page.
+                    </div>
+                    <input type="submit" name="select_files_button" value="Select"/>
+                </div>
             </div>
-        </form>
-    %endif
-</div>
+    </form>
+%endif
 
 
 
