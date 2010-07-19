@@ -29,8 +29,8 @@ if not os.path.exists( 'setup.py.orig' ):
     i = open( 'setup.py.orig', 'r' )
     o = open( 'setup.py', 'w' )
     for line in i.readlines():
-        if line == "	version = '2.9.0',\n":
-            line = "	version = '2.9.4',\n"
+        if line == "	version = '4.0.0',\n":
+            line = "	version = '4.1.0',\n"
         print >>o, line,
 i.close()
 o.close()
