@@ -12,11 +12,20 @@ pkg_resources.require( "sqlalchemy-migrate" )
 from migrate.versioning.shell import main
 from ConfigParser import SafeConfigParser
 
-
 log = logging.getLogger( __name__ )
 
+if sys.argv[-1] in [ 'community' ]:
+    # Need to pop the last arg so the command line args will be correct
+    # for sqlalchemy-migrate 
+    webapp = sys.argv.pop()
+    config_file = 'community_wsgi.ini'
+    repo = 'lib/galaxy/webapps/community/model/migrate'
+else:
+    config_file = 'universe_wsgi.ini'
+    repo = 'lib/galaxy/model/migrate'
+
 cp = SafeConfigParser()
-cp.read( "universe_wsgi.ini" )
+cp.read( config_file )
 
 if cp.has_option( "app:main", "database_connection" ):
     db_url = cp.get( "app:main", "database_connection" )
@@ -43,4 +52,4 @@ except KeyError:
     # Let this go, it could possibly work with db's we don't support
     log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-main( repository='lib/galaxy/model/migrate', url=db_url )
+main( repository=repo, url=db_url )
