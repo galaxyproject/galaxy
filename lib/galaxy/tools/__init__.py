@@ -437,10 +437,16 @@ class Tool:
             self.check_values = util.string_as_bool( input_elem.get("check_values", "true") )
             self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", "false" ) )
             self.action = input_elem.get( 'action', '/tool_runner/index' )
+            # If we have an nginx upload, save the action as a tuple instead of
+            # a string. The actual action needs to get url_for run to add any
+            # prefixes, and we want to avoid adding the prefix to the
+            # nginx_upload_path. This logic is handled in the tool_form.mako
+            # template.
             if self.nginx_upload and self.app.config.nginx_upload_path:
                 if '?' in urllib.unquote_plus( self.action ):
                     raise Exception( 'URL parameters in a non-default tool action can not be used in conjunction with nginx upload.  Please convert them to hidden POST parameters' )
-                self.action = self.app.config.nginx_upload_path + '?nginx_redir=' + urllib.unquote_plus( self.action )
+                self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
+                        urllib.unquote_plus(self.action))
             self.target = input_elem.get( "target", "galaxy_main" )
             self.method = input_elem.get( "method", "post" )
             # Parse the actual parameters

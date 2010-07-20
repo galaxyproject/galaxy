@@ -200,14 +200,22 @@ function checkUncheckAll( name, check )
         <br/>
     %endif
     
-    <div class="toolForm" id="${tool.id}">
+    ## handle calculating the redict url for the special case where we have nginx proxy
+    ## upload and need to do url_for on the redirect portion of the tool action
+    <%
+        try:   
+            tool_url = h.url_for(tool.action)
+        except AttributeError:
+            assert len(tool.action) == 2
+            tool_url = tool.action[0] + h.url_for(tool.action[1])
+    %><div class="toolForm" id="${tool.id}">
         %if tool.has_multiple_pages:
             <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
         %else:
             <div class="toolFormTitle">${tool.name}</div>
         %endif
         <div class="toolFormBody">
-            <form id="tool_form" name="tool_form" action="${h.url_for( tool.action )}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}">
+            <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}"><input type="hidden" name="tool_id" value="${tool.id}"><input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
                 <input type="hidden" name="tool_id" value="${tool.id}">
                 <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
                 %if tool.display_by_page[tool_state.page]:
