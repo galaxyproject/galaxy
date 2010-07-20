@@ -91,9 +91,8 @@ $.extend( View.prototype, {
         // Create DOM elements
         var parent_element = this.container,
             view = this;
-        
+        this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(parent_element);        
         this.content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
-        this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.content_div);
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
         this.viewport = $("<div/>").addClass("viewport").appendTo(this.viewport_container);
         
@@ -136,7 +135,7 @@ $.extend( View.prototype, {
                     var found = $.grep(view.chrom_data, function(v, i) {
                         return v.chrom === view.chrom;
                     })[0];
-                    view.max_high = found.len;
+                    view.max_high = (found.len !== undefined ? found.len : 0);
                     view.reset();
                     view.redraw(true);
                 
@@ -154,6 +153,7 @@ $.extend( View.prototype, {
             }
         });
         
+        /*
         this.content_div.bind("mousewheel", function( e, delta ) {
             if (Math.abs(delta) < 0.5) {
                 return;
@@ -165,6 +165,7 @@ $.extend( View.prototype, {
             }
             e.preventDefault();
         });
+        */
 
         this.content_div.bind("dblclick", function( e ) {
             view.zoom_in(e.pageX, this.viewport_container);
@@ -177,8 +178,8 @@ $.extend( View.prototype, {
             var delta = e.offsetX - this.current_x;
             this.current_x = e.offsetX;
 
-            var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low) );
-            view.move_delta(-2*delta_chrom);
+            var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.max_high - view.max_low) );
+            view.move_delta(-delta_chrom);
         });
         
         this.viewport_container.bind( "dragstart", function( e ) {
