@@ -215,7 +215,7 @@ function checkUncheckAll( name, check )
             <div class="toolFormTitle">${tool.name}</div>
         %endif
         <div class="toolFormBody">
-            <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}"><input type="hidden" name="tool_id" value="${tool.id}"><input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
+            <form id="tool_form" name="tool_form" action="${tool_url}" enctype="${tool.enctype}" target="${tool.target}" method="${tool.method}">
                 <input type="hidden" name="tool_id" value="${tool.id}">
                 <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
                 %if tool.display_by_page[tool_state.page]:
