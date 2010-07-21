@@ -72,11 +72,11 @@ def __main__():
         output_bed_del = None
 
     # the pattern to match, assuming just one indel per cigar string
-    pat_indel = re.compile( '(?P<lmatch>\d+)M(?P<ins_del_width>\d+)(?P<ins_del>[ID])(?P<rmatch>\d+)M' )
+    pat_indel = re.compile( '^(?P<lmatch>\d+)M(?P<ins_del_width>\d+)(?P<ins_del>[ID])(?P<rmatch>\d+)M$' )
     pat_multi = re.compile( '(\d+[MIDNSHP])(\d+[MIDNSHP])(\d+[MIDNSHP])+' )
 
     # go through all lines in input file
-    out_data = []
+    out_data = {}
     multi_indel_lines = 0
     for line in open( options.input, 'rb' ):
         if line and not line.startswith( '#' ) and not line.startswith( '@' ) :
@@ -84,14 +84,14 @@ def __main__():
             if split_line < 12:
                 continue
             # grab relevant pieces
-            cigar = split_line[5]
+            cigar = split_line[5].strip()
             pos = int( split_line[3] )
             chr = split_line[2]
             base_string = split_line[9]
             # parse cigar string
-            m = pat_indel.search( cigar )
+            m = pat_indel.match( cigar )
             if not m:
-                m = pat_multi.search( cigar )
+                m = pat_multi.match( cigar )
                 # skip this line if no match
                 if not m:
                     continue
@@ -109,37 +109,43 @@ def __main__():
             start = left + pos
             if middle_type == 'D':
                 end = start + middle
-                d = [ chr, start, end, 'D' ]
+                data = [ chr, start, end, 'D' ]
                 if options.include_base == "true":
-                    d.append( '-' )
-                out_data.append( tuple( d ) )
-                if output_bed_del:
-                    output_bed_del.write( '%s\t%s\t%s\n' % ( chr, start, end ) )
+                    data.append( '-' )
             else:
-                end = start + 1#+ middle
-                d = [ chr, start, end, 'I' ]
+                end = start + 1
+                data = [ chr, start, end, 'I' ]
                 if options.include_base == "true":
-                    d.append( bases )
-                out_data.append( tuple( d ) )
-                if output_bed_ins:
-                    output_bed_ins.write( '%s\t%s\t%s\n' % ( chr, start, end ) )
-    # output to interval file
-    if options.collapse == 'true':
-        out_dict = {}
-        # first collapse and get counts
-        for data in out_data:
-            location = ' '.join( [ '%s' % d for d in data ] )
+                    data.append( bases )
+            location = '\t'.join( [ '%s' % d for d in data ] )
             try:
-                out_dict[ location ].append( data )
+                out_data[ location ] += 1
             except KeyError:
-                out_dict[ location ] = [ data ]
-        locations = out_dict.keys()
-        locations.sort( numeric_sort )
-        for loc in locations:
-            output.write( '%s\t%s\n' % ( '\t'.join( [ '%s' % d for d in out_dict[ loc ][0] ] ), len( out_dict[ loc ] ) ) )
-    else:
-        for data in out_data:
-            output.write( '%s\n' % '\t'.join( [ '%s' % d for d in data ] ) )
+                out_data[ location ] = 1
+    # output to interval file
+    # get all locations and sort
+    locations = out_data.keys()
+    locations.sort( numeric_sort )
+    last_line = ''
+    # output each location, either with counts or each occurrence
+    for loc in locations:
+        sp_loc = loc.split( '\t' )
+        cur_line = '\t'.join( sp_loc[:3] )
+        if options.collapse == 'true':
+            output.write( '%s\t%s\n' % ( loc, out_data[ loc ] ) )
+            if output_bed_del and sp_loc[3] == 'D':
+                output_bed_del.write( '%s\n' % cur_line )
+            if output_bed_ins and sp_loc[3] == 'I' and last_line != cur_line:
+                output_bed_ins.write( '%s\n' % cur_line )
+                last_line = cur_line
+        else:
+            for i in range( out_data[ loc ] ):
+                output.write( '%s\n' % loc )
+                if output_bed_del or output_bed_ins:
+                    if output_bed_del and sp_loc[3] == 'D':
+                        output_bed_del.write( '%s\n' % cur_line )
+                    if output_bed_ins and sp_loc[3] == 'I':
+                        output_bed_ins.write( '%s\n' % cur_line )
 
     # cleanup, close files
     if output_bed_ins:
@@ -150,6 +156,6 @@ def __main__():
 
     # if skipped lines because of more than one indel, output message
     if multi_indel_lines > 0:
-        sys.stdout.write( '%s alignments were skipped because they contained more than one indel or had unhandled operations (N/S/H/P).' % multi_indel_lines )
+        sys.stdout.write( '%s alignments were skipped because they contained more than one indel.' % multi_indel_lines )
 
 if __name__=="__main__": __main__()

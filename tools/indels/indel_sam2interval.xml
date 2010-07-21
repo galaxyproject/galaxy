@@ -1,5 +1,5 @@
-<tool id="indel_sam2interval" name="Convert SAM to interval/BED" version="1.0.0">
-  <description>for indels</description>
+<tool id="indel_sam2interval" name="Extract indels" version="1.0.0">
+  <description>from SAM</description>
   <command interpreter="python">
     indel_sam2interval.py
       --input=$input1
@@ -30,7 +30,7 @@
       <when value="false" />
     </conditional>
     <conditional name="del_out">
-      <param name="include_del_out" type="select" label="Include insertions output bed file?">
+      <param name="include_del_out" type="select" label="Include deletions output bed file?">
         <option value="true">Yes</option>
         <option value="false">No</option>
       </param>
@@ -41,10 +41,10 @@
   <outputs>
     <data format="interval" name="output1" />
     <data format="bed" name="output2">
-      <filter>ins_out[ "include_ins_out" ] = "true"</filter>
+      <filter>ins_out[ "include_ins_out" ] == "true"</filter>
     </data>
     <data format="bed" name="output3">
-      <filter>del_out[ "include_del_out" ] = "true"</filter>
+      <filter>del_out[ "include_del_out" ] == "true"</filter>
     </data>
   </outputs>
   <tests>
@@ -69,48 +69,66 @@ Given a SAM file containing indels, converts these to an interval file with a co
 
 **Example**
 
-Suppose you have the following::
+Suppose you have the following mapping results::
 
- r770    89  ref        116   37  17M1I5M          =   72131356   0   CACACTGTGACAGACAGCGCAGC   00/02!!0//1200210AA44/1  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r780   181  ref       4567    0      24M          =   72131356   0  TTGGTGCGCGCGGTTGAGGGTTGG  $$(#%%#$%#%####$%%##$###  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r1231   69    *          0    0        *          *           0  0  AGACCGGGCGGGGTGGCGTTCGGT  %##+'#######%###$#$##$(#
- r1563  133    *          0    0        *          *           0  0  GTTCGTGGCCGGTGGGTGTTTGGG  ###$$#$#$&amp;#####$'$#$###$
- r1945  177  ref      71908    0      23M  190342418  181247988   0   AGAGAGAGAGAGAGAGAGAGAGA   SQQWZYURVYWX]]YXTSY]]ZM  XT:A:R  CM:i:0  SM:i:0   AM:i:0  X0:i:163148            XM:i:0  XO:i:0  XG:i:0  MD:Z:23
- r3671  117  ref   31903418    0      24M          =  190342418   0  CTGGCGTTCTCGGCGTGGATGGGT  #####$$##$#%#%%###%$#$##  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r3673  153  ref   48819768   37  16M1I6M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0///////00/!!0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r3824  117  ref   80729921    0      24M          =   80324999   0  TCCAGTCGCGTTGTTAGGTTCGGA  #$#$$$#####%##%%###**#+/  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r3911  153  ref   87824718   37  8M1I14M          =   80324999   0   TTTAGCCCGAAATGCCTAGAGCA   4;6//11!"11100110////00  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r4795   81  ref  126739130    0      23M   57401793   57401793   0   TGGCATTCCTGTAGGCAGAGAGG   AZWWZS]!"QNXZ]VQ]]]/2]]  XT:A:R  CM:i:2  SM:i:0   AM:i:0       X0:i:3    X1:i:0  XM:i:2  XO:i:0  XG:i:0  MD:Z:23
- r4797  161  ref   57401793   37      23M   26739130   26739130   0   GATCACCCAGGTGATGTAACTCC   ]WV]]]]WW]]]]]]]]]]PU]]  XT:A:U  CM:i:0  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:23
- r4800   16  ref        241  255  15M2D8M          =       1550   0   CGTGGCCGGCGGGCCGAAGGCAT   IIIIIIIIIICCCCIII?IIIII  XT:A:U  CM:i:2  SM:i:37  AM:i:0  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r5377  170  ref   52090793   37      23M   26739130   26739130   0   TATCAATAAGGTGATGTAACTCG   ]WV]ABAWW]]]]]P]P//GU]]  XT:A:U  CM:i:0  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:23
- r5612  151  ref  190341152   37  19M1D4M          =  190342418   0  TCTAACTTAGCCTCATAATGCTAA   /&lt;&lt;!"0/4/*/7//00/BC0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r5623  151  ref  188841418   37  19M1I3M          =  190342418   0   TCTAACTTAGCCTCATAATAGCT   /&lt;&lt;!"0/4//7//00/BC0121/  XT:A:U  CM:i:2  SM:i:37  AM:i:0       X0:i:1    X1:i:0  XM:i:1  XO:i:1  XG:i:1  MD:Z:22
- r7899   69     *          0    0        *          *          0   0  CTGCGTGTTGGTGTCTACTGGGGT  #%#'##$#$##&amp;%#%$$$%#%#'#
- r9192  133     *          0    0        *          *          0   0  GTGCGTCGGGGAGGGTGCTGTCGG  ######%#$%#$$###($###&amp;&amp;%
+ r327     16   chrM   11   37      8M1D10M   *   0   0             CTTACCAGATAGTCATCA   -+&lt;2;?@BA@?-,.+4=4             XT:A:U  NM:i:1  X0:i:1  X1:i:0  XM:i:0  XO:i:1  XG:i:1  MD:Z:41^C35
+ r457      0   chr1   14   37          14M   *   0   0                 ACCTGACAGATATC   =/DF;?@1A@?-,.                 XT:A:U  NM:i:0  X0:i:1  X1:i:0  XM:i:0  XO:i:0  XG:i:0  MD:Z:76
+ r501     16   chrM    6   23      7M1I13M   *   0   0          TCTGTGCCTACCAGACATTCA   +=$2;?@BA@?-,.+4=4=4A          XT:A:U  NM:i:3  X0:i:1  X1:i:1  XM:i:2  XO:i:1  XG:i:1  MD:Z:28C36G9        XA:Z:chrM,+134263658,14M1I61M,4;
+ r1288    16   chrM    8   37      11M1I7M   *   0   0            TCACTTACCTGTACACACA   /*F2;?@%A@?-,.+4=4=            XT:A:U  NM:i:4  X0:i:1  X1:i:0  XM:i:3  XO:i:1  XG:i:1  MD:Z:2T0T1A69
+ r1902     0   chr1    4   37      7M2D18M   *   0   0        AGTCTCTTACCTGACGGTTATGA   &lt;2;?@BA@?-,.+4=4=4AA663        XT:A:U  NM:i:3  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:2  MD:Z:17^CA58A0
+ r2204    16   chrM    9    0          19M   *   0   0            CTGGTACCTGACAGGTATC   2;?@BA@?-,.+4=4=4AA            XT:A:R  NM:i:1  X0:i:2  X1:i:0  XM:i:1  XO:i:0  XG:i:0  MD:Z:0T75           XA:Z:chrM,-564927,76M,1;
+ r2314    16   chrM    6   37      10M2D8M   *   0   0               TCACTCTTACGTCTGA   &lt;2;?@BA@?-,.+4=4               XT:A:U  NM:i:3  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:2  MD:Z:25A5^CA45
+ r3001     0   chrM   13   37   3M1D5M2I7M   *   0   0              TACAGTCACCCTCATCA   &lt;2;?@BA/(@?-,$&amp;                XT:A:U  NM:i:3  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:2  MD:Z:17^CA58A0
+ r3218     0   chr1   13   37       8M1D7M   *   0   0                TACAGTCACTCATCA   &lt;2;?@BA/(@?-,$&amp;                XT:A:U  NM:i:3  X0:i:1  X1:i:0  XM:i:1  XO:i:1  XG:i:2  MD:Z:17^CA58A0
+ r4767    16   chr2    3   37      15M2I7M   *   0   0       CAGACTCTCTTACCAAAGACAGAC   &lt;2;?@BA/(@?-,.+4=4=4AA66       XT:A:U  NM:i:4  X0:i:1  X1:i:0  XM:i:3  XO:i:1  XG:i:1  MD:Z:2T1A4T65
+ r5333     0   chrM    5   37      17M1D8M   *   0   0       GTCTCTCATACCAGACAACGGCAT   FB3$@BA/(@?-,.+4=4=4AA66       XT:A:U  NM:i:4  X0:i:1  X1:i:0  XM:i:3  XO:i:1  XG:i:1  MD:Z:45C10^C0C5C13
+ r6690    16   chrM    7   23          20M   *   0   0           CTCTCTTACCAGACAGACAT   2;?@BA/(@?-,.+4=4=4A           XT:A:U  NM:i:0  X0:i:1  X1:i:1  XM:i:0  XO:i:0  XG:i:0  MD:Z:76             XA:Z:chrM,-568532,76M,1;
+ r7211     0   chrM    7   37          24M   *   0   0       CGACAGAGACAAAATAACATTTAA   //&lt;2;?@BA@?-,.+4=442;;6:       XT:A:U  NM:i:3  X0:i:1  X1:i:0  XM:i:2  XO:i:1  XG:i:1  MD:Z:73G0G0
+ r7899    69      *    0    0            *   *   0   0       CTGCGTGTTGGTGTCTACTGGGGT   #%#'##$#$##&amp;%#%$$$%#%#'#
+ r9192   133      *    0    0            *   *   0   0       GTGCGTCGGGGAGGGTGCTGTCGG   ######%#$%#$$###($###&amp;&amp;%
+ r9922    16   chrM    4    0       7M3I9M   *   0   0            CCAGACATTTGAAATCAGG   F/D4=44^D++26632;;6            XT:A:U  NM:i:0  X0:i:1  X1:i:1  XM:i:0  XO:i:0  XG:i:0  MD:Z:76
+ r9987    16   chrM    4    0      9M1I18M   *   0   0   AGGTTCTCATTACCTGACACTCATCTTG   G/AD6"/+4=4426632;;6:&lt;2;?@BA   XT:A:U  NM:i:0  X0:i:1  X1:i:1  XM:i:0  XO:i:0  XG:i:0  MD:Z:76
+ r10145   16   chr1   16    0       5M2D7M   *   0   0                   CACATTGTTGTA   G//+4=44=4AA                   XT:A:U  NM:i:0  X0:i:1  X1:i:1  XM:i:0  XO:i:0  XG:i:0  MD:Z:76
+ r10324   16   chrM   15    0       6M1D5M   *   0   0                   CCGTTCTACTTG   A@??8.G//+4=                   XT:A:U  NM:i:0  X0:i:1  X1:i:1  XM:i:0  XO:i:0  XG:i:0  MD:Z:76
+ r12331   16   chrM   17    0       4M2I6M   *   0   0                  AGTCGAATACGTG   632;;6:&lt;2;?@B                  XT:A:U  NM:i:0  X0:i:1  X1:i:1  XM:i:0  XO:i:0  XG:i:0  MD:Z:76
+ r12914   16   chr2   24    0       4M3I3M   *   0   0                     ACTACCCCAA   G//+4=42,.                     XT:A:U  NM:i:0  X0:i:1  X1:i:1  XM:i:0  XO:i:0  XG:i:0  MD:Z:76
+ r13452   16   chrM   13    0      3M1D11M   *   0   0                 TACGTCACTCATCA   IIIABCCCICCCCI                 XT:A:U  NM:i:0  X0:i:1  X1:i:1  XM:i:0  XO:i:0  XG:i:0  MD:Z:76
 
 
 The following three files will be produced (Interval, Insertions BED and Deletions BED)::
 
- ref         133         134   I   C   1
- ref         256         258   D   -   1
- ref    48819784    48819785   I   A   1
- ref    87824726    87824727   I   G   1
- ref   188841437   188841419   I   T   1
- ref   190341171   190341172   D   -   1
+ chr1   11   13   D     -   1
+ chr1   21   22   D     -   1
+ chr1   21   23   D     -   1
+ chr2   18   19   I    AA   1
+ chr2   28   29   I   CCC   1
+ chrM   11   12   I   TTT   1
+ chrM   13   14   I     C   1
+ chrM   13   14   I     T   1
+ chrM   16   17   D     -   1
+ chrM   16   18   D     -   1
+ chrM   19   20   D     -   1
+ chrM   19   20   I     T   1
+ chrM   21   22   D     -   1
+ chrM   21   22   I    GA   1
+ chrM   22   23   D     -   1
 
- ref         133         134
- ref    48819784    48819785
- ref    87824726    87824727
- ref   188841437   188841419
+ chr2   18   19
+ chr2   28   29
+ chrM   11   12
+ chrM   13   14
+ chrM   13   14
+ chrM   19   20
+ chrM   21   22
 
- ref         256         258
- ref   190341171   190341172
-
-
-
-
-
+ chr1   11   13
+ chr1   21   22
+ chr1   21   23
+ chrM   16   17
+ chrM   16   18
+ chrM   19   20
+ chrM   21   22
+ chrM   22   23
 
 For more information on SAM, please consult the `SAM format description`__.
 

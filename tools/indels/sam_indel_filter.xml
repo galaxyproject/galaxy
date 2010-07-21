@@ -1,5 +1,5 @@
-<tool id="sam_indel_filter" name="Filter SAM" version="1.0.0">
-  <description>for indels</description>
+<tool id="sam_indel_filter" name="Filter Indels" version="1.0.0">
+  <description>for SAM</description>
   <command interpreter="python">
     sam_indel_filter.py
       --input=$input1
