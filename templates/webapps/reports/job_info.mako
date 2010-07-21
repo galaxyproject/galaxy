@@ -1,6 +1,8 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
+<% import datetime %>
+
 %if message:
     ${render_msg( message, 'done' )}
 %endif
@@ -13,14 +15,17 @@
                 <td>State</td>
                 <td>Job Id</td>
                 <td>Create Time</td>
-                <td>Update Time</td>
+                <td>Time To Finish</td>
                 <td>Session Id</td>
             </tr>
             <tr>
                 <td><div class="count-box state-color-${job.state}">${job.state}</div></td>
                 <td>${job.id}</td>
                 <td>${job.create_time}</td>
-                <td>${job.update_time}</td>
+                <td>
+                    <% execute_time = job.update_time - job.create_time %>
+                    ${datetime.timedelta( seconds=execute_time.seconds )}
+                </td>
                 <td>${job.session_id}</td>
             </tr>
                 <tr class="header">
@@ -54,6 +59,12 @@
             </tr>
             <tr>
                 <td colspan="5">${job.command_line}</td>
+            </tr>
+            <tr class="header">
+                <td colspan="5">Stdout</td>
+            </tr>
+            <tr>
+                <td colspan="5"><pre>${job.stdout}</pre></td>
             </tr>
             <tr class="header">
                 <td colspan="5">Stderr</td>
