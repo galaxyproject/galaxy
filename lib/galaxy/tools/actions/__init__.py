@@ -5,7 +5,6 @@ from galaxy.tools.parameters.grouping import *
 from galaxy.util.template import fill_template
 from galaxy.util.none_like import NoneDataset
 from galaxy.web import url_for
-from galaxy.jobs import JOB_OK
 import galaxy.tools
 from types import *
 
@@ -353,7 +352,7 @@ class DefaultToolAction( object ):
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
             redirect_url += "&GALAXY_URL=%s" % GALAXY_URL
             # Job should not be queued, so set state to ok
-            job.state = JOB_OK
+            job.state = trans.app.model.Job.states.OK
             job.info = "Redirected to: %s" % redirect_url
             trans.sa_session.add( job )
             trans.sa_session.flush()
