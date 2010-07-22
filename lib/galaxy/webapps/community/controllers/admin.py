@@ -299,7 +299,7 @@ class GroupListGrid( grids.Grid ):
 class AdminToolListGrid( ToolListGrid ):
     class StateColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            state = tool.state()
+            state = tool.state
             if state == 'approved':
                 state_color = 'ok'
             elif state == 'rejected':
@@ -441,7 +441,7 @@ class AdminController( BaseController, Admin ):
                     # Called from the ToolStateColumn link
                     tool_id = kwd.get( 'id', None )
                     tool = get_tool( trans, tool_id )
-                    kwd[ 'f-state' ] = tool.state()
+                    kwd[ 'f-state' ] = tool.state
             elif operation == "tools_by_category":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -547,7 +547,7 @@ class AdminController( BaseController, Admin ):
                 # If we're approving a tool, all previously approved versions must be set to archived
                 for version in get_versions( tool ):
                     # TODO: get latest approved version instead of all versions
-                    if version != tool and version.is_approved():
+                    if version != tool and version.is_approved:
                         # Create an event with state ARCHIVED for the previously approved version of this tool
                         self.__create_tool_event( trans,
                                                   version,
@@ -799,30 +799,30 @@ def get_tools_by_state( trans, state ):
     ids = []
     if state == trans.model.Tool.states.NEW:
         for tool in get_tools( trans ):
-            if tool.is_new():
+            if tool.is_new:
                 ids.append( tool.id )
     elif state == trans.model.Tool.states.ERROR:
         for tool in get_tools( trans ):
-            if tool.is_error():
+            if tool.is_error:
                 ids.append( tool.id )
     elif state == trans.model.Tool.states.DELETED:
         for tool in get_tools( trans ):
-            if tool.is_deleted():
+            if tool.is_deleted:
                 ids.append( tool.id )
     elif state == trans.model.Tool.states.WAITING:
         for tool in get_tools( trans ):
-            if tool.is_waiting():
+            if tool.is_waiting:
                 ids.append( tool.id )
     elif state == trans.model.Tool.states.APPROVED:
         for tool in get_tools( trans ):
-            if tool.is_approved():
+            if tool.is_approved:
                 ids.append( tool.id )
     elif state == trans.model.Tool.states.REJECTED:
         for tool in get_tools( trans ):
-            if tool.is_rejected():
+            if tool.is_rejected:
                 ids.append( tool.id )
     elif state == trans.model.Tool.states.ARCHIVED:
         for tool in get_tools( trans ):
-            if tool.is_archived():
+            if tool.is_archived:
                 ids.append( tool.id )
     return ids

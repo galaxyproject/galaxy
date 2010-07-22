@@ -93,7 +93,7 @@ ${tool.get_state_message()}
 
 %if can_edit:
     <form id="edit_tool" name="edit_tool" action="${h.url_for( controller='common', action='edit_tool' )}" method="post">
-        %if tool.is_rejected():
+        %if tool.is_rejected:
             <div class="toolForm">
                 <div class="toolFormTitle">Reason for rejection</div>
                 <div class="toolFormBody">
@@ -169,7 +169,7 @@ ${tool.get_state_message()}
             </div>
         </div>
         <p/>
-        %if tool.is_new() or tool.is_rejected():
+        %if tool.is_new or tool.is_rejected:
             <div class="toolForm">
                 <div class="toolFormTitle">Get approval for publishing</div>
                 <div class="toolFormBody">

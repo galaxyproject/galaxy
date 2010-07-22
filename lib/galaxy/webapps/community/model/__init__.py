@@ -1,5 +1,5 @@
 """
-Galaxy Community Space data model classes
+Galaxy Tool Shed data model classes
 
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
@@ -95,7 +95,7 @@ class Tool( object ):
                     REJECTED = 'rejected',
                     ARCHIVED = 'archived' )
     def __init__( self, guid=None, tool_id=None, name=None, description=None, user_description=None, 
-                  category=None, version=None, user_id=None, external_filename=None ):
+                  category=None, version=None, user_id=None, external_filename=None, suite=False ):
         self.guid = guid
         self.tool_id = tool_id
         self.name = name or "Unnamed tool"
@@ -106,6 +106,7 @@ class Tool( object ):
         self.external_filename = external_filename
         self.deleted = False
         self.__extension = None
+        self.suite = suite
     def get_file_name( self ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
@@ -133,6 +134,8 @@ class Tool( object ):
         self.description = datatype_bunch.description
         self.version = datatype_bunch.version
         self.user_id = datatype_bunch.user.id
+        self.suite = datatype_bunch.suite
+    @property
     def state( self ):
         if self.events:
             # Sort the events in ascending order by update_time
@@ -150,35 +153,47 @@ class Tool( object ):
             else:
                 return ''
         return 'No comment'
+    # Tool states
+    @property
     def is_new( self ):
-        return self.state() == self.states.NEW
+        return self.state == self.states.NEW
+    @property
     def is_error( self ):
-        return self.state() == self.states.ERROR
+        return self.state == self.states.ERROR
+    @property
     def is_deleted( self ):
-        return self.state() == self.states.DELETED
+        return self.state == self.states.DELETED
+    @property
     def is_waiting( self ):
-        return self.state() == self.states.WAITING
+        return self.state == self.states.WAITING
+    @property
     def is_approved( self ):
-        return self.state() == self.states.APPROVED
+        return self.state == self.states.APPROVED
+    @property
     def is_rejected( self ):
-        return self.state() == self.states.REJECTED
+        return self.state == self.states.REJECTED
+    @property
     def is_archived( self ):
-        return self.state() == self.states.ARCHIVED
+        return self.state == self.states.ARCHIVED
     def get_state_message( self ):
-        if self.is_new():
-            return '<font color="red"><b><i>This is an unsubmitted version of this tool</i></b></font>'
-        if self.is_error():
-            return '<font color="red"><b><i>This tool is in an error state</i></b></font>'
-        if self.is_deleted():
-            return '<font color="red"><b><i>This is a deleted version of this tool</i></b></font>'
-        if self.is_waiting():
-            return '<font color="red"><b><i>This version of this tool is awaiting administrative approval</i></b></font>'
-        if self.is_approved():
-            return '<b><i>This is the latest approved version of this tool</i></b>'
-        if self.is_rejected():
-            return '<font color="red"><b><i>This version of this tool has been rejected by an administrator</i></b></font>'
-        if self.is_archived():
-            return '<font color="red"><b><i>This is an archived version of this tool</i></b></font>'
+        if self.is_suite:
+            label = 'tool suite'
+        else:
+            label = 'tool'
+        if self.is_new:
+            return '<font color="red"><b><i>This is an unsubmitted version of this %s</i></b></font>' % label
+        if self.is_error:
+            return '<font color="red"><b><i>This %s is in an error state</i></b></font>' % label
+        if self.is_deleted:
+            return '<font color="red"><b><i>This is a deleted version of this %s</i></b></font>' % label
+        if self.is_waiting:
+            return '<font color="red"><b><i>This version of this %s is awaiting administrative approval</i></b></font>' % label
+        if self.is_approved:
+            return '<b><i>This is the latest approved version of this %s</i></b>' % label
+        if self.is_rejected:
+            return '<font color="red"><b><i>This version of this %s has been rejected by an administrator</i></b></font>' % label
+        if self.is_archived:
+            return '<font color="red"><b><i>This is an archived version of this %s</i></b></font>' % label
     @property
     def extension( self ):
         # if instantiated via a query, this unmapped property won't exist
@@ -201,6 +216,15 @@ class Tool( object ):
         if self.__extension is None:
             self.__extension = 'tar'
         return self.__extension
+    @property
+    def is_suite( self ):
+        return self.suite
+    @property
+    def label( self ):
+        if self.is_suite:
+            return 'tool suite'
+        else:
+            return 'tool'
     @property
     def download_file_name( self ):
         return '%s_%s.%s' % ( self.tool_id, self.version, self.extension )

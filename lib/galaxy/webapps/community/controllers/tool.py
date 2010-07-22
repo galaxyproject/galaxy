@@ -15,7 +15,7 @@ class ApprovedToolListGrid( ToolListGrid ):
 class MyToolsListGrid( ToolListGrid ):
     class StateColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            state = tool.state()
+            state = tool.state
             if state == 'approved':
                 state_color = 'ok'
             elif state == 'rejected':
@@ -64,7 +64,7 @@ class ToolCategoryListGrid( CategoryListGrid ):
                 viewable_tools = 0
                 for tca in category.tools:
                     tool = tca.tool
-                    if tool.is_approved():
+                    if tool.is_approved:
                         viewable_tools += 1
                 return viewable_tools
             return 0

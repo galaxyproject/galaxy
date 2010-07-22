@@ -1,7 +1,7 @@
 <%inherit file="/base_panels.mako"/>
 
 ## Default title
-<%def name="title()">Galaxy Community Space</%def>
+<%def name="title()">Galaxy Tool Shed</%def>
 
 ## Masthead
 <%def name="masthead()">
@@ -94,7 +94,7 @@
     <div class="title" style="position: absolute; top: 0; left: 0;">
         <a href="${app.config.get( 'logo_url', '/' )}">
         <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
-        Galaxy Community
+        Galaxy Tool Shed
         %if app.config.brand:
             <span class='brand'>/ ${app.config.brand}</span>
         %endif

@@ -113,7 +113,8 @@ Tool.table = Table( "tool", metadata,
     Column( "version", TrimmedString( 255 ) ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "external_filename" , TEXT ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "suite", Boolean, default=False, index=True ) )
 
 Category.table = Table( "category", metadata,
     Column( "id", Integer, primary_key=True ),

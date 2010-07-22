@@ -14,6 +14,11 @@ class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             return tool.name
+    class TypeColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, tool ):
+            if tool.is_suite:
+                return 'Suite'
+            return 'Tool'
     class VersionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             return tool.version
@@ -60,6 +65,10 @@ class ToolListGrid( grids.Grid ):
                     model_class=model.Tool,
                     attach_popup=False
                     ),
+        TypeColumn( "Type",
+                     key="suite",
+                     model_class=model.Tool,
+                     attach_popup=False ),
         VersionColumn( "Version",
                        key="version",
                        model_class=model.Tool,
@@ -229,7 +238,7 @@ class CommonController( BaseController ):
                 in_categories.append( ( category.id, category.name ) )
             else:
                 out_categories.append( ( category.id, category.name ) )
-        if tool.is_rejected():
+        if tool.is_rejected:
             # Include the comments regarding the reason for rejection
             reason_for_rejection = get_most_recent_event( tool ).comment
         else:
@@ -283,7 +292,7 @@ class CommonController( BaseController ):
         visible_versions = trans.app.security_agent.get_visible_versions( trans.user, trans.user_is_admin(), cntrller, tool )
         categories = [ tca.category for tca in tool.categories ]
         tool_file_contents = tarfile.open( tool.file_name, 'r' ).getnames()
-        if tool.is_rejected():
+        if tool.is_rejected:
             # Include the comments regarding the reason for rejection
             reason_for_rejection = get_most_recent_event( tool ).comment
         else:

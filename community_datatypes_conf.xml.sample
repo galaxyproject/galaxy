@@ -2,8 +2,6 @@
 <datatypes>
     <registration>
         <datatype extension="tool" type="galaxy.webapps.community.datatypes:Tool" model="galaxy.webapps.community.model:Tool"/>
+        <datatype extension="toolsuite" type="galaxy.webapps.community.datatypes:ToolSuite" model="galaxy.webapps.community.model:Tool"/>
     </registration>
-    <sniffers>
-        <sniffer type="galaxy.webapps.community.datatypes:Tool"/>
-    </sniffers>
 </datatypes>

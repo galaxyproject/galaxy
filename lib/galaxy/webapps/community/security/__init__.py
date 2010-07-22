@@ -1,5 +1,5 @@
 """
-Galaxy Community Space Security
+Galaxy Tool Shed Security
 """
 import logging, socket, operator
 from datetime import datetime, timedelta
@@ -167,14 +167,14 @@ class CommunityRBACAgent( RBACAgent ):
     def can_approve_or_reject( self, user, user_is_admin, cntrller, item ):
         # The current user can approve or reject the item if the user
         # is an admin, and the item's state is WAITING.
-        return user and user_is_admin and cntrller=='admin' and item.is_waiting()
+        return user and user_is_admin and cntrller=='admin' and item.is_waiting
     def can_delete( self, user, user_is_admin, cntrller, item ):
         # The current user can delete the item if they are an admin or if they uploaded the
         # item and in either case the item's state is not DELETED.
         if user and user_is_admin and cntrller == 'admin':
-            can_delete = not item.is_deleted()
+            can_delete = not item.is_deleted
         elif cntrller in [ 'tool' ]:
-            can_delete = user==item.user and not item.is_deleted()
+            can_delete = user==item.user and not item.is_deleted
         else:
             can_delete = False
         return can_delete
@@ -184,7 +184,7 @@ class CommunityRBACAgent( RBACAgent ):
         if user and user_is_admin and cntrller == 'admin':
             return True
         elif cntrller in [ 'tool' ]:
-            can_download = not( item.is_new() or item.is_waiting() )
+            can_download = not( item.is_new or item.is_waiting )
         else:
             can_download = False
         return can_download
@@ -194,7 +194,7 @@ class CommunityRBACAgent( RBACAgent ):
         if user and user_is_admin and cntrller == 'admin':
             return True
         if cntrller in [ 'tool' ]:
-            return user and user==item.user and ( item.is_new() or item.is_rejected() )
+            return user and user==item.user and ( item.is_new or item.is_rejected )
         return False
     def can_purge( self, user, user_is_admin, cntrller ):
         # The current user can purge the item if they are an admin.
@@ -206,7 +206,7 @@ class CommunityRBACAgent( RBACAgent ):
         versions = get_versions( item )
         state_ok = True
         for version in versions:
-            if version.is_new() or version.is_waiting():
+            if version.is_new or version.is_waiting:
                 state_ok = False
                 break
         return state_ok
@@ -215,7 +215,7 @@ class CommunityRBACAgent( RBACAgent ):
         # or if the item's state is APPROVED.
         if user and user_is_admin and cntrller == 'admin':
             return True
-        if cntrller in [ 'tool' ] and item.is_approved():
+        if cntrller in [ 'tool' ] and item.is_approved:
             return True
         return user and user==item.user
     def get_all_action_permissions( self, user, user_is_admin, cntrller, item ):
@@ -236,7 +236,7 @@ class CommunityRBACAgent( RBACAgent ):
         elif cntrller in [ 'tool' ]:
             visible_versions = []
             for version in get_versions( item ):
-                if version.is_approved() or version.is_archived() or version.user == user:
+                if version.is_approved or version.is_archived or version.user == user:
                     visible_versions.append( version )
         else:
            visible_versions = []

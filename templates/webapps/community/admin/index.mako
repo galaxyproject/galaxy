@@ -1,7 +1,7 @@
 <%inherit file="/webapps/community/base_panels.mako"/>
 
 ## Default title
-<%def name="title()">Galaxy Community Space Administration</%def>
+<%def name="title()">Galaxy Tool Shed Administration</%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}    

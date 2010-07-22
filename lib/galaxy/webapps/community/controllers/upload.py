@@ -2,6 +2,7 @@ import sys, os, shutil, logging, urllib2
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
+from galaxy.web.form_builder import SelectField
 from galaxy.webapps.community import datatypes
 from common import get_categories, get_category, get_versions
 
@@ -25,12 +26,13 @@ class UploadController( BaseController ):
         replace_id = params.get( 'replace_id', None )
         replace_version = None
         uploaded_file = None
+        upload_type = params.get( 'upload_type', 'tool' )
         categories = get_categories( trans )
         if not categories:
             return trans.response.send_redirect( web.url_for( controller='tool',
                                                               action='browse_tools',
                                                               cntrller='tool',
-                                                              message='No categories have been configured in this instance of the Galaxy Community.  An administrator needs to create some via the Administrator control panel before anything can be uploaded',
+                                                              message='No categories have been configured in this instance of the Galaxy Tool Shed.  An administrator needs to create some via the Administrator control panel before anything can be uploaded',
                                                               status='error' ) )
         if params.get( 'upload_button', False ):
             url_paste = params.get( 'url', '' ).strip()
@@ -50,8 +52,6 @@ class UploadController( BaseController ):
             elif file_data not in ( '', None ):
                 uploaded_file = file_data.file
             if uploaded_file:
-                # TODO: tool should no longer be the default when we upload histories and workflows
-                upload_type = params.get( 'upload_type', 'tool' )
                 datatype = trans.app.datatypes_registry.get_datatype_by_extension( upload_type )
                 if datatype is None:
                     message = 'An unknown file type was selected.  This should not be possible, please report the error.'
@@ -62,6 +62,7 @@ class UploadController( BaseController ):
                         meta = datatype.verify( uploaded_file )
                         meta.user = trans.user
                         meta.guid = trans.app.security.get_new_guid()
+                        meta.suite = upload_type == 'toolsuite'
                         obj = datatype.create_model_object( meta )
                         trans.sa_session.add( obj )
                         if isinstance( obj, trans.app.model.Tool ):
@@ -71,25 +72,32 @@ class UploadController( BaseController ):
                             if replace_id:
                                 replace_version = trans.sa_session.query( trans.app.model.Tool ).get( trans.security.decode_id( replace_id ) )
                             if existing and not replace_id:
-                                raise UploadError( 'A tool with the same ID already exists.  If you are trying to update this tool to a new version, please use the upload form on the "Edit Tool" page.  Otherwise, please choose a new ID.' )
+                                raise UploadError( 'A %s with the same Id already exists.  If you are trying to update this %s to a new version, use the upload form on the "Edit Tool" page.  Otherwise, change the Id in the %s config.' % \
+                                                   ( obj.label, obj.label, obj.label ) )
                             elif replace_id and not existing:
-                                raise UploadError( 'Tool ids must match when uploading a new version of a tool.  The new tool id does not match the old tool id (%s).  Check the tool XML files.' % str( replace_version.tool_id ) )
+                                raise UploadError( 'The new %s id (%s) does not match the old %s id (%s).  Check the %s config files.' % \
+                                                   ( obj.label, str( meta.id ), obj.label, str( replace_version.tool_id ), obj.label ) )
                             elif existing and replace_id:
                                 if replace_version.newer_version:
                                     # If the user has picked an old version, switch to the newest version
                                     replace_version = get_versions( replace_version )[0]
                                 if replace_version.tool_id != meta.id:
-                                    raise UploadError( 'Tool ids must match when uploading a new version of a tool.  The new tool id (%s) does not match the old tool id (%s).  Check the tool XML files.' % ( str( meta.id ), str( replace_version.tool_id ) ) )
+                                    raise UploadError( 'The new %s id (%s) does not match the old %s id (%s).  Check the %s config files.' % \
+                                                   ( obj.label, str( meta.id ), obj.label, str( replace_version.tool_id ), obj.label ) )
                                 for old_version in get_versions( replace_version ):
                                     if old_version.version == meta.version:
-                                        raise UploadError( 'The new version (%s) matches an old version.  Check your version in the tool XML file.' % str( meta.version ) )
-                                    if old_version.is_new():
-                                        raise UploadError( 'There is an existing version of this tool which has not yet been submitted for approval, so either <a href="%s">submit or delete it</a> before uploading a new version.' % url_for( controller='common',
-                                                                                                                                                                                                                                                action='view_tool',
-                                                                                                                                                                                                                                                cntrller='tool',
-                                                                                                                                                                                                                                                id=trans.security.encode_id( old_version.id ) ) )
-                                    if old_version.is_waiting():
-                                        raise UploadError( 'There is an existing version of this tool which is waiting for administrative approval, so contact an administrator for help.' )
+                                        raise UploadError( 'The new version (%s) matches an old version.  Check your version in the %s config file.' % \
+                                                           ( str( meta.version ), obj.label ) )
+                                    if old_version.is_new:
+                                        raise UploadError( 'There is an existing version of this %s which has not yet been submitted for approval, so either <a href="%s">submit it or delete it</a> before uploading a new version.' % \
+                                                           ( obj.label,
+                                                             url_for( controller='common',
+                                                                      action='view_tool',
+                                                                      cntrller='tool',
+                                                                      id=trans.security.encode_id( old_version.id ) ) ) )
+                                    if old_version.is_waiting:
+                                        raise UploadError( 'There is an existing version of this %s which is waiting for administrative approval, so contact an administrator for help.' % \
+                                                           obj.label )
                                     # Defer setting the id since the newer version id doesn't exist until the new Tool object is flushed
                             if category_ids:
                                 for category_id in category_ids:
@@ -128,10 +136,10 @@ class UploadController( BaseController ):
                 replace_version = trans.sa_session.query( trans.app.model.Tool ).get( int( trans.app.security.decode_id( replace_id ) ) )
                 old_version = None
                 for old_version in get_versions( replace_version ):
-                    if old_version.is_new():
+                    if old_version.is_new:
                         message = 'There is an existing version of this tool which has not been submitted for approval, so either submit or delete it before uploading a new version.'
                         break
-                    if old_version.is_waiting():
+                    if old_version.is_waiting:
                         message = 'There is an existing version of this tool which is waiting for administrative approval, so contact an administrator for help.'
                         break
                 else:
@@ -143,13 +151,23 @@ class UploadController( BaseController ):
                                                                       id=trans.app.security.encode_id( old_version.id ),
                                                                       message=message,
                                                                       status='error' ) )
-        selected_upload_type = params.get( 'type', 'tool' )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
+        datatype_labels=trans.app.datatypes_registry.get_datatype_labels()
+        type_ids = [ tup[0] for tup in datatype_labels ]
+        upload_type_select_list = SelectField( 'upload_type', 
+                                               refresh_on_change=True, 
+                                               refresh_on_change_values=type_ids )
+        for type_id, type_label in datatype_labels:
+            if type_id == upload_type:
+                upload_type_select_list.add_option( type_label, type_id, selected = True )
+            else:
+                upload_type_select_list.add_option( type_label, type_id, selected = False )
         return trans.fill_template( '/webapps/community/upload/upload.mako',
                                     message=message,
                                     status=status,
-                                    selected_upload_type=selected_upload_type,
-                                    upload_types=trans.app.datatypes_registry.get_datatypes_for_select_list(),
+                                    selected_upload_type=upload_type,
+                                    upload_type_select_list=upload_type_select_list,
+                                    datatype_labels=trans.app.datatypes_registry.get_datatype_labels(),
                                     replace_id=replace_id,
                                     selected_categories=selected_categories,
                                     categories=get_categories( trans ) )

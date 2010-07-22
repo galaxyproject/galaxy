@@ -85,7 +85,7 @@ ${tool.get_state_message()}
 %endif
 
 %if can_view:
-    %if tool.is_rejected():
+    %if tool.is_rejected:
         <div class="toolForm">
             <div class="toolFormTitle">Reason for rejection</div>
             <div class="toolFormBody">
@@ -168,7 +168,7 @@ ${tool.get_state_message()}
         <div class="toolFormBody">
             <div class="form-row">
                 <ul class="toolFile">
-                    <li><a href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">${tool.download_file_name}</a></li>
+                    <li><a href="${h.url_for( controller='common', action='download_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">${tool.download_file_name}</a></li>
                     <ul class="fileBrowser">
                         %for name in tool_file_contents:
                             <li><a href="${h.url_for( controller='tool', action='view_tool_file', id=trans.app.security.encode_id( tool.id ), file_name=quote_plus( name ) )}">${name}</a></li>
