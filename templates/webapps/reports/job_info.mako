@@ -29,18 +29,22 @@
                 <td>${job.session_id}</td>
             </tr>
                 <tr class="header">
-                <td colspan="3">Tool</td>
-                <td colspan="2">User</td>
+                <td colspan="2">Tool</td>
+                <td>User</td>
+                <td>Runner</td>
+                <td>Runner Id</td>
             </tr>
             <tr>
-                <td colspan="3">${job.tool_id}</td>
-                <td colspan="2">
+                <td colspan="2">${job.tool_id}</td>
+                <td>
                     %if job.user and job.user.email:
                         ${job.user.email}
                     %else:
                         anonymous
                     %endif
                 </td>
+                <td>${job.job_runner_name}</td>
+                <td>${job.job_runner_external_id}</td>
             </tr>
             <tr class="header">
                 <td colspan="5">Remote Host</td>
