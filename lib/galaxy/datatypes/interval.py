@@ -719,9 +719,9 @@ class Gff( Tabular, _RemoteCallMixin ):
         if seqid is not None:
             for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
                 if site_name in app.config.gbrowse_display_sites:
-                    # Old method, the one uncommented below now seems to be the way GBrowse wants the request
-                    # redirect_url = urllib.quote_plus( "%s%s/?ref=%s&start=%s&stop=%s&eurl=%%s" % ( site_url, dataset.dbkey, seqid, start, stop ) )
-                    redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s" % ( site_url, seqid, start, stop ) )
+                    if seqid.startswith( 'chr' ) and len ( seqid ) > 3:
+                        seqid = seqid[3:]
+                    redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, seqid, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
@@ -1032,7 +1032,9 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         if chrom is not None:
             for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
                 if site_name in app.config.gbrowse_display_sites:
-                    redirect_url = urllib.quote_plus( "%s%s/?ref=%s&start=%s&stop=%s&eurl=%%s" % ( site_url, dataset.dbkey, chrom, start, stop ) )
+                    if chrom.startswith( 'chr' ) and len ( chrom ) > 3:
+                        chrom = chrom[3:]
+                    redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, chrom, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
