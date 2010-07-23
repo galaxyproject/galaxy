@@ -1,0 +1,24 @@
+<display id="gbrowse_wig" version="1.0.0" name="display at GBrowse">
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links from_file="tool-data/shared/gbrowse/gbrowse_build_sites.txt" skip_startswith="#" id="0" name="0">
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="gbrowse_link" value="1"/>
+        <dynamic_param name="builds" value="2" split="True" separator="," />
+        <!-- Filter out some of the links based upon matching site_id to a Galaxy application configuration parameter and by dataset dbkey -->
+        <filter>${site_id in $APP.config.gbrowse_display_sites}</filter>
+        <filter>${dataset.dbkey in $builds}</filter>
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${gbrowse_link}/?${position}eurl=${wig_file.qp}</url>
+        <param type="data" name="wig_file" url="galaxy_${DATASET_HASH}.wig" format="wig"/>
+        <param type="template" name="position" strip="True" >
+#set chrom, start, end = $wig_file.datatype.get_estimated_display_viewport( $wig_file )
+#if $chrom is not None:
+#if $chrom.startswith( 'chr' ):
+    #set $chrom = $chrom[3:]
+#end if
+q=${chrom}:${start}..${end}&amp;
+#end if
+        </param>
+    </dynamic_links>
+</display>

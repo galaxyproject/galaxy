@@ -55,6 +55,7 @@
             <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
             <converter file="gff_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
             <display file="ensembl/ensembl_gff.xml" inherit="True"/>
+            <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="True" /> -->
         </datatype>
         <datatype extension="gff3" type="galaxy.datatypes.interval:Gff3" display_in_upload="true"/>
         <datatype extension="gif" type="galaxy.datatypes.images:Image" mimetype="image/gif"/>
@@ -70,6 +71,7 @@
             <!-- <display file="ucsc/interval_as_bed.xml" inherit="True" /> -->
             <display file="genetrack.xml" inherit="True"/>
             <display file="ensembl/ensembl_interval_as_bed.xml" inherit="True"/>
+            <display file="gbrowse/gbrowse_interval_as_bed.xml" inherit="True"/>
         </datatype>
         <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
         <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
@@ -102,6 +104,7 @@
         <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
             <converter file="wiggle_to_array_tree_converter.xml" target_datatype="array_tree"/>
             <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
+            <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
         </datatype>
         <datatype extension="array_tree" type="galaxy.datatypes.data:Data" />
         <datatype extension="summary_tree" type="galaxy.datatypes.data:Data" />

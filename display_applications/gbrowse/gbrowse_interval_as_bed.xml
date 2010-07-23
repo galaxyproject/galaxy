@@ -1,0 +1,24 @@
+<display id="gbrowse_interval_as_bed" version="1.0.0" name="display at GBrowse">
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links from_file="tool-data/shared/gbrowse/gbrowse_build_sites.txt" skip_startswith="#" id="0" name="0">
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="gbrowse_link" value="1"/>
+        <dynamic_param name="builds" value="2" split="True" separator="," />
+        <!-- Filter out some of the links based upon matching site_id to a Galaxy application configuration parameter and by dataset dbkey -->
+        <filter>${site_id in $APP.config.gbrowse_display_sites}</filter>
+        <filter>${dataset.dbkey in $builds}</filter>
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${gbrowse_link}/?${position}eurl=${bed_file.qp}</url>
+        <param type="data" name="bed_file" url="galaxy_${DATASET_HASH}.bed" format="bedstrict"/> <!-- Galaxy allows BED files to contain non-standard fields beyond the first 3 columns, gbrowse does not(?): force use of converter which will make strict BED6+ file -->
+        <param type="template" name="position" strip="True" >
+#set chrom, start, end = $bed_file.datatype.get_estimated_display_viewport( $bed_file )
+#if $chrom is not None:
+#if $chrom.startswith( 'chr' ):
+    #set $chrom = $chrom[3:]
+#end if
+q=${chrom}:${start}..${end}&amp;
+#end if
+        </param>
+    </dynamic_links>
+</display>
