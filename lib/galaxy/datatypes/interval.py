@@ -38,6 +38,10 @@ for key, value in alias_spec.items():
     for elem in value:
         alias_helper[elem] = key
 
+#Constants for configuring viewport generation
+VIEWPORT_READLINE_BUFFER_SIZE = 1048576 #1MB
+VIEWPORT_MAX_READS_PER_LINE = 10 # If a line is greater than VIEWPORT_MAX_READS_PER_LINE * VIEWPORT_READLINE_BUFFER_SIZE bytes in size, then we will not generate a viewport for that dataset
+
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
     file_ext = "interval"
@@ -146,33 +150,55 @@ class Interval( Tabular ):
                 and dataset.metadata.endCol
         except:
             return False
-    def get_estimated_display_viewport( self, dataset ):
+    def get_estimated_display_viewport( self, dataset, chrom_col = None, start_col = None, end_col = None ):
         """Return a chrom, start, stop tuple for viewing a file."""
+        viewport_feature_count = 100 # viewport should check at least 100 features; excludes comment lines
+        max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
         if self.displayable( dataset ):
             try:
-                c, s, e = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol
-                c, s, e = int(c)-1, int(s)-1, int(e)-1
-                try:
-                    skipme = int(dataset.metadata.comment_lines)
-                except:
-                    skipme = 0
-                peek = []
-                for idx, line in enumerate(file(dataset.file_name)):
-                    if line[0] != '#':
-                        peek.append( line.rstrip( '\n\r' ).split() )
-                        if idx > 100 and idx > skipme: # viewport should have at least 100 features
-                            break
-                chr, start, stop = peek[skipme][c], int( peek[skipme][s] ), int( peek[skipme][e] )
-                for p in peek[(skipme+1):]:
-                    if p[0] == chr:
-                        start = min( start, int( p[s] ) )
-                        stop  = max( stop, int( p[e] ) )
-            except Exception, exc:
-                log.exception( str(exc) )
-                return ( None, None, None )
-            return (chr, str( start ), str( stop )) 
-        else:
-            return ( None, None, None )
+                chrom = None 
+                start = sys.maxint 
+                end = 0
+                if chrom_col is None:
+                    chrom_col = int( dataset.metadata.chromCol ) - 1
+                if start_col is None:
+                    start_col = int( dataset.metadata.startCol ) - 1
+                if end_col is None:
+                    end_col = int( dataset.metadata.endCol ) - 1
+                max_col = max( chrom_col, start_col, end_col )
+                fh = open( dataset.file_name )
+                while True:
+                    line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                    if not line: break #EOF
+                    if not line.startswith( '#' ):
+                        try:
+                            fields = line.rstrip().split( '\t' )
+                            if len( fields ) > max_col:
+                                if chrom is None or chrom == fields[ chrom_col ]:
+                                    start = min( start, int( fields[ start_col ] ) )
+                                    end = max( end, int( fields[ end_col ] ) )
+                                    chrom = fields[ chrom_col ] #set chrom last, in case start and end are not integers
+                                viewport_feature_count -= 1
+                        except Exception:
+                            #most likely a non-integer field has been encountered for start / stop
+                            continue
+                    #make sure we are at the next new line
+                    readline_count = VIEWPORT_MAX_READS_PER_LINE
+                    while line.rstrip( '\n\r' ) == line:
+                        assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
+                        line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                        if not line: break #EOF
+                        readline_count -= 1
+                    max_line_count -= 1
+                    if not viewport_feature_count or not max_line_count:
+                        #exceeded viewport or total line count to check
+                        break
+                if chrom is not None:
+                    return ( chrom, str( start ), str( end ) ) #Necessary to return strings?
+            except Exception, e:
+                #unexpected error, possibly missing metadata
+                log.exception( str( e ) )
+        return ( None, None, None ) #could not determine viewport
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data"""
         fd, temp_name = tempfile.mkstemp()
@@ -336,49 +362,11 @@ class BedGraph( Interval ):
         """
         return open( dataset.file_name )
         
-    def get_estimated_display_viewport( self, dataset ):
+    def get_estimated_display_viewport( self, dataset, chrom_col = 0, start_col = 1, end_col = 2 ):
         """
             Set viewport based on dataset's first 100 lines.
         """
-        if self.displayable( dataset ):
-            try:
-                # Set seqid, start, stop.
-                seqid = None
-                start = 2147483647  # Maximum value of a signed 32 bit integer ( 2**31 - 1 )
-                stop = 0
-                for i, line in enumerate( file( dataset.file_name ) ):
-                    line = line.rstrip( '\r\n' )
-                    if not line:
-                        continue
-                    elems = line.split('\t')
-                    if len( elems ) == 4:
-                        # Update seq id, start, end.
-                        if not seqid:
-                            # We can only set the viewport for a single chromosome
-                            seqid = elems[0]
-                        if seqid == elems[0]:
-                            # Make sure we have not spanned chromosomes
-                            start = min( start, int( elems[1] ) )
-                            stop = max( stop, int( elems[2] ) )
-                        else:
-                            # We've spanned a chromosome
-                            break
-                    else:
-                        continue
-                    # Only look through 100 lines.
-                    if i > 100:
-                        break
-                        
-                # Set valid values for start, stop if necessary.
-                if start == 2147483647:
-                    start = 0
-                if stop == 0:
-                    stop = 1
-                return ( seqid, str( start ), str( stop ) )
-            except Exception, exc:
-                log.exception( str( exc ) )
-                return ( None, None, None )
-        return ( None, None, None )
+        return Interval.get_estimated_display_viewport( self, dataset, chrom_col = chrom_col, start_col = start_col, end_col = end_col )
 
 class Bed( Interval ):
     """Tab delimited data in BED format"""
@@ -644,61 +632,75 @@ class Gff( Tabular, _RemoteCallMixin ):
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
         formats.  This function should correctly handle both...
         """
+        viewport_feature_count = 100 # viewport should check at least 100 features; excludes comment lines
+        max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
         if self.displayable( dataset ):
             try:
-                seqid = ''
-                start = 2147483647  # Maximum value of a signed 32 bit integer ( 2**31 - 1 )
+                seqid = None 
+                start = sys.maxint 
                 stop = 0
-                for i, line in enumerate( file( dataset.file_name ) ):
-                    line = line.rstrip( '\r\n' )
-                    if not line:
-                        continue
-                    if line.startswith( '##sequence-region' ): # ##sequence-region IV 6000000 6030000
-                        elems = line.split()
-                        if len( elems ) > 3:
-                            # line looks like:
-                            # ##sequence-region   ctg123 1 1497228 
-                            seqid = elems[1] # IV
-                            start = elems[2] # 6000000
-                            stop = elems[3] # 6030000
-                            break
-                        elif len( elems ) == 2 and elems[1].find( '..' ) > 0:
-                            # line looks like this:
-                            # ##sequence-region X:120000..140000
-                            elems = elems[1].split( ':' )
-                            seqid = elems[0]
-                            start = elems[1].split( '..' )[0]
-                            stop = elems[1].split( '..' )[1]
-                            break
-                        else:
-                            log.exception( "line (%s) uses an unsupported ##sequence-region definition." % str( line ) )
-                            break
-                    # Allow UCSC style browser and track info in the GFF file
-                    if line.startswith("browser position"):
-                        pos_info = line.split()[-1]
-                        seqid, startend = pos_info.split(":")
-                        start, end = startend.split("-")
+                fh = open( dataset.file_name )
+                while True:
+                    line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                    if not line: break #EOF
+                    try:
+                        if line.startswith( '##sequence-region' ): # ##sequence-region IV 6000000 6030000
+                            elems = line.rstrip( '\n\r' ).split()
+                            if len( elems ) > 3:
+                                # line looks like:
+                                # ##sequence-region   ctg123 1 1497228 
+                                seqid = elems[1] # IV
+                                start = int( elems[2] )# 6000000
+                                stop = int( elems[3] ) # 6030000
+                                break #use location declared in file
+                            elif len( elems ) == 2 and elems[1].find( '..' ) > 0:
+                                # line looks like this:
+                                # ##sequence-region X:120000..140000
+                                elems = elems[1].split( ':' )
+                                seqid = elems[0]
+                                start = int( elems[1].split( '..' )[0] )
+                                stop = int( elems[1].split( '..' )[1] )
+                                break #use location declared in file
+                            else:
+                                log.exception( "line (%s) uses an unsupported ##sequence-region definition." % str( line ) )
+                                #break #no break, if bad definition, we try another method
+                        elif line.startswith("browser position"):
+                            # Allow UCSC style browser and track info in the GFF file
+                            pos_info = line.split()[-1]
+                            seqid, startend = pos_info.split(":")
+                            start, stop = map( int, startend.split("-") )
+                            break #use location declared in file
+                        elif True not in map( line.startswith, ( '#', 'track', 'browser' ) ):# line.startswith() does not accept iterator in python2.4
+                            viewport_feature_count -= 1
+                            elems = line.rstrip( '\n\r' ).split( '\t' )
+                            if len( elems ) > 3:
+                                if not seqid:
+                                    # We can only set the viewport for a single chromosome
+                                    seqid = elems[0]
+                                if seqid == elems[0]:
+                                    # Make sure we have not spanned chromosomes
+                                    start = min( start, int( elems[3] ) )
+                                    stop = max( stop, int( elems[4] ) )
+                    except:
+                        #most likely start/stop is not an int or not enough fields
+                        pass
+                    #make sure we are at the next new line
+                    readline_count = VIEWPORT_MAX_READS_PER_LINE
+                    while line.rstrip( '\n\r' ) == line:
+                        assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
+                        line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                        if not line: break #EOF
+                        readline_count -= 1
+                    max_line_count -= 1
+                    if not viewport_feature_count or not max_line_count:
+                        #exceeded viewport or total line count to check
                         break
-                    if not line.startswith(('#', 'track', 'browser')) :
-                        elems = line.split( '\t' )
-                        if not seqid:
-                            # We can only set the viewport for a single chromosome
-                            seqid = elems[0]
-                        if seqid == elems[0]:
-                            # Make sure we have not spanned chromosomes
-                            start = min( start, int( elems[3] ) )
-                            stop = max( stop, int( elems[4] ) )
-                        else:
-                            # We've spanned a chromosome
-                            break
-                    if i > 10:
-                        break
+                if seqid is not None:
+                    return ( seqid, str( start ), str( stop ) ) #Necessary to return strings?
             except Exception, e:
+                #unexpected error
                 log.exception( str( e ) )
-                return ( None, None, None )
-            return ( seqid, str( start ), str( stop ) )
-        else:
-            return ( None, None, None )
+        return ( None, None, None ) #could not determine viewport
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport( dataset )
@@ -963,44 +965,67 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         Tabular.__init__( self, **kwd )
         self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
         self.add_display_app( 'gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
-
     def get_estimated_display_viewport( self, dataset ):
+        """Return a chrom, start, stop tuple for viewing a file."""
+        viewport_feature_count = 100 # viewport should check at least 100 features; excludes comment lines
+        max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
         if self.displayable( dataset ):
-            num_check_lines = 100 # only check up to this many non empty lines
-            vstart = None
-            vend = 0
-            vwig_chr = '?'
-            value = None
-            for i, line in enumerate( file( dataset.file_name ) ):
-                line = line.rstrip( '\r\n' )
-                if line:
-                    if line.startswith( "browser" ):
-                        chr_info = line.split()[-1]
-                        wig_chr, coords = chr_info.split( ":" )
-                        start, end = coords.split( "-" )
-                        value = ( wig_chr, start, end )
+            try:
+                chrom = None 
+                start = sys.maxint 
+                end = 0
+                span = 1
+                step = None
+                fh = open( dataset.file_name )
+                while True:
+                    line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                    if not line: break #EOF
+                    try:
+                        if line.startswith( "browser" ):
+                            chr_info = line.rstrip( '\n\r' ).split()[-1]
+                            chrom, coords = chr_info.split( ":" )
+                            start, end = map( int, coords.split( "-" ) )
+                            break # use the browser line
+                        # variableStep chrom=chr20
+                        if line and ( line.lower().startswith( "variablestep" ) or line.lower().startswith( "fixedstep" ) ):
+                            if chrom is not None: break #different chrom or different section of the chrom
+                            chrom = line.rstrip( '\n\r' ).split("chrom=")[1].split()[0]
+                            if 'span=' in line:
+                                span = int( line.rstrip( '\n\r' ).split("span=")[1].split()[0] )
+                            if 'step=' in line:
+                                step = int( line.rstrip( '\n\r' ).split("step=")[1].split()[0] )
+                                start = int( line.rstrip( '\n\r' ).split("start=")[1].split()[0] )
+                        else:
+                            fields = line.rstrip( '\n\r' ).split()
+                            if fields:
+                                if step is not None:
+                                    if not end:
+                                        end = start + span
+                                    else:
+                                        end += step
+                                else:
+                                    start = min( int( fields[0] ), start )
+                                    end = max( end, int( fields[0] ) + span )
+                                viewport_feature_count -= 1
+                    except:
+                        pass
+                    #make sure we are at the next new line
+                    readline_count = VIEWPORT_MAX_READS_PER_LINE
+                    while line.rstrip( '\n\r' ) == line:
+                        assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
+                        line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                        if not line: break #EOF
+                        readline_count -= 1
+                    max_line_count -= 1
+                    if not viewport_feature_count or not max_line_count:
+                        #exceeded viewport or total line count to check
                         break
-                    # variableStep chrom=chr20
-                    if line and (line.lower().startswith( "variablestep" ) or line.lower().startswith( "fixedstep" )):
-                        c = line.split("chr")[-1]
-                        c = c.split()[0]
-                        vwig_chr = 'chr%s' % c
-                    else:
-                        try:
-                            offset = line.split()[0]
-                            offset = int(offset)
-                            vend = max(vend,offset)
-                            if not vstart:
-                                vstart = offset # first
-                        except:
-                            pass                    
-                if i > num_check_lines:
-                    break
-            if value == None:
-                value = (vwig_chr, vstart, vend)
-            return value
-        else:
-            return ( None, None, None )
+                if chrom is not None:
+                    return ( chrom, str( start ), str( end ) ) #Necessary to return strings?
+            except Exception, e:
+                #unexpected error
+                log.exception( str( e ) )
+        return ( None, None, None ) #could not determine viewport
     def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport( dataset )
@@ -1119,44 +1144,61 @@ class CustomTrack ( Tabular ):
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
-    def get_estimated_display_viewport( self, dataset ):
+    def get_estimated_display_viewport( self, dataset, chrom_col = None, start_col = None, end_col = None ):
+        """Return a chrom, start, stop tuple for viewing a file."""
+        #FIXME: only BED and WIG custom tracks are currently supported
+        #As per previously existing behavior, viewport will only be over the first intervals 
+        max_line_count = 100 # maximum number of lines to check; includes comment lines
+        variable_step_wig = False
+        chrom = None
+        span = 1
         if self.displayable( dataset ):
             try:
-                wiggle_format = False
-                for line in open(dataset.file_name):
-                    if (line.startswith("chr") or line.startswith("scaffold")):  
-                        line = line.rstrip( '\n\r' )
-                        start = line.split("\t")[1].replace(",","")   
-                        end = line.split("\t")[2].replace(",","")
-    
-                        if int(start) < int(end):
-                            value = ( line.split("\t")[0], start, end )
-                        else:
-                            value = ( line.split("\t")[0], end, start )
-    
+                fh = open( dataset.file_name )
+                while True:
+                    line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                    if not line: break #EOF
+                    if not line.startswith( '#' ):
+                        try:
+                            if variable_step_wig:
+                                fields = line.rstrip().split()
+                                if len( fields ) == 2:
+                                    start = int( fields[ 0 ] )
+                                    return ( chrom, str( start ), str( start + span ) )
+                            elif line and ( line.lower().startswith( "variablestep" ) or line.lower().startswith( "fixedstep" ) ):
+                                chrom = line.rstrip( '\n\r' ).split("chrom=")[1].split()[0]
+                                if 'span=' in line:
+                                    span = int( line.rstrip( '\n\r' ).split("span=")[1].split()[0] )
+                                if 'start=' in line:
+                                    start = int( line.rstrip( '\n\r' ).split("start=")[1].split()[0] )
+                                    return ( chrom, str( start ), str( start + span )  )
+                                else:
+                                    variable_step_wig = True 
+                            else:
+                                fields = line.rstrip().split( '\t' )
+                                if len( fields ) >= 3:
+                                    chrom = fields[ 0 ]
+                                    start = int( fields[ 1 ] )
+                                    end = int( fields[ 2 ] )
+                                    return ( chrom, str( start ), str( end ) )
+                        except Exception:
+                            #most likely a non-integer field has been encountered for start / stop
+                            continue
+                    #make sure we are at the next new line
+                    readline_count = VIEWPORT_MAX_READS_PER_LINE
+                    while line.rstrip( '\n\r' ) == line:
+                        assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
+                        line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                        if not line: break #EOF
+                        readline_count -= 1
+                    max_line_count -= 1
+                    if not max_line_count:
+                        #exceeded viewport or total line count to check
                         break
-    
-                    elif (line.startswith('variableStep')):
-                        # wiggle format
-                        wiggle_format = True
-                        wig_chr = line.split()[1].split('=')[1]
-                        if not wig_chr.startswith("chr"):
-                            value = ('', '', '')
-                            break
-                    elif wiggle_format:
-                        # wiggle format
-                        if line.split("\t")[0].isdigit():
-                            start = line.split("\t")[0]
-                            end = str(int(start) + 1)
-                            value = (wig_chr, start, end)
-                        else:
-                            value = (wig_chr, '', '')
-                        break       
-                return value #returns the co-ordinates of the 1st track/dataset
-            except:
-                return ( None, None, None )
-        else:
-            return ( None, None, None )
+            except Exception, e:
+                #unexpected error
+                log.exception( str( e ) )
+        return ( None, None, None ) #could not determine viewport
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
