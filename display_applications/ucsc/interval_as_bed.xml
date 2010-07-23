@@ -12,30 +12,7 @@
         <url>${ucsc_link}db=${qp($bed_file.dbkey)}&amp;position=${position.qp}&amp;hgt.customText=${bed_file.qp}</url>
         <param type="data" name="bed_file" url="galaxy_${DATASET_HASH}.bed" format="bedstrict"/> <!-- Galaxy allows BED files to contain non-standard fields beyond the first 3 columns, UCSC does not: force use of converter which will make strict BED6+ file -->
         <param type="template" name="position" strip="True" >
-#set line_count = 0
-#set chrom = None
-#set start = float( 'inf' )
-#set end = 0
-#for $line in open( $bed_file.file_name ):
-    #if $line_count &gt; 10: ##10 max lines to check for view port
-        #break
-    #end if
-    #if not $line.startswith( "#" ):
-        #set $fields = $line.split( "\t" )
-        #try:
-            #if len( $fields ) &gt;= max( $bed_file.metadata.startCol, $bed_file.metadata.endCol, $bed_file.metadata.chromCol ):
-                #if $chrom is None or $fields[ $bed_file.metadata.chromCol - 1 ] == $chrom:
-                    #set chrom = $fields[ $bed_file.metadata.chromCol - 1 ]
-                    #set start = min( $start, int( $fields[ $bed_file.metadata.startCol - 1 ] ) )
-                    #set end = max( $end, int( $fields[ $bed_file.metadata.endCol - 1 ] ) )
-                #end if
-            #end if
-        #except:
-            #pass
-        #end try
-    #end if
-    #set line_count += 1
-#end for
+#set chrom, start, end = $bed_file.datatype.get_estimated_display_viewport( $bed_file )
 #if $chrom is not None:
 ${chrom}:${start}-${end + 1}
 #else:

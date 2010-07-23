@@ -152,13 +152,13 @@
                             %endfor
                         %endif
                     %endfor
-                %endif
-                %for display_app in data.get_display_applications( trans ).itervalues():
-                    | ${display_app.name} 
-                    %for link_app in display_app.links.itervalues():
-                        <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
+                    %for display_app in data.get_display_applications( trans ).itervalues():
+                        | ${display_app.name} 
+                        %for link_app in display_app.links.itervalues():
+                            <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
+                        %endfor
                     %endfor
-                %endfor
+                %endif
     
                 </div>
                 %if data.peek != "no peek":

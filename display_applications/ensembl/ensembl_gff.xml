@@ -21,30 +21,7 @@
             $site_organisms[ $site_dbkeys.index( $gff_file.dbkey ) ]
         </param>
         <param type="template" name="position" strip="True" >
-#set line_count = 0
-#set chrom = None
-#set start = float( 'inf' )
-#set end = 0
-#for $line in open( $gff_file.file_name ):
-    #if $line_count &gt; 10: ##10 max lines to check for view port
-        #break
-    #end if
-    #if not $line.startswith( "#" ):
-        #set $fields = $line.split( "\t" )
-        #try:
-            #if len( $fields ) &gt;= 5:
-                #if $chrom is None or $fields[ 0 ] == $chrom:
-                    #set chrom = $fields[ 0 ]
-                    #set start = min( $start, int( $fields[ 3 ] ) )
-                    #set end = max( $end, int( $fields[ 4 ] ) )
-                #end if
-            #end if
-        #except:
-            #pass
-        #end try
-    #end if
-    #set line_count += 1
-#end for
+#set chrom, start, end = $gff_file.datatype.get_estimated_display_viewport( $gff_file )
 #if $chrom is not None:
 ##The difference between chr1 and 1 is handled by Ensembl, except for the viewport, we need to provide e.g. '1' instead of 'chr1' here
 ##This is rather naive, it would be more ideal to have actual mappings
@@ -84,30 +61,7 @@ ${chrom}:${start}-${end}
             $site_organisms[ $site_dbkeys.index( $gff_file.dbkey ) ]
         </param>
         <param type="template" name="position" strip="True" >
-            #set line_count = 0
-            #set chrom = None
-            #set start = float( 'inf' )
-            #set end = 0
-            #for $line in open( $gff_file.file_name ):
-                #if $line_count &gt; 10: ##10 max lines to check for view port
-                    #break
-                #end if
-                #if not $line.startswith( "#" ):
-                    #set $fields = $line.split( "\t" )
-                    #try:
-                        #if len( $fields ) &gt;= 5:
-                            #if $chrom is None or $fields[ 0 ] == $chrom:
-                                #set chrom = $fields[ 0 ]
-                                #set start = min( $start, int( $fields[ 3 ] ) )
-                                #set end = max( $end, int( $fields[ 4 ] ) )
-                            #end if
-                        #end if
-                    #except:
-                        #pass
-                    #end try
-                #end if
-                #set line_count += 1
-            #end for
+            #set chrom, start, end = $gff_file.datatype.get_estimated_display_viewport( $gff_file )
             #if $chrom is not None:
             ##The difference between chr1 and 1 is handled by Ensembl, except for the viewport, we need to provide e.g. '1' instead of 'chr1' here
             ##This is rather naive, it would be more ideal to have actual mappings
