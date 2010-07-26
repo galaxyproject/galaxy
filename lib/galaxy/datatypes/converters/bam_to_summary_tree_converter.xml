@@ -1,4 +1,4 @@
-<tool id="CONVERTER_bam_to_summary_tree_0" name="Convert BAM to Summary Tree" version="1.0.0">
+<tool id="CONVERTER_bam_to_summary_tree_0" name="Convert BAM to Summary Tree" version="1.0.0" hidden="true">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
   <command interpreter="python">bam_to_summary_tree_converter.py $input1 $bai $output1</command>
   <inputs>

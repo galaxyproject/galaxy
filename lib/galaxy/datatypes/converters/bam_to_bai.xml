@@ -1,4 +1,4 @@
-<tool id="CONVERTER_Bam_Bai_0" name="Bam to Bai">
+<tool id="CONVERTER_Bam_Bai_0" name="Bam to Bai" hidden="true">
   <command>samtools index $input1 $output1</command>
   <inputs>
     <page>

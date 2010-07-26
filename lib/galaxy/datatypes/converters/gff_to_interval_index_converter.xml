@@ -1,4 +1,4 @@
-<tool id="CONVERTER_gff_to_interval_index_0" name="Convert BED to Interval Index" version="1.0.0">
+<tool id="CONVERTER_gff_to_interval_index_0" name="Convert BED to Interval Index" version="1.0.0" hidden="true">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
   <command interpreter="python">interval_to_interval_index_converter.py $input1 $output1 --gff</command>
   <inputs>

@@ -39,7 +39,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                                                             order_by( self.app.model.Job.create_time.desc() ):
                     tool_id = row[0]
                     a_tool = toolbox.tools_by_id.get( tool_id, None )
-                    if a_tool and a_tool not in recent_tools:
+                    if a_tool and not a_tool.hidden and a_tool not in recent_tools:
                         recent_tools.append( a_tool )
                         ## TODO: make number of recently used tools a user preference.
                         if len ( recent_tools ) == 5:
