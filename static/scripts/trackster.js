@@ -93,6 +93,7 @@ $.extend( View.prototype, {
             view = this;
         this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(parent_element);        
         this.content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
+        this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide().appendTo(parent_element);
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
         this.viewport = $("<div/>").addClass("viewport").appendTo(this.viewport_container);
         
@@ -130,12 +131,21 @@ $.extend( View.prototype, {
                     chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
                 }
                 view.chrom_select.html(chrom_options);
-                view.chrom_select.bind( "change", function () {
+                
+                var change_chrom = function () {
+                    if (view.chrom_select.val() === "") {
+                        // No chrom selected
+                        view.intro_div.show();
+                        view.content_div.hide();
+                    } else {
+                        view.intro_div.hide();
+                        view.content_div.show();
+                    }
                     view.chrom = view.chrom_select.val();
                     var found = $.grep(view.chrom_data, function(v, i) {
                         return v.chrom === view.chrom;
                     })[0];
-                    view.max_high = (found.len !== undefined ? found.len : 0);
+                    view.max_high = (found !== undefined ? found.len : 0);
                     view.reset();
                     view.redraw(true);
                 
@@ -146,7 +156,9 @@ $.extend( View.prototype, {
                         }
                     }
                     view.redraw();
-                });
+                };
+                view.chrom_select.bind( "change", change_chrom );
+                change_chrom();
             },
             error: function() {
                 alert( "Could not load chroms for this dbkey:", view.dbkey );
@@ -190,9 +202,9 @@ $.extend( View.prototype, {
             var container = $(this);
             var delta = e.offsetX - this.current_x;
             var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
-            if ( new_scroll < container.get(0).scrollHeight - container.height() ) {
+            // if ( new_scroll < container.get(0).scrollHeight - container.height() ) {
                 container.scrollTop(new_scroll);
-            }
+            // }
             this.current_height = e.clientY;
             this.current_x = e.offsetX;
 
@@ -204,12 +216,12 @@ $.extend( View.prototype, {
             this.drag_origin_x = e.clientX;
             this.drag_origin_pos = e.clientX / view.viewport_container.width() * (view.high - view.low) + view.low;
             this.drag_div = $("<div />").css( { 
-                "height": view.content_div.height(), "top": "0px", "position": "absolute", 
-                "background-color": "#cfc", "border": "1px solid #6a6", "opacity": 0.5
+                "height": view.viewport_container.height(), "top": "0px", "position": "absolute", 
+                "background-color": "#cfc", "border": "1px solid #6a6", "opacity": 0.5, "z-index": 1000
             } ).appendTo( $(this) );
         }).bind( "drag", function(e) {
-            var min = Math.min(e.clientX, this.drag_origin_x),
-                max = Math.max(e.clientX, this.drag_origin_x),
+            var min = Math.min(e.clientX, this.drag_origin_x) - view.container.offset().left,
+                max = Math.max(e.clientX, this.drag_origin_x) - view.container.offset().left,
                 span = (view.high - view.low),
                 width = view.viewport_container.width();
             
@@ -371,7 +383,7 @@ $.extend( Track.prototype, {
         track.data_queue = {};
         track.tile_cache.clear();
         track.data_cache.clear();
-        // track.content_div.css( "height", "30px" );
+        track.content_div.css( "height", "auto" );
         if (!track.content_div.text()) {
             track.content_div.text(DATA_LOADING);
         }
@@ -501,7 +513,7 @@ $.extend( LabelTrack.prototype, Track.prototype, {
 
 var ReferenceTrack = function (view) {
     this.track_type = "ReferenceTrack";
-    Track.call( this, null, view, view.nav_labeltrack );
+    Track.call( this, null, view, view.top_labeltrack );
     TiledTrack.call( this );
     
     this.hidden = true;
@@ -547,7 +559,10 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
             }
             
             var seq = this.data_cache.get(key);
-            if (seq === null) { return; }
+            if (seq === null) {
+                this.content_div.css("height", "0px");
+                return;
+            }
             
             canvas.get(0).width = Math.ceil( tile_length * w_scale + this.left_offset);
             canvas.get(0).height = this.height_px;
@@ -565,6 +580,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
             parent_element.append( canvas );
             return canvas;
         }
+        this.content_div.css("height", "0px");
     }
 });
 

@@ -8,15 +8,16 @@
     <script type="text/javascript">
         var view;
         // To adjust the size of the viewport to fit the fixed-height footer
-        var refresh = function() {
+        var refresh = function( e ) {
             if (view !== undefined) {
                 view.viewport_container.height( $(window).height() - 100 );
                 view.nav_container.width( $("#center").width() );
                 view.redraw();
             }
         };
-        $(window).bind( "resize", function() { refresh(); } );
-        $("#right-border").bind( "click dragend", function() { refresh(); } );
+        $(window).bind( "resize", function(e) { refresh(e); } );
+        $("#right-border").bind( "click dragend", function(e) { refresh(e); } );
+        $(window).trigger( "resize" );
     </script>
     
 </%def>
@@ -63,6 +64,7 @@
                 new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['prefs']} )
             );
         %endfor
-        $(window).trigger( "resize" );
+        container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
+
     </script>
 </%def>

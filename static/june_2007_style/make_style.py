@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, string, os.path, tempfile, subprocess
+import sys, string, os, tempfile, subprocess
 
 # from Cheetah.Template import Template
 from subprocess import Popen, PIPE
@@ -62,12 +62,16 @@ shared_images = [
     ( "wait_small.png", "history_queued_bg", "data_queued.png" ),
 ]
 
+if __name__ == "__main__":
+    if len(sys.argv) > 1: # has params
+        ini_file, out_dir = sys.argv[1:]
+    else:
+        cwd = os.getcwd() # default settings
+        ini_file, out_dir = cwd + "/blue_colors.ini", cwd + "/blue"
 
-ini_file, out_dir = sys.argv[1:]
-
-for in_file, out_file in templates:
-    print in_file ,"->", out_file
-    subprocess.call( "./process_css.py %s shared_images:../images %s < %s > %s" % ( ini_file, out_dir, in_file, os.path.join( out_dir, out_file ) ), shell=True )
+    for in_file, out_file in templates:
+        print in_file ,"->", out_file
+        subprocess.call( "./process_css.py %s shared_images:../images %s < %s > %s" % ( ini_file, out_dir, in_file, os.path.join( out_dir, out_file ) ), shell=True )
 
   
 """
@@ -81,3 +85,5 @@ for src, bg, out in shared_images:
     print t
     run( t.split() )
 """
+
+

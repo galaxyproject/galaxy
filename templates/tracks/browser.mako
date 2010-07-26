@@ -112,7 +112,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
         // To adjust the size of the viewport to fit the fixed-height footer
         var refresh = function() {
             if (view !== undefined) {
-                view.viewport_container.height( $(window).height() - 100 );
+                view.viewport_container.height( $("#center").height() - 110 );
                 view.nav_container.width( $("#center").width() );
                 view.redraw();
             }

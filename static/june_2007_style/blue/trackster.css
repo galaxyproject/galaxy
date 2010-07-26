@@ -3,18 +3,19 @@
 .nav-controls{text-align:center;background:#cccccc;background-image:url(panel_header_bg.png);background-position:top center;background-repeat:repeat-x;padding:2px 0;}
 .nav-controls input{margin:0 5px;}
 .nav-controls a{padding:0 0.4em;}
-.overview{width:100%;margin:0px;color:white;margin-top:-6px;margin-bottom:-4px;}
-.overview-viewport{position:relative;height:14px;background:white;border-top:solid gray 1px;border-bottom:solid gray 1px;margin:5px 0;}
+.intro{position:absolute;top:50%;left:30%;color:#555;font-size:16px;}
+.overview{width:100%;margin:0px;color:white;}
+.overview-viewport{position:relative;height:14px;background:white;border-bottom:solid gray 1px;margin:0;}
 .overview-box{position:absolute;margin-top:0px;height:14px;background:#ddd url(../images/visualization/draggable_horizontal.png) center center no-repeat;}
 .viewport{background-color:#fff;}
 .viewport-canvas{width:100%;height:100px;}
 .yaxislabel{color:#777;}
 .line-track .track-content{border-top:1px solid #ddd;border-bottom:1px solid #ddd;}
 .track{background:white;}
-.track-header{text-align:center;padding:4px;color:#666;}
+.track-header{text-align:left;padding:4px;color:#666;}
 .track-content{overflow:hidden;text-align:center;}
-.track.error{background-color:#ECB4AF;}
-.track.nodata{background-color:#ddd;}
+.track.error{margin-bottom:2px;background-color:#ECB4AF;}
+.track.nodata{margin-bottom:2px;background-color:#ddd;}
 .loading{min-height:100px;}
 .label-track{}
 .label-track .label{border-left:solid #999 1px;padding:1px;display:inline-block;}
