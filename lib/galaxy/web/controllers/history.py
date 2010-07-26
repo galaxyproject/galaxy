@@ -958,9 +958,12 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         # Do import.
         if not id:
             return trans.show_error_message( "You must specify a history you want to import.<br>You can %s." % referer_message, use_panels=True )
-        import_history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
+        import_history = self.get_history( trans, id, check_ownership=False, check_accessible=False )
         if not import_history:
             return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
+        # History is importable if user is admin or it's accessible. TODO: probably want to have app setting to enable admin access to histories.
+        if not trans.user_is_admin() and not self.security_check( user, import_history, check_ownership=False, check_accessible=True ):
+            return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
         if user:
             if import_history.user_id == user.id:
                 return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
@@ -1016,7 +1019,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         if not history_to_view:
             return trans.show_error_message( "The specified history does not exist." )
         # Admin users can view any history
-        if not trans.user_is_admin and not history_to_view.importable:
+        if not trans.user_is_admin() and not history_to_view.importable:
             error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
         # View history.
         datasets = self.get_history_datasets( trans, history_to_view )
