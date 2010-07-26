@@ -174,6 +174,8 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
         stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False ).first()
+        if stored_workflow is None:
+           raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access workflow.
         self.security_check( trans.get_user(), stored_workflow, False, True)
         
