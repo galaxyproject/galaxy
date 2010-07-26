@@ -69,8 +69,8 @@ class Tool( object ):
             raise DatatypeVerificationError( 'The archive is not a readable tar file.' )
         if not xml_files:
             # Make sure we're not uploading a tool suite
-            if filter( lambda x: x.lower() == 'tool_suite.xml', tar.getnames() ):
-                raise DatatypeVerificationError( 'The archive includes a tool_suite.xml file, so set the upload type to "Tool Suite".' )
+            if filter( lambda x: x.lower() == 'suite_config.xml', tar.getnames() ):
+                raise DatatypeVerificationError( 'The archive includes a suite_config.xml file, so set the upload type to "Tool Suite".' )
             xml_files = filter( lambda x: x.lower().endswith( '.xml' ), tar.getnames() )
             if not xml_files:
                 raise DatatypeVerificationError( 'The archive does not contain any xml config files.' )
@@ -148,9 +148,9 @@ class ToolSuite( Tool ):
             tar = tarfile.open( f.name )
         except tarfile.ReadError:
             raise DatatypeVerificationError( 'The archive is not a readable tar file.' )
-        suite_config = filter( lambda x: x.lower() == 'tool_suite.xml', tar.getnames() )
+        suite_config = filter( lambda x: x.lower() == 'suite_config.xml', tar.getnames() )
         if not suite_config:
-            raise DatatypeVerificationError( 'The archive does not contain the required tool_suite.xml config file.  If you are uploading a single tool archive, set the upload type to "Tool".' )
+            raise DatatypeVerificationError( 'The archive does not contain the required suite_config.xml config file.  If you are uploading a single tool archive, set the upload type to "Tool".' )
         suite_config = suite_config[ 0 ]
         # Parse and verify suite_config
         archive_ok = False
@@ -184,7 +184,7 @@ class ToolSuite( Tool ):
         else:
             raise DatatypeVerificationError( "The file named %s is not a valid tool suite config." % str( suite_config ) )
         # Verify all included tool config files
-        xml_files = filter( lambda x: x.lower().endswith( '.xml' ) and x.lower() != 'tool_suite.xml', tar.getnames() )
+        xml_files = filter( lambda x: x.lower().endswith( '.xml' ) and x.lower() != 'suite_config.xml', tar.getnames() )
         if not xml_files:
             raise DatatypeVerificationError( 'The archive does not contain any tool config (xml) files.' )
         Tool.verify( self, f, xml_files=xml_files, tool_tags=tool_tags )
