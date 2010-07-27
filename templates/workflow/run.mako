@@ -2,6 +2,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ${h.js( "jquery.autocomplete" )}
     <script type="text/javascript">        
         $( function() {
             $( "select[refresh_on_change='true']").change( function() {
@@ -12,7 +13,8 @@
 </%def>
 
 <%def name="stylesheets()">
-    <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+    ${parent.stylesheets()}
+    ${h.css( "autocomplete_tagging" )}
     <style type="text/css">
     div.toolForm{
         margin-top: 10px;
