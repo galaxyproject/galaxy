@@ -148,7 +148,7 @@ class ToolSuite( Tool ):
             tar = tarfile.open( f.name )
         except tarfile.ReadError:
             raise DatatypeVerificationError( 'The archive is not a readable tar file.' )
-        suite_config = filter( lambda x: x.lower() == 'suite_config.xml', tar.getnames() )
+        suite_config = filter( lambda x: x.lower().find( 'suite_config.xml' ) >=0, tar.getnames() )
         if not suite_config:
             raise DatatypeVerificationError( 'The archive does not contain the required suite_config.xml config file.  If you are uploading a single tool archive, set the upload type to "Tool".' )
         suite_config = suite_config[ 0 ]
