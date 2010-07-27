@@ -331,6 +331,11 @@
    <tool file="samtools/pileup_parser.xml" />
    <tool file="samtools/pileup_interval.xml" />
   </section>
+  <section name="NGS: Indel Analysis" id="indel_analysis">
+    <tool file="indels/sam_indel_filter.xml" />
+    <tool file="indels/indel_sam2interval.xml" />
+    <tool file="indels/indel_analysis.xml" />
+  </section>
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />
    <tool file="genetrack/genetrack_indexer.xml" />
