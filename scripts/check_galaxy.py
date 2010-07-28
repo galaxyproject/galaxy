@@ -90,9 +90,8 @@ except:
 
 # find/import twill
 lib_dir = os.path.join( scripts_dir, "..", "lib" )
-eggs_dir = os.path.join( scripts_dir, "..", "eggs", "py%s-noplatform" %sys.version[:3] )
 sys.path.append( lib_dir )
-sys.path.append( eggs_dir )
+from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "twill" )
 import twill
