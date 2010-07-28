@@ -17,4 +17,8 @@
         </div>
         <div style="clear: both;"></div>
     </div>
+    <div class="form-row">
+        Is your build not listed here? 
+        <a href="${h.url_for( controller='user', action='dbkeys', panels=True )}">Add a Custom Build</a>
+    </div>
 </form>

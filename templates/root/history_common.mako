@@ -119,7 +119,8 @@
                     %if for_editing:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
                         %if app.config.get_bool( 'enable_tracks', False ) and data.ext in app.datatypes_registry.get_available_tracks():
-                            <a class="icon-button vis-chart tooltip trackster" title="Visualize in Trackster" id="visualize_${hid}"></a>
+                            <a data-url="${h.url_for( controller='tracks', action='list_tracks' )}" class="icon-button vis-chart tooltip trackster-add"
+                                action-url="${h.url_for( controller='tracks', action='browser', dataset_id=dataset_id)}" title="Visualize in Trackster"></a>
                         %endif
                         %if trans.user:
                             <div style="float: right">

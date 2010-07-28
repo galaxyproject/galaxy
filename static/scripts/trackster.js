@@ -79,6 +79,7 @@ var View = function( container, chrom, title, vis_id, dbkey ) {
     this.label_tracks = [];
     this.max_low = 0;
     this.max_high = 0;
+    this.num_tracks = 0;
     this.track_id_counter = 0;
     this.zoom_factor = 3;
     this.min_separation = 30;
@@ -267,6 +268,7 @@ $.extend( View.prototype, {
         if (track.init) { track.init(); }
         track.container_div.attr('id', 'track_' + track.track_id);
         this.track_id_counter += 1;
+        this.num_tracks += 1;
     },
     add_label_track: function (label_track) {
         label_track.view = this;
@@ -276,6 +278,7 @@ $.extend( View.prototype, {
         this.has_changes = true;
         track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[this.tracks.indexOf(track)];
+        this.num_tracks -= 1;
     },
     update_options: function() {
         this.has_changes = true;
@@ -570,7 +573,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
             canvas.css( {
                 position: "absolute",
                 top: 0,
-                left: ( tile_low - this.view.low ) * w_scale + this.left_offset
+                left: ( tile_low - this.view.low ) * w_scale - this.left_offset
             });
             
             for (var c = 0, str_len = seq.length; c < str_len; c++) {

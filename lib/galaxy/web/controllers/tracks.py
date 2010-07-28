@@ -87,6 +87,35 @@ class DatasetSelectionGrid( grids.Grid ):
                     .filter( model.History.deleted == False ) \
                     .filter( model.HistoryDatasetAssociation.deleted == False )
                     
+class TracksterSelectionGrid( grids.Grid ):
+#    class DbKeyColumn( grids.GridColumn ):
+#        def filter( self, trans, user, query, dbkey ):
+#            """ Filter by dbkey. """
+#            # use raw SQL b/c metadata is a BLOB
+#            dbkey = dbkey.replace("'", "\\'")
+#            return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+
+    # Grid definition.
+    title = "Insert into visualization"
+    template = "/tracks/add_to_viz.mako"
+    async_template = "/page/select_items_grid_async.mako"
+    model_class = model.Visualization
+    default_filter = { "deleted" : "False" , "shared" : "All" }
+    default_sort_key = "title"
+    use_async = True
+    use_paging = False
+    columns = [
+        grids.TextColumn( "Title", key="title", model_class=model.Visualization )
+    ]
+    columns.append( 
+        grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+    )
+
+    def build_initial_query( self, trans, **kwargs ):
+        return trans.sa_session.query( self.model_class )
+    def apply_query_filter( self, trans, query, **kwargs ):
+        return query.filter( self.model_class.user_id == trans.user.id )                    
         
 class TracksController( BaseController, UsesVisualization ):
     """
@@ -138,7 +167,7 @@ class TracksController( BaseController, UsesVisualization ):
         
     @web.expose
     @web.require_login()
-    def browser(self, trans, id, chrom=""):
+    def browser(self, trans, id, chrom="", **kwargs):
         """
         Display browser for the datasets listed in `dataset_ids`.
         """
@@ -149,7 +178,7 @@ class TracksController( BaseController, UsesVisualization ):
         
         # Set config chrom.
         viz_config[ 'chrom' ] = chrom
-        return trans.fill_template( 'tracks/browser.mako', config=viz_config )
+        return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=kwargs.get("dataset_id", None) )
 
     @web.json
     def chroms(self, trans, vis_id=None, dbkey=None ):
@@ -288,10 +317,6 @@ class TracksController( BaseController, UsesVisualization ):
             data = data['data']
         return { 'dataset_type': dataset_type, 'extra_info': extra_info, 'data': data, 'message': message }
     
-    @web.expose
-    def list_tracks( self, trans, hid ):
-        return None
-    
     @web.json
     def save( self, trans, **kwargs ):
         session = trans.sa_session
@@ -328,6 +353,7 @@ class TracksController( BaseController, UsesVisualization ):
         return trans.security.encode_id(vis.id)
     
     data_grid = DatasetSelectionGrid()
+    tracks_grid = TracksterSelectionGrid()
     
     @web.expose
     @web.require_login( "see all available datasets" )
@@ -336,3 +362,8 @@ class TracksController( BaseController, UsesVisualization ):
         
         # Render the list view
         return self.data_grid( trans, **kwargs )
+    
+    @web.expose
+    def list_tracks( self, trans, **kwargs ):
+        return self.tracks_grid( trans, **kwargs )
+            

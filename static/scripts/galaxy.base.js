@@ -553,6 +553,34 @@ GalaxyAsync.prototype.log_user_action = function( action, context, params )
     });
 };
 
+// Add to trackster browser functionality
+$(".trackster-add").live("click", function() {
+    var dataset = this,
+        dataset_jquery = $(this);
+    $.ajax({
+        url: dataset_jquery.attr("data-url"),
+        data: { "f-dbkey": "hi" },
+        dataType: "html",
+        error: function() { alert( "Could not add this dataset to browser." ); },
+        success: function(table_html) {
+            var parent = window.parent;
+            parent.show_modal("Add to Browser:", table_html, {
+                "Insert Dataset Into": function() {
+                    $(parent.document).find('input[name=id]:checked').each(function() {
+                        var vis_id = $(this).val();
+                        parent.location = dataset_jquery.attr("action-url") + "&id=" + vis_id;
+                    });
+                    parent.hide_modal();
+                },
+                "Cancel": function() {
+                    parent.hide_modal();
+                }
+            });
+        }
+    });
+});
+
+
 $(document).ready( function() {
     // Links with confirmation
     $( "a[confirm]" ).click( function() {

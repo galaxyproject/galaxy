@@ -56,6 +56,9 @@ ${h.css( "history", "autocomplete_tagging", "trackster" )}
     </div>
     <form action="#" onsubmit="view.update_options();return false;">
         <div id="show-hide-move">
+            <div id="no-tracks" class="warningmessage" style="margin: 5px; display:none;">
+                There are currently no tracks in this browser. Add tracks via the button above.
+            </div>
             <ul id="sortable-ul"></ul>
         </div>
         <input type="submit" id="refresh-button" value="Refresh" style="display:none" />
@@ -123,6 +126,14 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
         
         // Execute initializer for EDITOR specific javascript
         function init() {
+            %if add_dataset:
+                console.log("Adding dataset");
+                ## Code for adding new dataset
+            %endif
+            
+            if (view.num_tracks === 0) {
+                $("#no-tracks").show();
+            }
             $("#title").text(view.title + " (" + view.dbkey + ")");
             $("ul#sortable-ul").sortable({
                 update: function(event, ui) {
@@ -161,6 +172,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
 												
                                             view.add_track(new_track);
                                             view.has_changes = true;
+                                            $("#no-tracks").hide();
                                             sidebar_box(new_track);
                                         }
                                     });
@@ -231,6 +243,9 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     del_icon.bind("click", function() {
                         $("#track_" + track_id + "_li").fadeOut('slow', function() { $("#track_" + track_id + "_li").remove(); });
                         view.remove_track(track);
+                        if (view.num_tracks === 0) {
+                            $("#no-tracks").show();
+                        }
                     });
                     icon_div.append(edit_icon).append(del_icon);
                     title.append(label).prepend(icon_div);
