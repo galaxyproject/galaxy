@@ -158,6 +158,8 @@
                             <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
                         %endfor
                     %endfor
+                %elif for_editing:
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
                 %endif
     
                 </div>
