@@ -31,7 +31,7 @@
 #if $chrom.startswith( 'chr' ):
     #set $chrom = $chrom[3:]
 #end if
-${chrom}:${start + 1}-${end}
+${chrom}:${int( start ) + 1}-${end}
 #else:
 ##default view is of '1'
 1
@@ -71,7 +71,7 @@ ${chrom}:${start + 1}-${end}
             #if $chrom.startswith( 'chr' ):
                 #set $chrom = $chrom[3:]
             #end if
-            &amp;chr=${chrom}&amp;start=${start + 1}&amp;end=${end}
+            &amp;chr=${chrom}&amp;start=${int( start ) + 1}&amp;end=${end}
             #end if
         </param>
     </dynamic_links>
