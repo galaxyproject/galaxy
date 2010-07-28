@@ -14,8 +14,6 @@ from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
 from galaxy.webapps.community.security import CommunityRBACAgent
-from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.ext.associationproxy import association_proxy
 
 metadata = MetaData()
 context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
@@ -216,7 +214,12 @@ assign_mapper( context, ToolAnnotationAssociation, ToolAnnotationAssociation.tab
 assign_mapper( context, Tool, Tool.table, 
     properties = dict(
         categories=relation( ToolCategoryAssociation ),
-        events=relation( ToolEventAssociation ),
+        events=relation( ToolEventAssociation, secondary=Event.table,
+                         primaryjoin=( Tool.table.c.id==ToolEventAssociation.table.c.tool_id ),
+                         secondaryjoin=( ToolEventAssociation.table.c.event_id==Event.table.c.id ),
+                         order_by=desc( Event.table.c.update_time ),
+                         viewonly=True,
+                         uselist=True ),
         user=relation( User.mapper ),
         older_version=relation(
             Tool,

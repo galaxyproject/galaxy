@@ -8,45 +8,55 @@ from common import *
 
 log = logging.getLogger( __name__ )
 
+class StateColumn( grids.TextColumn ):
+    def get_value( self, trans, grid, tool ):
+        state = tool.state
+        if state == trans.model.Tool.states.APPROVED:
+            state_color = 'ok'
+        elif state == trans.model.Tool.states.REJECTED:
+            state_color = 'error'
+        elif state == trans.model.Tool.states.ARCHIVED:
+            state_color = 'upload'
+        else:
+            state_color = state
+        return '<div class="count-box state-color-%s">%s</div>' % ( state_color, state )
+class ToolStateColumn( grids.StateColumn ):
+    def filter( self, trans, user, query, column_filter ):
+        """Modify query to filter self.model_class by state."""
+        if column_filter == "All":
+            pass
+        elif column_filter in [ v for k, v in self.model_class.states.items() ]:
+            # Get all of the latest Events associated with the current version of each tool
+            latest_event_id_for_current_versions_of_tools = [ tool.latest_event.id for tool in get_latest_versions_of_tools( trans ) ]
+            # Filter query by the latest state for the current version of each tool
+            return query.filter( and_( model.Event.table.c.state == column_filter,
+                                       model.Event.table.c.id.in_( latest_event_id_for_current_versions_of_tools ) ) )
+        return query
+        
 class ApprovedToolListGrid( ToolListGrid ):
-    def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter( model.Event.table.c.state == 'approved' )
-
-class MyToolsListGrid( ToolListGrid ):
-    class StateColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            state = tool.state
-            if state == 'approved':
-                state_color = 'ok'
-            elif state == 'rejected':
-                state_color = 'error'
-            elif state == 'archived':
-                state_color = 'upload'
-            else:
-                state_color = state
-            return '<div class="count-box state-color-%s">%s</div>' % ( state_color, state )
-    class ToolStateColumn( grids.StateColumn ):
-        def filter( self, trans, user, query, column_filter ):
-            """Modify query to filter self.model_class by state."""
-            if column_filter == "All":
-                pass
-            elif column_filter in [ v for k, v in self.model_class.states.items() ]:
-                # Get all of the latest ToolEventAssociation ids
-                tea_ids = [ tea_id_tup[0] for tea_id_tup in trans.sa_session.query( func.max( model.ToolEventAssociation.table.c.id ) ) \
-                                                                            .group_by( model.ToolEventAssociation.table.c.tool_id ) ]
-                # Get all of the Event ids associated with the latest ToolEventAssociation ids
-                event_ids = [ event_id_tup[0] for event_id_tup in trans.sa_session.query( model.ToolEventAssociation.table.c.event_id ) \
-                                                                                  .filter( model.ToolEventAssociation.table.c.id.in_( tea_ids ) ) ]
-                # Filter our query by state and event ids
-                return query.filter( and_( model.Event.table.c.state == column_filter,
-                                           model.Event.table.c.id.in_( event_ids ) ) )
-            return query
-
     columns = [ col for col in ToolListGrid.columns ]
     columns.append(
         StateColumn( "Status",
                      model_class=model.Tool,
                      link=( lambda item: dict( operation="tools_by_state", id=item.id, webapp="community" ) ),
+                     visible=False,
+                     attach_popup=False )
+    )
+    columns.append(
+        ToolStateColumn( "State",
+                         key="state",
+                         model_class=model.Tool,
+                         visible=False,
+                         filterable="advanced" )
+    )
+
+class MyToolsListGrid( ApprovedToolListGrid ):
+    columns = [ col for col in ToolListGrid.columns ]
+    columns.append(
+        StateColumn( "Status",
+                     model_class=model.Tool,
+                     link=( lambda item: dict( operation="tools_by_state", id=item.id, webapp="community" ) ),
+                     visible=True,
                      attach_popup=False )
     )
     columns.append(
@@ -58,6 +68,10 @@ class MyToolsListGrid( ToolListGrid ):
     )
 
 class ToolCategoryListGrid( CategoryListGrid ):
+    """
+    Replaces the tools column in the Category grid with a similar column,
+    but displaying the number of APPROVED tools in the category.
+    """
     class ToolsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
             if category.tools:
@@ -69,7 +83,10 @@ class ToolCategoryListGrid( CategoryListGrid ):
                 return viewable_tools
             return 0
 
-    columns = [ col for col in CategoryListGrid.columns ]
+    columns = []
+    for col in CategoryListGrid.columns:
+        if not isinstance( col, CategoryListGrid.ToolsColumn ):
+            columns.append( col )
     columns.append(
         ToolsColumn( "Tools",
                      model_class=model.Tool,
@@ -146,6 +163,14 @@ class ToolController( BaseController ):
                         del kwd[ k ]
                 kwd[ 'f-email' ] = trans.user.email
                 return self.my_tools_list_grid( trans, **kwd )
+            elif operation == "approved_tools":
+                # Eliminate the current filters if any exist.
+                for k, v in kwd.items():
+                    if k.startswith( 'f-' ):
+                        del kwd[ k ]
+                # Make sure only the latest version of a tool whose state is APPROVED are displayed.
+                kwd[ 'f-state' ] = trans.model.Tool.states.APPROVED
+                return self.tool_list_grid( trans, **kwd )
             elif operation == "tools_by_category":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -154,6 +179,8 @@ class ToolController( BaseController ):
                 category_id = kwd.get( 'id', None )
                 category = get_category( trans, category_id )
                 kwd[ 'f-category' ] = category.name
+                # Make sure only the latest version of a tool whose state is APPROVED are displayed.
+                kwd[ 'f-state' ] = trans.model.Tool.states.APPROVED
         # Render the list view
         return self.tool_list_grid( trans, **kwd )
     @web.expose

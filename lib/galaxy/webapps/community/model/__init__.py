@@ -10,7 +10,6 @@ from galaxy import util
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 log = logging.getLogger( __name__ )
-from sqlalchemy.orm import object_session
 
 class User( object ):
     def __init__( self, email=None, password=None ):
@@ -137,22 +136,17 @@ class Tool( object ):
         self.suite = datatype_bunch.suite
     @property
     def state( self ):
-        if self.events:
-            # Sort the events in ascending order by update_time
-            events = sort_by_attr( [ tca.event for tca in self.events ], 'update_time' )
-            # Get the last event that occurred
-            return events[-1].state
+        latest_event = self.latest_event
+        if latest_event:
+            return latest_event.state
         return None
-    def last_comment( self ):
+    @property
+    def latest_event( self ):
         if self.events:
-            # Sort the events in ascending order by update_time
-            events = sort_by_attr( [ tca.event for tca in self.events ], 'update_time' )
-            # Get the last event that occurred
-            if events[-1].comment:
-                return events[-1].comment
-            else:
-                return ''
-        return 'No comment'
+            events = [ tea.event for tea in self.events ]
+            # Get the last event that occurred ( events mapper is sorted descending )
+            return events[0]
+        return None
     # Tool states
     @property
     def is_new( self ):

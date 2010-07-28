@@ -81,7 +81,7 @@
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_categories', webapp='community' )}">Browse by category</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools', webapp='community' )}">Browse all tools</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools', operation='approved_tools', webapp='community' )}">Browse all tools</a></div>
                         %if trans.user:
                             <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tool', action='browse_tools', operation='my_tools', webapp='community' )}">Browse your tools</a></div>
                         %endif

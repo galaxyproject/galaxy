@@ -2,7 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
-from common import ToolListGrid, CategoryListGrid, get_category, get_tools, get_event, get_tool, get_versions
+from common import ToolListGrid, CategoryListGrid, get_category, get_event, get_tool, get_versions
 import logging
 log = logging.getLogger( __name__ )
 
@@ -791,38 +791,3 @@ class AdminController( BaseController, Admin ):
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
-
-## ---- Utility methods -------------------------------------------------------
-
-def get_tools_by_state( trans, state ):
-    # TODO: write this as a query using eagerload - will be much faster.
-    ids = []
-    if state == trans.model.Tool.states.NEW:
-        for tool in get_tools( trans ):
-            if tool.is_new:
-                ids.append( tool.id )
-    elif state == trans.model.Tool.states.ERROR:
-        for tool in get_tools( trans ):
-            if tool.is_error:
-                ids.append( tool.id )
-    elif state == trans.model.Tool.states.DELETED:
-        for tool in get_tools( trans ):
-            if tool.is_deleted:
-                ids.append( tool.id )
-    elif state == trans.model.Tool.states.WAITING:
-        for tool in get_tools( trans ):
-            if tool.is_waiting:
-                ids.append( tool.id )
-    elif state == trans.model.Tool.states.APPROVED:
-        for tool in get_tools( trans ):
-            if tool.is_approved:
-                ids.append( tool.id )
-    elif state == trans.model.Tool.states.REJECTED:
-        for tool in get_tools( trans ):
-            if tool.is_rejected:
-                ids.append( tool.id )
-    elif state == trans.model.Tool.states.ARCHIVED:
-        for tool in get_tools( trans ):
-            if tool.is_archived:
-                ids.append( tool.id )
-    return ids

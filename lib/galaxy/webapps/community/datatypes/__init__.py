@@ -69,7 +69,7 @@ class Tool( object ):
             raise DatatypeVerificationError( 'The archive is not a readable tar file.' )
         if not xml_files:
             # Make sure we're not uploading a tool suite
-            if filter( lambda x: x.lower() == 'suite_config.xml', tar.getnames() ):
+            if filter( lambda x: x.lower().find( 'suite_config.xml' ) >= 0, tar.getnames() ):
                 raise DatatypeVerificationError( 'The archive includes a suite_config.xml file, so set the upload type to "Tool Suite".' )
             xml_files = filter( lambda x: x.lower().endswith( '.xml' ), tar.getnames() )
             if not xml_files:

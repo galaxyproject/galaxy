@@ -96,7 +96,7 @@ class ToolListGrid( grids.Grid ):
         ToolCategoryColumn( "Category",
                             key="category",
                             model_class=model.Category,
-                            visible=False ),
+                            visible=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1], columns[2] ],
@@ -123,6 +123,14 @@ class CategoryListGrid( grids.Grid ):
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
             return category.description
+    class ToolsColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, category ):
+            if category.tools:
+                viewable_tools = 0
+                for tca in category.tools:
+                    viewable_tools += 1
+                return viewable_tools
+            return 0
 
     # Grid definition
     webapp = "community"
@@ -148,13 +156,17 @@ class CategoryListGrid( grids.Grid ):
         grids.DeletedColumn( "Deleted",
                              key="deleted",
                              visible=False,
-                             filterable="advanced" )
+                             filterable="advanced" ),
+        ToolsColumn( "Tools",
+                     model_class=model.Tool,
+                     attach_popup=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
                                                 cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
+
     # Override these
     global_actions = []
     operations = []
@@ -240,7 +252,7 @@ class CommonController( BaseController ):
                 out_categories.append( ( category.id, category.name ) )
         if tool.is_rejected:
             # Include the comments regarding the reason for rejection
-            reason_for_rejection = get_most_recent_event( tool ).comment
+            reason_for_rejection = tool.latest_event.comment
         else:
             reason_for_rejection = ''
         can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
@@ -294,7 +306,7 @@ class CommonController( BaseController ):
         tool_file_contents = tarfile.open( tool.file_name, 'r' ).getnames()
         if tool.is_rejected:
             # Include the comments regarding the reason for rejection
-            reason_for_rejection = get_most_recent_event( tool ).comment
+            reason_for_rejection = tool.latest_event.comment
         else:
             reason_for_rejection = ''
         return trans.fill_template( '/webapps/community/tool/view_tool.mako',
@@ -429,15 +441,15 @@ class CommonController( BaseController ):
 
 def get_versions( item ):
     """Get all versions of item"""
-    versions = [item]
+    versions = [ item ]
     this_item = item
     while item.newer_version:
         versions.insert( 0, item.newer_version )
         item = item.newer_version
     item = this_item
     while item.older_version:
-        versions.append( item.older_version[0] )
-        item = item.older_version[0]
+        versions.append( item.older_version[ 0 ] )
+        item = item.older_version[ 0 ]
     return versions
 def get_categories( trans ):
     """Get all categories from the database"""
@@ -450,22 +462,21 @@ def get_category( trans, id ):
 def get_tool( trans, id ):
     """Get a tool from the database"""
     return trans.sa_session.query( trans.model.Tool ).get( trans.app.security.decode_id( id ) )
-def get_tools( trans ):
+def get_latest_versions_of_tools( trans ):
     """Get only the latest version of each tool from the database"""
     return trans.sa_session.query( trans.model.Tool ) \
                            .filter( trans.model.Tool.newer_version_id == None ) \
                            .order_by( trans.model.Tool.name )
+def get_approved_tools( trans ):
+    """Get the tools from the database whose state is APPROVED"""
+    approved_tools = []
+    for tool in get_latest_versions_of_tools( trans ):
+        if tool.state == trans.model.Tool.states.APPROVED:
+            approved_tools.append( tool )
+    return approved_tools
 def get_event( trans, id ):
     """Get an event from the databse"""
     return trans.sa_session.query( trans.model.Event ).get( trans.security.decode_id( id ) )
-def get_most_recent_event( item ):
-    """Get the most recent event for item"""
-    if item.events:
-        # Sort the events in ascending order by update_time
-        events = model.sort_by_attr( [ item_event_assoc.event for item_event_assoc in item.events ], 'update_time' )
-        # Get the last event that occurred
-        return events[-1]
-    return None
 def get_user( trans, id ):
     """Get a user from the database"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
