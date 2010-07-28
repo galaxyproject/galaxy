@@ -737,6 +737,9 @@ class DefaultJobDispatcher( object ):
             elif runner_name == "sge":
                 import runners.sge
                 self.job_runners[runner_name] = runners.sge.SGEJobRunner( app )
+            elif runner_name == "drmaa":
+                import runners.drmaa
+                self.job_runners[runner_name] = runners.drmaa.DRMAAJobRunner( app )
             else:
                 log.error( "Unable to start unknown job runner: %s" %runner_name )
             

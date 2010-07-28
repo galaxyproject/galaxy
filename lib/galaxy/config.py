@@ -151,7 +151,7 @@ class Configuration( object ):
                 raise ConfigurationError("File not found: %s" % path )
         # Check job runners so the admin can scramble dependent egg.
         if self.start_job_runners is not None:
-            runner_to_egg = dict( pbs = 'pbs_python', sge = 'DRMAA_python' )
+            runner_to_egg = dict( pbs = 'pbs_python', sge = 'DRMAA_python', drmaa = 'drmaa' )
             for runner in self.start_job_runners.split( ',' ):
                 try:
                     pkg_resources.require( runner_to_egg[runner] )
