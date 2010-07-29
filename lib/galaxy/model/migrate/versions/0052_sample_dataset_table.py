@@ -61,19 +61,20 @@ def upgrade():
     result = db_session.execute( cmd )
     for r in result:
         sample_id = r[0]
-        dataset_files = from_json_string(r[1])
-        for df in dataset_files:
-            cmd = "INSERT INTO sample_dataset VALUES (%s, %s, %s, %s, '%s', '%s', '%s', '%s', '%s')"
-            cmd = cmd % ( nextval('sample_dataset'),
-                          localtimestamp(),
-                          localtimestamp(),
-                          str(sample_id),
-                          df['name'],
-                          df['filepath'],
-                          df['status'],
-                          df['error_msg'].replace('"', '').replace("'", ""),
-                          df['size'] )
-            db_session.execute( cmd )
+        if r[1]:
+            dataset_files = from_json_string(r[1])
+            for df in dataset_files:
+                cmd = "INSERT INTO sample_dataset VALUES (%s, %s, %s, %s, '%s', '%s', '%s', '%s', '%s')"
+                cmd = cmd % ( nextval('sample_dataset'),
+                              localtimestamp(),
+                              localtimestamp(),
+                              str(sample_id),
+                              df['name'],
+                              df['filepath'],
+                              df['status'].replace('"', '').replace("'", ""),
+                              "",
+                              df['size'].replace('"', '').replace("'", "") )
+                db_session.execute( cmd )
             
     # Delete the dataset_files column in the Sample table
     try:
