@@ -69,6 +69,7 @@ class SGEJobRunner( object ):
         if DRMAA is None:
             raise Exception( "SGEJobRunner requires DRMAA_python which was not found" )
         self.app = app
+        self.sa_session = app.model.context
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
         # any thread (usually by the 'queue_job' method). 'watched' must only
@@ -291,12 +292,8 @@ class SGEJobRunner( object ):
             if state == DRMAA.Session.RUNNING and not sge_job_state.running:
                 sge_job_state.running = True
                 sge_job_state.job_wrapper.change_state( model.Job.states.RUNNING )
-            if state == DRMAA.Session.DONE:
+            if state in ( DRMAA.Session.DONE, DRMAA.Session.FAILED ):
                 self.work_queue.put( ( 'finish', sge_job_state ) )
-                continue
-            if state == DRMAA.Session.FAILED:
-                sge_job_state.fail_message = "Cluster could not complete job"
-                self.work_queue.put( ( 'fail', sge_job_state ) )
                 continue
             sge_job_state.old_state = state
             new_watched.append( sge_job_state )
