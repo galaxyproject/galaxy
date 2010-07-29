@@ -75,8 +75,8 @@ class RemoteUser( object ):
         # Apache sets REMOTE_USER to the string '(null)' when using the
         # Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
+        path_info = environ.get('PATH_INFO', '')
         if environ.has_key( 'HTTP_REMOTE_USER' ) and environ[ 'HTTP_REMOTE_USER' ] != '(null)':
-            path_info = environ.get('PATH_INFO', '')
             if not environ[ 'HTTP_REMOTE_USER' ].count( '@' ):
                 if self.maildomain is not None:
                     environ[ 'HTTP_REMOTE_USER' ] += '@' + self.maildomain
@@ -96,7 +96,7 @@ class RemoteUser( object ):
             if path_info.startswith( '/user/create' ) and environ[ 'HTTP_REMOTE_USER' ] in self.admin_users:
                 pass # admins can create users
             elif path_info.startswith( '/user/api_keys' ):
-                pass
+                pass # api keys can be managed when remote_user is in use
             elif path_info.startswith( '/user' ):
                 title = "Access to Galaxy user controls is disabled"
                 message = """
@@ -104,6 +104,9 @@ class RemoteUser( object ):
                     for external authentication.
                 """
                 return self.error( start_response, title, message )
+            return self.app( environ, start_response )
+        elif path_info.startswith( '/api/' ):
+            # The API handles its own authentication via keys
             return self.app( environ, start_response )
         else:
             title = "Access to Galaxy is denied"
