@@ -95,6 +95,8 @@ class RemoteUser( object ):
                     return self.error( start_response, title, message )
             if path_info.startswith( '/user/create' ) and environ[ 'HTTP_REMOTE_USER' ] in self.admin_users:
                 pass # admins can create users
+            elif path_info.startswith( '/user/api_keys' ):
+                pass
             elif path_info.startswith( '/user' ):
                 title = "Access to Galaxy user controls is disabled"
                 message = """

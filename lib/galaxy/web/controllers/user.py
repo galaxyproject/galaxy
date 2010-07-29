@@ -1003,24 +1003,20 @@ class User( BaseController ):
                                     
                                     
     @web.expose
-    def new_api_key( self, trans, **kwd ):
+    def api_keys( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        admin_view = util.string_as_bool( params.get( 'admin_view', False ) )
         error = ''
-        user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'user_id', None ) ) )
         if params.get( 'new_api_key_button', None  ) == 'Generate a new key now':
             new_key = trans.app.model.APIKeys()
-            new_key.user_id = user.id
+            new_key.user_id = trans.user.id
             new_key.key = trans.app.security.get_new_guid()
             trans.sa_session.add( new_key )
             trans.sa_session.flush()
             message = "Generated a new web API key"
             status = "done"
-        return trans.response.send_redirect( web.url_for( controller='user',
-                                                          action='show_info',
-                                                          admin_view=admin_view,
-                                                          user_id=user.id,
-                                                          message=message,
-                                                          status=status ) )
+        return trans.fill_template( 'webapps/galaxy/user/api_keys.mako',
+                                    user=trans.user,
+                                    message=message,
+                                    status=status )

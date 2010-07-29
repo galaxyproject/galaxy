@@ -130,6 +130,9 @@
             %if app.config.get_bool( 'enable_pages', False ):
                 <li><a href="${h.url_for( controller='/page', action='list' )}">Pages</a></li>  
             %endif
+            %if app.config.enable_api:
+                <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='api_keys' )}">API Keys</a></li>
+            %endif
         </ul>
         </div>
     </td>
