@@ -12,6 +12,9 @@
         %if webapp == 'galaxy':
             <li><a href="${h.url_for( controller='user', action='show_info' )}">${_('Manage your information')}</a></li>
             <li><a href="${h.url_for( controller='user', action='set_default_permissions' )}">${_('Change default permissions')}</a> for new histories</li>
+            %if trans.app.config.enable_api:
+                <li><a href="${h.url_for( controller='user', action='api_keys' )}">${_('Manage your API Keys')}</a> for new histories</li>
+            %endif
         %else:
             <li><a href="${h.url_for( controller='user', action='show_info', webapp='community' )}">${_('Manage your information')}</a></li>
         %endif
