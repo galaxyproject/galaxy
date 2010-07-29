@@ -23,6 +23,12 @@ def main():
         cols.append(var.split()[1])
         rounds.append(var.split()[2])
     
+    if 'Mode' in ops:
+        try:
+            r.library('prettyR')
+        except:
+            stop_err('R package prettyR could not be loaded. Please make sure it is installed.')
+    
     """
     At this point, ops, cols and rounds will look something like this:
     ops:  ['mean', 'min', 'c']
@@ -46,9 +52,10 @@ def main():
     except:
         stop_err( "Group column not specified." )
     
+    str_ops = ['c', 'length', 'unique', 'random', 'cuniq', 'Mode'] #ops that can handle string/non-numeric inputs
     for k,col in enumerate(cols):
         col = int(col)-1
-        if ops[k] not in ['c', 'length', 'unique', 'random', 'cuniq']:
+        if ops[k] not in str_ops:
             # We'll get here only if the user didn't choose 'Concatenate' or 'Count' or 'Count Distinct' or 'pick randmly', which are the
             # only aggregation functions that can be used on columns containing strings.
             try:
@@ -109,7 +116,7 @@ def main():
                             valid = True
                             # Before appending the current value, make sure it is numeric if the
                             # operation for the column requires it.
-                            if ops[i] not in ['c','length', 'unique','random','cuniq']:
+                            if ops[i] not in str_ops:
                                 try:
                                     float( fields[col].strip())
                                 except:
@@ -128,13 +135,14 @@ def main():
                         due to the sort on group_col we've applied to the data above.
                         """
                         out_str = prev_item
-    
+                        multiple_modes = False
+                        mode_index = None
                         for i, op in enumerate( ops ):
                             if op == 'cuniq':
                                 rfunc = "r.c"
                             else:
                                 rfunc = "r." + op 
-                            if op not in ['c','length','unique','random','cuniq']:
+                            if op not in str_ops:
                                 for j, elem in enumerate( prev_vals[i] ):
                                     prev_vals[i][j] = float( elem )
                                 rout = eval( rfunc )( prev_vals[i] )
@@ -148,7 +156,10 @@ def main():
                                 else:
                                     rand_index = random.randint(0,len(prev_vals[i])-1)
                                     rout = prev_vals[i][rand_index]
-                                    
+                            
+                            if op == 'Mode' and rout == '>1 mode':
+                                multiple_modes = True
+                                mode_index = i
                             if op == 'unique':
                                 rfunc = "r.length" 
                                 rout = eval( rfunc )( rout )
@@ -165,8 +176,13 @@ def main():
                                         out_str += "\t" + str(rout)
                             else:
                                 out_str += "\t" + str(rout)
-                                
-                        print >>fout, out_str
+                        if multiple_modes and mode_index != None:
+                            out_str_list = out_str.split('\t')
+                            for val in prev_vals[mode_index]:
+                                out_str = '\t'.join(out_str_list[:mode_index+1]) + '\t' + str(val) + '\t' + '\t'.join(out_str_list[mode_index+2:])
+                                print >>fout, out_str.rstrip('\t')
+                        else:
+                            print >>fout, out_str
     
                         prev_item = item   
                         prev_vals = [] 
@@ -195,14 +211,15 @@ def main():
     
     # Handle the last grouped value
     out_str = prev_item
-    
+    multiple_modes = False
+    mode_index = None
     for i, op in enumerate(ops):
         if op == 'cuniq':
             rfunc = "r.c"
         else:
             rfunc = "r." + op 
         try:
-            if op not in ['c','length','unique','random','cuniq']:
+            if op not in str_ops:
                 for j, elem in enumerate( prev_vals[i] ):
                     prev_vals[i][j] = float( elem )
                 rout = eval( rfunc )( prev_vals[i] )
@@ -216,7 +233,10 @@ def main():
                 else:
                     rand_index = random.randint(0,len(prev_vals[i])-1)
                     rout = prev_vals[i][rand_index]
-                    
+            
+            if op == 'Mode' and rout == '>1 mode':
+                multiple_modes = True
+                mode_index = i      
             if op == 'unique':
                 rfunc = "r.length" 
                 rout = eval( rfunc )( rout )  
@@ -238,7 +258,13 @@ def main():
             if not first_invalid_line:
                 first_invalid_line = ii+1
     
-    print >>fout, out_str
+    if multiple_modes and mode_index != None:
+        out_str_list = out_str.split('\t')
+        for val in prev_vals[mode_index]:
+            out_str = '\t'.join(out_str_list[:mode_index+1]) + '\t' + str(val) + '\t' + '\t'.join(out_str_list[mode_index+2:])
+            print >>fout, out_str.rstrip('\t')
+    else:
+        print >>fout, out_str
     
     # Generate a useful info message.
     msg = "--Group by c%d: " %(group_col+1)

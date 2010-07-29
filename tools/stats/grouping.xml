@@ -1,4 +1,4 @@
-<tool id="Grouping1" name="Group" version="1.9.0">
+<tool id="Grouping1" name="Group" version="1.9.1">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python">
     grouping.py 
@@ -22,6 +22,7 @@
       <param name="optype" type="select" label="Type">
         <option value="mean">Mean</option>
         <option value="median">Median</option>
+        <option value="Mode">Mode</option>
         <option value="max">Maximum</option>
         <option value="min">Minimum</option>
         <option value="sum">Sum</option>
@@ -77,9 +78,11 @@
 
 **Syntax**
 
-This tool allows you to group the input dataset by a particular column and perform aggregate functions like Mean, Sum, Max, Min and Concatenate on other columns. 
+This tool allows you to group the input dataset by a particular column and perform aggregate functions like Mean, Median, Mode, Sum, Max, Min, Count, Random draw and Concatenate on other columns. 
 
 - All invalid, blank and comment lines are skipped when performing the aggregate functions.  The number of skipped lines is displayed in the resulting history item.
+
+- If multiple modes are present, all are reported.
 
 -----
 
