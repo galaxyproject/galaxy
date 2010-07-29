@@ -81,8 +81,8 @@ def __main__():
                     first_skipped_line = count + 1
                 continue
             fields = line.split('\t')
-            assert len( fields ) >= 3, 'A BED file requires at least 3 columns' #we can't fix this
             try:
+                assert len( fields ) >= 3, 'A BED file requires at least 3 columns' #we can't fix this
                 if len(fields) > 12:
                     strict_bed = False
                     break
