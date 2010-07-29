@@ -1624,7 +1624,7 @@ class Sample( object ):
         output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
                                           pexpect.TIMEOUT:print_ticks}, 
                                           timeout=10)
-        return output.split('\t')[0]
+        return output.replace(filepath, '').strip()
 
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):
