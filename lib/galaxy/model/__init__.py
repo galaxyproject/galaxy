@@ -1584,7 +1584,7 @@ class Sample( object ):
                              COMPLETE = 'Complete',
                              ERROR = 'Error')
     def __init__(self, name=None, desc=None, request=None, form_values=None, 
-                 bar_code=None, library=None, folder=None, dataset_files=None):
+                 bar_code=None, library=None, folder=None):
         self.name = name
         self.desc = desc
         self.request = request
@@ -1592,27 +1592,26 @@ class Sample( object ):
         self.bar_code = bar_code
         self.library = library
         self.folder = folder
-        self.dataset_files = dataset_files
     def current_state(self):
         if self.events:
             return self.events[0].state
         return None
     def untransferred_dataset_files(self):
         count = 0
-        for df in self.dataset_files:
-            if df['status'] == self.transfer_status.NOT_STARTED:
+        for df in self.datasets:
+            if df.status == self.transfer_status.NOT_STARTED:
                 count = count + 1
         return count
     def inprogress_dataset_files(self):
         count = 0
-        for df in self.dataset_files:
-            if df['status'] not in [self.transfer_status.NOT_STARTED, self.transfer_status.COMPLETE]:
+        for df in self.datasets:
+            if df.status not in [self.transfer_status.NOT_STARTED, self.transfer_status.COMPLETE]:
                 count = count + 1
         return count
     def transferred_dataset_files(self):
         count = 0
-        for df in self.dataset_files:
-            if df['status'] == self.transfer_status.COMPLETE:
+        for df in self.datasets:
+            if df.status == self.transfer_status.COMPLETE:
                 count = count + 1
         return count
     def dataset_size(self, filepath):
@@ -1638,6 +1637,16 @@ class SampleEvent( object ):
         self.sample = sample
         self.state = sample_state
         self.comment = comment
+        
+class SampleDataset( object ):
+    def __init__(self, sample=None, name=None, file_path=None, 
+                 status=None, error_msg=None, size=None):
+        self.sample = sample
+        self.name = name
+        self.file_path = file_path
+        self.status = status
+        self.error_msg = error_msg
+        self.size = size
         
 class UserAddress( object ):
     def __init__(self, user=None, desc=None, name=None, institution=None, 

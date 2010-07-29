@@ -28,11 +28,12 @@ class GalaxyDbInterface(object):
     def __init__(self, dbstr):
         self.dbstr = dbstr
         self.db_engine = create_engine(self.dbstr)    
-        self.db_engine.echo = False  
+        self.db_engine.echo = True  
         self.metadata = MetaData(self.db_engine)
         self.session = sessionmaker(bind=self.db_engine)
         self.event_table = Table('sample_event', self.metadata, autoload=True )
         self.sample_table = Table('sample', self.metadata, autoload=True )
+        self.sample_dataset_table = Table('sample_dataset', self.metadata, autoload=True )
         self.request_table = Table('request', self.metadata, autoload=True )
         self.request_event_table = Table('request_event', self.metadata, autoload=True )
         self.state_table = Table('sample_state', self.metadata, autoload=True  )
@@ -105,7 +106,7 @@ class GalaxyDbInterface(object):
                   create_time=datetime.utcnow(),
                   sample_id=sample_id, 
                   sample_state_id=int(new_state_id), 
-                  comment='bar code scanner')
+                  comment='Update by barcode scan')
         # if all the samples for this request are in the final state
         # then change the request state to 'Complete'
         result = select(columns=[self.sample_table.c.id],
@@ -126,23 +127,22 @@ class GalaxyDbInterface(object):
                       request_id=self.request_id, 
                       state=request_state, 
                       comment='All samples of this request have finished processing.')
-     
-    def get_sample_dataset_files(self, sample_id):
-        subsubquery = select(columns=[self.sample_table.c.dataset_files], 
-                             whereclause=self.sample_table.c.id==sample_id)
-        return subsubquery.execute().fetchall()[0][0]
-               
-    def set_sample_dataset_files(self, sample_id, value):
-        u = self.sample_table.update(whereclause=self.sample_table.c.id==sample_id)
-        u.execute(dataset_files=value)
-        
 
+    def set_sample_dataset_status(self, id, new_status, msg=None):
+        u = self.sample_dataset_table.update(whereclause=self.sample_dataset_table.c.id==int(id))
+        u.execute(status=new_status)
+        if new_status == 'Error':
+            u.execute(error_msg=msg)
+        else:
+            u.execute(error_msg='')
+        return
+    
 
 
 if __name__ == '__main__':
     print '''This file should not be run directly. To start the Galaxy AMQP Listener:
     %sh run_galaxy_listener.sh'''
-    dbstr = 'postgres://postgres:postgres@localhost/galaxy_uft'
+    dbstr = 'postgres://postgres:postgres@localhost/g2'
 
     parser = optparse.OptionParser()
     parser.add_option('-n', '--name', help='name of the sample field', dest='name', \

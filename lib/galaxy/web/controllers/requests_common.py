@@ -34,7 +34,7 @@ class RequestsCommon( BaseController ):
                 if sample.current_state().name != state:
                     rval[id] = {
                         "state": sample.current_state().name,
-                        "datasets": len(sample.dataset_files),
+                        "datasets": len(sample.datasets),
                         "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako", sample=sample, cntrller=cntrller ), 'utf-8' ),
                         "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako", trans=trans, sample=sample, cntrller=cntrller ), 'utf-8' )
                     }
@@ -518,7 +518,6 @@ class RequestsCommon( BaseController ):
                                         barcode=s.bar_code,
                                         library=s.library,
                                         folder=s.folder,
-                                        dataset_files=s.dataset_files,
                                         field_values=s.values.content,
                                         lib_widget=lib_widget,
                                         folder_widget=folder_widget))
@@ -530,7 +529,6 @@ class RequestsCommon( BaseController ):
                                         barcode='',
                                         library=None,
                                         folder=None,
-                                        dataset_files=[],
                                         field_values=['' for field in request.type.sample_form.fields],
                                         lib_widget=lib_widget,
                                         folder_widget=folder_widget))
@@ -792,8 +790,7 @@ class RequestsCommon( BaseController ):
                                                request, form_values, 
                                                current_samples[sample_index]['barcode'],
                                                current_samples[sample_index]['library'],
-                                               current_samples[sample_index]['folder'], 
-                                               dataset_files=[])
+                                               current_samples[sample_index]['folder'])
                     trans.sa_session.add( s )
                     trans.sa_session.flush()
 
@@ -1078,12 +1075,17 @@ class RequestsCommon( BaseController ):
                                                               operation='show',
                                                               status='error',
                                                               message="Set a data library and folder for <b>%s</b> to transfer dataset(s)." % sample.name,
-                                                              id=trans.security.encode_id(sample.request.id) ) )             
+                                                              id=trans.security.encode_id(sample.request.id) ) )
+        if cntrller == 'requests_admin':
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_datasets',
+                                                              sample_id=sample.id) )
+            
         if params.get( 'folder_path', ''  ):
             folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
         else:
-            if len(sample.dataset_files):
-                folder_path = os.path.dirname(sample.dataset_files[-1]['filepath'][:-1])
+            if len(sample.datasets):
+                folder_path = os.path.dirname(sample.datasets[-1]['filepath'][:-1])
             else:
                 folder_path = util.restore_text( sample.request.type.datatx_info.get('data_dir', '') )
         if folder_path and folder_path[-1] != os.sep:
@@ -1094,6 +1096,6 @@ class RequestsCommon( BaseController ):
             message = 'The sequencer login information is incomplete. Click on the <b>Sequencer information</b> to add login details.'
         return trans.fill_template( '/requests/common/get_data.mako', 
                                     cntrller=cntrller, sample=sample, 
-                                    dataset_files=sample.dataset_files,
+                                    dataset_files=sample.datasets,
                                     message=message, status=status, files=[],
                                     folder_path=folder_path )

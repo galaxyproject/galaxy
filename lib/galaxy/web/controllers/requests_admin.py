@@ -146,7 +146,7 @@ class RequestsGrid( grids.Grid ):
 
 
 #
-# ---- Request Type Gridr ------------------------------------------------------ 
+# ---- Request Type Grid ------------------------------------------------------ 
 #
 class RequestTypeGrid( grids.Grid ):
     # Custom column types
@@ -207,6 +207,57 @@ class RequestTypeGrid( grids.Grid ):
                                                            action='create_request_type' ) )
     ]
 
+
+# ---- Data Transfer Grid ------------------------------------------------------ 
+#
+class DataTransferGrid( grids.Grid ):
+    # Custom column types
+    class NameColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, sample_dataset):
+            return sample_dataset.name
+    class SizeColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, sample_dataset):
+            return sample_dataset.size
+    class StatusColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, sample_dataset):
+            return sample_dataset.status
+    # Grid definition
+    title = "Sample Datasets"
+    template = "admin/requests/datasets_grid.mako"
+    model_class = model.SampleDataset
+    default_sort_key = "-create_time"
+    num_rows_per_page = 50
+    preserve_state = True
+    use_paging = True
+    #default_filter = dict( deleted="False" )
+    columns = [
+        NameColumn( "Name", 
+                    #key="name", 
+                    model_class=model.SampleDataset,
+                    link=( lambda item: dict( operation="view", id=item.id ) ),
+                    attach_popup=True,
+                    filterable="advanced" ),
+        SizeColumn( "Size",
+                    #key='size',
+                    model_class=model.SampleDataset,
+                    filterable="advanced" ),
+        StatusColumn( "Status",
+                      #key='status',
+                      model_class=model.SampleDataset,
+                      filterable="advanced" ),
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = [
+        grids.GridOperation( "Start Transfer", allow_multiple=True, condition=( lambda item: item.status in [model.Sample.transfer_status.NOT_STARTED] ) ),
+        grids.GridOperation( "Rename", allow_multiple=True, allow_popup=False, condition=( lambda item: item.status in [model.Sample.transfer_status.NOT_STARTED] ) ),
+        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: item.status in [model.Sample.transfer_status.NOT_STARTED] )  ),
+    ]
+    def apply_query_filter( self, trans, query, **kwd ):
+        return query.filter_by( sample_id=kwd['sample_id'] )
 #
 # ---- Request Controller ------------------------------------------------------ 
 #
@@ -214,6 +265,7 @@ class RequestTypeGrid( grids.Grid ):
 class RequestsAdmin( BaseController ):
     request_grid = RequestsGrid()
     requesttype_grid = RequestTypeGrid()
+    datatx_grid = DataTransferGrid()
 
     
     @web.expose
@@ -280,11 +332,11 @@ class RequestsAdmin( BaseController ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        sample = trans.sa_session.query( self.app.model.Sample ).get( int(id) )
-        datatx_info = sample.request.type.datatx_info
+        request = trans.sa_session.query( self.app.model.Request ).get( int(id) )
+        datatx_info = request.type.datatx_info
         cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( datatx_info['username'],
-                                             datatx_info['host'],
-                                             folder_path  )
+                                                 datatx_info['host'],
+                                                 folder_path  )
         output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
                                           pexpect.TIMEOUT:print_ticks}, 
                                           timeout=10)
@@ -297,8 +349,8 @@ class RequestsAdmin( BaseController ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        sample = trans.sa_session.query( self.app.model.Sample ).get( int(id) )
-        return self.__get_files(trans, sample, folder_path)
+        request = trans.sa_session.query( self.app.model.Request ).get( int(id) )
+        return self.__get_files(trans, request.type, folder_path)
 
     def __reject_request(self, trans, **kwd):
         try:
@@ -522,12 +574,120 @@ class RequestsAdmin( BaseController ):
     #
     # Data transfer from sequencer
     #
+    
+    @web.expose
+    @web.require_admin
+    def manage_datasets( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if not kwd.get( 'id', None ):
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='list',
+                                                                  status='error',
+                                                                  message="Invalid sample dataset ID") )
+            if operation == "view":
+                sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id(kwd['id']) )
+                return trans.fill_template( '/admin/requests/dataset.mako', 
+                                            sample=sample_dataset.sample,
+                                            sample_dataset=sample_dataset)
 
-    def __get_files(self, trans, sample, folder_path):
+            elif operation == "delete":
+                id_list = util.listify( kwd['id'] )
+                for id in id_list:
+                    sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id(id) )
+                    sample_id = sample_dataset.sample_id
+                    trans.sa_session.delete( sample_dataset )
+                    trans.sa_session.flush()
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='manage_datasets',
+                                                                  sample_id=sample_id,
+                                                                  status='done',
+                                                                  message="%i dataset(s) have been removed." % len(id_list)) )
+
+            elif operation == "rename":
+                id_list = util.listify( kwd['id'] )
+                sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id(id_list[0]) )
+                return trans.fill_template( '/admin/requests/rename_datasets.mako', 
+                                            sample=sample_dataset.sample,
+                                            id_list=id_list )
+            elif operation == "start transfer":
+                id_list = util.listify( kwd['id'] )
+                sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id(id_list[0]) )
+                self.__start_datatx(trans, sample_dataset.sample, id_list)
+                
+
+        # Render the grid view
+        try:
+            sample = trans.sa_session.query( trans.app.model.Sample ).get( kwd['sample_id']  )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid sample ID" ) )
+        self.datatx_grid.title = 'Datasets of Sample "%s"' % sample.name
+        self.datatx_grid.global_actions = [
+                                           grids.GridAction( "Refresh", 
+                                                             dict( controller='requests_admin', 
+                                                                   action='manage_datasets',
+                                                                   sample_id=sample.id) ),
+                                           grids.GridAction( "Select Datasets", 
+                                                             dict(controller='requests_admin', 
+                                                                  action='get_data',
+                                                                  request_id=sample.request.id,
+                                                                  folder_path=sample.request.type.datatx_info['data_dir'],
+                                                                  sample_id=sample.id,
+                                                                  show_page=True)),
+                                           grids.GridAction( 'Data Library "%s"' % sample.library.name, 
+                                                             dict(controller='library_common', 
+                                                                  action='browse_library', 
+                                                                  cntrller='library_admin', 
+                                                                  id=trans.security.encode_id( sample.library.id))),
+                                           grids.GridAction( "Browse this request", 
+                                                             dict( controller='requests_admin', 
+                                                                   action='list',
+                                                                   operation='show',
+                                                                   id=trans.security.encode_id(sample.request.id)))]
+        return self.datatx_grid( trans, **kwd )
+
+    @web.expose
+    @web.require_admin
+    def rename_datasets( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' ) 
+        try:
+            sample = trans.sa_session.query( trans.app.model.Sample ).get( trans.security.decode_id(kwd['sample_id']))
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid sample ID" ) )
+        if params.get( 'save_button', False ):
+            id_list = util.listify( kwd['id_list'] )
+            for id in id_list:
+                sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id(id) )
+                prepend = util.restore_text( params.get( 'prepend_%i' % sample_dataset.id, ''  ) )
+                name = util.restore_text( params.get( 'name_%i' % sample_dataset.id, sample_dataset.name  ) )
+                if prepend == 'None':
+                    sample_dataset.name = name
+                else: 
+                    sample_dataset.name = prepend+'_'+name
+                trans.sa_session.add( sample_dataset )
+                trans.sa_session.flush()
+            return trans.fill_template( '/admin/requests/rename_datasets.mako', 
+                                        sample=sample, id_list=id_list,
+                                        message='Changes saved successfully.',
+                                        status='done' )
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='manage_datasets',
+                                                          sample_id=sample.id) )
+
+
+    def __get_files(self, trans, request_type, folder_path):
         '''
         This method retrieves the filenames to be transfer from the remote host.
         '''
-        datatx_info = sample.request.type.datatx_info
+        datatx_info = request_type.datatx_info
         if not datatx_info['host'] or not datatx_info['username'] or not datatx_info['password']:
             message = "Error in sequencer login information." 
             return trans.response.send_redirect( web.url_for( controller='requests_common',
@@ -555,123 +715,152 @@ class RequestsAdmin( BaseController ):
         
         return output.splitlines()
     
-    def __get_files_in_dir(self, trans, sample, folder_path):
-        tmpfiles = self.__get_files(trans, sample, folder_path)
-        for tf in tmpfiles:
-            if tf[-1] == os.sep:
-                self.__get_files_in_dir(trans, sample, os.path.join(folder_path, tf))
+#    def __get_files_in_dir(self, trans, sample, folder_path):
+#        tmpfiles = self.__get_files(trans, sample, folder_path)
+#        for tf in tmpfiles:
+#            if tf[-1] == os.sep:
+#                self.__get_files_in_dir(trans, sample, os.path.join(folder_path, tf))
+#            else:
+#                sample.dataset_files.append([os.path.join(folder_path, tf),
+#                                             sample.transfer_status.NOT_STARTED])
+#                trans.sa_session.add( sample )
+#                trans.sa_session.flush()
+#        return
+    
+
+    def __samples_selectbox(self, trans, request, sample_id=None):
+        samples_selectbox = SelectField('sample_id')
+        for i, s in enumerate(request.samples):
+            if str(s.id) == sample_id:
+                samples_selectbox.add_option(s.name, s.id, selected=True)
             else:
-                sample.dataset_files.append([os.path.join(folder_path, tf),
-                                             sample.transfer_status.NOT_STARTED])
-                trans.sa_session.add( sample )
-                trans.sa_session.flush()
-        return
+                samples_selectbox.add_option(s.name, s.id)
+        return samples_selectbox
+        
     @web.expose
     @web.require_admin
     def get_data(self, trans, **kwd):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' ) 
         try:
-            sample = trans.sa_session.query( trans.app.model.Sample ).get( kwd['sample_id']  )
+            request = trans.sa_session.query( trans.app.model.Request ).get( kwd['request_id']  )
         except:
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='list',
                                                               status='error',
-                                                              message="Invalid sample ID" ) )
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' ) 
-        folder_path = util.restore_text( params.get( 'folder_path', 
-                                                     sample.request.type.datatx_info['data_dir']  ) )
+                                                              message="Invalid request ID" ) )
         files_list = util.listify( params.get( 'files_list', ''  ) ) 
-        if params.get( 'start_transfer_button', False ) == 'True':
-            return self.__start_datatx(trans, sample)
+        folder_path = util.restore_text( params.get( 'folder_path', 
+                                                     request.type.datatx_info['data_dir']  ) )
+        sbox = self.__samples_selectbox(trans, request, kwd.get('sample_id', None))
         if not folder_path:
-            return trans.fill_template( '/requests/common/get_data.mako',
-                                        cntrller='requests_admin',
-                                        sample=sample, files=[], 
-                                        dataset_files=sample.dataset_files,
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        cntrller='requests_admin', request=request,
+                                        samples_selectbox=sbox, files=[], 
                                         folder_path=folder_path )
         if folder_path[-1] != os.sep:
             folder_path = folder_path+os.sep
-        if params.get( 'browse_button', False ):
+        if params.get( 'show_page', False ):
+            if kwd.get('sample_id', None):
+                sample = trans.sa_session.query( trans.app.model.Sample ).get( kwd['sample_id']  )
+                if sample.datasets:
+                    folder_path = os.path.dirname(sample.datasets[-1].file_path)
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        cntrller='requests_admin', request=request,
+                                        samples_selectbox=sbox, files=[], 
+                                        folder_path=folder_path,
+                                        status=status, message=message )
+        elif params.get( 'browse_button', False ):
             # get the filenames from the remote host
-            files = self.__get_files(trans, sample, folder_path)
+            files = self.__get_files(trans, request.type, folder_path)
             if folder_path[-1] != os.sep:
                 folder_path += os.sep
-            return trans.fill_template( '/requests/common/get_data.mako',
-                                        cntrller='requests_admin',
-                                        sample=sample, files=files, 
-                                        dataset_files=sample.dataset_files,
-                                        folder_path=folder_path )
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        cntrller='requests_admin', request=request,
+                                        samples_selectbox=sbox, files=files, 
+                                        folder_path=folder_path,
+                                        status=status, message=message )
         elif params.get( 'folder_up', False ):
             if folder_path[-1] == os.sep:
                 folder_path = os.path.dirname(folder_path[:-1])
             # get the filenames from the remote host
-            files = self.__get_files(trans, sample, folder_path)
+            files = self.__get_files(trans, request.type, folder_path)
             if folder_path[-1] != os.sep:
                 folder_path += os.sep
-            return trans.fill_template( '/requests/common/get_data.mako',
-                                        cntrller='requests_admin',
-                                        sample=sample, files=files, 
-                                        dataset_files=sample.dataset_files,
-                                        folder_path=folder_path )
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        cntrller='requests_admin',request=request,
+                                        samples_selectbox=sbox, files=files, 
+                                        folder_path=folder_path,
+                                        status=status, message=message )
         elif params.get( 'open_folder', False ):
             if len(files_list) == 1:
                 folder_path = os.path.join(folder_path, files_list[0])
             # get the filenames from the remote host
-            files = self.__get_files(trans, sample, folder_path)
+            files = self.__get_files(trans, request.type, folder_path)
             if folder_path[-1] != os.sep:
                 folder_path += os.sep
-            return trans.fill_template( '/requests/common/get_data.mako',
-                                        cntrller='requests_admin',
-                                        sample=sample, files=files, 
-                                        dataset_files=sample.dataset_files,
-                                        folder_path=folder_path )
-        elif params.get( 'remove_dataset_button', False ):
-            # get the filenames from the remote host
-            files = self.__get_files(trans, sample, folder_path)
-            dataset_index = int(params.get( 'dataset_index', 0 ))
-            del sample.dataset_files[dataset_index]
-            trans.sa_session.add( sample )
-            trans.sa_session.flush()
-            return trans.fill_template( '/requests/common/get_data.mako', 
-                                        cntrller='requests_admin',
-                                        sample=sample, files=files,
-                                        dataset_files=sample.dataset_files,
-                                        folder_path=folder_path)
-        elif params.get( 'select_files_button', False ):
-            folder_files = []
-            if len(files_list):
-                for f in files_list:
-                    filepath = os.path.join(folder_path, f)
-                    if f[-1] == os.sep:
-                        # the selected item is a folder so transfer all the 
-                        # folder contents
-                        # FIXME 
-                        #self.__get_files_in_dir(trans, sample, filepath)
-                        return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                          action='get_data', 
-                                                                          sample_id=sample.id,
-                                                                          folder_path=folder_path,
-                                                                          open_folder=True))
-                    else:
-                        sample.dataset_files.append(dict(filepath=filepath,
-                                                         status=sample.transfer_status.NOT_STARTED,
-                                                         name=self.__dataset_name(sample, filepath.split('/')[-1]),
-                                                         error_msg='',
-                                                         size=sample.dataset_size(filepath)))
-                        trans.sa_session.add( sample )
-                        trans.sa_session.flush()
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        cntrller='requests_admin', request=request,
+                                        samples_selectbox=sbox, files=files, 
+                                        folder_path=folder_path,
+                                        status=status, message=message )
+        elif params.get( 'select_show_datasets_button', False ):
+            sample = trans.sa_session.query( trans.app.model.Sample ).get( kwd['sample_id']  )
+            retval = self.__save_sample_datasets(trans, sample, files_list, folder_path)
+            if retval: message='The dataset(s) %s have been selected for sample <b>%s</b>' %(str(retval)[1:-1].replace("'", ""), sample.name)
+            else: message = None
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_datasets',
+                                                              sample_id=sample.id,
+                                                              status='done',
+                                                              message=message) )
+        elif params.get( 'select_more_button', False ):
+            sample = trans.sa_session.query( trans.app.model.Sample ).get( kwd['sample_id']  )
+            retval = self.__save_sample_datasets(trans, sample, files_list, folder_path)
+            if retval: message='The dataset(s) %s have been selected for sample <b>%s</b>' %(str(retval)[1:-1].replace("'", ""), sample.name)
+            else: message = None
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='get_data', 
-                                                              sample_id=sample.id,
+                                                              request_id=sample.request.id,
                                                               folder_path=folder_path,
-                                                              open_folder=True))
-
-        return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                          cntrller='requests_admin' ,
-                                                          action='show_datatx_page', 
-                                                          sample_id=trans.security.encode_id(sample.id),
-                                                          folder_path=folder_path))
+                                                              sample_id=sample.id,
+                                                              open_folder=True,
+                                                              status='done',
+                                                              message=message))
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='get_data', 
+                                                          request_id=sample.request.id,
+                                                          folder_path=folder_path,
+                                                          show_page=True))
+        
+    def __save_sample_datasets(self, trans, sample, files_list, folder_path):
+        files = []
+        if len(files_list):
+            for f in files_list:
+                filepath = os.path.join(folder_path, f)
+                if f[-1] == os.sep:
+                    # the selected item is a folder so transfer all the 
+                    # folder contents
+                    # FIXME 
+                    #self.__get_files_in_dir(trans, sample, filepath)
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                      action='get_data', 
+                                                                      request=sample.request,
+                                                                      folder_path=folder_path,
+                                                                      open_folder=True))
+                else:
+                    sample_dataset = trans.app.model.SampleDataset(  sample=sample,
+                                                                     file_path=filepath,
+                                                                     status=sample.transfer_status.NOT_STARTED,
+                                                                     name=self.__dataset_name(sample, filepath.split('/')[-1]),
+                                                                     error_msg='',
+                                                                     size=sample.dataset_size(filepath))
+                    trans.sa_session.add( sample_dataset )
+                    trans.sa_session.flush()
+                    files.append(str(sample_dataset.name))
+        return files
+        
     
     def __dataset_name(self, sample, filepath):
         name = filepath.split('/')[-1]
@@ -735,7 +924,7 @@ class RequestsAdmin( BaseController ):
             trans.sa_session.flush()
         return datatx_user
 
-    def __send_message(self, trans, datatx_info, sample):
+    def __send_message(self, trans, datatx_info, sample, id_list):
         '''
         This method creates the xml message and sends it to the rabbitmq server
         '''
@@ -752,20 +941,20 @@ class RequestsAdmin( BaseController ):
                 </data_transfer>'''
         dataset_xml = \
             '''<dataset>
-                   <index>%(INDEX)s</index>
+                   <dataset_id>%(ID)s</dataset_id>
                    <name>%(NAME)s</name>
                    <file>%(FILE)s</file>
                </dataset>'''
         datasets = ''
-        for index, dataset in enumerate(sample.dataset_files):
-            if dataset['status'] == sample.transfer_status.NOT_STARTED:
-                datasets = datasets + dataset_xml % dict(INDEX=str(index),
-                                                         NAME=dataset['name'],
-                                                         FILE=dataset['filepath'])
-                sample.dataset_files[index]['status'] = sample.transfer_status.IN_QUEUE
-
-        trans.sa_session.add( sample )
-        trans.sa_session.flush()
+        for id in id_list:
+            sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id(id) )
+            if sample_dataset.status == sample.transfer_status.NOT_STARTED:
+                datasets = datasets + dataset_xml % dict(ID=str(sample_dataset.id),
+                                                         NAME=sample_dataset.name,
+                                                         FILE=sample_dataset.file_path)
+                sample_dataset.status = sample.transfer_status.IN_QUEUE
+                trans.sa_session.add( sample_dataset )
+                trans.sa_session.flush()
         data = xml % dict(DATA_HOST=datatx_info['host'],
                           DATA_USER=datatx_info['username'],
                           DATA_PASSWORD=datatx_info['password'],
@@ -790,7 +979,7 @@ class RequestsAdmin( BaseController ):
         chan.close()
         conn.close()
 
-    def __start_datatx(self, trans, sample):
+    def __start_datatx(self, trans, sample, id_list):
         # data transfer user
         datatx_user = self.__setup_datatx_user(trans, sample.library, sample.folder)
         # validate sequecer information
@@ -799,46 +988,19 @@ class RequestsAdmin( BaseController ):
            not datatx_info['username'] or \
            not datatx_info['password']:
             message = "Error in sequencer login information." 
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              cntrller='requests_admin' ,
-                                                              action='show_datatx_page', 
-                                                              sample_id=trans.security.encode_id(sample.id),
-                                                              status='error',
-                                                              message=message))
-        self.__send_message(trans, datatx_info, sample)
-        return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                          cntrller='requests_admin' ,
-                                                          action='show_datatx_page', 
-                                                          sample_id=trans.security.encode_id(sample.id),
-                                                          folder_path=datatx_info['data_dir']))
-    @web.expose
-    @web.require_admin
-    def dataset_details( self, trans, **kwd ):
-        try:
-            sample = trans.sa_session.query( trans.app.model.Sample ).get( trans.security.decode_id(kwd['sample_id']) )
-        except:
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
+                                                              action='manage_datasets',
+                                                              sample_id=sample.id,
                                                               status='error',
-                                                              message="Invalid sample ID" ) )
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' ) 
-        dataset_index = int( params.get( 'dataset_index', ''  ) )
-        if params.get('save', '') == 'Save':
-            sample.dataset_files[dataset_index]['name'] = util.restore_text( params.get( 'name', 
-                                                                                         sample.dataset_files[dataset_index]['name']  ) )
-            trans.sa_session.add( sample )
-            trans.sa_session.flush()
-            status = 'done'
-            message = 'Saved the changes made to the dataset.'
-        return trans.fill_template( '/admin/requests/dataset.mako', 
-                                    sample=sample,
-                                    dataset_index=dataset_index,
-                                    message=message,
-                                    status=status)
+                                                              message=message) )
+        self.__send_message(trans, datatx_info, sample, id_list)
+        message="%i dataset(s) have been queued for transfer from the sequencer. Click on <b>Refresh</b> button above to get the latest transfer status." % len(id_list)
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='manage_datasets',
+                                                          sample_id=sample.id,
+                                                          status='done',
+                                                          message=message) )
 
-#                
 ##
 #### Request Type Stuff ###################################################
 ##

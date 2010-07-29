@@ -574,7 +574,6 @@ Sample.table = Table('sample', metadata,
     Column( "bar_code", TrimmedString( 255 ), index=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
-    Column( "dataset_files", JSONType() ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 SampleState.table = Table('sample_state', metadata,
@@ -592,6 +591,17 @@ SampleEvent.table = Table('sample_event', metadata,
     Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
     Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ), 
     Column( "comment", TEXT ) )
+
+SampleDataset.table = Table('sample_dataset', metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "file_path", TrimmedString( 255 ), nullable=False ),
+    Column( "status", TrimmedString( 255 ), nullable=False ),
+    Column( "error_msg", TEXT ),
+    Column( "size", TrimmedString( 255 ) ) )
 
 Page.table = Table( "page", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -792,6 +802,8 @@ assign_mapper( context, Sample, Sample.table,
                properties=dict( 
                     events=relation( SampleEvent, backref="sample",
                         order_by=desc(SampleEvent.table.c.update_time) ),
+                    datasets=relation( SampleDataset, backref="sample",
+                        order_by=desc(SampleDataset.table.c.update_time) ),
                     values=relation( FormValues,
                         primaryjoin=( Sample.table.c.form_values_id == FormValues.table.c.id ) ),
                     request=relation( Request,
@@ -863,6 +875,9 @@ assign_mapper( context, SampleEvent, SampleEvent.table,
                                 ) )
                                 
 assign_mapper( context, SampleState, SampleState.table,
+               properties=None )
+
+assign_mapper( context, SampleDataset, SampleDataset.table,
                properties=None )
 
 assign_mapper( context, UserAddress, UserAddress.table,

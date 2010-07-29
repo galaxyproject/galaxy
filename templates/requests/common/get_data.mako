@@ -94,8 +94,7 @@ $(document).ready(function(){
 </style>
 
 
-<h2>Data transfer from Sequencer</h2>
-<h3>Sample "${sample.name}" of Request "${sample.request.name}"</h3>
+<h2>Datasets of Sample "${sample.name}"</h2>
 <br/>
 <br/>
 

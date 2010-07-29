@@ -147,30 +147,29 @@ $(document).ready(function(){
 </div>
 
 <ul class="manage-table-actions">
-
-    %if request.unsubmitted() and request.samples:
-        <li>
+    <li><a class="action-button" id="seqreq-${request.id}-popup" class="menubutton">Sequencing Request Actions</a></li>
+    <div popupmenu="seqreq-${request.id}-popup">
+        %if request.unsubmitted() and request.samples:
             <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller=cntrller, action='list', operation='Submit', id=trans.security.encode_id(request.id) )}">
-            <span>Submit request</span></a>
-        </li>
-    %endif
-    %if cntrller == 'requests_admin' and trans.user_is_admin():
-        %if request.submitted():
-            <li>
-                <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='reject', id=trans.security.encode_id(request.id))}">
-                <span>Reject request</span></a>
-            </li>
+            <span>Submit</span></a>
         %endif
-    %endif
-    <li>
+        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
+        <span>Edit</span></a>
         <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">
         <span>History</span></a>
-    </li>
+        %if cntrller == 'requests_admin' and trans.user_is_admin():
+            %if request.submitted():
+                <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='reject', id=trans.security.encode_id(request.id))}">
+                <span>Reject</span></a>
+                <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', show_page=True, request_id=request.id)}">
+                <span>Select dataset(s) to transfer</span></a>
+            %endif
+        %endif
+    </div>
     <li>
         <a class="action-button"  href="${h.url_for( controller=cntrller, action='list')}">
         <span>Browse requests</span></a>
     </li>
-
 </ul>
 
 
@@ -396,12 +395,21 @@ $(document).ready(function(){
                             <td>${info['name']}</td>
                             <td>${info['barcode']}</td>
                             %if sample.request.unsubmitted():
-                                <td>Unsubmitted</td>
+                                ##<td>Unsubmitted</td>
+                                <td>
+                                    <div id="history-name-container">
+                                        <div id="history-name" class="tooltip editable-text" title="Click to rename history">Unsubmitted</div>
+                                    </div>
+                                </td>
                             %else:
                                 <td id="sampleState-${sample.id}">${render_sample_state( cntrller, sample )}</td>
                             %endif
                             %if info['library']:
-                                <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( info['library'].id ) )}">${info['library'].name}</a></td>
+                                %if cntrller == 'requests':
+                                    <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( info['library'].id ) )}">${info['library'].name}</a></td>
+                                %elif cntrller == 'requests_admin':
+                                    <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library_admin', id=trans.security.encode_id( info['library'].id ) )}">${info['library'].name}</a></td>
+                                %endif                                    
                             %else:
                                 <td></td>
                             %endif

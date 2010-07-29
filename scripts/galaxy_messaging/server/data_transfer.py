@@ -70,12 +70,12 @@ class DataTransfer(object):
         self.config_id_secret = config_id_secret
         count=0
         while True:
-           index = self.get_value_index(self.dom, 'index', count)
+           dataset_id = self.get_value_index(self.dom, 'dataset_id', count)
            file = self.get_value_index(self.dom, 'file', count)
            name = self.get_value_index(self.dom, 'name', count)
            if file:
                self.dataset_files.append(dict(name=name,
-                                              index=int(index),
+                                              dataset_id=int(dataset_id),
                                               file=file)) 
            else:
                break
@@ -149,7 +149,7 @@ class DataTransfer(object):
         def print_ticks(d):
             pass
         for i, df in enumerate(self.dataset_files):
-            self.update_status(Sample.transfer_status.TRANSFERRING, df['index'])
+            self.update_status(Sample.transfer_status.TRANSFERRING, df['dataset_id'])
             try:
                 cmd = "scp %s@%s:'%s' '%s/%s'" % ( self.username,
                                             self.host,
@@ -168,7 +168,7 @@ class DataTransfer(object):
                     raise Exception(msg)
             except Exception, e:
                 msg = traceback.format_exc()
-                self.update_status('Error', df['index'], msg)
+                self.update_status('Error', df['dataset_id'], msg)
 
         
     def add_to_library(self):
@@ -189,29 +189,17 @@ class DataTransfer(object):
             log.debug(e)
             self.error_and_exit(str(e))
             
-    def update_status(self, status, dataset_index='All', msg=''):
+    def update_status(self, status, dataset_id='All', msg=''):
         '''
         Update the data transfer status for this dataset in the database
         '''
         try:
-            log.debug('Setting status "%s" for dataset "%s" of sample "%s"' % ( status, str(dataset_index), str(self.sample_id) ) )
-            df = from_json_string(self.galaxydb.get_sample_dataset_files(self.sample_id))
-            if dataset_index == 'All':
+            log.debug('Setting status "%s" for dataset "%s" of sample "%s"' % ( status, str(dataset_id), str(self.sample_id) ) )
+            if dataset_id == 'All':
                 for dataset in self.dataset_files:
-                    df[dataset['index']]['status'] = status
-                    if status == 'Error':
-                        df[dataset['index']]['error_msg'] = msg
-                    else:
-                        df[dataset['index']]['error_msg'] = ''
-                        
+                    self.galaxydb.set_sample_dataset_status(dataset['dataset_id'], status, msg)
             else:
-                df[dataset_index]['status'] = status
-                if status == 'Error':
-                    df[dataset_index]['error_msg'] = msg
-                else:
-                    df[dataset_index]['error_msg'] = ''
-
-            self.galaxydb.set_sample_dataset_files(self.sample_id, to_json_string(df))
+                self.galaxydb.set_sample_dataset_status(dataset_id, status, msg)
             log.debug('done.')
         except:
             log.error(traceback.format_exc())
@@ -229,12 +217,12 @@ class DataTransfer(object):
                 rc = rc + node.data
         return rc
     
-    def get_value_index(self, dom, tag_name, index):
+    def get_value_index(self, dom, tag_name, dataset_id):
         '''
         This method extracts the tag value from the xml message
         '''
         try:
-            nodelist = dom.getElementsByTagName(tag_name)[index].childNodes
+            nodelist = dom.getElementsByTagName(tag_name)[dataset_id].childNodes
         except:
             return None
         rc = ""
