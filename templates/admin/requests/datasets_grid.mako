@@ -4,7 +4,6 @@
 <%def name="custom_javascripts()">
     <script type="text/javascript">
         $("#select-dataset-action-button").bind( "click", function(e) {
-            alert('afdhblvi')
             $.ajax({
                 url: "${h.url_for( controller='requests_admin', action='remote_file_browser' )}",
                 data: {id: 6},

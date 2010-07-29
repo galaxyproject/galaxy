@@ -4,7 +4,7 @@
 <h2>History of Sequencing Request "${request.name}"</h2>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='show_request', id=trans.security.encode_id(request.id) )}">
+        <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='show', id=trans.security.encode_id(request.id) )}">
         <span>Browse this request</span></a>
     </li>
     <li>
