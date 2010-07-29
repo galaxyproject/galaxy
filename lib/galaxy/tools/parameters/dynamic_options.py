@@ -206,6 +206,40 @@ class MultipleSplitterFilter( Filter ):
                 for field in fields[column].split( self.separator ):
                     rval.append( fields[0:column] + [field] + fields[column:] )
         return rval
+        
+class AttributeValueSplitterFilter( Filter ):
+    """
+    Filters a list of attribute-value pairs to be unique attribute names.
+
+    Type: attribute_value_splitter
+
+    Required Attributes:
+        column: column in options to compare with
+    Optional Attributes:
+        pair_separator: Split column by this (,)
+        name_val_separator: Split name-value pair by this ( whitespace )
+    """
+    def __init__( self, d_option, elem ):
+        Filter.__init__( self, d_option, elem )
+        self.pair_separator = elem.get( "pair_separator", "," )
+        self.name_val_separator = elem.get( "name_val_separator", None )
+        self.columns = elem.get( "column", None )
+        assert self.columns is not None, "Required 'columns' attribute missing from filter"
+        self.columns = [ int ( column ) for column in self.columns.split( "," ) ]
+    def filter_options( self, options, trans, other_values ):
+        attr_names = []
+        rval = []
+        for fields in options:
+            for column in self.columns:
+                for pair in fields[column].split( self.pair_separator ):
+                    ary = pair.split( self.name_val_separator )
+                    if len( ary ) == 2:
+                        name, value = ary
+                        if name not in attr_names:
+                            rval.append( fields[0:column] + [name] + fields[column:] )
+                            attr_names.append( name )
+        return rval
+
 
 class AdditionalValueFilter( Filter ):
     """
@@ -322,6 +356,7 @@ filter_types = dict( data_meta = DataMetaFilter,
                      static_value = StaticValueFilter,
                      unique_value = UniqueValueFilter,
                      multiple_splitter = MultipleSplitterFilter,
+                     attribute_value_splitter = AttributeValueSplitterFilter,
                      add_value = AdditionalValueFilter,
                      remove_value = RemoveValueFilter,
                      sort_by = SortByColumnFilter )

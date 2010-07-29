@@ -5,8 +5,12 @@
   </command>
   <inputs>
     <param format="gff" name="input" type="data" label="Filter" help="Query missing? See TIP below."/>
-    <param name="attribute_name" size="40" type="text" label="Attribute name" help="">
-      <validator type="empty_field" message="Enter a valid attribute name."/>
+    <param name="attribute_name" type="select" label="Attribute name" help="">
+        <options from_dataset="input">
+          <column name="name" index="8"/>
+          <column name="value" index="8"/>
+          <filter type="attribute_value_splitter" pair_separator=";" column="8"/>
+        </options>
     </param>
     <param name="attribute_type" type="select" label="Attribute type">
       <option value="float">Float</option>
