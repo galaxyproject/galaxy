@@ -1085,7 +1085,7 @@ class RequestsCommon( BaseController ):
             folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
         else:
             if len(sample.datasets):
-                folder_path = os.path.dirname(sample.datasets[-1]['filepath'][:-1])
+                folder_path = os.path.dirname(sample.datasets[-1].file_path[:-1])
             else:
                 folder_path = util.restore_text( sample.request.type.datatx_info.get('data_dir', '') )
         if folder_path and folder_path[-1] != os.sep:
