@@ -487,7 +487,7 @@ $(document).ready(function(){
     <td>${info['folder_widget'].get_html()}</td>
     %if request.submitted() or request.complete(): 
         %if sample:
-            <td><a href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">${len(sample.dataset_files)}</a></td> 
+            <td><a href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">${len(sample.datasets)}</a></td> 
         %else:
             <td><a href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">Add</a></td>
         %endif 
