@@ -204,7 +204,7 @@ class MultipleSplitterFilter( Filter ):
         for fields in options:
             for column in self.columns:
                 for field in fields[column].split( self.separator ):
-                    rval.append( fields[0:column] + [field] + fields[column:] )
+                    rval.append( fields[0:column] + [field] + fields[column+1:] )
         return rval
         
 class AttributeValueSplitterFilter( Filter ):
