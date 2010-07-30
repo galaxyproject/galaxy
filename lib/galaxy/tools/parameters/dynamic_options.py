@@ -136,6 +136,7 @@ class ParamValueFilter( Filter ):
     Optional Attributes:
         keep: Keep columns matching value (True)
               Discard columns matching value (False)
+        ref_attribute: Period (.) separated attribute chain of input (ref) to use as value for filter
     """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
@@ -145,12 +146,20 @@ class ParamValueFilter( Filter ):
         assert self.column is not None, "Required 'column' attribute missing from filter"
         self.column = int ( self.column )
         self.keep = string_as_bool( elem.get( "keep", 'True' ) )
+        self.ref_attribute = elem.get( "ref_attribute", None )
+        if self.ref_attribute:
+            self.ref_attribute = self.ref_attribute.split( '.' )
+        else:
+            self.ref_attribute = []
     def get_dependency_name( self ):
         return self.ref_name
     def filter_options( self, options, trans, other_values ):
         if trans is not None and trans.workflow_building_mode: return []
         assert self.ref_name in other_values, "Required dependency '%s' not found in incoming values" % self.ref_name
-        ref = str( other_values.get( self.ref_name, None ) )
+        ref = other_values.get( self.ref_name, None )
+        for ref_attribute in self.ref_attribute:
+            ref = getattr( ref, ref_attribute )
+        ref = str( ref )
         rval = []
         for fields in options:
             if ( self.keep and fields[self.column] == ref ) or ( not self.keep and fields[self.column] != ref ):
