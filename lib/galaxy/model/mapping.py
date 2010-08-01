@@ -956,10 +956,10 @@ assign_mapper( context, History, History.table,
                      tags=relation( HistoryTagAssociation, order_by=HistoryTagAssociation.table.c.id, backref="histories" ),
                      annotations=relation( HistoryAnnotationAssociation, order_by=HistoryAnnotationAssociation.table.c.id, backref="histories" ) )  
                       )
-                                            
+
 # Set up proxy so that 
-#   History.users_shared_with_dot_users
-# returns a list of User objects.
+#   History.users_shared_with
+# returns a list of users that history is shared with.
 History.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
 
 assign_mapper( context, HistoryUserShareAssociation, HistoryUserShareAssociation.table,
@@ -1224,8 +1224,8 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
                    )
                    
 # Set up proxy so that 
-#   StoredWorkflow.users_shared_with_dot_users
-# returns a list of User objects.
+#   StoredWorkflow.users_shared_with
+# returns a list of users that workflow is shared with.
 StoredWorkflow.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
 
 assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserShareAssociation.table,
@@ -1264,8 +1264,8 @@ assign_mapper( context, Page, Page.table,
                    ) )
                    
 # Set up proxy so that 
-#   Page.users_shared_with_dot_users
-# returns a list of User objects.
+#   Page.users_shared_with
+# returns a list of users that page is shared with.
 Page.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
                    
 assign_mapper( context, PageUserShareAssociation, PageUserShareAssociation.table,
@@ -1288,8 +1288,8 @@ assign_mapper( context, Visualization, Visualization.table,
                    ) )
                    
 # Set up proxy so that 
-#   Visualization.users_shared_with_dot_users
-# returns a list of User objects for users that a visualization is shared with.
+#   Visualization.users_shared_with
+# returns a list of users that visualization is shared with.
 Visualization.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
                    
 assign_mapper( context, VisualizationUserShareAssociation, VisualizationUserShareAssociation.table,
