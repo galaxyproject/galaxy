@@ -1163,7 +1163,13 @@ class LibraryCommon( BaseController ):
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
-        uploaded_dataset.name = name
+        # Remove compressed file extensions, if any
+        new_name = name
+        if new_name.endswith( '.gz' ):
+            new_name = new_name.rstrip( '.gz' )
+        elif new_name.endswith( '.zip' ):
+            new_name = new_name.rstrip( '.zip' )
+        uploaded_dataset.name = new_name
         uploaded_dataset.path = path
         uploaded_dataset.type = type
         uploaded_dataset.ext = None
@@ -1261,7 +1267,7 @@ class LibraryCommon( BaseController ):
             message = "Invalid paths:<br><ul><li>%s</li></ul>" % "</li><li>".join( bad_paths )
             response_code = 400
             return None, response_code, message
-        return uploaded_datasets, None, None
+        return uploaded_datasets, 200, None
     @web.expose
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
         params = util.Params( kwd )
