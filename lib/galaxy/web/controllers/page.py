@@ -4,6 +4,7 @@ from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string
+from galaxy.item_attrs.ratings import UsesItemRatings
 
 def format_bool( b ):
     if b:
@@ -269,7 +270,8 @@ class _PageContentProcessor( _BaseHTMLProcessor ):
         # Default behavior: 
         _BaseHTMLProcessor.unknown_endtag( self, tag )
                 
-class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, UsesStoredWorkflow, UsesHistoryDatasetAssociation, UsesVisualization ):
+class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, 
+                      UsesStoredWorkflow, UsesHistoryDatasetAssociation, UsesVisualization, UsesItemRatings ):
     
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
@@ -582,9 +584,22 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
         # Process page content.
         processor = _PageContentProcessor( trans, 'utf-8', 'text/html', self._get_embed_html )
         processor.feed( page.latest_revision.content )
+        
+        # Get rating data.
+        user_item_rating = 0
+        if trans.get_user():
+            user_item_rating = self.get_user_item_rating( trans, trans.get_user(), page )
+            if user_item_rating:
+                user_item_rating = user_item_rating.rating
+            else:
+                user_item_rating = 0
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, page )
+        
         # Output is string, so convert to unicode for display.
         page_content = unicode( processor.output(), 'utf-8' )
-        return trans.fill_template_mako( "page/display.mako", item=page, item_data=page_content, content_only=True )
+        return trans.fill_template_mako( "page/display.mako", item=page, item_data=page_content, 
+                                         user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                         content_only=True )
         
     @web.expose
     @web.require_login( "use Galaxy pages" )
@@ -610,6 +625,21 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
             page.slug = new_slug
             trans.sa_session.flush()
             return page.slug
+            
+    @web.expose
+    @web.require_login( "rate items" )
+    @web.json
+    def rate_async( self, trans, id, rating ):
+        """ Rate a page asynchronously and return updated community data. """
+
+        page = self.get_page( trans, id, check_ownership=False, check_accessible=True )
+        if not page:
+            return trans.show_error_message( "The specified page does not exist." )
+
+        # Rate page.
+        page_rating = self.rate_item( trans, trans.get_user(), page, rating )
+
+        return self.get_ave_item_rating_data( trans, page )
             
     @web.expose
     def get_embed_html_async( self, trans, id ):

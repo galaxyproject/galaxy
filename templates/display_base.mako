@@ -32,7 +32,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstore", "jquery.autocomplete", "autocomplete_tagging", "trackster" )}
+    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstore", "jquery.autocomplete", "jquery.rating", "autocomplete_tagging", "trackster" )}
 
     <script type="text/javascript">
         
@@ -47,6 +47,23 @@
             self.location = href;
         }
         
+        // Map item rating to number of stars to show.
+        function map_rating_to_num_stars(rating) {
+            if (rating <= 0)
+                return 0;
+            else if (rating > 0 && rating <= 1.5)
+                return 1;
+            else if (rating > 1.5 && rating <= 2.5)
+                return 2;
+            else if (rating > 2.5 && rating <= 3.5)
+                return 3;
+            else if (rating > 3.5 && rating <= 4.5)
+                return 4;
+            else if (rating > 4.5)
+                return 5;
+        }
+        
+        // Init. on document load.
         $(function() {
             // Set links to Galaxy screencasts to open in overlay.
             $(this).find("a[href^='http://screencast.g2.bx.psu.edu/']").each( function() {
@@ -63,15 +80,38 @@
                     return false;
                 });
             });
-            // Init history boxes
+            
+            // Init history boxes.
             init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
+            
+            // Init user item rating.
+            $('.user_rating_star').rating({
+                callback: function(rating, link) {
+                    $.ajax({
+                        type: "GET",
+                        url: "${h.url_for ( controller='/' + controller_name , action='rate_async' )}",
+                        data: { id : "${trans.security.encode_id( item.id )}", rating : rating },
+                        dataType: 'json',
+                        error: function() { alert( "Rating submission failed" ); },
+                        success: function( community_data ) {
+                            $('#rating_feedback').show();
+                            $('#num_ratings').text(Math.round(community_data[1]*10)/10);
+                            $('#ave_rating').text(community_data[0]);
+                            $('.community_rating_star').rating('readOnly', false);
+                            $('.community_rating_star').rating('select', map_rating_to_num_stars(community_data[0])-1);
+                            $('.community_rating_star').rating('readOnly', true);
+                        }
+                    });
+                },
+                required: true // Hide cancel button.
+            });
         });    
     </script>
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging", "embed_item", "trackster" )}
+    ${h.css( "autocomplete_tagging", "embed_item", "trackster", "jquery.rating" )}
     
     <style type="text/css">
         .page-body {
@@ -211,13 +251,91 @@
                 <h4>Author</h4>
                 
                 <p>${item.user.username | h}</p>
-            
-                ## Page meta.
+                
+                ## Related items.
                 <h4>Related ${item_plural}</h4>
                 <p>
                     <a href="${href_to_all_items}">All published ${item_plural.lower()}</a><br>
                     <a href="${href_to_user_items}">Published ${item_plural.lower()} by ${item.user.username | h}</a>
-        
+                
+                ## Rating.
+                <h4>Rating</h4>
+
+                <%
+                    label = "ratings"
+                    if num_ratings == 1:
+                        label = "rating"
+                %>
+                <div style="padding-bottom: 0.75em; float: left">
+                    Community<br>
+                    <span style="font-size:80%">
+                        (<span id="num_ratings">${num_ratings}</span> ${label}, 
+                         <span id="ave_rating">${"%.1f" % ave_item_rating}</span> average)
+                    <span>
+                </div>
+                <div style="float: right">
+                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="1"
+                    %if ave_item_rating > 0 and ave_item_rating <= 1.5:
+                        checked="checked"
+                    %endif
+                    
+                    />
+                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="2"
+                    %if ave_item_rating > 1.5 and ave_item_rating <= 2.5:
+                        checked="checked"
+                    %endif
+                    />
+                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="3"
+                    %if ave_item_rating > 2.5 and ave_item_rating <= 3.5:
+                        checked="checked"
+                    %endif
+                    />
+                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="4"
+                    %if ave_item_rating > 3.5 and ave_item_rating <= 4.5:
+                        checked="checked"
+                    %endif
+                    />
+                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="5"
+                    %if ave_item_rating > 4.5:
+                        checked="checked"
+                    %endif
+                    />
+                </div>
+                <div style="clear: both;"></div>
+                %if trans.get_user():
+                    <div style="float: left">
+                        Yours<br><span id="rating_feedback" style="font-size:80%; display: none">(thanks!)</span>
+                    </div>
+                    <div style="float: right">
+                        <input name="star2" type="radio" class="user_rating_star" value="1"
+                        %if user_item_rating == 1:
+                            checked="checked"
+                        %endif
+                        />
+                        <input name="star2" type="radio" class="user_rating_star" value="2"
+                        %if user_item_rating == 2:
+                            checked="checked"
+                        %endif
+                        />
+                        <input name="star2" type="radio" class="user_rating_star" value="3"
+                        %if user_item_rating == 3:
+                            checked="checked"
+                        %endif
+                        />
+                        <input name="star2" type="radio" class="user_rating_star" value="4"
+                        %if user_item_rating == 4:
+                            checked="checked"
+                        %endif
+                        />
+                        <input name="star2" type="radio" class="user_rating_star" value="5"
+                        %if user_item_rating == 5:
+                            checked="checked"
+                        %endif
+                        />
+                    </div>
+                %endif
+                <div style="clear: both;"></div>
+                        
                 ## Tags.
                 <h4>Tags</h4>
                 <p>

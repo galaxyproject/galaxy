@@ -1766,6 +1766,8 @@ class StoredWorkflowTagAssociation ( ItemTagAssociation ):
 class VisualizationTagAssociation ( ItemTagAssociation ):
     pass
     
+# Item annotation classes.
+    
 class HistoryAnnotationAssociation( object ):
     pass
     
@@ -1783,6 +1785,39 @@ class PageAnnotationAssociation( object ):
     
 class VisualizationAnnotationAssociation( object ):
     pass
+    
+# Item rating classes.
+    
+class ItemRatingAssociation( object ):
+    def __init__( self, id=None, user=None, item=None, rating=0 ):
+        self.id = id
+        self.user = user
+        self.item = item
+        self.rating = rating
+        
+    def set_item( self, item ):
+        """ Set association's item. """
+        pass
+        
+class HistoryRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, history ):
+        self.history = history
+    
+class HistoryDatasetAssociationRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, history_dataset_association ):
+        self.history_dataset_association = history_dataset_association
+    
+class StoredWorkflowRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, stored_workflow ):
+        self.stored_workflow = stored_workflow
+    
+class PageRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, page ):
+        self.page = page
+
+class VisualizationRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, visualization ):
+        self.visualization = visualization
     
 class UserPreference ( object ):
     def __init__( self, name=None, value=None ):

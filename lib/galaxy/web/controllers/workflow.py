@@ -18,6 +18,7 @@ from galaxy import model
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.jobs.actions.post import *
+from galaxy.item_attrs.ratings import UsesItemRatings
 
 import urllib2
 
@@ -83,7 +84,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         # A public workflow is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
-class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnnotations ):
+class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnnotations, UsesItemRatings ):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
     
@@ -185,7 +186,18 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         stored_workflow.annotation = self.get_item_annotation_str( trans, stored_workflow.user, stored_workflow )
         for step in stored_workflow.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str( trans, stored_workflow.user, step )
-        return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps )
+
+        # Get rating data.
+        user_item_rating = 0
+        if trans.get_user():
+            user_item_rating = self.get_user_item_rating( trans, trans.get_user(), stored_workflow )
+            if user_item_rating:
+                user_item_rating = user_item_rating.rating
+            else:
+                user_item_rating = 0
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, stored_workflow )            
+        return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps,
+                                            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     @web.expose
     def get_item_content_async( self, trans, id ):
@@ -375,6 +387,21 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             self.add_item_annotation( trans, stored, new_annotation )
             trans.sa_session.flush()
             return new_annotation
+            
+    @web.expose
+    @web.require_login( "rate items" )
+    @web.json
+    def rate_async( self, trans, id, rating ):
+        """ Rate a workflow asynchronously and return updated community data. """
+
+        stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
+        if not stored:
+            return trans.show_error_message( "The specified workflow does not exist." )
+
+        # Rate workflow.
+        stored_rating = self.rate_item( trans, trans.get_user(), stored, rating )
+
+        return self.get_ave_item_rating_data( trans, stored )
             
     @web.expose
     @web.require_login( "use Galaxy workflows" )

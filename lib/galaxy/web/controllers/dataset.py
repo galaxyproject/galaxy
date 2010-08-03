@@ -6,6 +6,7 @@ from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
 from galaxy.datatypes.display_applications.util import encode_dataset_user, decode_dataset_user
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.item_attrs.ratings import UsesItemRatings
 
 from email.MIMEText import MIMEText
 import pkg_resources; 
@@ -467,6 +468,21 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         return
         
     @web.expose
+    @web.require_login( "rate items" )
+    @web.json
+    def rate_async( self, trans, id, rating ):
+        """ Rate a dataset asynchronously and return updated community data. """
+
+        dataset = self.get_dataset( trans, id, check_ownership=False, check_accessible=True )
+        if not dataset:
+            return trans.show_error_message( "The specified dataset does not exist." )
+
+        # Rate dataset.
+        dataset_rating = self.rate_item( trans, trans.get_user(), dataset, rating )
+
+        return self.get_ave_item_rating_data( trans, dataset )
+        
+    @web.expose
     def display_by_username_and_slug( self, trans, username, slug, preview=True ):
         """ Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id. """
         dataset = self.get_dataset( trans, slug, False, True )
@@ -481,7 +497,18 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                 trans.response.set_content_type( mime )
                 return open( dataset.file_name )
             else:
-                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated )
+                # Get rating data.
+                user_item_rating = 0
+                if trans.get_user():
+                    user_item_rating = self.get_user_item_rating( trans, trans.get_user(), dataset )
+                    if user_item_rating:
+                        user_item_rating = user_item_rating.rating
+                    else:
+                        user_item_rating = 0
+                ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, dataset )
+                
+                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated,
+                                                user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
         else:
             raise web.httpexceptions.HTTPNotFound()
             

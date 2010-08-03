@@ -1,5 +1,6 @@
 from galaxy import model
 from galaxy.web.base.controller import *
+from galaxy.item_attrs.ratings import UsesItemRatings
 from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -65,7 +66,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
 
 
-class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVisualization ):
+class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVisualization, UsesItemRatings ):
     _user_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
     
@@ -137,6 +138,21 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
             trans.sa_session.flush()
 
         return
+        
+    @web.expose
+    @web.require_login( "rate items" )
+    @web.json
+    def rate_async( self, trans, id, rating ):
+        """ Rate a visualization asynchronously and return updated community data. """
+
+        visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+        if not visualization:
+            return trans.show_error_message( "The specified visualization does not exist." )
+
+        # Rate visualization.
+        visualization_rating = self.rate_item( trans, trans.get_user(), visualization, rating )
+
+        return self.get_ave_item_rating_data( trans, visualization )
         
     @web.expose
     @web.require_login( "share Galaxy visualizations" )
@@ -263,9 +279,21 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         # Security check raises error if user cannot access visualization.
         self.security_check( trans.get_user(), visualization, False, True)
         
+        # Get rating data.
+        user_item_rating = 0
+        if trans.get_user():
+            user_item_rating = self.get_user_item_rating( trans, trans.get_user(), visualization )
+            if user_item_rating:
+                user_item_rating = user_item_rating.rating
+            else:
+                user_item_rating = 0
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, visualization )
+        
         # Display.
-        visualization_config = self.get_visualization_config( trans, visualization )    
-        return trans.fill_template_mako( "visualization/display.mako", item=visualization, item_data=visualization_config, content_only=True )
+        visualization_config = self.get_visualization_config( trans, visualization )
+        return trans.stream_template_mako( "visualization/display.mako", item = visualization, item_data = visualization_config, 
+                                            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                            content_only=True )
         
     @web.expose
     @web.json

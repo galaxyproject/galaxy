@@ -771,7 +771,38 @@ VisualizationAnnotationAssociation.table = Table( "visualization_annotation_asso
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
-
+    
+# Ratings tables.
+HistoryRatingAssociation.table = Table( "history_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True) )
+    
+HistoryDatasetAssociationRatingAssociation.table = Table( "history_dataset_association_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True) )
+    
+StoredWorkflowRatingAssociation.table = Table( "stored_workflow_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True) )
+    
+PageRatingAssociation.table = Table( "page_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True) )
+    
+VisualizationRatingAssociation.table = Table( "visualization_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True) )
+    
 # User tables.
     
 UserPreference.table = Table( "user_preference", metadata,
@@ -916,7 +947,8 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
             HistoryDatasetAssociation, 
             primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == True ) ) ),
         tags=relation( HistoryDatasetAssociationTagAssociation, order_by=HistoryDatasetAssociationTagAssociation.table.c.id, backref='history_tag_associations' ),
-        annotations=relation( HistoryDatasetAssociationAnnotationAssociation, order_by=HistoryDatasetAssociationAnnotationAssociation.table.c.id, backref="hdas" ) ) 
+        annotations=relation( HistoryDatasetAssociationAnnotationAssociation, order_by=HistoryDatasetAssociationAnnotationAssociation.table.c.id, backref="hdas" ),
+        ratings=relation( HistoryDatasetAssociationRatingAssociation, order_by=HistoryDatasetAssociationRatingAssociation.table.c.id, backref="hdas" ) )
             )
 
 assign_mapper( context, Dataset, Dataset.table,
@@ -954,7 +986,8 @@ assign_mapper( context, History, History.table,
                      datasets=relation( HistoryDatasetAssociation, backref="history", order_by=asc(HistoryDatasetAssociation.table.c.hid) ),
                      active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
                      tags=relation( HistoryTagAssociation, order_by=HistoryTagAssociation.table.c.id, backref="histories" ),
-                     annotations=relation( HistoryAnnotationAssociation, order_by=HistoryAnnotationAssociation.table.c.id, backref="histories" ) )  
+                     annotations=relation( HistoryAnnotationAssociation, order_by=HistoryAnnotationAssociation.table.c.id, backref="histories" ),
+                     ratings=relation( HistoryRatingAssociation, order_by=HistoryRatingAssociation.table.c.id, backref="histories" ) )  
                       )
 
 # Set up proxy so that 
@@ -1220,7 +1253,8 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
                                                primaryjoin=( StoredWorkflow.table.c.latest_workflow_id == Workflow.table.c.id ),
                                                lazy=False ),
                      tags=relation( StoredWorkflowTagAssociation, order_by=StoredWorkflowTagAssociation.table.c.id, backref="stored_workflows" ),
-                     annotations=relation( StoredWorkflowAnnotationAssociation, order_by=StoredWorkflowAnnotationAssociation.table.c.id, backref="stored_workflows" ) ) 
+                     annotations=relation( StoredWorkflowAnnotationAssociation, order_by=StoredWorkflowAnnotationAssociation.table.c.id, backref="stored_workflows" ),
+                     ratings=relation( StoredWorkflowRatingAssociation, order_by=StoredWorkflowRatingAssociation.table.c.id, backref="stored_workflows" ) )
                    )
                    
 # Set up proxy so that 
@@ -1260,7 +1294,8 @@ assign_mapper( context, Page, Page.table,
                                                primaryjoin=( Page.table.c.latest_revision_id == PageRevision.table.c.id ),
                                                lazy=False ),
                      tags=relation(PageTagAssociation, order_by=PageTagAssociation.table.c.id, backref="pages"),
-                     annotations=relation( PageAnnotationAssociation, order_by=PageAnnotationAssociation.table.c.id, backref="pages" )
+                     annotations=relation( PageAnnotationAssociation, order_by=PageAnnotationAssociation.table.c.id, backref="pages" ),
+                     ratings=relation( PageRatingAssociation, order_by=PageRatingAssociation.table.c.id, backref="pages" )  
                    ) )
                    
 # Set up proxy so that 
@@ -1284,7 +1319,8 @@ assign_mapper( context, Visualization, Visualization.table,
                                                primaryjoin=( Visualization.table.c.latest_revision_id == VisualizationRevision.table.c.id ),
                                                lazy=False ),
                      tags=relation( VisualizationTagAssociation, order_by=VisualizationTagAssociation.table.c.id, backref="visualizations" ),
-                     annotations=relation( VisualizationAnnotationAssociation, order_by=VisualizationAnnotationAssociation.table.c.id, backref="visualizations" )
+                     annotations=relation( VisualizationAnnotationAssociation, order_by=VisualizationAnnotationAssociation.table.c.id, backref="visualizations" ),
+                     ratings=relation( VisualizationRatingAssociation, order_by=VisualizationRatingAssociation.table.c.id, backref="visualizations" ) 
                    ) )
                    
 # Set up proxy so that 
@@ -1296,6 +1332,8 @@ assign_mapper( context, VisualizationUserShareAssociation, VisualizationUserShar
   properties=dict( user=relation( User, backref='visualizations_shared_by_others' ),
                    visualization=relation( Visualization, backref='users_shared_with' )
                  ) )
+                 
+# Tag tables.
 
 assign_mapper( context, Tag, Tag.table,
     properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[Tag.table.c.id] ) )  
@@ -1329,6 +1367,8 @@ assign_mapper( context, VisualizationTagAssociation, VisualizationTagAssociation
     properties=dict( tag=relation(Tag, backref="tagged_visualizations"), user=relation( User ) )
                     )
                     
+# Annotation tables.
+                    
 assign_mapper( context, HistoryAnnotationAssociation, HistoryAnnotationAssociation.table,
     properties=dict( history=relation( History ), user=relation( User ) )
                     )
@@ -1353,6 +1393,30 @@ assign_mapper( context, VisualizationAnnotationAssociation, VisualizationAnnotat
     properties=dict( visualization=relation( Visualization ), user=relation( User ) )
                     )
                     
+# Rating tables.
+
+assign_mapper( context, HistoryRatingAssociation, HistoryRatingAssociation.table,
+    properties=dict( history=relation( History ), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, HistoryDatasetAssociationRatingAssociation, HistoryDatasetAssociationRatingAssociation.table,
+    properties=dict( hda=relation( HistoryDatasetAssociation ), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, StoredWorkflowRatingAssociation, StoredWorkflowRatingAssociation.table,
+    properties=dict( stored_workflow=relation( StoredWorkflow ), user=relation( User ) )
+                    )
+
+assign_mapper( context, PageRatingAssociation, PageRatingAssociation.table,
+    properties=dict( page=relation( Page ), user=relation( User ) )
+                    )
+
+assign_mapper( context, VisualizationRatingAssociation, VisualizationRatingAssociation.table,
+    properties=dict( visualization=relation( Visualization ), user=relation( User ) )
+                    )
+
+# User tables.
+                    
 assign_mapper( context, UserPreference, UserPreference.table, 
     properties = {}
               )
@@ -1363,6 +1427,8 @@ assign_mapper( context, UserAction, UserAction.table,
 
 assign_mapper( context, APIKeys, APIKeys.table, 
     properties = {} )
+    
+# Helper methods.
 
 def db_next_hid( self ):
     """

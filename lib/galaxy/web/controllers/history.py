@@ -9,6 +9,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.tools.actions import upload_common
 from galaxy.tags.tag_handler import GalaxyTagHandler
+from galaxy.item_attrs.ratings import UsesItemRatings
 from sqlalchemy.sql.expression import ClauseElement
 import webhelpers, logging, operator, os, tempfile, subprocess, shutil, tarfile
 from datetime import datetime
@@ -147,7 +148,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         # A public history is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
             
-class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory ):
+class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRatings, UsesHistory ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -415,7 +416,22 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             trans.log_event( "History id %d marked as deleted" % history.id )
         # Regardless of whether it was previously deleted, we make a new history active 
         trans.new_history()
-        return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
+        return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )  
+        
+    @web.expose
+    @web.require_login( "rate items" )
+    @web.json
+    def rate_async( self, trans, id, rating ):
+        """ Rate a history asynchronously and return updated community data. """
+        
+        history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
+        if not history:
+            return trans.show_error_message( "The specified history does not exist." )
+            
+        # Rate history.
+        history_rating = self.rate_item( trans, trans.get_user(), history, rating )
+        
+        return self.get_ave_item_rating_data( trans, history )
         
     @web.expose
     def rename_async( self, trans, id=None, new_name=None ):
@@ -1047,8 +1063,18 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         history.annotation = self.get_item_annotation_str( trans, history.user, history )
         for dataset in datasets:
             dataset.annotation = self.get_item_annotation_str( trans, history.user, dataset )
-        return trans.stream_template_mako( "history/display.mako",
-                                          item = history, item_data = datasets )
+            
+        # Get rating data.
+        user_item_rating = 0
+        if trans.get_user():
+            user_item_rating = self.get_user_item_rating( trans, trans.get_user(), history )
+            if user_item_rating:
+                user_item_rating = user_item_rating.rating
+            else:
+                user_item_rating = 0
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, history )
+        return trans.stream_template_mako( "history/display.mako", item = history, item_data = datasets, 
+                                            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
                                           
     @web.expose
     @web.require_login( "share Galaxy histories" )
