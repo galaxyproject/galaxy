@@ -739,8 +739,8 @@
                                 href = ""
                                 extra = ""
                                 if column.sortable:
-                                    if sort_key == column.key:
-                                        if sort_order == "asc":
+                                    if sort_key.endswith(column.key):
+                                        if not sort_key.startswith("-"):
                                             href = url( sort=( "-" + column.key ) )
                                             extra = "&darr;"
                                         else:

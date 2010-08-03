@@ -136,7 +136,6 @@ class Grid( object ):
                         extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
         # Process sort arguments.
         sort_key = None
-        sort_order = None
         if 'sort' in kwargs:
             sort_key = kwargs['sort']
         elif base_sort_key:
@@ -144,11 +143,9 @@ class Grid( object ):
         encoded_sort_key = sort_key
         if sort_key:
             if sort_key.startswith( "-" ):
-                sort_order = 'desc'
                 # Can't use lower() on timestamp or integer objects, so func.lower() is not used here...
                 query = query.order_by( self.model_class.table.c.get( sort_key[1:] ).desc() ) 
             else:
-                sort_order = 'asc'
                 # See reason for not using lower() to do case-insensitive search.
                 query = query.order_by( self.model_class.table.c.get( sort_key ).asc() )
         extra_url_args['sort'] = encoded_sort_key
@@ -226,7 +223,6 @@ class Grid( object ):
                                     cur_filter_dict=cur_filter_dict,
                                     sort_key=sort_key,
                                     encoded_sort_key=encoded_sort_key,
-                                    sort_order=sort_order,
                                     current_item=current_item,
                                     ids = kwargs.get( 'id', [] ),
                                     url = url,

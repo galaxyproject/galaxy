@@ -14,13 +14,13 @@ log = logging.getLogger( __name__ )
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
-Visualization_table = Table( "visualization", metadata, autoload=True )
-Visualization_revision_table = Table( "visualization_revision", metadata, autoload=True )
-
 def upgrade():
     
     print __doc__
     metadata.reflect()
+    
+    Visualization_table = Table( "visualization", metadata, autoload=True )
+    Visualization_revision_table = Table( "visualization_revision", metadata, autoload=True )
 
     # Create dbkey columns.
     x = Column( "dbkey", TEXT, index=True )
@@ -47,12 +47,16 @@ def upgrade():
     for viz in all_viz:
         viz_id = viz['viz_id']
         viz_rev_id = viz['viz_rev_id']
-        dbkey = from_json_string(viz[Visualization_revision_table.c.config]).get('dbkey', "").replace("'", "\\'")
-        db_session.execute("UPDATE visualization_revision SET dbkey='%s' WHERE id=%s" % (dbkey, viz_rev_id))
-        db_session.execute("UPDATE visualization SET dbkey='%s' WHERE id=%s" % (dbkey, viz_id))
+        if viz[Visualization_revision_table.c.config]:
+            dbkey = from_json_string(viz[Visualization_revision_table.c.config]).get('dbkey', "").replace("'", "\\'")
+            db_session.execute("UPDATE visualization_revision SET dbkey='%s' WHERE id=%s" % (dbkey, viz_rev_id))
+            db_session.execute("UPDATE visualization SET dbkey='%s' WHERE id=%s" % (dbkey, viz_id))
 
 def downgrade():
     metadata.reflect()
+    
+    Visualization_table = Table( "visualization", metadata, autoload=True )
+    Visualization_revision_table = Table( "visualization_revision", metadata, autoload=True )
 
     Visualization_table.c.dbkey.drop()
     Visualization_revision_table.c.dbkey.drop()

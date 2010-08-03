@@ -205,7 +205,7 @@ class UsesVisualization( SharableItemSecurity ):
 
             # Set dbkey.
             try:
-                dbkey = latest_revision.config['dbkey']
+                dbkey = latest_revision.dbkey
             except KeyError:
                 dbkey = None
         
