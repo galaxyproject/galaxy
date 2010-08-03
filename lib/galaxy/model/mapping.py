@@ -641,6 +641,7 @@ Visualization.table = Table( "visualization", metadata,
             ForeignKey( "visualization_revision.id", use_alter=True, name='visualization_latest_revision_id_fk' ), index=True ),
     Column( "title", TEXT ),
     Column( "type", TEXT ),
+    Column( "dbkey", TEXT, index=True ),
     Column( "deleted", Boolean, default=False, index=True ),
     Column( "importable", Boolean, default=False, index=True ),
     Column( "slug", TEXT, index=True ),
@@ -653,6 +654,7 @@ VisualizationRevision.table = Table( "visualization_revision", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True, nullable=False ),
     Column( "title", TEXT ),
+    Column( "dbkey", TEXT, index=True ),
     Column( "config", JSONType )
     )
     

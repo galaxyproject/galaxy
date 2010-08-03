@@ -7,10 +7,6 @@ of datasets associated with the same dbkey to display. Once selected, jobs
 are started to create any necessary indexes in the background, and the user
 is redirected to the browser interface, which loads the appropriate datasets.
 
-Problems
---------
- - Must have a LEN file, not currently able to infer from data (not sure we
-   need to support that, but need to make user defined build support better)
 """
 
 import math, re, logging, glob, pkg_resources
@@ -88,12 +84,6 @@ class DatasetSelectionGrid( grids.Grid ):
                     .filter( model.HistoryDatasetAssociation.deleted == False )
                     
 class TracksterSelectionGrid( grids.Grid ):
-#    class DbKeyColumn( grids.GridColumn ):
-#        def filter( self, trans, user, query, dbkey ):
-#            """ Filter by dbkey. """
-#            # use raw SQL b/c metadata is a BLOB
-#            dbkey = dbkey.replace("'", "\\'")
-#            return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
 
     # Grid definition.
     title = "Insert into visualization"
@@ -105,7 +95,8 @@ class TracksterSelectionGrid( grids.Grid ):
     use_async = True
     use_paging = False
     columns = [
-        grids.TextColumn( "Title", key="title", model_class=model.Visualization )
+        grids.TextColumn( "Title", key="title", model_class=model.Visualization ),
+        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization )
     ]
     columns.append( 
         grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0] ], 
@@ -138,15 +129,16 @@ class TracksController( BaseController, UsesVisualization ):
     
     @web.expose
     @web.require_login()
-    def index( self, trans ):
+    def index( self, trans, **kwargs ):
         config = {}
         
-        return trans.fill_template( "tracks/browser.mako", config=config )
+        return trans.fill_template( "tracks/browser.mako", config=config, add_dataset=kwargs.get("dataset_id", None), \
+                                        default_dbkey=kwargs.get("default_dbkey", None) )
     
     @web.expose
     @web.require_login()
-    def new_browser( self, trans ):
-        return trans.fill_template( "tracks/new_browser.mako", dbkeys=self._get_dbkeys( trans ) )
+    def new_browser( self, trans, **kwargs ):
+        return trans.fill_template( "tracks/new_browser.mako", dbkeys=self._get_dbkeys( trans ), default_dbkey=kwargs.get("default_dbkey", None) )
             
     @web.json
     @web.require_login()
@@ -204,7 +196,7 @@ class TracksController( BaseController, UsesVisualization ):
             visualization = self.get_visualization( trans, vis_id, check_ownership=False, check_accessible=True )
             visualization.config = self.get_visualization_config( trans, visualization )
             vis_user = visualization.user
-            vis_dbkey = visualization.config['dbkey']
+            vis_dbkey = visualization.dbkey
         else:
             # No vis_id, so visualization is new. User is current user, dbkey must be given.
             vis_user = trans.user
@@ -330,6 +322,7 @@ class TracksController( BaseController, UsesVisualization ):
             vis.user = trans.user
             vis.title = kwargs['vis_title']
             vis.type = "trackster"
+            vis.dbkey = dbkey
             session.add( vis )
         else:
             decoded_id = trans.security.decode_id( vis_id )
@@ -339,6 +332,7 @@ class TracksController( BaseController, UsesVisualization ):
         vis_rev = model.VisualizationRevision()
         vis_rev.visualization = vis
         vis_rev.title = vis.title
+        vis_rev.dbkey = dbkey
         tracks = []
         for track in decoded_payload:
             tracks.append( {    "dataset_id": str(track['dataset_id']),
@@ -346,7 +340,7 @@ class TracksController( BaseController, UsesVisualization ):
                                 "track_type": track['track_type'],
                                 "prefs": track['prefs']
             } )
-        vis_rev.config = { "dbkey": dbkey, "tracks": tracks }
+        vis_rev.config = { "tracks": tracks }
         vis.latest_revision = vis_rev
         session.add( vis_rev )
         session.flush()

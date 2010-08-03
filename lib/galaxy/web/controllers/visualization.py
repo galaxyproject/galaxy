@@ -14,7 +14,7 @@ class VisualizationListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, attach_popup=True,
                          link=( lambda item: dict( controller="tracks", action="browser", id=item.id ) ) ),
-        grids.TextColumn( "Type", key="type", model_class=model.Visualization ),
+        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
         grids.IndividualTagsColumn( "Tags", "tags", model.Visualization, model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Visualization, filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),

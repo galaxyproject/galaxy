@@ -94,7 +94,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 hide_modal();
             };
             $.ajax({
-                url: "${h.url_for( action='new_browser' )}",
+                url: "${h.url_for( action='new_browser', default_dbkey=default_dbkey )}",
                 data: {},
                 error: function() { alert( "Couldn't create new browser" ) },
                 success: function(form_html) {
@@ -126,10 +126,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
         
         // Execute initializer for EDITOR specific javascript
         function init() {
-            %if add_dataset:
-                console.log("Adding dataset");
-                ## Code for adding new dataset
-            %endif
             
             if (view.num_tracks === 0) {
                 $("#no-tracks").show();
@@ -148,6 +144,27 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     return "There are unsaved changes to your visualization which will be lost.";
                 }
             };
+            
+            var add_async_success = function(track_data) {
+                var td = track_data,
+					track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
+					new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs);
+					
+                view.add_track(new_track);
+                view.has_changes = true;
+                $("#no-tracks").hide();
+                sidebar_box(new_track);
+            };
+            
+            %if add_dataset is not None:
+                $.ajax( {
+                    url: "${h.url_for( action='add_track_async' )}",
+                    data: { id: "${add_dataset}" },
+                    dataType: "json",
+                    success: add_async_success
+                });
+                
+            %endif
 
             // Use a popup grid to add more tracks
             $("#add-track").bind( "click", function(e) {
@@ -164,17 +181,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                                         url: "${h.url_for( action='add_track_async' )}",
                                         data: { id: item_id },
                                         dataType: "json",
-                                        error: function() {},
-                                        success: function(track_data) {
-                                            var td = track_data,
-												track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
-												new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs);
-												
-                                            view.add_track(new_track);
-                                            view.has_changes = true;
-                                            $("#no-tracks").hide();
-                                            sidebar_box(new_track);
-                                        }
+                                        success: add_async_success
                                     });
 
                                 });

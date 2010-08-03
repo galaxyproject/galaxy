@@ -21,4 +21,10 @@
         Is your build not listed here? 
         <a href="${h.url_for( controller='user', action='dbkeys', panels=True )}">Add a Custom Build</a>
     </div>
+    %if default_dbkey is not None:
+        <script type="text/javascript">
+            console.log("${default_dbkey}");
+            $("#new-dbkey option[value='${default_dbkey}']").attr("selected", true);
+        </script>
+    %endif
 </form>
