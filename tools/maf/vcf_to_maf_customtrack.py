@@ -110,7 +110,11 @@ def main():
             if num_dels and start_pos:
                 ref_text = UNKNOWN_NUCLEOTIDE + ref_text
                 start_pos -= 1
-            alignment.add_component( bx.align.maf.Component( src='%s.chr%s' % ( dbkey, vc.chrom ), start = start_pos, size = len( ref_text.replace( '-', '' ) ), strand = '+', src_size = start_pos + len( ref_text ), text = ref_text ) )
+            alignment.add_component( bx.align.maf.Component( src='%s.%s%s' % (
+                 dbkey, ("chr" if not vc.chrom.startswith("chr") else ""), vc.chrom ),
+                 start = start_pos, size = len( ref_text.replace( '-', '' ) ),
+                 strand = '+', src_size = start_pos + len( ref_text ),
+                 text = ref_text ) )
             for variant_name, variant_text in variants:
                 #FIXME:
                 ## skip non-spec. compliant data, see: http://1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:vcf3.3 for format spec

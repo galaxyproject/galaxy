@@ -44,9 +44,14 @@ class VariantCall33( VariantCall ):
             for sample_value in self.fields[ self.required_header_length + 1: ]:
                 self.sample_values.append( sample_value.split( ':' ) )
 
+class VariantCall40( VariantCall33 ):
+    version = 'VCFv4.0'
+    def __init__( self, vcf_line, metadata, sample_names ):
+        VariantCall33.__init__( self, vcf_line, metadata, sample_names)
+
 #VCF Format version lookup dict
 VCF_FORMATS = {}
-for format in [ VariantCall33 ]:
+for format in [ VariantCall33, VariantCall40 ]:
     VCF_FORMATS[format.version] = format
 
 class Reader( object ):
@@ -61,7 +66,9 @@ class Reader( object ):
             assert line, 'Invalid VCF file provided.'
             line = line.rstrip( '\r\n' )
             if self.vcf_class and line.startswith( self.vcf_class.header_startswith ):
-                self.header_fields = line.split( '\t' )
+                # read the header fields, ignoring any blank tabs, which GATK
+                # VCF produces after the sample
+                self.header_fields = [l for l in line.split( '\t' ) if l]
                 if len( self.header_fields ) > self.vcf_class.required_header_length:
                     for sample_name in self.header_fields[ self.vcf_class.required_header_length + 1 : ]:
                         self.sample_names.append( sample_name )
