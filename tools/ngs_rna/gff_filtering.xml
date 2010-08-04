@@ -14,7 +14,7 @@
     </param>
     <param name="attribute_type" type="select" label="Attribute type">
       <option value="float">Float</option>
-      <option value="integer">Integer</option>
+      <option value="int">Integer</option>
       <option value="str">String</option>
     </param>
     <param name="cond" size="40" type="text" value=">0" label="With following condition" help="Double equal signs, ==, must be used as shown above. To filter for an arbitrary string, use the Select tool.">

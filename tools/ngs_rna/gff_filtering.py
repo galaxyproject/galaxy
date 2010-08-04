@@ -48,7 +48,7 @@ mapped_str = {
 for key, value in mapped_str.items():
     cond_text = cond_text.replace( key, value )
     
-# Add attribute name to condition text.
+# Condition text is 'attribute meets condition.'
 cond_text = attribute_name + cond_text
     
 # Attempt to determine if the condition includes executable stuff and, if so, exit
@@ -62,7 +62,7 @@ for operand in operands:
             stop_err( "Illegal value '%s' in condition '%s'" % ( operand, cond_text ) )
             
 # Set up assignment.
-assignment = "%s = attributes[ '%s' ]" % ( attribute_name, attribute_name )
+assignment = "%s = attributes.get('%s', None)" % ( attribute_name, attribute_name )
             
 # Set up type casting based on attribute type.
 type_cast = "%s = %s(%s)" % ( attribute_name, attribute_type, attribute_name)
@@ -103,16 +103,18 @@ for i, line in enumerate( file( in_fname ) ):
             value = pair[1].strip(" \\"")
             attributes[name] = value
         %s
-        %s
         if %s:
-            lines_kept += 1
-            print >> out, line
-    except:
+            %s
+            if %s:
+                lines_kept += 1
+                print >> out, line
+    except Exception, e:
         skipped_lines += 1
         if not invalid_line:
             first_invalid_line = i + 1
             invalid_line = line
-''' % ( assignment, type_cast, cond_text )
+''' % ( assignment, attribute_name, type_cast, cond_text )
+
 
 valid_filter = True
 try:
