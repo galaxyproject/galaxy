@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """
-Find regions of first interval/GFF file that overlap regions in a second interval/GFF file
+Find regions of first interval file that overlap regions in a second interval file.
+Interval files can either be BED or GFF format.
 
-usage: %prog bed_file_1 bed_file_2 out_file
+usage: %prog interval_file_1 interval_file_2 out_file
     -1, --cols1=N,N,N,N: Columns for start, end, strand in first file
     -2, --cols2=N,N,N,N: Columns for start, end, strand in second file
     -m, --mincols=N: Require this much overlap (default 1bp)
