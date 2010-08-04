@@ -36,7 +36,6 @@ class ToolDataTableManager( object ):
             table = tool_data_table_types[ type ]( table_elem )
             self.data_tables[ table.name ] = table
             log.debug( "Loaded tool data table '%s", table.name )
-        print >> sys.stderr, repr( self.data_tables )
     
 class ToolDataTable( object ):
     def __init__( self, config_element ):
@@ -72,9 +71,10 @@ class TabularToolDataTable( ToolDataTable ):
         all_rows = []
         for file_element in config_element.findall( 'file' ):
             filename = file_element.get( 'path' )
-            assert os.path.exists( filename ), \
-                "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name )
-            all_rows.extend( self.parse_file_fields( open( filename ) ) )
+            if not os.path.exists( filename ): 
+                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
+            else:
+                all_rows.extend( self.parse_file_fields( open( filename ) ) )
         self.data = all_rows
         
     def get_fields( self ):
