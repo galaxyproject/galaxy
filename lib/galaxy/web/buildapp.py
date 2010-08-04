@@ -190,7 +190,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         log.debug( "Enabling 'error' middleware" )
     # Transaction logging (apache access.log style)
     if asbool( conf.get( 'use_translogger', True ) ):
-        from paste.translogger import TransLogger
+        from framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
     # Config middleware just stores the paste config along with the request,
