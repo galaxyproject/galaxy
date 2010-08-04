@@ -68,6 +68,9 @@ ${tool.get_state_message()}
         %if can_download:
             <a class="action-button" href="${h.url_for( controller='common', action='download_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Download tool</a>
         %endif
+        %if can_rate:
+            <a class="action-button" href="${h.url_for( controller='common', action='rate_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Rate tool</a>
+        %endif
         %if can_delete:
             <a class="action-button" href="${h.url_for( controller='common', action='delete_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}" confirm="Are you sure you want to delete this tool?">Delete tool</a>
         %endif

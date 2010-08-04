@@ -236,6 +236,21 @@ class ToolEventAssociation( object ):
         self.tool = tool
         self.event = event
 
+class ItemRatingAssociation( object ):
+    def __init__( self, id=None, user=None, item=None, rating=0, comment='' ):
+        self.id = id
+        self.user = user
+        self.item = item
+        self.rating = rating
+        self.comment = comment
+    def set_item( self, item ):
+        """ Set association's item. """
+        pass
+
+class ToolRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, tool ):
+        self.tool = tool
+
 class Category( object ):
     def __init__( self, name=None, description=None, deleted=False ):
         self.name = name

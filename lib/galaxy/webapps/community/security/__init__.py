@@ -164,6 +164,14 @@ class CommunityRBACAgent( RBACAgent ):
             self.sa_session.refresh( tool )
             for category in categories:
                 self.associate_components( tool=tool, category=category )
+    def can_rate( self, user, user_is_admin, cntrller, item ):
+        # The current user can rate and review the item if they are an admin or if
+        # they did not upload the item and the item is approved or archived.
+        if user and user_is_admin and cntrller == 'admin':
+            return True
+        if cntrller in [ 'tool' ] and ( item.is_approved or item.is_archived ) and user != item.user:
+            return True
+        return False
     def can_approve_or_reject( self, user, user_is_admin, cntrller, item ):
         # The current user can approve or reject the item if the user
         # is an admin, and the item's state is WAITING.

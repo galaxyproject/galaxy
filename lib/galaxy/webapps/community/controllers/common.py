@@ -4,6 +4,7 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.web.form_builder import SelectField
+from galaxy.item_attrs.ratings import UsesItemRatings
 import logging
 log = logging.getLogger( __name__ )
 
@@ -45,7 +46,7 @@ class ToolListGrid( grids.Grid ):
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             if tool.user:
-                return tool.user.email
+                return tool.user.username
             return 'no user'
     class EmailColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
@@ -175,7 +176,29 @@ class CategoryListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class CommonController( BaseController ):
+class ItemRatings( UsesItemRatings ):
+    """Overrides rate_item method since we also allow for comments"""
+    def rate_item( self, trans, user, item, rating, comment='' ):
+        """ Rate an item. Return type is <item_class>RatingAssociation. """
+        item_rating = self.get_user_item_rating( trans, user, item )
+        if not item_rating:
+            # User has not yet rated item; create rating.
+            item_rating_assoc_class = self._get_item_rating_assoc_class( trans, item )
+            item_rating = item_rating_assoc_class()
+            item_rating.user = trans.user
+            item_rating.set_item( item )
+            item_rating.rating = rating
+            item_rating.comment = comment
+            trans.sa_session.add( item_rating )
+            trans.sa_session.flush()
+        elif item_rating.rating != rating or item_rating.comment != comment:
+            # User has previously rated item; update rating.
+            item_rating.rating = rating
+            item_rating.comment = comment
+            trans.sa_session.flush()
+        return item_rating
+                
+class CommonController( BaseController, ItemRatings ):
     @web.expose
     def edit_tool( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -300,6 +323,7 @@ class CommonController( BaseController ):
         can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
         can_edit = trans.app.security_agent.can_edit( trans.user, trans.user_is_admin(), cntrller, tool )
         can_purge = trans.app.security_agent.can_purge( trans.user, trans.user_is_admin(), cntrller )
+        can_rate = trans.app.security_agent.can_rate( trans.user, trans.user_is_admin(), cntrller, tool )
         can_upload_new_version = trans.app.security_agent.can_upload_new_version( trans.user, tool )
         visible_versions = trans.app.security_agent.get_visible_versions( trans.user, trans.user_is_admin(), cntrller, tool )
         categories = [ tca.category for tca in tool.categories ]
@@ -319,6 +343,7 @@ class CommonController( BaseController ):
                                     can_download=can_download,
                                     can_edit=can_edit,
                                     can_purge=can_purge,
+                                    can_rate=can_rate,
                                     can_upload_new_version=can_upload_new_version,
                                     can_view=can_view,
                                     visible_versions=visible_versions,
@@ -410,7 +435,7 @@ class CommonController( BaseController ):
         if not id:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
-                                                              message='Select a tool to view events',
+                                                              message='Select a tool to view its history',
                                                               status='error' ) )
         tool = get_tool( trans, id )
         can_view = trans.app.security_agent.can_view( trans.user, trans.user_is_admin(), cntrller, tool )
@@ -434,6 +459,51 @@ class CommonController( BaseController ):
                                     can_delete=can_delete,
                                     can_download=can_download,
                                     can_view=can_view,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_login( "rate tools" )
+    def rate_tool( self, trans, cntrller, **kwd ):
+        """ Rate a tool and return updated rating data. """
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = params.get( 'id', None )
+        if not id:
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_tools',
+                                                              message='Select a tool to rate',
+                                                              status='error' ) )
+        tool = get_tool( trans, id )
+        can_rate = trans.app.security_agent.can_rate( trans.user, trans.user_is_admin(), cntrller, tool )
+        if not can_rate:
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_tools',
+                                                              message="You are not allowed to rate this tool",
+                                                              status='error' ) )
+        if params.get( 'rate_button', False ):
+            rating = int( params.get( 'rating', '0' ) )
+            comment = util.restore_text( params.get( 'comment', '' ) )
+            rating = self.rate_item( trans, trans.user, tool, rating, comment )
+        avg_rating, num_ratings = self.get_ave_item_rating_data( trans, tool )
+        can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
+        can_edit = trans.app.security_agent.can_edit( trans.user, trans.user_is_admin(), cntrller, tool )
+        can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
+        can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
+        display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
+        tra = self.get_user_item_rating( trans, trans.user, tool )
+        return trans.fill_template( '/webapps/community/common/rate_tool.mako', 
+                                    cntrller=cntrller,
+                                    tool=tool,
+                                    avg_rating=avg_rating,
+                                    can_approve_or_reject=can_approve_or_reject,
+                                    can_edit=can_edit,
+                                    can_delete=can_delete,
+                                    can_download=can_download,
+                                    can_rate=can_rate,
+                                    display_reviews=display_reviews,
+                                    num_ratings=num_ratings,
+                                    tra=tra,
                                     message=message,
                                     status=status )
 
@@ -461,7 +531,7 @@ def get_category( trans, id ):
     return trans.sa_session.query( trans.model.Category ).get( trans.security.decode_id( id ) )
 def get_tool( trans, id ):
     """Get a tool from the database"""
-    return trans.sa_session.query( trans.model.Tool ).get( trans.app.security.decode_id( id ) )
+    return trans.sa_session.query( trans.model.Tool ).get( trans.security.decode_id( id ) )
 def get_latest_versions_of_tools( trans ):
     """Get only the latest version of each tool from the database"""
     return trans.sa_session.query( trans.model.Tool ) \

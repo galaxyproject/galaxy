@@ -139,6 +139,15 @@ ToolEventAssociation.table = Table( "tool_event_association", metadata,
     Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
     Column( "event_id", Integer, ForeignKey( "event.id" ), index=True ) )
 
+ToolRatingAssociation.table = Table( "tool_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True ),
+    Column( "comment", TEXT ) )
+
 Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
@@ -220,6 +229,7 @@ assign_mapper( context, Tool, Tool.table,
                          order_by=desc( Event.table.c.update_time ),
                          viewonly=True,
                          uselist=True ),
+        ratings=relation( ToolRatingAssociation, order_by=desc( ToolRatingAssociation.table.c.update_time ), backref="tools" ),
         user=relation( User.mapper ),
         older_version=relation(
             Tool,
@@ -246,6 +256,11 @@ assign_mapper( context, ToolCategoryAssociation, ToolCategoryAssociation.table,
         tool=relation( Tool )
     )
 )
+
+assign_mapper( context, ToolRatingAssociation, ToolRatingAssociation.table,
+    properties=dict( tool=relation( Tool ), user=relation( User ) )
+                    )
+
 
 def guess_dialect_for_url( url ):
     return (url.split(':', 1))[0]
