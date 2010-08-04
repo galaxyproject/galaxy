@@ -2,6 +2,7 @@ import sys, os, atexit
 
 from galaxy import config, jobs, util, tools, web
 import galaxy.tools.search
+import galaxy.tools.data
 from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
@@ -36,6 +37,8 @@ class UniverseApplication( object ):
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Tag handler
         self.tag_handler = GalaxyTagHandler()
+        # Tool data tables
+        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_table_config_path )
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         # Search support for tools
