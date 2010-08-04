@@ -7,6 +7,7 @@ SAMPLES="
 datatypes_conf.xml.sample
 reports_wsgi.ini.sample
 tool_conf.xml.sample
+tool_data_table_conf.xml.sample
 universe_wsgi.ini.sample
 tool-data/alignseq.loc.sample
 tool-data/annotation_profiler_options.xml.sample

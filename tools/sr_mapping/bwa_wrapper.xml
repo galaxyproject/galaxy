@@ -34,10 +34,13 @@
       </param>
       <when value="indexed">
         <param name="indices" type="select" label="Select a reference genome">
+          <options from_data_table="bwa_indexes"/>
+          <!--
           <options from_file="bwa_index.loc">
             <column name="value" index="1" />
             <column name="name" index="0" />
           </options>
+          -->
         </param>
       </when>
       <when value="history">

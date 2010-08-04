@@ -1,0 +1,17 @@
+<tables>
+    <!-- Locations of MAF files that have been indexed with bx-python -->    
+    <table name="indexed_maf_files">
+        <columns>name, value, dbkey, species</columns>
+        <file path="tool-data/maf_index.loc" />
+    </table>
+    <!-- Locations of indexes in the BWA mapper format -->
+    <table name="bwa_indexes">
+        <columns>name, value</columns>
+        <file path="tool-data/bwa_index.loc" />
+    </table>
+    <!-- Locations of indexes in the Bowtie mapper format -->
+    <table name="bowtie_indexes">
+        <columns>name, value</columns>
+        <file path="tool-data/bowtie_indices.loc" />
+    </table>
+</tables>
