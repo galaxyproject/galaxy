@@ -593,16 +593,25 @@ class RequestsAdmin( BaseController ):
 
             elif operation == "delete":
                 id_list = util.listify( kwd['id'] )
+                not_deleted = []
                 for id in id_list:
                     sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id(id) )
                     sample_id = sample_dataset.sample_id
-                    trans.sa_session.delete( sample_dataset )
-                    trans.sa_session.flush()
+                    if sample_dataset.status == sample_dataset.sample.transfer_status.NOT_STARTED:
+                        trans.sa_session.delete( sample_dataset )
+                        trans.sa_session.flush()
+                    else:
+                        not_deleted.append(sample_dataset.name)
+                message = '%i dataset(s) have been successfully deleted. ' % (len(id_list) - len(not_deleted))
+                status = 'done'
+                if not_deleted:
+                    status = 'warning'
+                    message = message + '%s could not be deleted. Only datasets with transfer status "Not Started" can be deleted. ' % str(not_deleted)
                 return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                   action='manage_datasets',
                                                                   sample_id=sample_id,
-                                                                  status='done',
-                                                                  message="%i dataset(s) have been removed." % len(id_list)) )
+                                                                  status=status,
+                                                                  message=message) )
 
             elif operation == "rename":
                 id_list = util.listify( kwd['id'] )
