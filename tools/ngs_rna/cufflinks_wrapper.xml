@@ -1,4 +1,4 @@
-<tool id="cufflinks" name="Cufflinks" version="0.8.2">
+<tool id="cufflinks" name="Cufflinks" version="0.8.3">
     <description>transcript assembly and FPKM (RPKM) estimates for RNA-Seq data</description>
     <command interpreter="python">
         cufflinks_wrapper.py 

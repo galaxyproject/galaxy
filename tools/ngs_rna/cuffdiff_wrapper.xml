@@ -1,4 +1,4 @@
-<tool id="cuffdiff" name="Cuffdiff" version="0.8.2">
+<tool id="cuffdiff" name="Cuffdiff" version="0.8.3">
     <description>find significant changes in transcript expression, splicing, and promoter use</description>
     <command interpreter="python">
         cuffdiff_wrapper.py

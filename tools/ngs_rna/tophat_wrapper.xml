@@ -1,4 +1,4 @@
-<tool id="tophat" name="Tophat" version="1.0.0">
+<tool id="tophat" name="Tophat" version="1.0.14">
     <description>Find splice junctions using RNA-seq data</description>
     <command interpreter="python">
         tophat_wrapper.py

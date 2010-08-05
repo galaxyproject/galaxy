@@ -1,4 +1,4 @@
-<tool id="cuffcompare" name="Cuffcompare" version="0.8.2">
+<tool id="cuffcompare" name="Cuffcompare" version="0.8.3">
     <description>compare assembled transcripts to a reference annotation and track Cufflinks transcripts across multiple experiments</description>
     <command interpreter="python">
         cuffcompare_wrapper.py 
