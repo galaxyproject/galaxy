@@ -73,7 +73,7 @@ class EmailAction(DefaultJobAction):
             if action.action_arguments.has_key('host'):
                 host = action.action_arguments['host']
         else:
-            host = 'unknownhost'
+            host = 'usegalaxy.org'
         if smtp_server is None:
             log.error("Mail is not configured for this galaxy instance.  Workflow action aborting after logging mail to info.")
             frm = 'galaxy-noreply@%s' % host
