@@ -114,7 +114,7 @@ class EmailAction(DefaultJobAction):
             if pja.action_arguments.has_key('host'):
                 return "Email the current user from server %s when this job is complete." % pja.action_arguments['host']
         else:
-            return "Email the current user when this job is complete." % pja.action_arguments['host']
+            return "Email the current user when this job is complete."
 
 
 class ChangeDatatypeAction(DefaultJobAction):
