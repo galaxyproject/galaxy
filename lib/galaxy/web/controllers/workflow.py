@@ -1093,8 +1093,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                         # Execute it
                         job, out_data = tool.execute( trans, step.state.inputs )
                         outputs[ step.id ] = out_data
+                        # Create new PJA associations with the created job, to be run on completion.
                         for pja in step.post_job_actions:
-                            ActionBox.execute(trans, pja, job)
+                            job.add_post_job_action(pja)
                     else:
                         job, out_data = step.module.execute( trans, step.state )
                         outputs[ step.id ] = out_data

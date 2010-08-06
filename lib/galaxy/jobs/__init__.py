@@ -7,6 +7,7 @@ from galaxy.datatypes.interval import *
 from galaxy.datatypes import metadata
 from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
+from galaxy.jobs.actions.post import ActionBox
 
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
@@ -563,6 +564,8 @@ class JobWrapper( object ):
                              out_data=out_data, param_dict=param_dict, 
                              tool=self.tool, stdout=stdout, stderr=stderr )
         job.command_line = self.command_line
+        for pja in job.post_job_actions:
+            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job)
         # fix permissions
         for path in [ dp.real_path for dp in self.get_output_fnames() ]:
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )

@@ -380,6 +380,11 @@ PostJobAction.table = Table("post_job_action", metadata,
     Column("output_name", String(255), nullable=True),
     Column("action_arguments", JSONType, nullable=True))
 
+PostJobActionAssociation.table = Table("post_job_action_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("job_id", Integer, ForeignKey( "job.id" ), index=True, nullable=False),
+    Column("post_job_action_id", Integer, ForeignKey( "post_job_action.id" ), index=True, nullable=False))
+
 Event.table = Table( "event", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1197,6 +1202,10 @@ assign_mapper( context, JobExternalOutputMetadata, JobExternalOutputMetadata.tab
 assign_mapper( context, PostJobAction, PostJobAction.table,
     properties=dict(workflow_step = relation( WorkflowStep, backref='post_job_actions', primaryjoin=(WorkflowStep.table.c.id == PostJobAction.table.c.workflow_step_id))))
 
+assign_mapper( context, PostJobActionAssociation, PostJobActionAssociation.table,
+    properties=dict( job = relation( Job ), 
+                     post_job_action = relation( PostJobAction) ) )
+
 assign_mapper( context, Job, Job.table, 
     properties=dict( user=relation( User.mapper ),
                      galaxy_session=relation( GalaxySession ),
@@ -1205,6 +1214,7 @@ assign_mapper( context, Job, Job.table,
                      parameters=relation( JobParameter, lazy=False ),
                      input_datasets=relation( JobToInputDatasetAssociation, lazy=False ),
                      output_datasets=relation( JobToOutputDatasetAssociation, lazy=False ),
+                     post_job_actions=relation( PostJobActionAssociation, lazy=False ),
                      output_library_datasets=relation( JobToOutputLibraryDatasetAssociation, lazy=False ),
                      external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
 

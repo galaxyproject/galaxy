@@ -114,7 +114,7 @@ class Job( object ):
         self.info = None
         self.job_runner_name = None
         self.job_runner_external_id = None
-        self.post_job_actions = None
+        self.post_job_actions = []
         self.imported = False
         
     def add_parameter( self, name, value ):
@@ -125,6 +125,8 @@ class Job( object ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
     def add_output_library_dataset( self, name, dataset ):
         self.output_library_datasets.append( JobToOutputLibraryDatasetAssociation( name, dataset ) )
+    def add_post_job_action(self, pja):
+        self.post_job_actions.append( PostJobActionAssociation( pja, self ) )
     def set_state( self, state ):
         self.state = state
         # For historical reasons state propogates down to datasets
@@ -194,6 +196,11 @@ class PostJobAction( object ):
         self.output_name = output_name
         self.action_arguments = action_arguments
         self.workflow_step = workflow_step
+        
+class PostJobActionAssociation( object ):
+    def __init__(self, pja, job):
+        self.job = job
+        self.post_job_action = pja
 
 class JobExternalOutputMetadata( object ):
     def __init__( self, job = None, dataset = None ):

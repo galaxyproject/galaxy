@@ -1,4 +1,4 @@
-import logging, threading, time
+import logging, threading, time, datetime
 from Queue import Queue, Empty
 
 from galaxy.util.json import from_json_string, to_json_string
@@ -44,8 +44,9 @@ class DefaultJobAction(object):
     name = "DefaultJobAction"
     verbose_name = "Default Job"
 
+    
     @classmethod
-    def execute(cls, job):
+    def execute(cls, app, sa_session, action, job):
         pass
 
     @classmethod
@@ -63,18 +64,34 @@ class DefaultJobAction(object):
 class EmailAction(DefaultJobAction):
     name = "EmailAction"
     verbose_name = "Email Notification"
+
+    
     @classmethod
-    def execute(cls, trans, action, job):
-        smtp_server = trans.app.config.smtp_server
+    def execute(cls, app, sa_session, action, job):
+        smtp_server = app.config.smtp_server
+        if action.action_arguments:
+            if action.action_arguments.has_key('host'):
+                host = action.action_arguments['host']
+        else:
+            host = 'unknownhost'
         if smtp_server is None:
-            log.error("Mail is not configured for this galaxy instance.  Workflow action aborted.")
+            log.error("Mail is not configured for this galaxy instance.  Workflow action aborting after logging mail to info.")
+            frm = 'galaxy-noreply@%s' % host
+            to  = job.user.email
+            outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
+            msg = MIMEText( "Your Galaxy job generating dataset '%s' in history '%s' is complete as of %s." % (outdata, job.history.name,  datetime.datetime.now().strftime( "%Y-%m-%d %I:%M:%S" )))
+            msg[ 'To' ] = to
+            msg[ 'From' ] = frm
+            msg[ 'Subject' ] = "Galaxy notification regarding history '%s'" % (job.history.name)
+            log.info(msg)
+            return
         # Build the email message
-        frm = 'galaxy-noreply@%s' % trans.request.host
+        frm = 'galaxy-noreply@%s' % host
         to  = job.user.email
-        msg = MIMEText( "Your job '%s' at Galaxy instance %s is complete as of %s." % (job.history.name, trans.request.host, job.update_time))
+        msg = MIMEText( "Your Galaxy job generating dataset '%s' in history '%s' is complete as of %s." % (outdata, job.history.name,  datetime.datetime.now().strftime( "%Y-%m-%d %I:%M:%S" )))
         msg[ 'To' ] = to
         msg[ 'From' ] = frm
-        msg[ 'Subject' ] = "Galaxy workflow step notification '%s'"
+        msg[ 'Subject' ] = "Galaxy workflow step notification '%s'" % (job.history.name)
         try:
             s = smtplib.SMTP()
             s.connect( smtp_server )
@@ -87,19 +104,27 @@ class EmailAction(DefaultJobAction):
     def get_config_form(cls, trans):
         form = """
         	p_str += "<label for='pja__"+pja.output_name+"__EmailAction'>There are no additional options for this action.  You will be emailed upon job completion.</label>\
-        	            <input type='hidden' name='pja__"+pja.output_name+"__EmailAction'/>";
-            """
+        	            <input type='hidden' value='%s' name='pja__"+pja.output_name+"__EmailAction__host'/><input type='hidden' name='pja__"+pja.output_name+"__EmailAction'/>";
+            """ % trans.request.host
         return get_form_template(cls.name, cls.verbose_name, form, "This action will send an email notifying you when the job is done.", on_output = False)
+
+    @classmethod
+    def get_short_str(cls, pja):
+        if pja.action_arguments:
+            if pja.action_arguments.has_key('host'):
+                return "Email the current user from server %s when this job is complete." % pja.action_arguments['host']
+        else:
+            return "Email the current user when this job is complete." % pja.action_arguments['host']
 
 
 class ChangeDatatypeAction(DefaultJobAction):
     name = "ChangeDatatypeAction"
     verbose_name = "Change Datatype"
     @classmethod
-    def execute(cls, trans, action, job):
+    def execute(cls, app, sa_session, action, job):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
-                trans.app.datatypes_registry.change_datatype( dataset_assoc.dataset, action.action_arguments['newtype'])
+                app.datatypes_registry.change_datatype( dataset_assoc.dataset, action.action_arguments['newtype'])
 
     @classmethod
     def get_config_form(cls, trans):
@@ -119,13 +144,18 @@ class ChangeDatatypeAction(DefaultJobAction):
 		    """ % dt_list
             # Note the scrip + t hack above.  Is there a better way?
         return get_form_template(cls.name, cls.verbose_name, ps, 'This action will change the datatype of the output to the indicated value.')
+    
+    @classmethod
+    def get_short_str(cls, pja):
+        return "Set the datatype of output '%s' to '%s'" % (pja.output_name, pja.action_arguments['newtype'])
+
 
 class RenameDatasetAction(DefaultJobAction):
     name = "RenameDatasetAction"
     verbose_name = "Rename Dataset"
-    
+
     @classmethod
-    def execute(cls, trans, action, job):
+    def execute(cls, app, sa_session, action, job):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 dataset_assoc.dataset.name = action.action_arguments['newname']
@@ -143,13 +173,18 @@ class RenameDatasetAction(DefaultJobAction):
 			}
 		    """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
+    
+    @classmethod
+    def get_short_str(cls, pja):
+        return "Rename output '%s' to '%s'." % (pja.output_name, pja.action_arguments['newname'])
+
 
 class HideDatasetAction(DefaultJobAction):
     name = "HideDatasetAction"
     verbose_name = "Hide Dataset"
     
     @classmethod
-    def execute(cls, trans, action, job):
+    def execute(cls, app, sa_session, action, job):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 dataset_assoc.dataset.visible=False
@@ -160,7 +195,10 @@ class HideDatasetAction(DefaultJobAction):
         	p_str += "<label for='pja__"+pja.output_name+"__HideDatasetAction'>There are no additional options for this action.</label>\
         	            <input type='hidden' name='pja__"+pja.output_name+"__HideDatasetAction'/>";
             """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
+        return get_form_template(cls.name, cls.verbose_name, form, "This action will hide the result dataset.")
+
+    def get_short_str(cls, trans):
+        return "Hide this dataset."
 
 class DeleteDatasetAction(DefaultJobAction):
     # This is disabled for right now.  Deleting a dataset in the middle of a workflow causes errors (obviously) for the subsequent steps using the data.
@@ -168,7 +206,7 @@ class DeleteDatasetAction(DefaultJobAction):
     verbose_name = "Delete Dataset"
 
     @classmethod
-    def execute(cls, trans, action, job):
+    def execute(cls, app, sa_session, action, job):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 dataset_assoc.dataset.deleted=True
@@ -180,13 +218,18 @@ class DeleteDatasetAction(DefaultJobAction):
         	            <input type='hidden' name='pja__"+pja.output_name+"__DeleteDatasetAction'/>";
             """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
+    
+    @classmethod
+    def get_short_str(cls, pja):
+        return "Delete this dataset after creation."
+
 
 
 class ColumnSetAction(DefaultJobAction):
     name = "ColumnSetAction"
     verbose_name = "Assign Columns"
     @classmethod
-    def execute(cls, trans, action, job):
+    def execute(cls, app, sa_session, action, job):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 for k, v in action.action_arguments.items():
@@ -229,13 +272,17 @@ class ColumnSetAction(DefaultJobAction):
             """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will set column assignments in the output dataset.  Blank fields are ignored.")
 
+    @classmethod
+    def get_short_str(cls, pja):
+        return "Set the following metadata values:<br/>" + "<br/>".join(['%s : %s' % (k, v) for k, v in pja.action_arguments.iteritems()])
+
 
 class SetMetadataAction(DefaultJobAction):
     name = "SetMetadataAction"
     # DBTODO Setting of Metadata is currently broken and disabled.  It should not be used (yet).
     
     @classmethod
-    def execute(cls, trans, action, job):
+    def execute(cls, app, sa_session, action, job):
         for data in self.job.output_datasets:
             data.set_metadata( action.action_arguments['newtype'] )
             
@@ -266,6 +313,8 @@ class SetMetadataAction(DefaultJobAction):
             """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will set metadata in the output dataset.")
 
+
+
 ACTIONS = { "RenameDatasetAction" : RenameDatasetAction,
             "HideDatasetAction" : HideDatasetAction,
             "ChangeDatatypeAction": ChangeDatatypeAction, 
@@ -276,13 +325,7 @@ ACTIONS = { "RenameDatasetAction" : RenameDatasetAction,
              }
             
 class ActionBox(object):
-    @classmethod
-    def execute(cls, action, job):
-        if action.action_type in ACTIONS:
-            ACTIONS[action.action_type].execute(action, job, trans)
-        else:
-            return False
-    
+        
     @classmethod
     def get_short_str(cls, action):
         if action.action_type in ACTIONS:
@@ -327,6 +370,6 @@ class ActionBox(object):
         return forms
     
     @classmethod
-    def execute(cls, trans, pja, job):
+    def execute(cls, app, sa_session, pja, job):
         if ACTIONS.has_key(pja.action_type):
-            ACTIONS[pja.action_type].execute(trans, pja, job)
+            ACTIONS[pja.action_type].execute(app, sa_session, pja, job)

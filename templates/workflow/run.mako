@@ -147,7 +147,7 @@ from galaxy.jobs.actions.post import ActionBox
 				% else:
 					<label>Action:</label>
 				% endif
-				${', '.join([ActionBox.get_short_str(pja) for pja in step.post_job_actions])}
+				${'<br/>'.join([ActionBox.get_short_str(pja) for pja in step.post_job_actions])}
 				</div>
 			% endif
 		% if step.annotations:

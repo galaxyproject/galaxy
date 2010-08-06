@@ -135,9 +135,14 @@
              "Layout": layout_editor,
              "Save" : save_current_workflow,
              ##"Load a Workflow" : load_workflow,
-             "Close": close_editor
+             "Close": close_editor,
+			"Hide Intermediate Steps": hide_intermediate_steps
         });
         
+		function hide_intermediate_steps(){
+			
+		};
+
         function layout_editor() {
             workflow.layout();
             workflow.fit_canvas_to_nodes();
