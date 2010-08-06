@@ -361,7 +361,7 @@ use_interactive = True
 # Comma-separated list of job runners to start.  local is always started.  If
 # left commented, no jobs will be run on the cluster, even if a cluster URL is
 # explicitly defined in the [galaxy:tool_runners] section below.  The runners
-# currently available are 'pbs' and 'sge'.
+# currently available are 'pbs' and 'drmaa'.
 #start_job_runners = None
 
 # The URL for the default runner to use when a tool doesn't explicity define a
