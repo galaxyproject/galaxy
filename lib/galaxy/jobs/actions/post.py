@@ -88,6 +88,7 @@ class EmailAction(DefaultJobAction):
         # Build the email message
         frm = 'galaxy-noreply@%s' % host
         to  = job.user.email
+        outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
         msg = MIMEText( "Your Galaxy job generating dataset '%s' in history '%s' is complete as of %s." % (outdata, job.history.name,  datetime.datetime.now().strftime( "%Y-%m-%d %I:%M:%S" )))
         msg[ 'To' ] = to
         msg[ 'From' ] = frm
