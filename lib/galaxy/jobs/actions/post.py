@@ -198,6 +198,7 @@ class HideDatasetAction(DefaultJobAction):
             """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will hide the result dataset.")
 
+    @classmethod
     def get_short_str(cls, trans):
         return "Hide this dataset."
 

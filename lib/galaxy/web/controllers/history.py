@@ -362,6 +362,8 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         # added directly to items
         jobs = odict()
         for hda in history.active_datasets:
+            if hda.visible == False:
+                continue
             # Follow "copied from ..." association until we get to the original
             # instance of the dataset
             original_hda = hda
