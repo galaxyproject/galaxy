@@ -241,6 +241,7 @@ class DataTransferGrid( grids.Grid ):
                     #key='size',
                     model_class=model.SampleDataset,
                     filterable="advanced" ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         StatusColumn( "Status",
                       #key='status',
                       model_class=model.SampleDataset,
