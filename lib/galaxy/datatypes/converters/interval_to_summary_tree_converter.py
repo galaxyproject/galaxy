@@ -42,7 +42,7 @@ def main():
     st = SummaryTree(block_size=25, levels=6, draw_cutoff=150, detail_cutoff=30)
     for line in list( reader_wrapper ):
         if type( line ) is GenomicInterval:
-            st.insert_range( line[ chr_col ], long( line[ start_col ] ), long( line[ end_col ] ) )
+            st.insert_range( line.chrom, long( line.start ), long( line.end ) )
     
     st.write(out_fname)
 
