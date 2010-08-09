@@ -41,6 +41,20 @@
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
+                <label>Created on:</label>
+                <div style="float: left; width: 250px; margin-right: 10px;">
+                    ${sample_dataset.create_time}
+                </div>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Updated on:</label>
+                <div style="float: left; width: 250px; margin-right: 10px;">
+                    ${sample_dataset.update_time}
+                </div>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
                 <label>Transfer status:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     ${sample_dataset.status}
