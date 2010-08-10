@@ -150,6 +150,8 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                         tool = trans.app.toolbox.tools_by_id.get( job_hda.creating_job_associations[ 0 ].job.tool_id, None )
                         if tool:
                             force_history_refresh = tool.force_history_refresh
+                    if not job_hda.visible:
+                        force_history_refresh = True 
                     rval[id] = {
                         "state": data.state,
                         "html": unicode( trans.fill_template( "root/history_item.mako", data=data, hid=data.hid ), 'utf-8' ),
