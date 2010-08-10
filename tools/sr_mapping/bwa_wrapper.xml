@@ -88,7 +88,19 @@
     <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="BWA produces SAM with several lines of header information" />
   </inputs>
   <outputs>
-    <data format="sam" name="output" />
+    <data format="sam" name="output">
+      <actions>
+        <conditional name="genomeSource.refGenomeSource">
+          <when value="indexed">
+            <action type="metadata" name="dbkey">
+              <option type="from_data_table" name="bwa_indexes" column="0">
+                <filter type="param_value" ref="genomeSource.indices" column="1"/>
+              </option>
+            </action>
+          </when>
+        </conditional>
+      </actions>
+    </data>
   </outputs>
   <tests>
     <test>
@@ -303,7 +315,6 @@ For **sampe**::
           parameter helps faster pairing. [100000]
 
   </help>
-  <code file="bwa_wrapper_code.py" />
 </tool>
 
 
