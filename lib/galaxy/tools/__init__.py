@@ -16,6 +16,7 @@ from galaxy import util, jobs, model
 from elementtree import ElementTree
 from parameters import *
 from parameters.grouping import *
+from parameters.output import ToolOutputActionGroup
 from parameters.validation import LateValidationError
 from parameters.input_translation import ToolInputTranslator
 from galaxy.util.expressions import ExpressionContext
@@ -241,13 +242,14 @@ class ToolOutput( object ):
       (format, metadata_source, parent)  
     """
     def __init__( self, name, format=None, metadata_source=None, 
-                  parent=None, label=None, filters = None ):
+                  parent=None, label=None, filters = None, actions = None ):
         self.name = name
         self.format = format
         self.metadata_source = metadata_source
         self.parent = parent
         self.label = label
         self.filters = filters or []
+        self.actions = actions
 
     # Tuple emulation
 
@@ -388,6 +390,8 @@ class Tool:
                 output.label = util.xml_text( data_elem, "label" )
                 output.count = int( data_elem.get("count", 1) )
                 output.filters = data_elem.findall( 'filter' )
+                output.tool = self
+                output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
                 self.outputs[ output.name ] = output
         # Any extra generated config files for the tool
         self.config_files = []

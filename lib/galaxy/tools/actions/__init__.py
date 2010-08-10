@@ -289,6 +289,11 @@ class DefaultToolAction( object ):
                         data.name += ( " on " + on_text )
                 # Store output 
                 out_data[ name ] = data
+                if output.actions:
+                    #Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
+                    output_action_params = dict( out_data )
+                    output_action_params.update( incoming )
+                    output.actions.apply_action( data, output_action_params )
                 # Store all changes to database
                 trans.sa_session.flush()
         # Add all the top-level (non-child) datasets to the history
