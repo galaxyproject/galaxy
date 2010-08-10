@@ -204,6 +204,7 @@ class ToolModule( WorkflowModule ):
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = self.tool_id
+        step.tool_version = self.get_tool_version()
         step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
         step.tool_errors = self.errors
         for k, v in self.post_job_actions.iteritems():
@@ -222,6 +223,8 @@ class ToolModule( WorkflowModule ):
         return self.tool.name
     def get_tool_id( self ):
         return self.tool_id
+    def get_tool_version( self ):
+        return self.tool.version
     def get_state( self, secure=True ):
         return self.state.encode( self.tool, self.trans.app, secure=secure )
     def get_errors( self ):
