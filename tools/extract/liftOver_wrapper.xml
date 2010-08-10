@@ -17,8 +17,17 @@
     <param name="minMatch" size="10" type="float" value="0.95" label="Minimum ratio of bases that must remap" />
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" />
-    <data format="input" name="out_file2" />
+    <data format="input" name="out_file1" label="${tool.name} on ${on_string} [ MAPPED COORDINATES ]">
+      <actions>
+        <action type="metadata" name="dbkey">
+          <option type="from_file" name="liftOver.loc" column="1" offset="0">
+            <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+            <filter type="param_value" ref="to_dbkey" column="2"/>
+          </option>
+        </action>
+      </actions>
+    </data>
+    <data format="input" name="out_file2" label="${tool.name} on ${on_string} [ UNMAPPED COORDINATES ]" />
   </outputs>
   <requirements>
     <requirement type="binary">liftOver</requirement>
@@ -69,5 +78,4 @@ will produce the following hg18 intervals::
     chrX  160024  169033  AK074528  0  -
 
   </help>
-  <code file="liftOver_wrapper_code.py" />
 </tool>
