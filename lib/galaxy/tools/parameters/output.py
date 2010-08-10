@@ -202,10 +202,8 @@ class FromDataTableOutputActionOption( ToolOutputActionOption ):
         self.offset = int( self.offset )
     def get_value( self, other_values ):
         options = self.options
-        print 'o1', options
         for filter in self.filters:
             options = filter.filter_options( options, other_values )
-            print 'o2', options
         try:
             if options:
                 return str( options[ self.offset ][ self.column ] )
