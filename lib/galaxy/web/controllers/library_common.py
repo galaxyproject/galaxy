@@ -1486,7 +1486,7 @@ class LibraryCommon( BaseController ):
             valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
             fname = ldda.name
             fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
-            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( id ), fname )
+            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s" % fname
             try:
                 return open( ldda.file_name )
             except: 
