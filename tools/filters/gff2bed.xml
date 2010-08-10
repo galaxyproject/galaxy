@@ -1,4 +1,4 @@
-<tool id="gff2bed1" name="GFF-to-BED">
+<tool id="gff2bed1" name="GFF-to-BED" version="1.0.1">
   <description>converter</description>
   <command interpreter="python">gff_to_bed_converter.py $input $out_file1</command>
   <inputs>
@@ -11,6 +11,10 @@
     <test>
       <param name="input" value="5.gff" ftype="gff"/>
       <output name="out_file1" file="gff2bed_out.bed"/>
+    </test>
+    <test>
+      <param name="input" value="gff2bed_in2.gff" ftype="gff"/>
+      <output name="out_file1" file="gff2bed_out2.bed"/>
     </test>
   </tests>
   <help>
