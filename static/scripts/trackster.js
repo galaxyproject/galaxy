@@ -827,7 +827,7 @@ var FeatureTrack = function ( name, view, dataset_id, prefs ) {
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.data_cache = new Cache(20);
     
-    this.prefs = { 'block_color': 'black', 'label_color': 'black', 'show_counts': false };
+    this.prefs = { 'block_color': 'black', 'label_color': 'black', 'show_counts': true };
     if (prefs.block_color !== undefined) { this.prefs.block_color = prefs.block_color; }
     if (prefs.label_color !== undefined) { this.prefs.label_color = prefs.label_color; }
     if (prefs.show_counts !== undefined) { this.prefs.show_counts = prefs.show_counts; }
@@ -836,38 +836,39 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this,
             key = track.view.max_low + '_' + track.view.max_high;
-            track.mode = "Auto";
-            if (track.mode_div) {
-                track.mode_div.remove();
+            if (track.mode_div === undefined) {
+                track.mode_div = $("<div class='right-float menubutton popup' />").text("Display Mode").appendTo(track.header_div);
+                track.mode = "Auto";
+                
+                var change_mode = function(name) {
+                    track.mode_div.text(name);
+                    track.mode = name;
+                    track.tile_cache.clear();
+                    track.draw();
+                };
+                make_popupmenu(track.mode_div, {
+                    "Auto": function() {
+                        change_mode("Auto");
+                    },
+                    "Dense": function() {
+                        change_mode("Dense");
+                    },
+                    "Squish": function() {
+                        change_mode("Squish");
+                    },
+                    "Pack": function() {
+                        change_mode("Pack");
+                    }
+                });
+            } else {
+                track.mode_div.hide();
             }
             
             this.init_each({  low: track.view.max_low, 
                                     high: track.view.max_high, dataset_id: track.dataset_id,
                                     chrom: track.view.chrom, resolution: this.view.resolution }, function (result) {
             
-            track.mode_div = $("<div class='right-float menubutton popup' />").text("Display Mode");
-            track.header_div.append(track.mode_div);
-            track.mode = "Auto";
-            var change_mode = function(name) {
-                track.mode_div.text(name);
-                track.mode = name;
-                track.tile_cache.clear();
-                track.draw();
-            };
-            make_popupmenu(track.mode_div, {
-                "Auto": function() {
-                    change_mode("Auto");
-                },
-                "Dense": function() {
-                    change_mode("Dense");
-                },
-                "Squish": function() {
-                    change_mode("Squish");
-                },
-                "Pack": function() {
-                    change_mode("Pack");
-                }
-            });
+            track.mode_div.show();
             track.data_cache.set(key, result);
             track.draw();
         });
@@ -1055,15 +1056,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 color_cutoff = color_span*2/3, // Where text switches from black to white
                 points = result.data,
                 max = result.max,
-                avg = result.avg;
-            if (points.length > 2) {
-                var delta_x_px = Math.ceil((points[1][0] - points[0][0]) * w_scale);
-            } else {
-                var delta_x_px = 50; // Arbitrary, fix
-            }
+                avg = result.avg,
+                delta_x_px = Math.ceil(result.delta * w_scale);
         
             for ( var i = 0, len = points.length; i < len; i++ ) {
-                var x = Math.ceil( (points[i][0] - tile_low) * w_scale );
+                var x = Math.floor( (points[i][0] - tile_low) * w_scale );
                 var y = points[i][1];
             
                 if (!y) { continue; }
@@ -1071,14 +1068,14 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 ctx.fillStyle = "rgb(" +color+ "," +color+ "," +color+ ")";
                 ctx.fillRect(x + left_offset, 0, delta_x_px, 20);
 
-                if (this.prefs.show_counts) {
+                if (this.prefs.show_counts && ctx.measureText(y).width < delta_x_px) {
                     if (color > color_cutoff) {
                         ctx.fillStyle = "black";
                     } else {
                         ctx.fillStyle = "#ddd";
                     }
                     ctx.textAlign = "center";
-                    ctx.fillText(points[i][1], x + left_offset + (delta_x_px/2), 12);
+                    ctx.fillText(y, x + left_offset + (delta_x_px/2), 12);
                 }
             }
             
