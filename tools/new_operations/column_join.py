@@ -124,9 +124,9 @@ def hinge_sort( infile, outfile, hinge ):
         try:
             hinge_parts = line.split( '\t' )[ :hinge ]
             try:
-                hinge_locs[ '\t'.join( hinge_parts ) ].append( fin.tell() - len( line.strip() ) - 1 )
+                hinge_locs[ '\t'.join( hinge_parts ) ].append( fin.tell() - len( line ) )
             except KeyError:
-                hinge_locs[ '\t'.join( hinge_parts ) ] = [ fin.tell() - len( line.strip() ) - 1 ]
+                hinge_locs[ '\t'.join( hinge_parts ) ] = [ fin.tell() - len( line ) ]
         except ValueError:
             bad_line.append( line )
         line = fin.readline()
@@ -155,18 +155,18 @@ def __main__():
     hinge = int( options.hinge )
     cols = [ int( c ) for c in str( options.columns ).split( ',' ) if int( c ) > hinge ]
     inputs = [ options.input1, options.input2 ]
-    if options.fill_options_file == "None":
+    if options.fill_options_file == 'None':
         inputs.extend( args )
     elif len( args ) > 0:
         inputs.extend( args )
     fill_options = None
-    if options.fill_options_file != "None" and options.fill_options_file is not None:
+    if options.fill_options_file != 'None' and options.fill_options_file is not None:
         try:
             if simplejson is None:
                 raise simplejson_exception
             fill_options = Bunch( **stringify_dictionary_keys( simplejson.load( open( options.fill_options_file ) ) ) )
         except Exception, e:
-            print "Warning: Ignoring fill options due to simplejson error (%s)." % e
+            print 'Warning: Ignoring fill options due to simplejson error (%s).' % e
     if fill_options is None:
         fill_options = Bunch()
     if 'file1_columns' not in fill_options:

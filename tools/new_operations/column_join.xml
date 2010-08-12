@@ -122,6 +122,8 @@ ${simplejson.dumps( __fill_options )}
 
 This tool allows you to join several files with the same column structure into one file, removing certain columns if necessary. The user needs to select a 'hinge', which is the number of left-most columns to match on. They also need to select the columns to include in the join, which should include the hinge columns, too.
 
+Note that the files are expected to have the same number of columns.
+
 -----
 
 **Example**
