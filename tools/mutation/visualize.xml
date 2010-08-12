@@ -1,0 +1,33 @@
+<tool id="mutation_visualize" name="Mutation Visualization" version="1.0.0">
+  <description></description>
+  <command interpreter="python">visualize.py --input-file=$input --output-file=$out_file1 $header_row</command>
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Compare sequences in"></param>
+    <param name="header_row" type="boolean" label="Header in dataset?" checked="yes" truevalue="" falsevalue="--noheaders"/>
+  </inputs>
+  <outputs>
+    <data format="svg" name="out_file1" />
+  </outputs>
+  <help>
+.. class:: warningmark
+
+The SVG image produced by this tool may not display correctly in Mozilla Firefox. It works fine in Chrome and Safari.
+
+-----
+
+**Example**
+
+    
+Given the input file::
+  
+                              gm blood                                    gm cheek
+  chrM    72      73      G   26394   4       49  0   26447   26398   1   23389   3       45  0   23437   23392   1
+  chrM    149     150     T   11      50422   2   96  50531   50435   1   4       45417   1   65  45487   45422   1
+
+Visualization:
+
+.. image:: ../static/images/mutation_visualization_example.png 
+   :width: 150
+
+  </help>
+</tool>
