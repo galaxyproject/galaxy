@@ -194,8 +194,8 @@ def __main__():
     fout = file( options.output, 'w' )
     old_current = ''
     first_line = True
-    current_lines = [ f.readline() for f in tmp_input_files ]
-    last_lines = ''.join( current_lines ).strip()
+    current_lines = [ f.readline().rstrip( '\r\n' ) for f in tmp_input_files ]
+    last_lines = ''.join( current_lines )
     last_loc = -1
     while last_lines:
         # get the "minimum" hinge, which should come first, and the file location in list
@@ -234,14 +234,23 @@ def __main__():
                 else:
                     current_data = [ fill_empty[ cols[ col % len( cols ) ] ] for col in range( ( loc - last_loc - 1 ) * len( cols ) ) ]
         # now output actual data
-        split_line = current_lines[ loc ].strip().split( delimiter )
+        split_line = current_lines[ loc ].split( delimiter )
+        # fill empties within actual line if appropriate
+        if fill_empty:
+            new_split_line = split_line[:]
+            split_line = []
+            for i, item in enumerate( new_split_line ):
+                if item:
+                    split_line.append( item )
+                else:
+                    split_line.append( fill_empty[ i + 1 ] )
         if ''.join( split_line ):
             # add actual data to be output below
             for col in cols:
                 if col > hinge:
                     current_data.append( split_line[ col - 1 ] )
             # grab next line for selected file
-            current_lines[ loc ] = tmp_input_files[ loc ].readline()
+            current_lines[ loc ] = tmp_input_files[ loc ].readline().rstrip( '\r\n' )
             # write relevant data to file
             if current == old_current:
                 fout.write( '%s%s' % ( delimiter, delimiter.join( current_data ) ) )
@@ -249,7 +258,7 @@ def __main__():
                 fout.write( '%s%s%s' % ( current, delimiter, delimiter.join( current_data ) ) )
         last_loc = loc
         old_current = current
-        last_lines = ''.join( current_lines ).strip()
+        last_lines = ''.join( current_lines )
         first_line = False
     # fill trailing empty columns for final line
     if last_loc < len( inputs ) - 1:

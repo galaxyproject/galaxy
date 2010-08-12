@@ -1,4 +1,4 @@
-<tool id="column_join" name="Column Join" version="1.0.0">
+<tool id="column_join" name="Column Join" version="1.1.0">
   <description></description>
   <command interpreter="python">
     column_join.py
