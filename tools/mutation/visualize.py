@@ -8,6 +8,10 @@ from __future__ import division
 
 import sys, csv, os, math
 import optparse
+
+from galaxy import eggs
+import pkg_resources
+pkg_resources.require( "SVGFig" )
 import svgfig as svg
 
 COLS_PER_SAMPLE = 7
