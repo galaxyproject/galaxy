@@ -132,12 +132,17 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
     num_rows_per_page = 50
-    def apply_query_filter( self, trans, query, **kwargs ):
-        # To filter HDAs by user, need to join HDA and History table and then filter histories by user. This is necessary because HDAs do not have
-        # a user relation. TODO: move the base of this query to build_initial_query.
-        # Summary: filter by user, and deleted==False for both dataset and history
-        return query.select_from( model.HistoryDatasetAssociation.table.join( model.History.table ) ).filter( model.History.user == trans.user ).filter( self.model_class.deleted==False ).filter( model.History.deleted==False)
-
+    def build_initial_query( self, trans, **kwargs ):
+        # Show user's datasets that are not deleted, not in deleted histories, and not hidden.
+        # To filter HDAs by user, need to join model class/HDA and History table so that it is 
+        # possible to filter by user. However, for dictionary-based filtering to work, need a 
+        # primary table for the query.
+        return trans.sa_session.query( self.model_class ).select_from( self.model_class.table.join( model.History.table ) ) \
+                .filter( model.History.user == trans.user ) \
+                .filter( self.model_class.deleted==False ) \
+                .filter( model.History.deleted==False ) \
+                .filter( self.model_class.visible==True )
+        
 class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssociation ):
         
     stored_list_grid = HistoryDatasetAssociationListGrid()
