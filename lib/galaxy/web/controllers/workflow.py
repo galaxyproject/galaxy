@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 
 import pkg_resources
 pkg_resources.require( "simplejson" )
+pkg_resources.require( "SVGFig" )
 import simplejson
 import base64, httplib, urllib, sgmllib
 
@@ -21,7 +22,7 @@ from galaxy.model.orm import *
 from galaxy.jobs.actions.post import *
 from galaxy.item_attrs.ratings import UsesItemRatings
 
-import urllib2, galaxy.util.svgfig as svgfig
+import urllib2, svgfig
 
 class StoredWorkflowListGrid( grids.Grid ):    
     class StepsColumn( grids.GridColumn ):
@@ -539,7 +540,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 out_pos[step.order_index][do['name']] = (x, cur_y)
                 text.append( svgfig.Text(x, cur_y, do['name']).SVG() )
                 count += 1
-                max_len = max(max_len, len(di['name']))
+                max_len = max(max_len, len(do['name']))
             
             widths[step.order_index] = max_len*5.5
             max_x = max(max_x, step.position['left'])
