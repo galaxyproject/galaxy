@@ -48,19 +48,7 @@
                     %>
                     Output dataset '${conn.output_name}' from step ${int(conn.output_step.order_index)+1}
                 %else:
-                    ## FIXME: Initialize in the controller
-                    <%
-                    if value is None:
-                        other_values = {}
-                        value = other_values[ param.name ] = param.get_initial_value( t, other_values )
-                    %>
-                    ## For display, do not show input elements.
-                    <% html_field = param.get_html_field( t, value, other_values ) %>
-                    %if type( html_field ) in [ form_builder.SelectField ]:
-                        <i>select at runtime</i>
-                    %else:
-                        ${html_field.get_html( str(step.id) + "|" + prefix )}
-                    %endif
+                    <i>select at runtime</i>
                 %endif
             %else:
                 ${param.value_to_display_text( value, app )}
