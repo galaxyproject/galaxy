@@ -60,7 +60,7 @@ class UniverseApplication( object ):
         if self.config.use_heartbeat:
             from galaxy.util import heartbeat
             if heartbeat.Heartbeat:
-                self.heartbeat = heartbeat.Heartbeat()
+                self.heartbeat = heartbeat.Heartbeat( fname=self.config.heartbeat_log )
                 self.heartbeat.start()
         # Enable the memdump signal catcher if configured and available
         if self.config.use_memdump:

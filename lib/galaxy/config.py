@@ -114,6 +114,8 @@ class Configuration( object ):
         self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
+        # Heartbeat log file name override
+        self.heartbeat_log = global_conf.get( 'heartbeat_log', 'heartbeat.log' )
         #Store per-tool runner config
         try:
             self.tool_runners = global_conf_parser.items("galaxy:tool_runners")
