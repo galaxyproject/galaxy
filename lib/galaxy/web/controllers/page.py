@@ -470,11 +470,11 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
         session.flush()
 
         return trans.fill_template( "/sharing_base.mako",
-                                    item=page )
+                                    item=page, use_panels=True )
                                     
     @web.expose
     @web.require_login( "use Galaxy pages" )
-    def share( self, trans, id, email="" ):
+    def share( self, trans, id, email="", use_panels=False ):
         """ Handle sharing with an individual user. """
         msg = mtype = None
         page = trans.sa_session.query( model.Page ).get( trans.security.decode_id( id ) )
@@ -503,11 +503,12 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
                 session.flush()
                 trans.set_message( "Page '%s' shared with user '%s'" % ( page.title, other.email ) )
                 return trans.response.send_redirect( url_for( controller='page', action='sharing', id=id ) )
-        return trans.fill_template( "/share_base.mako",
+        return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,
                                     messagetype = mtype,
                                     item=page,
-                                    email=email )
+                                    email=email,
+                                    use_panels=use_panels )
         
     @web.expose
     @web.require_login() 

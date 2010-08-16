@@ -1114,16 +1114,18 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                 history.importable = history.published = False
             elif 'unshare_user' in kwargs:
                 user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwargs[ 'unshare_user' ] ) )
-                if not user:
-                    message = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
-                    return trans.fill_template( 'history/sharing.mako',
-                                                histories=histories,
-                                                message=message,
-                                                status='error' )
+                # Look for and delete sharing relation for history-user.
+                deleted_sharing_relation = False
                 husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=user, history=history ).all()
                 if husas:
+                    deleted_sharing_relation = True
                     for husa in husas:
-                        trans.sa_session.delete( husa )    
+                        trans.sa_session.delete( husa )
+                if not deleted_sharing_relation:
+                    message = "History '%s' does not seem to be shared with user '%s'" % ( history.name, user.email )
+                    return trans.fill_template( '/sharing_base.mako', item=history,
+                                                message=message, status='error' )
+                
                         
         # Legacy issue: histories made accessible before recent updates may not have a slug. Create slug for any histories that need them.
         for history in histories:
@@ -1188,7 +1190,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
             elif not send_to_err:
                 # User seems to be sharing an empty history
                 send_to_err = "You cannot share an empty history.  "
-        return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err )
+        return trans.fill_template( "/ind_sharing_base.mako", histories=histories, email=email, send_to_err=send_to_err )
         
     @web.expose
     @web.require_login( "share restricted histories with other users" )

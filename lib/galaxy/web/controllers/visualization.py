@@ -225,11 +225,11 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
 
         session.flush()
 
-        return trans.fill_template( "/sharing_base.mako", item=visualization )
+        return trans.fill_template( "/sharing_base.mako", item=visualization, use_panels=True )
 
     @web.expose
     @web.require_login( "share Galaxy visualizations" )
-    def share( self, trans, id=None, email="", **kwd ):
+    def share( self, trans, id=None, email="", use_panels=False ):
         """ Handle sharing a visualization with a particular user. """
         msg = mtype = None
         visualization = trans.sa_session.query( model.Visualization ).get( trans.security.decode_id( id ) )
@@ -258,11 +258,12 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 session.flush()
                 trans.set_message( "Visualization '%s' shared with user '%s'" % ( visualization.title, other.email ) )
                 return trans.response.send_redirect( url_for( action='sharing', id=id ) )
-        return trans.fill_template( "/share_base.mako",
+        return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,
                                     messagetype = mtype,
                                     item=visualization,
-                                    email=email )
+                                    email=email,
+                                    use_panels=use_panels )
         
 
     @web.expose

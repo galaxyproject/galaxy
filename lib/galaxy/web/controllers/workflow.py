@@ -239,7 +239,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                               
     @web.expose
     @web.require_login( "use Galaxy workflows" )
-    def share( self, trans, id, email="" ):
+    def share( self, trans, id, email="", use_panels=False ):
         msg = mtype = None
         # Load workflow from database
         stored = self.get_stored_workflow( trans, id )
@@ -268,11 +268,12 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
                 return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )
-        return trans.fill_template( "workflow/share.mako",
+        return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,
                                     messagetype = mtype,
-                                    stored=stored,
-                                    email=email )
+                                    item=stored,
+                                    email=email,
+                                    use_panels=use_panels )
     
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -312,8 +313,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             
         session.flush()
         
-        return trans.fill_template( "/sharing_base.mako",
-                                    item=stored )
+        return trans.fill_template( "/workflow/sharing.mako", use_panels=True, item=stored )
 
     @web.expose
     @web.require_login( "to import a workflow", use_panels=True )

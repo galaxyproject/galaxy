@@ -1,15 +1,38 @@
 ##
-## Base template for sharing an item. Template expects the following parameters:
+## Base template for sharing/publishing/exporting an item. Template expects the following parameters:
 ## (a) item - item to be shared.
 ##
-
-<%inherit file="/base.mako"/>
+<%!
+    def inherit(context):
+        if context.get('use_panels', False) == True:
+            if context.get('webapp'):
+                webapp = context.get('webapp')
+            else:
+                webapp = 'galaxy'
+            return '/webapps/%s/base_panels.mako' % webapp
+        else:
+            return '/base.mako'
+%>
+<%inherit file="${inherit(context)}"/>
 
 <%namespace file="./display_common.mako" import="*" />
+<%namespace file="/message.mako" import="render_msg" />
 
 ##
 ## Page methods.
 ##
+
+<%def name="init()">
+<%
+    self.has_left_panel=False
+    self.has_right_panel=False
+    self.message_box_visible=False
+    self.overlay_visible=False
+    self.message_box_class=""
+    self.active_view=""
+    self.body_class=""
+%>
+</%def>
 
 <%def name="title()">
     Sharing and Publishing ${get_class_display_name( item.__class__ )} '${get_item_name( item )}'
@@ -57,18 +80,38 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style>
-        div.indent
+        ## Put some whitespace before each section header.
+        h3
         {
-            margin-left: 1em;
+            margin-top: 2em;
         }
         input.action-button
         {
             margin-left: 0;
         }
+        ## If page is displayed in panels, pad from edges for readabilit.
+        %if context.get('use_panels'):
+        div#center
+        {
+            padding: 10px;
+        }
+        %endif
     </style>
 </%def>
 
+<%def name="center_panel()">
+    ${self.body()}
+</%def>
+
 <%def name="body()">
+    ## Set use_panels var for use in page's URLs.
+    <% use_panels = context.get('use_panels', False)  %>
+
+    ## Render message.
+    %if message:
+        ${render_msg( message, status )}
+    %endif
+
     <%
         #
         # Setup and variables needed for page.
@@ -79,8 +122,10 @@
         item_class_name_lc = item_class_name.lower()
         item_class_plural_name = get_class_plural_display_name( item.__class__ )
         item_class_plural_name_lc = item_class_plural_name.lower()
+        
+        # Get item name.
+        item_name = get_item_name(item)
     %>
-    <% item_name = get_item_name(item) %>
 
     <h2>Sharing and Publishing ${item_class_name} '${item_name}'</h2>
 
@@ -103,7 +148,6 @@
         </form>
     %else:
         ## User has a public username, so private sharing and publishing options.
-        <div class="indent" style="margin-top: 2em">
         <h3>Making ${item_class_name} Accessible via Link and Publishing It</h3>
     
             <div>
@@ -174,8 +218,10 @@
                     </form>
        
                 %endif
-            </div>
 
+        ##
+        ## Sharing with Galaxy users.
+        ##
         <h3>Sharing ${item_class_name} with Specific Users</h3>
 
             <div>
@@ -183,7 +229,7 @@
 
                     <p>
                         The following users will see this ${item_class_name_lc} in their ${item_class_name_lc} list and will be
-                        able to run/view and import it.
+                        able to view, import, and run it.
                     </p>
             
                     <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
@@ -200,7 +246,7 @@
                                 </td>
                                 <td>
                                     <div popupmenu="user-${i}-popup">
-                                    <a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id( item.id ), unshare_user=trans.security.encode_id( user.id ) )}">Unshare</a>
+                                    <a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id( item.id ), unshare_user=trans.security.encode_id( user.id ), use_panels=use_panels )}">Unshare</a>
                                     </div>
                                 </td>
                             </tr>    
@@ -208,7 +254,8 @@
                     </table>
     
                     <p>
-                    <a class="action-button" href="${h.url_for( action='share', id=trans.security.encode_id(item.id) )}">
+                    <a class="action-button" 
+                       href="${h.url_for( action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with another user</span>
                     </a>
 
@@ -216,7 +263,8 @@
 
                     <p>You have not shared this ${item_class_name_lc} with any users.</p>
     
-                    <a class="action-button" href="${h.url_for( action='share', id=trans.security.encode_id(item.id) )}">
+                    <a class="action-button" 
+                       href="${h.url_for( action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with a user</span>
                     </a>
                     <br>
