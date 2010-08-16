@@ -1,0 +1,105 @@
+<tool id="compute_p-values_max_variances_feature_occurrences_in_one_dataset_using_discrete_wavelet_transfom" name="Compute P-values and Max Variances for Feature Occurrences" version="1.0.0">
+  <description>in one dataset using Discrete Wavelet Transfoms</description>
+  
+  <command interpreter="perl">
+  	execute_dwt_var_perClass.pl $inputFile $outputFile1 $outputFile2 $outputFile3
+  </command>
+  
+  <inputs>
+  	<param format="tabular" name="inputFile" type="data" label="Select the input file"/>	
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/> 
+    <data format="tabular" name="outputFile2"/>
+    <data format="pdf" name="outputFile3"/>
+  </outputs>
+  	
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program generates plots and computes table matrix of maximum variances, p-values, and test orientations at multiple scales for the occurrences of a class of features in one dataset of DNA sequences using multiscale wavelet analysis technique. 
+
+The program assumes that the user has one set of DNA sequences, S, which consists of one or more sequences of equal length. Each sequence in S is divided into the same number of multiple intervals n such that n = 2^k, where k is a positive integer and  k >= 1. Thus, n could be any value of the set {2, 4, 8, 16, 32, 64, 128, ...}. k represents the number of scales.
+
+The program has one input file obtained as follows:
+
+For a given set of features, say motifs, the user counts the number of occurrences of each feature in each interval of each sequence in S, and builds a tabular file representing the count results in each interval of S. This is the input file of the program. 
+
+The program gives three output files:
+
+- The first output file is a TABULAR format file giving the scales at which each features has a maximum variances.
+- The second output file is a TABULAR format file representing the variances, p-values, and test orientation for the occurrences of features at each scale based on a random permutation test and using multiscale wavelet analysis technique.
+- The third output file is a PDF file plotting the wavelet variances of each feature at each scale.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+- If the number of features is greater than 12, the program will divide each output file into subfiles, such that each subfile represents the results of a group of 12 features except the last subfile that will represents the results of the rest. For example, if the number of features is 17, the p-values file will consists of two subfiles, the first for the features 1-12 and the second for the features 13-17. As for the PDF file, it will consists of two pages in this case.
+- In order to obtain empirical p-values, a random perumtation test is implemented by the program, which results in the fact that the program gives slightly different results each time it is run on the same input file. 
+
+-----
+
+
+**Example**
+
+Counting the occurrences of 8 features (motifs) in 16 intervals (one line per interval) of set of DNA sequences in S gives the following tabular file::
+
+	deletionHoptspot	insertionHoptspot	dnaPolPauseFrameshift	indelHotspot	topoisomeraseCleavageSite	translinTarget		vDjRecombinationSignal		x-likeSite
+		226			403			416			221		1165			832				749			1056		
+		236			444			380			241		1223			746				782			1207	
+		242			496			391			195		1116			643				770			1219	
+		243			429			364			191		1118			694				783			1223	
+		244			410			371			236		1063			692				805			1233	
+		230			386			370			217		1087			657				787			1215	
+		275			404			402			214		1044			697				831			1188	
+		265			443			365			231		1086			694				782			1184	
+		255			390			354			246		1114			642				773			1176	
+		281			384			406			232		1102			719				787			1191	
+		263			459			369			251		1135			643				810			1215	
+		280			433			400			251		1159			701				777			1151	
+		278			385			382			231		1147			697				707			1161	
+		248			393			389			211		1162			723				759			1183	
+		251			403			385			246		1114			752				776			1153	
+		239			383			347			227		1172			759				789			1141	
+  
+We notice that the number of scales here is 4 because 16 = 2^4. Runnig the program on the above input file gives the following 3 output files:
+
+The first output file::
+
+	motifs			max_var	at scale
+	deletionHoptspot		NA
+	insertionHoptspot		NA
+	dnaPolPauseFrameshift		NA
+	indelHotspot			NA
+	topoisomeraseCleavageSite	3
+	translinTarget			NA
+	vDjRecombinationSignal		NA
+	x.likeSite			NA
+	
+The second output file::
+
+	motif				1_var		1_pval		1_test		2_var		2_pval		2_test		3_var		3_pval		3_test		4_var		4_pval		4_test
+	
+	deletionHoptspot		0.457		0.048		L		1.18		0.334		R		1.61		0.194		R		3.41		0.055		R
+	insertionHoptspot		0.556		0.109		L		1.34		0.272		R		1.59		0.223		R		2.02		0.157		R
+	dnaPolPauseFrameshift		1.42		0.089		R		0.66		0.331		L		0.421		0.305		L		0.121		0.268		L
+	indelHotspot			0.373		0.021		L		1.36		0.254		R		1.24		0.301		R		4.09		0.047		R
+	topoisomeraseCleavageSite	0.305		0.002		L		0.936		0.489		R		3.78		0.01		R		1.25		0.272		R
+	translinTarget			0.525		0.061		L		1.69		0.11		R		2.02		0.131		R		0.00891		0.069		L
+	vDjRecombinationSignal		0.68		0.138		L		0.957		0.46		R		2.35		0.071		R		1.03		0.357		R
+	x.likeSite			0.928		0.402		L		1.33		0.261		R		0.735		0.431		L		0.783		0.422		R
+
+The third output file:
+
+.. image:: ../static/operation_icons/dwt_var_perClass.png
+
+  </help>  
+  
+</tool>

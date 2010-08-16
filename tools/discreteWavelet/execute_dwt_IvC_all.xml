@@ -1,0 +1,112 @@
+<tool id="compute_p-values_second_moments_feature_occurrences_between_two_datasets_using_discrete_wavelet_transfom" name="Compute P-values and Second Moments for Feature Occurrences" version="1.0.0">
+  <description>between two datasets using Discrete Wavelet Transfoms</description>
+  
+  <command interpreter="perl">
+  	execute_dwt_IvC_all.pl $inputFile1 $inputFile2 $outputFile1 $outputFile2
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select the first input file"/>	
+  	<param format="tabular" name="inputFile2" type="data" label="Select the second input file"/>
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/> 
+    <data format="pdf" name="outputFile2"/>
+  </outputs>
+  	
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program generates plots and computes table matrix of second moments, p-values, and test orientations at multiple scales for the correlation between the occurrences of features in one dataset and their occurrences in another using multiscale wavelet analysis technique. 
+
+The program assumes that the user has two sets of DNA sequences, S1 and S1, each of which consists of one or more sequences of equal length. Each sequence in each set is divided into the same number of multiple intervals n such that n = 2^k, where k is a positive integer and  k >= 1. Thus, n could be any value of the set {2, 4, 8, 16, 32, 64, 128, ...}. k represents the number of scales.
+
+The program has two input files obtained as follows:
+
+For a given set of features, say motifs, the user counts the number of occurrences of each feature in each interval of each sequence in S1 and S1, and builds two tabular files representing the count results in each interval of S1 and S1. These are the input files of the program. 
+
+The program gives two output files:
+
+- The first output file is a TABULAR format file representing the second moments, p-values, and test orientations for each feature at each scale.
+- The second output file is a PDF file consisting of as many figures as the number of features, such that each figure represents the values of the second moment for that feature at every scale.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+In order to obtain empirical p-values, a random perumtation test is implemented by the program, which results in the fact that the program gives slightly different results each time it is run on the same input file. 
+
+-----
+
+**Example**
+
+Counting the occurrences of 5 features (motifs) in 16 intervals (one line per interval) of the DNA sequences in S1 gives the following tabular file::
+
+	deletionHoptspot	insertionHoptspot	dnaPolPauseFrameshift	topoisomeraseCleavageSite	translinTarget	
+		226			403			416			221				1165
+		236			444			380			241				1223
+		242			496			391			195				1116
+		243			429			364			191				1118
+		244			410			371			236				1063
+		230			386			370			217				1087
+		275			404			402			214				1044
+		265			443			365			231				1086
+		255			390			354			246				1114
+		281			384			406			232				1102
+		263			459			369			251				1135
+		280			433			400			251				1159
+		278			385			382			231				1147
+		248			393			389			211				1162
+		251			403			385			246				1114
+		239			383			347			227				1172
+
+And counting the occurrences of 5 features (motifs) in 16 intervals (one line per interval) of the DNA sequences in S2 gives the following tabular file:: 
+
+	deletionHoptspot	insertionHoptspot	dnaPolPauseFrameshift	topoisomeraseCleavageSite	translinTarget
+		235			374			407			257				1159
+		244			356			353			212				1128
+		233			343			322			204				1110
+		222			329			398			253				1054
+		216			325			328			253				1129
+		257			368			352			221				1115
+		238			360			346			224				1102
+		225			350			377			248				1107
+		230			330			365			236				1132
+		241			389			357			220				1120
+		274			354			392			235				1120
+		250			379			354			210				1102
+		254			329			320			251				1080
+		221			355			406			279				1127
+		224			330			390			249				1129
+		246			366			364			218				1176
+
+  
+We notice that the number of scales here is 4 because 16 = 2^4. Runnig the program on the above input files gives the following output:
+
+The first output file::
+
+	motif				1_moment2	1_pval	1_test	2_moment2	2_pval	2_test	3_moment2	3_pval	3_test	4_moment2	4_pval	4_test
+	
+	deletionHoptspot		0.8751		0.376	L	1.549		0.168	R	0.6152		0.434	L	0.5735		0.488	R
+	insertionHoptspot		0.902		0.396	L	1.172		0.332	R	0.6843		0.456	L	1.728		0.213	R
+	dnaPolPauseFrameshift		1.65		0.013	R	0.267		0.055	L	0.1387		0.124	L	0.4516		0.498	L
+	topoisomeraseCleavageSite	0.7443		0.233	L	1.023		0.432	R	1.933		0.155	R	1.09		0.3	R
+	translinTarget			0.5084		0.057	L	0.8219		0.446	L	3.604		0.019	R	0.4377		0.492	L
+
+The second output file:
+
+.. image:: ../static/operation_icons/dwt_IvC_1.png
+.. image:: ../static/operation_icons/dwt_IvC_2.png
+.. image:: ../static/operation_icons/dwt_IvC_3.png
+.. image:: ../static/operation_icons/dwt_IvC_4.png
+.. image:: ../static/operation_icons/dwt_IvC_5.png
+
+  </help>  
+  
+</tool>

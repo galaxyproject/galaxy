@@ -1,0 +1,112 @@
+<tool id="compute_p-values_correlation_coefficients_feature_occurrences_between_two_datasets_using_discrete_wavelet_transfom" name="Compute P-values and Correlation Coefficients for Feature Occurrences" version="1.0.0">
+  <description>between two datasets using Discrete Wavelet Transfoms</description>
+  
+  <command interpreter="perl">
+  	execute_dwt_cor_aVa_perClass.pl $inputFile1 $inputFile2 $outputFile1 $outputFile2
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select the first input file"/>	
+  	<param format="tabular" name="inputFile2" type="data" label="Select the second input file"/>
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/> 
+    <data format="pdf" name="outputFile2"/>
+  </outputs>
+  	
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program generates plots and computes table matrix of coefficient correlations and p-values at multiple scales for the correlation between the occurrences of features in one dataset and their occurrences in another using multiscale wavelet analysis technique. 
+
+The program assumes that the user has two sets of DNA sequences, S1 and S1, each of which consists of one or more sequences of equal length. Each sequence in each set is divided into the same number of multiple intervals n such that n = 2^k, where k is a positive integer and  k >= 1. Thus, n could be any value of the set {2, 4, 8, 16, 32, 64, 128, ...}. k represents the number of scales.
+
+The program has two input files obtained as follows:
+
+For a given set of features, say motifs, the user counts the number of occurrences of each feature in each interval of each sequence in S1 and S1, and builds two tabular files representing the count results in each interval of S1 and S1. These are the input files of the program. 
+
+The program gives two output files:
+
+- The first output file is a TABULAR format file representing the coefficient correlations and p-values for each feature at each scale.
+- The second output file is a PDF file consisting of as many figures as the number of features, such that each figure represents the values of the coefficient correlation for that feature at every scale.
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+In order to obtain empirical p-values, a random perumtation test is implemented by the program, which results in the fact that the program gives slightly different results each time it is run on the same input file. 
+
+-----
+
+**Example**
+
+Counting the occurrences of 5 features (motifs) in 16 intervals (one line per interval) of the DNA sequences in S1 gives the following tabular file::
+
+	deletionHoptspot	insertionHoptspot	dnaPolPauseFrameshift	topoisomeraseCleavageSite	translinTarget	
+		269			366			330			238				1129
+		239			328			327			283				1188
+		254			351			358			297				1151
+		262			371			355			256				1107
+		254			361			352			234				1192
+		265			354			367			240				1182
+		255			359			333			235				1217
+		271			389			387			272				1241
+		240			305			341			249				1159
+		272			351			337			257				1169
+		275			351			337			233				1158
+		305			331			361			253				1172
+		277			341			343			253				1113
+		266			362			355			267				1162
+		235			326			329			241				1230
+		254			335			360			251				1172
+
+And counting the occurrences of 5 features (motifs) in 16 intervals (one line per interval) of the DNA sequences in S2 gives the following tabular file::
+
+	deletionHoptspot	insertionHoptspot	dnaPolPauseFrameshift	topoisomeraseCleavageSite	translinTarget
+		104			146			142			113				478
+		89			146			151			94				495
+		100			176			151			88				435
+		96			163			128			114				468
+		99			138			144			91				513
+		112			126			162			106				468
+		86			127			145			83				491
+		104			145			171			110				496
+		91			121			147			104				469
+		103			141			145			98				458
+		92			134			142			117				468
+		97			146			145			107				471
+		115			121			136			109				470
+		113			135			138			101				491
+		111			150			138			102				451
+		94			128			151			138				481
+
+  
+We notice that the number of scales here is 4 because 16 = 2^4. Running the program on the above input files gives the following output:
+
+The first output file::
+
+	motif				1_cor		1_pval		2_cor		2_pval		3_cor		3_pval		4_cor		4_pval
+	
+	deletionHoptspot		0.4		0.072		0.143		0.394		-0.667		0.244		1		0.491
+	insertionHoptspot		0.343		0.082		-0.0714		0.446		-1		0.12		1		0.502
+	dnaPolPauseFrameshift		0.617		0.004		-0.5		0.13		0.667		0.234		1		0.506
+	topoisomeraseCleavageSite	-0.183		0.242		-0.286		0.256		0.333		0.353		-1		0.489
+	translinTarget			0.0167		0.503		-0.0714		0.469		1		0.136		1		0.485
+
+The second output file:
+
+.. image:: ../static/operation_icons/dwt_cor_aVa_1.png
+.. image:: ../static/operation_icons/dwt_cor_aVa_2.png
+.. image:: ../static/operation_icons/dwt_cor_aVa_3.png
+.. image:: ../static/operation_icons/dwt_cor_aVa_4.png
+.. image:: ../static/operation_icons/dwt_cor_aVa_5.png
+
+  </help>  
+  
+</tool>
