@@ -142,10 +142,14 @@ sys.path.insert( 0, galaxy_lib )
 from galaxy import eggs
 
 # get setuptools
-from ez_setup import use_setuptools
-use_setuptools( download_delay=8, to_dir=os.path.dirname( __file__ ) )
-from setuptools import *
-import pkg_resources
+try:
+    from setuptools import *
+    import pkg_resources
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools( download_delay=8, to_dir=os.path.dirname( __file__ ) )
+    from setuptools import *
+    import pkg_resources
 
 # some constants
 root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..' ) )
