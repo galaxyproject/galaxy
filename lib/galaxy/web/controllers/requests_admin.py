@@ -317,6 +317,11 @@ class RequestsAdmin( BaseController ):
                                                                   cntrller='requests_admin',
                                                                   action='events',
                                                                   **kwd ) )
+            if operation == "settings":
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  cntrller='requests_admin',
+                                                                  action='settings',
+                                                                  **kwd ) )
             elif operation == "reject":
                 return self.__reject_request( trans, **kwd )
             elif operation == "view_type":
@@ -532,14 +537,15 @@ class RequestsAdmin( BaseController ):
                 host = trans.request.host.split(':')[0]
                 if host == 'localhost':
                     host = socket.getfqdn()
-                msg = MIMEText( "The '%s' sequencing request (type: %s) is now complete. Datasets from all the samples are now available for analysis or download from the respective data libraries in Galaxy."  % ( request.name, request.type.name ) )
-                to = msg[ 'To' ] = request.user.email
-                frm = msg[ 'From' ] = 'galaxy-no-reply@' + host
-                msg[ 'Subject' ] = "Galaxy Sample Tracking: '%s' sequencing request in complete." % request.name
+                body = "The '%s' sequencing request (type: %s) is now complete. Datasets from all the samples are now available for analysis or download from the respective data libraries in Galaxy."  % ( request.name, request.type.name )
+                to = [request.user.email]
+                frm = 'galaxy-no-reply@' + host
+                subject = "Galaxy Sample Tracking: '%s' sequencing request in complete." % request.name
+                message = "From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" % (frm, ", ".join(to), subject, body)
                 try:
                     s = smtplib.SMTP()
                     s.connect( trans.app.config.smtp_server )
-                    s.sendmail( frm, [ to ], msg.as_string() )
+                    s.sendmail( frm, [ to ], message )
                     s.close()
                 except:
                     pass
