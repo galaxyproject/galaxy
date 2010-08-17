@@ -23,7 +23,7 @@
             %>
             <p />
             <div class="${messagetype}message">
-                ${message}
+                ${h.to_unicode( message )}
             </div>
             %endif
 
@@ -50,7 +50,7 @@
                         <tr>
                             <td>
                                 <div class="menubutton" style="float: left;" id="wf-${i}-popup">
-                                ${h.to_unicode_utf8( workflow.name )}
+                                ${h.to_unicode( workflow.name )}
                                 </div>
                             </td>
                             <td>${len(workflow.latest_workflow.steps)}</td>
@@ -62,7 +62,7 @@
                                 <a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id(workflow.id) )}">Share or Publish</a>
                                 <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
                                 <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(workflow.id) )}">Rename</a>
-                                <a class="action-button" confirm="Are you sure you want to delete workflow '${h.to_unicode_utf8( workflow.name ) | h}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>
+                                <a class="action-button" confirm="Are you sure you want to delete workflow '${h.to_unicode( workflow.name ) | h}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>
                                 </div>
                             </td>
                         </tr>    
@@ -88,7 +88,7 @@
                         <% workflow = association.stored_workflow %>
                         <tr>
                             <td>
-                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode_utf8( workflow.name )}</a>
+                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name )}</a>
                             </td>
                             <td>${workflow.user.email}</td>
                             <td>${len(workflow.latest_workflow.steps)}</td>

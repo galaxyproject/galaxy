@@ -58,11 +58,14 @@ def md5( s ):
     
 # Unicode help
 
-def to_unicode_utf8( a_string ):
-    """ Convert strings to unicode in utf-8 format. Method should be used for all user input. """
+def to_unicode( a_string ):
+    """ 
+    Convert a string to unicode in utf-8 format; if string is already unicode,
+    does nothing because string's encoding cannot be determined by introspection.
+    """
     a_string_type = type ( a_string )
     if a_string_type is str:
         return unicode( a_string, 'utf-8' )
     elif a_string_type is unicode:
-        return a_string.encode( 'utf-8' )
+        return a_string
     

@@ -830,7 +830,7 @@
             <a id="workflow-options-button" class="panel-header-button popup" href="#">Options</a>
         </div>
         <div class="unified-panel-header-inner">
-            Workflow Canvas | ${h.to_unicode_utf8( stored.name ) | h}
+            Workflow Canvas | ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
 
@@ -865,7 +865,7 @@
             ## Workflow name.
             <div id="workflow-name-area" class="form-row">
                 <label>Name:</label>
-                <span id="workflow-name" class="tooltip editable-text" original-title="Click to rename workflow">${h.to_unicode_utf8( stored.name ) | h}</span>
+                <span id="workflow-name" class="tooltip editable-text" original-title="Click to rename workflow">${h.to_unicode( stored.name ) | h}</span>
             </div>
             ## Workflow tags.
             <%namespace file="/tagging_common.mako" import="render_individual_tagging_element" />

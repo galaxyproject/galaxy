@@ -21,6 +21,7 @@ from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.jobs.actions.post import *
 from galaxy.item_attrs.ratings import UsesItemRatings
+from galaxy.web.framework.helpers import to_unicode
 
 import urllib2, svgfig
 
@@ -388,7 +389,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             #return self.list_grid( trans, message=message, status='done' )
         else:
             return form( url_for( action='rename', id=trans.security.encode_id(stored.id) ), "Rename workflow", submit_text="Rename" ) \
-                .add_text( "new_name", "Workflow Name", value=stored.name )
+                .add_text( "new_name", "Workflow Name", value=to_unicode( stored.name ) )
                 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
