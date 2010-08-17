@@ -31,7 +31,10 @@ class JSONType( TypeDecorator ):
         return json_decoder.decode( json_encoder.encode( value ) )
 
     def compare_values( self, x, y ):
-        return json_encoder.encode( x ) == json_encoder.encode( y )
+        try:
+            return x.values == y.values
+        except:
+            return x == y
     
     def is_mutable( self ):
         return True
