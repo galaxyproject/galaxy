@@ -84,8 +84,8 @@ class JobQueue( object ):
         self.queue = Queue()
         
         # Contains jobs that are waiting (only use from monitor thread)
-        ## This and new_jobs[] are closest to a "Job Queue"
-        self.waiting = []
+        ## This and jobs_to_check[] are closest to a "Job Queue"
+        self.waiting_jobs = []
                 
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
@@ -153,14 +153,14 @@ class JobQueue( object ):
         the job is dispatched.
         """
         # Pull all new jobs from the queue at once
-        new_jobs = []
+        jobs_to_check = []
         if self.track_jobs_in_database:
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
             # Fetch all new jobs
-            new_jobs = self.sa_session.query( model.Job ) \
-                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
-                            .filter( model.Job.state == model.Job.states.NEW ).all()
+            jobs_to_check = self.sa_session.query( model.Job ) \
+                                .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+                                .filter( model.Job.state == model.Job.states.NEW ).all()
         else:
             try:
                 while 1:
@@ -169,26 +169,24 @@ class JobQueue( object ):
                         return
                     # Unpack the message
                     job_id, tool_id = message
-                    # Create a job wrapper from it
-                    job = self.sa_session.query( model.Job ).get( job_id )
-                    # Append to watch queue
-                    new_jobs.append( job )
+                    # Get the job object and append to watch queue
+                    jobs_to_check.append( self.sa_session.query( model.Job ).get( job_id ) )
             except Empty:
                 pass
+            # Get job objects and append to watch queue for any which were
+            # previously waiting
+            for job_id in self.waiting_jobs:
+                jobs_to_check.append( self.sa_session.query( model.Job ).get( job_id ) )
         # Iterate over new and waiting jobs and look for any that are 
         # ready to run
-        new_waiting = []
-        for job in ( new_jobs + self.waiting ):
+        new_waiting_jobs = []
+        for job in jobs_to_check:
             try:
-                # Since we don't expunge when not tracking jobs in the
-                # database, refresh the job here so it's not stale.
-                if not self.track_jobs_in_database:
-                    self.sa_session.refresh( job )
                 # Check the job's dependencies, requeue if they're not done                    
                 job_state = self.__check_if_ready_to_run( job )
                 if job_state == JOB_WAIT:
                     if not self.track_jobs_in_database:
-                        new_waiting.append( job )
+                        new_waiting_jobs.append( job.id )
                 elif job_state == JOB_INPUT_ERROR:
                     log.info( "job %d unable to run: one or more inputs in error state" % job.id )
                 elif job_state == JOB_INPUT_DELETED:
@@ -197,7 +195,7 @@ class JobQueue( object ):
                     if self.job_lock:
                         log.info( "Job dispatch attempted for %s, but prevented by administrative lock." % job.id )
                         if not self.track_jobs_in_database:
-                            new_waiting.append( job )
+                            new_waiting_jobs.append( job.id )
                     else:
                         self.dispatcher.put( JobWrapper( job, self ) )
                         log.info( "job %d dispatched" % job.id )
@@ -208,11 +206,11 @@ class JobQueue( object ):
                 else:
                     log.error( "unknown job state '%s' for job %d" % ( job_state, job.id ) )
                     if not self.track_jobs_in_database:
-                        new_waiting.append( job )
+                        new_waiting_jobs.append( job.id )
             except Exception, e:
                 log.exception( "failure running job %d" % job.id )
         # Update the waiting list
-        self.waiting = new_waiting
+        self.waiting_jobs = new_waiting_jobs
         # Done with the session
         self.sa_session.remove()
         
