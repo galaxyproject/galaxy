@@ -682,7 +682,8 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         #
         # Helper methods/classes.
         #
-        
+
+        # TODO: replace unicode wrangler with to_unicode_utf8 in web helper.
         def unicode_wrangler( a_string ):
             """ Convert strings to unicode in utf-8 format. Method should be used for all user input. """
             a_string_type = type ( a_string )
