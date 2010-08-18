@@ -6,6 +6,8 @@ Fetch closest up/downstream interval from features corresponding to every interv
 usage: %prog primary_file features_file out_file direction
     -1, --cols1=N,N,N,N: Columns for start, end, strand in first file
     -2, --cols2=N,N,N,N: Columns for start, end, strand in second file
+    -G, --gff1: input 1 is GFF format, meaning start and end coordinates are 1-based, closed interval
+    -H, --gff2: input 2 is GFF format, meaning start and end coordinates are 1-based, closed interval
 """
 from galaxy import eggs
 import pkg_resources
@@ -16,6 +18,7 @@ from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *
 from bx.intervals.io import *
 from bx.intervals.operations import quicksect
+from galaxy.tools.util.gff_util import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -60,6 +63,10 @@ def get_closest_feature (node, direction, threshold_up, threshold_down, report_f
                 get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
 
 def proximal_region_finder(readers, region, comments=True):
+    """
+    Returns an iterator that yields elements of the form [ <original_interval>, <closest_feature> ]. 
+    Intervals are GenomicInterval objects. 
+    """
     primary = readers[0]
     features = readers[1]
     either = False
@@ -76,7 +83,7 @@ def proximal_region_finder(readers, region, comments=True):
     rightTree = quicksect.IntervalTree()
     for item in features:
         if type( item ) is GenomicInterval:
-            rightTree.insert( item, features.linenum, item.fields )
+            rightTree.insert( item, features.linenum, item )
             
     for interval in primary:
         if type( interval ) is Header:
@@ -103,7 +110,6 @@ def proximal_region_finder(readers, region, comments=True):
                     get_closest_feature (root, 0, None, end-1, None, lambda node: result_down.append( node ))
                 
                 if result_up:
-                    outfields = list(interval)
                     if len(result_up) > 1: #The results_up list has a list of intervals upstream to the given interval. 
                         ends = []
                         for n in result_up:
@@ -112,55 +118,89 @@ def proximal_region_finder(readers, region, comments=True):
                     else:
                         res_ind = 0
                     if not(either):
-                        map(outfields.append, result_up[res_ind].other)
-                        yield outfields
+                        yield [ interval, result_up[res_ind].other ]
                 
                 if result_down:    
-                    outfields = list(interval)
                     if not(either):
-                        map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
-                        yield outfields
+                        #The last element of result_down will be the closest element to the given interval
+                        yield [ interval, result_down[-1].other ] 
                 
                 if either and (result_up or result_down):
+                    iter_val = []
                     if result_up and result_down:
                         if abs(start - int(result_up[res_ind].end)) <= abs(end - int(result_down[-1].start)):
-                            map(outfields.append, result_up[res_ind].other)
+                            iter_val = [ interval, result_up[res_ind].other ]
                         else:
-                            map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
+                            #The last element of result_down will be the closest element to the given interval
+                            iter_val = [ interval, result_down[-1].other ]
                     elif result_up:
-                        map(outfields.append, result_up[res_ind].other)
+                        iter_val = [ interval, result_up[res_ind].other ]
                     elif result_down:
-                        map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
-                    yield outfields              
+                        #The last element of result_down will be the closest element to the given interval
+                        iter_val = [ interval, result_down[-1].other ]
+                    yield iter_val
                         
 def main():
     options, args = doc_optparse.parse( __doc__ )
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols1 )
-        chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )      
+        chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )
+        in1_gff_format = bool( options.gff1 )
+        in2_gff_format = bool( options.gff2 )
         in_fname, in2_fname, out_fname, direction = args
     except:
         doc_optparse.exception()
+        
+    # Set readers to handle either GFF or default format.
+    if in1_gff_format:
+        in1_reader_wrapper = GFFReaderWrapper
+    else:
+        in1_reader_wrapper = NiceReaderWrapper
+    if in2_gff_format:
+        in2_reader_wrapper = GFFReaderWrapper
+    else:
+        in2_reader_wrapper = NiceReaderWrapper
 
-    g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
+    g1 = in1_reader_wrapper( fileinput.FileInput( in_fname ),
                             chrom_col=chr_col_1,
                             start_col=start_col_1,
                             end_col=end_col_1,
                             strand_col=strand_col_1,
                             fix_strand=True )
-    g2 = NiceReaderWrapper( fileinput.FileInput( in2_fname ),
+    g2 = in2_reader_wrapper( fileinput.FileInput( in2_fname ),
                             chrom_col=chr_col_2,
                             start_col=start_col_2,
                             end_col=end_col_2,
                             strand_col=strand_col_2,
                             fix_strand=True )
+
+    # Find flanking features.
     out_file = open( out_fname, "w" )
     try:
-        for line in proximal_region_finder([g1,g2], direction):
-            if type( line ) is list:
-                out_file.write( "%s\n" % "\t".join( line ) )
+        for result in proximal_region_finder([g1,g2], direction):
+            if type( result ) is list:
+                line, closest_feature = result
+                # Need to join outputs differently depending on file types.
+                if in1_gff_format:
+                    # Output is GFF with added attribute 'closest feature.'
+
+                    # Invervals are in BED coordinates; need to convert to GFF.
+                    line = convert_bed_coords_to_gff( line )
+                    closest_feature = convert_bed_coords_to_gff( closest_feature )
+                    
+                    # Replace double quotes with single quotes in closest feature's attributes.
+                    out_file.write( "%s closest_feature \"%s\" \n" % 
+                                    ( "\t".join( line.fields ), \
+                                      "\t".join( closest_feature.fields ).replace( "\"", "\\\"" )
+                                     ) )
+                else:
+                    # Output is BED + closest feature fields.
+                    output_line_fields = []
+                    output_line_fields.extend( line.fields )
+                    output_line_fields.extend( closest_feature.fields )
+                    out_file.write( "%s\n" % ( "\t".join( output_line_fields ) ) )
             else:
-                out_file.write( "%s\n" % line )
+                out_file.write( "%s\n" % result )
     except ParseError, exc:
         fail( "Invalid file format: %s" % str( exc ) )
 
