@@ -1,13 +1,13 @@
 GALAXY
 ======
-http://g2.bx.psu.edu/
+http://galaxyproject.org/
 
 The latest information about Galaxy is always available via the Galaxy
 website above.
 
 HOW TO START
 ============
-Galaxy requires Python 2.4 or 2.5. To check your python version, run:
+Galaxy requires Python 2.4, 2.5 or 2.6. To check your python version, run:
 
 % python -V
 Python 2.4.4
@@ -32,4 +32,4 @@ on adding tools can be found on the Galaxy website (linked above).
 Not all dependencies are included for the tools provided in the sample
 tool_conf.xml.  A full list of external dependencies is available at:
 
-http://g2.trac.bx.psu.edu/wiki/ToolDependencies
+http://bitbucket.org/galaxy/galaxy-central/wiki/ToolDependencies
