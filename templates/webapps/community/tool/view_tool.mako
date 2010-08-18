@@ -21,6 +21,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
+    ${h.css( "jquery.rating" )}
     <style type="text/css">
     ul.fileBrowser,
     ul.toolFile {
@@ -45,6 +46,17 @@
         background-image: url( ${h.url_for( '/static/images/silk/page_white.png' )} );
     }
     </style>
+</%def>
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${h.js( "jquery.rating" )}
+
+    <script type="text/javascript">
+        jQuery( function() {
+            jQuery( 'form.rating' ).rating();
+        });
+    </script>
 </%def>
 
 <%def name="title()">View Tool</%def>
@@ -181,4 +193,110 @@ ${tool.get_state_message()}
             </div>
         </div>
     </div>
+    <p/>
+    %if tool.ratings:
+        <div class="toolForm">
+            <div class="toolFormTitle">Rating</div>
+            <div class="toolFormBody">
+                <div class="form-row">
+                    <label>Times Rated:</label>
+                    ${num_ratings}
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Average Rating:</label>
+                    <input name="avg_rating" type="radio" class="star" value="1" disabled="disabled"
+                        %if avg_rating > 0.5 and avg_rating < 1.5:
+                            checked="checked"
+                        %endif
+                    />
+                    <input name="avg_rating" type="radio" class="star" value="2" disabled="disabled"
+                        %if avg_rating > 1.5 and avg_rating < 2.5:
+                            checked="checked"
+                        %endif
+                    />
+                    <input name="avg_rating" type="radio" class="star" value="3" disabled="disabled"
+                        %if avg_rating > 2.5 and avg_rating < 3.5:
+                            checked="checked"
+                        %endif
+                    />
+                    <input name="avg_rating" type="radio" class="star" value="4" disabled="disabled"
+                        %if avg_rating > 3.5 and avg_rating < 4.5:
+                            checked="checked"
+                        %endif
+                    />
+                    <input name="avg_rating" type="radio" class="star" value="5" disabled="disabled"
+                        %if avg_rating > 4.5 and avg_rating < 5.5:
+                            checked="checked"
+                        %endif
+                    />
+                    <div style="clear: both"></div>
+                </div>
+            </div>
+        </div>
+        <p/>
+        <div class="toolForm">
+            <div class="toolFormBody">
+                %if display_reviews:
+                    <div class="form-row">
+                        <a href="${h.url_for( controller='common', action='view_tool', id=trans.security.encode_id( tool.id ), cntrller=cntrller, display_reviews=False )}"><label>Hide Reviews</label></a>
+                    </div>
+                    <table class="grid">
+                        <thead>
+                            <tr>
+                                <th>Rating</th>
+                                <th>Comments</th>
+                                <th>Reviewed</th>
+                                <th>User</th>
+                            </tr>
+                        </thead>
+                        <% count = 0 %>
+                        %for review in tool.ratings:
+                            <%
+                                count += 1
+                                name = 'rating%d' % count
+                            %>
+                            <tr>
+                                <td>
+                                    <input name="${name}" type="radio" class="star" value="1" disabled="disabled"
+                                        %if review.rating > 0.5 and review.rating < 1.5:
+                                            checked="checked"
+                                        %endif
+                                    />
+                                    <input name="${name}" type="radio" class="star" value="2" disabled="disabled"
+                                        %if review.rating > 1.5 and review.rating < 2.5:
+                                            checked="checked"
+                                        %endif
+                                    />
+                                    <input name="${name}" type="radio" class="star" value="3" disabled="disabled"
+                                        %if review.rating > 2.5 and review.rating < 3.5:
+                                            checked="checked"
+                                        %endif
+                                    />
+                                    <input name="${name}" type="radio" class="star" value="4" disabled="disabled"
+                                        %if review.rating > 3.5 and review.rating < 4.5:
+                                            checked="checked"
+                                        %endif
+                                    />
+                                    <input name="${name}" type="radio" class="star" value="5" disabled="disabled"
+                                        %if review.rating > 4.5 and review.rating < 5.5:
+                                            checked="checked"
+                                        %endif
+                                    />
+                                </td>
+                                <td>${review.comment}</td>
+                                <td>${time_ago( review.update_time )}</td>
+                                <td>${review.user.username}</td>
+                            </tr>
+                        %endfor
+                    </table>
+                %else:
+                    <div class="form-row">
+                        <a href="${h.url_for( controller='common', action='view_tool', id=trans.security.encode_id( tool.id ), cntrller=cntrller, display_reviews=True )}"><label>Display Reviews</label></a>
+                    </div>
+                %endif
+            </div>
+        </div>
+    %endif
+    <p/>
 %endif

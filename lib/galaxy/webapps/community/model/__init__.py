@@ -6,7 +6,6 @@ the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile, mimetypes
 from galaxy.util.bunch import Bunch
-from galaxy import util
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 log = logging.getLogger( __name__ )

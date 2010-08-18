@@ -1,5 +1,5 @@
 import sys, logging, tarfile
-import galaxy.util
+from galaxy.util import parse_xml
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
@@ -19,7 +19,7 @@ class Registry( object ):
         self.datatypes_by_extension = {}
         if root_dir and config:
             # Parse datatypes_conf.xml
-            tree = galaxy.util.parse_xml( config )
+            tree = parse_xml( config )
             root = tree.getroot()
             # Load datatypes and converters from config
             log.debug( 'Loading datatypes from %s' % config )
