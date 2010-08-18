@@ -1351,6 +1351,9 @@ class Tool:
         param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
         # The following points to location (xxx.loc) files which are pointers to locally cached data
         param_dict['GALAXY_DATA_INDEX_DIR'] = self.app.config.tool_data_path
+        # For the upload tool, we need to know the root directory and the datatypes conf path, so we can load the datatypes registry
+        param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
+        param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.abspath( self.app.config.datatypes_config )
         # Return the dictionary of parameters
         return param_dict
     

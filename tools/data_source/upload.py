@@ -126,7 +126,7 @@ def parse_outputs( args ):
         id, files_path, path = arg.split( ':', 2 )
         rval[int( id )] = ( path, files_path )
     return rval
-def add_file( dataset, json_file, output_path ):
+def add_file( dataset, registry, json_file, output_path ):
     data_type = None
     line_count = None
     converted_path = None
@@ -250,7 +250,7 @@ def add_file( dataset, json_file, output_path ):
                 else:
                     line_count, converted_path = sniff.convert_newlines( dataset.path, in_place=in_place )
             if dataset.file_type == 'auto':
-                ext = sniff.guess_ext( dataset.path )
+                ext = sniff.guess_ext( dataset.path, registry.sniff_order )
             else:
                 ext = dataset.file_type
             data_type = ext
@@ -284,10 +284,10 @@ def add_file( dataset, json_file, output_path ):
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )
     # Groom the dataset content if necessary
-    datatype = Registry().get_datatype_by_extension( ext )
+    datatype = registry.get_datatype_by_extension( ext )
     datatype.groom_dataset_content( output_path )
 
-def add_composite_file( dataset, json_file, output_path, files_path ):
+def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         if dataset.composite_files:
             os.mkdir( files_path )
             for name, value in dataset.composite_files.iteritems():
@@ -322,13 +322,16 @@ def add_composite_file( dataset, json_file, output_path, files_path ):
 
 def __main__():
 
-    if len( sys.argv ) < 2:
-        print >>sys.stderr, 'usage: upload.py <json paramfile> <output spec> ...'
+    if len( sys.argv ) < 4:
+        print >>sys.stderr, 'usage: upload.py <root> <datatypes_conf> <json paramfile> <output spec> ...'
         sys.exit( 1 )
 
-    output_paths = parse_outputs( sys.argv[2:] )
+    output_paths = parse_outputs( sys.argv[4:] )
     json_file = open( 'galaxy.json', 'w' )
-    for line in open( sys.argv[1], 'r' ):
+
+    registry = Registry( sys.argv[1], sys.argv[2] )
+
+    for line in open( sys.argv[3], 'r' ):
         dataset = from_json_string( line )
         dataset = util.bunch.Bunch( **safe_dict( dataset ) )
         try:
@@ -338,9 +341,9 @@ def __main__():
             sys.exit( 1 )
         if dataset.type == 'composite':
             files_path = output_paths[int( dataset.dataset_id )][1]
-            add_composite_file( dataset, json_file, output_path, files_path )
+            add_composite_file( dataset, registry, json_file, output_path, files_path )
         else:
-            add_file( dataset, json_file, output_path )
+            add_file( dataset, registry, json_file, output_path )
     # clean up paramfile
     try:
         os.remove( sys.argv[1] )
