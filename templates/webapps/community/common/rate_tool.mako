@@ -218,7 +218,7 @@ ${tool.get_state_message()}
         </div>
     </div>
     <p/>
-    %if len( tool.ratings ) > 1 or tool.ratings[0] != tra:
+    %if tool.ratings and ( len( tool.ratings ) > 1 or tool.ratings[0] != tra ):
         <div class="toolForm">
             <div class="toolFormBody">
                 %if display_reviews:
