@@ -14,6 +14,7 @@ class ConfigurationError( Exception ):
 class Registry( object ):
     def __init__( self, root_dir=None, config=None ):
         self.log = logging.getLogger(__name__)
+        self.log.addHandler( logging.NullHandler() )
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = odict()

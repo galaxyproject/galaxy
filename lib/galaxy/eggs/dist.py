@@ -8,6 +8,7 @@ from __init__ import Crate, CaseSensitiveConfigParser
 
 import logging
 log = logging.getLogger( __name__ )
+log.addHandler( logging.NullHandler() )
 
 class DistScrambleEgg( ScrambleEgg ):
     def set_dir( self ):

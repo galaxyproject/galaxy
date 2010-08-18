@@ -11,6 +11,7 @@ arctypes = ( 'tar.gz', 'tgz', 'zip' )
 
 import logging
 log = logging.getLogger( __name__ )
+log.addHandler( logging.NullHandler() )
 
 import pkg_resources
 

@@ -92,3 +92,11 @@ try:
 except:
     pkg_resources.Distribution._insert_on = pkg_resources.Distribution.insert_on
     pkg_resources.Distribution.insert_on = _insert_on
+
+# patch to add the NullHandler class to logging
+if sys.version_info[:2] < ( 2, 7 ):
+    import logging
+    class NullHandler( logging.Handler ):
+        def emit( self, record ):
+            pass
+    logging.NullHandler = NullHandler

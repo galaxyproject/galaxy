@@ -6,6 +6,7 @@ import os, sys, shutil, glob, urllib, urllib2, ConfigParser, HTMLParser, zipimpo
 
 import logging
 log = logging.getLogger( __name__ )
+log.addHandler( logging.NullHandler() )
 
 import pkg_resources
 
