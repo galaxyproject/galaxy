@@ -158,6 +158,8 @@ class ParamValueFilter( Filter ):
         assert self.ref_name in other_values, "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
         for ref_attribute in self.ref_attribute:
+            if not hasattr( ref, ref_attribute ):
+                return [] #ref does not have attribute, so we cannot filter, return empty list
             ref = getattr( ref, ref_attribute )
         ref = str( ref )
         rval = []
