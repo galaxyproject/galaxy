@@ -3,8 +3,12 @@ import pkg_resources
 pkg_resources.require("simplejson")
 import simplejson
 import pickle
+import copy
 from galaxy.util.bunch import Bunch
 from galaxy.util.aliaspickler import AliasPickleModule
+
+import logging
+log = logging.getLogger( __name__ )
 
 # Default JSON encoder and decoder
 json_encoder = simplejson.JSONEncoder( sort_keys=True )
@@ -28,13 +32,12 @@ class JSONType( TypeDecorator ):
         return json_decoder.decode( str( value ) )
     
     def copy_value( self, value ):
-        return json_decoder.decode( json_encoder.encode( value ) )
+        # return json_decoder.decode( json_encoder.encode( value ) )
+        return copy.deepcopy( value )
 
     def compare_values( self, x, y ):
-        try:
-            return x.values == y.values
-        except:
-            return x == y
+        # return json_encoder.encode( x ) == json_encoder.encode( y ) 
+        return ( x == y ) 
     
     def is_mutable( self ):
         return True
