@@ -81,11 +81,11 @@ class DataMetaFilter( Filter ):
         d_option.has_dataset_dependencies = True
         self.key = elem.get( "key", None )
         assert self.key is not None, "Required 'key' attribute missing from filter"
-        column = elem.get( "column", None )
-        if column is None:
+        self.column = elem.get( "column", None )
+        if self.column is None:
             assert self.dynamic_option.file_fields is None and self.dynamic_option.dataset_ref_name is None, "Required 'column' attribute missing from filter, when loading from file"
         else:
-            self.column = d_option.column_spec_to_index( column )
+            self.column = d_option.column_spec_to_index( self.column )
         self.multiple = string_as_bool( elem.get( "multiple", "False" ) )
         self.separator = elem.get( "separator", "," )
     def get_dependency_name( self ):
