@@ -32,7 +32,8 @@ class UniverseApplication( object ):
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,
                                    db_url,
-                                   self.config.database_engine_options )
+                                   self.config.database_engine_options,
+                                   database_query_profiling_log = self.config.database_query_profiling_log )
         # Security helper
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Tag handler

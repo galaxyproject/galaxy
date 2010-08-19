@@ -36,6 +36,7 @@ class Configuration( object ):
         self.database_connection =  kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )                        
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
+        self.database_query_profiling_log = kwargs.get( "database_query_profiling_log", None )
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
