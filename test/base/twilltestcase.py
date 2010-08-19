@@ -1104,9 +1104,9 @@ class TwillTestCase( unittest.TestCase ):
         track_string = urllib.urlencode( track_params )
         galaxy_url = urllib.quote_plus( "%s/tool_runner/index?" % self.url )
         self.visit_url( "http://genome.ucsc.edu/cgi-bin/hgTables?GALAXY_URL=%s&hgta_compressType=none&tool_id=%s&%s" % ( galaxy_url, tool_id, track_string ) )
-        tc.fv( "1","hgta_doTopSubmit", "get output" )
+        tc.fv( "mainForm", "hgta_doTopSubmit", "get output" )
         self.submit_form( button="get output" )#, **track_params )
-        tc.fv( "1","hgta_doGalaxyQuery", "Send query to Galaxy" )
+        tc.fv( 2, "hgta_doGalaxyQuery", "Send query to Galaxy" )
         self.submit_form( button="Send query to Galaxy" )#, **output_params ) #AssertionError: Attempting to set field 'fbQual' to value '['whole']' in form 'None' threw exception: no matching forms! control: <RadioControl(fbQual=[whole, upstreamAll, endAll])>
 
     def wait( self, maxseconds=120 ):
