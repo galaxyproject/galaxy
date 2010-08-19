@@ -262,6 +262,7 @@
    <tool file="metag_tools/megablast_wrapper.xml" />
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="sr_mapping/PerM.xml" />
+   <tool file="sr_mapping/srma_wrapper.xml" />
   </section>
   <section name="NGS: Indel Analysis" id="indel_analysis">
    <tool file="indels/sam_indel_filter.xml" />

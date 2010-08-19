@@ -12,6 +12,7 @@ universe_wsgi.ini.sample
 tool-data/alignseq.loc.sample
 tool-data/annotation_profiler_options.xml.sample
 tool-data/annotation_profiler_valid_builds.txt.sample
+tool-data/bfast_indexes.loc.sample
 tool-data/binned_scores.loc.sample
 tool-data/blastdb.loc.sample
 tool-data/bowtie_indices.loc.sample
@@ -24,9 +25,7 @@ tool-data/phastOdds.loc.sample
 tool-data/quality_scores.loc.sample
 tool-data/regions.loc.sample
 tool-data/sam_fa_indices.loc.sample
-tool-data/sequence_index_base.loc.sample
-tool-data/sequence_index_color.loc.sample
-tool-data/bfast_indexes.loc.sample
+tool-data/srma_index.loc.sample
 tool-data/twobit.loc.sample
 tool-data/shared/ucsc/builds.txt.sample
 "

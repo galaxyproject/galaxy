@@ -31,12 +31,12 @@ LINKS="
 /galaxy/data/annotation_profiler/annotation_profiler.loc
 /galaxy/data/annotation_profiler/annotation_profiler_options.xml
 /galaxy/data/annotation_profiler/annotation_profiler_valid_builds.txt
+/galaxy/data/location/bfast_indexes.loc
 /galaxy/data/location/binned_scores.loc
 /galaxy/data/location/blastdb.loc
 /galaxy/data/location/bowtie_indices.loc
 /galaxy/data/location/bowtie_indices_color.loc
 /galaxy/data/location/bwa_index.loc
-/galaxy/data/location/bfast_indexes.loc
 /galaxy/data/location/codingSnps.loc
 /galaxy/data/location/encode_datasets.loc
 /galaxy/home/universe/encode_feature_partitions
@@ -51,6 +51,7 @@ LINKS="
 /galaxy/data/location/quality_scores.loc
 /galaxy/data/location/regions.loc
 /galaxy/data/location/sam_fa_indices.loc
+/galaxy/data/location/srma_index.loc
 /galaxy/data/taxonomy
 /galaxy/data/location/twobit.loc
 "
