@@ -36,6 +36,7 @@ LINKS="
 /galaxy/data/location/bowtie_indices.loc
 /galaxy/data/location/bowtie_indices_color.loc
 /galaxy/data/location/bwa_index.loc
+/galaxy/data/location/bfast_indexes.loc
 /galaxy/data/location/codingSnps.loc
 /galaxy/data/location/encode_datasets.loc
 /galaxy/home/universe/encode_feature_partitions
