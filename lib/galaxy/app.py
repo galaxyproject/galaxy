@@ -33,7 +33,7 @@ class UniverseApplication( object ):
         self.model = mapping.init( self.config.file_path,
                                    db_url,
                                    self.config.database_engine_options,
-                                   database_query_profiling_log = self.config.database_query_profiling_log )
+                                   database_query_profiling_proxy = self.config.database_query_profiling_proxy )
         # Security helper
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Tag handler

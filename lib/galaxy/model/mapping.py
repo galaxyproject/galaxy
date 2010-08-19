@@ -1479,16 +1479,15 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_log=None ):
+def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
     # Load the appropriate db module
     load_egg_for_url( url )
     # Should we use the logging proxy?
-    if database_query_profiling_log is not None:
+    if database_query_profiling_proxy:
         import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
-        logging_connection_proxy.set_log_filename( database_query_profiling_log )
         proxy = logging_connection_proxy.LoggingProxy()
     else:
         proxy = None

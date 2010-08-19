@@ -20,10 +20,6 @@ def pretty_stack():
         rval.append( "%s:%s@%d" % ( stripwd( fname ), funcname, line ) )
     return " > ".join( rval ) 
 
-def set_log_filename( filename ):
-    log.addHandler( logging.FileHandler( filename ) )
-    log.propagate = False
-
 class LoggingProxy(ConnectionProxy):
     def cursor_execute(self, execute, cursor, statement, parameters, context, executemany):
         start = time.clock()
