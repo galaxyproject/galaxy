@@ -33,12 +33,12 @@ if($lambdaValue =~ /sequence/){
 open (INPUT, "<", $p_valuesInputFile) || die("Could not open file $p_valuesInputFile \n");
 open (OUTPUT1, ">", $q_valuesOutputFile) || die("Could not open file $q_valuesOutputFile \n");
 open (OUTPUT2, ">", $p_q_values_histograms_QPlotsFile) || die("Could not open file $p_q_values_histograms_QPlotsFile \n");
-open (ERROR,  ">", "error.txt")  or die ("Could not open file error.txt \n");
+#open (ERROR,  ">", "error.txt")  or die ("Could not open file error.txt \n");
 
 #save all error messages into the error file $errorFile using the error file handle ERROR
-STDERR -> fdopen( \*ERROR,  "w" ) or die ("Could not direct errors to the error file error.txt \n");
+#STDERR -> fdopen( \*ERROR,  "w" ) or die ("Could not direct errors to the error file error.txt \n");
 
-warn "Hello Error File \n";
+#warn "Hello Error File \n";
 
 #variable to store the name of the R script file
 my $r_script;
@@ -85,7 +85,7 @@ close Rcmd;
 system("R --no-restore --no-save --no-readline < $r_script > $r_script.out");
 
 #close the input and output and error files
-close(ERROR);
+#close(ERROR);
 close(OUTPUT2);
 close(OUTPUT1);
 close(INPUT);
