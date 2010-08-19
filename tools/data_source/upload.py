@@ -88,6 +88,10 @@ def check_sff( temp_name ):
     return Sff().sniff( temp_name )
 def check_pdf( temp_name ):
     return Pdf().sniff( temp_name )
+def check_bigwig( temp_name ):
+    return BigWig().sniff( temp_name )
+def check_bigbed( temp_name ):
+    return BigBed().sniff( temp_name )
 def check_gzip( temp_name ):
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
     # Make sure we have a gzipped file
@@ -166,6 +170,12 @@ def add_file( dataset, registry, json_file, output_path ):
     elif check_pdf( dataset.path ):
         ext = 'pdf'
         data_type = 'pdf'
+    elif check_bigwig( dataset.path ):
+        ext = 'bigwig'
+        data_type = 'bigwig'
+    elif check_bigbed( dataset.path ):
+        ext = 'bigbed'
+        data_type = 'bigbed'
     else:
         # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
         is_gzipped, is_valid = check_gzip( dataset.path )

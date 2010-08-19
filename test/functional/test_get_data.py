@@ -2,6 +2,7 @@ import galaxy.model
 from galaxy.model.orm import *
 from galaxy.model.mapping import context as sa_session
 from base.twilltestcase import TwillTestCase
+from base.test_db_util import *
 
 class UploadData( TwillTestCase ):
     def test_0000_setup_upload_tests( self ):
@@ -9,35 +10,21 @@ class UploadData( TwillTestCase ):
         self.logout()
         self.login( email='test@bx.psu.edu' )
         global admin_user
-        admin_user = sa_session.query( galaxy.model.User ) \
-                               .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
-                               .one()
+        admin_user = get_user( email='test@bx.psu.edu' )
     def test_0005_upload_file( self ):               
         """Test uploading 1.bed, NOT setting the file format"""
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.bed' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.bed', hid=str( hda.hid ) )
         self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0006_upload_file( self ):               
         """Test uploading 1.bed.spaces, with space to tab selected, NOT setting the file format"""
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.bed.spaces', space_to_tab = True )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.bed', hid=str( hda.hid ) )
         self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
@@ -45,15 +32,9 @@ class UploadData( TwillTestCase ):
     def test_0010_upload_file( self ):
         """Test uploading 4.bed.gz, manually setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '4.bed.gz', dbkey='hg17', ftype='bed' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '4.bed', hid=str( hda.hid ) )
         self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
@@ -61,15 +42,9 @@ class UploadData( TwillTestCase ):
     def test_0015_upload_file( self ):
         """Test uploading 1.scf, manually setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.scf', ftype='scf' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.scf', hid=str( hda.hid ) )
         self.check_history_for_string( "Binary scf sequence file</pre>" )
@@ -77,30 +52,18 @@ class UploadData( TwillTestCase ):
     def test_0020_upload_file( self ):
         """Test uploading 1.scf, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.scf' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.check_history_for_string( "File Format' to 'Scf' when uploading scf files" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0025_upload_file( self ):
         """Test uploading 4.bed.zip, manually setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '4.bed.zip', ftype='bed' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '4.bed', hid=str( hda.hid ) )
         self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
@@ -108,15 +71,9 @@ class UploadData( TwillTestCase ):
     def test_0030_upload_file( self ):
         """Test uploading 4.bed.zip, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '4.bed.zip' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '4.bed', hid=str( hda.hid ) )
         self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
@@ -124,15 +81,9 @@ class UploadData( TwillTestCase ):
     def test_0035_upload_file( self ):
         """Test uploading 1.sam NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.sam' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.sam', hid=str( hda.hid ) )
         self.check_history_for_string( "<th>1.QNAME</th><th>2.FLAG</th><th>3.RNAME</th><th>4.POS</th>" )
@@ -140,15 +91,9 @@ class UploadData( TwillTestCase ):
     def test_0040_upload_file( self ):
         """Test uploading 1.sff, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.sff' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.sff', hid=str( hda.hid ) )
         self.check_history_for_string( 'format: <span class="sff">sff' )
@@ -156,47 +101,29 @@ class UploadData( TwillTestCase ):
     def test_0045_upload_file( self ):
         """Test uploading 454Score.pdf, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '454Score.pdf' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
-        self.check_history_for_string( "The uploaded file contains inappropriate content" )
+        self.check_history_for_string( "1: 454Score.pdf</span>" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0050_upload_file( self ):
         """Test uploading 454Score.png, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '454Score.png' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.check_history_for_string( "The uploaded file contains inappropriate content" )
     def test_0055_upload_file( self ):
         """Test uploading lped composite datatype file, manually setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         # lped data types include a ped_file and a map_file ( which is binary )
         self.upload_file( None, ftype='lped', metadata = [ { 'name':'base_name', 'value':'rgenetics' } ], composite_data = [ { 'name':'ped_file', 'value':'tinywga.ped' }, { 'name':'map_file', 'value':'tinywga.map'} ] )
         # Get the latest hid for testing
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         # We'll test against the resulting ped file and map file for correctness
         self.verify_composite_datatype_file_content( 'tinywga.ped', str( hda.id ), base_name = 'rgenetics.ped' )
@@ -207,17 +134,11 @@ class UploadData( TwillTestCase ):
         """Test uploading lped composite datatype file, manually setting the file format, and using space to tab on one file (tinywga.ped)"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         # lped data types include a ped_file and a map_file ( which is binary )
         self.upload_file( None, ftype='lped', metadata = [ { 'name':'base_name', 'value':'rgenetics' } ], composite_data = [ { 'name':'ped_file', 'value':'tinywga.ped', 'space_to_tab':True }, { 'name':'map_file', 'value':'tinywga.map'} ] )
         # Get the latest hid for testing
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         # We'll test against the resulting ped file and map file for correctness
         self.verify_composite_datatype_file_content( 'tinywga.ped.space_to_tab', str( hda.id ), base_name = 'rgenetics.ped' )
@@ -228,17 +149,11 @@ class UploadData( TwillTestCase ):
         """Test uploading pbed composite datatype file, manually setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         # pbed data types include a bim_file, a bed_file and a fam_file
         self.upload_file( None, ftype='pbed', metadata = [ { 'name':'base_name', 'value':'rgenetics' } ], composite_data = [ { 'name':'bim_file', 'value':'tinywga.bim' }, { 'name':'bed_file', 'value':'tinywga.bed'}, { 'name':'fam_file', 'value':'tinywga.fam' } ] )
         # Get the latest hid for testing
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         # We'll test against the resulting ped file and map file for correctness
         self.verify_composite_datatype_file_content( 'tinywga.bim', str( hda.id ), base_name = 'rgenetics.bim' )
@@ -250,15 +165,9 @@ class UploadData( TwillTestCase ):
         """Test uploading asian_chars_1.txt, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( 'asian_chars_1.txt' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( 'asian_chars_1.txt', hid=str( hda.hid ) )
         self.check_history_for_string( 'uploaded multi-byte char file' )
@@ -267,15 +176,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 2gen.fastq, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '2gen.fastq' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '2gen.fastq', hid=str( hda.hid ) )
         self.check_history_for_string( '2gen.fastq format: <span class="fastq">fastq</span>, database: \? Info: uploaded fastq file' )
@@ -284,15 +187,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 1.wig, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.wig' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.wig', hid=str( hda.hid ) )
         self.check_history_for_string( '1.wig format: <span class="wig">wig</span>, database: \? Info: uploaded file' )
@@ -303,15 +200,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 1.tabular, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.tabular' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.tabular', hid=str( hda.hid ) )
         self.check_history_for_string( '1.tabular format: <span class="tabular">tabular</span>, database: \? Info: uploaded file' )
@@ -322,15 +213,9 @@ class UploadData( TwillTestCase ):
         """Test uploading qualscores.qualsolid, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( 'qualscores.qualsolid' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( 'qualscores.qualsolid', hid=str( hda.hid ) )
         self.check_history_for_string( '48 lines, format: <span class="qualsolid">qualsolid</span>, database: \? Info: uploaded file' )
@@ -340,15 +225,9 @@ class UploadData( TwillTestCase ):
         """Test uploading qualscores.qual454, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( 'qualscores.qual454' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( 'qualscores.qual454', hid=str( hda.hid ) )
         self.check_history_for_string( '49 lines, format: <span class="qual454">qual454</span>, database: \?' )
@@ -358,15 +237,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 3.maf, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '3.maf' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '3.maf', hid=str( hda.hid ) )
         self.check_history_for_string( '3.maf format: <span class="maf">maf</span>, database: \? Info: uploaded file' )
@@ -378,15 +251,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 1.lav, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.lav' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.lav', hid=str( hda.hid ) )
         self.check_history_for_string( '1.lav format: <span class="lav">lav</span>, database: \? Info: uploaded file' )
@@ -397,15 +264,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 1.interval, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.interval' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.interval', hid=str( hda.hid ) )
         self.check_history_for_string( '1.interval format: <span class="interval">interval</span>, database: \? Info: uploaded file' )
@@ -419,15 +280,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 5.gff3, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '5.gff3' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '5.gff3', hid=str( hda.hid ) )
         self.check_history_for_string( '5.gff3 format: <span class="gff3">gff3</span>, database: \? Info: uploaded file' )
@@ -439,15 +294,9 @@ class UploadData( TwillTestCase ):
         """Test uploading html_file.txt, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( 'html_file.txt' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.check_history_for_string( 'The uploaded file contains inappropriate content' )
         self.delete_history( id=self.security.encode_id( history.id ) )
@@ -455,15 +304,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 5.gff, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '5.gff' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '5.gff', hid=str( hda.hid ) )
         self.check_history_for_string( '5.gff format: <span class="gff">gff</span>, database: \? Info: uploaded file' )
@@ -475,15 +318,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 1.fasta, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.fasta' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.fasta', hid=str( hda.hid ) )
         self.check_history_for_string( '1.fasta format: <span class="fasta">fasta</span>, database: \? Info: uploaded file' )
@@ -493,15 +330,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 1.customtrack, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.customtrack' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.customtrack', hid=str( hda.hid ) )
         self.check_history_for_string( '1.customtrack format: <span class="customtrack">customtrack</span>, database: \? Info: uploaded file' )
@@ -511,15 +342,9 @@ class UploadData( TwillTestCase ):
         """Test uploading shrimp_cs_test1.csfasta, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( 'shrimp_cs_test1.csfasta' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( 'shrimp_cs_test1.csfasta', hid=str( hda.hid ) )
         self.check_history_for_string( '2,500 sequences, format: <span class="csfasta">csfasta</span>, <td>&gt;2_14_26_F3,-1282216.0</td>' )
@@ -529,15 +354,9 @@ class UploadData( TwillTestCase ):
         """Test uploading megablast_xml_parser_test1.gz, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( 'megablast_xml_parser_test1.gz' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.check_history_for_string( 'NCBI Blast XML data format: <span class="blastxml">blastxml</span>' )
         self.delete_history( id=self.security.encode_id( history.id ) )
@@ -545,15 +364,9 @@ class UploadData( TwillTestCase ):
         """Test uploading 1.axt, NOT setting the file format"""
         # Logged in as admin_user
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.axt' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.axt', hid=str( hda.hid ) )
         self.check_history_for_string( '1.axt format: <span class="axt">axt</span>, database: \? Info: uploaded file' )
@@ -562,15 +375,9 @@ class UploadData( TwillTestCase ):
     def test_0150_upload_file( self ):
         """Test uploading 1.bam, which is a sorted Bam file creaed by the Galaxy sam_to_bam tool, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.bam' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.bam', hid=str( hda.hid ) )
         self.check_history_for_string( '<span class="bam">bam</span>' )
@@ -580,15 +387,9 @@ class UploadData( TwillTestCase ):
     def test_0155_upload_file( self ):
         """Test uploading 3.bam, which is an unsorted Bam file, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '3.bam' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         # Since 3.bam is not sorted, we cannot verify dataset correctness since the uploaded
         # dataset will be sorted.  However, the check below to see if the index was created is
@@ -602,11 +403,7 @@ class UploadData( TwillTestCase ):
         # Logged in as admin_user
         # Deleting the current history should have created a new history
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_url_paste( 'hello world' )
         self.check_history_for_string( 'Pasted Entry' )
         self.check_history_for_string( 'hello world' )
@@ -617,19 +414,35 @@ class UploadData( TwillTestCase ):
     def test_0165_upload_file( self ):
         """Test uploading 1.pileup, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
-        history = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+        history = get_latest_history_for_user( admin_user )
         self.upload_file( '1.pileup' )
-        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                        .first()
+        hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.pileup', hid=str( hda.hid ) )
         self.check_history_for_string( '1.pileup format: <span class="pileup">pileup</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="1.pileup" value="\?" Change data type selected value="pileup" selected="yes"' )
+        self.delete_history( id=self.security.encode_id( history.id ) )
+    def test_0170_upload_file( self ):
+        """Test uploading 1.bigbed, NOT setting the file format"""
+        self.check_history_for_string( 'Your history is empty' )
+        history = get_latest_history_for_user( admin_user )
+        self.upload_file( '1.bigbed' )
+        hda = get_latest_hda()
+        assert hda is not None, "Problem retrieving hda from database"
+        self.verify_dataset_correctness( '1.bigbed', hid=str( hda.hid ) )
+        self.check_history_for_string( '1.bigbed</span> database: \? Info: uploaded bigbed file' )
+        self.check_metadata_for_string( 'value="1.bigbed" value="\?" Change data type selected value="bigbed" selected="yes"' )
+        self.delete_history( id=self.security.encode_id( history.id ) )
+    def test_0175_upload_file( self ):
+        """Test uploading 1.bigwig, NOT setting the file format"""
+        self.check_history_for_string( 'Your history is empty' )
+        history = get_latest_history_for_user( admin_user )
+        self.upload_file( '1.bigwig' )
+        hda = get_latest_hda()
+        assert hda is not None, "Problem retrieving hda from database"
+        self.verify_dataset_correctness( '1.bigwig', hid=str( hda.hid ) )
+        self.check_history_for_string( '1.bigwig</span> database: \? Info: uploaded bigwig file' )
+        self.check_metadata_for_string( 'value="1.bigwig" value="\?" Change data type selected value="bigwig" selected="yes"' )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_9999_clean_up( self ):
         self.logout()

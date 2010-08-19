@@ -9,6 +9,7 @@ from galaxy.datatypes.sniff import *
 from urllib import urlencode, quote_plus
 import zipfile, gzip
 import os, subprocess, tempfile
+import struct
 
 log = logging.getLogger(__name__)
 
@@ -186,3 +187,38 @@ class Sff( Binary ):
             return dataset.peek
         except:
             return "Binary sff file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+class BigWig(Binary):
+    """
+    Accessing binary BigWig files from UCSC.
+    The supplemental info in the paper has the binary details:
+    http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btq351v1
+    """
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+        self._magic = 0x888FFC26
+        self._name = "BigWig"
+    def _unpack( self, pattern, handle ):
+        return struct.unpack( pattern, handle.read( struct.calcsize( pattern ) ) )
+    def sniff( self, filename ):
+        magic = self._unpack( "I", open( filename ) )
+        return magic[0] == self._magic
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek  = "Binary UCSC %s file" % self._name
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Binary UCSC %s file (%s)" % ( self._name, data.nice_size( dataset.get_size() ) )
+
+class BigBed(BigWig):
+    """BigBed support from UCSC."""
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+        self._magic = 0x8789F2EB
+        self._name = "BigBed"
