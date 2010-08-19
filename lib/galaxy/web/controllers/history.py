@@ -1191,7 +1191,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
             elif not send_to_err:
                 # User seems to be sharing an empty history
                 send_to_err = "You cannot share an empty history.  "
-        return trans.fill_template( "/ind_sharing_base.mako", histories=histories, email=email, send_to_err=send_to_err )
+        return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err )
         
     @web.expose
     @web.require_login( "share restricted histories with other users" )
