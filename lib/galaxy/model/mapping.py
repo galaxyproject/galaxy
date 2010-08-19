@@ -10,6 +10,7 @@ import datetime
 
 from galaxy.model import *
 from galaxy.model.orm import *
+from galaxy.model.orm.logging_connection_proxy import *
 from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
@@ -1485,8 +1486,14 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     Dataset.file_path = file_path
     # Load the appropriate db module
     load_egg_for_url( url )
+    # Should we use the logging proxy?
+    use_logging_proxy = engine_options.pop( 'use_logging_proxy', 'False' )
+    if use_logging_proxy == 'True':
+        proxy = LoggingProxy()
+    else:
+        proxy = None
     # Create the database engine
-    engine = create_engine( url, **engine_options )
+    engine = create_engine( url, proxy=proxy, **engine_options )
     # Connect the metadata to the database.
     metadata.bind = engine
     # Clear any existing contextual sessions and reconfigure
