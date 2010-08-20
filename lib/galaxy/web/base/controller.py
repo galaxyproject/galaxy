@@ -1407,7 +1407,6 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, job_lock = None, **kwd ):
-        # DBTODO admin job lock.
         deleted = []
         msg = None
         status = None

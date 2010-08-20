@@ -275,6 +275,7 @@ $.extend( Node.prototype, {
         this.tooltip = data.tooltip ? data.tooltip : ""
         this.annotation = data.annotation;
         this.post_job_actions = data.post_job_actions;
+        this.workflow_outputs = data.workflow_outputs
         
         if ( this.tool_errors ) {
             f.addClass( "tool-node-error" );
@@ -416,6 +417,10 @@ $.extend( Workflow.prototype, {
                     post_job_actions[ act.type + act.output_name ] = pja;
                 });
             }
+            if (!node.workflow_outputs){
+                node.workflow_outputs = [];
+                // Just in case.
+            }
             var node_data = {
                 id : node.id,
                 type : node.type,
@@ -425,7 +430,8 @@ $.extend( Workflow.prototype, {
                 input_connections : input_connections,
                 position : $(node.element).position(),
                 annotation: node.annotation,
-                post_job_actions: node.post_job_actions
+                post_job_actions: node.post_job_actions,
+                workflow_outputs: node.workflow_outputs
             };
             nodes[ node.id ] = node_data;
         });

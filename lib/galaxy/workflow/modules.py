@@ -165,6 +165,7 @@ class ToolModule( WorkflowModule ):
         self.tool_id = tool_id
         self.tool = trans.app.toolbox.tools_by_id[ tool_id ]
         self.post_job_actions = {}
+        self.workflow_outputs = []
         self.state = None
         self.errors = None
 
@@ -181,10 +182,9 @@ class ToolModule( WorkflowModule ):
         module.state = DefaultToolState()
         module.state.decode( d["tool_state"], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
-        if 'post_job_actions' in d and d["post_job_actions"] != []:
-            module.post_job_actions = d["post_job_actions"]
-        else:
-            module.post_job_actions = {}
+        module.post_job_actions = d.get("post_job_actions", {})
+        module.workflow_outputs = d.get("workflow_outputs", [])
+
         return module
         
     @classmethod
@@ -195,6 +195,7 @@ class ToolModule( WorkflowModule ):
         module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
         module.errors = step.tool_errors
         # module.post_job_actions = step.post_job_actions
+        module.workflow_outputs = step.workflow_outputs
         pjadict = {}
         for pja in step.post_job_actions:
             pjadict[pja.action_type] = pja

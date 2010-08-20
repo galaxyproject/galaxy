@@ -1328,7 +1328,7 @@ class CloudUserCredentials( object ):
         self.accessKey = None
         self.secretKey = None
         self.credentials = []
- 
+
 class StoredWorkflow( object ):
     def __init__( self ):
         self.id = None
@@ -1364,6 +1364,11 @@ class WorkflowStepConnection( object ):
         self.output_name = None
         self.input_step_id = None
         self.input_name = None
+
+class WorkflowOutput(object):
+    def __init__( self, workflow_step, output_name):
+        self.workflow_step = workflow_step
+        self.output_name = output_name
         
 class StoredWorkflowUserShareAssociation( object ):
     def __init__( self ):

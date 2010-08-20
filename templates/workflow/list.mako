@@ -58,6 +58,7 @@
                             <td>
                                 <div popupmenu="wf-${i}-popup">
                                 <a class="action-button" href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">Edit</a>
+								<a class="action-button" href="${h.url_for( action='tag_outputs', id=trans.security.encode_id(workflow.id) )}">Tag Outputs</a>
                                 <a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(workflow.id) )}" target="_parent">Run</a>
                                 <a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id(workflow.id) )}">Share or Publish</a>
                                 <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>

@@ -463,6 +463,12 @@ WorkflowStepConnection.table = Table( "workflow_step_connection", metadata,
     Column( "input_name", TEXT)
     )
 
+WorkflowOutput.table = Table( "workflow_output", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+    Column( "output_name", String(255), nullable=True)
+    )
+
 WorkflowInvocation.table = Table( "workflow_invocation", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1238,7 +1244,10 @@ assign_mapper( context, Workflow, Workflow.table,
     properties=dict( steps=relation( WorkflowStep, backref='workflow',
                                      order_by=asc(WorkflowStep.table.c.order_index),
                                      cascade="all, delete-orphan",
-                                     lazy=False )
+                                     lazy=False ),
+                     # outputs = relation( WorkflowOutput, backref='workflow',
+                     #                 primaryjoin=(Workflow.table.c.id == WorkflowStep.table.c.workflow_id),
+                     #                 secondaryjoin=(WorkflowStep.table.c.id == WorkflowOutput.table.c.workflow_step_id))
                                       ) )
 
 assign_mapper( context, WorkflowStep, WorkflowStep.table,
@@ -1246,6 +1255,9 @@ assign_mapper( context, WorkflowStep, WorkflowStep.table,
                     tags=relation(WorkflowStepTagAssociation, order_by=WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"), 
                     annotations=relation( WorkflowStepAnnotationAssociation, order_by=WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) )
                 )
+
+assign_mapper( context, WorkflowOutput, WorkflowOutput.table,
+    properties=dict(workflow_step = relation( WorkflowStep, backref='workflow_outputs', primaryjoin=(WorkflowStep.table.c.id == WorkflowOutput.table.c.workflow_step_id))))
 
 assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
     properties=dict( input_step=relation( WorkflowStep, backref="input_connections", cascade="all",

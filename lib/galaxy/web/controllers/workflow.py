@@ -358,7 +358,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         stored = self.get_stored_workflow( trans, id )
         if not stored:
             error( "You do not own this workflow or workflow ID is invalid." )
-            
         # Update workflow attributes if new values submitted.
         if 'name' in kwargs:
             # Rename workflow.
@@ -368,7 +367,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
             self.add_item_annotation( trans, stored,  annotation )
         trans.sa_session.flush()
-        
         return trans.fill_template( 'workflow/edit_attributes.mako', 
                                     stored=stored, 
                                     annotation=self.get_item_annotation_str( trans, trans.user, stored ) 
@@ -773,7 +771,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
                 'form_html': module.get_config_form(),
-                'annotation' : annotation_str
+                'annotation' : annotation_str,
+                'post_job_actions' : {},
+                'workflow_outputs' : []
             }
             # Connections
             input_connections = step.input_connections
@@ -794,6 +794,11 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                                             output_name = pja.output_name,
                                             action_arguments = pja.action_arguments)
                 step_dict['post_job_actions'] = pja_dict
+                #workflow outputs
+                outputs = []
+                for output in step.workflow_outputs:
+                    outputs.append(output.output_name)
+                step_dict['workflow_outputs'] = outputs
             # Encode input connections as dictionary
             input_conn_dict = {}
             for conn in input_connections:
@@ -838,6 +843,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             step.position = step_dict['position']
             module = module_factory.from_dict( trans, step_dict )
             module.save_to_step( step )
+            if step_dict.has_key('workflow_outputs'):
+                for output_name in step_dict['workflow_outputs']:
+                    m = model.WorkflowOutput(workflow_step = step, output_name = output_name)
+                    trans.sa_session.add(m)
             if step.tool_errors:
                 workflow.has_errors = True
             # Stick this in the step temporarily
@@ -1272,6 +1281,84 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Render the form
         return trans.fill_template(
                     "workflow/run.mako", 
+                    steps=workflow.steps,
+                    workflow=stored,
+                    has_upgrade_messages=has_upgrade_messages,
+                    errors=errors,
+                    incoming=kwargs )
+    
+    @web.expose
+    def tag_outputs( self, trans, id, check_user=True, **kwargs ):
+        stored = self.get_stored_workflow( trans, id, check_ownership=False )
+        if check_user:
+            user = trans.get_user()
+            if stored.user != user:
+                if trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
+                        .filter_by( user=user, stored_workflow=stored ).count() == 0:
+                    error( "Workflow is not owned by or shared with current user" )
+        # Get the latest revision
+        workflow = stored.latest_workflow
+        # It is possible for a workflow to have 0 steps
+        if len( workflow.steps ) == 0:
+            error( "Workflow cannot be tagged for outputs because it does not have any steps" )
+        if workflow.has_cycles:
+            error( "Workflow cannot be tagged for outputs because it contains cycles" )
+        if workflow.has_errors:
+            error( "Workflow cannot be tagged for outputs because of validation errors in some steps" )
+        # Build the state for each step
+        errors = {}
+        has_upgrade_messages = False
+        has_errors = False
+        if kwargs:
+            # If kwargs were provided, the states for each step should have
+            # been POSTed
+            for step in workflow.steps:
+                if step.type == 'tool':
+                    # Extract just the output flags for this step.
+                    p = "%s|otag|" % step.id
+                    l = len(p)
+                    outputs = [k[l:] for ( k, v ) in kwargs.iteritems() if k.startswith( p )]
+                    if step.workflow_outputs:
+                        for existing_output in step.workflow_outputs:
+                            if existing_output.output_name not in outputs:
+                                # print "Deleting action %s on %s" % (step.id, existing_output.output_name)
+                                trans.sa_session.delete(existing_output)
+                            else:
+                                outputs.remove(existing_output.output_name)
+                    for outputname in outputs:
+                        # print "Creating new workflow output at step %s on output name %s" %(step.id, outputname)
+                        m = model.WorkflowOutput(workflow_step_id = int(step.id), output_name = outputname)
+                        trans.sa_session.add(m)
+        # Prepare each step
+        trans.sa_session.flush()
+        for step in workflow.steps:
+            step.upgrade_messages = {}
+            # Contruct modules
+            if step.type == 'tool' or step.type is None:
+                # Restore the tool state for the step
+                step.module = module_factory.from_workflow_step( trans, step )
+                # Fix any missing parameters
+                step.upgrade_messages = step.module.check_and_update_state()
+                if step.upgrade_messages:
+                    has_upgrade_messages = True
+                # Any connected input needs to have value DummyDataset (these
+                # are not persisted so we need to do it every time)
+                step.module.add_dummy_datasets( connections=step.input_connections )                  
+                # Store state with the step
+                step.state = step.module.state
+                # Error dict
+                if step.tool_errors:
+                    has_errors = True
+                    errors[step.id] = step.tool_errors
+            else:
+                ## Non-tool specific stuff?
+                step.module = module_factory.from_workflow_step( trans, step )
+                step.state = step.module.get_runtime_state()
+            # Connections by input name
+            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+        # Render the form
+        return trans.fill_template(
+                    "workflow/tag_outputs.mako",
                     steps=workflow.steps,
                     workflow=stored,
                     has_upgrade_messages=has_upgrade_messages,
