@@ -174,7 +174,7 @@ $.extend( Node.prototype, {
                         .appendTo( "body" )
                         .append(
                             $("<div class='buttons'></div>").append(
-                                $("<img src='../images/delete_icon.png' />").click( function() {
+                                $("<img/>").attr("src", image_path + '/delete_icon.png').click( function() {
                                     $.each( terminal.connectors, function( _, x ) {
                                         x.destroy();
                                     });
@@ -648,18 +648,18 @@ function prebuild_node( type, title_text, tool_id ) {
     f.append( title );
     f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );    
     var b = $("<div class='toolFormBody'></div>");
-    var tmp = "<div><img height='16' align='middle' src='../images/loading_small_white_bg.gif'/> loading tool info...</div>";
+    var tmp = "<div><img height='16' align='middle' src='" +image_path+ "/loading_small_white_bg.gif'/> loading tool info...</div>";
     b.append( tmp );
     node.form_html = tmp;
     f.append( b );
     // Fix width to computed width
     // Now add floats
     var buttons = $("<div class='buttons' style='float: right;'></div>");
-    buttons.append( $("<img src='../images/delete_icon.png' />").click( function( e ) {
+    buttons.append( $("<img/>").attr("src", image_path + '/delete_icon.png').click( function( e ) {
         node.destroy();
     } ).hover( 
-        function() { $(this).attr( 'src', "../images/delete_icon_dark.png" ); },
-        function() { $(this).attr( 'src', "../images/delete_icon.png" ); }
+        function() { $(this).attr( "src", image_path + "/delete_icon_dark.png" ); },
+        function() { $(this).attr( "src", image_path + "/delete_icon.png" ); }
     ) );
     // Place inside container
     f.appendTo( "#canvas-container" );
