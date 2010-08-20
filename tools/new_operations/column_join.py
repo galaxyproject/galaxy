@@ -241,10 +241,14 @@ def __main__():
             new_split_line = split_line[:]
             split_line = []
             for i, item in enumerate( new_split_line ):
-                if item:
-                    split_line.append( item )
+                col = i + 1
+                if not item:
+                    try:
+                        split_line.append( fill_empty[ i + 1 ] )
+                    except KeyError:
+                        split_line.append( item )
                 else:
-                    split_line.append( fill_empty[ i + 1 ] )
+                    split_line.append( item )
         # add actual data to be output below
         if ''.join( split_line ):
             for col in cols:
@@ -265,9 +269,11 @@ def __main__():
                 fout.write( '%s%s' % ( delimiter, delimiter.join( current_data ) ) )
             elif current_data:
                 fout.write( '%s%s%s' % ( current, delimiter, delimiter.join( current_data ) ) )
+            last_lines = ''.join( current_lines )
+        else:
+            last_lines = None
         last_loc = loc
         old_current = current
-        last_lines = ''.join( current_lines )
         first_line = False
     # fill trailing empty columns for final line
     if last_loc < len( inputs ) - 1:
