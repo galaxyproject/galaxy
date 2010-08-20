@@ -523,7 +523,6 @@ class JobWrapper( object ):
                     if dataset.ext == 'auto':
                         dataset.extension = 'txt'
                 self.sa_session.add( dataset )
-                self.sa_session.flush()
             if context['stderr']:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
             else:
@@ -535,6 +534,10 @@ class JobWrapper( object ):
             # panel stops checking for updates.  So allow the
             # self.sa_session.flush() at the bottom of this method set
             # the state instead.
+
+        # Flush all the dataset and job changes above.  Dataset state changes
+        # will now be seen by the user.
+        self.sa_session.flush()
         
         # Save stdout and stderr    
         if len( stdout ) > 32768:
