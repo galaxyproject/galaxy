@@ -16,6 +16,7 @@ tool-data/bfast_indexes.loc.sample
 tool-data/binned_scores.loc.sample
 tool-data/blastdb.loc.sample
 tool-data/bowtie_indices.loc.sample
+tool-data/bowtie_indices_color.loc.sample
 tool-data/encode_datasets.loc.sample
 tool-data/liftOver.loc.sample
 tool-data/maf_index.loc.sample
