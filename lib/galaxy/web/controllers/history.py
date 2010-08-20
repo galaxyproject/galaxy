@@ -155,6 +155,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
     @web.expose
     def list_as_xml( self, trans ):
         """XML history list for functional tests"""
+        trans.response.set_content_type( 'text/xml' )
         return trans.fill_template( "/history/list_as_xml.mako" )
     
     stored_list_grid = HistoryListGrid()
