@@ -208,7 +208,8 @@ def __main__():
         hinges = [ h for h in hinges if h ]
         current, loc = hinges[0], hinge_dict[ hinges[0] ]
         # first output empty columns for vertical alignment (account for "missing" files)
-        # write output if trailing empty columns
+        # write output for leading and trailing empty columns
+        # columns missing from actual file handled further below
         current_data = []
         if current != old_current:
             # fill trailing empty columns with appropriate fill value
@@ -244,17 +245,25 @@ def __main__():
                     split_line.append( item )
                 else:
                     split_line.append( fill_empty[ i + 1 ] )
+        # add actual data to be output below
         if ''.join( split_line ):
-            # add actual data to be output below
             for col in cols:
                 if col > hinge:
-                    current_data.append( split_line[ col - 1 ] )
+                    # if this column doesn't exist, add the appropriate filler or empty column
+                    try:
+                        new_item = split_line[ col - 1 ]
+                    except IndexError:
+                        if fill_empty:
+                            new_item = fill_empty[ col ]
+                        else:
+                            new_item = ''
+                    current_data.append( new_item )
             # grab next line for selected file
             current_lines[ loc ] = tmp_input_files[ loc ].readline().rstrip( '\r\n' )
             # write relevant data to file
-            if current == old_current:
+            if current == old_current and current_data:
                 fout.write( '%s%s' % ( delimiter, delimiter.join( current_data ) ) )
-            else:
+            elif current_data:
                 fout.write( '%s%s%s' % ( current, delimiter, delimiter.join( current_data ) ) )
         last_loc = loc
         old_current = current
