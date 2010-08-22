@@ -70,7 +70,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         grids.PublicURLColumn( "Name", key="name", model_class=model.StoredWorkflow, filterable="advanced" ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.StoredWorkflow, model_annotation_association_class=model.StoredWorkflowAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.CommunityTagsColumn( "Community Tags", "tags", model.StoredWorkflow, model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="PublicWorkflowListGrid" ),
+        grids.CommunityTagsColumn( "Community Tags", key="tags", model_class=model.StoredWorkflow, model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="PublicWorkflowListGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 

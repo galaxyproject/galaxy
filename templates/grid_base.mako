@@ -255,7 +255,7 @@
         }
         
         // Add sort argument to URL args.
-        url_args['sort'] = "${encoded_sort_key}";
+        url_args['sort'] = "${sort_key}";
         
         // Add async keyword to URL args.
         url_args['async'] = true;

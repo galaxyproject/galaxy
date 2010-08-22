@@ -15,7 +15,7 @@ class VisualizationListGrid( grids.Grid ):
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, attach_popup=True,
                          link=( lambda item: dict( controller="tracks", action="browser", id=item.id ) ) ),
         grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.Visualization, model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.Visualization, model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Visualization, filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
@@ -50,7 +50,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         grids.PublicURLColumn( "Title", key="title", model_class=model.Visualization, filterable="advanced" ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.Visualization, model_annotation_association_class=model.VisualizationAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.CommunityTagsColumn( "Community Tags", "tags", model.Visualization, model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationAllPublishedGrid" ),
+        grids.CommunityTagsColumn( "Community Tags", key="tags", model_class=model.Visualization, model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationAllPublishedGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
