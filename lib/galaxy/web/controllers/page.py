@@ -25,11 +25,11 @@ class PageListGrid( grids.Grid ):
     default_filter = { "published" : "All", "tags" : "All", "title" : "All", "sharing" : "All" }
     default_sort_key = "-create_time"
     columns = [
-        grids.TextColumn( "Title", key="title", model_class=model.Page, attach_popup=True, filterable="advanced" ),
+        grids.TextColumn( "Title", key="title", attach_popup=True, filterable="advanced" ),
         URLColumn( "Public URL" ),
-        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.Page, model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.Page, model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Page, filterable="advanced", sortable=False ),
+        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid" ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
@@ -61,10 +61,10 @@ class PageAllPublishedGrid( grids.Grid ):
     default_sort_key = "-update_time"
     default_filter = dict( title="All", username="All" )
     columns = [
-        grids.PublicURLColumn( "Title", key="title", model_class=model.Page, filterable="advanced" ),
-        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.Page, model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
-        grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.CommunityTagsColumn( "Community Tags", key="tags", model_class=model.Page, model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
+        grids.PublicURLColumn( "Title", key="title", filterable="advanced" ),
+        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
+        grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ), 
+        grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
@@ -107,12 +107,12 @@ class HistorySelectionGrid( ItemSelectionGrid ):
     title = "Saved Histories"
     model_class = model.History
     columns = [
-        ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.History, model_tag_association_class=model.HistoryTagAssociation, filterable="advanced"),
+        ItemSelectionGrid.NameColumn( "Name", key="name", filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False, visible=False ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False, visible=False ),
     ]
     columns.append(     
         grids.MulticolFilterColumn(  
@@ -130,12 +130,12 @@ class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
     title = "Saved Datasets"
     model_class = model.HistoryDatasetAssociation
     columns = [
-        ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.HistoryDatasetAssociation, model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
+        ItemSelectionGrid.NameColumn( "Name", key="name", filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.HistoryDatasetAssociation, filterable="advanced", sortable=False, visible=False ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False, visible=False ),
     ]
     columns.append(     
         grids.MulticolFilterColumn(  
@@ -155,12 +155,12 @@ class WorkflowSelectionGrid( ItemSelectionGrid ):
     title = "Saved Workflows"
     model_class = model.StoredWorkflow
     columns = [
-        ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.StoredWorkflow, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.StoredWorkflow, model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced"),
+        ItemSelectionGrid.NameColumn( "Name", key="name", filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.StoredWorkflow, filterable="advanced", sortable=False, visible=False ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False, visible=False ),
     ]
     columns.append(     
         grids.MulticolFilterColumn(  
@@ -175,12 +175,12 @@ class PageSelectionGrid( ItemSelectionGrid ):
     title = "Saved Pages"
     model_class = model.Page
     columns = [
-        grids.TextColumn( "Title", key="title", model_class=model.Page, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.Page, model_tag_association_class=model.PageTagAssociation, filterable="advanced"),
+        grids.TextColumn( "Title", key="title", filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Page, filterable="advanced", sortable=False, visible=False ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False, visible=False ),
     ]
     columns.append(     
         grids.MulticolFilterColumn(  
@@ -195,10 +195,10 @@ class VisualizationSelectionGrid( ItemSelectionGrid ):
     title = "Saved Visualizations"
     model_class = model.Visualization
     columns = [
-        grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="advanced" ),
-        grids.TextColumn( "Type", key="type", model_class=model.Visualization ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.Visualization, model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Visualization, filterable="advanced", sortable=False ),
+        grids.TextColumn( "Title", key="title", filterable="advanced" ),
+        grids.TextColumn( "Type", key="type" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]    
     columns.append( 
@@ -299,8 +299,8 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
                     return self.sharing( trans, **kwargs )
             session.flush()
             
-        # Build grid HTML and make sure to encode in utf-8 to support unicode characters.
-        grid = unicode( self._page_list( trans, *args, **kwargs ), 'utf-8' )
+        # Build grid HTML.
+        grid = self._page_list( trans, *args, **kwargs )
         
         # Build list of pages shared with user.
         shared_by_others = trans.sa_session \
@@ -316,7 +316,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
              
     @web.expose
     def list_published( self, trans, *args, **kwargs ):
-        grid = unicode( self._all_published_list( trans, *args, **kwargs ), 'utf-8' )
+        grid = self._all_published_list( trans, *args, **kwargs )
         if 'async' in kwargs:
             return grid
         else:

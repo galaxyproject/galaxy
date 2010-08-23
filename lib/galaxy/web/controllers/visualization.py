@@ -12,11 +12,11 @@ class VisualizationListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     default_filter = dict( title="All", deleted="False", tags="All", sharing="All" )
     columns = [
-        grids.TextColumn( "Title", key="title", model_class=model.Visualization, attach_popup=True,
+        grids.TextColumn( "Title", key="title", attach_popup=True,
                          link=( lambda item: dict( controller="tracks", action="browser", id=item.id ) ) ),
-        grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.Visualization, model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Visualization, filterable="advanced", sortable=False ),
+        grids.TextColumn( "Dbkey", key="dbkey" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]    
@@ -47,10 +47,10 @@ class VisualizationAllPublishedGrid( grids.Grid ):
     default_sort_key = "-update_time"
     default_filter = dict( title="All", username="All" )
     columns = [
-        grids.PublicURLColumn( "Title", key="title", model_class=model.Visualization, filterable="advanced" ),
-        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.Visualization, model_annotation_association_class=model.VisualizationAnnotationAssociation, filterable="advanced" ),
-        grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.CommunityTagsColumn( "Community Tags", key="tags", model_class=model.Visualization, model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationAllPublishedGrid" ),
+        grids.PublicURLColumn( "Title", key="title", filterable="advanced" ),
+        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.VisualizationAnnotationAssociation, filterable="advanced" ),
+        grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ), 
+        grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationAllPublishedGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 

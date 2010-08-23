@@ -28,7 +28,7 @@
 
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">
-            ${unicode( grid, 'utf-8' )}
+            ${h.to_unicode( grid )}
         </div>
     </div>
 

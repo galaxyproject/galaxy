@@ -107,14 +107,14 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     title = "Saved Datasets"
     model_class = model.HistoryDatasetAssociation
     template='/dataset/grid.mako'
-    default_sort_key = "-create_time"
+    default_sort_key = "-update_time"
     columns = [
-        grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation,
+        grids.TextColumn( "Name", key="name", 
                             # Link name to dataset's history.
-                              link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True ),
+                            link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True ),
         HistoryColumn( "History", key="history", 
                         link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.HistoryDatasetAssociation, model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),
         StatusColumn( "Status", key="deleted", attach_popup=False ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]

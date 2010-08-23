@@ -38,16 +38,15 @@ class HistoryListGrid( grids.Grid ):
     title = "Saved Histories"
     model_class = model.History
     template='/history/grid.mako'
-    default_sort_key = "-create_time"
+    default_sort_key = "-update_time"
     columns = [
-        NameColumn( "Name", key="name", model_class=model.History,
+        NameColumn( "Name", key="name",
                           link=( lambda history: iff( history.deleted, None, dict( operation="Switch", id=history.id ) ) ),
                           attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
-        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.History, \
-                                    model_tag_association_class=model.HistoryTagAssociation, \
+        grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, \
                                     filterable="advanced", grid_name="HistoryListGrid" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
@@ -130,10 +129,10 @@ class HistoryAllPublishedGrid( grids.Grid ):
     default_filter = dict( public_url="All", username="All", tags="All" )
     use_async = True
     columns = [
-        NameURLColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
-        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.History, model_annotation_association_class=model.HistoryAnnotationAssociation, filterable="advanced" ),
-        grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.CommunityTagsColumn( "Community Tags", key="tags", model_class=model.History, model_tag_association_class=model.HistoryTagAssociation, filterable="advanced", grid_name="PublicHistoryListGrid" ),
+        NameURLColumn( "Name", key="name", filterable="advanced" ),
+        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.HistoryAnnotationAssociation, filterable="advanced" ),
+        grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ), 
+        grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, filterable="advanced", grid_name="PublicHistoryListGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 

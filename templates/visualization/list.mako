@@ -13,7 +13,7 @@
 
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">
-            ${grid}
+            ${h.to_unicode( grid )}
 
 			<br><br>
 			<h2>Visualizations shared with you by others</h2>
