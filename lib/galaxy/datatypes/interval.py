@@ -1,7 +1,7 @@
 """
 Interval datatypes
-
 """
+
 import pkg_resources
 pkg_resources.require( "bx-python" )
 
@@ -20,10 +20,8 @@ import math
 
 log = logging.getLogger(__name__)
 
-#
-# contain the meta columns and the words that map to it
-# list aliases on the right side of the : in decreasing order of priority
-#
+# Contains the meta columns and the words that map to it; list aliases on the
+# right side of the : in decreasing order of priority
 alias_spec = { 
     'chromCol'  : [ 'chrom' , 'CHROMOSOME' , 'CHROM', 'Chromosome Name' ],  
     'startCol'  : [ 'start' , 'START', 'chromStart', 'txStart', 'Start Position (bp)' ],
@@ -38,9 +36,11 @@ for key, value in alias_spec.items():
     for elem in value:
         alias_helper[elem] = key
 
-#Constants for configuring viewport generation
-VIEWPORT_READLINE_BUFFER_SIZE = 1048576 #1MB
-VIEWPORT_MAX_READS_PER_LINE = 10 # If a line is greater than VIEWPORT_MAX_READS_PER_LINE * VIEWPORT_READLINE_BUFFER_SIZE bytes in size, then we will not generate a viewport for that dataset
+# Constants for configuring viewport generation: If a line is greater than
+# VIEWPORT_MAX_READS_PER_LINE * VIEWPORT_READLINE_BUFFER_SIZE bytes in size,
+# then we will not generate a viewport for that dataset
+VIEWPORT_READLINE_BUFFER_SIZE = 1048576 # 1MB
+VIEWPORT_MAX_READS_PER_LINE = 10 
 
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
@@ -150,55 +150,66 @@ class Interval( Tabular ):
                 and dataset.metadata.endCol
         except:
             return False
+
     def get_estimated_display_viewport( self, dataset, chrom_col = None, start_col = None, end_col = None ):
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100 # viewport should check at least 100 features; excludes comment lines
         max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
-        if self.displayable( dataset ):
-            try:
-                chrom = None 
-                start = sys.maxint 
-                end = 0
-                if chrom_col is None:
-                    chrom_col = int( dataset.metadata.chromCol ) - 1
-                if start_col is None:
-                    start_col = int( dataset.metadata.startCol ) - 1
-                if end_col is None:
-                    end_col = int( dataset.metadata.endCol ) - 1
-                max_col = max( chrom_col, start_col, end_col )
-                fh = open( dataset.file_name )
-                while True:
+        if not self.displayable( dataset ):
+            return ( None, None, None )
+        try:
+            # If column indexes were not passwed, determine from metadata
+            if chrom_col is None:
+                chrom_col = int( dataset.metadata.chromCol ) - 1
+            if start_col is None:
+                start_col = int( dataset.metadata.startCol ) - 1
+            if end_col is None:
+                end_col = int( dataset.metadata.endCol ) - 1
+            # Scan lines of file to find a reasonable chromosome and range
+            chrom = None 
+            start = sys.maxint 
+            end = 0
+            max_col = max( chrom_col, start_col, end_col )
+            fh = open( dataset.file_name )
+            while True:
+                line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
+                # Stop if at end of file
+                if not line: 
+                    break
+                # Skip comment lines
+                if not line.startswith( '#' ):
+                    try:
+                        fields = line.rstrip().split( '\t' )
+                        if len( fields ) > max_col:
+                            if chrom is None or chrom == fields[ chrom_col ]:
+                                start = min( start, int( fields[ start_col ] ) )
+                                end = max( end, int( fields[ end_col ] ) )
+                                # Set chrom last, in case start and end are not integers
+                                chrom = fields[ chrom_col ] 
+                            viewport_feature_count -= 1
+                    except Exception, e:
+                        # Most likely a non-integer field has been encountered
+                        # for start / stop. Just ignore and make sure we finish
+                        # reading the line and decrementing the counters.
+                        pass
+                # Make sure we are at the next new line
+                readline_count = VIEWPORT_MAX_READS_PER_LINE
+                while line.rstrip( '\n\r' ) == line:
+                    assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
                     line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
                     if not line: break #EOF
-                    if not line.startswith( '#' ):
-                        try:
-                            fields = line.rstrip().split( '\t' )
-                            if len( fields ) > max_col:
-                                if chrom is None or chrom == fields[ chrom_col ]:
-                                    start = min( start, int( fields[ start_col ] ) )
-                                    end = max( end, int( fields[ end_col ] ) )
-                                    chrom = fields[ chrom_col ] #set chrom last, in case start and end are not integers
-                                viewport_feature_count -= 1
-                        except Exception:
-                            #most likely a non-integer field has been encountered for start / stop
-                            continue
-                    #make sure we are at the next new line
-                    readline_count = VIEWPORT_MAX_READS_PER_LINE
-                    while line.rstrip( '\n\r' ) == line:
-                        assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
-                        line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
-                        if not line: break #EOF
-                        readline_count -= 1
-                    max_line_count -= 1
-                    if not viewport_feature_count or not max_line_count:
-                        #exceeded viewport or total line count to check
-                        break
-                if chrom is not None:
-                    return ( chrom, str( start ), str( end ) ) #Necessary to return strings?
-            except Exception, e:
-                #unexpected error, possibly missing metadata
-                log.exception( str( e ) )
-        return ( None, None, None ) #could not determine viewport
+                    readline_count -= 1
+                max_line_count -= 1
+                if not viewport_feature_count or not max_line_count:
+                    #exceeded viewport or total line count to check
+                    break
+            if chrom is not None:
+                return ( chrom, str( start ), str( end ) ) # Necessary to return strings?
+        except Exception, e:
+            # Unexpected error, possibly missing metadata
+            log.exception( "Exception caught attempting to generate viewport for dataset '%d'", dataset.id )
+        return ( None, None, None ) 
+
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data"""
         fd, temp_name = tempfile.mkstemp()
@@ -252,22 +263,39 @@ class Interval( Tabular ):
             out = "Can't create peek %s" % str( exc )
         return out
     def ucsc_links( self, dataset, type, app, base_url ):
-        ret_val = []
+        """
+        Generate links to UCSC genome browser sites based on the dbkey
+        and content of dataset.
+        """
+        # Filter UCSC sites to only those that are supported by this build and
+        # enabled.
+        valid_sites = [ ( name, url ) 
+                        for name, url in util.get_ucsc_by_build( dataset.dbkey ) 
+                        if name in app.config.ucsc_display_sites ]
+        if not valid_sites:
+            return []
+        # If there are any valid sites, we need to generate the estimated
+        # viewport
         chrom, start, stop = self.get_estimated_display_viewport( dataset )
-        if chrom is not None:
-            for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
-                if site_name in app.config.ucsc_display_sites:
-                    # HACK: UCSC doesn't support https, so force http even
-                    # if our URL scheme is https.  Making this work
-                    # requires additional hackery in your upstream proxy.
-                    # If UCSC ever supports https, remove this hack.
-                    internal_url = "%s" % url_for( controller='/dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
-                    if base_url.startswith( 'https://' ):
-                        base_url = base_url.replace( 'https', 'http', 1 )
-                    display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
-                    redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )
-                    link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
-                    ret_val.append( (site_name, link) )
+        if chrom is None:
+            return []
+        # Accumulate links for valid sites
+        ret_val = []
+        for site_name, site_url in valid_sites:
+            internal_url = url_for( controller='/dataset', dataset_id=dataset.id, 
+                                    action='display_at', filename='ucsc_' + site_name )
+            # HACK: UCSC doesn't support https, so force http even if our URL
+            #       scheme is https.  Making this work requires additional 
+            #       hackery in your upstream proxy.  If UCSC ever supports 
+            #       https, remove this hack.
+            if base_url.startswith( 'https://' ):
+                base_url = base_url.replace( 'https', 'http', 1 )
+            display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" 
+                    % (base_url, url_for( controller='root' ), dataset.id, type) )
+            redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" 
+                    % (site_url, dataset.dbkey, chrom, start, stop ) )
+            link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
+            ret_val.append( ( site_name, link ) )
         return ret_val
     def validate( self, dataset ):
         """Validate an interval file using the bx GenomicIntervalReader"""

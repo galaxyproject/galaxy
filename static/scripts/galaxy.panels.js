@@ -193,7 +193,7 @@ function show_modal( title, body, buttons, extra_buttons, init_fn ) {
         b.hide();
     }
     if ( body == "progress" ) {
-        body = $( "<img src='../images/yui/rel_interstitial_loading.gif')' />" );
+        body = $("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif");
     }
     $( ".dialog-box" ).find( ".body" ).html( body );
     if ( ! $(".dialog-box-container").is( ":visible" ) ) {

@@ -140,15 +140,14 @@ class Grid( object ):
             sort_key = kwargs['sort']
         elif base_sort_key:
             sort_key = base_sort_key
-        encoded_sort_key = sort_key
         if sort_key:
             if sort_key.startswith( "-" ):
                 # Can't use lower() on timestamp or integer objects, so func.lower() is not used here...
                 query = query.order_by( self.model_class.table.c.get( sort_key[1:] ).desc() ) 
             else:
-                # See reason for not using lower() to do case-insensitive search.
+                # See reason for not using lower() to do case-insensitive sorting.
                 query = query.order_by( self.model_class.table.c.get( sort_key ).asc() )
-        extra_url_args['sort'] = encoded_sort_key
+        extra_url_args['sort'] = sort_key
         # There might be a current row
         current_item = self.get_current_item( trans, **kwargs )
         # Process page number.
@@ -222,7 +221,6 @@ class Grid( object ):
                                     default_filter_dict=self.default_filter,
                                     cur_filter_dict=cur_filter_dict,
                                     sort_key=sort_key,
-                                    encoded_sort_key=encoded_sort_key,
                                     current_item=current_item,
                                     ids = kwargs.get( 'id', [] ),
                                     url = url,
@@ -260,10 +258,11 @@ class Grid( object ):
         return query
     
 class GridColumn( object ):
-    def __init__( self, label, key=None, model_class=None, method=None, format=None, link=None, attach_popup=False, visible=True, ncells=1, 
+    def __init__( self, label, grid=None, key=None, model_class=None, method=None, format=None, link=None, attach_popup=False, visible=True, ncells=1, 
                     # Valid values for filterable are ['standard', 'advanced', None]
                     filterable=None, sortable=True ):
         self.label = label
+        self.grid = grid
         self.key = key
         self.model_class = model_class
         self.method = method

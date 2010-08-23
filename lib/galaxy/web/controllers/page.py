@@ -27,7 +27,8 @@ class PageListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Page, attach_popup=True, filterable="advanced" ),
         URLColumn( "Public URL" ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid" ),
+        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.Page, model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.Page, model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Page, filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
@@ -63,7 +64,7 @@ class PageAllPublishedGrid( grids.Grid ):
         grids.PublicURLColumn( "Title", key="title", model_class=model.Page, filterable="advanced" ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.Page, model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.CommunityTagsColumn( "Community Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
+        grids.CommunityTagsColumn( "Community Tags", key="tags", model_class=model.Page, model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
@@ -107,7 +108,7 @@ class HistorySelectionGrid( ItemSelectionGrid ):
     model_class = model.History
     columns = [
         ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.History, model_tag_association_class=model.HistoryTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
@@ -130,7 +131,7 @@ class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
     model_class = model.HistoryDatasetAssociation
     columns = [
         ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.HistoryDatasetAssociation, model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.HistoryDatasetAssociation, model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
@@ -155,7 +156,7 @@ class WorkflowSelectionGrid( ItemSelectionGrid ):
     model_class = model.StoredWorkflow
     columns = [
         ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.StoredWorkflow, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.StoredWorkflow, model.StoredWorkflowTagAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.StoredWorkflow, model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
@@ -175,7 +176,7 @@ class PageSelectionGrid( ItemSelectionGrid ):
     model_class = model.Page
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Page, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.Page, model_tag_association_class=model.PageTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
@@ -196,7 +197,7 @@ class VisualizationSelectionGrid( ItemSelectionGrid ):
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="advanced" ),
         grids.TextColumn( "Type", key="type", model_class=model.Visualization ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.Visualization, model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.Visualization, model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Visualization, filterable="advanced", sortable=False ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]    

@@ -116,17 +116,29 @@ ${simplejson.dumps( __fill_options )}
       <param name="input" value="column_join_in12.pileup" ftype="pileup" />
       <output name="output" file="column_join_out4.pileup" ftype="tabular" />
     </test>
-    </tests>
+    <test>
+      <!-- Test for handling missing column -->
+      <param name="input1" value="column_join_in13.tabular" ftype="tabular" />
+      <param name="hinge" value="1" />
+      <param name="columns" value="5" />
+      <param name="fill_empty_columns_switch" value="fill_empty" />
+      <param name="column_fill_type" value="single_fill_value" />
+      <param name="fill_value" value="0" />
+      <param name="input2" value="column_join_in14.tabular" ftype="tabular" />
+      <param name="input" value="column_join_in15.tabular" ftype="tabular" />
+      <output name="output" file="column_join_out5.tabular" ftype="tabular" />
+    </test>
+  </tests>
   <help>
 **What it does**
 
 This tool allows you to join several files with the same column structure into one file, removing certain columns if necessary. The user needs to select a 'hinge', which is the number of left-most columns to match on. They also need to select the columns to include in the join, which should include the hinge columns, too.
 
-Note that the files are expected to have the same number of columns.
+Note that the files are expected to have the same number of columns. If for some reason the join column is missing (this only applies to the last column(s)), the tool attempts to handle this situation by inserting an empty item (or the appropriate filler) for that column on that row. This could lead to the situation where a row has a hinge but entirely empty or filled columns, if the hinge exists in at least one file but every file that has it is missing the join column. Also, note that the tool does not distinguish between a file missing the hinge altogether and a file having the hinge but missing the column (in both cases the column would be empty or filled). There is an example of this below.
 
 -----
 
-**Example**
+**General Example**
 
 Given the following files::
 
@@ -213,6 +225,36 @@ To join on columns 3 and 4 combining on columns 1 and 2, columns 1-4 should be s
   chr2    83             T    8
   chr2    84             A    9
 
+**Example with missing columns**
+
+Given the following input files::
+
+  FILE 1
+  1   A
+  2   B   b
+  4   C   c
+  5   D
+  6   E   e
+
+  FILE 2
+  1   M   m
+  2   N
+  3   O   o
+  4   P   p
+  5   Q
+  7   R   r
+
+if we join only column 3 using column 1 as the hinge and with a fill value of '0', this is what will be output::
+
+  1   0   m
+  2   b   0
+  3   0   o
+  4   c   p
+  5   0   0
+  6   e   0
+  7   0   r
+
+Row 5 appears in both files with the missing column, so it's got nothing but fill values in the output file.
 
   </help>
 </tool>

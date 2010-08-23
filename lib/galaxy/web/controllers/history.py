@@ -44,7 +44,9 @@ class HistoryListGrid( grids.Grid ):
                           link=( lambda history: iff( history.deleted, None, dict( operation="Switch", id=history.id ) ) ),
                           attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="HistoryListGrid" ),
+        grids.IndividualTagsColumn( "Tags", key="tags", model_class=model.History, \
+                                    model_tag_association_class=model.HistoryTagAssociation, \
+                                    filterable="advanced", grid_name="HistoryListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
@@ -131,7 +133,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         NameURLColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.History, model_annotation_association_class=model.HistoryAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.CommunityTagsColumn( "Community Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="PublicHistoryListGrid" ),
+        grids.CommunityTagsColumn( "Community Tags", key="tags", model_class=model.History, model_tag_association_class=model.HistoryTagAssociation, filterable="advanced", grid_name="PublicHistoryListGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
@@ -155,6 +157,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
     @web.expose
     def list_as_xml( self, trans ):
         """XML history list for functional tests"""
+        trans.response.set_content_type( 'text/xml' )
         return trans.fill_template( "/history/list_as_xml.mako" )
     
     stored_list_grid = HistoryListGrid()
