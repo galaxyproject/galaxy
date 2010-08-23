@@ -132,7 +132,7 @@
         make_popupmenu( $("#workflow-options-button"), {
              ##"Create New" : create_new_workflow_dialog,
              "Edit Attributes" : edit_workflow_attributes,
-			"Edit Workflow Outputs": edit_workflow_outputs,
+			##"Edit Workflow Outputs": edit_workflow_outputs,
              "Layout": layout_editor,
              "Save" : save_current_workflow,
              ##"Load a Workflow" : load_workflow,
@@ -399,7 +399,7 @@
 	}
 	
     function show_form_for_tool( text, node ) {
-        $("#edit-attributes").hide();
+		$('.right-content').hide();
         $("#right-content").show().html( text );
         // Add metadata form to tool.
         if (node) {
