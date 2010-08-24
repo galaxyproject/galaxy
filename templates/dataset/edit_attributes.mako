@@ -82,11 +82,13 @@
         </form>
         <form name="auto_detect" action="${h.url_for( controller='root', action='edit' )}" method="post">
             <input type="hidden" name="id" value="${data.id}"/>
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                <input type="submit" name="detect" value="${_('Auto-detect')}"/>
-            </div>
-            <div class="toolParamHelp" style="clear: both;">
-                This will inspect the dataset and attempt to correct the above column values if they are not accurate.
+            <div class="form-row">
+                <div style="float: left; width: 250px; margin-right: 10px;">
+                    <input type="submit" name="detect" value="${_('Auto-detect')}"/>
+                </div>
+                <div class="toolParamHelp" style="clear: both;">
+                    This will inspect the dataset and attempt to correct the above column values if they are not accurate.
+                </div>
             </div>
         </form>
         %if data.missing_meta():
@@ -190,9 +192,9 @@
             <form name="copy_hda" action="${h.url_for( controller='dataset', action='copy_datasets', source_dataset_ids=data.id, target_history_ids=data.history_id )}" method="post">
                 <div class="form-row">
                     <input type="submit" name="change" value="Copy history item"/>
-                </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    Make a copy of this history item in your current history or any of your active histories.
+                    <div class="toolParamHelp" style="clear: both;">
+                        Make a copy of this history item in your current history or any of your active histories.
+                    </div>
                 </div>
             </form>
         </div>
