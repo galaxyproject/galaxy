@@ -85,8 +85,6 @@ def mainsvg(opts):
             total = int(row[start_col+4])
             diff = int(row[start_col+5])
             imp = int(row[start_col+6])
-            
-            #print 'sample_index', sample_index, total
             if total:
                 x = 16+(sample_index*(WIDTH+GAP))
                 y = 30+(count*(HEIGHT+GAP))
