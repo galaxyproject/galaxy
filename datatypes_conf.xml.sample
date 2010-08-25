@@ -105,6 +105,7 @@
         <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
         <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
         <datatype extension="sff" type="galaxy.datatypes.binary:Sff" mimetype="application/octet-stream" display_in_upload="true"/>
+        <datatype extension="svg" type="galaxy.datatypes.images:Image" mimetype="image/svg+xml"/>
         <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
         <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
         <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
