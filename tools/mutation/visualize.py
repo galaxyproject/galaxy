@@ -17,21 +17,21 @@ import svgfig as svg
 COLS_PER_SAMPLE = 7
 HEADER_COLS = 4
 
-SPACE_PAIRS = 0.8
-SPACE_SAMPLES = 1
+HEIGHT = 6
+WIDTH = 12
+BAR_WIDTH = 1.5
+GAP = 2
 
-HEIGHT = 4
-WIDTH = 8
 
 colors = {'A':'blue', 'C':'green', 'G':'orange', 'T':'red'}
 bases = ['A', 'C', 'G', 'T' ]
 
 
 def mainsvg(opts):
-    s = svg.SVG('g')
+    s = svg.SVG('g', transform="translate(20,0)")
     
     # display legend
-    for i, b in enumerate(bases):
+    for i, b in enumerate( bases ):
         bt = svg.SVG("tspan", b, style="font-family:Verdana;font-size:3")
         s.append(svg.SVG("text", bt, x=12+(i*10), y=8, stroke="none", fill="black"))
         s.append(svg.SVG("rect", x=13+(i*10), y=5, width=4, height=3, 
@@ -71,10 +71,10 @@ def mainsvg(opts):
         #print 'position', position, ref, count
         
         # display positions
-        bt = svg.SVG("tspan", str(position), style="font-family:Verdana;font-size:3")
-        s.append(svg.SVG("text", bt, x=9, y=33+(count*5), stroke="none", fill="black"))
-        s.append(svg.SVG("rect", x=4, y=30+(count*5), width=10, height=4, 
-                         stroke='none', fill=colors[ref.upper()], fill_opacity=0.3))
+        bt = svg.SVG("tspan", str(position), style="font-family:Verdana;font-size:4")
+        s.append(svg.SVG("text", bt, x=7, y=34+(count*(HEIGHT+GAP)), stroke="none", fill="black"))
+        s.append(svg.SVG("rect", x=0, y=30+(count*(HEIGHT+GAP)), width=14, height=HEIGHT, 
+                         stroke='none', fill=colors[ref.upper()], fill_opacity=0.2))
         
         for sample_index in range(int((len(row)-HEADER_COLS)/COLS_PER_SAMPLE)):
             start_col = HEADER_COLS+(COLS_PER_SAMPLE*sample_index)
@@ -88,10 +88,10 @@ def mainsvg(opts):
             
             #print 'sample_index', sample_index, total
             if total:
-                x = 16+(sample_index*10)
-                y = 30+(count*5)
+                x = 16+(sample_index*(WIDTH+GAP))
+                y = 30+(count*(HEIGHT+GAP))
                 width = WIDTH
-                height = 4
+                height = HEIGHT
                 
                 if imp == 1:
                     fill_opacity = 0.1
@@ -104,18 +104,21 @@ def mainsvg(opts):
                                  stroke='none', fill='grey', fill_opacity=fill_opacity))
                 for base, value in enumerate([n_a, n_c, n_g, n_t]):
                     width = int(math.ceil(value / total * WIDTH))
-                    s.append(svg.SVG("rect", x=x, y=y, width=width, height=1, 
+                    s.append(svg.SVG("rect", x=x, y=y, width=width, height=BAR_WIDTH, 
                                      stroke='none', fill=colors[bases[base]], fill_opacity=0.6))
-                    y = y + 1
+                    y = y + BAR_WIDTH
                     #print base, value, total, x, y, width
                     
 
 
         count=count+1
-
-    w = str(int(700)) + "px"
-    h = str(int(1000)) + "px"
-    canv = svg.canvas(s, width=w, height=h, viewBox="0 0 200 300")
+        
+    #print x, y
+    
+    zoom = int(opts.zoom)
+    w = "%ipx" % (x*(10+zoom))
+    h = "%ipx" % (y*(2+zoom))
+    canv = svg.canvas(s, width=w, height=h, viewBox="0 0 %i %i" %(x+100, y+100))
     canv.save(opts.output_file)
 
     
@@ -123,6 +126,7 @@ if __name__ == '__main__':
     parser = optparse.OptionParser()
     parser.add_option('-i', '--input-file', dest='input_file', action='store')
     parser.add_option('-o', '--output-file', dest='output_file', action='store')
+    parser.add_option('-z', '--zoom', dest='zoom', action='store', default='1')
     parser.add_option('-n', '--noheaders', dest='header_row', action='store_false', default=True)
     (opts, args) = parser.parse_args()
     mainsvg(opts)

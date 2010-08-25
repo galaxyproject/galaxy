@@ -1,9 +1,16 @@
 <tool id="mutation_visualize" name="Mutation Visualization" version="1.0.0">
   <description></description>
-  <command interpreter="python">visualize.py --input-file=$input --output-file=$out_file1 $header_row</command>
+  <command interpreter="python">visualize.py --input-file=$input --output-file=$out_file1 --zoom=$zoom_value $header_row</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Compare sequences in"></param>
     <param name="header_row" type="boolean" label="Header in dataset?" checked="yes" truevalue="" falsevalue="--noheaders"/>
+    <param name="zoom_value" type="select" label="Zoom">
+        <option value="1">1x</option>
+        <option value="2">2x</option>
+        <option value="3">3x</option>
+        <option value="4">4x</option>
+        <option value="5">5x</option>
+    </param>
   </inputs>
   <outputs>
     <data format="svg" name="out_file1" />
