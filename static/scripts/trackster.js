@@ -112,19 +112,28 @@ $.extend( View.prototype, {
         this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
         this.chrom_form = $("<form/>").attr("action", function() { void(0); } ).appendTo(this.nav_controls);
         this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").addClass("no-autocomplete").append("<option value=''>Loading</option>").appendTo(this.chrom_form);
-        this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keypress", function(e) {
-            if ((e.keyCode || e.which) === 13) {
-                view.go_to( $(this).val() );
+        var submit_nav = function(e) {
+            if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27 ) {
+                if ((e.keyCode || e.which) !== 27) { // Not escape key
+                    view.go_to( $(this).val() );
+                }
                 $(this).hide();
+                view.location_span.show();
+                view.chrom_select.show();
                 return false;
             }
-            
-        }).appendTo(this.chrom_form);
+        };
+        this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keypress focusout", submit_nav).appendTo(this.chrom_form);
         this.location_span = $("<span/>").addClass("location").appendTo(this.chrom_form);
+        this.location_span.bind("click", function() {
+            view.location_span.hide();
+            view.chrom_select.hide();
+            view.nav_input.css("display", "inline-block");
+            view.nav_input.focus();
+        });
         if (this.vis_id !== undefined) {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.chrom_form);
         }
-        this.goto_link = $("<a/>").click(function() { view.nav_input.toggle(); view.nav_input.focus(); }).html('<img src="'+image_path+'/fugue/navigation.png" />').appendTo(this.chrom_form);
         this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw() }).html('<img src="'+image_path+'/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);
         this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw() }).html('<img src="'+image_path+'/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);        
         
@@ -205,7 +214,7 @@ $.extend( View.prototype, {
             this.drag_origin_x = e.clientX;
             this.drag_origin_pos = e.clientX / view.viewport_container.width() * (view.high - view.low) + view.low;
             this.drag_div = $("<div />").css( { 
-                "height": view.content_div.height(), "top": "0px", "position": "absolute", 
+                "height": view.content_div.height()+30, "top": "0px", "position": "absolute", 
                 "background-color": "#cfc", "border": "1px solid #6a6", "opacity": 0.5, "z-index": 1000
             } ).appendTo( $(this) );
         }).bind( "drag", function(e) {
@@ -245,24 +254,26 @@ $.extend( View.prototype, {
             // Invalid chrom
             return;
         }
-        view.chrom = chrom;
-        if (view.chrom === "") {
-            // No chrom selected
-            view.intro_div.show();
-            view.content_div.hide();
-        } else {
-            view.intro_div.hide();
-            view.content_div.show();
-        }
-        view.chrom_select.val(view.chrom);
-        view.max_high = found.len;
-        view.reset();
-        view.redraw(true);
+        if (chrom !== view.chrom) {
+            view.chrom = chrom;
+            if (view.chrom === "") {
+                // No chrom selected
+                view.intro_div.show();
+                view.content_div.hide();
+            } else {
+                view.intro_div.hide();
+                view.content_div.show();
+            }
+            view.chrom_select.val(view.chrom);
+            view.max_high = found.len;
+            view.reset();
+            view.redraw(true);
     
-        for (var track_id in view.tracks) {
-            var track = view.tracks[track_id];
-            if (track.init) {
-                track.init();
+            for (var track_id in view.tracks) {
+                var track = view.tracks[track_id];
+                if (track.init) {
+                    track.init();
+                }
             }
         }
         if (low !== undefined && high !== undefined) {
