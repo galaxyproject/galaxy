@@ -136,6 +136,7 @@ class RequestsGrid( grids.Grid ):
         grids.GridOperation( "Reject", allow_multiple=False, condition=( lambda item: not item.deleted and item.submitted() )  ),
         grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted )  ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
+        grids.GridOperation( "Purge", allow_multiple=False, confirm="This will permanently delete the sequencing request. Click OK to proceed.", condition=( lambda item: item.deleted ) ),
     ]
     global_actions = [
         grids.GridAction( "Create new request", dict( controller='requests_common',
@@ -316,11 +317,6 @@ class RequestsAdmin( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                                   cntrller='requests_admin',
                                                                   action='events',
-                                                                  **kwd ) )
-            if operation == "settings":
-                return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                                  cntrller='requests_admin',
-                                                                  action='settings',
                                                                   **kwd ) )
             elif operation == "reject":
                 return self.__reject_request( trans, **kwd )
@@ -514,41 +510,52 @@ class RequestsAdmin( BaseController ):
                                                           id=trans.security.encode_id(request.id),
                                                           message='Bar codes have been saved for this request',
                                                           status='done'))
-    def __set_request_state( self, trans, request ):
-        # check if all the samples of the current request are in the final state
-        complete = True 
-        for s in request.samples:
-            if s.current_state().id != request.type.states[-1].id:
-                complete = False
-        if request.complete() and not complete:
-            comments = "One or more samples moved back from the %s state" % request.type.states[-1].name
-            event = trans.app.model.RequestEvent(request, request.states.SUBMITTED, comments)
-            trans.sa_session.add( event )
-            trans.sa_session.flush()
-        elif complete:
-            # change the request state to 'Complete'
-            comments = "All samples of this request are in the last sample state (%s)." % request.type.states[-1].name
-            event = trans.app.model.RequestEvent(request, request.states.COMPLETE, comments)
-            trans.sa_session.add( event )
-            trans.sa_session.flush()
-            # now that the request is complete send the email notification to the 
-            # the user
-            if request.notify and trans.app.config.smtp_server is not None:
-                host = trans.request.host.split(':')[0]
-                if host == 'localhost':
-                    host = socket.getfqdn()
-                body = "The '%s' sequencing request (type: %s) is now complete. Datasets from all the samples are now available for analysis or download from the respective data libraries in Galaxy."  % ( request.name, request.type.name )
-                to = [request.user.email]
-                frm = 'galaxy-no-reply@' + host
-                subject = "Galaxy Sample Tracking: '%s' sequencing request in complete." % request.name
-                message = "From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" % (frm, ", ".join(to), subject, body)
-                try:
-                    s = smtplib.SMTP()
-                    s.connect( trans.app.config.smtp_server )
-                    s.sendmail( frm, [ to ], message )
-                    s.close()
-                except:
-                    pass
+    @web.expose
+    @web.require_admin
+    def update_request_state( self, trans, **kwd ):
+        params = util.Params( kwd )
+        try:
+            request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', None ) ) )
+            sample_id = int(params.get('sample_id', False))
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid request ID",
+                                                              **kwd) )
+        # check if all the samples of the current request are in the sample state
+        common_state = request.common_state()
+        if not common_state:
+            # if the current request state is complete and one of its samples moved from
+            # the final sample state, then move the request state to In-progress
+            if request.complete():
+                event = trans.app.model.RequestEvent(request, request.states.SUBMITTED, "One or more samples' state moved from the final sample state.")
+                trans.sa_session.add( event )
+                trans.sa_session.flush()
+            return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                              cntrller='requests_admin', 
+                                                              action='sample_events',
+                                                              sample_id=sample_id))
+        final_state = False
+        if common_state.id == request.type.last_state().id:
+            # since all the samples are in the final state, change the request state to 'Complete'
+            comments = "All samples of this request are in the last sample state (%s)." % request.type.last_state().name
+            state = request.states.COMPLETE
+            final_state = True
+        else:
+            comments = "All samples are in %s state." % common_state.name
+            state = request.states.SUBMITTED
+        event = trans.app.model.RequestEvent(request, state, comments)
+        trans.sa_session.add( event )
+        trans.sa_session.flush()
+        # check if an email notification is configured to be sent when the samples 
+        # are in this state
+#        if common_state.id in request.notification['sample_states']:
+        request.send_email_notification(trans, common_state, final_state)
+        return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                          cntrller='requests_admin', 
+                                                          action='sample_events',
+                                                          sample_id=sample_id))
 
     @web.expose
     @web.require_admin
@@ -573,10 +580,10 @@ class RequestsAdmin( BaseController ):
         event = trans.app.model.SampleEvent(sample, new_state, comments)
         trans.sa_session.add( event )
         trans.sa_session.flush()
-        self.__set_request_state( trans, sample.request )
-        return trans.response.send_redirect( web.url_for( controller='requests_common',
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           cntrller='requests_admin', 
-                                                          action='sample_events',
+                                                          action='update_request_state',
+                                                          request_id=sample.request.id,
                                                           sample_id=sample.id))
     #
     # Data transfer from sequencer
@@ -1290,3 +1297,6 @@ class RequestsAdmin( BaseController ):
                                     roles=roles,
                                     status=status,
                                     message=message)
+
+
+

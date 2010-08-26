@@ -13,7 +13,7 @@ from sqlalchemy.sql import select
 import pexpect
 import ConfigParser, threading, time
 from amqplib import client_0_8 as amqp
-import csv
+import csv, smtplib, socket
 log = logging.getLogger( __name__ )
 
 
@@ -151,9 +151,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                              util.restore_text( params.get( 'desc', ''  ) )), 
                             helptext='(Optional)'))
         widgets = widgets + request_type.request_form.get_widgets( user, **kwd )
-        widgets.append(dict(label='Send email notification when the sequencing request is complete', 
-                            widget=CheckboxField('email_notify', False), 
-                            helptext='Email would be sent to the lab admin and the user for whom this request has been created.'))
         return trans.fill_template( '/requests/common/new_request.mako',
                                     cntrller=cntrller,
                                     select_request_type=select_request_type,
@@ -188,17 +185,18 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         '''
         params = util.Params( kwd )
         cntrller = util.restore_text( params.get( 'cntrller', 'requests'  ) )
-        request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
         if request:
             user = request.user
+            request_type = request.type
         else:
+            request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
             if cntrller == 'requests_admin' and trans.user_is_admin():
                 user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'select_user', '' ) ) )
             elif cntrller == 'requests':
                 user = trans.user
         name = util.restore_text(params.get('name', ''))
         desc = util.restore_text(params.get('desc', ''))
-        notify = CheckboxField.is_checked( params.get('email_notify', '') )
+        notification = dict(email=[user.email], sample_states=[request_type.last_state().id], body='', subject='')
         # fields
         values = []
         for index, field in enumerate(request_type.request_form.fields):
@@ -223,7 +221,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         trans.sa_session.flush()
         if not request:
             request = trans.app.model.Request(name, desc, request_type, 
-                                              user, form_values, notify)
+                                              user, form_values, notification)
             trans.sa_session.add( request )
             trans.sa_session.flush()
             trans.sa_session.refresh( request )
@@ -240,12 +238,66 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             request.desc = desc
             request.type = request_type
             request.user = user
-            request.notify = notify
+            request.notification = notification
             request.values = form_values
             trans.sa_session.add( request )
             trans.sa_session.flush()
         return request
-    
+    @web.expose
+    @web.require_login( "create/submit sequencing requests" )
+    def email_settings(self, trans, **kwd):
+        params = util.Params( kwd )
+        cntrller = util.restore_text( params.get( 'cntrller', 'requests'  ) )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        try:
+            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id( params.get( 'id', None ) ) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid request ID") )
+        email_user = CheckboxField.is_checked( params.get('email_user', '') )
+        email_additional = params.get('email_additional', '').split('\r\n')
+        if email_user or email_additional:
+            emails = []
+            if email_user:
+                emails.append(request.user.email)
+            for e in email_additional:
+                emails.append(util.restore_text(e))
+            # check if valid email addresses
+            invalid = ''
+            for e in emails:
+                if len( e ) == 0 or "@" not in e or "." not in e:
+                    invalid = e
+                    break
+            if invalid:
+                message = "<b>%s</b> is not a valid email address." % invalid
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  cntrller=cntrller,
+                                                                  action='edit',
+                                                                  show=True, 
+                                                                  id=trans.security.encode_id(request.id),
+                                                                  message=message ,
+                                                                  status='error' ) )
+            else:
+                email_states = []
+                for i, ss in enumerate(request.type.states):
+                    if CheckboxField.is_checked( params.get('sample_state_%i' % ss.id, '') ):
+                        email_states.append(ss.id)
+                request.notification = dict(email=emails, sample_states=email_states, 
+                                            body='', subject='')
+                trans.sa_session.flush()
+                trans.sa_session.refresh( request )
+        message = 'The changes made to the sequencing request has been saved'
+        return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                          cntrller=cntrller,
+                                                          action='show',
+                                                          id=trans.security.encode_id(request.id),
+                                                          message=message ,
+                                                          status='done') )
+
+        
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def edit(self, trans, **kwd):
@@ -262,9 +314,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               message="Invalid request ID") )
         if params.get('show', False) == 'True':
             return self.__edit_request(trans, **kwd)
-        elif params.get('save_changes_request_button', False) == 'Save changes' \
+        elif params.get('save_changes_request_button', False) == 'Save' \
              or params.get('edit_samples_button', False) == 'Edit samples':
-                request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
                 if not util.restore_text(params.get('name', '')):
                     message = 'Please enter the <b>Name</b> of the request'
                     kwd['status'] = 'error'
@@ -276,7 +327,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                       **kwd) )
                 request = self.__save_request(trans, request, **kwd)
                 message = 'The changes made to the request named %s has been saved' % request.name
-                if params.get('save_changes_request_button', False) == 'Save changes':
+                if params.get('save_changes_request_button', False) == 'Save':
                     return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                                       cntrller=cntrller,
                                                                       action='list',
@@ -310,7 +361,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         cntrller = util.restore_text( params.get( 'cntrller', 'requests'  ) )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        select_request_type = self.__select_request_type(trans, request.type.id)
+        #select_request_type = self.__select_request_type(trans, request.type.id)
         # list of widgets to be rendered on the request form
         widgets = []
         if util.restore_text( params.get( 'name', ''  ) ):
@@ -328,12 +379,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                             widget=TextField('desc', 40, desc), 
                             helptext='(Optional)'))
         widgets = widgets + request.type.request_form.get_widgets( request.user, request.values.content, **kwd )
-        widgets.append(dict(label='Send email notification once the sequencing request is complete', 
-                            widget=CheckboxField('email_notify', request.notify), 
-                            helptext=''))
         return trans.fill_template( 'requests/common/edit_request.mako',
                                     cntrller=cntrller,
-                                    select_request_type=select_request_type,
+                                    #select_request_type=select_request_type,
                                     request_type=request.type,
                                     request=request,
                                     widgets=widgets,
@@ -399,6 +447,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             trans.sa_session.add( event )
         trans.sa_session.add( request )
         trans.sa_session.flush()
+        request.send_email_notification(trans, new_state)
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='list',
                                                           id=trans.security.encode_id(request.id),
@@ -484,6 +533,22 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         return trans.fill_template( '/requests/common/events.mako', 
                                     cntrller=cntrller,
                                     events_list=events_list, request=request)
+    @web.expose
+    @web.require_login( "create/submit sequencing requests" )
+    def settings(self, trans, **kwd):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        cntrller = params.get( 'cntrller', 'requests'  )
+        try:
+            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid request ID") )
+        return trans.fill_template( '/requests/common/settings.mako', 
+                                    cntrller=cntrller, request=request)
+        
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def show(self, trans, **kwd):
@@ -807,6 +872,17 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                         'Sample added to the system')
                                     trans.sa_session.add( event )
                                     trans.sa_session.flush()
+                                    # now check if all the samples' barcode has been entered.
+                                    # If yes then send notification email if configured
+                                    common_state = request.common_state()
+                                    if common_state:
+                                        if common_state.id == request.type.states[1].id:
+                                            event = trans.app.model.RequestEvent(request, 
+                                                                                 request.states.SUBMITTED,
+                                                                                 "All samples are in %s state." % common_state.name)
+                                            trans.sa_session.add( event )
+                                            trans.sa_session.flush()
+                                            request.send_email_notification(trans, request.type.states[1])
                             sample.bar_code = current_samples[sample_index]['barcode']
                     trans.sa_session.add( sample )
                     trans.sa_session.flush()
@@ -962,21 +1038,16 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         # list of widgets to be rendered on the request form
         request_details = []
         # main details
-        request_details.append(dict(label='User', 
-                                    value=str(request.user.email), 
-                                    helptext=''))
         request_details.append(dict(label='Description', 
                                     value=request.desc, 
-                                    helptext=''))
-        request_details.append(dict(label='Type', 
-                                    value=request.type.name, 
-                                    helptext=''))
-        request_details.append(dict(label='State', 
-                                    value=request.state(), 
                                     helptext=''))
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
                                     helptext=''))
+        request_details.append(dict(label='Date updated', 
+                                    value=request.update_time, 
+                                    helptext=''))
+
         # form fields
         for index, field in enumerate(request.type.request_form.fields):
             if field['required']:
@@ -996,13 +1067,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 request_details.append(dict(label=field['label'],
                                             value=request.values.content[index],
                                             helptext=field['helptext']+' ('+req+')'))
-        if request.notify:
-            notify = 'Yes'
-        else:
-            notify = 'No'
-        request_details.append(dict(label='Send email notification once the sequencing request is complete', 
-                                    value=notify, 
-                                    helptext=''))
         return request_details
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
@@ -1089,3 +1153,5 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     dataset_files=sample.datasets,
                                     message=message, status=status, files=[],
                                     folder_path=folder_path )
+        
+

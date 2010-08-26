@@ -57,6 +57,12 @@ class GalaxyDbInterface(object):
                 #log.debug('Sample ID: %i' % sample_id)
                 return sample_id
         return -1
+    
+    def get_request_id(self, sample_id):
+        query = select(columns=[self.sample_table.c.request_id], 
+                       whereclause=self.sample_table.c.id==sample_id)
+        request_id = query.execute().fetchall()[0][0]
+        return request_id
         
     def current_state(self, sample_id):
         '''

@@ -1503,7 +1503,7 @@ class TwillTestCase( unittest.TestCase ):
     def edit_request( self, request_id, name, new_name, new_desc, new_fields):
         self.home()
         self.visit_url( "%s/requests/list?operation=Edit&id=%s" % (self.url, self.security.encode_id(request_id) ) )
-        self.check_page_for_string( 'Edit request "%s"' % name )
+        self.check_page_for_string( 'Edit sequencing request "%s"' % name )
         tc.fv( "1", "name", new_name )
         tc.fv( "1", "desc", new_desc )
         for index, field_value in enumerate(new_fields):

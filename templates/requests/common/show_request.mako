@@ -131,21 +131,35 @@ $(document).ready(function(){
     document.onkeypress = stopRKey
 </script> 
 
-%if request.submitted():
-    <% samples_not_ready = request.sequence_run_ready() %>
-    %if samples_not_ready:
-        ${render_msg( "Select a target library and folder for all the samples before starting the sequence run", "warning" )}
-    %endif
+<% samples_not_ready = request.sequence_run_ready() %>
+%if samples_not_ready:
+    ${render_msg( "Select a target data library and folder for all the samples before starting the sequence run", "warning" )}
 %endif
 
 %if request.rejected():
     ${render_msg( "Reason for rejection: "+request.last_comment(), "warning" )}
 %endif
 
+%if message:
+    ${render_msg( message, status )}
+%endif
+
 <div class="grid-header">
     <h2>Sequencing Request "${request.name}"</h2>
+    <div class="toolParamHelp" style="clear: both;">
+	    <b>Type</b>: ${request.type.name} 
+	    %if cntrller == 'requests_admin':
+	        | <b>User</b>: ${request.user.email}
+	    %endif
+	    %if request.state() == request.states.SUBMITTED:
+	        | <b>State</b>: <i>${request.state()}</i>
+	    %else:
+	        | <b>State</b>: ${request.state()}
+	    %endif
+    </div>
+    
 </div>
-
+<br/>
 <ul class="manage-table-actions">
     <li><a class="action-button" id="seqreq-${request.id}-popup" class="menubutton">Sequencing Request Actions</a></li>
     <div popupmenu="seqreq-${request.id}-popup">
@@ -153,10 +167,10 @@ $(document).ready(function(){
             <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller=cntrller, action='list', operation='Submit', id=trans.security.encode_id(request.id) )}">
             <span>Submit</span></a>
         %endif
-        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
-        <span>Edit</span></a>
         <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">
         <span>History</span></a>
+        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
+        <span>Edit</span></a>
         %if cntrller == 'requests_admin' and trans.user_is_admin():
             %if request.submitted():
                 <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='reject', id=trans.security.encode_id(request.id))}">
@@ -173,41 +187,71 @@ $(document).ready(function(){
 </ul>
 
 
-%if message:
-    ${render_msg( message, status )}
-%endif
 
 <div>
-<h3><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);" style="cursor:pointer;"/> Request Information</h3>
-<div style="display:none;"  >
-    %for index, rd in enumerate(request_details):
-        <div class="form-row">
-            <label>${rd['label']}</label>
-            %if not rd['value']:
-                <i>None</i>
-            %else:                      
-                %if rd['label'] == 'State':
-                    <a href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
-                %else:
-                    ${rd['value']}     
-                %endif
-            %endif
-        </div>
-        <div style="clear: both"></div>
-    %endfor
-    <div class="form-row">
-    <ul class="manage-table-actions">
-        <li>
-            <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
-            <span>Edit request details</span></a>
-        </li>
-    </ul>
-    </div>
+	<h4><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);" style="cursor:pointer;"/> Request Information</h4>
+	<div style="display:none;"  >
+	    <table class="grid" border="0">
+	        <tbody>
+	            <tr>
+		            <td valign="top" width="50%">
+					    %for index, rd in enumerate(request_details):
+					        <div class="form-row">
+					            <label>${rd['label']}:</label>
+					            %if not rd['value']:
+					                <i>None</i>
+					            %else:                      
+					                %if rd['label'] == 'State':
+					                    <a href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
+					                %else:
+					                    ${rd['value']}     
+					                %endif
+					            %endif
+					        </div>
+					        <div style="clear: both"></div>
+					    %endfor
+					</td>
+					<td valign="top" width="50%">
+	                    <div class="form-row">
+	                        <label>Email notification recipient(s):</label>
+	                        <% emails = ', '.join(request.notification['email']) %>
+	                        %if emails:
+	                            ${emails}
+	                        %else:
+	                            <i>None</i>
+	                        %endif
+	                    </div>
+	                    <div style="clear: both"></div>
+	                    <div class="form-row">
+	                        <label>Email notification on sample state(s):</label>
+	                        <% 
+	                            states = []
+	                            for ss in request.type.states:
+	                                if ss.id in request.notification['sample_states']:
+	                                    states.append(ss.name)
+	                            states = ', '.join(states)
+	                        %>
+	                        %if states:
+	                            ${states}
+	                        %else:
+	                            <i>None</i>
+	                        %endif
+	                    </div>
+	                    <div style="clear: both"></div>
+					</td>
+				</tr>
+		    </tbody>
+		</table>
+	    <div class="form-row">
+		    <ul class="manage-table-actions">
+		        <li>
+		            <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
+		            <span>Edit request information</span></a>
+		        </li>
+		    </ul>
+	    </div>
+	</div>
 </div>
-</div>
-
-
-
 
 <br/>
 
@@ -395,12 +439,7 @@ $(document).ready(function(){
                             <td>${info['name']}</td>
                             <td>${info['barcode']}</td>
                             %if sample.request.unsubmitted():
-                                ##<td>Unsubmitted</td>
-                                <td>
-                                    <div id="history-name-container">
-                                        <div id="history-name" class="tooltip editable-text" title="Click to rename history">Unsubmitted</div>
-                                    </div>
-                                </td>
+                                <td>Unsubmitted</td>
                             %else:
                                 <td id="sampleState-${sample.id}">${render_sample_state( cntrller, sample )}</td>
                             %endif

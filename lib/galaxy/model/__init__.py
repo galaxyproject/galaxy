@@ -15,7 +15,7 @@ from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.security import RBACAgent, get_permitted_actions
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
-import logging
+import logging, smtplib, socket
 log = logging.getLogger( __name__ )
 from sqlalchemy.orm import object_session
 import pexpect
@@ -1520,18 +1520,27 @@ class Request( object ):
                     REJECTED = 'Rejected',
                     COMPLETE = 'Complete'   )
     def __init__(self, name=None, desc=None, request_type=None, user=None, 
-                 form_values=None, notify=None):
+                 form_values=None, notification=None):
         self.name = name
         self.desc = desc
         self.type = request_type
         self.values = form_values
         self.user = user
-        self.notify = notify
+        self.notification = notification
         self.samples_list = []
     def state(self):
         if self.events:
             return self.events[0].state
         return None
+    def common_state(self):
+        '''
+        This method returns the state of this request's sample when they are all
+        in one common state. If not this returns None
+        '''
+        for s in self.samples:
+            if s.current_state().id != self.samples[0].current_state().id:
+                return False
+        return self.samples[0].current_state()
     def last_comment(self):
         if self.events:
             if self.events[0].comment:
@@ -1560,7 +1569,66 @@ class Request( object ):
             if not s.library:
                 samples.append(s.name)
         return samples
+    def send_email_notification(self, trans, common_state, final_state=False):
+        # check if an email notification is configured to be sent when the samples 
+        # are in this state
+        if common_state.id not in self.notification['sample_states']:
+            return
+        comments = ''
+        # send email
+        if self.notification['email'] and trans.app.config.smtp_server is not None:
+            host = trans.request.host.split(':')[0]
+            if host in ['localhost', '127.0.0.1']:
+                host = socket.getfqdn()
+            
+            body = """
+Galaxy Sample Tracking Notification
+===================================
 
+User:                     %(user)s
+
+Sequencing request:       %(request_name)s
+Sequencing request type:  %(request_type)s
+Sequencing request state: %(request_state)s
+
+Number of samples:        %(num_samples)s
+All samples in state:     %(sample_state)s
+
+"""
+            values = dict(user=self.user.email, 
+                          request_name=self.name, 
+                          request_type=self.type.name, 
+                          request_state=self.state(), 
+                          num_samples=str(len(self.samples)), 
+                          sample_state=common_state.name, 
+                          create_time=self.create_time, 
+                          submit_time=self.create_time)
+            body = body % values
+            # check if this is the final state of the samples
+            if final_state:
+                txt = "Sample Name -> Data Library/Folder\r\n"
+                for s in self.samples:
+                    txt = txt + "%s -> %s/%s\r\n" % (s.name, s.library.name, s.folder.name)
+                body = body + txt
+            to = self.notification['email']
+            frm = 'galaxy-no-reply@' + host
+            subject = "Galaxy Sample Tracking notification: '%s' sequencing request" % self.name
+            message = "From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" % (frm, ", ".join(to), subject, body)
+            try:
+                s = smtplib.SMTP()
+                s.connect(trans.app.config.smtp_server)
+                s.sendmail(frm, to, message)
+                s.quit()
+                comments = "Email notification sent to %s." % ", ".join(to).strip().strip(',')
+            except:
+                comments = "Email notification failed."
+            # update the request history with the email notification event
+        elif not trans.app.config.smtp_server:
+            comments = "Email notification failed as SMTP server not set in config file"
+        if comments:
+            event = trans.app.model.RequestEvent(self, self.state(), comments)
+            trans.sa_session.add(event)
+            trans.sa_session.flush()
     
 class RequestEvent( object ):
     def __init__(self, request=None, request_state=None, comment=''):
@@ -1581,6 +1649,8 @@ class RequestType( object ):
         self.request_form = request_form
         self.sample_form = sample_form
         self.datatx_info = datatx_info
+    def last_state(self):
+        return self.states[-1]
         
 class RequestTypePermissions( object ):
     def __init__( self, action, request_type, role ):

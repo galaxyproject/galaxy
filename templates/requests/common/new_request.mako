@@ -85,7 +85,7 @@ $( function() {
                     </div>
                   <div style="clear: both"></div>
                 </div>
-        </form>
-    </div>
+	        </form>
+	    </div>
 </div>
 %endif

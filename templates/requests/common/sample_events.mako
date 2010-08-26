@@ -17,6 +17,13 @@
 %endif
 
 <div class="toolForm">
+    <div class="form-row">
+    <div class="toolParamHelp" style="clear: both;">
+    <b>Possible states: </b>
+    <% states = " > ".join([ ss.name for ss in sample.request.type.states ]) %>
+    ${states}
+    </div>
+    </div>
     <table class="grid">
         <thead>
             <tr>

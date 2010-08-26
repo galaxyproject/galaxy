@@ -16,10 +16,17 @@ import xml.dom.minidom
 import subprocess
 from galaxydb_interface import GalaxyDbInterface
 
+new_path = [ os.path.join( os.getcwd(), "scripts/galaxy_messaging/server" ) ]
+new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+sys.path = new_path
+from galaxyweb_interface import GalaxyWebInterface
+
 assert sys.version_info[:2] >= ( 2, 4 )
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
+
+
 
 from galaxy import eggs
 import pkg_resources
@@ -66,6 +73,7 @@ def get_value_index(dom, tag_name, index):
 
 def recv_callback(msg):
     global config
+    global webconfig
     # check the meesage type.
     msg_type = msg.properties['application_headers'].get('msg_type')
     log.debug('\nMESSAGE RECVD: '+str(msg_type))
@@ -88,12 +96,20 @@ def recv_callback(msg):
         log.debug('Barcode: '+barcode)
         log.debug('State: '+state)
         # update the galaxy db
-        galaxy = GalaxyDbInterface(dbconnstr)
-        sample_id = galaxy.get_sample_id(field_name='bar_code', value=barcode)
+        galaxydb = GalaxyDbInterface(dbconnstr)
+        sample_id = galaxydb.get_sample_id(field_name='bar_code', value=barcode)
         if sample_id == -1:
            log.debug('Invalid barcode.') 
            return
-        galaxy.change_state(sample_id, state)
+        galaxydb.change_state(sample_id, state)
+        # update the request state
+        galaxyweb = GalaxyWebInterface(webconfig.get("universe_wsgi_config", "host"), 
+                                       webconfig.get("universe_wsgi_config", "port"), 
+                                       webconfig.get("data_transfer_user_login_info", "email"),
+                                       webconfig.get("data_transfer_user_login_info", "password"),
+                                       config.get("app:main", "id_secret"))
+        galaxyweb.update_request_state(galaxydb.get_request_id(sample_id), sample_id)
+        galaxyweb.logout()
 
 def main():
     if len(sys.argv) < 2:
@@ -108,6 +124,15 @@ def main():
     for option in config.options("galaxy_amqp"):
         amqp_config[option] = config.get("galaxy_amqp", option)
     log.debug(str(amqp_config))
+    # web server config
+    global webconfig
+    webconfig = ConfigParser.ConfigParser()
+    webconfig.read('transfer_datasets.ini')
+
+
+
+    
+    
     conn = amqp.Connection(host=amqp_config['host']+":"+amqp_config['port'], 
                            userid=amqp_config['userid'], 
                            password=amqp_config['password'], 
