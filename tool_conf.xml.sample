@@ -60,6 +60,10 @@
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
+    <label text="GFF files" id="gff" />
+        <tool file="filters/gff/extract_GFF_Features.xml" />
+        <tool file="filters/gff/gff_filter_by_attribute.xml" />
+        <tool file="filters/gff/gff_filter_by_feature_count.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
     <tool file="filters/joiner.xml" />
@@ -87,7 +91,6 @@
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
-    <tool file="extract/extract_GFF_Features.xml" />
   </section>
   <section name="Fetch Sequences" id="fetchSeq">
     <tool file="extract/extract_genomic_dna.xml" />
@@ -278,7 +281,6 @@
       <tool file="ngs_rna/cuffdiff_wrapper.xml" />
    <label text="Filtering" id="filtering" />
       <tool file="ngs_rna/filter_transcripts_via_tracking.xml" />
-      <tool file="ngs_rna/gff_filtering.xml" />
   </section>
   <section name="NGS: SAM Tools" id="samtools">
    <tool file="samtools/sam_bitwise_flag_filter.xml" />

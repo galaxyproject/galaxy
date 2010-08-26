@@ -1,7 +1,7 @@
-<tool id="gff_filtering" name="Filter GFF" version="0.1">
-  <description>file on any attribute using simple expressions</description>
+<tool id="gff_filter_by_attribute" name="Filter GFF file by attribute" version="0.1">
+  <description>using simple expressions</description>
   <command interpreter="python">
-    gff_filtering.py $input $out_file1 "$attribute_type" "$attribute_name" "$cond"
+    gff_filter_by_attribute.py $input $out_file1 "$attribute_type" "$attribute_name" "$cond"
   </command>
   <inputs>
     <param format="gff" name="input" type="data" label="Filter" help="Query missing? See TIP below."/>
@@ -26,11 +26,11 @@
   </outputs>
   <tests>
     <test>
-        <param name="input" value="gff_filtering_in1.gff"/>
+        <param name="input" value="gff_filter_attr_in1.gff"/>
         <param name="attribute_name" value="conf_lo"/>
         <param name="attribute_type" value="float"/>
         <param name="cond" value=">0"/>
-        <output name="out_file1" file="gff_filtering_out1.gff"/>
+        <output name="out_file1" file="gff_filter_by_attribute_out1.gff"/>
     </test>
   </tests>
 
