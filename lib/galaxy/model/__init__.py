@@ -661,11 +661,11 @@ class DatasetInstance( object ):
         new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps ).values()[0]
         new_dataset.hid = self.hid
         new_dataset.name = self.name
-        trans.sa_session.add( new_dataset )
-        trans.sa_session.flush()
+        session = trans.sa_session
+        session.add( new_dataset )
         assoc.dataset = new_dataset
-        trans.sa_session.add( assoc )
-        trans.sa_session.flush()
+        session.add( assoc )
+        session.flush()
         return None
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         raise 'Unimplemented'

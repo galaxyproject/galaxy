@@ -84,7 +84,7 @@ def build_stylesheet_parser():
     #   Just match anything that looks like a selector, including element, class,
     #   id, attribute, and pseudoclass. Attributes are not handled properly (spaces,
     #   and even newlines in the quoted string are legal).
-    simple_selector = Word( alphanums + ".#*:()[]|=\"'_-" )
+    simple_selector = Word( alphanums + "@.#*:()[]|=\"'_-" )
     combinator = Literal( ">" ) | Literal( "+" )
     selector = Group( simple_selector + ZeroOrMore( Optional( combinator ) + simple_selector ) )
     selectors = Group( delimitedList( selector ) )

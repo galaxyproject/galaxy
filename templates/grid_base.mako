@@ -97,10 +97,8 @@
         
         // Operations that are async (AJAX) compatible.
         var async_ops = {};
-        %for operation in grid.operations:
-            %if operation.async_compatible:
-                async_ops['${operation.label.lower()}'] = "True";
-            %endif
+        %for operation in [op for op in grid.operations if op.async_compatible]:
+            async_ops['${operation.label.lower()}'] = "True";
         %endfor
         
         // Initialize grid controls
@@ -108,15 +106,13 @@
             // Initialize operation buttons.
             $('input[name=operation]:submit').each(function() {
                 $(this).click( function() {
-                   // Get the webapp
                    var webapp = $("input[name=webapp]").attr("value");
-                   // Get operation name.
-                   var operation_name = $(this).attr("value");
+                   var operation_name = $(this).val();
                    // For some reason, $('input[name=id]:checked').val() does not return all ids for checked boxes.
                    // The code below performs this function.
                    var item_ids = [];
                    $('input[name=id]:checked').each(function() {
-                       item_ids[item_ids.length] = $(this).val();
+                       item_ids.push( $(this).val() );
                    });
                    do_operation(webapp, operation_name, item_ids); 
                 });
@@ -133,28 +129,24 @@
                 $(this).mouseup( function() {
                    $(this).removeClass('gray-background'); 
                 });
-                
             });
             
             // Initialize sort links.
             $('.sort-link').each( function() {
-                var sort_key = $(this).attr('sort_key');
                 $(this).click( function() {
-                   set_sort_condition(sort_key);
-                   return false; 
+                   set_sort_condition( $(this).attr('sort_key') );
+                   return false;
                 });
-                
             });
             
             // Initialize page links.
             $('.page-link > a').each( function() {
-                var page_num = $(this).attr('page_num');
                 $(this).click( function() {
-                   set_page(page_num);
-                   return false; 
+                   set_page( $(this).attr('page_num') );
+                   return false;
                 });
-                
             });
+            
             $('#show-all-link').click( function() {
                 set_page('all');
                 return false;
@@ -163,9 +155,7 @@
             // Initialize categorical filters.
             $('.categorical-filter > a').each( function() {
                 $(this).click( function() {
-                    var filter_key = $(this).attr('filter_key');
-                    var filter_val = $(this).attr('filter_val');
-                    set_categorical_filter(filter_key, filter_val);
+                    set_categorical_filter( $(this).attr('filter_key'), $(this).attr('filter_val') );
                     return false;
                 });
             });
@@ -179,15 +169,15 @@
                     text_input_obj.val('');
                     add_filter_condition(column_key, text_input, true);
                     return false;
-                });                
+                });
             });
-                                        
+            
             // Initialize autocomplete for text inputs in search UI.
             var t = $("#input-tags-filter");
             if (t.length) {
                 t.autocomplete(  "${h.url_for( controller='tag', action='tag_autocomplete_data', item_class='History' )}", 
                                  { selectFirst: false, autoFill: false, highlight: false, mustMatch: false });
-            }      
+            }
  
             var t2 = $("#input-name-filter");
             if (t2.length) {
@@ -209,14 +199,15 @@
             // Initialize grid selection checkboxes.
             $(".grid").each( function() {
                 var checkboxes = $(this).find("input.grid-row-select-checkbox");
-                var update = $(this).find( "span.grid-selected-count" );
-                update.text("");
+                var check_count = $(this).find("span.grid-selected-count");
+                var update_checked = function() {
+                    check_count.text( $(checkboxes).filter(":checked").length );
+                };
+                
                 $(checkboxes).each( function() {
-                    $(this).change( function() {
-                        var n = $(checkboxes).filter("[checked]").size();
-                        update.text( n );
-                    });
+                    $(this).change(update_checked);
                 });
+                update_checked();
             });
             
             // Initialize item labels.

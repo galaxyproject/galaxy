@@ -30,8 +30,9 @@ class VisualizationListGrid( grids.Grid ):
         grids.GridAction( "Create new visualization", dict( action='create' ) )
     ]
     operations = [
-        grids.GridOperation( "View", allow_multiple=False, url_args=dict( controller='tracks', action='browser' ) ),
+        grids.GridOperation( "View/Edit", allow_multiple=False, url_args=dict( controller='tracks', action='browser' ) ),
         grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
+        grids.GridOperation( "Clone", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='clone') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True, confirm="Are you sure you want to delete this visualization?" ),
     ]
@@ -85,6 +86,34 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         """ Lists user's saved visualizations. """
         return self.list( trans, args, kwargs )
     
+    @web.expose
+    @web.require_login()
+    def clone(self, trans, id, *args, **kwargs):
+        viz = self.get_visualization( trans, id, check_ownership=False )
+        user = trans.get_user()
+        if viz.user == user:
+            owner = True
+        else:
+            if trans.sa_session.query( model.VisualizationUserShareAssociation ) \
+                    .filter_by( user=user, visualization=viz ).count() == 0:
+                error( "Visualization is not owned by or shared with current user" )
+            owner = False
+        new_viz = model.Visualization()
+        new_viz.title = "Clone of '%s'" % viz.title
+        new_viz.dbkey = viz.dbkey
+        new_viz.type = viz.type
+        new_viz.latest_revision = viz.latest_revision
+        if not owner:
+            new_viz.title += " shared by '%s'" % viz.user.email
+        new_viz.user = user
+        # Persist
+        session = trans.sa_session
+        session.add( new_viz )
+        session.flush()
+        # Display the management page
+        trans.set_message( 'Clone created with name "%s"' % new_viz.title )
+        return self.list( trans )
+        
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):

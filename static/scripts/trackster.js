@@ -37,6 +37,10 @@ left_img_inv.onload = function() {
     LEFT_STRAND_INV = CONTEXT.createPattern(left_img_inv, "repeat");
 };
 
+function round_1000(num) {
+    return Math.round(num * 1000) / 1000;    
+}
+    
 var Cache = function( num_elements ) {
     this.num_elements = num_elements;
     this.clear();
@@ -96,7 +100,6 @@ $.extend( View.prototype, {
         this.content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
         this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide().appendTo(parent_element);
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
-        this.viewport = $("<div/>").addClass("viewport").appendTo(this.viewport_container);
         
         this.nav_container = $("<div/>").addClass("nav-container").appendTo(parent_element);
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.nav_container);
@@ -104,18 +107,26 @@ $.extend( View.prototype, {
         this.overview = $("<div/>").addClass("overview").appendTo(this.nav);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
         this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
+        this.default_overview_height = this.overview_box.height();
         
         this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
         this.chrom_form = $("<form/>").attr("action", function() { void(0); } ).appendTo(this.nav_controls);
         this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").addClass("no-autocomplete").append("<option value=''>Loading</option>").appendTo(this.chrom_form);
-        this.low_input = $("<input/>").addClass("low").css("width", "10em").appendTo(this.chrom_form);
-        $("<span/>").text(" - ").appendTo(this.chrom_form);
-        this.high_input = $("<input/>").addClass("high").css("width", "10em").appendTo(this.chrom_form);
+        this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keypress", function(e) {
+            if ((e.keyCode || e.which) === 13) {
+                view.go_to( $(this).val() );
+                $(this).hide();
+                return false;
+            }
+            
+        }).appendTo(this.chrom_form);
+        this.location_span = $("<span/>").addClass("location").appendTo(this.chrom_form);
         if (this.vis_id !== undefined) {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.chrom_form);
         }
-        this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw() }).html('<img src="'+image_path+'/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);
-        this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw() }).html('<img src="'+image_path+'/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);;
+        this.goto_link = $("<a/>").click(function() { view.nav_input.toggle(); view.nav_input.focus(); }).html('<img src="'+image_path+'/fugue/navigation.png" />').appendTo(this.chrom_form);
+        this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw() }).html('<img src="'+image_path+'/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);
+        this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw() }).html('<img src="'+image_path+'/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);        
         
         $.ajax({
             url: chrom_url, 
@@ -132,34 +143,11 @@ $.extend( View.prototype, {
                     chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
                 }
                 view.chrom_select.html(chrom_options);
-                
-                var change_chrom = function () {
-                    if (view.chrom_select.val() === "") {
-                        // No chrom selected
-                        view.intro_div.show();
-                        view.content_div.hide();
-                    } else {
-                        view.intro_div.hide();
-                        view.content_div.show();
-                    }
-                    view.chrom = view.chrom_select.val();
-                    var found = $.grep(view.chrom_data, function(v, i) {
-                        return v.chrom === view.chrom;
-                    })[0];
-                    view.max_high = (found !== undefined ? found.len : 0);
-                    view.reset();
-                    view.redraw(true);
-                
-                    for (var track_id in view.tracks) {
-                        var track = view.tracks[track_id];
-                        if (track.init) {
-                            track.init();
-                        }
-                    }
-                    view.redraw();
-                };
-                view.chrom_select.bind( "change", change_chrom );
-                change_chrom();
+                view.intro_div.show();
+                view.content_div.hide();
+                view.chrom_select.bind("change", function() {
+                    view.change_chrom(view.chrom_select.val());
+                });
             },
             error: function() {
                 alert( "Could not load chroms for this dbkey:", view.dbkey );
@@ -199,13 +187,13 @@ $.extend( View.prototype, {
             this.original_low = view.low;
             this.current_height = e.clientY;
             this.current_x = e.offsetX;
+            this.active = (e.clientX < view.viewport_container.width() - 16) ? true : false; // Fix webkit scrollbar
         }).bind( "drag", function( e ) {
+            if (!this.active) { return; }
             var container = $(this);
             var delta = e.offsetX - this.current_x;
             var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
-            // if ( new_scroll < container.get(0).scrollHeight - container.height() ) {
-                container.scrollTop(new_scroll);
-            // }
+            container.scrollTop(new_scroll);
             this.current_height = e.clientY;
             this.current_x = e.offsetX;
 
@@ -217,7 +205,7 @@ $.extend( View.prototype, {
             this.drag_origin_x = e.clientX;
             this.drag_origin_pos = e.clientX / view.viewport_container.width() * (view.high - view.low) + view.low;
             this.drag_div = $("<div />").css( { 
-                "height": view.viewport_container.height(), "top": "0px", "position": "absolute", 
+                "height": view.content_div.height(), "top": "0px", "position": "absolute", 
                 "background-color": "#cfc", "border": "1px solid #6a6", "opacity": 0.5, "z-index": 1000
             } ).appendTo( $(this) );
         }).bind( "drag", function(e) {
@@ -226,8 +214,7 @@ $.extend( View.prototype, {
                 span = (view.high - view.low),
                 width = view.viewport_container.width();
             
-            view.low_input.val(commatize(Math.round(min / width * span) + view.low));
-            view.high_input.val(commatize(Math.round(max / width * span) + view.low));
+            view.update_location(Math.round(min / width * span) + view.low, Math.round(max / width * span) + view.low);
             this.drag_div.css( { "left": min + "px", "width": (max - min) + "px" } );
         }).bind( "dragend", function(e) {
             var min = Math.min(e.clientX, this.drag_origin_x),
@@ -244,6 +231,64 @@ $.extend( View.prototype, {
         
         this.add_label_track( new LabelTrack( this, this.top_labeltrack ) );
         this.add_label_track( new LabelTrack( this, this.nav_labeltrack ) );
+    },
+    update_location: function(low, high) {
+        this.location_span.text( commatize(low) + ' - ' + commatize(high) );
+        this.nav_input.val( this.chrom + ':' + commatize(low) + '-' + commatize(high) );
+    },
+    change_chrom: function(chrom, low, high) {
+        var view = this;
+        var found = $.grep(view.chrom_data, function(v, i) {
+            return v.chrom === chrom;
+        })[0];
+        if (found === undefined) {
+            // Invalid chrom
+            return;
+        }
+        view.chrom = chrom;
+        if (view.chrom === "") {
+            // No chrom selected
+            view.intro_div.show();
+            view.content_div.hide();
+        } else {
+            view.intro_div.hide();
+            view.content_div.show();
+        }
+        view.chrom_select.val(view.chrom);
+        view.max_high = found.len;
+        view.reset();
+        view.redraw(true);
+    
+        for (var track_id in view.tracks) {
+            var track = view.tracks[track_id];
+            if (track.init) {
+                track.init();
+            }
+        }
+        if (low !== undefined && high !== undefined) {
+            view.low = Math.max(low, 0);
+            view.high = Math.min(high, view.max_high);
+        }
+        view.overview_viewport.find("canvas").remove();
+        view.redraw();
+        
+    },
+    go_to: function(str) {
+        var view = this,
+            chrom_pos = str.split(":"),
+            chrom = chrom_pos[0],
+            pos = chrom_pos[1];
+        
+        if (pos !== undefined) {
+            try {
+                var pos_split   = pos.split("-"),
+                    new_low     = parseInt(pos_split[0].replace(/,/g, "")),
+                    new_high    = parseInt(pos_split[1].replace(/,/g, ""));
+            } catch (e) {
+                return false;
+            }
+        }
+        view.change_chrom(chrom, new_low, new_high);
     },
     move_delta: function(delta_chrom) {
         var view = this;
@@ -327,8 +372,7 @@ $.extend( View.prototype, {
             // Minimum width for usability
             width: Math.max( 12, (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width() )
         }).show();
-        this.low_input.val( commatize(this.low) );
-        this.high_input.val( commatize(this.high) );
+        this.update_location(this.low, this.high);
         if (!nodraw) {
             for (var i = 0, len = this.tracks.length; i < len; i++) {
                 if (this.tracks[i] && this.tracks[i].enabled) {
@@ -386,6 +430,7 @@ $.extend( Track.prototype, {
         track.data_queue = {};
         track.tile_cache.clear();
         track.data_cache.clear();
+        track.initial_canvas = undefined;
         track.content_div.css( "height", "auto" );
         if (!track.content_div.text()) {
             track.content_div.text(DATA_LOADING);
@@ -432,7 +477,49 @@ $.extend( Track.prototype, {
 });
 
 var TiledTrack = function() {
-    this.left_offset = 200;
+    var track = this,
+        view = track.view;
+    
+    if (track.display_modes !== undefined) {
+        if (track.mode_div === undefined) {
+            track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
+            var init_mode = track.display_modes[0];
+            track.mode = init_mode;
+            track.mode_div.text(init_mode);
+        
+            var change_mode = function(name) {
+                track.mode_div.text(name);
+                track.mode = name;
+                track.tile_cache.clear();
+                track.draw();
+            };
+            var mode_mapping = {};
+            for (var i in track.display_modes) {
+                var mode = track.display_modes[i];
+                mode_mapping[mode] = function(mode) {
+                    return function() { change_mode(mode); }
+                }(mode);
+            }
+            make_popupmenu(track.mode_div, mode_mapping);
+        } else {
+            track.mode_div.hide();
+        }
+    }
+    if (track.overview_check_div === undefined) {
+        track.overview_check_div = $("<div class='right-float' />").css("margin-top", "-3px").appendTo(track.header_div);
+        track.overview_check = $("<input type='checkbox' class='overview_check' />").appendTo(track.overview_check_div);
+        track.overview_check.bind("click", function() {
+            var curr = this;
+            view.overview_viewport.find("canvas").remove();
+            track.set_overview();
+            $(".overview_check").each(function() {
+                if (this !== curr) {
+                    $(this).attr("checked", false);
+                }
+            });
+        });
+        track.overview_check_div.append( $("<label />").text("Overview") );
+    }
 };
 $.extend( TiledTrack.prototype, Track.prototype, {
     draw: function() {
@@ -476,13 +563,33 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         setTimeout(function() {
             if ( !(low > track.view.high || high < track.view.low) ) {
                 tile_element = track.draw_tile( resolution, tile_index, parent_element, w_scale );
-                if ( tile_element ) {
+                if (tile_element) {
+                    // Store initial canvas in we need to use it for overview
+                    if (!track.initial_canvas) {
+                        track.initial_canvas = $(tile_element).clone();
+                        var src_ctx = tile_element.get(0).getContext("2d");
+                        var tgt_ctx = track.initial_canvas.get(0).getContext("2d");
+                        var data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
+                        tgt_ctx.putImageData(data, 0, 0);
+                        track.set_overview();
+                    }
                     track.tile_cache.set(key, tile_element);
                     track.max_height = Math.max( track.max_height, tile_element.height() );
                     track.content_div.css("height", track.max_height + "px");
                 }
             }
         }, 50);
+    }, set_overview: function() {
+        var view = this.view;
+        view.overview_viewport.height(view.default_overview_height);
+        view.overview_box.height(view.default_overview_height);
+        
+        if (this.initial_canvas && this.overview_check.is(":checked")) {
+            view.overview_viewport.append(this.initial_canvas);
+            view.overview_viewport.height(this.initial_canvas.height());
+            view.overview_box.height(this.initial_canvas.height());
+        }
+        $(window).trigger("resize");
     }
 });
 
@@ -580,7 +687,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
                 var c_start = Math.round(c * w_scale);
                 ctx.fillText(seq[c], c_start + this.left_offset, 10);
             }
-            parent_element.append( canvas );
+            parent_element.append(canvas);
             return canvas;
         }
         this.content_div.css("height", "0px");
@@ -589,17 +696,18 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
 
 var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.track_type = "LineTrack";
+    this.display_modes = ["Line", "Filled", "Intensity"];
+    this.mode = "Line";
     Track.call( this, name, view, view.viewport_container );
     TiledTrack.call( this );
     
-    this.height_px = 100;
+    this.height_px = 80;
     this.dataset_id = dataset_id;
     this.data_cache = new Cache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.prefs = { 'min_value': undefined, 'max_value': undefined, 'mode': 'Line' };
     if (prefs.min_value !== undefined) { this.prefs.min_value = prefs.min_value; }
     if (prefs.max_value !== undefined) { this.prefs.max_value = prefs.max_value; }
-    if (prefs.mode !== undefined) { this.prefs.mode = prefs.mode; }
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -626,13 +734,13 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             $('#linetrack_' + track_id + '_minval').remove();
             $('#linetrack_' + track_id + '_maxval').remove();
             
-            var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.prefs.min_value);
-            var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.prefs.max_value);
+            var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(round_1000(track.prefs.min_value));
+            var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(round_1000(track.prefs.max_value));
             
-            max_label.css({ position: "relative", top: "25px", left: "10px" });
+            max_label.css({ position: "relative", top: "32px", left: "10px" });
             max_label.prependTo(track.container_div);
     
-            min_label.css({ position: "relative", top: track.height_px + 55 + "px", left: "10px" });
+            min_label.css({ position: "relative", top: track.height_px + 32 + "px", left: "10px" });
             min_label.prependTo(track.container_div);
         });
     },
@@ -689,7 +797,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             left: ( tile_low - this.view.low ) * w_scale
         });
         
-        canvas.get(0).width = Math.ceil( tile_length * w_scale + this.left_offset);
+        canvas.get(0).width = Math.ceil( tile_length * w_scale );
         canvas.get(0).height = this.height_px;
         var ctx = canvas.get(0).getContext("2d"),
             in_path = false,
@@ -698,7 +806,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             vertical_range = this.vertical_range,
             total_frequency = this.total_frequency,
             height_px = this.height_px,
-            mode = this.prefs.mode;
+            mode = this.mode;
             
         ctx.beginPath();
         
@@ -768,7 +876,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         } else {
             ctx.stroke();
         }
-        parent_element.append( canvas );
+        parent_element.append(canvas);
         return canvas;
     }, gen_options: function(track_id) {
         var container = $("<div />").addClass("form-row");
@@ -780,23 +888,15 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             maxval = 'track_' + track_id + '_maxval',
             max_label = $('<label></label>').attr("for", maxval).text("Max value:"),
             max_val = (this.prefs.max_value === undefined ? "" : this.prefs.max_value),
-            max_input = $('<input></input>').attr("id", maxval).val(max_val),
-            mode = 'track_' + track_id + '_mode',
-            mode_label = $('<label></label>').attr("for", mode).text("Display mode:"),
-            mode_val = (this.prefs.mode === undefined ? "Line" : this.prefs.mode),
-            mode_input = $('<select id="' +mode+ '"><option value="Line" id="mode_Line">Line</option><option value="Filled" id="mode_Filled">Filled</option><option value="Intensity" id="mode_Intensity">Intensity</option></select>');
-            
-            mode_input.children("#mode_"+mode_val).attr('selected', 'selected');
-            
-        return container.append(min_label).append(min_input).append(max_label).append(max_input).append(mode_label).append(mode_input);
+            max_input = $('<input></input>').attr("id", maxval).val(max_val);
+
+        return container.append(min_label).append(min_input).append(max_label).append(max_input);
     }, update_options: function(track_id) {
         var min_value = $('#track_' + track_id + '_minval').val(),
-            max_value = $('#track_' + track_id + '_maxval').val(),
-            mode = $('#track_' + track_id + '_mode option:selected').val();
-        if ( min_value !== this.prefs.min_value || max_value !== this.prefs.max_value || mode !== this.prefs.mode ) {
+            max_value = $('#track_' + track_id + '_maxval').val();
+        if ( min_value !== this.prefs.min_value || max_value !== this.prefs.max_value ) {
             this.prefs.min_value = parseFloat(min_value);
             this.prefs.max_value = parseFloat(max_value);
-            this.prefs.mode = mode;
             this.vertical_range = this.prefs.max_value - this.prefs.min_value;
             // Update the y-axis
             $('#linetrack_' + track_id + '_minval').text(this.prefs.min_value);
@@ -809,6 +909,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
 
 var FeatureTrack = function ( name, view, dataset_id, prefs ) {
     this.track_type = "FeatureTrack";
+    this.display_modes = ["Auto", "Dense", "Squish", "Pack"];
     Track.call( this, name, view, view.viewport_container );
     TiledTrack.call( this );
     
@@ -819,13 +920,15 @@ var FeatureTrack = function ( name, view, dataset_id, prefs ) {
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.vertical_detail_px = 10;
-    this.vertical_nodetail_px = 3;
+    this.vertical_nodetail_px = 2;
+    this.summary_draw_height = 20;
     this.default_font = "9px Monaco, Lucida Console, monospace";
     this.inc_slots = {};
     this.data_queue = {};
     this.s_e_by_tile = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.data_cache = new Cache(20);
+    this.left_offset = 200;
     
     this.prefs = { 'block_color': 'black', 'label_color': 'black', 'show_counts': true };
     if (prefs.block_color !== undefined) { this.prefs.block_color = prefs.block_color; }
@@ -835,39 +938,11 @@ var FeatureTrack = function ( name, view, dataset_id, prefs ) {
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this,
-            key = track.view.max_low + '_' + track.view.max_high;
-            if (track.mode_div === undefined) {
-                track.mode_div = $("<div class='right-float menubutton popup' />").text("Display Mode").appendTo(track.header_div);
-                track.mode = "Auto";
-                
-                var change_mode = function(name) {
-                    track.mode_div.text(name);
-                    track.mode = name;
-                    track.tile_cache.clear();
-                    track.draw();
-                };
-                make_popupmenu(track.mode_div, {
-                    "Auto": function() {
-                        change_mode("Auto");
-                    },
-                    "Dense": function() {
-                        change_mode("Dense");
-                    },
-                    "Squish": function() {
-                        change_mode("Squish");
-                    },
-                    "Pack": function() {
-                        change_mode("Pack");
-                    }
-                });
-            } else {
-                track.mode_div.hide();
-            }
+            key = "initial";
             
-            this.init_each({  low: track.view.max_low, 
-                                    high: track.view.max_high, dataset_id: track.dataset_id,
-                                    chrom: track.view.chrom, resolution: this.view.resolution }, function (result) {
-            
+        this.init_each({    low: track.view.max_low, 
+                            high: track.view.max_high, dataset_id: track.dataset_id,
+                            chrom: track.view.chrom, resolution: this.view.resolution }, function (result) {    
             track.mode_div.show();
             track.data_cache.set(key, result);
             track.draw();
@@ -993,8 +1068,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
-            tile_span = DENSITY * resolution;
-        // console.log("drawing " + tile_index);
+            tile_span = tile_high - tile_low;
+        // console.log("drawing " + tile_low + " to " + tile_high);
 
         /*for (var k in this.data_cache.obj_cache) {
             var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
@@ -1004,9 +1079,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             }
         }*/
         
-        // var k = this.view.low + '_' + this.view.high;
-        var k = tile_low + '_' + tile_high;
+        var k = (!this.initial_canvas ? "initial" : tile_low + '_' + tile_high);
         var result = this.data_cache.get(k);
+        var cur_mode;
         
         if (result === undefined) {
             this.data_queue[ [tile_low, tile_high] ] = true;
@@ -1024,7 +1099,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             slots, required_height, y_scale;
         
         if (result.dataset_type === "summary_tree") {
-            required_height = 30;
+            required_height = this.summary_draw_height;
         } else if (mode === "Dense") {
             required_height = 15;
             y_scale = 10;
@@ -1066,7 +1141,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 if (!y) { continue; }
                 color = Math.floor( color_span - (y / max) * color_span );
                 ctx.fillStyle = "rgb(" +color+ "," +color+ "," +color+ ")";
-                ctx.fillRect(x + left_offset, 0, delta_x_px, 20);
+                ctx.fillRect(x + left_offset, 0, delta_x_px, this.summary_draw_height);
 
                 if (this.prefs.show_counts && ctx.measureText(y).width < delta_x_px) {
                     if (color > color_cutoff) {
@@ -1078,7 +1153,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     ctx.fillText(y, x + left_offset + (delta_x_px/2), 12);
                 }
             }
-            
+            cur_mode = "Summary";
             parent_element.append( new_canvas );
             return new_canvas;
         }

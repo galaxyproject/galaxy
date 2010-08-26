@@ -204,12 +204,6 @@ class UsesVisualization( SharableItemSecurity ):
             latest_revision = visualization.latest_revision
             tracks = []
 
-            # Set dbkey.
-            try:
-                dbkey = latest_revision.dbkey
-            except KeyError:
-                dbkey = None
-        
             # Set tracks.
             if 'tracks' in latest_revision.config:
                 hda_query = trans.sa_session.query( trans.model.HistoryDatasetAssociation )
@@ -227,12 +221,9 @@ class UsesVisualization( SharableItemSecurity ):
                         "dataset_id": dataset.id,
                         "prefs": simplejson.dumps(prefs),
                     } )
-                    if dbkey is None: dbkey = dataset.dbkey # Hack for backward compat
             
-            
-            ## TODO: chrom needs to be able to be set; right now it's empty.
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 
-                        "tracks": tracks, "chrom": "", "dbkey": dbkey }
+                        "tracks": tracks, "chrom": "", "dbkey": visualization.dbkey }
             
         return config
         

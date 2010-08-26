@@ -10,7 +10,7 @@
         // To adjust the size of the viewport to fit the fixed-height footer
         var refresh = function( e ) {
             if (view !== undefined) {
-                view.viewport_container.height( $(window).height() - 100 );
+                view.viewport_container.height( $("#center").height() - $(".nav-container").height() - 40 );
                 view.nav_container.width( $("#center").width() );
                 view.redraw();
             }

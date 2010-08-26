@@ -46,7 +46,7 @@
 
 **What it does**
 
-This program computes the q-values based on the p-values of multiple simultaneous tests. The q-valules are computed using a specific R package, created by John Storey and Alan Dabney, called "qvalue". The program takes five inputs:
+This program computes the q-values based on the p-values of multiple simultaneous tests. The q-values are computed using a specific R package, created by John Storey and Alan Dabney, called "qvalue". The program takes five inputs:
  
 - The first input is a TABULAR format file consisting of one column only that represents the p-values of multiple simultaneous tests, one line for every p-value. 
 - The second input is the lambda parameter. The user can choose either the default: seq(0, 0.95, 0.05) or a decimal number between 0.0 and 1.0.
@@ -103,7 +103,7 @@ Let us have the first input file of p-values as follows::
 	0.904129283
 	0.031152635
 
-Runnig the program will give the following output::
+Running the program will give the following output::
 
 	pi0: 0.140311054	
 
