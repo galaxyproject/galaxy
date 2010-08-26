@@ -5,7 +5,6 @@ from galaxy.datatypes import sniff
 from galaxy.security import RBACAgent
 from galaxy.util.json import to_json_string
 from galaxy.tools.actions import upload_common
-from galaxy.web.controllers.forms import get_all_forms
 from galaxy.model.orm import *
 from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys
@@ -1935,9 +1934,9 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
     @web.expose
     def add_template( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
         # Template can only be added to a Library, Folder or LibraryDatasetDatasetAssociation.
-        forms = get_all_forms( trans,
-                               filter=dict( deleted=False ),
-                               form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE )
+        forms = self.get_all_forms( trans,
+                                    filter=dict( deleted=False ),
+                                    form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE )
         if not forms:
             message = "There are no forms on which to base the template, so create a form and then add the template."
             return trans.response.send_redirect( web.url_for( controller='forms',

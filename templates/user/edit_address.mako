@@ -42,7 +42,7 @@
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Address Line 1:</label>
+                <label>Address:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="text" name="address" value="${address_obj.address}" size="40">
                 </div>

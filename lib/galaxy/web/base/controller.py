@@ -285,6 +285,22 @@ class UsesHistory( SharableItemSecurity ):
 
 class UsesFormDefinitionWidgets:
     """Mixin for controllers that use Galaxy form objects."""
+    def get_all_forms( self, trans, all_versions=False, filter=None, form_type='All' ):
+        """
+        Return all the latest forms from the form_definition_current table 
+        if all_versions is set to True. Otherwise return all the versions
+        of all the forms from the form_definition table.
+        """
+        if all_versions:
+            return trans.sa_session.query( trans.app.model.FormDefinition )
+        if filter:
+            fdc_list = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).filter_by( **filter )
+        else:
+            fdc_list = trans.sa_session.query( trans.app.model.FormDefinitionCurrent )
+        if form_type == 'All':
+            return [ fdc.latest_form for fdc in fdc_list ]
+        else:
+            return [ fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type ]
     def widget_fields_have_contents( self, widgets ):
         # Return True if any of the fields in widgets contain contents, widgets is a list of dictionaries that looks something like:
         # [{'widget': <galaxy.web.form_builder.TextField object at 0x10867aa10>, 'helptext': 'Field 0 help (Optional)', 'label': 'Field 0'}]

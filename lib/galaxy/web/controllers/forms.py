@@ -665,21 +665,3 @@ class Forms( BaseController ):
                                     current_form_type=current_form[ 'type' ],
                                     layout_grids=form_layout,
                                     response_redirect=response_redirect )
-
-# Common methods for all components that use forms
-def get_all_forms( trans, all_versions=False, filter=None, form_type='All' ):
-    '''
-    Return all the latest forms from the form_definition_current table 
-    if all_versions is set to True. Otherwise return all the versions
-    of all the forms from the form_definition table.
-    '''
-    if all_versions:
-        return trans.sa_session.query( trans.app.model.FormDefinition )
-    if filter:
-        fdc_list = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).filter_by( **filter )
-    else:
-        fdc_list = trans.sa_session.query( trans.app.model.FormDefinitionCurrent )
-    if form_type == 'All':
-        return [ fdc.latest_form for fdc in fdc_list ]
-    else:
-        return [ fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type ]

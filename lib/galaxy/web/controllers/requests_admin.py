@@ -8,7 +8,6 @@ import logging, tempfile, zipfile, tarfile, os, sys, subprocess, smtplib, socket
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
 from email.MIMEText import MIMEText
-from galaxy.web.controllers.forms import get_all_forms
 from sqlalchemy.sql.expression import func, and_
 from sqlalchemy.sql import select
 import pexpect
@@ -264,7 +263,7 @@ class DataTransferGrid( grids.Grid ):
 # ---- Request Controller ------------------------------------------------------ 
 #
 
-class RequestsAdmin( BaseController ):
+class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
     request_grid = RequestsGrid()
     requesttype_grid = RequestTypeGrid()
     datatx_grid = DataTransferGrid()
@@ -1061,7 +1060,7 @@ class RequestsAdmin( BaseController ):
                                                               message="Invalid requesttype ID") )
         return trans.fill_template( '/admin/requests/view_request_type.mako', 
                                     request_type=rt,
-                                    forms=get_all_forms( trans ),
+                                    forms=self.get_all_forms( trans ),
                                     states_list=rt.states,
                                     rename_dataset_selectbox=self.__rename_dataset_selectbox(trans, rt) )
     def __view_form(self, trans, **kwd):
@@ -1104,7 +1103,7 @@ class RequestsAdmin( BaseController ):
             rt, message = self.__save_request_type(trans, **kwd)
             if not rt:
                 return trans.fill_template( '/admin/requests/create_request_type.mako', 
-                                            forms=get_all_forms( trans ),
+                                            forms=self.get_all_forms( trans ),
                                             message=message,
                                             status='error')
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
@@ -1144,12 +1143,12 @@ class RequestsAdmin( BaseController ):
                                         status=status,
                                         rename_dataset_selectbox=self.__rename_dataset_selectbox(trans))
     def __create_request_type_form(self, trans, **kwd):
-        request_forms=get_all_forms( trans, 
-                                     filter=dict(deleted=False),
-                                     form_type=trans.app.model.FormDefinition.types.REQUEST )
-        sample_forms=get_all_forms( trans, 
-                                    filter=dict(deleted=False),
-                                    form_type=trans.app.model.FormDefinition.types.SAMPLE )
+        request_forms=self.get_all_forms( trans, 
+                                          filter=dict(deleted=False),
+                                          form_type=trans.app.model.FormDefinition.types.REQUEST )
+        sample_forms=self.get_all_forms( trans, 
+                                         filter=dict(deleted=False),
+                                         form_type=trans.app.model.FormDefinition.types.SAMPLE )
         if not len(request_forms) or not len(sample_forms):
             return [],[]
         params = util.Params( kwd )

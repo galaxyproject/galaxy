@@ -360,44 +360,44 @@ class TestFormsAndRequests( TwillTestCase ):
         # check if the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.REJECTED )
-#    def test_055_reset_data_for_later_test_runs( self ):
-#        """Reseting data to enable later test runs to pass"""
-#        # Logged in as admin_user
-#        # remove the request_type permissions
-#        rt_actions = sa_session.query( galaxy.model.RequestTypePermissions ) \
-#                               .filter(and_(galaxy.model.RequestTypePermissions.table.c.request_type_id==request_type.id) ) \
-#                               .order_by( desc( galaxy.model.RequestTypePermissions.table.c.create_time ) ) \
-#                               .all()
-#        for a in rt_actions:
-#            sa_session.delete( a )
-#        sa_session.flush()
-#        ##################
-#        # Purge all libraries
-#        ##################
-#        for library in [ library_one ]:
-#            self.delete_library_item( 'library_admin',
-#                                      self.security.encode_id( library.id ),
-#                                      self.security.encode_id( library.id ),
-#                                      library.name,
-#                                      item_type='library' )
-#            self.purge_library( self.security.encode_id( library.id ), library.name )
-#        ##################
-#        # Eliminate all non-private roles
-#        ##################
-#        for role in [ role_one, role_two ]:
-#            self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
-#            self.purge_role( self.security.encode_id( role.id ), role.name )
-#            # Manually delete the role from the database
-#            sa_session.refresh( role )
-#            sa_session.delete( role )
-#            sa_session.flush()
-#        ##################
-#        # Eliminate all groups
-#        ##################
-#        for group in [ group_one ]:
-#            self.mark_group_deleted( self.security.encode_id( group.id ), group.name )
-#            self.purge_group( self.security.encode_id( group.id ), group.name )
-#            # Manually delete the group from the database
-#            refresh( group )
-#            sa_session.delete( group )
-#            sa_session.flush()
+    def test_055_reset_data_for_later_test_runs( self ):
+        """Reseting data to enable later test runs to pass"""
+        # Logged in as admin_user
+        # remove the request_type permissions
+        rt_actions = sa_session.query( galaxy.model.RequestTypePermissions ) \
+                               .filter(and_(galaxy.model.RequestTypePermissions.table.c.request_type_id==request_type.id) ) \
+                               .order_by( desc( galaxy.model.RequestTypePermissions.table.c.create_time ) ) \
+                               .all()
+        for a in rt_actions:
+            sa_session.delete( a )
+        sa_session.flush()
+        ##################
+        # Purge all libraries
+        ##################
+        for library in [ library_one ]:
+            self.delete_library_item( 'library_admin',
+                                      self.security.encode_id( library.id ),
+                                      self.security.encode_id( library.id ),
+                                      library.name,
+                                      item_type='library' )
+            self.purge_library( self.security.encode_id( library.id ), library.name )
+        ##################
+        # Eliminate all non-private roles
+        ##################
+        for role in [ role_one, role_two ]:
+            self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
+            self.purge_role( self.security.encode_id( role.id ), role.name )
+            # Manually delete the role from the database
+            sa_session.refresh( role )
+            sa_session.delete( role )
+            sa_session.flush()
+        ##################
+        # Eliminate all groups
+        ##################
+        for group in [ group_one ]:
+            self.mark_group_deleted( self.security.encode_id( group.id ), group.name )
+            self.purge_group( self.security.encode_id( group.id ), group.name )
+            # Manually delete the group from the database
+            refresh( group )
+            sa_session.delete( group )
+            sa_session.flush()

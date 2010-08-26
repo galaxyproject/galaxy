@@ -7,7 +7,6 @@ from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys, subprocess
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
-from galaxy.web.controllers.forms import get_all_forms
 from sqlalchemy.sql.expression import func, and_
 from sqlalchemy.sql import select
 import pexpect

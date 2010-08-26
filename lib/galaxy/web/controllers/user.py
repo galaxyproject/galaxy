@@ -216,14 +216,10 @@ class User( BaseController, UsesFormDefinitionWidgets ):
         the one that user has selected. And for existing users, the user info form is 
         retrieved from the db.
         '''
-        # TODO: the user controller must be decoupled from the model, so this import causes problems.
-        # The get_all_forms method is used only if Galaxy is the webapp, so it needs to be re-worked
-        # so that it can be imported with no problems if the controller is not 'galaxy'.
-        from galaxy.web.controllers.forms import get_all_forms
         params = util.Params( kwd )
         # get all the user information forms
-        user_info_forms = get_all_forms( trans, filter=dict(deleted=False),
-                                         form_type=trans.app.model.FormDefinition.types.USER_INFO )
+        user_info_forms = self.get_all_forms( trans, filter=dict(deleted=False),
+                                              form_type=trans.app.model.FormDefinition.types.USER_INFO )
         if new_user:
             # if there are no user forms available then there is nothing to save
             if not len( user_info_forms ):
@@ -331,10 +327,9 @@ class User( BaseController, UsesFormDefinitionWidgets ):
             error = self.__validate_username( trans, username )
         if not error:
             if webapp == 'galaxy':
-                from galaxy.web.controllers.forms import get_all_forms
-                if len( get_all_forms( trans, 
-                                       filter=dict( deleted=False ),
-                                       form_type=trans.app.model.FormDefinition.types.USER_INFO ) ):
+                if len( self.get_all_forms( trans, 
+                                            filter=dict( deleted=False ),
+                                            form_type=trans.app.model.FormDefinition.types.USER_INFO ) ):
                     if not params.get( 'user_info_select', False ):
                         return "Select the user's type and information"
         return error
@@ -347,12 +342,11 @@ class User( BaseController, UsesFormDefinitionWidgets ):
         show a selectbox containing all the forms, then the user can select 
         the one that fits the user's description the most
         '''
-        from galaxy.web.controllers.forms import get_all_forms
         params = util.Params( kwd )
         # get all the user information forms
-        user_info_forms = get_all_forms( trans,
-                                         filter=dict( deleted=False ),
-                                         form_type=trans.app.model.FormDefinition.types.USER_INFO )
+        user_info_forms = self.get_all_forms( trans,
+                                              filter=dict( deleted=False ),
+                                              form_type=trans.app.model.FormDefinition.types.USER_INFO )
         user_info_select = None
         if user:
             if user.values:
@@ -423,7 +417,6 @@ class User( BaseController, UsesFormDefinitionWidgets ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         if webapp == 'galaxy':
-            from galaxy.web.controllers.forms import get_all_forms
             user_info_select, user_info_form, widgets = self.__user_info_ui( trans, user, **kwd )
             # user's addresses
             show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
@@ -433,9 +426,9 @@ class User( BaseController, UsesFormDefinitionWidgets ):
                 addresses = [address for address in user.addresses if address.deleted]
             else:
                 addresses = [address for address in user.addresses if not address.deleted]
-            user_info_forms = get_all_forms( trans,
-                                             filter=dict( deleted=False ),
-                                             form_type=trans.app.model.FormDefinition.types.USER_INFO )
+            user_info_forms = self.get_all_forms( trans,
+                                                  filter=dict( deleted=False ),
+                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO )
             return trans.fill_template( '/webapps/galaxy/user/info.mako',
                                         user=user,
                                         email=email,
