@@ -53,9 +53,7 @@ def upgrade():
         cmd = "SELECT id, notification FROM request"
         result = db_session.execute( cmd )
         for r in result:
-            print r, str(r[1])
             rr = from_json_string(str(r[1]))
-            print r[0], type(rr), rr, rr['email'], rr['sample_states']
 
         # remove the 'notify' column
         try:
