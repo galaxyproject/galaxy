@@ -413,8 +413,8 @@ $.extend( Workflow.prototype, {
                         output_name : act.output_name, 
                         action_arguments : act.action_arguments
                     }
-                    post_job_actions[ act.type + act.output_name ] = null;
-                    post_job_actions[ act.type + act.output_name ] = pja;
+                    post_job_actions[ act.action_type + act.output_name ] = null;
+                    post_job_actions[ act.action_type + act.output_name ] = pja;
                 });
             }
             if (!node.workflow_outputs){

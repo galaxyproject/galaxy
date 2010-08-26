@@ -341,16 +341,17 @@ class ActionBox(object):
         for key, val in incoming.iteritems():
             if key.startswith('pja'):
                 sp = key.split('__')
+                ao_key = sp[2] + sp[1]
                 # flag / output_name / pjatype / desc
-                if not sp[2] in npd:
-                    npd[sp[2]] = {'action_type' : sp[2],
+                if not ao_key in npd:
+                    npd[ao_key] = {'action_type' : sp[2],
                                   'output_name' : sp[1],
                                   'action_arguments' : {}}
                 if len(sp) > 3:
                     if sp[3] == 'output_name':
-                        npd[sp[2]]['output_name'] = val
+                        npd[ao_key]['output_name'] = val
                     else:
-                        npd[sp[2]]['action_arguments'][sp[3]] = val
+                        npd[ao_key]['action_arguments'][sp[3]] = val
             else:
                 # Not pja stuff.
                 pass
