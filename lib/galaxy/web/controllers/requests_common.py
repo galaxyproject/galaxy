@@ -17,7 +17,7 @@ import csv
 log = logging.getLogger( __name__ )
 
 
-class RequestsCommon( BaseController ):
+class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
     
     @web.json
     def sample_state_updates( self, trans, ids=None, states=None, cntrller=None ):
@@ -207,17 +207,7 @@ class RequestsCommon( BaseController ):
                 if value == 'new':
                     # save this new address in the list of this user's addresses
                     user_address = trans.app.model.UserAddress( user=user )
-                    user_address.desc = util.restore_text(params.get('field_%i_short_desc' % index, ''))
-                    user_address.name = util.restore_text(params.get('field_%i_name' % index, ''))
-                    user_address.institution = util.restore_text(params.get('field_%i_institution' % index, ''))
-                    user_address.address = util.restore_text(params.get('field_%i_address1' % index, ''))+' '+util.restore_text(params.get('field_%i_address2' % index, ''))
-                    user_address.city = util.restore_text(params.get('field_%i_city' % index, ''))
-                    user_address.state = util.restore_text(params.get('field_%i_state' % index, ''))
-                    user_address.postal_code = util.restore_text(params.get('field_%i_postal_code' % index, ''))
-                    user_address.country = util.restore_text(params.get('field_%i_country' % index, ''))
-                    user_address.phone = util.restore_text(params.get('field_%i_phone' % index, ''))
-                    trans.sa_session.add( user_address )
-                    trans.sa_session.flush()
+                    self.save_widget_field( trans, user_address, index, **kwd )
                     trans.sa_session.refresh( user )
                     values.append(int(user_address.id))
                 elif value == unicode('none'):

@@ -384,8 +384,7 @@ class AddressField(BaseField):
         return   [  ( "short_desc", "Short address description"),
                     ( "name", "Name" ),
                     ( "institution", "Institution" ),
-                    ( "address1", "Address Line 1" ),
-                    ( "address2", "Address Line 2" ),
+                    ( "address", "Address" ),
                     ( "city", "City" ),
                     ( "state", "State/Province/Region" ),
                     ( "postal_code", "Postal Code" ),
@@ -437,8 +436,7 @@ class AddressField(BaseField):
         else:
             self.select_address.add_option('Add a new address', 'new')
         return self.select_address.get_html()+address_html
-    
-    
+
 class WorkflowField(BaseField):
     def __init__(self, name, user=None, value=None, params=None):
         self.name = name

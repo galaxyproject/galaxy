@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common/common.mako" import="render_template_info" />
+<%namespace file="/library/common/common.mako" import="render_template_fields" />
 <%
     from galaxy import util
     from galaxy.web.controllers.library_common import branch_deleted, get_containing_library_from_library_dataset
@@ -22,6 +22,34 @@
     else:
         can_modify = can_manage = False
 %>
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">
+    $( function() {
+        $( "select[refresh_on_change='true']").change( function() {
+            var refresh = false;
+            var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
+            if ( refresh_on_change_values ) {
+                refresh_on_change_values = refresh_on_change_values.value.split( ',' );
+                var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
+                for( i= 0; i < refresh_on_change_values.length; i++ ) {
+                    if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
+                        refresh = true;
+                        break;
+                    }
+                }
+            }
+            else {
+                refresh = true;
+            }
+            if ( refresh ){
+                $( "#edit_info" ).submit();
+            }
+        });
+    });
+    </script>
+</%def>
 
 %if current_version:
     <b><i>This is the latest version of this library dataset</i></b>
@@ -134,7 +162,7 @@
     </div>
 </div>
 %if widgets:
-    ${render_template_info( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, info_association=info_association, inherited=inherited, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), editable=False )}
+    ${render_template_fields( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, info_association=info_association, inherited=inherited, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), editable=False )}
 %endif
 %if trans.user_is_admin() and cntrller == 'library_admin':
     %if associated_hdas:

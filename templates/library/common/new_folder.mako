@@ -1,6 +1,5 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common/common.mako" import="render_template_info" />
 
 <br/<br/>
 <ul class="manage-table-actions">

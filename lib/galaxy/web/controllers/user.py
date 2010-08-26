@@ -26,7 +26,7 @@ require_login_creation_template = require_login_template % "  If you don't alrea
 
 VALID_USERNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 
-class User( BaseController ):
+class User( BaseController, UsesFormDefinitionWidgets ):
     @web.expose
     def index( self, trans, webapp='galaxy', **kwd ):
         return trans.fill_template( '/user/index.mako', webapp=webapp )
@@ -263,17 +263,7 @@ class User( BaseController ):
                 if value == 'new':
                     # save this new address in the list of this user's addresses
                     user_address = trans.app.model.UserAddress( user=user )
-                    user_address.desc = util.restore_text(params.get('field_%i_short_desc' % index, ''))
-                    user_address.name = util.restore_text(params.get('field_%i_name' % index, ''))
-                    user_address.institution = util.restore_text(params.get('field_%i_institution' % index, ''))
-                    user_address.address = util.restore_text(params.get('field_%i_address1' % index, ''))+' '+util.restore_text(params.get('field_%i_address2' % index, ''))
-                    user_address.city = util.restore_text(params.get('field_%i_city' % index, ''))
-                    user_address.state = util.restore_text(params.get('field_%i_state' % index, ''))
-                    user_address.postal_code = util.restore_text(params.get('field_%i_postal_code' % index, ''))
-                    user_address.country = util.restore_text(params.get('field_%i_country' % index, ''))
-                    user_address.phone = util.restore_text(params.get('field_%i_phone' % index, ''))
-                    trans.sa_session.add( user_address )
-                    trans.sa_session.flush()
+                    self.save_widget_field( trans, user_address, index, **kwd )
                     trans.sa_session.refresh( user )
                     values.append(int(user_address.id))
                 elif value == unicode('none'):
@@ -673,8 +663,7 @@ class User( BaseController ):
             return trans.fill_template( 'user/permissions.mako' )
         else:
             # User not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change your default permitted actions." )
-                    
+            return trans.show_error_message( "You must be logged in to change your default permitted actions." )   
     @web.expose
     @web.require_login( "to get most recently used tool" )
     @web.json_pretty
@@ -697,8 +686,7 @@ class User( BaseController ):
             "minsizehint" : tool.uihints.get( 'minwidth', -1 ),
             "description" : tool.description
         }
-        return tool_info
-                    
+        return tool_info          
     @web.expose
     def manage_addresses(self, trans, **kwd):
         if trans.user:
@@ -726,123 +714,151 @@ class User( BaseController ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         admin_view = util.string_as_bool( params.get( 'admin_view', False ) )
-        error = ''
-        user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'user_id', None ) ) )
+        user_id = params.get( 'user_id', False )
+        if not user_id:
+            # User must be logged in to create a new address
+            return trans.show_error_message( "You must be logged in to create a new address." )
+        user = trans.sa_session.query( trans.app.model.User ).get( int( user_id ) )
+        short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
+        name = util.restore_text( params.get( 'name', ''  ) )
+        institution = util.restore_text( params.get( 'institution', ''  ) )
+        address = util.restore_text( params.get( 'address', ''  ) )
+        city = util.restore_text( params.get( 'city', ''  ) )
+        state = util.restore_text( params.get( 'state', ''  ) )
+        postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
+        country = util.restore_text( params.get( 'country', ''  ) )
+        phone = util.restore_text( params.get( 'phone', ''  ) )
+        ok = True
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
-        if params.get( 'save_new_address_button', None  ) == 'Save':
-            if not len( util.restore_text( params.get( 'short_desc', ''  ) ) ):
-                error = 'Enter a short description for this address'
-            elif not len( util.restore_text( params.get( 'name', ''  ) ) ):
-                error = 'Enter the full name'
-            elif not len( util.restore_text( params.get( 'institution', ''  ) ) ):
-                error = 'Enter the institution associated with the user'
-            elif not len ( util.restore_text( params.get( 'address1', ''  ) ) ):
-                error = 'Enter the address'
-            elif not len( util.restore_text( params.get( 'city', ''  ) ) ):
-                error = 'Enter the city'
-            elif not len( util.restore_text( params.get( 'state', ''  ) ) ):
-                error = 'Enter the state/province/region'
-            elif not len( util.restore_text( params.get( 'postal_code', ''  ) ) ):
-                error = 'Enter the postal code'
-            elif not len( util.restore_text( params.get( 'country', ''  ) ) ):
-                error = 'Enter the country'
-            else:
-                user_address = trans.app.model.UserAddress( user=user )
-                user_address.desc = util.restore_text( params.get( 'short_desc', ''  ) )
-                user_address.name = util.restore_text( params.get( 'name', ''  ) )
-                user_address.institution = util.restore_text( params.get( 'institution', ''  ) )
-                user_address.address = util.restore_text( params.get( 'address1', ''  ) )+' '+util.restore_text( params.get( 'address2', ''  ) )
-                user_address.city = util.restore_text( params.get( 'city', ''  ) )
-                user_address.state = util.restore_text( params.get( 'state', ''  ) )
-                user_address.postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
-                user_address.country = util.restore_text( params.get( 'country', ''  ) )
-                user_address.phone = util.restore_text( params.get( 'phone', ''  ) )
+        if params.get( 'new_address_button', False ):
+            if not short_desc:
+                ok = False
+                message = 'Enter a short description for this address'
+            elif not name:
+                ok = False
+                message = 'Enter the name'
+            elif not institution:
+                ok = False
+                message = 'Enter the institution associated with the user'
+            elif not address:
+                ok = False
+                message = 'Enter the address'
+            elif not city:
+                ok = False
+                message = 'Enter the city'
+            elif not state:
+                ok = False
+                message = 'Enter the state/province/region'
+            elif not postal_code:
+                ok = False
+                message = 'Enter the postal code'
+            elif not country:
+                ok = False
+                message = 'Enter the country'
+            if ok:
+                user_address = trans.model.UserAddress( user=user,
+                                                        desc=short_desc,
+                                                        name=name,
+                                                        institution=institution, 
+                                                        address=address,
+                                                        city=city,
+                                                        state=state,
+                                                        postal_code=postal_code, 
+                                                        country=country,
+                                                        phone=phone )
                 trans.sa_session.add( user_address )
                 trans.sa_session.flush()
-                message = 'Address <b>%s</b> has been added' % user_address.desc
+                message = 'Address (%s) has been added' % user_address.desc
                 if admin_view:
                     return trans.response.send_redirect( web.url_for( controller='user',
                                                                       action='show_info',
                                                                       admin_view=admin_view,
                                                                       user_id=user.id,
                                                                       message=message,
-                                                                      status='done') )
+                                                                      status='done' ) )
                 return trans.response.send_redirect( web.url_for( controller='user',
                                                                   action='show_info',
                                                                   message=message,
-                                                                  status='done') )
-        else:
-            # show the address form with the current values filled in
-            # create the widgets for each address field
-            widgets = []
-            widgets.append(dict(label='Short description',
-                                widget=TextField( 'short_desc', 40, '' ) ) )
-            widgets.append(dict(label='Name',
-                                widget=TextField( 'name', 40, '' ) ) )
-            widgets.append(dict(label='Institution',
-                                widget=TextField( 'institution', 40, '' ) ) )
-            widgets.append(dict(label='Address Line 1',
-                                widget=TextField( 'address1', 40, '' ) ) )
-            widgets.append(dict(label='Address Line 2',
-                                widget=TextField( 'address2', 40, '' ) ) )
-            widgets.append(dict(label='City',
-                                widget=TextField( 'city', 40, '' ) ) )
-            widgets.append(dict(label='State',
-                                widget=TextField( 'state', 40, '' ) ) )
-            widgets.append(dict(label='Postal Code',
-                                widget=TextField( 'postal_code', 40, '' ) ) )
-            widgets.append(dict(label='Country',
-                                widget=TextField( 'country', 40, '' ) ) )
-            widgets.append(dict(label='Phone',
-                                widget=TextField( 'phone', 40, '' ) ) )
-            return trans.fill_template( 'user/new_address.mako',
-                                        user=user,
-                                        admin_view=admin_view,
-                                        widgets=widgets,
-                                        message=message,
-                                        status=status)
+                                                                  status='done' ) )
+        # Display the address form with the current values filled in
+        return trans.fill_template( 'user/new_address.mako',
+                                    user=user,
+                                    admin_view=admin_view,
+                                    short_desc=short_desc,
+                                    name=name,
+                                    institution=institution,
+                                    address=address,
+                                    city=city,
+                                    state=state,
+                                    postal_code=postal_code,
+                                    country=country,
+                                    phone=phone,
+                                    message=message,
+                                    status=status )
     @web.expose
     def edit_address( self, trans, **kwd ):
         params = util.Params( kwd )
-        user_id = params.get( 'user_id', None )
-        address_id = params.get( 'address_id', None )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         admin_view = util.string_as_bool( params.get( 'admin_view', False ) )
-        error = ''
+        user_id = params.get( 'user_id', False )
+        if not user_id:
+            # User must be logged in to create a new address
+            return trans.show_error_message( "You must be logged in to create a new address." )
         user = trans.sa_session.query( trans.app.model.User ).get( int( user_id ) )
-        user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( int( address_id ) )
-        if params.get( 'edit_address_button', None  ) == 'Save changes':
-            if not len( util.restore_text( params.get( 'short_desc', ''  ) ) ):
-                error = 'Enter a short description for this address'
-            elif not len( util.restore_text( params.get( 'name', ''  ) ) ):
-                error = 'Enter the full name'
-            elif not len( util.restore_text( params.get( 'institution', ''  ) ) ):
-                error = 'Enter the institution associated with the user'
-            elif not len ( util.restore_text( params.get( 'address1', ''  ) ) ):
-                error = 'Enter the address'
-            elif not len( util.restore_text( params.get( 'city', ''  ) ) ):
-                error = 'Enter the city'
-            elif not len( util.restore_text( params.get( 'state', ''  ) ) ):
-                error = 'Enter the state/province/region'
-            elif not len( util.restore_text( params.get( 'postal_code', ''  ) ) ):
-                error = 'Enter the postal code'
-            elif not len( util.restore_text( params.get( 'country', ''  ) ) ):
-                error = 'Enter the country'
-            else:
-                user_address.desc = util.restore_text( params.get( 'short_desc', ''  ) )
-                user_address.name = util.restore_text( params.get( 'name', ''  ) )
-                user_address.institution = util.restore_text( params.get( 'institution', ''  ) )
-                user_address.address = util.restore_text( params.get( 'address1', ''  ) )+' '+util.restore_text( params.get( 'address2', ''  ) )
-                user_address.city = util.restore_text( params.get( 'city', ''  ) )
-                user_address.state = util.restore_text( params.get( 'state', ''  ) )
-                user_address.postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
-                user_address.country = util.restore_text( params.get( 'country', ''  ) )
-                user_address.phone = util.restore_text( params.get( 'phone', ''  ) )
-                trans.sa_session.add( user_address )
+        address_id = params.get( 'address_id', None )
+        if not address_id:
+            return trans.show_error_message( "No address_id received for editing." )
+        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( int( address_id ) )     
+        if params.get( 'edit_address_button', False  ):
+            short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
+            name = util.restore_text( params.get( 'name', ''  ) )
+            institution = util.restore_text( params.get( 'institution', ''  ) )
+            address = util.restore_text( params.get( 'address', ''  ) )
+            city = util.restore_text( params.get( 'city', ''  ) )
+            state = util.restore_text( params.get( 'state', ''  ) )
+            postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
+            country = util.restore_text( params.get( 'country', ''  ) )
+            phone = util.restore_text( params.get( 'phone', ''  ) )
+            ok = True
+            if not short_desc:
+                ok = False
+                message = 'Enter a short description for this address'
+            elif not name:
+                ok = False
+                message = 'Enter the name'
+            elif not institution:
+                ok = False
+                message = 'Enter the institution associated with the user'
+            elif not address:
+                ok = False
+                message = 'Enter the address'
+            elif not city:
+                ok = False
+                message = 'Enter the city'
+            elif not state:
+                ok = False
+                message = 'Enter the state/province/region'
+            elif not postal_code:
+                ok = False
+                message = 'Enter the postal code'
+            elif not country:
+                ok = False
+                message = 'Enter the country'
+            if ok:
+                address_obj.desc = short_desc
+                address_obj.name = name
+                address_obj.institution = institution
+                address_obj.address = address
+                address_obj.city = city
+                address_obj.state = state
+                address_obj.postal_code = postal_code
+                address_obj.country = country
+                address_obj.phone = phone
+                trans.sa_session.add( address_obj )
                 trans.sa_session.flush()
-                message = 'Changes made to address <b>%s</b> are saved.' % user_address.desc
+                message = 'Address (%s) has been updated.' % address_obj.desc
                 if admin_view:
                     return trans.response.send_redirect( web.url_for( controller='user',
                                                                       action='show_info',
@@ -853,38 +869,14 @@ class User( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='user',
                                                                   action='show_info',
                                                                   message=message,
-                                                                  status='done') )
-        else:
-            # show the address form with the current values filled in
-            # create the widgets for each address field
-            widgets = []
-            widgets.append(dict(label='Short description',
-                                widget=TextField( 'short_desc', 40, user_address.desc ) ) )
-            widgets.append(dict(label='Name',
-                                widget=TextField( 'name', 40, user_address.name ) ) )
-            widgets.append(dict(label='Institution',
-                                widget=TextField( 'institution', 40, user_address.institution ) ) )
-            widgets.append(dict(label='Address Line 1',
-                                widget=TextField( 'address1', 40, user_address.address ) ) )
-            widgets.append(dict(label='Address Line 2',
-                                widget=TextField( 'address2', 40, '' ) ) )
-            widgets.append(dict(label='City',
-                                widget=TextField( 'city', 40, user_address.city ) ) )
-            widgets.append(dict(label='State',
-                                widget=TextField( 'state', 40, user_address.state ) ) )
-            widgets.append(dict(label='Postal Code',
-                                widget=TextField( 'postal_code', 40, user_address.postal_code ) ) )
-            widgets.append(dict(label='Country',
-                                widget=TextField( 'country', 40, user_address.country ) ) )
-            widgets.append(dict(label='Phone',
-                                widget=TextField( 'phone', 40, user_address.phone ) ) )
-            return trans.fill_template( 'user/edit_address.mako',
-                                        user=user,
-                                        address=user_address,
-                                        admin_view=admin_view,
-                                        widgets=widgets,
-                                        message=message,
-                                        status=status)
+                                                                  status='done' ) )
+        # Display the address form with the current values filled in
+        return trans.fill_template( 'user/edit_address.mako',
+                                    user=user,
+                                    address_obj=address_obj,
+                                    admin_view=admin_view,
+                                    message=message,
+                                    status=status )
     @web.expose
     def delete_address( self, trans, address_id=None, user_id=None, admin_view=False ):
         try:
@@ -897,12 +889,13 @@ class User( BaseController ):
                                                               message='Invalid address ID',
                                                               status='error' ) )
         user_address.deleted = True
+        trans.sa_session.add( user_address )
         trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='show_info',
                                                           admin_view=admin_view,
                                                           user_id=user_id,
-                                                          message='Address <b>%s</b> deleted' % user_address.desc,
+                                                          message='Address (%s) deleted' % user_address.desc,
                                                           status='done') )
     @web.expose
     def undelete_address( self, trans, address_id=None, user_id=None, admin_view=False ):
@@ -921,9 +914,8 @@ class User( BaseController ):
                                                           action='show_info',
                                                           admin_view=admin_view,
                                                           user_id=user_id,
-                                                          message='Address <b>%s</b> undeleted' % user_address.desc,
+                                                          message='Address (%s) undeleted' % user_address.desc,
                                                           status='done') )
-    
     @web.expose
     def set_user_pref_async( self, trans, pref_name, pref_value ):
         """ Set a user preference asynchronously. If user is not logged in, do nothing. """
@@ -931,13 +923,11 @@ class User( BaseController ):
             trans.log_action( trans.get_user(), "set_user_pref", "", { pref_name : pref_value } )
             trans.user.preferences[pref_name] = pref_value
             trans.sa_session.flush()
-      
     @web.expose
     def log_user_action_async( self, trans, action, context, params ):
         """ Log a user action asynchronously. If user is not logged in, do nothing. """
         if trans.user:
             trans.log_action( trans.get_user(), action, context, params )
-        
     @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
@@ -999,9 +989,7 @@ class User( BaseController ):
                                     user=user,
                                     dbkeys=dbkeys,
                                     message=message,
-                                    lines_skipped=lines_skipped )
-                                    
-                                    
+                                    lines_skipped=lines_skipped )          
     @web.expose
     def api_keys( self, trans, **kwd ):
         params = util.Params( kwd )

@@ -1,6 +1,34 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common/common.mako" import="render_template_info" />
+<%namespace file="/library/common/common.mako" import="render_template_fields" />
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">
+    $( function() {
+        $( "select[refresh_on_change='true']").change( function() {
+            var refresh = false;
+            var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
+            if ( refresh_on_change_values ) {
+                refresh_on_change_values = refresh_on_change_values.value.split( ',' );
+                var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
+                for( i= 0; i < refresh_on_change_values.length; i++ ) {
+                    if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
+                        refresh = true;
+                        break;
+                    }
+                }
+            }
+            else {
+                refresh = true;
+            }
+            if ( refresh ){
+                $( "#edit_info" ).submit();
+            }
+        });
+    });
+    </script>
+</%def>
 
 <%
     from cgi import escape
@@ -107,5 +135,5 @@
 </div>
 
 %if widgets:
-    ${render_template_info( cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), widgets=widgets, info_association=info_association, inherited=inherited, editable=not( library.deleted ) )}
+    ${render_template_fields( cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, info_association=info_association, inherited=inherited, editable=not( library.deleted ) )}
 %endif

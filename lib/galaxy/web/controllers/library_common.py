@@ -6,7 +6,6 @@ from galaxy.security import RBACAgent
 from galaxy.util.json import to_json_string
 from galaxy.tools.actions import upload_common
 from galaxy.web.controllers.forms import get_all_forms
-from galaxy.web.form_builder import SelectField, CheckboxField
 from galaxy.model.orm import *
 from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys
@@ -52,7 +51,7 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-class LibraryCommon( BaseController ):
+class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
     @web.json
     def library_item_updates( self, trans, ids=None, states=None ):
         # Avoid caching
@@ -160,9 +159,6 @@ class LibraryCommon( BaseController ):
                                                               use_panels=use_panels,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        # See if we have any associated templates
-        info_association, inherited = library.get_info_association()
-        widgets = library.get_template_widgets( trans )
         if params.get( 'library_info_button', False ):
             # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission.
             if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library ) ):
@@ -201,11 +197,16 @@ class LibraryCommon( BaseController ):
                                                                   show_deleted=show_deleted,
                                                                   message=util.sanitize_text( message ),
                                                                   status='done' ) )
+        # See if we have any associated templates
+        info_association, inherited = library.get_info_association()
+        widgets = library.get_template_widgets( trans )
+        widget_fields_have_contents = self.widget_fields_have_contents( widgets )
         return trans.fill_template( '/library/common/library_info.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
                                     library=library,
                                     widgets=widgets,
+                                    widget_fields_have_contents=widget_fields_have_contents,
                                     current_user_roles=current_user_roles,
                                     show_deleted=show_deleted,
                                     info_association=info_association,
@@ -402,11 +403,6 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        # See if we have any associated templates
-        widgets = []
-        info_association, inherited = folder.get_info_association()
-        if info_association and ( not( inherited ) or info_association.inheritable ):
-            widgets = folder.get_template_widgets( trans )
         if params.get( 'rename_folder_button', False ):
             # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission
             if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, folder ) ):
@@ -439,12 +435,20 @@ class LibraryCommon( BaseController ):
                                                                   show_deleted=show_deleted,
                                                                   message=util.sanitize_text( message ),
                                                                   status='done' ) )
+        # See if we have any associated templates
+        widgets = []
+        widget_fields_have_contents = False
+        info_association, inherited = folder.get_info_association()
+        if info_association and ( not( inherited ) or info_association.inheritable ):
+            widgets = folder.get_template_widgets( trans )
+            widget_fields_have_contents = self.widget_fields_have_contents( widgets )
         return trans.fill_template( '/library/common/folder_info.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
                                     folder=folder,
                                     library_id=library_id,
                                     widgets=widgets,
+                                    widget_fields_have_contents=widget_fields_have_contents,
                                     current_user_roles=current_user_roles,
                                     show_deleted=show_deleted,
                                     info_association=info_association,
@@ -677,9 +681,11 @@ class LibraryCommon( BaseController ):
             associated_lddas = [] 
         # See if we have any associated templates
         widgets = []
+        widget_fields_have_contents = False
         info_association, inherited = ldda.get_info_association()
         if info_association and ( not( inherited ) or info_association.inheritable ):
             widgets = ldda.get_template_widgets( trans )
+            widget_fields_have_contents = self.widget_fields_have_contents( widgets )
         return trans.fill_template( '/library/common/ldda_info.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
@@ -689,6 +695,7 @@ class LibraryCommon( BaseController ):
                                     associated_lddas=associated_lddas,
                                     show_deleted=show_deleted,
                                     widgets=widgets,
+                                    widget_fields_have_contents=widget_fields_have_contents,
                                     current_user_roles=current_user_roles,
                                     info_association=info_association,
                                     inherited=inherited,
@@ -1524,11 +1531,6 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
-        # See if we have any associated templates
-        widgets = []
-        info_association, inherited = library_dataset.library_dataset_dataset_association.get_info_association()
-        if info_association and ( not( inherited ) or info_association.inheritable ):
-            widgets = library_dataset.library_dataset_dataset_association.get_template_widgets( trans )
         if params.get( 'edit_attributes_button', False ):
             # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
             if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ) ):
@@ -1553,6 +1555,13 @@ class LibraryCommon( BaseController ):
                 trans.sa_session.flush()
                 message = "Information updated for library dataset '%s'." % library_dataset.name
                 status = 'done'
+        # See if we have any associated templates
+        widgets = []
+        widget_fields_have_contents = False
+        info_association, inherited = library_dataset.library_dataset_dataset_association.get_info_association()
+        if info_association and ( not( inherited ) or info_association.inheritable ):
+            widgets = library_dataset.library_dataset_dataset_association.get_template_widgets( trans )
+            widget_fields_have_contents = self.widget_fields_have_contents( widgets )
         return trans.fill_template( '/library/common/library_dataset_info.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
@@ -1562,6 +1571,7 @@ class LibraryCommon( BaseController ):
                                     info_association=info_association,
                                     inherited=inherited,
                                     widgets=widgets,
+                                    widget_fields_have_contents=widget_fields_have_contents,
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )
@@ -2134,7 +2144,7 @@ class LibraryCommon( BaseController ):
                                                     **kwd ) )
         return trans.response.send_redirect( web.url_for( controller='forms', action='edit', **vars ) )
     @web.expose
-    def edit_template_info( self, trans, cntrller, item_type, library_id, num_widgets, folder_id=None, ldda_id=None, **kwd ):
+    def edit_template_info( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
         # Edit the contents of the template fields without altering the template itself.
         params = util.Params( kwd )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
@@ -2156,10 +2166,28 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
+        # We need the type of each template field widget
+        widgets = item.get_template_widgets( trans )
+        # The list of widgets may include an AddressField which we need to save if it is new
+        for index, widget_dict in enumerate( widgets ):
+            widget = widget_dict[ 'widget' ]
+            if isinstance( widget, AddressField ):
+                value = util.restore_text( params.get( 'field_%i' % index, '' ) )
+                if value == 'new':
+                    if params.get( 'edit_info_button', False ):
+                        # Save the new address
+                        address = trans.app.model.UserAddress( user=trans.user )
+                        self.save_widget_field( trans, address, index, **kwd )
+                        widget.value = str( address.id )
+                    else:
+                        # Form was submitted via refresh_on_change
+                        widget.value = 'new'
+                elif value == unicode( 'none' ):
+                    widget.value = ''
+                else:
+                    widget.value = value
         # Save updated template field contents
-        field_contents = []
-        for index in range( int( num_widgets ) ):
-            field_contents.append( util.restore_text( params.get( 'field_%i' % ( index ), ''  ) ) )
+        field_contents = self.clean_field_contents( widgets, **kwd )
         if field_contents:
             # Since information templates are inherited, the template fields can be displayed on the information
             # page for a folder or ldda when it has no info_association object.  If the user has added

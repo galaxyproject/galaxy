@@ -1,5 +1,61 @@
-<%def name="render_template_info( cntrller, item_type, library_id, widgets, info_association, inherited, folder_id=None, ldda_id=None, editable=True )">
+<%def name="render_template_field( field )">
     <%
+        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
+        
+        has_contents = False
+        value = ''
+        if isinstance( field[ 'widget' ], TextArea ) and field[ 'widget' ].value:
+            has_contents = True
+            label = field[ 'label' ]
+            value = '<pre>%s</pre>' % field[ 'widget' ].value
+        elif isinstance( field[ 'widget' ], TextField ) and field[ 'widget' ].value:
+            has_contents = True
+            label = field[ 'label' ]
+            value = field[ 'widget' ].value
+        elif isinstance( field[ 'widget' ], SelectField ) and field[ 'widget' ].options:
+            for option_label, option_value, selected in field['widget'].options:
+                if selected:
+                    has_contents = True
+                    label = field[ 'label' ]
+                    value = option_value
+        elif isinstance( field[ 'widget' ], CheckboxField ) and field[ 'widget' ].checked:
+            has_contents = True
+            label = field[ 'label' ]
+            value = 'checked'
+        elif isinstance( field[ 'widget' ], WorkflowField ) and field[ 'widget' ].value not in [ 'none', 'None', None ]:
+            has_contents = True
+            label = field[ 'label' ]
+            widget = field[ 'widget' ]
+            workflow_user = widget.user
+            if workflow_user:
+                for workflow in workflow_user.stored_workflows:
+                    if not workflow.deleted and str( widget.value ) == str( workflow.id ):
+                        value = workflow.name
+                        break
+            else:
+                # If we didn't find the selected workflow option above, we'll just print the value
+                value = field[ 'widget' ].value
+        elif isinstance( field[ 'widget' ], AddressField ) and field[ 'widget' ].value not in [ 'none', 'None', None ]:
+            has_contents = True
+            widget = field[ 'widget' ]
+            address = trans.sa_session.query( trans.model.UserAddress ).get( int( widget.value ) )
+            label = address.desc
+            value = address.get_html()
+    %>
+    %if has_contents:
+        <div class="form-row">
+            <label>${label}</label>
+            ${value}
+            <div class="toolParamHelp" style="clear: both;">
+                ${field[ 'helptext' ]}
+            </div>
+            <div style="clear: both"></div>
+        </div>
+    %endif
+</%def>
+            
+<%def name="render_template_fields( cntrller, item_type, library_id, widgets, widget_fields_have_contents, info_association, inherited, folder_id=None, ldda_id=None, editable=True )">
+    <%  
         if item_type == 'library':
             item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         elif item_type == 'folder':
@@ -41,7 +97,7 @@
                     %endif
                 </div>
                 <div class="toolFormBody">
-                    <form name="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, library_id=library_id, num_widgets=len( widgets ), folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
+                    <form name="edit_info" id="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
                         %for i, field in enumerate( widgets ):
                             <div class="form-row">
                                 <label>${field[ 'label' ]}</label>
@@ -59,37 +115,17 @@
                 </div>
             </div>
             <p/>
-        %else:
-            <% contents = False %>
-            %for i, field in enumerate( widgets ):
-                %if field[ 'widget' ].value:
-                    <%
-                        contents = True
-                        break
-                    %>
-                %endif
-            %endfor
-            %if contents:
-                <p/>
-                <div class="toolForm">
-                    <div class="toolFormTitle">Other information about ${item.name}</div>
-                    <div class="toolFormBody">
-                        %for i, field in enumerate( widgets ):
-                            %if field[ 'widget' ].value:
-                                <div class="form-row">
-                                    <label>${field[ 'label' ]}</label>
-                                    <pre>${field[ 'widget' ].value}</pre>
-                                    <div class="toolParamHelp" style="clear: both;">
-                                        ${field[ 'helptext' ]}
-                                    </div>
-                                    <div style="clear: both"></div>
-                                </div>
-                            %endif
-                        %endfor
-                    </div>
+        %elif widget_fields_have_contents:
+            <p/>
+            <div class="toolForm">
+                <div class="toolFormTitle">Other information about ${item.name}</div>
+                <div class="toolFormBody">
+                    %for i, field in enumerate( widgets ):
+                        ${render_template_field( field )}
+                    %endfor
                 </div>
-                <p/>
-            %endif
+            </div>
+            <p/>
         %endif
     %endif
 </%def>

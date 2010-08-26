@@ -109,6 +109,13 @@ def get_user( email ):
     return sa_session.query( galaxy.model.User ) \
                      .filter( galaxy.model.User.table.c.email==email ) \
                      .first()
+def get_user_address( user, short_desc ):
+    return sa_session.query( galaxy.model.UserAddress ) \
+                     .filter( and_( galaxy.model.UserAddress.table.c.user_id==user.id,
+                                    galaxy.model.UserAddress.table.c.desc==short_desc,
+                                    galaxy.model.UserAddress.table.c.deleted==False ) ) \
+                     .order_by( desc( galaxy.model.UserAddress.table.c.create_time ) ) \
+                     .first()   
 def get_user_group_associations_by_group( group ):
     return sa_session.query( galaxy.model.UserGroupAssociation ) \
                      .filter( galaxy.model.UserGroupAssociation.table.c.group_id == group.id ) \

@@ -8,6 +8,7 @@ from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
 
 from Cheetah.Template import Template
 
@@ -290,7 +291,57 @@ class UsesHistory( SharableItemSecurity ):
         if not show_deleted:
             query = query.filter( trans.model.HistoryDatasetAssociation.deleted == False )
         return query.all()
-            
+
+class UsesFormDefinitionWidgets:
+    """Mixin for controllers that use Galaxy form objects."""
+    def widget_fields_have_contents( self, widgets ):
+        # Return True if any of the fields in widgets contain contents, widgets is a list of dictionaries that looks something like:
+        # [{'widget': <galaxy.web.form_builder.TextField object at 0x10867aa10>, 'helptext': 'Field 0 help (Optional)', 'label': 'Field 0'}]
+        for i, field in enumerate( widgets ):
+            if ( isinstance( field[ 'widget' ], TextArea ) or isinstance( field[ 'widget' ], TextField ) ) and field[ 'widget' ].value:
+                return True
+            if isinstance( field[ 'widget' ], SelectField ) and field[ 'widget' ].options:
+                for option_label, option_value, selected in field['widget'].options:
+                    if selected:
+                        return True
+            if isinstance( field[ 'widget' ], CheckboxField ) and field[ 'widget' ].checked:
+                return True
+            if isinstance( field[ 'widget' ], WorkflowField ) and field[ 'widget' ].value not in [ 'none', 'None', None ]:
+                return True
+            if isinstance( field[ 'widget' ], AddressField ) and field[ 'widget' ].value not in [ 'none', 'None', None ]:
+                return True
+        return False
+    def clean_field_contents( self, widgets, **kwd ):
+        params = util.Params( kwd )
+        field_contents = []
+        for index in range( len( widgets ) ):
+            widget = widgets[ index ][ 'widget' ]
+            field_value = params.get( 'field_%i' % ( index ), ''  )
+            if isinstance( widget, CheckboxField ):
+                # CheckboxField values are lists if the checkbox is checked
+                field_value = str( widget.is_checked( field_value ) ).lower()
+            elif isinstance( widget, AddressField ):
+                # If the address was new, is has already been saved and widget.value is the new address.id
+                field_value = widget.value
+            field_contents.append( util.restore_text( field_value ) )
+        return field_contents
+    def save_widget_field( self, trans, field_obj, index, **kwd ):
+        # Save a form_builder field object
+        # TODO: Add support for other field types ( e.g., WorkflowField )
+        params = util.Params( kwd )
+        if isinstance( field_obj, trans.model.UserAddress ):
+            field_obj.desc = util.restore_text( params.get( 'field_%i_short_desc' % index, '' ) )
+            field_obj.name = util.restore_text( params.get( 'field_%i_name' % index, '' ) )
+            field_obj.institution = util.restore_text( params.get( 'field_%i_institution' % index, '' ) )
+            field_obj.address = util.restore_text( params.get( 'field_%i_address' % index, '' ) )
+            field_obj.city = util.restore_text( params.get( 'field_%i_city' % index, '' ) )
+            field_obj.state = util.restore_text( params.get( 'field_%i_state' % index, '' ) )
+            field_obj.postal_code = util.restore_text( params.get( 'field_%i_postal_code' % index, '' ) )
+            field_obj.country = util.restore_text( params.get( 'field_%i_country' % index, '' ) )
+            field_obj.phone = util.restore_text( params.get( 'field_%i_phone' % index, '' ) )
+            trans.sa_session.add( field_obj )
+            trans.sa_session.flush()
+
 class Sharable:
     """ Mixin for a controller that manages an item that can be shared. """
     # Implemented methods.

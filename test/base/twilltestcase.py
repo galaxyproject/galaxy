@@ -1573,19 +1573,19 @@ class TwillTestCase( unittest.TestCase ):
     def add_user_address( self, user_id, address_dict ):
         self.home()
         self.visit_url( "%s/user/new_address?admin_view=False&user_id=%i" % ( self.url, user_id ) )
-        self.check_page_for_string( 'New address' )
+        self.check_page_for_string( 'Add new address' )
         for field_name, value in address_dict.items():
             tc.fv( "1", field_name, value )
-        tc.submit( "save_new_address_button" )
-        self.check_page_for_string( 'Address <b>%s</b> has been added' % address_dict[ 'short_desc' ] )
+        tc.submit( "new_address_button" )
+        self.check_page_for_string( 'Address (%s) has been added' % address_dict[ 'short_desc' ] )
     def add_user_address_as_admin( self, user_id, address_dict ):
         self.home()
         self.visit_url( "%s/user/new_address?admin_view=True&user_id=%i" % ( self.url, user_id ) )
-        self.check_page_for_string( 'New address' )
+        self.check_page_for_string( 'Add new address' )
         for field_name, value in address_dict.items():
             tc.fv( "1", field_name, value )
-        tc.submit( "save_new_address_button" )
-        self.check_page_for_string( 'Address <b>%s</b> has been added' % address_dict[ 'short_desc' ] )
+        tc.submit( "new_address_button" )
+        self.check_page_for_string( 'Address (%s) has been added' % address_dict[ 'short_desc' ] )
         
     # Library stuff
     def add_library_template( self, cntrller, item_type, library_id, form_id, form_name, folder_id=None, ldda_id=None ):

@@ -13,17 +13,15 @@ request_type_name = 'Test Requestype'
 sample_states = [  ( 'New', 'Sample entered into the system' ), 
                    ( 'Received', 'Sample tube received' ), 
                    ( 'Done', 'Sequence run complete' ) ]
-address1 = dict(  short_desc="Office",
-                  name="James+Bond",
-                  institution="MI6" ,
-                  address1="MI6+Headquarters",
-                  address2="",
-                  city="London",
-                  state="London",
-                  postal_code="007",
-                  country="United+Kingdom",
-                  phone="007-007-0007" )
-
+address_dict = dict( short_desc="Office",
+                     name="James+Bond",
+                     institution="MI6" ,
+                     address="MI6+Headquarters",
+                     city="London",
+                     state="London",
+                     postal_code="007",
+                     country="United+Kingdom",
+                     phone="007-007-0007" )
 
 def get_latest_form(form_name):
     fdc_list = sa_session.query( galaxy.model.FormDefinitionCurrent ) \
@@ -35,7 +33,6 @@ def get_latest_form(form_name):
         if form_name == fdc.latest_form.name:
             return fdc.latest_form
     return None
-
 
 class TestFormsAndRequests( TwillTestCase ):
     def test_000_initiate_users( self ):
@@ -114,7 +111,7 @@ class TestFormsAndRequests( TwillTestCase ):
     def test_010_create_form( self ):
         """Testing creating a new form and editing it"""
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )
         # create a form
         global form_one_name
         desc = "This is Form One's description"
@@ -197,7 +194,6 @@ class TestFormsAndRequests( TwillTestCase ):
             pass
         self.logout()
         self.login( email=admin_user.email )
-        
     def test_030_create_address_and_library( self ):
         """Testing address & library creation"""
         # first create a library for the request so that it can be submitted later
@@ -249,22 +245,15 @@ class TestFormsAndRequests( TwillTestCase ):
         assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
         # create address
         self.logout()
-        self.login( email='test1@bx.psu.edu', username='regular-user1' )
-        self.add_user_address( regular_user1.id, address1 )
-        global regular_user
-        regular_user = sa_session.query( galaxy.model.User ) \
-                                 .filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) \
-                                 .first()
+        self.login( email=regular_user1.email )
+        self.add_user_address( regular_user1.id, address_dict )
         global user_address
-        user_address = sa_session.query( galaxy.model.UserAddress ) \
-                                 .filter( and_( galaxy.model.UserAddress.table.c.desc==address1[ 'short_desc' ],
-                                                galaxy.model.UserAddress.table.c.deleted==False ) ) \
-                                 .first()    
+        user_address = get_user_address( regular_user1, address_dict[ 'short_desc' ] )    
     def test_035_create_request( self ):
         """Testing creating, editing and submitting a request as a regular user"""
         # login as a regular user
         self.logout()
-        self.login( email='test1@bx.psu.edu', username='regular-user1' )
+        self.login( email=regular_user1.email )
         # set field values
         fields = ['option1', str(user_address.id), 'field three value'] 
         # create the request
@@ -302,7 +291,7 @@ class TestFormsAndRequests( TwillTestCase ):
         """Testing request lifecycle as it goes through all the states"""
         # goto admin manage requests page
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )
         self.check_request_admin_grid(state=request_one.states.SUBMITTED, request_name=request_one.name)
         self.visit_url( "%s/requests_admin/list?operation=show&id=%s" \
                         % ( self.url, self.security.encode_id( request_one.id ) ))
@@ -317,7 +306,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.home()
         sa_session.refresh( request_one )
         self.logout()
-        self.login( email='test1@bx.psu.edu', username='regular-user1' )
+        self.login( email=regular_user1.email )
         # check if the request's state is now set to 'complete'
         self.check_request_grid(state='Complete', request_name=request_one.name)
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
@@ -325,11 +314,11 @@ class TestFormsAndRequests( TwillTestCase ):
     def test_045_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )
         request_name = "RequestTwo"
         # simulate request creation
         url_str = '%s/requests_common/new?cntrller=requests_admin&create_request_button=Save&select_request_type=%i&select_user=%i&name=%s&refresh=True&field_2=%s&field_0=%s&field_1=%i' \
-                  % ( self.url, request_type.id, regular_user.id, request_name, "field_2_value", 'option1', user_address.id )
+                  % ( self.url, request_type.id, regular_user1.id, request_name, "field_2_value", 'option1', user_address.id )
         print url_str
         self.home()
         self.visit_url( url_str )
@@ -363,7 +352,7 @@ class TestFormsAndRequests( TwillTestCase ):
     def test_050_reject_request( self ):
         '''Testing rejecting a request'''
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )
         self.reject_request( request_two.id, request_two.name, "Rejection test comment" )
         sa_session.refresh( request_two )
         # check if the request is showing in the 'rejected' filter
