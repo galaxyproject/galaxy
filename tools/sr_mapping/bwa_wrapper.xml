@@ -108,9 +108,8 @@
       BWA commands:
       bwa aln -t 4 phiX test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out1.sai
       bwa samse phiX bwa_wrapper_out1.sai test-data/bwa_wrapper_in1.fastq >> bwa_wrapper_out1.sam
-      phiX.fasta is the prefix for the reference
+      phiX.fa is the prefix for the reference files (phiX.fa.amb, phiX.fa.ann, phiX.fa.bwt, ...)
       remove the comment lines (beginning with '@') from the resulting sam file
-      note that 'phiX' should be 'PHIX174' to match what's in the indexed file 
       -->
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
@@ -118,7 +117,7 @@
       <param name="input1" value="bwa_wrapper_in1.fastq" ftype="fastqsanger" />
       <param name="source_select" value="pre_set" />
       <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out1.sam" ftype="sam" sort="true" />
+      <output name="output" file="bwa_wrapper_out1.sam" ftype="sam" sort="True" />
     </test>
     <test>
       <!--
@@ -126,8 +125,8 @@
       cp test-data/phiX.fasta phiX.fasta
       bwa index -a is phiX.fasta
       bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out2.sai
-      bwa samse phiX.fasta bwa_wrapper_out2.sai test-data/bwa_wrapper_in1.fastq >> bwa_wrapper_out2.sam
-      phiX.fasta is the prefix for the reference
+      bwa samse phiX.fasta bwa_wrapper_out2.sai test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out2.sam
+      phiX.fa is the prefix for the reference files (phiX.fa.amb, phiX.fa.ann, phiX.fa.bwt, ...)
       remove the comment lines (beginning with '@') from the resulting sam file
       -->
       <param name="refGenomeSource" value="history" />
@@ -152,17 +151,16 @@
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
       <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out2.sam" ftype="sam" sort="true" />
+      <output name="output" file="bwa_wrapper_out2.sam" ftype="sam" sort="True" />
     </test> 
     <test>
       <!--
       BWA commands:
-      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in2.fastq > bwa_wrapper_out3a.sai
-      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3b.sai
-      bwa sampe -a 500 -o 100000 phiX.fasta bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastq test-data/bwa_wrapper_in3.fastq >> bwa_wrapper_out3.sam
-      phiX.fasta is the prefix for the reference
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fa test-data/bwa_wrapper_in2.fastq > bwa_wrapper_out3a.sai
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fa test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3b.sai
+      bwa sampe -a 500 -o 100000 phiX.fasta bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastq test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3.sam
+      phiX.fa is the prefix for the reference
       remove the comment lines (beginning with '@') from the resulting sam file
-      note that 'phiX' should be 'PHIX174' to match what's in the indexed file 
       -->
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
@@ -187,7 +185,7 @@
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
       <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" sort="true" />
+      <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" sort="True" />
     </test>
   </tests> 
   <help>

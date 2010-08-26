@@ -180,6 +180,7 @@ def __main__():
                     
             # Copy SAM File.
             shutil.copyfile( tmp_output_dir + "/accepted_hits.sam", options.accepted_hits_output_file )
+            shutil.copyfile(tmp_output_dir + "/accepted_hits.sam", '/afs/bx.psu.edu/user/kpvincent/galaxy-commit/tophat_out.sam')
         except Exception, e:
             stop_err( 'Error in tophat:\n' + str( e ) ) 
     finally:

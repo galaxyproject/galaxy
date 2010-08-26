@@ -263,7 +263,7 @@
             <param name="input2" ftype="fastqsanger" value="tophat_in2.fq"/>
             <param name="mate_inner_distance" value="20"/>
             <param name="pSettingsType" value="preSet"/>
-            <output name="accepted_hits" file="tophat_out1.sam"/>
+            <output name="accepted_hits" file="tophat_out1.sam" sort="True"/>
             <output name="coverage" file="tophat_out2.wig"/>
             <output name="junctions" file="tophat_out3.bed"/>
         </test>
