@@ -341,7 +341,7 @@ $.extend( View.prototype, {
         var sorted = $("ul#sortable-ul").sortable('toArray');
         for (var id_i in sorted) {
             var id = sorted[id_i].split("_li")[0].split("track_")[1];
-            this.viewport.append( $("#track_" + id) );
+            this.viewport_container.append( $("#track_" + id) );
         }
         
         for (var track_id in view.tracks) {
