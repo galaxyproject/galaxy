@@ -1,4 +1,7 @@
 from sqlalchemy.sql.expression import func
+import logging
+
+log = logging.getLogger( __name__ )
 
 class UsesItemRatings:
     """ 

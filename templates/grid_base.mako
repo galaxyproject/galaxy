@@ -45,7 +45,7 @@
 </%def>
 
 <%def name="grid_javascripts()">
-    ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js("jquery.autocomplete", "autocomplete_tagging", "jquery.rating" )}
     <script type="text/javascript">
         // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
         // not appended to the identifier of a nested array.
@@ -609,7 +609,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging" )}
+    ${h.css( "autocomplete_tagging", "jquery.rating" )}
     <style>
        ## Not generic to all grids -- move to base?
        .count-box {
@@ -717,8 +717,8 @@
     %>
 
     <form action="${url()}" method="post" onsubmit="return false;">
-        <div class='loading-elt-overlay'></div>
-        <table id='grid-table' class="grid">
+        <div class="loading-elt-overlay"></div>
+        <table id="grid-table" class="grid">
             <thead id="grid-table-header">
                 <tr>
                     %if show_item_checkboxes:
@@ -747,7 +747,7 @@
                             %endif
                             >
                                 %if href:
-                                    <a href="${href}" class="sort-link" sort_key='${column.key}'>${column.label}</a>
+                                    <a href="${href}" class="sort-link" sort_key="${column.key}">${column.label}</a>
                                 %else:
                                     ${column.label}
                                 %endif

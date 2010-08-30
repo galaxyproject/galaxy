@@ -1,4 +1,5 @@
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/webapps/community/common/common.mako" import="*" />
 
 <%
     from galaxy.web.framework.helpers import time_ago
@@ -51,12 +52,6 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "jquery.rating" )}
-
-    <script type="text/javascript">
-        jQuery( function() {
-            jQuery( 'form.rating' ).rating();
-        });
-    </script>
 </%def>
 
 <%def name="title()">View Tool</%def>
@@ -205,31 +200,7 @@ ${tool.get_state_message()}
                 </div>
                 <div class="form-row">
                     <label>Average Rating:</label>
-                    <input name="avg_rating" type="radio" class="star" value="1" disabled="disabled"
-                        %if avg_rating > 0.5 and avg_rating < 1.5:
-                            checked="checked"
-                        %endif
-                    />
-                    <input name="avg_rating" type="radio" class="star" value="2" disabled="disabled"
-                        %if avg_rating > 1.5 and avg_rating < 2.5:
-                            checked="checked"
-                        %endif
-                    />
-                    <input name="avg_rating" type="radio" class="star" value="3" disabled="disabled"
-                        %if avg_rating > 2.5 and avg_rating < 3.5:
-                            checked="checked"
-                        %endif
-                    />
-                    <input name="avg_rating" type="radio" class="star" value="4" disabled="disabled"
-                        %if avg_rating > 3.5 and avg_rating < 4.5:
-                            checked="checked"
-                        %endif
-                    />
-                    <input name="avg_rating" type="radio" class="star" value="5" disabled="disabled"
-                        %if avg_rating > 4.5 and avg_rating < 5.5:
-                            checked="checked"
-                        %endif
-                    />
+                    ${render_star_rating( 'avg_rating', avg_rating, disabled=True )}
                     <div style="clear: both"></div>
                 </div>
             </div>
@@ -257,33 +228,7 @@ ${tool.get_state_message()}
                                 name = 'rating%d' % count
                             %>
                             <tr>
-                                <td>
-                                    <input name="${name}" type="radio" class="star" value="1" disabled="disabled"
-                                        %if review.rating > 0.5 and review.rating < 1.5:
-                                            checked="checked"
-                                        %endif
-                                    />
-                                    <input name="${name}" type="radio" class="star" value="2" disabled="disabled"
-                                        %if review.rating > 1.5 and review.rating < 2.5:
-                                            checked="checked"
-                                        %endif
-                                    />
-                                    <input name="${name}" type="radio" class="star" value="3" disabled="disabled"
-                                        %if review.rating > 2.5 and review.rating < 3.5:
-                                            checked="checked"
-                                        %endif
-                                    />
-                                    <input name="${name}" type="radio" class="star" value="4" disabled="disabled"
-                                        %if review.rating > 3.5 and review.rating < 4.5:
-                                            checked="checked"
-                                        %endif
-                                    />
-                                    <input name="${name}" type="radio" class="star" value="5" disabled="disabled"
-                                        %if review.rating > 4.5 and review.rating < 5.5:
-                                            checked="checked"
-                                        %endif
-                                    />
-                                </td>
+                                <td>${render_star_rating( name, review.rating, disabled=True )}</td>
                                 <td>${review.comment}</td>
                                 <td>${time_ago( review.update_time )}</td>
                                 <td>${review.user.username}</td>

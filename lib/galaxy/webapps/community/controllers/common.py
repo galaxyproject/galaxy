@@ -11,6 +11,41 @@ log = logging.getLogger( __name__ )
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
+class ItemRatings( UsesItemRatings ):
+    """Overrides rate_item method since we also allow for comments"""
+    def rate_item( self, trans, user, item, rating, comment='' ):
+        """ Rate an item. Return type is <item_class>RatingAssociation. """
+        item_rating = self.get_user_item_rating( trans, user, item )
+        if not item_rating:
+            # User has not yet rated item; create rating.
+            item_rating_assoc_class = self._get_item_rating_assoc_class( trans, item )
+            item_rating = item_rating_assoc_class()
+            item_rating.user = trans.user
+            item_rating.set_item( item )
+            item_rating.rating = rating
+            item_rating.comment = comment
+            trans.sa_session.add( item_rating )
+            trans.sa_session.flush()
+        elif item_rating.rating != rating or item_rating.comment != comment:
+            # User has previously rated item; update rating.
+            item_rating.rating = rating
+            item_rating.comment = comment
+            trans.sa_session.flush()
+        return item_rating
+    def get_avg_rating_html( self, avg_rating ):
+        # FIXME: the class="star" attribute in the input tag does not render correctly inside a table
+        # with the attribute class="grid-table", so just display the numerical avg_rating value until
+        # we can figure out why the styles don't work together.  When this is fixed, eliminate the following
+        # line and return the html.
+        return int( avg_rating )
+        html = ''
+        for index in range( 1, 6 ):
+            html += '<input name="avg_rating" type="radio" class="star" value="%s" disabled="disabled"' % str( index )
+            if avg_rating > ( index - 0.5 ) and avg_rating < ( index + 0.5 ):
+                html += ' checked="checked"'
+            html += '/>'
+        return html
+
 class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
@@ -48,6 +83,10 @@ class ToolListGrid( grids.Grid ):
             if tool.user:
                 return tool.user.username
             return 'no user'
+    class RatingColumn( grids.TextColumn, ItemRatings ):
+        def get_value( self, trans, grid, tool ):
+            avg_rating, num_ratings = self.get_ave_item_rating_data( trans, tool )
+            return self.get_avg_rating_html( avg_rating )
     class EmailColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
@@ -63,12 +102,10 @@ class ToolListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     link=( lambda item: dict( operation="view_tool", id=item.id, webapp="community" ) ),
-                    model_class=model.Tool,
                     attach_popup=False
                     ),
         TypeColumn( "Type",
                      key="suite",
-                     model_class=model.Tool,
                      attach_popup=False ),
         VersionColumn( "Version",
                        key="version",
@@ -77,7 +114,6 @@ class ToolListGrid( grids.Grid ):
                        filterable="advanced" ),
         DescriptionColumn( "Description",
                            key="description",
-                           model_class=model.Tool,
                            attach_popup=False
                            ),
         CategoryColumn( "Category",
@@ -89,6 +125,8 @@ class ToolListGrid( grids.Grid ):
                     link=( lambda item: dict( operation="tools_by_user", id=item.id, webapp="community" ) ),
                     attach_popup=False,
                     filterable="advanced" ),
+        RatingColumn( "Average Rating",
+                      attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
                      key="email",
@@ -142,14 +180,12 @@ class CategoryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    model_class=model.Category,
                     link=( lambda item: dict( operation="tools_by_category", id=item.id, webapp="community" ) ),
                     attach_popup=False,
                     filterable="advanced"
                   ),
         DescriptionColumn( "Description",
                     key="description",
-                    model_class=model.Category,
                     attach_popup=False,
                     filterable="advanced"
                   ),
@@ -175,28 +211,6 @@ class CategoryListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-
-class ItemRatings( UsesItemRatings ):
-    """Overrides rate_item method since we also allow for comments"""
-    def rate_item( self, trans, user, item, rating, comment='' ):
-        """ Rate an item. Return type is <item_class>RatingAssociation. """
-        item_rating = self.get_user_item_rating( trans, user, item )
-        if not item_rating:
-            # User has not yet rated item; create rating.
-            item_rating_assoc_class = self._get_item_rating_assoc_class( trans, item )
-            item_rating = item_rating_assoc_class()
-            item_rating.user = trans.user
-            item_rating.set_item( item )
-            item_rating.rating = rating
-            item_rating.comment = comment
-            trans.sa_session.add( item_rating )
-            trans.sa_session.flush()
-        elif item_rating.rating != rating or item_rating.comment != comment:
-            # User has previously rated item; update rating.
-            item_rating.rating = rating
-            item_rating.comment = comment
-            trans.sa_session.flush()
-        return item_rating
                 
 class CommonController( BaseController, ItemRatings ):
     @web.expose
