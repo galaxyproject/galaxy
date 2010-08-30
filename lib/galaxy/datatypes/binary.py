@@ -50,7 +50,15 @@ class Ab1( Binary ):
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
-    MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )    
+    MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
+    
+    def _is_coordinate_sorted(self, filename):
+        """Check if the input BAM file is sorted from the header information.
+        """
+        params = ["samtools", "view", "-H", filename]
+        output = subprocess.Popen(params, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[0]
+        # find returns -1 if string is not found
+        return output.find("SO:coordinate") != -1 or output.find("SO:sorted") != -1
 
     def groom_dataset_content( self, file_name ):
         """
@@ -63,8 +71,12 @@ class Bam( Binary ):
         ## Sort alignments by leftmost coordinates. File <out.prefix>.bam will be created.
         ## This command may also create temporary files <out.prefix>.%d.bam when the
         ## whole alignment cannot be fitted into memory ( controlled by option -m ).
-        
         #do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
+        
+        if self._is_coordinate_sorted(file_name):
+            # Don't re-sort if already sorted
+            return
+            
         tmp_dir = tempfile.mkdtemp()
         tmp_sorted_dataset_file_name_prefix = os.path.join( tmp_dir, 'sorted' )
         stderr_name = tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "bam_sort_stderr" ).name
