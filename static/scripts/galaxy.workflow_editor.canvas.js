@@ -45,9 +45,21 @@ $.extend( InputTerminal.prototype, {
     can_accept: function ( other ) {
         if ( this.connectors.length < 1 ) {
             for ( var t in this.datatypes ) {
+                var cat_outputs = new Array();
+                cat_outputs = cat_outputs.concat(other.datatypes);
+                if (other.node.post_job_actions){
+                    for (var pja_i in other.node.post_job_actions){
+                        var pja = other.node.post_job_actions[pja_i];
+                        if (pja.action_type == "ChangeDatatypeAction"){
+                            if (pja.action_arguments){
+                                cat_outputs.push(pja.action_arguments['newtype']);
+                            }
+                        }
+                    }
+                }
                 // FIXME: No idea what to do about case when datatype is 'input'
-                for ( var other_datatype_i in other.datatypes ) {
-                    if ( other.datatypes[other_datatype_i] == "input" || issubtype( other.datatypes[other_datatype_i], this.datatypes[t] ) ) {
+                for ( var other_datatype_i in cat_outputs ) {
+                    if ( cat_outputs[other_datatype_i] == "input" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
                         return true;
                     }
                 }
@@ -202,6 +214,7 @@ $.extend( Node.prototype, {
             terminal.node = node;
             terminal.name = name;
             $(this).bind( "dragstart", function( e ) { 
+                    workflow.check_changes_in_active_form(); //To save PJAs in the case of change datatype actions.
                     var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' ).appendTo( "#canvas-container" ).get(0);
                     h.terminal = new OutputTerminal( h );
                     var c = new Connector();
