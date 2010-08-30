@@ -190,11 +190,15 @@ class Crate( object ):
     Reads the eggs.ini file for use with checking and fetching.
     """
     config_file = os.path.join( galaxy_dir, 'eggs.ini' )
-    def __init__( self ):
+    def __init__( self, platform=None ):
         self.eggs = {}
         self.config = CaseSensitiveConfigParser()
         self.repo = None
         self.no_auto = []
+        self.platform = platform
+        self.py_platform = None
+        if platform is not None:
+            self.py_platform = platform.split( '-' )[0]
         self.galaxy_config = GalaxyConfig()
         self.parse()
     def parse( self ):
@@ -208,9 +212,9 @@ class Crate( object ):
             tag = dict( tags ).get( name, '' )
             url = '/'.join( ( self.repo, name ) )
             if full_platform:
-                platform = '-'.join( ( py, pkg_resources.get_platform() ) )
+                platform = self.platform or '-'.join( ( py, pkg_resources.get_platform() ) )
             else:
-                platform = py
+                platform = self.py_platform or py
             egg = egg_class( name, version, tag, url, platform )
             self.eggs[name] = egg
     @property
@@ -260,8 +264,6 @@ class Crate( object ):
         rval = []
         for egg in self.eggs.values():
             if egg.name not in self.galaxy_config.always_conditional:
-                rval.append( egg )
-            elif self.galaxy_config.check_conditional( egg.name ):
                 rval.append( egg )
         return rval
     def __getitem__( self, name ):

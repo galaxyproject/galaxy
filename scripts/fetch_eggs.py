@@ -21,11 +21,10 @@ sys.path.append( lib )
 from galaxy.eggs import Crate, EggNotFetchable
 import pkg_resources
 
-c = Crate()
 try:
-    c.platform = sys.argv[2]
+    c = Crate( platform = sys.argv[2] )
 except:
-    pass
+    c = Crate()
 try:
     if len( sys.argv ) == 1:
         c.resolve() # Only fetch eggs required by the config
