@@ -50,10 +50,8 @@ $.extend( InputTerminal.prototype, {
                 if (other.node.post_job_actions){
                     for (var pja_i in other.node.post_job_actions){
                         var pja = other.node.post_job_actions[pja_i];
-                        if (pja.action_type == "ChangeDatatypeAction"){
-                            if (pja.action_arguments){
-                                cat_outputs.push(pja.action_arguments['newtype']);
-                            }
+                        if (pja.action_type == "ChangeDatatypeAction" && (pja.output_name == '' || pja.output_name == other.name) && pja.action_arguments){
+                            cat_outputs.push(pja.action_arguments['newtype']);
                         }
                     }
                 }
