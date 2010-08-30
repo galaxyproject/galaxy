@@ -106,11 +106,10 @@ class GalaxyWebInterface(object):
         # Encrypt
         return id_cipher.encrypt( s ).encode( 'hex' )
     
-    def update_request_state(self, request_id, sample_id):
+    def update_request_state(self, request_id):
         params = urllib.urlencode(dict( cntrller='requests_admin',
-                                        request_id=request_id,
-                                        sample_id=sample_id))
-        url = self.base_url + "/requests_admin/update_request_state"
+                                        request_id=request_id))
+        url = self.base_url + "/requests_common/update_request_state"
         f = self.opener.open(url, params)
         print url
         print params

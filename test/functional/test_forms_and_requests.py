@@ -301,8 +301,8 @@ class TestFormsAndRequests( TwillTestCase ):
         self.add_bar_codes( request_one.id, request_one.name, bar_codes, request_one.samples )
         # change the states of all the samples of this request
         for sample in request_one.samples:
-            self.change_sample_state( sample.name, sample.id, request_type.states[1].id, request_type.states[1].name )
-            self.change_sample_state( sample.name, sample.id, request_type.states[2].id, request_type.states[2].name )
+            self.change_sample_state( request_one.id, request_one.name, sample.name, sample.id, request_type.states[1].id, request_type.states[1].name )
+            self.change_sample_state( request_one.id, request_one.name, sample.name, sample.id, request_type.states[2].id, request_type.states[2].name )
         self.home()
         sa_session.refresh( request_one )
         self.logout()

@@ -108,7 +108,7 @@ def recv_callback(msg):
                                        webconfig.get("data_transfer_user_login_info", "email"),
                                        webconfig.get("data_transfer_user_login_info", "password"),
                                        config.get("app:main", "id_secret"))
-        galaxyweb.update_request_state(galaxydb.get_request_id(sample_id), sample_id)
+        galaxyweb.update_request_state(galaxydb.get_request_id(sample_id))
         galaxyweb.logout()
 
 def main():

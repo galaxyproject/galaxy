@@ -515,7 +515,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
     @web.require_login( "create/submit sequencing requests" )
     def events(self, trans, **kwd):
         params = util.Params( kwd )
-        cntrller = util.restore_text( params.get( 'cntrller', 'requests'  ) )
+        cntrller = params.get( 'cntrller', 'requests'  )
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
         except:
@@ -533,21 +533,63 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     cntrller=cntrller,
                                     events_list=events_list, request=request)
     @web.expose
-    @web.require_login( "create/submit sequencing requests" )
-    def settings(self, trans, **kwd):
+    @web.require_admin
+    def update_request_state( self, trans, **kwd ):
         params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
         cntrller = params.get( 'cntrller', 'requests'  )
         try:
-            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
+            request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', None ) ) )
         except:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='list',
                                                               status='error',
-                                                              message="Invalid request ID") )
-        return trans.fill_template( '/requests/common/settings.mako', 
-                                    cntrller=cntrller, request=request)
-        
+                                                              message="Invalid request ID",
+                                                              **kwd) )
+        # check if all the samples of the current request are in the sample state
+        common_state = request.common_state()
+        if not common_state:
+            # if the current request state is complete and one of its samples moved from
+            # the final sample state, then move the request state to In-progress
+            if request.complete():
+                status='done'
+                message = "One or more samples' state moved from the final sample state. Now request in '%s' state" % request.states.SUBMITTED
+                event = trans.app.model.RequestEvent(request, request.states.SUBMITTED, message)
+                trans.sa_session.add( event )
+                trans.sa_session.flush()
+            else:
+                message = ''
+                status = 'ok'
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='list',
+                                                              operation='show',
+                                                              id=trans.security.encode_id(request.id),
+                                                              status=status,
+                                                              message=message ) )
+        final_state = False
+        if common_state.id == request.type.last_state().id:
+            # since all the samples are in the final state, change the request state to 'Complete'
+            comments = "All samples of this request are in the last sample state (%s). " % request.type.last_state().name
+            state = request.states.COMPLETE
+            final_state = True
+        else:
+            comments = "All samples are in %s state. " % common_state.name
+            state = request.states.SUBMITTED
+        event = trans.app.model.RequestEvent(request, state, comments)
+        trans.sa_session.add( event )
+        trans.sa_session.flush()
+        # check if an email notification is configured to be sent when the samples 
+        # are in this state
+        retval = request.send_email_notification(trans, common_state, final_state)
+        if retval:
+            message = comments + retval
+        else:
+            message = comments
+        return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                          action='list',
+                                                          operation='show',
+                                                          id=trans.security.encode_id(request.id),
+                                                          status='done',
+                                                          message=message ) )
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def show(self, trans, **kwd):
@@ -588,9 +630,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                         folder_widget=folder_widget))
         return trans.fill_template( '/requests/common/show_request.mako',
                                     cntrller=cntrller,
-                                    request=request,
+                                    request=request, selected_samples=[],
                                     request_details=self.request_details(trans, request.id),
                                     current_samples=current_samples,
+                                    sample_ops=self.__sample_operation_selectbox(trans, request, **kwd),
                                     sample_copy=self.__copy_sample(current_samples), 
                                     details='hide', edit_mode=util.restore_text( params.get( 'edit_mode', 'False'  ) ),
                                     message=message, status=status )
@@ -663,7 +706,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             else:
                 break
         return current_samples, details, edit_mode, libraries
-
+    
     def __library_widgets(self, trans, user, sample_index, libraries, sample=None, lib_id=None, folder_id=None, **kwd):
         '''
         This method creates the data library & folder selectbox for creating &
@@ -736,7 +779,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 else:
                     folder_widget.add_option(f.name, f.id)
         return lib_widget, folder_widget
-
     def __copy_sample(self, current_samples):
         copy_list = SelectField('copy_sample')
         copy_list.add_option('None', -1, selected=True)  
@@ -744,6 +786,44 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             copy_list.add_option(s['name'], i)
         return copy_list  
     
+    def __sample_operation_selectbox(self, trans, request, **kwd):
+        params = util.Params( kwd )
+        cntrller = util.restore_text( params.get( 'cntrller', 'requests'  ) )
+        if cntrller == 'requests_admin' and trans.user_is_admin():
+            if request.complete():
+                bulk_operations = [trans.app.model.Sample.bulk_operations.CHANGE_STATE]
+            if request.rejected():
+                bulk_operations = [trans.app.model.Sample.bulk_operations.SELECT_LIBRARY]
+            else:
+                bulk_operations = [s for i, s in trans.app.model.Sample.bulk_operations.items()]
+        else:
+            if request.complete():
+                bulk_operations = []
+            else:
+                bulk_operations = [trans.app.model.Sample.bulk_operations.SELECT_LIBRARY]
+        op_list = SelectField('select_sample_operation', 
+                              refresh_on_change=True, 
+                              refresh_on_change_values=bulk_operations)
+        sel_op = kwd.get('select_sample_operation', 'none')
+        if sel_op == 'none':
+            op_list.add_option('Select operation', 'none', True)
+        else:
+            op_list.add_option('Select operation', 'none')
+        for s in bulk_operations:
+            if s == sel_op:
+                op_list.add_option(s, s, True)
+            else:
+                op_list.add_option(s, s)
+        return op_list
+    
+    def __selected_samples(self, trans, request, **kwd):
+        params = util.Params( kwd )
+        selected_samples = []
+        for s in request.samples:
+            if CheckboxField.is_checked(params.get('select_sample_%i' % s.id, '')):
+                selected_samples.append(s.id)
+        return selected_samples
+
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def request_page(self, trans, **kwd):
@@ -760,6 +840,15 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               message="Invalid request ID") )
         # get the user entered sample details
         current_samples, details, edit_mode, libraries = self.__update_samples( trans, request, **kwd )
+        selected_samples = self.__selected_samples(trans, request, **kwd)
+        sample_ops = self.__sample_operation_selectbox(trans, request,**kwd)
+        if params.get('select_sample_operation', 'none') != 'none' and not len(selected_samples):
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='list',
+                                                              operation='show',
+                                                              id=trans.security.encode_id(request.id),
+                                                              status='error',
+                                                              message='Select at least one sample before selecting an operation.' ))
         if params.get('import_samples_button', False) == 'Import samples':
             return self.__import_samples(trans, cntrller, request, current_samples, details, libraries, **kwd)
         elif params.get('add_sample_button', False) == 'Add New':
@@ -805,7 +894,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                         request_details=self.request_details(trans, request.id),
                                         current_samples=current_samples,
                                         sample_copy=self.__copy_sample(current_samples), 
-                                        details=details,
+                                        details=details, selected_samples=selected_samples,
+                                        sample_ops=sample_ops,
                                         edit_mode=edit_mode)
         elif params.get('save_samples_button', False) == 'Save':
             # check for duplicate sample names
@@ -826,11 +916,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             if message:
                 return trans.fill_template( '/requests/common/show_request.mako',
                                             cntrller=cntrller,
-                                            request=request,
+                                            request=request, selected_samples=selected_samples,
                                             request_details=self.request_details(trans, request.id),
                                             current_samples = current_samples,
                                             sample_copy=self.__copy_sample(current_samples), 
                                             details=details, edit_mode=edit_mode,
+                                            sample_ops=sample_ops,
                                             status='error', message=message)
             # save all the new/unsaved samples entered by the user
             if edit_mode == 'False':
@@ -899,10 +990,11 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             edit_mode = 'True'
             return trans.fill_template( '/requests/common/show_request.mako',
                                         cntrller=cntrller,
-                                        request=request,
+                                        request=request, selected_samples=selected_samples,
                                         request_details=self.request_details(trans, request.id),
                                         current_samples=current_samples,
                                         sample_copy=self.__copy_sample(current_samples), 
+                                        sample_ops=sample_ops,
                                         details=details, libraries=libraries,
                                         edit_mode=edit_mode)
         elif params.get('cancel_changes_button', False) == 'Cancel':
@@ -910,14 +1002,33 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               action='list',
                                                               operation='show',
                                                               id=trans.security.encode_id(request.id)) )
+        elif params.get('change_state_button', False) == 'Save':
+            comments = util.restore_text( params.comment )
+            selected_state = int( params.select_state )
+            new_state = trans.sa_session.query( trans.app.model.SampleState ).get( selected_state )
+            for sample_id in selected_samples:
+                sample = trans.sa_session.query( trans.app.model.Sample ).get( sample_id )
+                event = trans.app.model.SampleEvent(sample, new_state, comments)
+                trans.sa_session.add( event )
+                trans.sa_session.flush()
+            return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                              cntrller=cntrller, 
+                                                              action='update_request_state',
+                                                              request_id=request.id ))
+        elif params.get('change_state_button', False) == 'Cancel':
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='list',
+                                                              operation='show',
+                                                              id=trans.security.encode_id(request.id)) )
         else:
             return trans.fill_template( '/requests/common/show_request.mako',
-                                        cntrller=cntrller,
-                                        request=request,
+                                        cntrller=cntrller, 
+                                        request=request, selected_samples=selected_samples,
                                         request_details=self.request_details(trans, request.id),
                                         current_samples=current_samples,
                                         sample_copy=self.__copy_sample(current_samples), 
                                         details=details, libraries=libraries,
+                                        sample_ops=sample_ops, 
                                         edit_mode=edit_mode, status=status, message=message)
             
     def __import_samples(self, trans, cntrller, request, current_samples, details, libraries, **kwd):
@@ -1014,21 +1125,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             trans.sa_session.delete( s.values )
             trans.sa_session.delete( s )
             trans.sa_session.flush()
-        del current_samples[sample_index]  
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='list',
                                                           operation='show',
                                                           id=trans.security.encode_id(request.id),
                                                           status='done',
                                                           message='Sample <b>%s</b> has been deleted.' % sample_name ))
-        return trans.fill_template( '/requests/common/show_request.mako',
-                                    controller=cntrller,
-                                    request=request,
-                                    request_details=self.request_details(trans, request.id),
-                                    current_samples = current_samples,
-                                    sample_copy=self.__copy_sample(current_samples), 
-                                    details=details,
-                                    edit_mode=edit_mode)
     def request_details(self, trans, id):
         '''
         Shows the request details
@@ -1087,11 +1189,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             events_list.append((event.state.name, event.state.desc, 
                                 time_ago(event.update_time), 
                                 event.comment))
-        widgets, title = self.__change_state_widgets(trans, sample)
         return trans.fill_template( '/requests/common/sample_events.mako', 
                                     cntrller=cntrller,
                                     events_list=events_list,
-                                    sample=sample, widgets=widgets, title=title)
+                                    sample=sample)
     def __change_state_widgets(self, trans, sample):
         possible_states = sample.request.type.states 
         curr_state = sample.current_state() 

@@ -1562,13 +1562,17 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'Changes made to the sample(s) are saved.' )
         for index, bar_code in enumerate(bar_codes):
             self.check_page_for_string( bar_code )
-    def change_sample_state( self, sample_name, sample_id, new_state_id, new_state_name, comment='' ):
+    def change_sample_state( self, request_id, request_name, sample_name, sample_id, new_state_id, new_state_name, comment='' ):
         self.home()
+        url = "%s/requests/list?operation=show&id=%s" % ( self.url, self.security.encode_id( request_id ) )
+        self.visit_url( url )
+        self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
+        url = "%s/requests_common/request_page?cntrller=requests_admin&edit_mode=False&id=%s&comment=%s&change_state_button=Save&select_sample_operation=%s&refresh=true&select_sample_%i=true&select_sample_%i=true&select_state=%i" % \
+              (self.url, self.security.encode_id( request_id ), comment, "Change%20state", sample_id, sample_id, new_state_id )
+        self.visit_url( url )        
+        self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
         self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%i" % (self.url, sample_id) )
         self.check_page_for_string( 'Events for Sample "%s"' % sample_name )
-        tc.fv( "1", "select_state", str(new_state_id) )
-        tc.fv( "1", "comment", comment )
-        tc.submit( "add_event_button" )
         self.check_page_for_string( new_state_name )
     def add_user_address( self, user_id, address_dict ):
         self.home()

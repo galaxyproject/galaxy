@@ -1629,6 +1629,7 @@ All samples in state:     %(sample_state)s
             event = trans.app.model.RequestEvent(self, self.state(), comments)
             trans.sa_session.add(event)
             trans.sa_session.flush()
+        return comments
     
 class RequestEvent( object ):
     def __init__(self, request=None, request_state=None, comment=''):
@@ -1651,6 +1652,28 @@ class RequestType( object ):
         self.datatx_info = datatx_info
     def last_state(self):
         return self.states[-1]
+    
+    def change_state_widgets(self, trans, sample=None):
+        if sample:
+            curr_state = sample.current_state()
+        else:
+            curr_state = self.states[0]
+        states_input = SelectField('select_state')
+        for state in self.states:
+            if curr_state.name == state.name:
+                states_input.add_option(state.name, state.id, selected=True)
+            else:
+                states_input.add_option(state.name, state.id)
+        widgets = []
+        if sample:
+            widgets.append(('Select the new state of the sample from the list of possible state(s)',
+                          states_input))
+        else:
+            widgets.append(('Select the new state of the selected sample(s) from the list of possible state(s)',
+                          states_input))
+        widgets.append(('Comments', TextArea('comment')))
+        title = 'Change current state'
+        return widgets, title
         
 class RequestTypePermissions( object ):
     def __init__( self, action, request_type, role ):
@@ -1659,6 +1682,8 @@ class RequestTypePermissions( object ):
         self.role = role
     
 class Sample( object ):
+    bulk_operations = Bunch(CHANGE_STATE = 'Change state', 
+                            SELECT_LIBRARY = 'Select data library and folder')
     transfer_status = Bunch( NOT_STARTED = 'Not started',
                              IN_QUEUE = 'In queue',
                              TRANSFERRING = 'Transferring dataset',

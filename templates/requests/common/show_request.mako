@@ -113,6 +113,36 @@ $(document).ready(function(){
             }
         });
     };
+    
+	function checkAllFields()
+	{
+		var chkAll = document.getElementById('checkAll');
+		var checks = document.getElementsByTagName('input');
+		var boxLength = checks.length;
+		var allChecked = false;
+		var totalChecked = 0;
+        if ( chkAll.checked == true )
+        {
+            for ( i=0; i < boxLength; i++ )
+            {
+	            if ( checks[i].name.indexOf( 'select_sample_' ) != -1)
+	            {
+	               checks[i].checked = true;
+	            }
+	        }
+        }
+        else
+        {
+            for ( i=0; i < boxLength; i++ )
+            {
+                if ( checks[i].name.indexOf( 'select_sample_' ) != -1)
+                {
+                   checks[i].checked = false
+                }
+            }
+        }
+	}
+
 </script>
 
 <style type="text/css">
@@ -261,6 +291,40 @@ $(document).ready(function(){
             %if current_samples:
                 ## first render the basic info grid 
                 ${render_basic_info_grid()}
+		        %if not request.new() and edit_mode == 'False' and len(sample_ops.options) > 1:
+                    <div class="form-row" style="background-color:#FAFAFA;">
+	                    For selected sample(s): 
+                        ${sample_ops.get_html()}
+                    </div>
+                    %if 'none' not in sample_ops.get_selected() and len(selected_samples):
+                        <div class="form-row" style="background-color:#FAFAFA;">
+                            %if trans.app.model.Sample.bulk_operations.CHANGE_STATE in sample_ops.get_selected():
+                                <%
+                                    widgets, title = request.type.change_state_widgets(trans)
+                                %>
+			                    %for w in widgets:
+			                        <div class="form-row">
+			                            <label>
+			                                ${w[0]}:
+			                            </label>
+			                            ${w[1].get_html()}
+			                            %if w[0] == 'Comments':
+			                                <div class="toolParamHelp" style="clear: both;">
+			                                    Optional
+			                                </div>
+			                            %endif
+			                        </div>
+			                    %endfor
+		                        <div class="form-row">
+		                            <input type="submit" name="change_state_button" value="Save"/>
+		                            <input type="submit" name="change_state_button" value="Cancel"/>
+		                        </div>
+		                    %elif trans.app.model.Sample.bulk_operations.SELECT_LIBRARY in sample_ops.get_selected():
+		                        ${current_samples[0]}
+                            %endif
+                        </div>
+                    %endif
+		        %endif
                 ## then render the other grid(s)
                 <% trans.sa_session.refresh( request.type.sample_form ) %>
                 %for grid_index, grid_name in enumerate(request.type.sample_form.layout):
@@ -407,6 +471,7 @@ $(document).ready(function(){
     <table class="grid">
         <thead>
             <tr>
+                <th><input type="checkbox" id="checkAll" name=select_all_samples value="true" onclick='checkAllFields(1);'><input type="hidden" name=select_all_samples value="true"></th>
                 <th>Name</th>
                 <th>Barcode</th>
                 <th>State</th>
@@ -436,6 +501,11 @@ $(document).ready(function(){
                 %else:
                     <tr>
                         %if sample_index in range(len(request.samples)):
+                            %if sample.id in selected_samples:
+                                <td><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true" checked><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"></td>
+                            %else:
+                                <td><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true"><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"></td>
+                            %endif
                             <td>${info['name']}</td>
                             <td>${info['barcode']}</td>
                             %if sample.request.unsubmitted():
@@ -486,6 +556,7 @@ $(document).ready(function(){
 </%def>
 
 <%def name="show_basic_info_form( sample_index, sample, info )">
+    <td></td>
     <td>
         <input type="text" name=sample_${sample_index}_name value="${info['name']}" size="10"/>
         <div class="toolParamHelp" style="clear: both;">
