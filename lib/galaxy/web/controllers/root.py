@@ -335,10 +335,11 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                     if params.annotation:
                         annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
                         self.add_item_annotation( trans, data, annotation )
+                    trans.sa_session.flush()
+                    return trans.show_ok_message( "Attributes updated%s" % message, refresh_frames=['history'] )
                 else:
-                    message = ' (Metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.)'
-                trans.sa_session.flush()
-                return trans.show_ok_message( "Attributes updated%s" % message, refresh_frames=['history'] )
+                    trans.sa_session.flush()
+                    return trans.show_warn_message( "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.", refresh_frames=['history'] )
             elif params.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
                 #prevent modifying metadata when dataset is queued or running as input/output
