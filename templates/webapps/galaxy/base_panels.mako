@@ -12,7 +12,10 @@
     <table class="tab-group" border="0" cellspacing="0" style="margin: auto;">
     <tr>
     
-    <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='' )">
+    <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
+        ## Create a tab at the top of the panels. menu_options is a list of 2-elements lists of [name, link]
+        ## that are options in the menu.
+    
         <%
         cls = "tab"
         if extra_class:
@@ -23,120 +26,127 @@
         if not visible:
             style = "display: none;"
         %>
-        <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></td>
+        <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a>
+            %if menu_options:
+                <div class="submenu">
+                <ul>
+                    %for menu_item in menu_options:
+                        <li>
+                        %if not menu_item:
+                            <hr style="color: inherit; background-color: gray"/></li>
+                        %else:
+                            %if len ( menu_item ) == 1:
+                                ${menu_item[0]}
+                            %elif len ( menu_item ) == 2:
+                                <% name, link = menu_item %>
+                                <a href="${link}">${name}</a></li>
+                            %else:
+                                <% name, link, target = menu_item %>
+                                <a target="${target}" href="${link}">${name}</a></li>
+                            %endif
+                        %endif
+                    %endfor
+                </ul>
+                </div>
+            %endif
+        </td>
     </%def>
     
-    %if app.config.cloud_controller_instance:
-        ${tab( "cloud", "Cloud", h.url_for( controller='/cloud', action='index' ))}
-    %else:
-        ${tab( "analysis", "Analyze Data", h.url_for( controller='/root', action='index' ))}
-        
-        ${tab( "workflow", "Workflow", h.url_for( controller='/workflow', action='index' ))}
-        
-        ${tab( "libraries", "Data Libraries", h.url_for( controller='/library', action='index' ))}
-    %endif
+
+    ## Analyze data tab.
+    ${tab( "analysis", "Analyze Data", h.url_for( controller='/root', action='index' ) )}
     
-    %if trans.user and trans.user.accessible_request_types(trans):
-        <td class="tab">
-            <a>Lab</a>
-            <div class="submenu">
-            <ul>            
-                <li><a href="${h.url_for( controller='/requests', action='index' )}">Sequencing requests</a></li>
-                <li><a href="${h.url_for( controller='/requests_common', action='find', cntrller='requests' )}">Find samples</a></li>
-                <li><a target="_blank" href="${app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" )}">Help</a></li>
-            </ul>
-            </div>
-        </td>
-    %endif
-
-    %if app.config.get_bool( 'enable_tracks', False ):
+    ## Workflow tab.
+    ${tab( "workflow", "Workflow", h.url_for( controller='/workflow', action='index' ) )}
+    
+    ## 'Shared Items' or Libraries tab.
     <%
-    cls = "tab"
-    if self.active_view == 'visualization':
-        cls += " active"
+        menu_options = [ 
+                        [ 'Data Libraries', h.url_for( controller='/library', action='index') ],
+                        None,
+                        [ 'Published Histories', h.url_for( controller='/history', action='list_published' ) ],
+                        [ 'Published Workflows', h.url_for( controller='/workflow', action='list_published' ) ],
+                        [ 'Published Visualizations', h.url_for( controller='/visualization', action='list_published' ) ],
+                        [ 'Published Pages', h.url_for( controller='/page', action='list_published' ) ]
+                       ]
+        tab( "libraries", "Data Libraries", h.url_for( controller='/library', action='index'), menu_options=menu_options )
     %>
-    <td class="${cls}">
-        Visualization
-        <div class="submenu">
-        <ul>
-            <li><a href="${h.url_for( controller='/tracks', action='index' )}">New Track Browser</a></li>
-            <li><hr style="color: inherit; background-color: gray"/></li>
-        <li><a href="${h.url_for( controller='/visualization', action='list' )}">Saved Visualizations</a></li>
-        </ul>
-        </div>
-    </td>
+    
+    ## Lab menu.
+    %if trans.user and trans.user.accessible_request_types(trans):
+        menu_options = [
+                        [ 'Sequencing Requests', h.url_for( controller='/requests', action='index' ) ],
+                        [ 'Find Samples', h.url_for( controller='/requests_common', action='find' ) ],
+                        [ 'Help', app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" )}, "galaxy_main" ],
+                        ]
+        tab( "lab", "Lab", None, menu_options=menu_options )
     %endif
 
+    ## Visualization menu.
+    %if app.config.get_bool( 'enable_tracks', False ):
+        <%
+            menu_options = [ 
+                             ['New Track Browser', h.url_for( controller='/tracks', action='index' ) ],
+                             ['Saved Visualizations', h.url_for( controller='/visualization', action='list' ) ]
+                           ]
+            tab( "visualization", "Visualization", h.url_for( controller='/visualization', action='list'), menu_options=menu_options )
+        %>
+    %endif
+
+    ## Admin tab.
     ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
     
-    <td class="tab">
-        <a>Help</a>
-        <div class="submenu">
-        <ul>            
-            <li><a href="${app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )}">Email comments, bug reports, or suggestions</a></li>
-            <li><a target="_blank" href="${app.config.get( "wiki_url", "http://bitbucket.org/galaxy/galaxy-central/wiki" )}">Galaxy Wiki</a></li>             
-            <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://galaxycast.org" )}">Video tutorials (screencasts)</a></li>
-            <li><a target="_blank" href="${app.config.get( "citation_url", "http://bitbucket.org/galaxy/galaxy-central/wiki/Citations" )}">How to Cite Galaxy</a></li>
-        </ul>
-        </div>
-    </td>
-    
-    ## User tab.
+    ## Help tab.
     <%
-        cls = "tab"
-        if self.active_view == 'user':
-            cls += " active"
+        menu_options = [
+                            ['Email comments, bug reports, or suggestions', app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  ) ],
+                            ['Galaxy Wiki', app.config.get( "wiki_url", "http://bitbucket.org/galaxy/galaxy-central/wiki" ), "_blank" ],
+                            ['Video tutorials (screencasts)', app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
+                            ['How to Cite Galaxy', app.config.get( "screencasts_url", "http://bitbucket.org/galaxy/galaxy-central/wiki/Citations" ), "_blank" ]
+                        ]
+        tab( "help", "Help", None, menu_options=menu_options)
     %>
-    <td class="${cls}">
-        <a>User</a>
-        <%
+    
+    ## User tabs.
+    <%  
+        # Menu for user who is not logged in.
+        menu_options = [ [ "Login", h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
+        if app.config.allow_user_creation:
+            menu_options.append( [ "Register", h.url_for( controller='/user', action='create' ), "galaxy_main" ] ) 
+        extra_class = "loggedout-only"
+        visible = ( trans.user == None )
+        tab( "user", "User", None, visible=visible, menu_options=menu_options )
+        
+        # Menu for user who is logged in.
         if trans.user:
-            user_email = trans.user.email
-            style1 = "display: none;"
-            style2 = "";
+            email = trans.user.email
         else:
-            user_email = ""
-            style1 = ""
-            style2 = "display: none;"
-        %>
-        <div class="submenu">
-        <ul class="loggedout-only" style="${style1}">
-            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='login' )}">Login</a></li>
-            %if app.config.allow_user_creation:
-            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='create' )}">Register</a></li>
-            %endif
-        </ul>
-        <ul class="loggedin-only" style="${style2}">
-            <li>Logged in as <span id="user-email">${user_email}</span></li>
-            %if app.config.use_remote_user:
-                %if app.config.remote_user_logout_href:
-                    <li><a target="galaxy_main" href="${app.config.remote_user_logout_href}">Logout</a></li>
-                %endif
-            %else:
-                <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='index' )}">Preferences</a></li>
-                <%
-                    if app.config.require_login:
-                        logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
-                    else:
-                        logout_url = h.url_for( controller='/user', action='logout' )
-                %>
-                %if app.config.get_bool( 'enable_tracks', False ):
-                    <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='dbkeys' )}">Custom Builds</a></li>
-                %endif
-                <li><a target="_top" href="${logout_url}">Logout</a></li>
-                <li><hr style="color: inherit; background-color: gray"/></li>
-            %endif
-            <li><a target="galaxy_main" href="${h.url_for( controller='/history', action='list' )}">Histories</a></li>
-            <li><a target="galaxy_main" href="${h.url_for( controller='/dataset', action='list' )}">Datasets</a></li>
-            %if app.config.get_bool( 'enable_pages', False ):
-                <li><a href="${h.url_for( controller='/page', action='list' )}">Pages</a></li>  
-            %endif
-            %if app.config.enable_api:
-                <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='api_keys' )}">API Keys</a></li>
-            %endif
-        </ul>
-        </div>
-    </td>
+            email = ""
+        menu_options = [ [ '<li>Logged in as <span id="user-email">%s</span></li>' %  email ] ]
+        if app.config.use_remote_user:
+            if app.config.remote_user_logout_href:
+                menu_options.append( [ 'Logout', app.config.remote_user_logout_href, "galaxy_main" ] )
+        else:
+            menu_options.append( [ 'Preferences', h.url_for( controller='/user', action='index' ), "galaxy_main" ] )
+            if app.config.get_bool( 'enable_tracks', False ):
+                menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
+            if app.config.require_login:
+                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
+            else:
+                logout_url = h.url_for( controller='/user', action='logout' )
+            menu_options.append( [ 'Logout', logout_url, "_top" ] )
+            menu_options.append( None )
+            menu_options.append( [ 'Saved Histories', h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
+            menu_options.append( [ 'Saved Datasets', h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
+            if app.config.get_bool( 'enable_pages', False ):
+                menu_options.append( [ 'Saved Pages', h.url_for( controller='/page', action='list' ), "_top" ] )
+            if app.config.enable_api:
+                menu_options.append( [ 'API Keys', h.url_for( controller='/user', action='api_keys' ), "galaxy_main" ] )
+    
+        extra_class = "loggedin-only"
+        visible = ( trans.user != None )
+        tab( "user", "User", None, visible=visible, menu_options=menu_options )
+    %>
     
     </tr>
     </table>
