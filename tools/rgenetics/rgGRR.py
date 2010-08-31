@@ -78,7 +78,7 @@ class NullDevice:
     pass
 
 tempstderr = sys.stderr # save
-sys.stderr = NullDevice()
+#sys.stderr = NullDevice()
 # need to avoid blather about deprecation and other strange stuff from scipy
 # the current galaxy job runner assumes that
 # the job is in error if anything appears on sys.stderr

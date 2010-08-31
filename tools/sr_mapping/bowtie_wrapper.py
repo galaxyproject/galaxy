@@ -120,6 +120,7 @@ def __main__():
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
     (options, args) = parser.parse_args()
     stdout = ''
+
     # make temp directory for placement of indices and copy reference file there if necessary
     tmp_index_dir = tempfile.mkdtemp()
     # get type of data (solid or solexa)
@@ -190,7 +191,7 @@ def __main__():
                 # clean up temp dir
                 if os.path.exists( tmp_index_dir ):
                     shutil.rmtree( tmp_index_dir )
-                stop_err( 'Something is wrong with the indexing parameters and the indexing and alignment could not be run\n' + str( e ) )
+                stop_err( "Something is wrong with the indexing parameters and the indexing and alignment could not be run. Make sure you don't have any non-numeric values where they should be numeric.\n" + str( e ) )
         ref_file = tempfile.NamedTemporaryFile( dir=tmp_index_dir )
         ref_file_name = ref_file.name
         ref_file.close()
@@ -259,7 +260,7 @@ def __main__():
                 trimL = '-3 %s' % options.trimL
             else:
                 trimL = ''
-            if options. mismatchSeed != 'None' and (options.mismatchSeed == '0' or options.mismatchSeed == '1' \
+            if options.mismatchSeed != 'None' and (options.mismatchSeed == '0' or options.mismatchSeed == '1' \
                         or options.mismatchSeed == '2' or options.mismatchSeed == '3'):
                 mismatchSeed = '-n %s' % options.mismatchSeed
             else:
@@ -276,7 +277,7 @@ def __main__():
                 rounding = '--nomaqround'
             else:
                 rounding = ''
-            if options.maqSoapAlign != '-1':
+            if options.maqSoapAlign != '-1' and int( options.maqSoapAlign ) >= 0:
                 maqSoapAlign = '-v %s' % options.maqSoapAlign
             else:
                 maqSoapAlign = ''

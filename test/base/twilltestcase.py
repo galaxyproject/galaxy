@@ -616,6 +616,16 @@ class TwillTestCase( unittest.TestCase ):
             hid = elem.get('hid')
             hids.append(hid)
         return hids
+
+    def makeTfname(self, fname=None):
+	"""
+        safe temp name - preserve the file extension for tools that interpret it
+	"""
+        suffix = os.path.split(fname)[-1] # ignore full path
+	fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
+	return temp_prefix
+
+
     def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait:
@@ -645,7 +655,7 @@ class TwillTestCase( unittest.TestCase ):
                     raise AssertionError( errmsg )
         else:
             local_name = self.get_filename( filename )
-            temp_name = self.get_filename( '%s_temp' % filename ) #This is a terrible way to generate a temp name
+            temp_name = self.makeTfname(fname = filename)
             self.home()
             self.visit_page( "display?hid=" + hid )
             data = self.last_page()
@@ -691,7 +701,7 @@ class TwillTestCase( unittest.TestCase ):
         local_name = self.get_filename( file_name )
         if base_name is None:
             base_name = os.path.split(file_name)[-1]
-        temp_name = self.get_filename( '%s_temp' % file_name ) #This is a terrible way to generate a temp name
+        temp_name = self.makeTfname(fname = base_name)
         self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
         data = self.last_page()
         file( temp_name, 'wb' ).write( data )
@@ -720,7 +730,7 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += str( err )
                 raise AssertionError( errmsg )
         finally:
-            os.remove( temp_name )
+	    os.remove( temp_name )
 
     def is_zipped( self, filename ):
         if not zipfile.is_zipfile( filename ):
@@ -728,7 +738,7 @@ class TwillTestCase( unittest.TestCase ):
         return True
 
     def is_binary( self, filename ):
-        temp = open( temp_name, "U" )
+        temp = open( filename, "U" ) # why is this not filename? Where did temp_name come from
         lineno = 0
         for line in temp:
             lineno += 1

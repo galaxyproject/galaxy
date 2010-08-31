@@ -42,15 +42,11 @@
  <param name='chrom_col' value='1' />
  <param name='offset_col' value='2' />
  <param name='grey' value='0' />
- <output name='out_html' file='rgtestouts/rgManQQ/rgManQQtest1.html' ftype='html' lines_diff='17'>
-   <extra_files type="file" name='Allelep_manhattan.png' value='rgtestouts/rgManQQ/Allelep_manhattan.png' compare="sim_size"   
-     delta = "4000" />
-   <extra_files type="file" name='Allelep_qqplot.png' value='rgtestouts/rgManQQ/Allelep_qqplot.png' compare="sim_size"   
-     delta = "4000" />
-   <extra_files type="file" name='Armitagep_manhattan.png' value='rgtestouts/rgManQQ/Armitagep_manhattan.png' compare="sim_size" 
-     delta = "4000"/>
-   <extra_files type="file" name='Armitagep_qqplot.png' value='rgtestouts/rgManQQ/Armitagep_qqplot.png' compare="sim_size"
-     delta = "4000" />
+ <output name='out_html' file='rgtestouts/rgManQQ/rgManQQtest1.html' ftype='html' lines_diff='30'>
+   <extra_files type="file" name='Allelep_manhattan.png' value='rgtestouts/rgManQQ/Allelep_manhattan.png' compare="sim_size" 
+     delta = "10000"/>
+   <extra_files type="file" name='Allelep_qqplot.png' value='rgtestouts/rgManQQ/Allelep_qqplot.png' compare="sim_size"
+     delta = "10000" />
    <extra_files type="file" name='rgManQQtest1.R' value='rgtestouts/rgManQQ/rgManQQtest1.R' compare="diff" lines_diff="160"/>
  </output>
  </test>

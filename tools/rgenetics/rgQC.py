@@ -270,6 +270,8 @@ def makePlots(markers=[],subjects=[],newfpath='.',basename='test',nbreaks='20',n
         rpy.r.dev_off()
 
 
+    fdsto,stofile = tempfile.mkstemp()
+    sto = open(stofile,'w')
     import rpy # delay to avoid rpy stdout chatter replacing galaxy file blurb
     mog = 'mogrify'
     pdfnup = 'pdfnup'
@@ -368,7 +370,7 @@ def makePlots(markers=[],subjects=[],newfpath='.',basename='test',nbreaks='20',n
         expl = 'All %s QC Plots joined into a single pdf' % basename
         vcl = '%s %s --outfile %s ' % (pdfjoin,filestojoin, fullafname)
         # make single page pdf
-        x=subprocess.Popen(vcl,shell=True,cwd=newfpath)
+        x=subprocess.Popen(vcl,shell=True,cwd=newfpath,stderr=sto,stdout=sto)
         retval = x.wait()
         row = [expl,afname,fullafname]
         html.insert(0,row) # last rather than second
@@ -377,15 +379,17 @@ def makePlots(markers=[],subjects=[],newfpath='.',basename='test',nbreaks='20',n
         expl = 'All %s QC Plots %d by %d to a page' % (basename,nup,nup)
         vcl = '%s %s --nup %dx%d --frame true --outfile %s' % (pdfnup,afname,nup,nup,fullnfname)
         # make thumbnail images
-        x=subprocess.Popen(vcl,shell=True,cwd=newfpath)
+        x=subprocess.Popen(vcl,shell=True,cwd=newfpath,stderr=sto,stdout=sto)
         retval = x.wait()
         row = [expl,nfname,fullnfname]
         html.insert(1,row) # this goes second
     vcl = '%s -format jpg -resize %s %s' % (mog, mogresize, os.path.join(newfpath,'*.pdf'))
     # make thumbnail images
-    x=subprocess.Popen(vcl,shell=True,cwd=newfpath)
+    x=subprocess.Popen(vcl,shell=True,cwd=newfpath,stderr=sto,stdout=sto)
     retval = x.wait()
-    return html # elements for an ordered list of urls or whatever..  
+    sto.close()
+    cruft = open(stofile,'r').readlines()
+    return html,cruft # elements for an ordered list of urls or whatever..  
 
 
 def RmakePlots(markers=[],subjects=[],newfpath='.',basename='test',nbreaks='100',nup=3,height=8,width=10,rexe=''):
@@ -1282,7 +1286,7 @@ if __name__ == "__main__":
     s = '## starting plotpage, newfpath=%s,m=%s,s=%s/n' % (newfpath,markers[:2],subjects[:2])
     alogf.write(s)
     print s
-    plotpage = makePlots(markers=markers,subjects=subjects,newfpath=newfpath,
+    plotpage,cruft = makePlots(markers=markers,subjects=subjects,newfpath=newfpath,
                          basename=basename,nbreaks=nbreaks,height=10,width=8,rgbin=rgbin)
     #plotpage = RmakePlots(markers=markers,subjects=subjects,newfpath=newfpath,basename=basename,nbreaks=nbreaks,rexe=rexe)
 
@@ -1343,6 +1347,8 @@ if __name__ == "__main__":
     lf.write('\n'.join(html))
     lf.write('<h4>QC run log contents</h4>')
     lf.write('<pre>%s</pre>' % (''.join(llog))) # plink logs
+    if len(cruft) > 0:
+        lf.write('<h2>Blather from pdfnup follows:</h2><pre>%s</pre>' % (''.join(cruft))) # pdfnup
     lf.write('%s\n<hr>\n' % galhtmlpostfix)
     lf.close()
 
