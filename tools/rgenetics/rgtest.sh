@@ -41,7 +41,7 @@ CL="python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.h
 #python /opt/galaxy/tools/rgenetics/rgManQQ.py /opt/galaxy/test-data/smallwgaP.xls rgManQQtest1 
 #/opt/galaxy/test-data/rgtestouts/rgManQQ/rgManQQtest1.html /opt/galaxy/test-data/rgtestouts/rgManQQ 1 2 5,7 
 echo "Testing $TOOL using $CL"
-python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.html $OUTPATH 1 2 5,7 0
+python $TOOLPATH/$TOOL.py "$INPATH/smallwgaP.xls" $NPRE ${OUTPATH}/${NPRE}.html $OUTPATH 1 2 7 0
 TOOL="rgfakePhe"
 NPRE=${TOOL}test1
 OUTPATH="$OROOT/$TOOL"
