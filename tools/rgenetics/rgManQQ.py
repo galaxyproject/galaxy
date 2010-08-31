@@ -52,6 +52,7 @@ manhattan = function(chrom=NULL,offset=NULL,pvals=NULL, title=NULL, max.y="max",
                 lastbase=0
                 chrlist = unique(d$CHR)
                 nchr = length(chrlist) # may be any number?
+                if (nchr < 2) {
                 for (x in c(1:nchr)) {
                         i = chrlist[x] # need the chrom number - may not == index
                         if (x == 1) { # first time
@@ -62,8 +63,16 @@ manhattan = function(chrom=NULL,offset=NULL,pvals=NULL, title=NULL, max.y="max",
                                 d[d$CHR==i, ]$pos=d[d$CHR==i, ]$BP+lastbase
                         }
                         ticks=c(ticks, d[d$CHR==i, ]$pos[floor(length(d[d$CHR==i, ]$pos)/2)+1])
-                }
-                ticklim=c(min(d$pos),max(d$pos))
+                    ticklim=c(min(d$pos),max(d$pos))
+                    }
+                } else { # nchr >= 2
+                   last = max(offset)
+                   first = min(offset)
+                   ticks = first
+                   t = (last-first)/9 # units per tick
+                   for (x in c(1:9)) ticks = c(ticks,round(x*t))
+                   ticklim = c(first,last)
+                } # else
                 if (grey) {mycols=rep(c("gray10","gray60"),max(d$CHR))
                            } else {
                            mycols=rep(coloursTouse,max(d$CHR))
