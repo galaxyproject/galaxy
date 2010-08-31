@@ -55,8 +55,8 @@ $( function() {
         <form name="find_request" id="find_request" action="${h.url_for( controller='requests_common', action='find', cntrller=cntrller)}" method="post" >
             <div class="form-row">
                 <label>Find in sequencing requests in state:</label>
-                <select name="select_search_type"> 
-                    <option value="In-Progress" selected>In-Progress</option> 
+                <select name="request_state"> 
+                    <option value="In Progress" selected>In-Progress</option> 
                     <option value="Complete">Complete</option>
                     <option value="Both">Both</option> 
                 </select>

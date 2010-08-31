@@ -1265,6 +1265,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         status = params.get( 'status', 'done' )
         search_string = kwd.get( 'search_string', ''  )
         search_type = params.get( 'search_type', ''  )
+        if params.get( 'request_state', 'In Progress'  ) == 'Both':
+            request_states = ['In Progress', 'Complete']
+        else:
+            request_states = [params.get( 'request_state', 'In Progress'  )]
+        
+            
         samples_list = []
         results = ''
         if params.get('go_button', '') == 'Go':
@@ -1280,10 +1286,15 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                           .all()
             if cntrller == 'requests':
                 for s in samples:
-                    if s.request.user.id == trans.user.id:
+                    if s.request.user.id == trans.user.id \
+                        and s.request.state() in request_states\
+                        and not s.request.deleted:
                         samples_list.append(s)
             elif cntrller == 'requests_admin':
-                samples_list = samples
+                for s in samples:
+                    if not s.request.deleted \
+                        and s.request.state() in request_states:
+                        samples_list.append(s)
             results = 'There are %i sequencing requests matching the search parameters.' % len(samples_list)
         return trans.fill_template( '/requests/common/find.mako', 
                                     cntrller=cntrller,
