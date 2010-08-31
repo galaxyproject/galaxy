@@ -82,6 +82,14 @@ class RequestsGrid( grids.Grid ):
     class UserColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request):
             return request.user.email
+        def sort( self, query, ascending ):
+            """ Sort column using case-insensitive alphabetical sorting on item's username. """
+            if ascending:
+                query = query.order_by( func.lower ( self.model_class.email ).asc() ) 
+            else:
+                query = query.order_by( func.lower( self.model_class.email ).desc() )
+            return query
+        
     # Grid definition
     title = "Sequencing Requests"
     template = "admin/requests/grid.mako"
@@ -119,12 +127,14 @@ class RequestsGrid( grids.Grid ):
                      link=( lambda item: iff( item.deleted, None, dict( operation="events", id=item.id ) ) ),
                      ),
         UserColumn( "User",
-                    #key='user.email',
-                    model_class=model.Request)
+                    #key='owner',
+                    model_class=model.User 
+                    #filterable="advanced"
+                    )
 
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                cols_to_filter=[ columns[0], columns[1], columns[6] ], 
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )

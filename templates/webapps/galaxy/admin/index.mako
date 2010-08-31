@@ -116,6 +116,7 @@
                   <div class="toolSectionBg">
                     <div class="toolTitle"><a href="${h.url_for( controller='requests_admin', action='manage_request_types' )}" target="galaxy_main">Manage request types</a></div>
                     <div class="toolTitle"><a href="${h.url_for( controller='requests_admin', action='list')}" target="galaxy_main">Manage requests</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( controller='requests_common', action='find', cntrller='requests_admin')}" target="galaxy_main">Find samples</a></div>
                   </div>
                 </div>
             </div>

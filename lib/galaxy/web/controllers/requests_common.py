@@ -1253,5 +1253,49 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     dataset_files=sample.datasets,
                                     message=message, status=status, files=[],
                                     folder_path=folder_path )
+    #
+    # Find sequencing requests & samples
+    #
+    @web.expose
+    @web.require_admin
+    def find( self, trans, **kwd ):
+        params = util.Params( kwd )
+        cntrller = params.get( 'cntrller', 'requests'  )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        search_string = kwd.get( 'search_string', ''  )
+        search_type = params.get( 'search_type', ''  )
+        samples_list = []
+        results = ''
+        if params.get('go_button', '') == 'Go':
+            if search_type == 'bar_code':
+                samples = trans.sa_session.query( trans.app.model.Sample ) \
+                                          .filter( and_( trans.app.model.Sample.table.c.deleted==False,
+                                                         trans.app.model.Sample.table.c.bar_code.like(search_string) ) )\
+                                          .all()
+            elif search_type == 'name':
+                samples = trans.sa_session.query( trans.app.model.Sample ) \
+                                          .filter( and_( trans.app.model.Sample.table.c.deleted==False,
+                                                         trans.app.model.Sample.table.c.name.like(search_string) ) )\
+                                          .all()
+            if cntrller == 'requests':
+                for s in samples:
+                    if s.request.user.id == trans.user.id:
+                        samples_list.append(s)
+            elif cntrller == 'requests_admin':
+                samples_list = samples
+            results = 'There are %i sequencing requests matching the search parameters.' % len(samples_list)
+        return trans.fill_template( '/requests/common/find.mako', 
+                                    cntrller=cntrller,
+                                    samples=samples_list,
+                                    results=results )
+    
+    
+    
+    
+    
+    
+    
+    
         
 
