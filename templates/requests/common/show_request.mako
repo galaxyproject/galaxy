@@ -225,6 +225,15 @@ $(document).ready(function(){
 	        <tbody>
 	            <tr>
 		            <td valign="top" width="50%">
+                        <div class="form-row">
+                            <label>Description:</label>
+                            %if request.desc:
+                                ${request.desc}
+                            %else:
+                                <i>None</i>
+                            %endif
+                        </div>
+                        <div style="clear: both"></div>
 					    %for index, rd in enumerate(request_details):
 					        <div class="form-row">
 					            <label>${rd['label']}:</label>
@@ -242,6 +251,14 @@ $(document).ready(function(){
 					    %endfor
 					</td>
 					<td valign="top" width="50%">
+                        <div class="form-row">
+                            <label>Date created:</label>
+                            ${request.create_time}
+                        </div>
+                        <div class="form-row">
+                            <label>Date updated:</label>
+                            ${request.update_time}
+                        </div>
 	                    <div class="form-row">
 	                        <label>Email notification recipient(s):</label>
 	                        <% emails = ', '.join(request.notification['email']) %>

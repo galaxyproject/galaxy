@@ -1138,17 +1138,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         request = trans.sa_session.query( trans.app.model.Request ).get( id )
         # list of widgets to be rendered on the request form
         request_details = []
-        # main details
-        request_details.append(dict(label='Description', 
-                                    value=request.desc, 
-                                    helptext=''))
-        request_details.append(dict(label='Date created', 
-                                    value=request.create_time, 
-                                    helptext=''))
-        request_details.append(dict(label='Date updated', 
-                                    value=request.update_time, 
-                                    helptext=''))
-
         # form fields
         for index, field in enumerate(request.type.request_form.fields):
             if field['required']:
