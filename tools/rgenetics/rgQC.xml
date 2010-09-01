@@ -32,8 +32,8 @@
     <extra_files type="file" name='tinywga_All_Paged.pdf' value="rgtestouts/rgQC/tinywga_All_Paged.pdf" compare="sim_size" delta = "5000"/>
     <extra_files type="file" name='tinywga.log' value="rgtestouts/rgQC/tinywga.log" compare="diff" lines_diff="10"/>
     <extra_files type="file" name='tinywga.frq' value="rgtestouts/rgQC/tinywga.frq" compare="diff" />
-    <extra_files type="file" name='tinywga.het' value="rgtestouts/rgQC/tinywga.het" compare="diff" />
-    <extra_files type="file" name='tinywga.hwe' value="rgtestouts/rgQC/tinywga.hwe" compare="diff" />
+    <extra_files type="file" name='tinywga.het' value="rgtestouts/rgQC/tinywga.het" compare="diff" lines_diff="90"/>
+    <extra_files type="file" name='tinywga.hwe' value="rgtestouts/rgQC/tinywga.hwe" compare="diff" lines_diff="90"/>
     <extra_files type="file" name='tinywga.imendel' value="rgtestouts/rgQC/tinywga.imendel" compare="diff"/>
     <extra_files type="file" name='tinywga.imiss' value="rgtestouts/rgQC/tinywga.imiss" compare="diff" />
     <extra_files type="file" name='tinywga.lmendel' value="rgtestouts/rgQC/tinywga.lmendel" compare="diff" />
