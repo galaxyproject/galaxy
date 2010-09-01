@@ -25,14 +25,21 @@ class Tabular( data.Text ):
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
-    def set_meta( self, dataset, overwrite = True, skip = None, **kwd ):
+    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = None, **kwd ):
         """
         Tries to determine the number of columns as well as those columns
         that contain numerical values in the dataset.  A skip parameter is
         used because various tabular data types reuse this function, and
         their data type classes are responsible to determine how many invalid
         comment lines should be skipped. Using None for skip will cause skip 
-        to be zero, but the first line will be processed as a header.
+        to be zero, but the first line will be processed as a header. A 
+        max_data_lines parameter is used because various tabular data types 
+        reuse this function, and their data type classes are responsible to 
+        determine how many data lines should be processed to ensure that the
+        non-optional metadata parameters are properly set; if used, optional 
+        metadata parameters will be set to None, unless the entire file has 
+        already been read. Using None (default) for max_data_lines will 
+        process all data lines. 
 
         Items of interest:
         1. We treat 'overwrite' as always True (we always want to set tabular metadata when called).
@@ -97,7 +104,11 @@ class Tabular( data.Text ):
         first_line_column_types = [default_column_type] # default value is one column of type str
         if dataset.has_data():
             #NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
-            for i, line in enumerate( file ( dataset.file_name ) ):
+            dataset_fh = open( dataset.file_name )
+            i = 0
+            while True:
+                line = dataset_fh.readline()
+                if not line: break
                 line = line.rstrip( '\r\n' )
                 if i < skip or not line or line.startswith( '#' ):
                     # We'll call blank lines comments
@@ -127,6 +138,14 @@ class Tabular( data.Text ):
                         # "column_types": ["int", "int", "str", "list"]
                         first_line_column_types = column_types
                         column_types = [ None for col in first_line_column_types ]
+                if max_data_lines is not None and data_lines >= max_data_lines:
+                    if dataset_fh.tell() != dataset.get_size():
+                        data_lines = None #Clear optional data_lines metadata value
+                        comment_lines = None #Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                    break
+                i += 1
+            dataset_fh.close()
+                        
         #we error on the larger number of columns
         #first we pad our column_types by using data from first line
         if len( first_line_column_types ) > len( column_types ):

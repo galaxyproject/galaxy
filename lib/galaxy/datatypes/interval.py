@@ -1079,6 +1079,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
     def make_html_table( self, dataset ):
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
     def set_meta( self, dataset, overwrite = True, **kwd ):
+        max_data_lines = None
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
             line = line.rstrip('\r\n')
@@ -1089,13 +1090,19 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                     break
                 except:
                     do_break = False
-                    for str in data.col1_startswith:
-                        if elems[0].lower().startswith(str):
+                    for col_startswith in data.col1_startswith:
+                        if elems[0].lower().startswith( col_startswith ):
                             do_break = True
                             break
                     if do_break:
                         break
-        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            #we'll arbitrarily only use the first 100 data lines in this wig file to calculate tabular attributes (column types)
+            #this should be sufficient, except when we have mixed wig track types (bed, variable, fixed), 
+            #    but those cases are not a single table that would have consistant column definitions
+            #optional metadata values set in Tabular class will be 'None'
+            max_data_lines = 100
+        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i, max_data_lines = max_data_lines )
     def sniff( self, filename ):
         """
         Determines wether the file is in wiggle format
