@@ -26,7 +26,12 @@
         if not visible:
             style = "display: none;"
         %>
-        <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a>
+        <td class="${cls}" style="${style}">
+            %if href:
+                <a target="${target}" href="${href}">${display}</a>
+            %else:
+                ${display}
+            %endif
             %if menu_options:
                 <div class="submenu">
                 <ul>
