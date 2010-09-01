@@ -11,14 +11,25 @@ from galaxy.tools.util.gff_util import parse_gff_attributes
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+# Valid operators, ordered so that complex operators (e.g. '>=') are
+# recognized before simple operators (e.g. '>')
+ops = [
+    '>=',
+    '<=',
+    '<',
+    '>',
+    '==',
+    '!='
+]
+
 # Escape sequences for valid operators.
 mapped_ops = {
-    '__lt__': '<',
-    '__le__': '<=',
-    '__eq__': '==',
-    '__ne__': '!=',
-    '__gt__': '>',
-    '__ge__': '>=',
+    '__ge__': ops[0],
+    '__le__': ops[1],
+    '__lt__': ops[2],
+    '__gt__': ops[3],
+    '__eq__': ops[4],
+    '__ne__': ops[5],
 }
 
 
@@ -34,7 +45,7 @@ def __main__():
         condition = condition.replace( key, value )
     
     # Error checking: condition should be of the form <operator><number>
-    for op in mapped_ops.itervalues():
+    for op in ops:
         if op in condition:
             empty, number_str = condition.split( op )
             try:
@@ -44,6 +55,7 @@ def __main__():
             if empty != "" or not number:
                 print >> sys.stderr, "Invalid condition: %s, cannot filter." % condition
                 return
+            break
 
     # Do filtering.
     kept_lines = 0
