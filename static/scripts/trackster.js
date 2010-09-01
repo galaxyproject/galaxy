@@ -951,9 +951,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         var track = this,
             key = "initial";
             
-        this.init_each({    low: track.view.max_low, 
-                            high: track.view.max_high, dataset_id: track.dataset_id,
-                            chrom: track.view.chrom, resolution: this.view.resolution }, function (result) {    
+        this.init_each({    low: track.view.max_low, high: track.view.max_high, dataset_id: track.dataset_id,
+                            chrom: track.view.chrom, resolution: this.view.resolution, mode: track.mode }, function (result) {    
             track.mode_div.show();
             track.data_cache.set(key, result);
             track.draw();
@@ -1089,12 +1088,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 break;
             }
         }*/
-        
         var k = (!this.initial_canvas ? "initial" : tile_low + '_' + tile_high);
         var result = this.data_cache.get(k);
         var cur_mode;
         
-        if (result === undefined) {
+        if (result === undefined || (this.mode !== "Auto" && result.dataset_type === "summary_tree")) {
             this.data_queue[ [tile_low, tile_high] ] = true;
             this.get_data(tile_low, tile_high);
             return;
@@ -1112,7 +1110,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         if (result.dataset_type === "summary_tree") {
             required_height = this.summary_draw_height;
         } else if (mode === "Dense") {
-            required_height = 15;
+            required_height = 25;
             y_scale = 10;
         } else {
             // Calculate new slots incrementally for this new chunk of data and update height if necessary
@@ -1169,6 +1167,16 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             return new_canvas;
         }
         
+        if (result.message) {
+            new_canvas.css({
+                border: "solid red",
+                "border-width": "2px 2px 2px 0px"            
+            });
+            ctx.fillStyle = "red";
+            ctx.textAlign = "left";
+            ctx.fillText(result.message, 100 + left_offset, y_scale);
+        }
+        
         var data = result.data;
         var j = 0;
         for (var i = 0, len = data.length; i < len; i++) {
@@ -1181,7 +1189,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             if (feature_start <= tile_high && feature_end >= tile_low) {
                 var f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-                    y_center = (mode === "Dense" ? 0 : slots[feature_uid] * y_scale);
+                    y_center = (mode === "Dense" ? 1 : (1 + slots[feature_uid])) * y_scale;
                 
                 if (result.dataset_type === "bai") {
                     ctx.fillStyle = block_color;
@@ -1222,6 +1230,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     
                     // console.log(feature_uid, feature_start, feature_end, f_start, f_end, y_center);
                     if (no_detail) {
+                        ctx.fillStyle = block_color;
                         ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
                     } else {
                         // Showing labels, blocks, details
@@ -1291,7 +1300,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                     ctx.fillStyle = LEFT_STRAND_INV;
                                 }
                                 ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
-                                ctx.fillStyle = prefs.block_color;
+                                ctx.fillStyle = block_color;
                             }
                         }
                     }

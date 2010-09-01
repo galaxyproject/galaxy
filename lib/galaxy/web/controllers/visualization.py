@@ -228,7 +228,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
 
         # Get session and visualization.
         session = trans.sa_session
-        visualization = trans.sa_session.query( model.Visualization ).get( trans.security.decode_id( id ) )
+        visualization = self.get_visualization( trans, id, check_ownership=True )
 
         # Do operation on visualization.
         if 'make_accessible_via_link' in kwargs:
@@ -261,7 +261,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
     def share( self, trans, id=None, email="", use_panels=False ):
         """ Handle sharing a visualization with a particular user. """
         msg = mtype = None
-        visualization = trans.sa_session.query( model.Visualization ).get( trans.security.decode_id( id ) )
+        visualization = self.get_visualization( trans, id, check_ownership=True )
         if email:
             other = trans.sa_session.query( model.User ) \
                                     .filter( and_( model.User.table.c.email==email,
@@ -330,7 +330,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
     @web.require_login( "get item name and link" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns visualization's name and link. """
-        visualization = self.get_visualization( trans, id )
+        visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
 
         if self.create_item_slug( trans.sa_session, visualization ):
             trans.sa_session.flush()
@@ -342,7 +342,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         """ Returns item content in HTML format. """
         
         # Get visualization, making sure it's accessible.
-        visualization = self.get_visualization( trans, id, False, True )
+        visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         if visualization is None:
             raise web.httpexceptions.HTTPNotFound()
         
@@ -373,25 +373,26 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 visualization = model.Visualization()
                 visualization.title = visualization_title
                 visualization.slug = visualization_slug
+                visualization.dbkey = visualization_dbkey
+                visualization.type = 'trackster' # HACK: set visualization type to trackster since it's the only viz
                 visualization_annotation = sanitize_html( visualization_annotation, 'utf-8', 'text/html' )
                 self.add_item_annotation( trans, visualization, visualization_annotation )
                 visualization.user = user
+                
                 # And the first (empty) visualization revision
                 visualization_revision = model.VisualizationRevision()
                 visualization_revision.title = visualization_title
+                visualization_revision.config = {}
+                visualization_revision.dbkey = visualization_dbkey
                 visualization_revision.visualization = visualization
-                # HACK: set visualization type to trackster; when we have multiple visualization types, we'll need to get type from the user.
-                visualization.type = 'trackster'
                 visualization.latest_revision = visualization_revision
-                # Visualization config is dbkey for now.
-                visualization.latest_revision.config = { 'dbkey' : visualization_dbkey }
-                visualization_revision.content = ""
+
                 # Persist
                 session = trans.sa_session
-                session.add( visualization )
+                session.add(visualization)
+                session.add(visualization_revision)
                 session.flush()
-                # Display the management visualization
-                ## trans.set_message( "Visualization '%s' created" % visualization.title )
+
                 return trans.response.send_redirect( web.url_for( action='list' ) )
                                 
         return trans.show_form( 
@@ -414,12 +415,9 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         """
         Edit a visualization's attributes.
         """
-        encoded_id = id
-        id = trans.security.decode_id( id )
+        visualization = self.get_visualization( trans, id, check_ownership=True )
         session = trans.sa_session
-        visualization = session.query( model.Visualization ).get( id )
-        user = trans.user
-        assert visualization.user == user
+        
         visualization_title_err = visualization_slug_err = visualization_annotation_err = ""
         if trans.request.method == "POST":
             if not visualization_title:
@@ -428,7 +426,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 visualization_slug_err = "Visualization id is required"
             elif not VALID_SLUG_RE.match( visualization_slug ):
                 visualization_slug_err = "Visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif visualization_slug != visualization.slug and trans.sa_session.query( model.Visualization ).filter_by( user=user, slug=visualization_slug, deleted=False ).first():
+            elif visualization_slug != visualization.slug and trans.sa_session.query( model.Visualization ).filter_by( user=visualization.user, slug=visualization_slug, deleted=False ).first():
                 visualization_slug_err = "Visualization id must be unique"
             else:
                 visualization.title = visualization_title
@@ -449,7 +447,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
             if not visualization_annotation:
                 visualization_annotation = ""
         return trans.show_form( 
-            web.FormBuilder( web.url_for( id=encoded_id ), "Edit visualization attributes", submit_text="Submit" )
+            web.FormBuilder( web.url_for( id=id ), "Edit visualization attributes", submit_text="Submit" )
                 .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
                 .add_text( "visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
                            help="""A unique identifier that will be used for
@@ -460,18 +458,5 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako" )
-    
-    # @web.expose
-    # @web.require_login()
-    # def list( self, trans, *args, **kwargs ):
-    #     return self.list_grid( trans, *args, **kwargs )
-    
-    #@web.expose
-    #@web.require_admin  
-    #def index( self, trans, *args, **kwargs ):
-    #    # Build grid
-    #    grid = self.list( trans, *args, **kwargs )
-    #    # Render grid wrapped in panels
-    #    return trans.fill_template( "visualization/index.mako", grid=grid )
-    
+
     

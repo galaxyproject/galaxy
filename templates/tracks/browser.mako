@@ -41,6 +41,7 @@ ${h.css( "history", "autocomplete_tagging", "trackster" )}
 <div class="unified-panel-header" unselectable="on">
     <div class="unified-panel-header-inner">
         <div style="float:left;" id="title"></div>
+        <a class="panel-header-button right-float" href="${h.url_for( controller='visualization', action='list' )}">Close</a>
         <a id="save-button" class="panel-header-button right-float" href="javascript:void(0);">Save</a>
         <a id="refresh-button" class="panel-header-button right-float" href="javascript:void(0);" onclick="view.update_options();return false;">Refresh</a>
     </div>

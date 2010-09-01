@@ -9,6 +9,8 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.interval_index_file import Indexes
 from galaxy.datatypes.interval import Bed, Gff
 
+MAX_VALS = 500 # only display first MAX_VALS features
+
 class IntervalIndexDataProvider( object ):
     def __init__( self, converted_dataset, original_dataset ):
         self.original_dataset = original_dataset
@@ -20,8 +22,14 @@ class IntervalIndexDataProvider( object ):
         source = open( self.original_dataset.file_name )
         index = Indexes( self.converted_dataset.file_name )
         results = []
+        count = 0
+        message = None
         
         for start, end, offset in index.find(chrom, start, end):
+            if count >= MAX_VALS:
+                message = "Only the first %s features are being displayed." % MAX_VALS
+                break
+            count += 1
             source.seek(offset)
             feature = source.readline().split()
             payload = [ offset, start, end ]
@@ -53,4 +61,4 @@ class IntervalIndexDataProvider( object ):
 
             results.append(payload)
         
-        return results
+        return { 'data': results, 'message': message }

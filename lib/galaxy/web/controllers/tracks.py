@@ -291,7 +291,8 @@ class TracksController( BaseController, UsesVisualization ):
             # Have to choose between indexer and data provider
             indexer = dataset_type_to_data_provider[data_sources['index']]( dataset.get_converted_dataset(trans, data_sources['index']), dataset )
             summary = indexer.get_summary( chrom, low, high, **kwargs )
-            if summary is not None:
+            if summary is not None and kwargs.get("mode", "Auto") == "Auto":
+                # Only check for summary if it's Auto mode (which is the default)
                 if summary == "no_detail":
                     kwargs["no_detail"] = True # meh
                     extra_info = "no_detail"
