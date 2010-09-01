@@ -1287,7 +1287,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         if params.get('go_button', '') == 'Find':
             search_string = kwd.get( 'search_box', ''  )
             search_type = params.get( 'search_type', ''  )
-            request_states = params.get( 'request_states', ''  )
+            request_states = util.listify( params.get( 'request_states', ''  ) )
             samples = []
             if search_type == 'barcode':
                 samples = trans.sa_session.query( trans.app.model.Sample ) \

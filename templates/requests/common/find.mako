@@ -83,18 +83,19 @@ $( function() {
             </div>
             %if results:
 	            <div class="form-row">
-                    <label><i>${results}</i></label> 
-	                <div class="toolParamHelp" style="clear: both;">
-	                   The search results are sorted by the date the samples where created. 
-	                </div>
+                    <label><i>${results}</i></label>
+                    %if samples:
+		                <div class="toolParamHelp" style="clear: both;">
+		                   The search results are sorted by the date the samples where created. 
+		                </div>
+	                %endif
 	            </div>
 	        %endif
             <div class="form-row">
 	            %if samples:
 	                %for s in samples:
 	                    <div class="form-row">
-                            
-                            Sample: ${s.name} | Barcode: ${s.bar_code}<br/>
+                            Sample: <b>${s.name}</b> | Barcode: ${s.bar_code}<br/>
                             State: ${s.current_state().name}<br/>
                             Datasets: <a href="${h.url_for(controller='requests_common', cntrller=cntrller, action='show_datatx_page', sample_id=trans.security.encode_id(s.id))}">${s.transferred_dataset_files()}/${len(s.datasets)}</a><br/>
                             %if cntrller == 'requests_admin':
@@ -103,7 +104,6 @@ $( function() {
                             <div class="toolParamHelp" style="clear: both;">
                             <a href="${h.url_for( controller=cntrller, action='list', operation='show', id=trans.security.encode_id(s.request.id))}">Sequencing request: ${s.request.name} | Type: ${s.request.type.name} | State: ${s.request.state()}</a>
                             </div>
-
 	                    </div>
 	                    <br/>
 	                %endfor
