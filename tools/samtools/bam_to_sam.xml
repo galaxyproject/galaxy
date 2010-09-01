@@ -1,0 +1,37 @@
+<tool id="bam_to_sam" name="BAM-to-SAM" version="1.0.0">
+  <description>converts BAM format to SAM format</description>
+  <command interpreter="python">bam_to_sam.py --input1=$input1 --output1=$output1</command>
+  <inputs>
+    <param name="input1" type="data" format="bam" label="BAM File to Convert" />
+  </inputs>
+  <outputs>
+    <data name="output1" format="sam" />
+  </outputs>
+  <tests>
+    <test>
+      <!--
+      Bam-to-Sam command:
+      samtools view -o test-data/3.bam bam_to_sam_out1.sam
+      -->
+      <param name="input1" value="1.bam" ftype="bam" />
+      <output name="output1" file="bam_to_sam_out1.sam" />
+    </test>
+    <test>
+      <!--
+      Bam-to-Sam command:
+      samtools view -o test-data/1.sam bam_to_sam_out2.sam
+      -->
+      <param name="input1" value="3.bam" ftype="bam" />
+      <param name="output1" file="bam_to_sam_out2.sam" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool uses the SAMTools_ toolkit to produce a SAM file from a BAM file.
+
+.. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
+
+  </help>
+</tool>
