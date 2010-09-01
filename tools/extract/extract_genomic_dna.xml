@@ -43,12 +43,12 @@
     </test>
     <!-- Test GFF file support. -->
     <test>
-      <param name="input" value="gff_filtering_out1.gff" dbkey="mm9" ftype="gff" />
+      <param name="input" value="gff_filter_by_attribute_out1.gff" dbkey="mm9" ftype="gff" />
       <param name="out_format" value="interval"/>
       <output name="out_file1" file="extract_genomic_dna_out4.gff" />
     </test>
     <test>
-      <param name="input" value="gff_filtering_out1.gff" dbkey="mm9" ftype="gff" />
+      <param name="input" value="gff_filter_by_attribute_out1.gff" dbkey="mm9" ftype="gff" />
       <param name="out_format" value="fasta"/>
       <output name="out_file1" file="extract_genomic_dna_out5.fasta" />
     </test>
