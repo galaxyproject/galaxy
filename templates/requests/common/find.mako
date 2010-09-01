@@ -54,47 +54,60 @@ $( function() {
     <div class="toolFormBody">
         <form name="find_request" id="find_request" action="${h.url_for( controller='requests_common', action='find', cntrller=cntrller)}" method="post" >
             <div class="form-row">
-                <label>Find in sequencing requests in state:</label>
-                <select name="request_state"> 
-                    <option value="In Progress" selected>In-Progress</option> 
-                    <option value="Complete">Complete</option>
-                    <option value="Both">Both</option> 
-                </select>
+                <label>Find sample(s) using:</label>
+                ${search_type.get_html()}
+                <div class="toolParamHelp" style="clear: both;">
+                    Select a sample attribute to search through all the samples.<br/>
+                    To search for a sample with a dataset name, select the dataset 
+                    option above. This will return all the sample(s) which has a 
+                    dataset with the given name associated with it. To search for 
+                    all samples created on a certain date select the 'date created' 
+                    option above. Enter date in 'YYYY-MM-DD' format. 
+                </div>
             </div>
             <div class="form-row">
-                <label>Find by sample:</label>
-                <select name="search_type"> 
-                    <option value="name" selected>name</option> 
-                    <option value="bar_code">barcode</option> 
-                </select>
+                <label>Filter sequencing requests in state:</label>
+                ${request_states.get_html()}
+                <div class="toolParamHelp" style="clear: both;">
+                    This will filter the search results to show only those sample(s) <br/>
+                    whose parent sequencing request is in the selected state.
+                </div>
             </div>
             <div class="form-row">
-                <input type="text" name="search_string" size="40" value="">
-                <input type="submit" name="go_button" value="Go"/>  
+                ${search_box.get_html()}
+                <input type="submit" name="go_button" value="Find"/>  
+                <div class="toolParamHelp" style="clear: both;">
+                   Wildcard search (%) can be used as placeholder for any sequence of characters or words.<br/> 
+                   For example, to search for samples starting with 'mysample' use 'mysample%' as the search string.
+                </div>
             </div>
             %if results:
 	            <div class="form-row">
                     <label><i>${results}</i></label> 
+	                <div class="toolParamHelp" style="clear: both;">
+	                   The search results are sorted by the date the samples where created. 
+	                </div>
 	            </div>
 	        %endif
             <div class="form-row">
 	            %if samples:
 	                %for s in samples:
 	                    <div class="form-row">
-	                        <a href="${h.url_for( controller=cntrller, action='list', operation='show', id=trans.security.encode_id(s.request.id))}"><label>Sequencing request: ${s.request.name} | Type: ${s.request.type.name} | State: ${s.request.state()}</label></a>
+                            
+                            Sample: ${s.name} | Barcode: ${s.bar_code}<br/>
+                            State: ${s.current_state().name}<br/>
+                            Datasets: <a href="${h.url_for(controller='requests_common', cntrller=cntrller, action='show_datatx_page', sample_id=trans.security.encode_id(s.id))}">${s.transferred_dataset_files()}/${len(s.datasets)}</a><br/>
                             %if cntrller == 'requests_admin':
                                <i>User: ${s.request.user.email}</i>
                             %endif
-					        <div class="toolParamHelp" style="clear: both;">
-	                            Sample: ${s.name}<br/>
-	                            Barcode: ${s.bar_code}<br/>
-	                            State: ${s.current_state().name}
-					        </div>
+                            <div class="toolParamHelp" style="clear: both;">
+                            <a href="${h.url_for( controller=cntrller, action='list', operation='show', id=trans.security.encode_id(s.request.id))}">Sequencing request: ${s.request.name} | Type: ${s.request.type.name} | State: ${s.request.state()}</a>
+                            </div>
+
 	                    </div>
 	                    <br/>
 	                %endfor
 	            %endif
-	            
             </div>
         </form>
     </div>

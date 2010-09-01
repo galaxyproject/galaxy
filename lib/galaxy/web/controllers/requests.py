@@ -135,6 +135,11 @@ class Requests( BaseController ):
     @web.require_login( "create/submit sequencing requests" )
     def index( self, trans ):
         return trans.fill_template( "requests/index.mako" )
+    
+    @web.expose
+    @web.require_login( "create/submit sequencing requests" )
+    def find_index( self, trans ):
+        return trans.fill_template( "requests/find_index.mako" )
 
     @web.expose
     @web.require_login( "create/submit sequencing requests" )

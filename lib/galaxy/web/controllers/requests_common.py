@@ -1256,6 +1256,25 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
     #
     # Find sequencing requests & samples
     #
+    def __find_widgets(self, trans, **kwd):
+        params = util.Params( kwd )
+        request_states = SelectField('request_states', multiple=True, display="checkboxes")
+        sel_op = kwd.get('request_states', trans.app.model.Request.states.SUBMITTED)
+        for i, s in trans.app.model.Request.states.items():
+            if s in sel_op:
+                request_states.add_option(s, s, True)
+            else:
+                request_states.add_option(s, s)
+        search_type = SelectField('search_type')
+        sel_op = kwd.get('search_type', 'sample name')
+        for s in ['sample name', 'barcode', 'dataset']:
+            if s in sel_op:
+                search_type.add_option(s, s, True)
+            else:
+                search_type.add_option(s, s)
+        search_box = TextField('search_box', 50, kwd.get('search_box', ''))
+        return request_states, search_type, search_box
+        
     @web.expose
     @web.require_admin
     def find( self, trans, **kwd ):
@@ -1263,26 +1282,31 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         cntrller = params.get( 'cntrller', 'requests'  )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        search_string = kwd.get( 'search_string', ''  )
-        search_type = params.get( 'search_type', ''  )
-        if params.get( 'request_state', 'In Progress'  ) == 'Both':
-            request_states = ['In Progress', 'Complete']
-        else:
-            request_states = [params.get( 'request_state', 'In Progress'  )]
-        
-            
         samples_list = []
         results = ''
-        if params.get('go_button', '') == 'Go':
-            if search_type == 'bar_code':
+        if params.get('go_button', '') == 'Find':
+            search_string = kwd.get( 'search_box', ''  )
+            search_type = params.get( 'search_type', ''  )
+            request_states = params.get( 'request_states', ''  )
+            samples = []
+            if search_type == 'barcode':
                 samples = trans.sa_session.query( trans.app.model.Sample ) \
                                           .filter( and_( trans.app.model.Sample.table.c.deleted==False,
                                                          trans.app.model.Sample.table.c.bar_code.like(search_string) ) )\
+                                          .order_by( trans.app.model.Sample.table.c.create_time.desc())\
                                           .all()
-            elif search_type == 'name':
+            elif search_type == 'sample name':
                 samples = trans.sa_session.query( trans.app.model.Sample ) \
                                           .filter( and_( trans.app.model.Sample.table.c.deleted==False,
-                                                         trans.app.model.Sample.table.c.name.like(search_string) ) )\
+                                                         trans.app.model.Sample.table.c.name.ilike(search_string) ) )\
+                                          .order_by( trans.app.model.Sample.table.c.create_time.desc())\
+                                          .all()
+            elif search_type == 'dataset':
+                samples = trans.sa_session.query( trans.app.model.Sample ) \
+                                          .filter( and_( trans.app.model.Sample.table.c.deleted==False,
+                                                         trans.app.model.SampleDataset.table.c.sample_id==trans.app.model.Sample.table.c.id,
+                                                         trans.app.model.SampleDataset.table.c.name.ilike(search_string) ) )\
+                                          .order_by( trans.app.model.Sample.table.c.create_time.desc())\
                                           .all()
             if cntrller == 'requests':
                 for s in samples:
@@ -1295,11 +1319,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     if not s.request.deleted \
                         and s.request.state() in request_states:
                         samples_list.append(s)
-            results = 'There are %i sequencing requests matching the search parameters.' % len(samples_list)
+            results = 'There are %i sample(s) matching the search parameters.' % len(samples_list)
+        request_states, search_type, search_box = self.__find_widgets(trans, **kwd)
         return trans.fill_template( '/requests/common/find.mako', 
-                                    cntrller=cntrller,
-                                    samples=samples_list,
-                                    results=results )
+                                    cntrller=cntrller, request_states=request_states,
+                                    samples=samples_list, search_type=search_type,
+                                    results=results, search_box=search_box )
     
     
     

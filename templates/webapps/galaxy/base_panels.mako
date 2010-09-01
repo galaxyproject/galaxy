@@ -82,7 +82,7 @@
         <%
             menu_options = [
                              [ 'Sequencing Requests', h.url_for( controller='/requests', action='index' ) ],
-                             [ 'Find Samples', h.url_for( controller='/requests_common', action='find' ) ],
+                             [ 'Find Samples', h.url_for( controller='/requests', action='find_index' ) ],
                              [ 'Help', app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" ), "galaxy_main" ]
                            ]
             tab( "lab", "Lab", None, menu_options=menu_options )
