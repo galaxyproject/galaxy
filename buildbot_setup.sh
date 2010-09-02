@@ -20,6 +20,8 @@ case "$OSTYPE" in
         [ ! -d "$HYPHY" ] && unset HYPHY
         ;;
     solaris2.10)
+        # For the psu-production builder which is Solaris, but jobs run on a
+        # Linux cluster
         HYPHY="/galaxy/software/linux2.6-x86_64/hyphy"
         ;;
 esac
@@ -73,6 +75,8 @@ database/import
 database/pbs
 "
 
+JARS="/galaxy/software/jars"
+
 for link in $LINKS; do
     echo "Linking $link"
     rm -f tool-data/`basename $link`
@@ -83,6 +87,12 @@ if [ -d "$HYPHY" ]; then
     echo "Linking $HYPHY"
     rm -f tool-data/HYPHY
     ln -sf $HYPHY tool-data/HYPHY
+fi
+
+if [ -d "$JARS" ]; then
+    echo "Linking $JARS"
+    rm -f tool-data/shared/jars
+    ln -sf $JARS tool-data/shared/jars
 fi
 
 for sample in $SAMPLES; do
