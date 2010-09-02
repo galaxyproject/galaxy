@@ -92,7 +92,9 @@
             </div>
         </form>
         %if data.missing_meta():
-            <div class="errormessagesmall">${_('Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.')}</div>
+            <div class="form-row">
+                <div class="errormessagesmall">${_('Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.')}</div>
+            </div>
         %endif
     </div>
 </div>

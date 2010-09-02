@@ -46,13 +46,15 @@ div.historyItem div.historyItem {
 }
 
 ## Change background/border color depending on state
-div.historyItem-ok {
+div.historyItem-ok,
+div.historyItem-failed_metadata {
     border-color: $history_ok_border;
     background: $history_ok_bg;
     .state-icon {
         display: none;
     }
 }
+
 div.historyItem-error {
     border-color: $history_error_border;
     background: $history_error_bg;

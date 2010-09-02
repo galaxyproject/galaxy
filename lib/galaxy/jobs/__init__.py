@@ -492,9 +492,12 @@ class JobWrapper( object ):
                     #either use the metadata from originating output dataset, or call set_meta on the copies
                     #it would be quicker to just copy the metadata from the originating output dataset, 
                     #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ):
-                        # Only set metadata values if they are missing...
+                    if not self.app.config.set_metadata_externally or \
+                     ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) \
+                       and self.app.config.retry_metadata_internally ):
                         dataset.set_meta( overwrite = False )
+                    elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and not context['stderr']:
+                        dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
                         #load metadata from file
                         #we need to no longer allow metadata to be edited while the job is still running,

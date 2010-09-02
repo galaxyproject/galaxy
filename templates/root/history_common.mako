@@ -100,7 +100,12 @@
             <div>${_('Metadata is being Auto-Detected.')}</div>
         %elif data_state == "empty":
             <div>${_('No data: ')}<i>${data.display_info()}</i></div>
-        %elif data_state == "ok":
+        %elif data_state in [ "ok", "failed_metadata" ]:
+            %if data_state == "failed_metadata":
+                <div class="warningmessagesmall" style="margin: 4px 0 4px 0">
+                    An error occurred setting the metadata for this dataset.  You may be able to <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">set it manually or retry auto-detection</a>.
+                </div>
+            %endif
             <div>
                 ${data.blurb},
                 format: <span class="${data.ext}">${data.ext}</span>, 

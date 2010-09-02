@@ -19,7 +19,7 @@ ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstor
 
 <script type="text/javascript">
 
-<% TERMINAL_STATES = ["ok", "error", "empty", "deleted", "discarded"] %>
+<% TERMINAL_STATES = ["ok", "error", "empty", "deleted", "discarded", "failed_metadata"] %>
 TERMINAL_STATES = ${ h.to_json_string(TERMINAL_STATES) };
 
 $(function() {

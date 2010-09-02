@@ -402,7 +402,8 @@ class Dataset( object ):
                     EMPTY = 'empty',
                     ERROR = 'error',
                     DISCARDED = 'discarded',
-                    SETTING_METADATA = 'setting_metadata' )
+                    SETTING_METADATA = 'setting_metadata',
+                    FAILED_METADATA = 'failed_metadata' )
     permitted_actions = get_permitted_actions( filter='DATASET' )
     file_path = "/tmp/"
     engine = None

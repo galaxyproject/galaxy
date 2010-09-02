@@ -335,6 +335,9 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                     if params.annotation:
                         annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
                         self.add_item_annotation( trans, data, annotation )
+                    # If setting metadata previously failed and all required elements have now been set, clear the failed state.
+                    if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
+                        data._state = None
                     trans.sa_session.flush()
                     return trans.show_ok_message( "Attributes updated%s" % message, refresh_frames=['history'] )
                 else:

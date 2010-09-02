@@ -346,6 +346,13 @@ use_interactive = True
 # unresponsive when this operation occurs internally.
 #set_metadata_externally = False
 
+# Although it is fairly reliable, setting metadata can occasionally fail.  In
+# these instances, you can choose to retry setting it internally or leave it in
+# a failed state (since retrying internally may cause the Galaxy process to be
+# unresponsive).  If this option is set to False, the user will be given the
+# option to retry externally, or set metadata manually (when possible).
+#retry_metadata_internally = True
+
 # Number of concurrent jobs to run (local job runner)
 #local_job_queue_workers = 5
 

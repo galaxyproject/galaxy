@@ -7,6 +7,8 @@ div.historyItem .historyItemTitle{font-weight:bold;line-height:16px;}
 div.historyItem div.historyItem{margin-right:-11px;}
 div.historyItem-ok{border-color:#66AA66;background:#CCFFCC;}
 div.historyItem-ok .state-icon{display:none;}
+div.historyItem-failed_metadata{border-color:#66AA66;background:#CCFFCC;}
+div.historyItem-failed_metadata .state-icon{display:none;}
 div.historyItem-error{border-color:#AA6666;background:#FFCCCC;}
 div.historyItem-error .state-icon{background:url(history-states.png) no-repeat 0px -0px;}
 div.historyItem-empty{border-color:#AA6666;background:#FFCCCC;}

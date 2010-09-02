@@ -55,8 +55,11 @@
                 <div>Metadata is being Auto-Detected.</div>
             %elif data_state == "empty":
                 <div>No data: <i>${data.display_info()}</i></div>
-            %elif data_state == "ok":
+            %elif data_state in [ "ok", "failed_metadata" ]:
                 <div>
+                    %if data_state == "failed_metadata":
+                        Warning: setting metadata failed,
+                    %endif
                     ${data.blurb},
                     format: <span class="${data.ext}">${data.ext}</span>, 
                     database: <span class="${data.dbkey}">${data.dbkey}</span>

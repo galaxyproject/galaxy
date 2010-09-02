@@ -1708,6 +1708,11 @@ class SetMetadataTool( Tool ):
             external_metadata = galaxy.datatypes.metadata.JobExternalOutputMetadataWrapper( job )
             if external_metadata.external_metadata_set_successfully( dataset, app.model.context ):
                 dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset, app.model.context ).filename_out )    
+            else:
+                dataset._state = model.Dataset.states.FAILED_METADATA
+                self.sa_session.add( dataset )
+                self.sa_session.flush()
+                return
             # If setting external metadata has failed, how can we inform the user?
             # For now, we'll leave the default metadata and set the state back to its original.
             dataset.datatype.after_setting_metadata( dataset )
