@@ -97,7 +97,7 @@ $.extend( View.prototype, {
         var parent_element = this.container,
             view = this;
         this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(parent_element);        
-        this.content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
+        this.content_div = $("<div/>").addClass("content").css("position", "relative").hide().appendTo(parent_element);
         this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide().appendTo(parent_element);
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
         
@@ -430,10 +430,14 @@ var Track = function (name, view, parent_element) {
 };
 $.extend( Track.prototype, {
     init_global: function () {
-        this.header_div = $("<div class='track-header'>").text( this.name );
-        this.content_div = $("<div class='track-content'>");
-        this.container_div = $("<div />").addClass('track').append( this.header_div ).append( this.content_div );
-        this.parent_element.append( this.container_div );
+        this.container_div = $("<div />").addClass('track')
+        if (!this.hidden) {
+            this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
+            this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
+            this.name_div.text(this.name);
+        }
+        this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
+        this.parent_element.append(this.container_div);
     },
     init_each: function(params, success_fn) {
         var track = this;
@@ -442,7 +446,7 @@ $.extend( Track.prototype, {
         track.tile_cache.clear();
         track.data_cache.clear();
         track.initial_canvas = undefined;
-        track.content_div.css( "height", "auto" );
+        track.content_div.css("height", "auto");
         if (!track.content_div.text()) {
             track.content_div.text(DATA_LOADING);
         }
@@ -491,6 +495,8 @@ var TiledTrack = function() {
     var track = this,
         view = track.view;
     
+    if (track.hidden) { return; }
+    
     if (track.display_modes !== undefined) {
         if (track.mode_div === undefined) {
             track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
@@ -516,6 +522,19 @@ var TiledTrack = function() {
             track.mode_div.hide();
         }
     }
+    var track_dropdown = {};
+    track_dropdown["Set track as overview"] = function() {
+        view.overview_viewport.find("canvas").remove();
+        track.is_overview = true;
+        track.set_overview();
+        for (var track_id in view.tracks) {
+            if (view.tracks[track_id] !== track) {
+                view.tracks[track_id].is_overview = false;
+            }
+        }
+    }
+    make_popupmenu(track.name_div, track_dropdown);
+    /*
     if (track.overview_check_div === undefined) {
         track.overview_check_div = $("<div class='right-float' />").css("margin-top", "-3px").appendTo(track.header_div);
         track.overview_check = $("<input type='checkbox' class='overview_check' />").appendTo(track.overview_check_div);
@@ -531,6 +550,7 @@ var TiledTrack = function() {
         });
         track.overview_check_div.append( $("<label />").text("Overview") );
     }
+    */
 };
 $.extend( TiledTrack.prototype, Track.prototype, {
     draw: function() {
@@ -595,7 +615,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         view.overview_viewport.height(view.default_overview_height);
         view.overview_box.height(view.default_overview_height);
         
-        if (this.initial_canvas && this.overview_check.is(":checked")) {
+        if (this.initial_canvas && this.is_overview) {
             view.overview_viewport.append(this.initial_canvas);
             view.overview_viewport.height(this.initial_canvas.height());
             view.overview_box.height(this.initial_canvas.height());
@@ -605,9 +625,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 });
 
 var LabelTrack = function (view, parent_element) {
-    Track.call( this, null, view, parent_element );
     this.track_type = "LabelTrack";
     this.hidden = true;
+    Track.call( this, null, view, parent_element );
     this.container_div.addClass( "label-track" );
 };
 $.extend( LabelTrack.prototype, Track.prototype, {
@@ -634,10 +654,10 @@ $.extend( LabelTrack.prototype, Track.prototype, {
 
 var ReferenceTrack = function (view) {
     this.track_type = "ReferenceTrack";
+    this.hidden = true;
     Track.call( this, null, view, view.top_labeltrack );
     TiledTrack.call( this );
     
-    this.hidden = true;
     this.height_px = 12;
     this.container_div.addClass( "reference-track" );
     this.dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d");
@@ -1103,6 +1123,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             label_color = this.prefs.label_color,
             block_color = this.prefs.block_color,
             mode = this.mode,
+            min_height = 25,
             no_detail = (mode === "Squish") || (mode === "Dense") && (mode !== "Pack") || (mode === "Auto" && (result.extra_info === "no_detail")),
             left_offset = this.left_offset,
             slots, required_height, y_scale;
@@ -1110,12 +1131,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         if (result.dataset_type === "summary_tree") {
             required_height = this.summary_draw_height;
         } else if (mode === "Dense") {
-            required_height = 25;
+            required_height = min_height;
             y_scale = 10;
         } else {
             // Calculate new slots incrementally for this new chunk of data and update height if necessary
             y_scale = ( no_detail ? this.vertical_nodetail_px : this.vertical_detail_px );
-            required_height = this.incremental_slots( this.view.zoom_res, result.data, no_detail, mode ) * y_scale + 15;
+            required_height = this.incremental_slots( this.view.zoom_res, result.data, no_detail, mode ) * y_scale + min_height;
             slots = this.inc_slots[this.view.zoom_res];
         }
         

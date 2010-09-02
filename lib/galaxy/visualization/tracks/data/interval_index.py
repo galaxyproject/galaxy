@@ -9,7 +9,7 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.interval_index_file import Indexes
 from galaxy.datatypes.interval import Bed, Gff
 
-MAX_VALS = 500 # only display first MAX_VALS features
+MAX_VALS = 5000 # only display first MAX_VALS features
 
 class IntervalIndexDataProvider( object ):
     def __init__( self, converted_dataset, original_dataset ):

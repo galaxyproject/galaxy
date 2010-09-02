@@ -74,7 +74,7 @@
                         [ 'Published Visualizations', h.url_for( controller='/visualization', action='list_published' ) ],
                         [ 'Published Pages', h.url_for( controller='/page', action='list_published' ) ]
                        ]
-        tab( "libraries", "Data Libraries", h.url_for( controller='/library', action='index'), menu_options=menu_options )
+        tab( "libraries", "Shared Data", h.url_for( controller='/library', action='index'), menu_options=menu_options )
     %>
     
     ## Lab menu.
