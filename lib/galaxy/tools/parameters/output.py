@@ -104,7 +104,6 @@ class ToolOutputAction( object ):
         self.parent = parent
         self.default = elem.get( 'default', None )
         option_elem = elem.find( 'option' )
-        assert option_elem is not None, "Required 'option' element missing from ToolOutputAction"
         self.option = ToolOutputActionOption.from_elem( self, option_elem )
     def apply_action( self, output_dataset, other_values ):
         raise TypeError( "Not implemented" )
@@ -117,19 +116,28 @@ class ToolOutputActionOption( object ):
     @classmethod
     def from_elem( cls, parent, elem ):
         """Loads the proper action by the type attribute of elem"""
-        option_type = elem.get( 'type', None )
+        if elem is None:
+            option_type = NullToolOutputActionOption.tag # no ToolOutputActionOption's have been defined, use implicit NullToolOutputActionOption
+        else:
+            option_type = elem.get( 'type', None )
         assert option_type is not None, "Required 'type' attribute missing from ToolOutputActionOption"
         return option_types[ option_type ]( parent, elem )
     def __init__( self, parent, elem ):
         self.parent = parent
         self.filters = []
-        for filter_elem in elem.findall( 'filter' ):
-            self.filters.append( ToolOutputActionOptionFilter.from_elem( self, filter_elem ) )
+        if elem is not None:
+            for filter_elem in elem.findall( 'filter' ):
+                self.filters.append( ToolOutputActionOptionFilter.from_elem( self, filter_elem ) )
     def get_value( self, other_values ):
         raise TypeError( "Not implemented" )
     @property
     def tool( self ):
         return self.parent.tool
+
+class NullToolOutputActionOption( ToolOutputActionOption ):
+    tag = "null_option"
+    def get_value( self, other_values ):
+        return None
 
 class FromFileToolOutputActionOption( ToolOutputActionOption ):
     tag = "from_file"
@@ -454,7 +462,7 @@ for action_type in [ MetadataToolOutputAction, FormatToolOutputAction ]:
     action_types[ action_type.tag ] = action_type
 
 option_types = {}
-for option_type in [ FromFileToolOutputActionOption, FromParamToolOutputActionOption, FromDataTableOutputActionOption ]:
+for option_type in [ NullToolOutputActionOption, FromFileToolOutputActionOption, FromParamToolOutputActionOption, FromDataTableOutputActionOption ]:
     option_types[ option_type.tag ] = option_type
     
 filter_types = {}
