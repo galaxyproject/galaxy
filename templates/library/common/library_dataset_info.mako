@@ -90,6 +90,5 @@
 %endif
 
 %if widgets:
-    ## Templates are not currently supported for library_datasets, only the associated ldda.
     ${render_template_fields( cntrller, 'library_dataset', library_id, widgets, widget_fields_have_contents, info_association=None, inherited=False, editable=False )}
 %endif

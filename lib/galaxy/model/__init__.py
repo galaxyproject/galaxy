@@ -862,7 +862,8 @@ class Library( object ):
         # inherited is not applicable at the library level.  The get_contents
         # param is passed by callers that are inheriting a template - these
         # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not the contents of the inherited template.
+        # fields on the upload form, but not necessarily the contents of the 
+        # inherited template saved for the parent.
         info_association, inherited = self.get_info_association()
         if info_association:
             template = info_association.template
@@ -939,7 +940,8 @@ class LibraryFolder( object ):
         # See if we have any associated templates.  The get_contents
         # param is passed by callers that are inheriting a template - these
         # are usually new library datsets for which we want to include template
-        # fields on the upload form.
+        # fields on the upload form, but not necessarily the contents of the 
+        # inherited template saved for the parent.
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -948,7 +950,12 @@ class LibraryFolder( object ):
                 template = info_association.template
             # See if we have any field contents, but only if the info_association was
             # not inherited ( we do not want to display the inherited contents ).
-            if not inherited and get_contents:
+            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
+            # contents.  We'll use this behavior until we hear from the community that
+            # contents should not be inherited.  If we don't hear anything for a while, 
+            # eliminate the old commented out behavior.
+            #if not inherited and get_contents:
+            if get_contents:
                 info = info_association.info
                 if info:
                     return template.get_widgets( trans.user, info.content )
@@ -1160,7 +1167,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         # See if we have any associated templatesThe get_contents
         # param is passed by callers that are inheriting a template - these
         # are usually new library datsets for which we want to include template
-        # fields on the upload form.
+        # fields on the upload form, but not necessarily the contents of the 
+        # inherited template saved for the parent.
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -1169,7 +1177,12 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                 template = info_association.template
             # See if we have any field contents, but only if the info_association was
             # not inherited ( we do not want to display the inherited contents ).
-            if not inherited and get_contents:
+            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
+            # contents.  We'll use this behavior until we hear from the community that
+            # contents should not be inherited.  If we don't hear anything for a while, 
+            # eliminate the old commented out behavior.
+            #if not inherited and get_contents:
+            if get_contents:
                 info = info_association.info
                 if info:
                     return template.get_widgets( trans.user, info.content )

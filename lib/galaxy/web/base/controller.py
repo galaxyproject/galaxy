@@ -313,9 +313,9 @@ class UsesFormDefinitionWidgets:
                         return True
             if isinstance( field[ 'widget' ], CheckboxField ) and field[ 'widget' ].checked:
                 return True
-            if isinstance( field[ 'widget' ], WorkflowField ) and field[ 'widget' ].value not in [ 'none', 'None', None ]:
+            if isinstance( field[ 'widget' ], WorkflowField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
                 return True
-            if isinstance( field[ 'widget' ], AddressField ) and field[ 'widget' ].value not in [ 'none', 'None', None ]:
+            if isinstance( field[ 'widget' ], AddressField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
                 return True
         return False
     def clean_field_contents( self, widgets, **kwd ):
@@ -332,9 +332,24 @@ class UsesFormDefinitionWidgets:
                 field_value = widget.value
             field_contents.append( util.restore_text( field_value ) )
         return field_contents
+    def field_param_values_ok( self, index, widget_type, **kwd ):
+        # Make sure required fields have contents, etc
+        # TODO: Add support for other field types ( e.g., WorkflowField, etc )
+        params = util.Params( kwd )
+        if widget_type == 'AddressField':
+            if not util.restore_text( params.get( 'field_%i_short_desc' % index, '' ) ) \
+                or not util.restore_text( params.get( 'field_%i_name' % index, '' ) ) \
+                or not util.restore_text( params.get( 'field_%i_institution' % index, '' ) ) \
+                or not util.restore_text( params.get( 'field_%i_address' % index, '' ) ) \
+                or not util.restore_text( params.get( 'field_%i_city' % index, '' ) ) \
+                or not util.restore_text( params.get( 'field_%i_state' % index, '' ) ) \
+                or not util.restore_text( params.get( 'field_%i_postal_code' % index, '' ) ) \
+                or not util.restore_text( params.get( 'field_%i_country' % index, '' ) ):
+                return False
+        return True
     def save_widget_field( self, trans, field_obj, index, **kwd ):
         # Save a form_builder field object
-        # TODO: Add support for other field types ( e.g., WorkflowField )
+        # TODO: Add support for other field types ( e.g., WorkflowField, etc )
         params = util.Params( kwd )
         if isinstance( field_obj, trans.model.UserAddress ):
             field_obj.desc = util.restore_text( params.get( 'field_%i_short_desc' % index, '' ) )
@@ -1227,6 +1242,7 @@ class Admin( object ):
         #    - Dataset where HistoryDatasetAssociation.dataset_id = Dataset.id
         # - UserGroupAssociation where user_id == User.id
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
+        # - UserAddress where user_id == User.id
         # Purging Histories and Datasets must be handled via the cleanup_datasets.py script
         webapp = kwd.get( 'webapp', 'galaxy' )
         id = kwd.get( 'id', None )
@@ -1271,6 +1287,9 @@ class Admin( object ):
             for ura in user.roles:
                 if ura.role_id != private_role.id:
                     trans.sa_session.delete( ura )
+            # Delete UserAddresses
+            for address in user.addresses:
+                trans.sa_session.delete( address )
             # Purge the user
             user.purged = True
             trans.sa_session.add( user )

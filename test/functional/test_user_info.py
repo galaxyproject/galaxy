@@ -126,7 +126,7 @@ class TestUserInfo( TwillTestCase ):
         self.check_page_for_string( "Manage User Information" )
         self.check_page_for_string( user_info_values[0] )
         self.check_page_for_string( user_info_values[1] )
-        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
+        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked >' )
     def test_015_user_reqistration_single_user_info_forms( self ):
         ''' Testing user registration with a single user info form '''
         # Logged in as regular_user_11
@@ -155,7 +155,7 @@ class TestUserInfo( TwillTestCase ):
         self.check_page_for_string( "Manage User Information" )
         self.check_page_for_string( user_info_values[0] )
         self.check_page_for_string( user_info_values[1] )
-        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
+        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked >' )
     def test_020_edit_user_info( self ):
         """Testing editing user info as a regular user"""
         # Logged in as regular_user_12
@@ -179,32 +179,23 @@ class TestUserInfo( TwillTestCase ):
         # Test editing the user info
         self.edit_user_info( ['Research', 'PSU'] )
     def test_999_reset_data_for_later_test_runs( self ):
+        """Reseting data to enable later test runs to pass"""
         # Logged in as regular_user_12
         self.logout()
         self.login( email=admin_user.email )
+        ##################
+        # Mark all forms deleted
+        ##################
+        for form_name in [ form_one_name ]:
+            form = get_form( form_name )
+            mark_form_deleted( form )
         ###############
-        # Mark form_one as deleted ( form_two was marked deleted earlier )
+        # Purge appropriate users
         ###############
-        form_latest = get_form( form_one_name )
-        mark_form_deleted( form_latest )
-        ###############
-        # Manually delete the test_user11
-        ###############
-        self.mark_user_deleted( user_id=self.security.encode_id( regular_user11.id ), email=regular_user11.email )
-        refresh( regular_user11 )
-        self.purge_user( self.security.encode_id( regular_user11.id ), regular_user11.email )
-        refresh( regular_user11 )
-        # We should now only the the user and his private role
-        delete_user_roles( regular_user11 )
-        delete_obj( regular_user11 )
-        ###############
-        # Manually delete the test_user12
-        ###############
-        refresh( regular_user12 )
-        self.mark_user_deleted( user_id=self.security.encode_id( regular_user12.id ), email=regular_user12.email )
-        refresh( regular_user12 )
-        self.purge_user( self.security.encode_id( regular_user12.id ), regular_user12.email )
-        refresh( regular_user12 )
-        # We should now only the the user and his private role
-        delete_user_roles( regular_user12 )
-        delete_obj( regular_user12 )
+        for user in [ regular_user11, regular_user12 ]:
+            self.mark_user_deleted( user_id=self.security.encode_id( user.id ), email=user.email )
+            refresh( user )
+            self.purge_user( self.security.encode_id( user.id ), user.email )
+            refresh( user )
+            delete_user_roles( user )
+            delete_obj( user )

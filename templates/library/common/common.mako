@@ -22,7 +22,7 @@
             has_contents = True
             label = field[ 'label' ]
             value = 'checked'
-        elif isinstance( field[ 'widget' ], WorkflowField ) and field[ 'widget' ].value not in [ 'none', 'None', None ]:
+        elif isinstance( field[ 'widget' ], WorkflowField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
             has_contents = True
             label = field[ 'label' ]
             widget = field[ 'widget' ]
@@ -35,7 +35,7 @@
             else:
                 # If we didn't find the selected workflow option above, we'll just print the value
                 value = field[ 'widget' ].value
-        elif isinstance( field[ 'widget' ], AddressField ) and field[ 'widget' ].value not in [ 'none', 'None', None ]:
+        elif isinstance( field[ 'widget' ], AddressField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
             has_contents = True
             widget = field[ 'widget' ]
             address = trans.sa_session.query( trans.model.UserAddress ).get( int( widget.value ) )
@@ -69,71 +69,77 @@
         else:
             can_modify = False
     %>
-    %if widgets:
-        %if editable and can_modify:
-            <p/>
-            <div class="toolForm">
-                <div class="toolFormTitle">
-                    %if inherited:
-                        Other information <i>- this is an inherited template and is not required to be used with this ${item_type}</i>
-                    %else:
-                        Other information
-                    %endif
-                    %if info_association and not inherited and can_modify:
+    %if editable and can_modify:
+        <p/>
+        <div class="toolForm">
+            <div class="toolFormTitle">Other information
+                <a id="item-${item.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                <div popupmenu="item-${item.id}-popup">
+                    %if info_association and inherited and can_modify:
                         ## "inherited" will be true only if the info_association is not associated with the current item,
-                        ## in which case we do not want to render the following popup menu.
-                        <a id="item-${item.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                        <div popupmenu="item-${item.id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Edit template</a>
-                            <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Delete template</a>
-                            %if item_type not in [ 'ldda', 'library_dataset' ]:
-                                %if info_association.inheritable:
-                                    <a class="action-button" href="${h.url_for( controller='library_common', action='manage_template_inheritance', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Dis-inherit template</a>
-                                %else:
-                                    <a class="action-button" href="${h.url_for( controller='library_common', action='manage_template_inheritance', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Inherit template</a>
-                                %endif
+                        ## which means that the currently display template has not yet been saved for the current item.
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Select a different template</a>
+                    %elif info_association and not inherited and can_modify:
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Edit template</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Delete template</a>
+                        %if item_type not in [ 'ldda', 'library_dataset' ]:
+                            %if info_association.inheritable:
+                                <a class="action-button" href="${h.url_for( controller='library_common', action='manage_template_inheritance', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Dis-inherit template</a>
+                            %else:
+                                <a class="action-button" href="${h.url_for( controller='library_common', action='manage_template_inheritance', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Inherit template</a>
                             %endif
-                        </div>
+                        %endif
                     %endif
                 </div>
-                <div class="toolFormBody">
-                    <form name="edit_info" id="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
-                        %for i, field in enumerate( widgets ):
-                            <div class="form-row">
-                                <label>${field[ 'label' ]}</label>
-                                ${field[ 'widget' ].get_html()}
-                                <div class="toolParamHelp" style="clear: both;">
-                                    ${field[ 'helptext' ]}
-                                </div>
-                                <div style="clear: both"></div>
-                            </div>
-                        %endfor 
-                        <div class="form-row">
-                            <input type="submit" name="edit_info_button" value="Save"/>
-                        </div>
-                    </form>
-                </div>
             </div>
-            <p/>
-        %elif widget_fields_have_contents:
-            <p/>
-            <div class="toolForm">
-                <div class="toolFormTitle">Other information about ${item.name}</div>
-                <div class="toolFormBody">
+            <div class="toolFormBody">
+                %if inherited:
+                    <div class="form-row">
+                        <font color="red">
+                            <b>
+                                This is an inherited template and is not required to be used with this ${item_type}.  You can 
+                                <a href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}"><font color="red">select a different template</font></a>
+                                or fill in the desired fields and save this one.  This template will not be assocaiated with this ${item_type} until you click the Save button.
+                            </b>
+                        </font>
+                    </div>
+                %endif
+                <form name="edit_info" id="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
                     %for i, field in enumerate( widgets ):
-                        ${render_template_field( field )}
-                    %endfor
-                </div>
+                        <div class="form-row">
+                            <label>${field[ 'label' ]}</label>
+                            ${field[ 'widget' ].get_html()}
+                            <div class="toolParamHelp" style="clear: both;">
+                                ${field[ 'helptext' ]}
+                            </div>
+                            <div style="clear: both"></div>
+                        </div>
+                    %endfor 
+                    <div class="form-row">
+                        <input type="submit" name="edit_info_button" value="Save"/>
+                    </div>
+                </form>
             </div>
-            <p/>
-        %endif
+        </div>
+        <p/>
+    %elif widget_fields_have_contents:
+        <p/>
+        <div class="toolForm">
+            <div class="toolFormTitle">Other information about ${item.name}</div>
+            <div class="toolFormBody">
+                %for i, field in enumerate( widgets ):
+                    ${render_template_field( field )}
+                %endfor
+            </div>
+        </div>
+        <p/>
     %endif
 </%def>
 
 <%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, widgets, roles, history, show_deleted )">
     <% import os, os.path %>
     %if upload_option in [ 'upload_file', 'upload_directory', 'upload_paths' ]:
-        <div class="toolForm" id="upload_library_dataset">
+        <div class="toolForm" id="upload_library_dataset_tool_form">
             %if upload_option == 'upload_directory':
                 <div class="toolFormTitle">Upload a directory of files</div>
             %elif upload_option == 'upload_paths':
@@ -142,7 +148,7 @@
                 <div class="toolFormTitle">Upload files</div>
             %endif
             <div class="toolFormBody">
-                <form name="upload_library_dataset" action="${action}" enctype="multipart/form-data" method="post">
+                <form name="upload_library_dataset" id="upload_library_dataset" action="${action}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="tool_id" value="upload1"/>
                     <input type="hidden" name="tool_state" value="None"/>
                     <input type="hidden" name="cntrller" value="${cntrller}"/>

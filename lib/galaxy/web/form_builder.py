@@ -4,12 +4,19 @@ Classes for generating HTML forms
 
 import logging,sys
 from cgi import escape
+from galaxy.util import restore_text
+
 log = logging.getLogger(__name__)
 
 class BaseField(object):
     def get_html( self, prefix="" ):
         """Returns the html widget corresponding to the parameter"""
         raise TypeError( "Abstract Method" )
+    def get_disabled_str( self, disabled=False ):
+        if disabled:
+            return 'disabled="disabled"'
+        else:
+            return ''
     @staticmethod
     def form_field_types():
         return ['TextField', 'TextArea', 'SelectField', 'CheckboxField', 'AddressField', 'WorkflowField']
@@ -31,9 +38,9 @@ class TextField(BaseField):
         self.name = name
         self.size = int( size or 10 )
         self.value = value or ""
-    def get_html( self, prefix="" ):
-        return '<input type="text" name="%s%s" size="%d" value="%s">' \
-            % ( prefix, self.name, self.size, escape(str(self.value), quote=True) )
+    def get_html( self, prefix="", disabled=False ):
+        return '<input type="text" name="%s%s" size="%d" value="%s" %s>' \
+            % ( prefix, self.name, self.size, escape( str( self.value ),  quote=True ), self.get_disabled_str( disabled ) )
     def set_size(self, size):
         self.size = int( size )
         
@@ -52,7 +59,7 @@ class PasswordField(BaseField):
         self.value = value or ""
     def get_html( self, prefix="" ):
         return '<input type="password" name="%s%s" size="%d" value="%s">' \
-            % ( prefix, self.name, self.size, escape(str(self.value), quote=True) )
+            % ( prefix, self.name, self.size, escape( str( self.value ), quote=True ) )
     def set_size(self, size):
         self.size = int( size )
 
@@ -71,9 +78,9 @@ class TextArea(BaseField):
         self.rows = int(self.size[0])
         self.cols = int(self.size[-1])
         self.value = value or ""
-    def get_html( self, prefix="" ):
-        return '<textarea name="%s%s" rows="%d" cols="%d">%s</textarea>' \
-            % ( prefix, self.name, self.rows, self.cols, escape( str( self.value ), quote=True ) )
+    def get_html( self, prefix="", disabled=False ):
+        return '<textarea name="%s%s" rows="%d" cols="%d" %s>%s</textarea>' \
+            % ( prefix, self.name, self.rows, self.cols, self.get_disabled_str( disabled ), escape( str( self.value ), quote=True ) )
     def set_size(self, rows, cols):
         self.rows = rows
         self.cols = cols
@@ -90,7 +97,7 @@ class CheckboxField(BaseField):
     def __init__( self, name, checked=None ):
         self.name = name
         self.checked = ( checked == True ) or ( isinstance( checked, basestring ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
-    def get_html( self, prefix="" ):
+    def get_html( self, prefix="", disabled=False ):
         if self.checked:
             checked_text = "checked"
         else:
@@ -100,8 +107,8 @@ class CheckboxField(BaseField):
         # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
-        return '<input type="checkbox" name="%s%s" value="true" %s><input type="hidden" name="%s%s" value="true">' \
-            % ( prefix, self.name, checked_text, prefix, self.name )
+        return '<input type="checkbox" name="%s%s" value="true" %s %s><input type="hidden" name="%s%s" value="true" %s>' \
+            % ( prefix, self.name, checked_text, self.get_disabled_str( disabled ), prefix, self.name, self.get_disabled_str( disabled ) )
     @staticmethod
     def is_checked( value ):
         if value == True:
@@ -150,7 +157,7 @@ class HiddenField(BaseField):
         self.name = name
         self.value = value or ""
     def get_html( self, prefix="" ):
-        return '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, escape(str(self.value), quote=True) )
+        return '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, escape( str( self.value ), quote=True ) )
 
 class SelectField(BaseField):
     """
@@ -210,14 +217,14 @@ class SelectField(BaseField):
             self.refresh_on_change_text = ''
     def add_option( self, text, value, selected = False ):
         self.options.append( ( text, value, selected ) )
-    def get_html( self, prefix="" ):
+    def get_html( self, prefix="", disabled=False ):
         if self.display == "checkboxes":
-            return self.get_html_checkboxes( prefix )
+            return self.get_html_checkboxes( prefix, disabled )
         elif self.display == "radio":
-            return self.get_html_radio( prefix )
+            return self.get_html_radio( prefix, disabled )
         else:
-            return self.get_html_default( prefix )
-    def get_html_checkboxes( self, prefix="" ):
+            return self.get_html_default( prefix, disabled )
+    def get_html_checkboxes( self, prefix="", disabled=False ):
         rval = []
         ctr = 0
         if len( self.options ) > 1:
@@ -227,12 +234,14 @@ class SelectField(BaseField):
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
             if selected:
-                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, escape(str(value), quote=True), text) )
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked %s>%s</div>' % \
+                             ( style, prefix, self.name, escape( str( value ), quote=True ), self.get_disabled_str( disabled ), text ) )
             else:
-                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, escape(str(value), quote=True), text) )
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" %s>%s</div>' % \
+                             ( style, prefix, self.name, escape( str( value ), quote=True ), self.get_disabled_str( disabled ), text ) )
             ctr += 1
         return "\n".join( rval )
-    def get_html_radio( self, prefix="" ):
+    def get_html_radio( self, prefix="", disabled=False ):
         rval = []
         ctr = 0
         for text, value, selected in self.options:
@@ -241,11 +250,20 @@ class SelectField(BaseField):
                 style = " class=\"odd_row\""
             if selected: selected_text = " checked"
             else: selected_text = ""
-            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s"%s>%s</div>' % ( style, prefix, self.name, self.refresh_on_change_text, escape(str(value), quote=True), selected_text, text ) )
+            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s"%s %s>%s</div>' % \
+                         ( style,
+                           prefix,
+                           self.name,
+                           self.refresh_on_change_text,
+                           escape( str( value ), quote=True ),
+                           selected_text,
+                           self.get_disabled_str( disabled ),
+                           text ) )
             ctr += 1
         return "\n".join( rval )    
-    def get_html_default( self, prefix="" ):
-        if self.multiple: multiple = " multiple"
+    def get_html_default( self, prefix="", disabled=False ):
+        if self.multiple:
+            multiple = " multiple"
         else: multiple = ""
         rval = []
         last_selected_value = ""
@@ -253,11 +271,13 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " selected"
                 last_selected_value = value
-            else: selected_text = ""
-            rval.append( '<option value="%s"%s>%s</option>' % ( escape(str(value), quote=True), selected_text, text ) )
+            else:
+                selected_text = ""
+            rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, text ) )
         if last_selected_value:
-            last_selected_value = ' last_selected_value="%s"' % escape(str(last_selected_value), quote=True)
-        rval.insert( 0, '<select name="%s%s"%s%s%s>' % ( prefix, self.name, multiple, self.refresh_on_change_text, last_selected_value ) )
+            last_selected_value = ' last_selected_value="%s"' % escape( str( last_selected_value ), quote=True )
+        rval.insert( 0, '<select name="%s%s"%s%s%s %s>' % \
+                     ( prefix, self.name, multiple, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ),  ) )
         rval.append( '</select>' )
         return "\n".join( rval )
     def get_selected(self):
@@ -381,61 +401,71 @@ class DrillDownField( BaseField ):
 class AddressField(BaseField):
     @staticmethod
     def fields():
-        return   [  ( "short_desc", "Short address description"),
-                    ( "name", "Name" ),
-                    ( "institution", "Institution" ),
-                    ( "address", "Address" ),
-                    ( "city", "City" ),
-                    ( "state", "State/Province/Region" ),
-                    ( "postal_code", "Postal Code" ),
-                    ( "country", "Country" ),
-                    ( "phone", "Phone" )  ]
+        return   [  ( "short_desc", "Short address description", "Required" ),
+                    ( "name", "Name", "Required" ),
+                    ( "institution", "Institution", "Required" ),
+                    ( "address", "Address", "Required" ),
+                    ( "city", "City", "Required" ),
+                    ( "state", "State/Province/Region", "Required" ),
+                    ( "postal_code", "Postal Code", "Required" ),
+                    ( "country", "Country", "Required" ),
+                    ( "phone", "Phone", "" )  ]
     def __init__(self, name, user=None, value=None, params=None):
         self.name = name
         self.user = user
         self.value = value
         self.select_address = None
         self.params = params
-    def get_html(self):
-        from galaxy import util
+    def get_html( self, disabled=False ):
         address_html = ''
         add_ids = ['none']
         if self.user:
             for a in self.user.addresses:
-                add_ids.append(str(a.id))
-        add_ids.append('new')
-        self.select_address = SelectField(self.name, 
-                                          refresh_on_change=True, 
-                                          refresh_on_change_values=add_ids)
+                add_ids.append( str( a.id ) )
+        add_ids.append( 'new' )
+        self.select_address = SelectField( self.name, 
+                                           refresh_on_change=True, 
+                                           refresh_on_change_values=add_ids )
         if self.value == 'none':
-            self.select_address.add_option('Select one', 'none', selected=True)
+            self.select_address.add_option( 'Select one', 'none', selected=True )
         else:
-            self.select_address.add_option('Select one', 'none')
+            self.select_address.add_option( 'Select one', 'none' )
         if self.user:
             for a in self.user.addresses:
                 if not a.deleted:
-                    if self.value == str(a.id):
-                        self.select_address.add_option(a.desc, str(a.id), selected=True)
-                        # display this address
-                        address_html = '''<div class="form-row">
-                                          %s
-                                          </div>''' % a.get_html()
+                    if self.value == str( a.id ):
+                        self.select_address.add_option( a.desc, str( a.id ), selected=True )
+                        # Display this address
+                        address_html += '''
+                                        <div class="form-row">
+                                            %s
+                                        </div>
+                                        ''' % a.get_html()
                     else:
-                        self.select_address.add_option(a.desc, str(a.id))
+                        self.select_address.add_option( a.desc, str( a.id ) )
         if self.value == 'new':
-            self.select_address.add_option('Add a new address', 'new', selected=True)
-            for field_name, label in self.fields():
-                add_field = TextField(self.name+'_'+field_name, 
+            self.select_address.add_option( 'Add a new address', 'new', selected=True )
+            for field_name, label, help_text in self.fields():
+                add_field = TextField( self.name + '_' + field_name, 
                                       40,
-                                      util.restore_text( self.params.get( self.name+'_'+field_name, ''  ) )) 
-                address_html += ''' <div class="form-row">
-                                        <label>%s</label>
+                                      restore_text( self.params.get( self.name + '_' + field_name, ''  ) ) ) 
+                address_html += '''
+                                <div class="form-row">
+                                    <label>%s</label>
+                                    %s
+                                    ''' % ( label, add_field.get_html( disabled=disabled ) )
+                if help_text:
+                    address_html += '''
+                                    <div class="toolParamHelp" style="clear: both;">
                                         %s
                                     </div>
-                                ''' % (label, add_field.get_html())
+                                    ''' % help_text      
+                address_html += '''
+                                </div>
+                                '''
         else:
-            self.select_address.add_option('Add a new address', 'new')
-        return self.select_address.get_html()+address_html
+            self.select_address.add_option( 'Add a new address', 'new' )
+        return self.select_address.get_html( disabled=disabled ) + address_html
 
 class WorkflowField(BaseField):
     def __init__(self, name, user=None, value=None, params=None):
@@ -444,21 +474,20 @@ class WorkflowField(BaseField):
         self.value = value
         self.select_workflow = None
         self.params = params
-    def get_html(self):
-        self.select_workflow = SelectField(self.name)
+    def get_html( self, disabled=False ):
+        self.select_workflow = SelectField( self.name )
         if self.value == 'none':
-            self.select_workflow.add_option('Select one', 'none', selected=True)
+            self.select_workflow.add_option( 'Select one', 'none', selected=True )
         else:
-            self.select_workflow.add_option('Select one', 'none')
+            self.select_workflow.add_option( 'Select one', 'none' )
         if self.user:
             for a in self.user.stored_workflows:
                 if not a.deleted:
-                    if str(self.value) == str(a.id):
-                        self.select_workflow.add_option(a.name, str(a.id), selected=True)
+                    if str( self.value ) == str( a.id ):
+                        self.select_workflow.add_option( a.name, str( a.id ), selected=True )
                     else:
-                        self.select_workflow.add_option(a.name, str(a.id))
-        return self.select_workflow.get_html()
-
+                        self.select_workflow.add_option( a.name, str( a.id ) )
+        return self.select_workflow.get_html( disabled=disabled )
 
 def get_suite():
     """Get unittest suite for this module"""

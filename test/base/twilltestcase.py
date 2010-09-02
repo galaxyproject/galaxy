@@ -1406,6 +1406,45 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( desc )
             self.check_page_for_string( formtype )
         self.home()
+    # Form stuff
+    def create_single_field_type_form_definition( self, name, desc, formtype, field_type ):
+        """
+        Create a new form definition containing 1 field of a specified type ( AddressField, CheckboxField, SelectField,
+        TextArea, TextField, WorkflowField ).  The form_type param value should not be 'Sequencing Sample Form,' use 
+        create_form() above for that.
+        """
+        self.home()
+        # Create a new form definition
+        self.visit_url( "%s/forms/new" % self.url )
+        self.check_page_for_string( 'Create a new form definition' )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", desc )
+        tc.fv( "1", "form_type_selectbox", formtype )
+        tc.submit( "create_form_button" )
+        # Add 1 AddressField to the new form definition
+        field_name = 'field_name_0'
+        field_contents = field_type
+        field_help_name = 'field_helptext_0'
+        field_help_contents = '%s help' % field_type
+        field_default = 'field_default_0'
+        field_default_contents = '%s default contents' % field_type
+        tc.fv( "1", field_name, field_contents )
+        tc.fv( "1", field_help_name, field_help_contents )
+        self.refresh_form( 'field_type_0', field_type )
+        if field_type == 'SelectField':
+            # Add 2 options so our select list is functional
+            tc.submit( "addoption_0" )
+            tc.fv( "1", "field_0_option_0", "One" )
+            tc.submit( "addoption_0" )
+            tc.fv( "1", "field_0_option_1", "Two" )
+        tc.fv( "1", field_default, field_default_contents )
+        tc.submit( "save_changes_button" )
+        self.home()
+        self.visit_url( "%s/forms/manage" % self.url )
+        self.check_page_for_string( name )
+        self.check_page_for_string( desc )
+        self.check_page_for_string( formtype )
+        self.home()
     def edit_form( self, form_current_id, form_name, new_form_name="Form One's Name (Renamed)", new_form_desc="This is Form One's description (Re-described)"):
         """
         Edit form details; name & description
@@ -1459,6 +1498,15 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "The form '%s' has been updated with the changes." % form_name
         self.check_page_for_string( check_str )
         self.home()
+    def mark_form_deleted( self, form_id ):
+        """Mark a form_definition as deleted"""
+        self.home()
+        url = "%s/forms/manage?operation=delete&id=%s" % ( self.url, form_id )
+        self.visit_url( url )
+        check_str = "1 form(s) is deleted."
+        self.check_page_for_string( check_str )
+        self.home()
+
     # Requests stuff
     def check_request_grid(self, state, request_name, deleted=False):
         self.home()
@@ -1603,7 +1651,11 @@ class TwillTestCase( unittest.TestCase ):
         
     # Library stuff
     def add_library_template( self, cntrller, item_type, library_id, form_id, form_name, folder_id=None, ldda_id=None ):
-        """Add a new info template to a library item"""
+        """
+        Add a new info template to a library item - the template will ALWAYS BE SET TO INHERITABLE here.  If you want to
+        dis-inherit your template, call the manage_library_template_inheritance() below immediately after you call this
+        method in your test code.
+        """
         self.home()
         if item_type == 'library':
             url = "%s/library_common/add_template?cntrller=%s&item_type=%s&library_id=%s" % \
@@ -1616,10 +1668,30 @@ class TwillTestCase( unittest.TestCase ):
             ( self.url, cntrller, item_type, library_id, folder_id, ldda_id )
         self.visit_url( url )
         self.check_page_for_string ( "Select a template for the" )
-        tc.fv( '1', 'form_id', form_id )
-        tc.fv( '1', 'inherit', '1' )
-        tc.submit( 'add_template_button' )
+        self.refresh_form( "form_id", form_id )
+        # For some unknown reason, twill barfs if the form number ( 1 ) is used in the following
+        # rather than the form anme ( select_template ), so we have to use the form name.
+        tc.fv( "select_template", "inheritable", '1' )
+        tc.submit( "add_template_button" )
         self.check_page_for_string = 'A template based on the form "%s" has been added to this' % form_name
+        self.home()
+    def manage_library_template_inheritance( self, cntrller, item_type, library_id, folder_id=None, ldda_id=None, inheritable=True ):
+        # If inheritable is True, the item is currently inheritable.
+        self.home()
+        if item_type == 'library':
+            url = "%s/library_common/manage_template_inheritance?cntrller=%s&item_type=%s&library_id=%s" % \
+            ( self.url, cntrller, item_type, library_id )
+        elif item_type == 'folder':
+            url = "%s/library_common/manage_template_inheritance?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s" % \
+            ( self.url, cntrller, item_type, library_id, folder_id )
+        elif item_type == 'ldda':
+            url = "%s/library_common/manage_template_inheritance?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s&ldda_id=%s" % \
+            ( self.url, cntrller, item_type, library_id, folder_id, ldda_id )
+        self.visit_url( url )
+        if inheritable:
+            self.check_page_for_string = 'will no longer be inherited to contained folders and datasets'
+        else:
+            self.check_page_for_string = 'will now be inherited to contained folders and datasets'
         self.home()
     def browse_libraries_admin( self, deleted=False, check_str1='', check_str2='', not_displayed1='' ):
         self.visit_url( '%s/library_admin/browse_libraries?sort=name&f-description=All&f-name=All&f-deleted=%s' % ( self.url, str( deleted ) ) )
@@ -1718,13 +1790,14 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Library folder stuff
-    def add_folder( self, controller, library_id, folder_id, name='Folder One', description='This is Folder One' ):
+    def add_folder( self, cntrller, library_id, folder_id, name='Folder One', description='This is Folder One' ):
         """Create a new folder"""
         self.home()
-        self.visit_url( "%s/library_common/create_folder?cntrller=%s&library_id=%s&parent_id=%s" % ( self.url, controller, library_id, folder_id ) )
+        url = "%s/library_common/create_folder?cntrller=%s&library_id=%s&parent_id=%s" % ( self.url, cntrller, library_id, folder_id )
+        self.visit_url( url )
         self.check_page_for_string( 'Create a new folder' )
-        tc.fv( "1", "name", name ) # form field 1 is the field named name...
-        tc.fv( "1", "description", description ) # form field 2 is the field named description...
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", description )
         tc.submit( "new_folder_button" )
         check_str = "The new folder named '%s' has been added to the data library." % name
         self.check_page_for_string( check_str )
@@ -1765,14 +1838,32 @@ class TwillTestCase( unittest.TestCase ):
     # Library dataset stuff
     def add_library_dataset( self, cntrller, filename, library_id, folder_id, folder_name,
                              file_type='auto', dbkey='hg18', roles=[], message='', root=False,
-                             template_field_name1='', template_field_contents1='', show_deleted='False',
-                             upload_option='upload_file' ):
+                             template_field_name1='', template_field_contents1='', 
+                             template_refresh_field_name='', template_refresh_field_contents='',
+                             field_0_short_desc='', field_0_name='', field_0_institution='',
+                             field_0_address='', field_0_city='', field_0_state='', field_0_postal_code='',
+                             field_0_country='', show_deleted='False', upload_option='upload_file' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
         self.visit_url( "%s/library_common/upload_library_dataset?cntrller=%s&library_id=%s&folder_id=%s&upload_option=%s&message=%s" % \
                         ( self.url, cntrller, library_id, folder_id, upload_option, message.replace( ' ', '+' ) ) )
         self.check_page_for_string( 'Upload files' )
+        # A template containing an AddressField may be displayed on the upload form.
+        # If this is the case, we need to refresh the form with the passeed tmplate_field_name1.
+        if template_refresh_field_name and template_refresh_field_contents:
+            self.refresh_form( template_refresh_field_name, template_refresh_field_contents )
+            tc.fv( "1", "field_0_short_desc", field_0_short_desc )
+            tc.fv( "1", "field_0_name", field_0_name )
+            tc.fv( "1", "field_0_institution", field_0_institution )
+            tc.fv( "1", "field_0_address", field_0_address )
+            tc.fv( "1", "field_0_city", field_0_city )
+            tc.fv( "1", "field_0_state", field_0_state )
+            tc.fv( "1", "field_0_postal_code", field_0_postal_code )
+            tc.fv( "1", "field_0_country", field_0_country )
+        # Add template field contents, if any...
+        if template_field_name1:
+            tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.fv( "1", "library_id", library_id )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "show_deleted", show_deleted )
@@ -1782,9 +1873,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         for role_id in roles:
             tc.fv( "1", "roles", role_id )
-        # Add template field contents, if any...
-        if template_field_name1:
-            tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.submit( "runtool_btn" )
         if root:
             check_str = "Added 1 datasets to the library '%s' (each is selected)." % folder_name

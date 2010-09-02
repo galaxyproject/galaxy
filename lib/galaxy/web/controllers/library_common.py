@@ -7,6 +7,7 @@ from galaxy.util.json import to_json_string
 from galaxy.tools.actions import upload_common
 from galaxy.model.orm import *
 from galaxy.util.streamball import StreamBall
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
 import logging, tempfile, zipfile, tarfile, os, sys
 
 if sys.version_info[:2] < ( 2, 6 ):
@@ -943,7 +944,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
             # on the dataset that would cause accessibility issues.
             roles = params.get( 'roles', False )
-            error = None
+            error = False
             if upload_option == 'upload_paths' and not trans.app.config.allow_library_path_paste:
                 error = True
                 message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
@@ -966,11 +967,41 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                                            status='error' ) )
 
             else:
-                # See if we have any inherited templates, but do not inherit contents.
+                # See if we have any inherited templates.
                 info_association, inherited = folder.get_info_association( inherited=True )
                 if info_association and info_association.inheritable:
                     template_id = str( info_association.template.id )
-                    widgets = folder.get_template_widgets( trans, get_contents=False )
+                    widgets = folder.get_template_widgets( trans, get_contents=True )
+                    processed_widgets = []
+                    # The list of widgets may include an AddressField which we need to save if it is new
+                    for index, widget_dict in enumerate( widgets ):
+                        widget = widget_dict[ 'widget' ]
+                        if isinstance( widget, AddressField ):
+                            value = util.restore_text( params.get( 'field_%i' % index, '' ) )
+                            if value == 'new':
+                                if self.field_param_values_ok( index, 'AddressField', **kwd ):
+                                    # Save the new address
+                                    address = trans.app.model.UserAddress( user=trans.user )
+                                    self.save_widget_field( trans, address, index, **kwd )
+                                    widget.value = str( address.id )
+                                    widget_dict[ 'widget' ] = widget
+                                    processed_widgets.append( widget_dict )
+                                    # FIXME: ( hack ) It is now critical to update the value of 'field_%i', replacing the string
+                                    # 'new' with the new address id.  This is necessary because the upload_dataset()
+                                    # method below calls the handle_library_params() method, which does not parse the
+                                    # widget fields, it instead pulls form values from kwd.  See the FIXME comments in the
+                                    # handle_library_params() method...
+                                    kwd[ 'field_%i' % index ] = str( address.id )
+                                else:
+                                    # The invalid address won't be saved, but we cannot dispaly error
+                                    # messages on the upload form due to the ajax upload already occurring.
+                                    # When we re-engineer the upload process ( currently under way ), we
+                                    # will be able to check the form values before the ajax upload occurs
+                                    # in the background.  For now, we'll do nothing...
+                                    pass
+                        else:
+                            processed_widgets.append( widget_dict )
+                    widgets = processed_widgets
                 else:
                     template_id = 'None'
                     widgets = []
@@ -1039,10 +1070,34 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                                            show_deleted=show_deleted,
                                                            message=util.sanitize_text( message ),
                                                            status=status ) )
-        # See if we have any inherited templates, but do not inherit contents.
+        # Note: if the upload form was submitted due to refresh_on_demand for a form field, we cannot re-populate
+        # the field for the selected file ( files_0|file_data ) if the user selected one.  This is because the value
+        # attribute of the html input file type field is typically ignored by browsers as a security precaution. 
+        
+        # See if we have any inherited templates.
         info_association, inherited = folder.get_info_association( inherited=True )
         if info_association and info_association.inheritable:
-            widgets = folder.get_template_widgets( trans, get_contents=False )
+            widgets = folder.get_template_widgets( trans, get_contents=True )
+            # Handle form submission via refresh_on_change by keeping the contents of widget fields
+            populated_widgets = []
+            for index, widget_dict in enumerate( widgets ):
+                widget = widget_dict[ 'widget' ]
+                if isinstance( widget, AddressField ):
+                    value = util.restore_text( params.get( 'field_%i' % index, '' ) )
+                    if value:
+                        if value == 'new':
+                            # Adding a new address
+                            widget.value = value
+                            widget_dict[ 'widget' ] = widget
+                        elif value == 'none':
+                            widget.value = ''
+                            widget_dict[ 'widget' ] = widget
+                        else:
+                            # An existing address object was selected
+                            address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( int( value ) )
+                            widget_dict[ 'widget' ] = address_obj
+                populated_widgets.append( widget_dict )
+            widgets = populated_widgets
         else:
             widgets = []
         upload_option = params.get( 'upload_option', 'upload_file' )
@@ -1132,6 +1187,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
         # Some error handling should be added to this method.
         try:
+            # FIXME: instead of passing params here ( chiech have been process by util.Params(), the original kwd
+            # should be passed so that complex objects that may have been included in the initial request remain.
             library_bunch = upload_common.handle_library_params( trans, params, folder_id, replace_dataset )
         except:
             response_code = 500
@@ -2174,10 +2231,23 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 value = util.restore_text( params.get( 'field_%i' % index, '' ) )
                 if value == 'new':
                     if params.get( 'edit_info_button', False ):
-                        # Save the new address
-                        address = trans.app.model.UserAddress( user=trans.user )
-                        self.save_widget_field( trans, address, index, **kwd )
-                        widget.value = str( address.id )
+                        if self.field_param_values_ok( index, 'AddressField', **kwd ):
+                            # Save the new address
+                            address = trans.app.model.UserAddress( user=trans.user )
+                            self.save_widget_field( trans, address, index, **kwd )
+                            widget.value = str( address.id )
+                        else:
+                            message = 'Required fields are missing contents.'
+                            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                              action=action,
+                                                                              cntrller=cntrller,
+                                                                              use_panels=use_panels,
+                                                                              library_id=library_id,
+                                                                              folder_id=folder_id,
+                                                                              id=id,
+                                                                              show_deleted=show_deleted,
+                                                                              message=util.sanitize_text( message ),
+                                                                              status='error' ) )
                     else:
                         # Form was submitted via refresh_on_change
                         widget.value = 'new'

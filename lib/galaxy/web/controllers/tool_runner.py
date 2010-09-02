@@ -179,6 +179,8 @@ class ToolRunner( BaseController ):
                     replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
                 else:
                     replace_dataset = None
+                # FIXME: instead of passing params here ( chiech have been process by util.Params(), the original kwd
+                # should be passed so that complex objects that may have been included in the initial request remain.
                 library_bunch = upload_common.handle_library_params( trans, nonfile_params, nonfile_params.folder_id, replace_dataset )
             else:
                 library_bunch = None

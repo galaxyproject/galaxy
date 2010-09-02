@@ -66,13 +66,18 @@ $( function() {
                 <input type="submit" name="add_template_button" value="Add template to ${item_desc}"/>
             </div>
         </form>
-        %if template_select_list.get_selected() != ('Select one', 'none'):
-            <div style="clear: both"></div>
+    </div>
+</div>
+<p/>
+%if template_select_list.get_selected() != ('Select one', 'none'):
+    <div class="toolForm">
+        <div class="toolFormTitle">Layout of selected template</div>
+        <div class="toolFormBody">
             <div class="form-row">
                 %for i, field in enumerate( widgets ):
                     <div class="form-row">
                         <label>${field[ 'label' ]}</label>
-                        ${field[ 'widget' ].get_html()}
+                        ${field[ 'widget' ].get_html( disabled=True )}
                         <div class="toolParamHelp" style="clear: both;">
                             ${field[ 'helptext' ]}
                         </div>
@@ -80,6 +85,6 @@ $( function() {
                     </div>
                 %endfor 
             </div>
-        %endif
+        </div>
     </div>
-</div>
+%endif
