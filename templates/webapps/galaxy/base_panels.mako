@@ -30,7 +30,7 @@
             %if href:
                 <a target="${target}" href="${href}">${display}</a>
             %else:
-                ${display}
+                <a>${display}</a>
             %endif
             %if menu_options:
                 <div class="submenu">
