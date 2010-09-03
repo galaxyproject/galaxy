@@ -26,9 +26,9 @@
 </%def>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Create a new request type</div>
+    <div class="toolFormTitle">Create a new sequencer configuration</div>
     %if not rt_info_widgets:
-        Create a request & sample form definition first to create a new request type.
+        Create a request & sample form definition first to create a new sequencer configuration.
     %else:
         <form name="create_request_type" action="${h.url_for( controller='requests_admin', action='create_request_type')}" method="post" >
             %for rt_info in rt_info_widgets:

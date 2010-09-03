@@ -112,7 +112,7 @@ class RequestsGrid( grids.Grid ):
                            filterable="advanced" ),
         SamplesColumn( "Sample(s)", 
                        link=( lambda item: iff( item.deleted, None, dict( operation="show", id=item.id ) ) ), ),
-        TypeColumn( "Type",
+        TypeColumn( "Sequencer",
                     link=( lambda item: iff( item.deleted, None, dict( operation="view_type", id=item.type.id ) ) ), ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         grids.DeletedColumn( "Deleted", 
@@ -173,7 +173,7 @@ class RequestTypeGrid( grids.Grid ):
         def get_value(self, trans, grid, request_type):
             return request_type.sample_form.name
     # Grid definition
-    title = "Requests Types"
+    title = "Sequencer Configurations"
     template = "admin/requests/manage_request_types.mako"
     model_class = model.RequestType
     default_sort_key = "-create_time"
@@ -213,7 +213,7 @@ class RequestTypeGrid( grids.Grid ):
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
     global_actions = [
-        grids.GridAction( "Create new request type", dict( controller='requests_admin', 
+        grids.GridAction( "Create new sequencer configuration", dict( controller='requests_admin', 
                                                            action='create_request_type' ) )
     ]
 
@@ -931,7 +931,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                             status='error')
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='manage_request_types',
-                                                              message='Request type <b>%s</b> has been created' % rt.name,
+                                                              message='Sequencer configuration <b>%s</b> has been created' % rt.name,
                                                               status='done') )
         elif params.get( 'save_changes', False ):
             try:
@@ -939,7 +939,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             except:
                 return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                   action='manage_request_types',
-                                                                  message='Invalid request type ID',
+                                                                  message='Invalid sequencer configuration ID',
                                                                   status='error') )
             # data transfer info
             rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
@@ -955,7 +955,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                               action='manage_request_types',
                                                               operation='view',
                                                               id=trans.security.encode_id(rt.id),
-                                                              message='Changes made to request type <b>%s</b> has been saved' % rt.name,
+                                                              message='Changes made to sequencer configuration <b>%s</b> has been saved' % rt.name,
                                                               status='done') )
         else:
             rt_info, rt_states = self.__create_request_type_form(trans, **kwd)
@@ -1056,7 +1056,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 i = i + 1
             else:
                 break
-        message = "The new request type named '%s' with %s state(s) has been created" % (rt.name, i)
+        message = "The new sequencer configuration named '%s' with %s state(s) has been created" % (rt.name, i)
         return rt, message
     def __delete_request_type( self, trans, **kwd ):
         id_list = util.listify( kwd['id'] )
@@ -1066,14 +1066,14 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             except:
                 return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                   action='manage_request_types',
-                                                                  message='Invalid request type ID',
+                                                                  message='Invalid sequencer configuration ID',
                                                                   status='error') )
             rt.deleted = True
             trans.sa_session.add( rt )
             trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_request_types',
-                                                          message='%i request type(s) has been deleted' % len(id_list),
+                                                          message='%i sequencer configuration(s) has been deleted' % len(id_list),
                                                           status='done') )
     def __undelete_request_type( self, trans, **kwd ):
         id_list = util.listify( kwd['id'] )
@@ -1083,14 +1083,14 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             except:
                 return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                   action='manage_request_types',
-                                                                  message='Invalid request type ID',
+                                                                  message='Invalid sequencer configuration ID',
                                                                   status='error') )
             rt.deleted = False
             trans.sa_session.add( rt )
             trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_request_types',
-                                                          message='%i request type(s) has been undeleted' % len(id_list),
+                                                          message='%i sequencer configuration(s) has been undeleted' % len(id_list),
                                                           status='done') )
     def __show_request_type_permissions(self, trans, **kwd ):
         params = util.Params( kwd )
@@ -1113,7 +1113,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
             trans.app.security_agent.set_request_type_permissions( rt, permissions )
             trans.sa_session.refresh( rt )
-            message = "Permissions updated for request type '%s'" % rt.name
+            message = "Permissions updated for sequencer configuration '%s'" % rt.name
         return trans.fill_template( '/admin/requests/request_type_permissions.mako',
                                     request_type=rt,
                                     roles=roles,

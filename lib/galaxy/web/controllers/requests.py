@@ -93,7 +93,7 @@ class RequestsGrid( grids.Grid ):
                            filterable="advanced" ),
         SamplesColumn( "Sample(s)", 
                        link=( lambda item: iff( item.deleted, None, dict( operation="show", id=item.id ) ) ), ),
-        TypeColumn( "Type" ),
+        TypeColumn( "Sequencer" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         grids.DeletedColumn( "Deleted", 
                        key="deleted", 

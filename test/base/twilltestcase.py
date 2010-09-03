@@ -1521,7 +1521,7 @@ class TwillTestCase( unittest.TestCase ):
     def create_request_type( self, name, desc, request_form_id, sample_form_id, states ):
         self.home()
         self.visit_url( "%s/requests_admin/create_request_type" % self.url )
-        self.check_page_for_string( 'Create a new request type' )
+        self.check_page_for_string( 'Create a new sequencer configuration' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "desc", desc )
         tc.fv( "1", "request_form_id", request_form_id )
@@ -1531,7 +1531,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv("1", "state_name_%i" % index, state[0])
             tc.fv("1", "state_desc_%i" % index, state[1])
         tc.submit( "save_request_type" )
-        self.check_page_for_string( "Request type <b>%s</b> has been created" % name )
+        self.check_page_for_string( "Sequencer configuration <b>%s</b> has been created" % name )
     def request_type_permissions( self, request_type_id, request_type_name, role_ids_str, permissions_in, permissions_out ):
         # role_ids_str must be a comma-separated string of role ids
         url = "requests_admin/manage_request_types?operation=permissions&id=%s&update_roles_button=Save" % ( request_type_id )
@@ -1543,7 +1543,7 @@ class TwillTestCase( unittest.TestCase ):
             url ="%s&%s=%s" % ( url, key, role_ids_str )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
-        check_str = "Permissions updated for request type '%s'" % request_type_name
+        check_str = "Permissions updated for sequencer configuration '%s'" % request_type_name
         self.check_page_for_string( check_str )
         self.home()
     def create_request( self, request_type_id, name, desc, fields ):

@@ -9,7 +9,7 @@
 <% num_states=len(states_list) %>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Edit the request type</div>
+    <div class="toolFormTitle">Edit the sequencer configuration</div>
     <div class="toolFormBody">
         <form name="library" action="${h.url_for( controller='admin', action='request_type', save_changes=True, create=False, id=request_type.id, num_states=num_states )}" method="post" >
             <div class="form-row">

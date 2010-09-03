@@ -83,6 +83,8 @@
         class_plural = "Sample Datasets"
     elif a_class == model.FormDefinitionCurrent:
         class_plural = "Forms"
+    elif a_class == model.RequestType:
+        class_plural = "sequencer configurations"
     else:
         class_plural = a_class.__name__ + "s"
     return class_plural

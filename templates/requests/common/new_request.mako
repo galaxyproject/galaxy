@@ -52,15 +52,19 @@ $( function() {
 <div class="toolForm">
     <div class="toolFormTitle">Add a new request</div>
     %if len(select_request_type.options) == 1:
-        There are no request types created for a new request.
+        There are no sequencer configurations available to ${trans.user.email} to create sequencing requests.
     %else:
         <div class="toolFormBody">
             <form name="new_request" id="new_request" action="${h.url_for( controller='requests_common', action='new', cntrller=cntrller)}" method="post" >
                 <div class="form-row">
-                    <label>
-                        Select request type
-                    </label>
+                    <label>Select a sequencer configuration:</label>
                     ${select_request_type.get_html()}
+                    %if cntrller != 'requests_admin':
+		                <div class="toolParamHelp" style="clear: both;">
+		                    Please contact the lab manager if you are <br/> 
+		                    not sure about the sequencer configuration.
+		                </div>
+	                %endif
                 </div>
 
                %if select_request_type.get_selected() != ('Select one', 'none'):

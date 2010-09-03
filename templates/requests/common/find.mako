@@ -60,18 +60,12 @@ $( function() {
                     Select a sample attribute to search through all the samples.<br/>
                     To search for a sample with a dataset name, select the dataset 
                     option above. This will return all the sample(s) which has a 
-                    dataset with the given name associated with it. To search for 
-                    all samples created on a certain date select the 'date created' 
-                    option above. Enter date in 'YYYY-MM-DD' format. 
+                    dataset with the given name associated with it. 
                 </div>
             </div>
             <div class="form-row">
-                <label>Filter sequencing requests in state:</label>
+                <label>Show only sequencing requests in state:</label>
                 ${request_states.get_html()}
-                <div class="toolParamHelp" style="clear: both;">
-                    This will filter the search results to show only those sample(s) <br/>
-                    whose parent sequencing request is in the selected state.
-                </div>
             </div>
             <div class="form-row">
                 ${search_box.get_html()}

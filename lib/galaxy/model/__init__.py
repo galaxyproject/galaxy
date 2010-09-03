@@ -1602,7 +1602,7 @@ Galaxy Sample Tracking Notification
 User:                     %(user)s
 
 Sequencing request:       %(request_name)s
-Sequencing request type:  %(request_type)s
+Sequencer configuration:  %(request_type)s
 Sequencing request state: %(request_state)s
 
 Number of samples:        %(num_samples)s
@@ -1685,7 +1685,7 @@ class RequestType( object ):
         else:
             widgets.append(('Select the new state of the selected sample(s) from the list of possible state(s)',
                           states_input))
-        widgets.append(('Comments', TextArea('comment')))
+        widgets.append(('Comments', TextField('comment', 50)))
         title = 'Change current state'
         return widgets, title
         

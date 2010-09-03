@@ -1182,21 +1182,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     cntrller=cntrller,
                                     events_list=events_list,
                                     sample=sample)
-    def __change_state_widgets(self, trans, sample):
-        possible_states = sample.request.type.states 
-        curr_state = sample.current_state() 
-        states_input = SelectField('select_state')
-        for state in possible_states:
-            if curr_state.name == state.name:
-                states_input.add_option(state.name+' (Current)', state.id, selected=True)
-            else:
-                states_input.add_option(state.name, state.id)
-        widgets = []
-        widgets.append(('Select the new state of the sample from the list of possible state(s)',
-                      states_input))
-        widgets.append(('Comments', TextArea('comment')))
-        title = 'Change current state'
-        return widgets, title
     @web.expose
     @web.require_admin
     def show_datatx_page( self, trans, **kwd ):

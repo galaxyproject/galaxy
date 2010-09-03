@@ -6,10 +6,10 @@
     ${render_msg( message, status )}
 %endif
 
-<h2>Request Type "${request_type.name}"</h2>
+<h2>Sequencer Configuration "${request_type.name}"</h2>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Request type information</div>
+    <div class="toolFormTitle">Sequencer configuration information</div>
     <form name="view_request_type" action="${h.url_for( controller='requests_admin', action='create_request_type', rt_id=request_type.id)}" method="post" >
         <div class="form-row">
             <label>Name</label>

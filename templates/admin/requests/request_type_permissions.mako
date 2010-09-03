@@ -34,14 +34,6 @@
     <div class="toolFormBody">
         <form name="request_type_permissions" id="request_type_permissions" action="${h.url_for( controller='requests_admin', action='manage_request_types', operation="permissions", id=trans.security.encode_id(request_type.id))}" method="post">
             <div class="form-row">
-##            %for k, v in permitted_actions:
-##                %if k not in do_not_render:
-##                    <div class="form-row">
-##                        ${render_select( current_actions, k, v, all_roles )}
-##                    </div>
-##                %endif
-##            %endfor
-##            <%def name="render_select( current_actions, action_key, action, all_roles )">
                 <%
                     obj_name = request_type.name
                     current_actions = request_type.actions
@@ -60,7 +52,7 @@
                     out_roles = filter( lambda x: x not in in_roles, all_roles )
                 %>
                 <p>
-                    <b>${action.action}:</b> ${action.description}
+                    <b>access sequencer configuration:</b> Restrict access to this sequencer configuration to only role members
                 </p>
                 <div style="width: 100%; white-space: nowrap;">
                     <div style="float: left; width: 50%;">

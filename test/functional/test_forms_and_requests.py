@@ -165,14 +165,14 @@ class TestFormsAndRequests( TwillTestCase ):
         """Testing creating a new requestype"""
         request_form = get_latest_form(form_one_name)
         sample_form = get_latest_form(form_two_name)
-        self.create_request_type(request_type_name, "test request type", 
+        self.create_request_type(request_type_name, "test sequencer configuration", 
                                  str(request_form.id), str(sample_form.id), sample_states )
         global request_type
         request_type = sa_session.query( galaxy.model.RequestType ) \
                                  .filter( and_( galaxy.model.RequestType.table.c.name==request_type_name ) ) \
                                  .order_by( desc( galaxy.model.RequestType.table.c.create_time ) ) \
                                  .first()
-        assert request_type is not None, 'Problem retrieving request type named "%s" from the database' % request_type_name
+        assert request_type is not None, 'Problem retrieving sequencer configuration named "%s" from the database' % request_type_name
         # Set permissions
         permissions_in = [ k for k, v in galaxy.model.RequestType.permitted_actions.items() ]
         permissions_out = []
@@ -188,7 +188,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.login( email=regular_user2.email )
         self.visit_url( '%s/requests_common/new?cntrller=requests&select_request_type=True' % self.url )
         try:
-            self.check_page_for_string( 'There are no request types created for a new request.' )
+            self.check_page_for_string( 'There are no sequencer configurations created for a new request.' )
             raise AssertionError, 'The request_type %s is accessible by %s when it should be restricted' % ( request_type.name, regular_user2.email )
         except:
             pass

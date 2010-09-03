@@ -177,7 +177,7 @@ $(document).ready(function(){
 <div class="grid-header">
     <h2>Sequencing Request "${request.name}"</h2>
     <div class="toolParamHelp" style="clear: both;">
-	    <b>Type</b>: ${request.type.name} 
+	    <b>Sequencer</b>: ${request.type.name} 
 	    %if cntrller == 'requests_admin':
 	        | <b>User</b>: ${request.user.email}
 	    %endif
