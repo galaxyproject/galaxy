@@ -990,7 +990,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                     # 'new' with the new address id.  This is necessary because the upload_dataset()
                                     # method below calls the handle_library_params() method, which does not parse the
                                     # widget fields, it instead pulls form values from kwd.  See the FIXME comments in the
-                                    # handle_library_params() method...
+                                    # handle_library_params() method, and the CheckboxField code in the next conditional.
                                     kwd[ 'field_%i' % index ] = str( address.id )
                                 else:
                                     # The invalid address won't be saved, but we cannot dispaly error
@@ -999,6 +999,15 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                     # will be able to check the form values before the ajax upload occurs
                                     # in the background.  For now, we'll do nothing...
                                     pass
+                        elif isinstance( widget, CheckboxField ):
+                            # We need to check the value from kwd since util.Params would have munged the list if
+                            # the checkbox is checked.
+                            value = kwd.get( 'field_%i' % index, '' )
+                            if CheckboxField.is_checked( value ):
+                                widget.value = 'true'
+                                widget_dict[ 'widget' ] = widget
+                                processed_widgets.append( widget_dict )
+                                kwd[ 'field_%i' % index ] = 'true'
                         else:
                             processed_widgets.append( widget_dict )
                     widgets = processed_widgets

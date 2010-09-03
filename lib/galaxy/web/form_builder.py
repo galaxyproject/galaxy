@@ -14,7 +14,7 @@ class BaseField(object):
         raise TypeError( "Abstract Method" )
     def get_disabled_str( self, disabled=False ):
         if disabled:
-            return 'disabled="disabled"'
+            return ' disabled="disabled"'
         else:
             return ''
     @staticmethod
@@ -39,7 +39,7 @@ class TextField(BaseField):
         self.size = int( size or 10 )
         self.value = value or ""
     def get_html( self, prefix="", disabled=False ):
-        return '<input type="text" name="%s%s" size="%d" value="%s" %s>' \
+        return '<input type="text" name="%s%s" size="%d" value="%s"%s>' \
             % ( prefix, self.name, self.size, escape( str( self.value ),  quote=True ), self.get_disabled_str( disabled ) )
     def set_size(self, size):
         self.size = int( size )
@@ -79,7 +79,7 @@ class TextArea(BaseField):
         self.cols = int(self.size[-1])
         self.value = value or ""
     def get_html( self, prefix="", disabled=False ):
-        return '<textarea name="%s%s" rows="%d" cols="%d" %s>%s</textarea>' \
+        return '<textarea name="%s%s" rows="%d" cols="%d"%s>%s</textarea>' \
             % ( prefix, self.name, self.rows, self.cols, self.get_disabled_str( disabled ), escape( str( self.value ), quote=True ) )
     def set_size(self, rows, cols):
         self.rows = rows
@@ -107,7 +107,7 @@ class CheckboxField(BaseField):
         # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
-        return '<input type="checkbox" name="%s%s" value="true" %s %s><input type="hidden" name="%s%s" value="true" %s>' \
+        return '<input type="checkbox" name="%s%s" value="true" %s%s><input type="hidden" name="%s%s" value="true"%s>' \
             % ( prefix, self.name, checked_text, self.get_disabled_str( disabled ), prefix, self.name, self.get_disabled_str( disabled ) )
     @staticmethod
     def is_checked( value ):
@@ -234,10 +234,10 @@ class SelectField(BaseField):
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
             if selected:
-                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked %s>%s</div>' % \
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked%s>%s</div>' % \
                              ( style, prefix, self.name, escape( str( value ), quote=True ), self.get_disabled_str( disabled ), text ) )
             else:
-                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" %s>%s</div>' % \
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s"%s>%s</div>' % \
                              ( style, prefix, self.name, escape( str( value ), quote=True ), self.get_disabled_str( disabled ), text ) )
             ctr += 1
         return "\n".join( rval )
@@ -250,7 +250,7 @@ class SelectField(BaseField):
                 style = " class=\"odd_row\""
             if selected: selected_text = " checked"
             else: selected_text = ""
-            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s"%s %s>%s</div>' % \
+            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s"%s%s>%s</div>' % \
                          ( style,
                            prefix,
                            self.name,
@@ -276,7 +276,7 @@ class SelectField(BaseField):
             rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, text ) )
         if last_selected_value:
             last_selected_value = ' last_selected_value="%s"' % escape( str( last_selected_value ), quote=True )
-        rval.insert( 0, '<select name="%s%s"%s%s%s %s>' % \
+        rval.insert( 0, '<select name="%s%s"%s%s%s%s>' % \
                      ( prefix, self.name, multiple, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ),  ) )
         rval.append( '</select>' )
         return "\n".join( rval )

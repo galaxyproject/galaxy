@@ -1737,22 +1737,24 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "The new library named '%s' has been created" % name
         self.check_page_for_string( check_str )
         self.home()
-    def edit_template( self, cntrller, item_type, library_id, folder_id='', ldda_id='', action='add_field',
-                       field_name='', field_name_value='', field_help='', field_help_value='',
-                       field_type='', field_type_value='' ):
+    def edit_template( self, cntrller, item_type, library_id, field_type, field_name_1, field_helptext_1, field_default_1,
+                       folder_id='', ldda_id='', action='add_field'  ):
         """Edit the form fields defining a library template"""
         self.visit_url( "%s/library_common/edit_template?cntrller=%s&item_type=%s&library_id=%s" % \
                         ( self.url, cntrller, item_type, library_id ) )
         self.check_page_for_string( "Edit form definition" )
         if action == 'add_field':
-            tc.submit( 'add_field_button' )
-            tc.fv( '1', field_name, field_name_value )
-            tc.fv( '1', field_help, field_help_value )
-            tc.fv( '1', field_type, field_type_value )
+            tc.submit( "add_field_button" )
+            tc.fv( "edit_form", "field_name_1", field_name_1 )
+            tc.fv( "edit_form", "field_helptext_1", field_helptext_1 )
+            if field_type == 'SelectField':
+                # Performs a refresh_on_change in this case
+                self.refresh_form( "field_type_1", field_type )
+            else:
+                tc.fv( "edit_form", "field_type_1", field_type )
+            tc.fv( "edit_form", "field_default_1", field_default_1 )
         tc.submit( 'save_changes_button' )
         self.check_page_for_string( "The template for this data library has been updated with your changes." )
-        if action == 'add_field':
-            self.check_page_for_string( field_name_value )
     def library_info( self, cntrller, library_id, library_name, new_name='', new_description='', new_synopsis='',
                            ele_1_field_name='', ele_1_contents='', ele_2_field_name='', ele_2_contents='', check_str1='' ):
         """Edit information about a library, optionally using an existing template with up to 2 elements"""
@@ -1773,6 +1775,14 @@ class TwillTestCase( unittest.TestCase ):
         elif ele_1_field_name and ele_1_contents:
             tc.fv( '2', ele_1_field_name, ele_1_contents )
             tc.submit( 'edit_info_button' )
+        self.home()
+    def set_library_info_field_template_field( self, cntrller, library_id, field_value ):
+        """Set the value of a single field in a template containing a field of type: CheckboxField, SelectField"""
+        self.visit_url( "%s/library_common/library_info?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
+        # The 2nd form on the page contains the template, and the form is named edit_info.
+        # Set the template field value
+        tc.fv( "edit_info", "field_0", field_value )
+        tc.submit( 'edit_info_button' )
         self.home()
     def library_permissions( self, library_id, library_name, role_ids_str, permissions_in, permissions_out, cntrller='library_admin' ):
         # role_ids_str must be a comma-separated string of role ids
@@ -1805,7 +1815,6 @@ class TwillTestCase( unittest.TestCase ):
     def folder_info( self, cntrller, folder_id, library_id, name='', new_name='', description='',
                      field_name='', contents='', check_str1='', check_str2='', not_displayed='' ):
         """Add information to a library using an existing template with 2 elements"""
-        self.home()
         self.visit_url( "%s/library_common/folder_info?cntrller=%s&id=%s&library_id=%s" % \
                         ( self.url, cntrller, folder_id, library_id ) )
         # Twill cannot handle the following call for some reason - it's buggy
@@ -1834,21 +1843,45 @@ class TwillTestCase( unittest.TestCase ):
             except:
                 pass
         self.home()
+    def save_folder_template( self, cntrller, folder_id, library_id, field_name, field_value, check_str1='', check_str2='', check_str3='' ):
+        self.visit_url( "%s/library_common/folder_info?cntrller=%s&id=%s&library_id=%s" % \
+                        ( self.url, cntrller, folder_id, library_id ) )
+        if check_str1:
+            self.check_page_for_string( check_str1 )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        if check_str3:
+            self.check_page_for_string( check_str3 )
+        # The 2nd form on the page contains the template, and the form is named edit_info.
+        # The CheckboxField may already be checked due to inherited template contents, but twill
+        # forces us to change a form value prior to submitting the form, so we'll check it.
+        tc.fv( "edit_info", field_name, field_value )
+        tc.submit( 'edit_info_button' )
+        self.home()
 
     # Library dataset stuff
     def add_library_dataset( self, cntrller, filename, library_id, folder_id, folder_name,
                              file_type='auto', dbkey='hg18', roles=[], message='', root=False,
-                             template_field_name1='', template_field_contents1='', 
+                             template_field_name1='', template_field_contents1='',
+                             template_field_name2='', template_field_contents2='',
                              template_refresh_field_name='', template_refresh_field_contents='',
                              field_0_short_desc='', field_0_name='', field_0_institution='',
                              field_0_address='', field_0_city='', field_0_state='', field_0_postal_code='',
-                             field_0_country='', show_deleted='False', upload_option='upload_file' ):
+                             field_0_country='', show_deleted='False', upload_option='upload_file',
+                             check_str1='', check_str2='', check_str3='', check_str4='' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
-        self.home()
         self.visit_url( "%s/library_common/upload_library_dataset?cntrller=%s&library_id=%s&folder_id=%s&upload_option=%s&message=%s" % \
                         ( self.url, cntrller, library_id, folder_id, upload_option, message.replace( ' ', '+' ) ) )
         self.check_page_for_string( 'Upload files' )
+        if check_str1:
+            self.check_page_for_string( check_str1 )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        if check_str3:
+            self.check_page_for_string( check_str3 )
+        if check_str4:
+            self.check_page_for_string( check_str4 )
         # A template containing an AddressField may be displayed on the upload form.
         # If this is the case, we need to refresh the form with the passeed tmplate_field_name1.
         if template_refresh_field_name and template_refresh_field_contents:
@@ -1863,7 +1896,11 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "field_0_country", field_0_country )
         # Add template field contents, if any...
         if template_field_name1:
-            tc.fv( "1", template_field_name1, template_field_contents1 )
+            # The 2nd form on the page contains the template, and the form is named edit_info.
+            tc.fv( "edit_info", template_field_name1, template_field_contents1 )
+        if template_field_name2:
+            # The 2nd form on the page contains the template, and the form is named edit_info.
+            tc.fv( "edit_info", template_field_name2, template_field_contents2 )
         tc.fv( "1", "library_id", library_id )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "show_deleted", show_deleted )
@@ -1904,7 +1941,8 @@ class TwillTestCase( unittest.TestCase ):
                         ele_1_field_name='', ele_1_contents='', ele_1_help='',
                         ele_2_field_name='', ele_2_contents='', ele_2_help='',
                         ele_3_field_name='', ele_3_contents='', ele_3_help='',
-                        check_str1='', check_str2='', check_str3='', not_displayed='' ):
+                        check_str1='', check_str2='', check_str3='', check_str4='',
+                        not_displayed='' ):
         """Edit library_dataset_dataset_association information, optionally template element information"""
         self.visit_url( "%s/library_common/ldda_edit_info?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
                         ( self.url, cntrller, library_id, folder_id, ldda_id ) )        
@@ -1945,6 +1983,10 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
         if check_str1:
             self.check_page_for_string( check_str1 )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        if check_str3:
+            self.check_page_for_string( check_str3 )
         if not_displayed:
             try:
                 self.check_page_for_string( not_displayed )
