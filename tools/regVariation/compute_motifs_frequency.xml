@@ -1,5 +1,5 @@
 <tool id="compute_motifs_frequency" name="Compute Motif Frequencies" version="1.0.0">
-  <description>in indel falnking regions</description>
+  <description>in indel flanking regions</description>
   
   
   <command interpreter="perl">
