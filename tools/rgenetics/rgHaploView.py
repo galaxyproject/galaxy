@@ -106,7 +106,7 @@ def ld():
         os.makedirs(outfpath)
         s = '## made new path %s\n' % outfpath
     except:
-        s = '## new path %s probably exists - not made\n' % outfpath
+        pass
     lf = file(log_file,'w')
     s = 'PATH=%s\n' % os.environ.get('PATH','?')
     lf.write(s)
@@ -118,6 +118,8 @@ def ld():
     hlog = []
 
     if region > '':
+        useRs = []
+        useRsdict={}
         try: # TODO make a regexp?
             c,rest = region.split(':')
             chromosome = c.replace('chr','')
@@ -137,8 +139,8 @@ def ld():
             lf.close()
             sys.exit(1)
     else:
-        rslist = orslist.split() # galaxy replaces newlines with XX - go figure
-        rsdict = dict(zip(rslist,rslist))
+        useRs = orslist.split() # galaxy replaces newlines with XX - go figure
+        useRsdict = dict(zip(useRs,useRs))
     useTemp = False
     try:
         dfile = open(DATA_FILE, 'r')
@@ -160,7 +162,7 @@ def ld():
         print >> sys.stdout, s
         raise
         sys.exit(1)
-    if spos <> -9 or len(rslist) > 0: # must subset - otherwise use whole input
+    if len(useRs) > 0 or spos <> -9 : # subset region
         useTemp = True
         ### Figure out which markers are in this region
         markers = []
@@ -185,15 +187,12 @@ def ld():
                         minpos = abspos
                 except:
                     abspos = epos + 999999999 # so next test fails
-            if rsdict.get(snp,None) or (chrom == chromosome and (spos <= abspos <= epos)):
+            if useRsdict.get(snp,None) or (spos <> -9 and chrom == chromosome and (spos <= abspos <= epos)):
                 if chromosome == '':
                     chromosome = chrom
                 chroms.setdefault(chrom,chrom)
                 markers.append((chrom,abspos,snp)) # decorate for sort into genomic
                 snpcols[snp] = lnum # so we know which col to find genos for this marker
-        if spos == -9:
-            spos = minpos
-            epos = maxpos
         markers.sort()
         rslist = [x[2] for x in markers] # drop decoration
         rsdict = dict(zip(rslist,rslist))
@@ -204,6 +203,9 @@ def ld():
             lf.close()
             print >> sys.stdout, s
             sys.exit(1)
+        if spos == -9:
+            spos = minpos
+            epos = maxpos
         s = '## %s looking for %d rs (%s)' % (progname,len(rslist),rslist[:5])
         lf.write(s)
         print >> sys.stdout, s

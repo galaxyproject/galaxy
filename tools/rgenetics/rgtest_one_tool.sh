@@ -11,7 +11,7 @@ OUTROOT=$3
 echo "using $GALAXYROOT"
 # change this as needed for your local install
 INPATH="${GALAXYROOT}/test-data"
-BINPATH="${GALAXYROOT}/tool-data/rg/bin"
+JARPATH="${GALAXYROOT}/tool-data/shared/jars"
 TOOLPATH="${GALAXYROOT}/tools/rgenetics"
 OROOT="${OUTROOT}/test-data/rgtestouts"
 NORMALOROOT="${OUTROOT}/test-data"
@@ -169,9 +169,10 @@ TOOL="rgHaploView"
 NPRE=${TOOL}test1
 OUTPATH="$OROOT/$TOOL"
 rm -rf $OUTPATH/*
-python $TOOLPATH/$TOOL.py ""  "rs2283802Xrs2267000Xrs16997606Xrs4820537Xrs3788347Xrs756632Xrs4820539Xrs2283804Xrs2267006Xrs4822363X" \
-"$NPRE" $OUTPATH/${NPRE}.html  "$INPATH" "tinywga" 0.0 200000 "RSQ" "lo" "2048" "$OUTPATH" "noinfo" "0.8" \
-"YRI" $BINPATH/haploview.jar
+CL="python $TOOLPATH/$TOOL.py ''  'rs2283802 rs2267000 rs16997606 rs4820537 rs3788347 rs756632 rs4820539 rs2283804 rs2267006 rs4822363' '$NPRE' $OUTPATH/${NPRE}.html  '$INPATH' 'tinywga' 0.0 200000 'RSQ' 'lo' '2048' '$OUTPATH' 'noinfo' '0.8' 'YRI' $JARPATH/haploview.jar"
+echo "Testing $TOOL using $CL"
+python $TOOLPATH/$TOOL.py ""  "rs2283802 rs2267000 rs16997606 rs4820537 rs3788347 rs756632 rs4820539 rs2283804 rs2267006 rs4822363" \
+"$NPRE" $OUTPATH/${NPRE}.html  "$INPATH" "tinywga" 0.0 200000 "RSQ" "lo" "2048" "$OUTPATH" "noinfo" "0.8" "YRI" $JARPATH/haploview.jar
 #  rgHaploView.py "$ucsc_region" "$rslist" "$title" "$output1"  
 #  "$lhistIn.extra_files_path" "$lhistIn.metadata.base_name"
 #  "$minmaf" "$maxdist" "$ldtype" "$hires" "$memsize" "$output1.files_path" 
@@ -207,7 +208,6 @@ NPRE=${TOOL}test1
 OUTPATH=$NORMALOROOT
 echo "now doing $TOOL"
 python $TOOLPATH/rgCaCo.py $INPATH/tinywga "$NPRE" $OUTPATH/${NPRE}_CaCo.xls $OUTPATH/${NPRE}_CaCo_log.txt $OUTPATH $OUTPATH/${NPRE}_CaCo_topTable.gff
-# echo tp=$TOOLPATH t=$TOOL op=$OUTPATH b=$BINPATH
 # rgCaCo.py '$i.extra_files_path/$i.metadata.base_name' "$name"  '$out_file1' '$logf' '$logf.files_path' '$gffout'
 ;;
 

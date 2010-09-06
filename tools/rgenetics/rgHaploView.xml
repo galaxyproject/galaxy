@@ -7,7 +7,7 @@
     rgHaploView.py "$ucsc_region" "$rslist" "$title" "$out_file1"
     "$lhistIn.extra_files_path" "$lhistIn.metadata.base_name"
     "$minmaf" "$maxdist" "$ldtype" "$hires" "$memsize" "$out_file1.files_path"
-    "$infoTrack" "$tagr2" "$hmpanel" ${GALAXY_DATA_INDEX_DIR}/rg/bin/haploview.jar
+    "$infoTrack" "$tagr2" "$hmpanel" ${GALAXY_DATA_INDEX_DIR}/shared/jars/haploview.jar
     </command>
 
     <inputs>
@@ -92,7 +92,7 @@
   </param>
  <param name='ucsc_region' value='' />
  <param name='title' value='rgHaploViewtest1' />
- <param name='rslist' value="rs2283802Xrs2267000Xrs16997606Xrs4820537Xrs3788347Xrs756632Xrs4820539Xrs2283804Xrs2267006Xrs4822363X" />
+ <param name='rslist' value="rs2283802 rs2267000 rs16997606 rs4820537 rs3788347 rs756632Xrs4820539 rs2283804 rs2267006 rs4822363" />
  <param name='ldtype' value='RSQ' />
  <param name='minmaf' value='0.0' />
  <param name='maxdist' value='200000' />
