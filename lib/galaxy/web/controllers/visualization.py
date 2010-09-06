@@ -1,6 +1,6 @@
 from galaxy import model
+from galaxy.model.item_attrs import *
 from galaxy.web.base.controller import *
-from galaxy.item_attrs.ratings import UsesItemRatings
 from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
 

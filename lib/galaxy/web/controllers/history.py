@@ -4,12 +4,12 @@ from galaxy import model, util
 from galaxy.util.odict import odict
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
+from galaxy.model.item_attrs import *
 from galaxy.util.json import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.tools.actions import upload_common
 from galaxy.tags.tag_handler import GalaxyTagHandler
-from galaxy.item_attrs.ratings import UsesItemRatings
 from sqlalchemy.sql.expression import ClauseElement
 import webhelpers, logging, operator, os, tempfile, subprocess, shutil, tarfile
 from datetime import datetime

@@ -1,10 +1,10 @@
 from galaxy import model
+from galaxy.model.item_attrs import *
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string
-from galaxy.item_attrs.ratings import UsesItemRatings
 
 def format_bool( b ):
     if b:

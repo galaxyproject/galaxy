@@ -52,56 +52,6 @@ class BaseController( object ):
         
 Root = BaseController
 
-class UsesAnnotations:
-    """ Mixin for getting and setting item annotations. """
-    def get_item_annotation_str( self, trans, user, item ):
-        """ Returns a user's annotation string for an item. """
-        annotation_obj = self.get_item_annotation_obj( trans, user, item )
-        if annotation_obj:
-            return annotation_obj.annotation
-        return None
-    def get_item_annotation_obj( self, trans, user, item ):
-        """ Returns a user's annotation object for an item. """
-        # Get annotation association.
-        try:
-            annotation_assoc_class = eval( "trans.model.%sAnnotationAssociation" % item.__class__.__name__ )
-        except:
-            # Item doesn't have an annotation association class and cannot be annotated.
-            return False
-        # Get annotation association object.
-        annotation_assoc = trans.sa_session.query( annotation_assoc_class ).filter_by( user=user )
-        if item.__class__ == trans.model.History:
-            annotation_assoc = annotation_assoc.filter_by( history=item )
-        elif item.__class__ == trans.model.HistoryDatasetAssociation:
-            annotation_assoc = annotation_assoc.filter_by( hda=item )
-        elif item.__class__ == trans.model.StoredWorkflow:
-            annotation_assoc = annotation_assoc.filter_by( stored_workflow=item )
-        elif item.__class__ == trans.model.WorkflowStep:
-            annotation_assoc = annotation_assoc.filter_by( workflow_step=item )
-        elif item.__class__ == trans.model.Page:
-            annotation_assoc = annotation_assoc.filter_by( page=item )
-        elif item.__class__ == trans.model.Visualization:
-            annotation_assoc = annotation_assoc.filter_by( visualization=item )
-        return annotation_assoc.first()
-    def add_item_annotation( self, trans, item, annotation ):
-        """ Add or update an item's annotation; a user can only have a single annotation for an item. """
-        # Get/create annotation association object.
-        annotation_assoc = self.get_item_annotation_obj( trans, trans.user, item )
-        if not annotation_assoc:
-            # Create association.
-            # TODO: we could replace this eval() with a long if/else stmt, but this is more general without sacrificing
-            try:
-                annotation_assoc_class = eval( "trans.model.%sAnnotationAssociation" % item.__class__.__name__ )
-            except:
-                # Item doesn't have an annotation association class and cannot be annotated.
-                return False
-            annotation_assoc = annotation_assoc_class()
-            item.annotations.append( annotation_assoc )
-            annotation_assoc.user = trans.get_user()
-        # Set annotation.
-        annotation_assoc.annotation = annotation
-        return True
-
 class SharableItemSecurity:
     """ Mixin for handling security for sharable items. """
     def security_check( self, user, item, check_ownership=False, check_accessible=False ):

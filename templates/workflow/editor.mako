@@ -922,7 +922,13 @@
                 ## Workflow annotation.
                 <div id="workflow-annotation-area" class="form-row">
                     <label>Annotation / Notes:</label>
-                    <span id="workflow-annotation" class="tooltip editable-text" original-title="Click to edit annotation">${annotation | h}</span>
+                    <span id="workflow-annotation" class="tooltip editable-text" original-title="Click to edit annotation">
+                    %if annotation == "":
+                        None
+                    %else:
+                        ${annotation | h}
+                    %endif
+                    </span>
                     <div class="toolParamHelp">Add an annotation or notes to a workflow; annotations are available when a workflow is viewed.</div>
                 </div>
             </div>

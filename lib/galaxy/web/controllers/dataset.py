@@ -6,7 +6,7 @@ from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
 from galaxy.datatypes.display_applications.util import encode_dataset_user, decode_dataset_user
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.item_attrs.ratings import UsesItemRatings
+from galaxy.model.item_attrs import *
 
 from email.MIMEText import MIMEText
 import pkg_resources; 
@@ -446,7 +446,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             
         # Do import.
         cur_history = trans.get_history( create=True )
-        status, message = self._copy_datasets( trans, [ dataset_id ], [ cur_history ] )
+        status, message = self._copy_datasets( trans, [ dataset_id ], [ cur_history ], imported=True )
         message = "Dataset imported. <br>You can <a href='%s'>start using the dataset</a> or %s." % ( url_for('/'),  referer_message )
         return trans.show_message( message, type=status, use_panels=True )
         
@@ -778,7 +778,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                                     error_msg = error_msg,
                                     refresh_frames = refresh_frames )
 
-    def _copy_datasets( self, trans, dataset_ids, target_histories ):
+    def _copy_datasets( self, trans, dataset_ids, target_histories, imported=False ):
         """ Helper method for copying datasets. """
         user = trans.get_user()
         done_msg = error_msg = ""
@@ -798,7 +798,10 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                     invalid_datasets += 1
                 else:
                     for hist in target_histories:
-                        hist.add_dataset( data.copy( copy_children = True ) )
+                        dataset_copy = data.copy( copy_children = True )
+                        if imported:
+                            dataset_copy.name = "imported: " + dataset_copy.name
+                        hist.add_dataset( dataset_copy )
             trans.sa_session.flush()
             num_datasets_copied = len( dataset_ids ) - invalid_datasets
             done_msg = "%i dataset%s copied to %i histor%s." % \

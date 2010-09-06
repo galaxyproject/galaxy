@@ -19,8 +19,8 @@ from galaxy.workflow.modules import *
 from galaxy import model
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
+from galaxy.model.item_attrs import *
 from galaxy.jobs.actions.post import *
-from galaxy.item_attrs.ratings import UsesItemRatings
 from galaxy.web.framework.helpers import to_unicode
 
 import urllib2, svgfig
