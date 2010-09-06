@@ -5,7 +5,7 @@ from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.odict import odict
 from galaxy.web.framework.helpers import to_unicode
-from galaxy.item_attrs.annotation import UsesAnnotations
+from galaxy.model.item_attrs import *
 
 import sys, logging, math
 
