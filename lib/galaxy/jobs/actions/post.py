@@ -1,10 +1,6 @@
-import logging, threading, time, datetime
-from Queue import Queue, Empty
+import logging, datetime
 
-from galaxy.util.json import from_json_string, to_json_string
-
-from galaxy.web.form_builder import *
-
+from galaxy.util.json import to_json_string
 
 #  For email notification PJA
 from email.MIMEText import MIMEText
@@ -285,7 +281,7 @@ class SetMetadataAction(DefaultJobAction):
     
     @classmethod
     def execute(cls, app, sa_session, action, job):
-        for data in self.job.output_datasets:
+        for data in job.output_datasets:
             data.set_metadata( action.action_arguments['newtype'] )
             
     @classmethod
@@ -317,21 +313,22 @@ class SetMetadataAction(DefaultJobAction):
 
 
 
-ACTIONS = { "RenameDatasetAction" : RenameDatasetAction,
-            "HideDatasetAction" : HideDatasetAction,
-            "ChangeDatatypeAction": ChangeDatatypeAction, 
-            "ColumnSetAction" : ColumnSetAction,
-            "EmailAction" : EmailAction,
-            # "SetMetadataAction" : SetMetadataAction,
-            # "DeleteDatasetAction" : DeleteDatasetAction,
-             }
-            
 class ActionBox(object):
-        
+    
+    actions = { "RenameDatasetAction" : RenameDatasetAction,
+                "HideDatasetAction" : HideDatasetAction,
+                "ChangeDatatypeAction": ChangeDatatypeAction, 
+                "ColumnSetAction" : ColumnSetAction,
+                "EmailAction" : EmailAction,
+                # "SetMetadataAction" : SetMetadataAction,
+                # "DeleteDatasetAction" : DeleteDatasetAction,
+                }
+    immediate_actions = ['ChangeDatatypeAction']
+
     @classmethod
     def get_short_str(cls, action):
-        if action.action_type in ACTIONS:
-            return ACTIONS[action.action_type].get_short_str(action)
+        if action.action_type in ActionBox.actions:
+            return ActionBox.actions[action.action_type].get_short_str(action)
         else:
             return "Unknown Action"
 
@@ -360,19 +357,19 @@ class ActionBox(object):
     @classmethod
     def get_add_list(cls):
         addlist = "<select id='new_pja_list' name='new_pja_list'>"
-        for action in ACTIONS:
-            addlist += "<option value='%s'>%s</option>" % (ACTIONS[action].name, ACTIONS[action].verbose_name)
+        for action in ActionBox.actions:
+            addlist += "<option value='%s'>%s</option>" % (ActionBox.actions[action].name, ActionBox.actions[action].verbose_name)
         addlist += "</select>"
         return addlist
         
     @classmethod
     def get_forms(cls, trans):
         forms = ""
-        for action in ACTIONS:
-            forms += ACTIONS[action].get_config_form(trans)
+        for action in ActionBox.actions:
+            forms += ActionBox.actions[action].get_config_form(trans)
         return forms
     
     @classmethod
     def execute(cls, app, sa_session, pja, job):
-        if ACTIONS.has_key(pja.action_type):
-            ACTIONS[pja.action_type].execute(app, sa_session, pja, job)
+        if ActionBox.actions.has_key(pja.action_type):
+            ActionBox.actions[pja.action_type].execute(app, sa_session, pja, job)

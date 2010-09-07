@@ -20,8 +20,8 @@ from galaxy import model
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.model.item_attrs import *
-from galaxy.jobs.actions.post import *
 from galaxy.web.framework.helpers import to_unicode
+from galaxy.jobs.actions.post import ActionBox
 
 import urllib2, svgfig
 
@@ -1236,7 +1236,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                         outputs[ step.id ] = out_data
                         # Create new PJA associations with the created job, to be run on completion.
                         for pja in step.post_job_actions:
-                            job.add_post_job_action(pja)
+                            if pja.action_type in ActionBox.immediate_actions:
+                                ActionBox.execute(trans.app, trans.sa_session, pja, job)
+                            else:
+                                job.add_post_job_action(pja)
                     else:
                         job, out_data = step.module.execute( trans, step.state )
                         outputs[ step.id ] = out_data

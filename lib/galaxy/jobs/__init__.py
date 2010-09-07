@@ -543,7 +543,6 @@ class JobWrapper( object ):
         # Flush all the dataset and job changes above.  Dataset state changes
         # will now be seen by the user.
         self.sa_session.flush()
-        
         # Save stdout and stderr    
         if len( stdout ) > 32768:
             log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
