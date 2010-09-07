@@ -19,7 +19,7 @@ def get_form_template(action_type, title, content, help, on_output = True ):
         form = """
             if (pja.action_type == "%s"){
             	p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + pja.output_name + "</span><div class='toolFormTitle'> %s <br/> on " + pja.output_name + "\
-            	<div style='float: right;' class='buttons'><img src='../images/delete_icon.png'></div></div><div class='toolFormBody'>";
+            	<div style='float: right;' class='buttons'><img src='/static/images/delete_icon.png'></div></div><div class='toolFormBody'>";
                 %s
                 p_str += "</div><div class='toolParamHelp'>%s</div></div>";
             }""" % (action_type, title, content, help)
@@ -27,7 +27,7 @@ def get_form_template(action_type, title, content, help, on_output = True ):
     	form =  """
             if (pja.action_type == "%s"){
             	p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + "</span><div class='toolFormTitle'> %s \
-            	<div style='float: right;' class='buttons'><img src='../images/delete_icon.png'></div></div><div class='toolFormBody'>";
+            	<div style='float: right;' class='buttons'><img src='/static/images/delete_icon.png'></div></div><div class='toolFormBody'>";
                 %s
                 p_str += "</div><div class='toolParamHelp'>%s</div></div>";
             }""" % (action_type, title, content, help)
