@@ -554,6 +554,14 @@ class JobExternalOutputMetadataWrapper( object ):
                 
                 #file to store existing dataset
                 metadata_files.filename_in = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_in_%s_" % key ).name )
+                
+                #FIXME: HACK
+                #sqlalchemy introduced 'expire_on_commit' flag for sessionmaker at version 0.5x
+                #This may be causing the dataset attribute of the dataset_association object to no-longer be loaded into memory when needed for pickling.
+                #For now, we'll simply 'touch' dataset_association.dataset to force it back into memory.
+                dataset.dataset #force dataset_association.dataset to be loaded before pickling
+                #A better fix could be setting 'expire_on_commit=False' on the session, or modifying where commits occur, or ?
+                
                 cPickle.dump( dataset, open( metadata_files.filename_in, 'wb+' ) )
                 #file to store metadata results of set_meta()
                 metadata_files.filename_out = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_out_%s_" % key ).name )
