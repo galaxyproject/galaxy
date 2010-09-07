@@ -1,5 +1,6 @@
 from sqlalchemy.sql.expression import func
-from galaxy import model
+# Cannot import galaxy.model b/c it creates a circular import graph.
+import galaxy
 
 class UsesItemRatings:
     """ 
@@ -58,7 +59,7 @@ class UsesItemRatings:
     def _get_item_rating_assoc_class( self, item ):
         """ Returns an item's item-rating association class. """
         item_rating_assoc_class = '%sRatingAssociation' % item.__class__.__name__
-        return getattr( model, item_rating_assoc_class, None )
+        return getattr( galaxy.model, item_rating_assoc_class, None )
         
     def _get_item_id_filter_str( self, item, item_rating_assoc_class ):
         # Get foreign key in item-rating association table that references item table.
@@ -94,17 +95,17 @@ class UsesAnnotations:
         annotation_assoc = db_session.query( annotation_assoc_class ).filter_by( user=user )
         
         # TODO: use filtering like that in _get_item_id_filter_str()
-        if item.__class__ == model.History:
+        if item.__class__ == galaxy.model.History:
             annotation_assoc = annotation_assoc.filter_by( history=item )
-        elif item.__class__ == model.HistoryDatasetAssociation:
+        elif item.__class__ == galaxy.model.HistoryDatasetAssociation:
             annotation_assoc = annotation_assoc.filter_by( hda=item )
-        elif item.__class__ == model.StoredWorkflow:
+        elif item.__class__ == galaxy.model.StoredWorkflow:
             annotation_assoc = annotation_assoc.filter_by( stored_workflow=item )
-        elif item.__class__ == model.WorkflowStep:
+        elif item.__class__ == galaxy.model.WorkflowStep:
             annotation_assoc = annotation_assoc.filter_by( workflow_step=item )
-        elif item.__class__ == model.Page:
+        elif item.__class__ == galaxy.model.Page:
             annotation_assoc = annotation_assoc.filter_by( page=item )
-        elif item.__class__ == model.Visualization:
+        elif item.__class__ == galaxy.model.Visualization:
             annotation_assoc = annotation_assoc.filter_by( visualization=item )
         return annotation_assoc.first()
         
@@ -126,4 +127,4 @@ class UsesAnnotations:
     def _get_annotation_assoc_class( self, item ):
         """ Returns an item's item-annotation association class. """
         class_name = '%sAnnotationAssociation' % item.__class__.__name__
-        return getattr( model, class_name, None )
+        return getattr( galaxy.model, class_name, None )

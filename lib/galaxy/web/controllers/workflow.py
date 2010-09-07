@@ -755,7 +755,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 #        as a dictionary not just the values
                 data['upgrade_messages'][step.order_index] = upgrade_message.values()
             # Get user annotation.
-            step_annotation = self.get_item_annotation_obj ( trans, trans.user, step )
+            step_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, step )
             annotation_str = ""
             if step_annotation:
                 annotation_str = step_annotation.annotation
@@ -1430,7 +1430,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
             # Get user annotation.
-            step_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, step )
+            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
             annotation_str = ""
             if step_annotation:
                 annotation_str = step_annotation.annotation

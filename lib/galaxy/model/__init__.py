@@ -15,6 +15,7 @@ from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.security import RBACAgent, get_permitted_actions
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
+from galaxy.model.item_attrs import UsesAnnotations
 import logging, smtplib, socket
 log = logging.getLogger( __name__ )
 from sqlalchemy.orm import object_session
@@ -227,7 +228,7 @@ class UserGroupAssociation( object ):
         self.user = user
         self.group = group
 
-class History( object ):
+class History( object, UsesAnnotations ):
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
         self.name = name or "Unnamed history"
@@ -278,13 +279,25 @@ class History( object ):
             self.genome_build = genome_build
         self.datasets.append( dataset )
     def copy( self, name=None, target_user=None, activatable=False ):
+        # Create new history.
         if not name:
             name = self.name
         if not target_user:
             target_user = self.user
         new_history = History( name=name, user=target_user )
-        object_session( self ).add( new_history )
-        object_session( self ).flush()
+        db_session = object_session( self )
+        db_session.add( new_history )
+        db_session.flush()
+        
+        # Copy annotations, tags.
+        if target_user:
+            annotation = self.get_item_annotation_str( db_session, self.user, self )
+            if annotation:
+                self.add_item_annotation( db_session, target_user, new_history, annotation )
+            for self.tags:
+                
+
+        # Copy HDAs.
         if activatable:
             hdas = self.activatable_datasets
         else:
@@ -292,11 +305,11 @@ class History( object ):
         for hda in hdas:
             new_hda = hda.copy( copy_children=True, target_history=new_history )
             new_history.add_dataset( new_hda, set_hid = False )
-            object_session( self ).add( new_hda )
-            object_session( self ).flush()
+            db_session.add( new_hda )
+            db_session.flush()
         new_history.hid_counter = self.hid_counter
-        object_session( self ).add( new_history )
-        object_session( self ).flush()
+        db_session.add( new_history )
+        db_session.flush()
         return new_history
     @property
     def activatable_datasets( self ):
