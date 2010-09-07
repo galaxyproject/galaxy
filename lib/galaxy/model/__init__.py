@@ -294,8 +294,6 @@ class History( object, UsesAnnotations ):
             annotation = self.get_item_annotation_str( db_session, self.user, self )
             if annotation:
                 self.add_item_annotation( db_session, target_user, new_history, annotation )
-            for self.tags:
-                
 
         # Copy HDAs.
         if activatable:
