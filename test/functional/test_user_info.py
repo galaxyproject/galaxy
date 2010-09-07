@@ -126,7 +126,7 @@ class TestUserInfo( TwillTestCase ):
         self.check_page_for_string( "Manage User Information" )
         self.check_page_for_string( user_info_values[0] )
         self.check_page_for_string( user_info_values[1] )
-        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked >' )
+        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
     def test_015_user_reqistration_single_user_info_forms( self ):
         ''' Testing user registration with a single user info form '''
         # Logged in as regular_user_11
@@ -155,7 +155,7 @@ class TestUserInfo( TwillTestCase ):
         self.check_page_for_string( "Manage User Information" )
         self.check_page_for_string( user_info_values[0] )
         self.check_page_for_string( user_info_values[1] )
-        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked >' )
+        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
     def test_020_edit_user_info( self ):
         """Testing editing user info as a regular user"""
         # Logged in as regular_user_12
