@@ -337,7 +337,20 @@ $(document).ready(function(){
 		                            <input type="submit" name="change_state_button" value="Cancel"/>
 		                        </div>
 		                    %elif trans.app.model.Sample.bulk_operations.SELECT_LIBRARY in sample_ops.get_selected():
-		                        ${current_samples[0]}
+		                        <div class="form-row">
+			                        <label>Select data library:</label>
+			                        ${bulk_lib_ops[0].get_html()}
+		                        </div>
+		                        %if not 'none' in bulk_lib_ops[0].get_selected():
+	                                <div class="form-row">
+				                        <label>Select folder:</label>
+				                        ${bulk_lib_ops[1].get_html()}
+			                        </div>
+			                        <div class="form-row">
+			                          <input type="submit" name="change_lib_button" value="Save"/>
+			                          <input type="submit" name="change_lib_button" value="Cancel"/>
+	                                </div>
+		                        %endif
                             %endif
                         </div>
                     %endif

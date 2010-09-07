@@ -628,6 +628,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                         field_values=['' for field in request.type.sample_form.fields],
                                         lib_widget=lib_widget,
                                         folder_widget=folder_widget))
+        bulk_lib_ops = self.__library_widgets(trans, request.user, 0, libraries, None, **kwd)
         return trans.fill_template( '/requests/common/show_request.mako',
                                     cntrller=cntrller,
                                     request=request, selected_samples=[],
@@ -636,7 +637,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     sample_ops=self.__sample_operation_selectbox(trans, request, **kwd),
                                     sample_copy=self.__copy_sample(current_samples), 
                                     details='hide', edit_mode=util.restore_text( params.get( 'edit_mode', 'False'  ) ),
-                                    message=message, status=status )
+                                    message=message, status=status, bulk_lib_ops=bulk_lib_ops )
 
     def __update_samples(self, trans, request, **kwd):
         '''
@@ -1020,6 +1021,26 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               action='list',
                                                               operation='show',
                                                               id=trans.security.encode_id(request.id)) )
+        elif params.get('change_lib_button', False) == 'Save':
+            library = trans.sa_session.query( trans.app.model.Library ).get( int( params.get( 'sample_0_library_id', None ) ) )
+            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( params.get( 'sample_0_folder_id', None ) ) )
+            for sample_id in selected_samples:
+                sample = trans.sa_session.query( trans.app.model.Sample ).get( sample_id )
+                sample.library = library
+                sample.folder = folder
+                trans.sa_session.add( sample )
+                trans.sa_session.flush()
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='list',
+                                                              operation='show',
+                                                              id=trans.security.encode_id(request.id),
+                                                              status='done',
+                                                              message='Changes made to the selected sample(s) are saved. ') )
+        elif params.get('change_lib_button', False) == 'Cancel':
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='list',
+                                                              operation='show',
+                                                              id=trans.security.encode_id(request.id)) )
         else:
             return trans.fill_template( '/requests/common/show_request.mako',
                                         cntrller=cntrller, 
@@ -1029,7 +1050,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                         sample_copy=self.__copy_sample(current_samples), 
                                         details=details, libraries=libraries,
                                         sample_ops=sample_ops, 
-                                        edit_mode=edit_mode, status=status, message=message)
+                                        edit_mode=edit_mode, status=status, message=message,
+                                        bulk_lib_ops=self.__library_widgets(trans, request.user, 0, libraries, None, **kwd))
             
     def __import_samples(self, trans, cntrller, request, current_samples, details, libraries, **kwd):
         '''
