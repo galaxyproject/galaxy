@@ -159,6 +159,13 @@
                 </div>
             </div>
         %endif
+        %if trans.user_is_admin() and cntrller == 'library_admin':
+            <div class="form-row">
+                <label>Disk file:</label>
+                ${ldda.file_name}
+                <div style="clear: both"></div>
+            </div>
+        %endif
     </div>
 </div>
 %if widgets:
@@ -262,6 +269,7 @@
 %if current_version:
     <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>
     %if expired_lddas:
+        <br/>
         <div class="toolFormTitle">Expired versions of ${ldda.name}</div>
         %for expired_ldda in expired_lddas:
             <div class="form-row">
