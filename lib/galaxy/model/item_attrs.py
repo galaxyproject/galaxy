@@ -124,6 +124,15 @@ class UsesAnnotations:
         annotation_assoc.annotation = annotation
         return annotation_assoc
         
+    def copy_item_annotation( self, db_session, source_user, source_item, target_user, target_item ):
+        """ Copy an annotation from a user/item source to a user/item target. """
+        if source_user and target_user:
+            annotation_str = self.get_item_annotation_str( db_session, source_user, source_item )
+            if annotation_str:
+                annotation = self.add_item_annotation( db_session, target_user, target_item, annotation_str )
+                return annotation
+        return None
+        
     def _get_annotation_assoc_class( self, item ):
         """ Returns an item's item-annotation association class. """
         class_name = '%sAnnotationAssociation' % item.__class__.__name__

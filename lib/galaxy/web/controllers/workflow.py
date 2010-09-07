@@ -336,7 +336,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         elif stored.deleted:
             return trans.show_error_message( "You can't import this workflow because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
         else:
-            # Create imported workflow via copy.
+            # Copy workflow.
             imported_stored = model.StoredWorkflow()
             imported_stored.name = "imported: " + stored.name
             imported_stored.latest_workflow = stored.latest_workflow
@@ -344,6 +344,13 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             # Save new workflow.
             session = trans.sa_session
             session.add( imported_stored )
+            session.flush()
+            
+            # Copy annotations.
+            self.copy_item_annotation( session, stored.user, stored, imported_stored.user, imported_stored )
+            for order_index, step in enumerate( stored.latest_workflow.steps ):
+                self.copy_item_annotation( session, stored.user, step, \
+                                            imported_stored.user, imported_stored.latest_workflow.steps[order_index] )
             session.flush()
             
             # Redirect to load galaxy frames.

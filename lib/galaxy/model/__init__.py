@@ -289,11 +289,8 @@ class History( object, UsesAnnotations ):
         db_session.add( new_history )
         db_session.flush()
         
-        # Copy annotations, tags.
-        if target_user:
-            annotation = self.get_item_annotation_str( db_session, self.user, self )
-            if annotation:
-                self.add_item_annotation( db_session, target_user, new_history, annotation )
+        # Copy annotation.
+        self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
 
         # Copy HDAs.
         if activatable:
@@ -301,10 +298,13 @@ class History( object, UsesAnnotations ):
         else:
             hdas = self.active_datasets
         for hda in hdas:
+            # Copy HDA.
             new_hda = hda.copy( copy_children=True, target_history=new_history )
             new_history.add_dataset( new_hda, set_hid = False )
             db_session.add( new_hda )
-            db_session.flush()
+            db_session.flush()            
+            # Copy annotation.
+            self.copy_item_annotation( db_session, self.user, hda, target_user, new_hda )
         new_history.hid_counter = self.hid_counter
         db_session.add( new_history )
         db_session.flush()
