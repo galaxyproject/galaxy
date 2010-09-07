@@ -538,6 +538,8 @@ class JobWrapper( object ):
             # self.sa_session.flush() at the bottom of this method set
             # the state instead.
 
+        for pja in job.post_job_actions:
+            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job)
         # Flush all the dataset and job changes above.  Dataset state changes
         # will now be seen by the user.
         self.sa_session.flush()
@@ -568,8 +570,7 @@ class JobWrapper( object ):
                              out_data=out_data, param_dict=param_dict, 
                              tool=self.tool, stdout=stdout, stderr=stderr )
         job.command_line = self.command_line
-        for pja in job.post_job_actions:
-            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job)
+
         # fix permissions
         for path in [ dp.real_path for dp in self.get_output_fnames() ]:
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
