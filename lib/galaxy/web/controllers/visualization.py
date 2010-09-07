@@ -179,9 +179,9 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
             return trans.show_error_message( "The specified visualization does not exist." )
 
         # Rate visualization.
-        visualization_rating = self.rate_item( trans, trans.get_user(), visualization, rating )
+        visualization_rating = self.rate_item( trans.sa_session, trans.get_user(), visualization, rating )
 
-        return self.get_ave_item_rating_data( trans, visualization )
+        return self.get_ave_item_rating_data( trans.sa_session, visualization )
         
     @web.expose
     @web.require_login( "share Galaxy visualizations" )
@@ -312,12 +312,12 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
-            user_item_rating = self.get_user_item_rating( trans, trans.get_user(), visualization )
+            user_item_rating = self.get_user_item_rating( trans.sa_session, trans.get_user(), visualization )
             if user_item_rating:
                 user_item_rating = user_item_rating.rating
             else:
                 user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, visualization )
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, visualization )
         
         # Display.
         visualization_config = self.get_visualization_config( trans, visualization )
@@ -376,7 +376,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 visualization.dbkey = visualization_dbkey
                 visualization.type = 'trackster' # HACK: set visualization type to trackster since it's the only viz
                 visualization_annotation = sanitize_html( visualization_annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans, visualization, visualization_annotation )
+                self.add_item_annotation( trans.sa_session, trans.get_user(), visualization, visualization_annotation )
                 visualization.user = user
                 
                 # And the first (empty) visualization revision
@@ -433,7 +433,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 visualization.slug = visualization_slug
                 if visualization_annotation != "":
                     visualization_annotation = sanitize_html( visualization_annotation, 'utf-8', 'text/html' )
-                    self.add_item_annotation( trans, visualization, visualization_annotation )
+                    self.add_item_annotation( trans.sa_session, trans.get_user(), visualization, visualization_annotation )
                 session.flush()
                 # Redirect to visualization list.
                 return trans.response.send_redirect( web.url_for( action='list' ) )
@@ -443,7 +443,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
             if visualization.slug is None:
                 self.create_item_slug( trans.sa_session, visualization )
             visualization_slug = visualization.slug
-            visualization_annotation = self.get_item_annotation_str( trans, trans.user, visualization )
+            visualization_annotation = self.get_item_annotation_str( trans.sa_session, trans.user, visualization )
             if not visualization_annotation:
                 visualization_annotation = ""
         return trans.show_form( 

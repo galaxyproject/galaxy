@@ -428,7 +428,7 @@ class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
         self.model_annotation_association_class = model_annotation_association_class
     def get_value( self, trans, grid, item ):
         """ Returns item annotation. """
-        annotation = self.get_item_annotation_str( trans, item.user, item )
+        annotation = self.get_item_annotation_str( trans.sa_session, item.user, item )
         return iff( annotation, annotation, "" )
     def get_single_filter( self, user, a_filter ):
         """ Filter by annotation and annotation owner. """

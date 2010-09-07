@@ -15,7 +15,7 @@ class ItemRatings( UsesItemRatings ):
     """Overrides rate_item method since we also allow for comments"""
     def rate_item( self, trans, user, item, rating, comment='' ):
         """ Rate an item. Return type is <item_class>RatingAssociation. """
-        item_rating = self.get_user_item_rating( trans, user, item )
+        item_rating = self.get_user_item_rating( trans.sa_session, user, item )
         if not item_rating:
             # User has not yet rated item; create rating.
             item_rating_assoc_class = self._get_item_rating_assoc_class( trans, item )
@@ -85,7 +85,7 @@ class ToolListGrid( grids.Grid ):
             return 'no user'
     class RatingColumn( grids.TextColumn, ItemRatings ):
         def get_value( self, trans, grid, tool ):
-            avg_rating, num_ratings = self.get_ave_item_rating_data( trans, tool )
+            avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool )
             return self.get_avg_rating_html( avg_rating )
     class EmailColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
@@ -332,7 +332,7 @@ class CommonController( BaseController, ItemRatings ):
                                                               action='browse_tools',
                                                               message='You are not allowed to view this tool',
                                                               status='error' ) )
-        avg_rating, num_ratings = self.get_ave_item_rating_data( trans, tool )
+        avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool )
         can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
         can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
         can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
@@ -343,7 +343,7 @@ class CommonController( BaseController, ItemRatings ):
         categories = [ tca.category for tca in tool.categories ]
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         tool_file_contents = tarfile.open( tool.file_name, 'r' ).getnames()
-        tra = self.get_user_item_rating( trans, trans.user, tool )
+        tra = self.get_user_item_rating( trans.sa_session, trans.user, tool )
         visible_versions = trans.app.security_agent.get_visible_versions( trans.user, trans.user_is_admin(), cntrller, tool )
         if tool.is_rejected:
             # Include the comments regarding the reason for rejection
@@ -506,13 +506,13 @@ class CommonController( BaseController, ItemRatings ):
             rating = int( params.get( 'rating', '0' ) )
             comment = util.restore_text( params.get( 'comment', '' ) )
             rating = self.rate_item( trans, trans.user, tool, rating, comment )
-        avg_rating, num_ratings = self.get_ave_item_rating_data( trans, tool )
+        avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool )
         can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
         can_edit = trans.app.security_agent.can_edit( trans.user, trans.user_is_admin(), cntrller, tool )
         can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
         can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
-        tra = self.get_user_item_rating( trans, trans.user, tool )
+        tra = self.get_user_item_rating( trans.sa_session, trans.user, tool )
         return trans.fill_template( '/webapps/community/common/rate_tool.mako', 
                                     cntrller=cntrller,
                                     tool=tool,

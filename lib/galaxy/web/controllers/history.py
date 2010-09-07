@@ -433,9 +433,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
             return trans.show_error_message( "The specified history does not exist." )
             
         # Rate history.
-        history_rating = self.rate_item( trans, trans.get_user(), history, rating )
+        history_rating = self.rate_item( trans.sa_session, trans.get_user(), history, rating )
         
-        return self.get_ave_item_rating_data( trans, history )
+        return self.get_ave_item_rating_data( trans.sa_session, history )
         
     @web.expose
     def rename_async( self, trans, id=None, new_name=None ):
@@ -460,7 +460,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         if new_annotation:
             # Sanitize annotation before adding it.
             new_annotation = sanitize_html( new_annotation, 'utf-8', 'text/html' )
-            self.add_item_annotation( trans, history, new_annotation )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), history, new_annotation )
             trans.sa_session.flush()
             return new_annotation
 
@@ -517,7 +517,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                         
                 # Add annotation, tags.
                 if trans.user:
-                    self.add_item_annotation( trans, new_history, history_attrs[ 'annotation' ] )
+                    self.add_item_annotation( trans.sa_session, trans.get_user(), new_history, history_attrs[ 'annotation' ] )
                     for tag, value in history_attrs[ 'tags' ].items():
                         trans.app.tag_handler.apply_item_tags( trans, trans.user, new_history, get_tag_str( tag, value ) )
     
@@ -574,7 +574,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         
                     # Set tags, annotations.
                     if trans.user:
-                        self.add_item_annotation( trans, hda, dataset_attrs[ 'annotation' ] )
+                        self.add_item_annotation( trans.sa_session, trans.get_user(), hda, dataset_attrs[ 'annotation' ] )
                         for tag, value in dataset_attrs[ 'tags' ].items():
                             trans.app.tag_handler.apply_item_tags( trans, trans.user, hda, get_tag_str( tag, value ) )
                             trans.sa_session.flush()
@@ -769,7 +769,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                     "name" : unicode_wrangler( history.name ),
                     "hid_counter" : history.hid_counter,
                     "genome_build" : history.genome_build,
-                    "annotation" : unicode_wrangler( self.get_item_annotation_str( trans, history.user, history ) ),
+                    "annotation" : unicode_wrangler( self.get_item_annotation_str( trans.sa_session, history.user, history ) ),
                     "tags" : get_item_tag_dict( history )
                 }
                 history_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
@@ -788,7 +788,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                         continue
                     if dataset.deleted and not include_deleted:
                         continue
-                    dataset.annotation = self.get_item_annotation_str( trans, history.user, dataset )
+                    dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
                     datasets_attrs.append( dataset )
                     included_datasets.append( dataset )
                 datasets_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
@@ -943,9 +943,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )
         # Get annotations.
-        history.annotation = self.get_item_annotation_str( trans, history.user, history )
+        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
         for dataset in datasets:
-            dataset.annotation = self.get_item_annotation_str( trans, history.user, dataset )
+            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
         return trans.stream_template_mako( "/history/item_content.mako", item = history, item_data = datasets )
                        
     @web.expose
@@ -1065,19 +1065,19 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )
         # Get annotations.
-        history.annotation = self.get_item_annotation_str( trans, history.user, history )
+        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
         for dataset in datasets:
-            dataset.annotation = self.get_item_annotation_str( trans, history.user, dataset )
+            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
             
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
-            user_item_rating = self.get_user_item_rating( trans, trans.get_user(), history )
+            user_item_rating = self.get_user_item_rating( trans.sa_session, trans.get_user(), history )
             if user_item_rating:
                 user_item_rating = user_item_rating.rating
             else:
                 user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, history )
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, history )
         return trans.stream_template_mako( "history/display.mako", item = history, item_data = datasets, 
                                             user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
                                           

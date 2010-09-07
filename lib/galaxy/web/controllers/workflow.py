@@ -206,19 +206,19 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored_workflow )
         # Get annotations.
-        stored_workflow.annotation = self.get_item_annotation_str( trans, stored_workflow.user, stored_workflow )
+        stored_workflow.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
         for step in stored_workflow.latest_workflow.steps:
-            step.annotation = self.get_item_annotation_str( trans, stored_workflow.user, step )
+            step.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step )
 
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
-            user_item_rating = self.get_user_item_rating( trans, trans.get_user(), stored_workflow )
+            user_item_rating = self.get_user_item_rating( trans.sa_session, trans.get_user(), stored_workflow )
             if user_item_rating:
                 user_item_rating = user_item_rating.rating
             else:
                 user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, stored_workflow )            
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, stored_workflow )            
         return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps,
                                             user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
@@ -233,9 +233,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored )
         # Get annotations.
-        stored.annotation = self.get_item_annotation_str( trans, stored.user, stored )
+        stored.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, stored )
         for step in stored.latest_workflow.steps:
-            step.annotation = self.get_item_annotation_str( trans, stored.user, step )
+            step.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, step )
         return trans.stream_template_mako( "/workflow/item_content.mako", item = stored, item_data = stored.latest_workflow.steps )
                               
     @web.expose
@@ -365,11 +365,11 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         if 'annotation' in kwargs:
             # Set workflow annotation; sanitize annotation before adding it.
             annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
-            self.add_item_annotation( trans, stored,  annotation )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), stored,  annotation )
         trans.sa_session.flush()
         return trans.fill_template( 'workflow/edit_attributes.mako', 
                                     stored=stored, 
-                                    annotation=self.get_item_annotation_str( trans, trans.user, stored ) 
+                                    annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) 
                                     )
     
     @web.expose
@@ -405,7 +405,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         if new_annotation:
             # Sanitize annotation before adding it.
             new_annotation = sanitize_html( new_annotation, 'utf-8', 'text/html' )
-            self.add_item_annotation( trans, stored, new_annotation )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), stored, new_annotation )
             trans.sa_session.flush()
             return new_annotation
             
@@ -420,9 +420,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             return trans.show_error_message( "The specified workflow does not exist." )
 
         # Rate workflow.
-        stored_rating = self.rate_item( trans, trans.get_user(), stored, rating )
+        stored_rating = self.rate_item( trans.sa_session, trans.get_user(), stored, rating )
 
-        return self.get_ave_item_rating_data( trans, stored )
+        return self.get_ave_item_rating_data( trans.sa_session, stored )
             
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -624,7 +624,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             stored_workflow.latest_workflow = workflow
             # Add annotation.
             workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
-            self.add_item_annotation( trans, stored_workflow, workflow_annotation )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation )
             # Persist
             session = trans.sa_session
             session.add( stored_workflow )
@@ -663,7 +663,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         if not id:
             error( "Invalid workflow id" )
         stored = self.get_stored_workflow( trans, id )
-        return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans, trans.user, stored ) )
+        return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
         
     @web.json
     def editor_form_post( self, trans, type='tool', tool_id=None, annotation=None, **incoming ):
@@ -855,7 +855,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             annotation = step_dict[ 'annotation' ]
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans, step, annotation )
+                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
@@ -1414,7 +1414,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         Converts a workflow to a dict of attributes suitable for exporting.
         """
         workflow = stored.latest_workflow
-        workflow_annotation = self.get_item_annotation_obj( trans, trans.user, stored )
+        workflow_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, stored )
         annotation_str = ""
         if workflow_annotation:
             annotation_str = workflow_annotation.annotation
@@ -1430,7 +1430,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
             # Get user annotation.
-            step_annotation = self.get_item_annotation_obj( trans, trans.user, step )
+            step_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, step )
             annotation_str = ""
             if step_annotation:
                 annotation_str = step_annotation.annotation
@@ -1551,7 +1551,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             annotation = step_dict[ 'annotation' ]
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans, step, annotation )
+                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections

@@ -97,7 +97,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden )
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
-                                               annotation = self.get_item_annotation_str( trans, trans.user, history ),
+                                               annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),
                                                datasets = datasets,
                                                hda_id = hda_id,
                                                show_deleted = show_deleted,
@@ -335,7 +335,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                     # Sanitize annotation before adding it.
                     if params.annotation:
                         annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
-                        self.add_item_annotation( trans, data, annotation )
+                        self.add_item_annotation( trans.sa_session, trans.get_user(), data, annotation )
                     # If setting metadata previously failed and all required elements have now been set, clear the failed state.
                     if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
                         data._state = None
@@ -405,7 +405,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 status = 'done'
             return trans.fill_template( "/dataset/edit_attributes.mako",
                                         data=data,
-                                        data_annotation=self.get_item_annotation_str( trans, trans.user, data ),
+                                        data_annotation=self.get_item_annotation_str( trans.sa_session, trans.user, data ),
                                         datatypes=ldatatypes,
                                         current_user_roles=current_user_roles,
                                         all_roles=all_roles,

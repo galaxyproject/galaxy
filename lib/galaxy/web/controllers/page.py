@@ -347,7 +347,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
                 page.title = page_title
                 page.slug = page_slug
                 page_annotation = sanitize_html( page_annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans, page, page_annotation )
+                self.add_item_annotation( trans.sa_session, trans.get_user(), page, page_annotation )
                 page.user = user
                 # And the first (empty) page revision
                 page_revision = model.PageRevision()
@@ -403,14 +403,14 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
                 page.title = page_title
                 page.slug = page_slug
                 page_annotation = sanitize_html( page_annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans, page, page_annotation )
+                self.add_item_annotation( trans.sa_session, trans.get_user(), page, page_annotation )
                 session.flush()
                 # Redirect to page list.
                 return trans.response.send_redirect( web.url_for( action='list' ) )
         else:
             page_title = page.title
             page_slug = page.slug
-            page_annotation = self.get_item_annotation_str( trans, trans.user, page )
+            page_annotation = self.get_item_annotation_str( trans.sa_session, trans.user, page )
             if not page_annotation:
                 page_annotation = ""
         return trans.show_form( 
@@ -590,12 +590,12 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
-            user_item_rating = self.get_user_item_rating( trans, trans.get_user(), page )
+            user_item_rating = self.get_user_item_rating( trans.sa_session, trans.get_user(), page )
             if user_item_rating:
                 user_item_rating = user_item_rating.rating
             else:
                 user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans, page )
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, page )
         
         # Output is string, so convert to unicode for display.
         page_content = unicode( processor.output(), 'utf-8' )
@@ -639,9 +639,9 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
             return trans.show_error_message( "The specified page does not exist." )
 
         # Rate page.
-        page_rating = self.rate_item( trans, trans.get_user(), page, rating )
+        page_rating = self.rate_item( trans.sa_session, trans.get_user(), page, rating )
 
-        return self.get_ave_item_rating_data( trans, page )
+        return self.get_ave_item_rating_data( trans.sa_session, page )
             
     @web.expose
     def get_embed_html_async( self, trans, id ):
@@ -729,25 +729,25 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory,
         item_class = self.get_class( trans, item_class )
         if item_class == model.History:
             history = self.get_history( trans, item_id, False, True )
-            history.annotation = self.get_item_annotation_str( trans, history.user, history )
+            history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
             if history:
                 datasets = self.get_history_datasets( trans, history )
                 return trans.fill_template( "history/embed.mako", item=history, item_data=datasets )
         elif item_class == model.HistoryDatasetAssociation:
             dataset = self.get_dataset( trans, item_id, False, True )
-            dataset.annotation = self.get_item_annotation_str( trans, dataset.history.user, dataset )
+            dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             if dataset:
                 data = self.get_data( dataset )
                 return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data )
         elif item_class == model.StoredWorkflow:
             workflow = self.get_stored_workflow( trans, item_id, False, True )
-            workflow.annotation = self.get_item_annotation_str( trans, workflow.user, workflow )
+            workflow.annotation = self.get_item_annotation_str( trans.sa_session, workflow.user, workflow )
             if workflow:
                 self.get_stored_workflow_steps( trans, workflow )
                 return trans.fill_template( "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps )
         elif item_class == model.Visualization:
             visualization = self.get_visualization( trans, item_id, False, True )
-            visualization.annotation = self.get_item_annotation_str( trans, visualization.user, visualization )
+            visualization.annotation = self.get_item_annotation_str( trans.sa_session, visualization.user, visualization )
             if visualization:
                 return trans.fill_template( "visualization/embed.mako", item=visualization, item_data=None )
         
