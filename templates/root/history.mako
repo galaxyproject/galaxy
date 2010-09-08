@@ -131,7 +131,7 @@ $(function() {
                             error: function() { alert( "Annotations failed" ) },
                             success: function(annotation) {
                                 if (annotation == "") {
-                                    annotation = "<i>Describe or add notes to dataset</i>";
+                                    annotation = "<em>Describe or add notes to dataset</em>";
                                 }
                                 annotation_elt.html(annotation);
                                 annotation_area.find(".tooltip").tipsy( { gravity: 's' } );
@@ -374,9 +374,15 @@ div.form-row {
     
         ## Annotation elt.
         <div id="history-annotation-area" style="display: none">
-   	    <b>Annotation / Notes:</b>
-   	    <div id="history-annotation-container">
-		<div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">${annotation or 'None' | h}</div>
+   	        <b>Annotation / Notes:</b>
+   	        <div id="history-annotation-container">
+		    <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
+    		    %if annotation:
+                    ${annotation | h}
+                %else:
+                    <em>Describe or add notes to history</em>
+                %endif
+		    </div>
             </div>
         </div>
         
