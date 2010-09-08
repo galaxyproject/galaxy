@@ -301,7 +301,7 @@
                parent="${parent}"
                style="display: none;"
            %endif
-
+           >
            <td style="padding-left: ${folder_pad}px;">
                <span class="expandLink"></span>
                <input type="checkbox" class="folderCheckbox"/>
@@ -347,7 +347,6 @@
                        </div>
                    %endif
                %endif
-           </div>
            <td colspan="5"></td>
        </tr>
        <%
@@ -474,8 +473,8 @@
                    <th>Uploaded By</th>
                    <th>Date</th>
                    <th>File Size</th>
-               </thead>
-           </tr>
+               </tr>
+           </thead>
            <% row_counter = RowCounter() %>
            %if cntrller in [ 'library', 'requests' ]:
                ${self.render_folder( 'library', library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}

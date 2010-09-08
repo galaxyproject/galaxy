@@ -12,8 +12,9 @@
 %>
 
 <%def name="javascripts()">
-   ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
-   ${parent.javascripts()}
+    ${parent.javascripts()}
+    ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+    
     <script type="text/javascript">
     $( function() {
         $( "select[refresh_on_change='true']").change( function() {

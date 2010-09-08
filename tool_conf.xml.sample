@@ -60,7 +60,7 @@
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
-    <label text="GFF files" id="gff" />
+    <label text="GFF" id="gff" />
         <tool file="filters/gff/extract_GFF_Features.xml" />
         <tool file="filters/gff/gff_filter_by_attribute.xml" />
         <tool file="filters/gff/gff_filter_by_feature_count.xml" />

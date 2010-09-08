@@ -63,7 +63,8 @@ class PageAllPublishedGrid( grids.Grid ):
     columns = [
         grids.PublicURLColumn( "Title", key="title", filterable="advanced" ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
-        grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ), 
+        grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ),
+        grids.CommunityRatingColumn( "Community Rating", key="rating" ), 
         grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]

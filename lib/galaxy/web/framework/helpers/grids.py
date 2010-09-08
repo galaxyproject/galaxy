@@ -5,6 +5,7 @@ from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.odict import odict
 from galaxy.web.framework.helpers import to_unicode
+from galaxy import model
 from galaxy.model.item_attrs import *
 
 import sys, logging, math
@@ -393,7 +394,7 @@ class TextColumn( GridColumn ):
     def sort( self, query, ascending ):
         """ Sort column using case-insensitive alphabetical sorting. """
         if ascending:
-            query = query.order_by( func.lower ( self.model_class.table.c.get( self.key ) ).asc() ) 
+            query = query.order_by( func.lower( self.model_class.table.c.get( self.key ) ).asc() ) 
         else:
             query = query.order_by( func.lower( self.model_class.table.c.get( self.key ) ).desc() )
         return query
@@ -419,6 +420,53 @@ class IntegerColumn( TextColumn ):
         model_class_key_field = getattr( self.model_class, self.key )
         assert int( a_filter ), "The search entry must be an integer"
         return model_class_key_field == int( a_filter )
+        
+class CommunityRatingColumn( GridColumn, UsesItemRatings ):
+    """ Column that displays community ratings for an item. """
+    
+    def get_value( self, trans, grid, item ):
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, item )
+        return trans.fill_template( "community_rating.mako", 
+                                    ave_item_rating=ave_item_rating, 
+                                    num_ratings=num_ratings, 
+                                    item_id=trans.security.encode_id( item.id ) )
+        
+    def sort( self, query, ascending ):
+        def get_foreign_key( source_class, target_class ):
+            """ Returns foreign key in source class that references target class. """
+            target_fk = None
+            for fk in source_class.table.foreign_keys:
+                if fk.references( target_class.table ):
+                    target_fk = fk
+                    break
+            if not target_fk:
+                raise RuntimeException( "No foreign key found between objects: %s, %s" % source_class.table, target_class.table )
+            return target_fk
+        
+        #
+        # Get the columns that connect item's table and item's rating association table.
+        #
+        item_rating_assoc_class = getattr( model, '%sRatingAssociation' % self.model_class.__name__ )
+        foreign_key = get_foreign_key( item_rating_assoc_class, self.model_class )
+        fk_col = foreign_key.parent
+        referent_col = foreign_key.get_referent( self.model_class.table )
+        
+        #
+        # Do sorting using a subquery.
+        #
+        db_session = query.session
+        # Subquery to get average rating for each item.
+        ave_rating_subquery = db_session.query( fk_col, \
+                                                func.avg( item_rating_assoc_class.table.c.rating \
+                                                ).label('avg_rating') ).group_by( fk_col ).subquery()
+        # Integrate subquery into main query.
+        query = query.outerjoin( (ave_rating_subquery, referent_col==ave_rating_subquery.columns[fk_col.name]) )
+        # Sort using subquery results; use coalesce to avoid null values.
+        if ascending:
+            query = query.order_by( func.coalesce( ave_rating_subquery.c.avg_rating, 0 ).asc() )
+        else:
+            query = query.order_by( func.coalesce( ave_rating_subquery.c.avg_rating, 0 ).desc() )
+        return query
 
 class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
     """ Column that displays and filters item owner's annotations. """
