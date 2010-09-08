@@ -222,6 +222,9 @@
                 }
             });
             
+            // Initialize ratings.
+            $('.community_rating_star').rating({});
+            
             // Initialize item menu operations.
             make_popup_menus();
         }
