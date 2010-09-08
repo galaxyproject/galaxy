@@ -58,7 +58,7 @@ class PageAllPublishedGrid( grids.Grid ):
     use_async = True
     title = "Published Pages"
     model_class = model.Page
-    default_sort_key = "-update_time"
+    default_sort_key = "update_time"
     default_filter = dict( title="All", username="All" )
     columns = [
         grids.PublicURLColumn( "Title", key="title", filterable="advanced" ),
@@ -66,7 +66,7 @@ class PageAllPublishedGrid( grids.Grid ):
         grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ),
         grids.CommunityRatingColumn( "Community Rating", key="rating" ), 
         grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
+        grids.ReverseSortColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
         grids.MulticolFilterColumn(  

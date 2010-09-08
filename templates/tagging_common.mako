@@ -89,9 +89,12 @@
     ## Build HTML.
     <% 
         elt_id = int ( floor ( random()*maxint ) ) 
-        community_tags = trans.app.tag_handler.get_community_tags( trans, item=tagged_item, limit=10 )
+        community_tags = trans.app.tag_handler.get_community_tags( trans, item=tagged_item, limit=5 )
     %>
-    ${self.render_tagging_element_html(elt_id=elt_id, tags=community_tags, use_toggle_link=use_toggle_link, editable=False, tag_type="community")}
+    ${self.render_tagging_element_html(elt_id=elt_id, \
+                                        tags=community_tags, \
+                                        use_toggle_link=use_toggle_link, \
+                                        editable=False, tag_type="community")}
     
     ## Set up tag click function.
     <script type="text/javascript">

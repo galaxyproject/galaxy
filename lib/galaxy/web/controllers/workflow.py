@@ -63,7 +63,7 @@ class StoredWorkflowListGrid( grids.Grid ):
 class StoredWorkflowAllPublishedGrid( grids.Grid ):
     title = "Published Workflows"
     model_class = model.StoredWorkflow
-    default_sort_key = "-update_time"
+    default_sort_key = "update_time"
     default_filter = dict( public_url="All", username="All", tags="All" )
     use_async = True
     columns = [
@@ -72,7 +72,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ),
         grids.CommunityRatingColumn( "Community Rating", key="rating" ), 
         grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="PublicWorkflowListGrid" ),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
+        grids.ReverseSortColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
         grids.MulticolFilterColumn(  
