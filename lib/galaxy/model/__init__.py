@@ -1075,6 +1075,15 @@ class LibraryDataset( object ):
         # display in other objects, we can't use the simpler method used by
         # other model classes.
         ldda = self.library_dataset_dataset_association
+        template_data = {}
+        for temp_info in ldda.info_association:
+            template = temp_info.template
+            content = temp_info.info.content
+            tmp_dict = {}
+            for i, field in enumerate(template.fields):
+                tmp_dict[field['label']] = content[i]
+            template_data[template.name] = tmp_dict
+        
         rval = dict( name = ldda.name,
                      uploaded_by = ldda.user.email,
                      message = ldda.message,
@@ -1083,7 +1092,8 @@ class LibraryDataset( object ):
                      data_type = ldda.ext,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
-                     misc_blurb = ldda.blurb )
+                     misc_blurb = ldda.blurb,
+                     template_data = template_data )
         for name, spec in ldda.metadata.spec.items():
             val = ldda.metadata.get( name )
             if isinstance( val, MetadataFile ):
