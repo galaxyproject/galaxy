@@ -1010,6 +1010,14 @@ class LibraryFolder( object ):
         return name
     def get_api_value( self, view='collection' ):
         rval = {}
+        info_association, inherited = self.get_info_association()
+        if info_association:
+            if inherited:
+                template = info_association.template.current.latest_form
+            else:
+                template = info_association.template
+            rval['data_template'] = template.name
+        
         try:
             visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
         except AttributeError:
