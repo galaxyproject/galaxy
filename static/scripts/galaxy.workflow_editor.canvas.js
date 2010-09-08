@@ -312,7 +312,43 @@ $.extend( Node.prototype, {
             if ( output.extensions.indexOf( 'input' ) < 0 ) {
                 label = label + " (" + output.extensions + ")";
             }
-            b.append( $("<div class='form-row dataRow'>" + label + "</div>" ).append( t ) );
+            var r = $("<div class='form-row dataRow'>" + label + "</div>" );
+            if (node.type == 'tool'){
+                var callout = $("<div class='callout'></div>")
+                    .css( { display: 'none' } )
+                    .append(
+                        $("<div class='buttons'></div>").append(
+                            $("<img/>").attr('src', image_path + '/fugue/asterisk-small.png').click( function() {
+                                if ($.inArray(output.name, node.workflow_outputs) != -1){
+                                    node.workflow_outputs.splice($.inArray(output.name, node.workflow_outputs), 1);
+                                    callout.hide();
+                                }else{
+                                    node.workflow_outputs.push(output.name);
+                                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                                }
+                                workflow.has_changes = true;
+                                canvas_manager.draw_overview();
+                            })));
+                callout.css({
+                        top: 4,
+                        right: 8
+                    });
+                if ($.inArray(output.name, node.workflow_outputs) != -1){
+                    callout.show();
+                }
+                r.append(callout);
+                r.bind( "hover", function() {
+                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small-yellow.png');
+                    callout.show();
+                });
+                r.bind( "mouseleave", function() {
+                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                    if ($.inArray(output.name, node.workflow_outputs) == -1){
+                        callout.hide();
+                    }
+                });
+            }
+            b.append( r.append( t ) );
         });
         workflow.node_changed( this );
     },
@@ -919,16 +955,20 @@ $.extend( CanvasManager.prototype, {
         canvas_el.attr( "width", o_w );
         canvas_el.attr( "height", o_h );
         // Draw overview
-        c.fillStyle = "#D2C099";
-        c.strokeStyle = "#D8B365";
-        c.lineWidth = 1;
         $.each( workflow.nodes, function( id, node ) {
+            c.fillStyle = "#D2C099";
+            c.strokeStyle = "#D8B365";
+            c.lineWidth = 1;
             var node_element = $(node.element),
                 position = node_element.position(),
                 x = position.left / in_w * o_w,
                 y = position.top / in_h * o_h,
                 w = node_element.width() / in_w * o_w,
                 h = node_element.height() / in_h * o_h;
+            if (node.workflow_outputs != undefined && node.workflow_outputs.length > 0){
+                c.fillStyle = "#E8A92D";
+                c.strokeStyle = "#E8A92D"
+            }
             c.fillRect( x, y, w, h );
             c.strokeRect( x, y, w, h );
         });
