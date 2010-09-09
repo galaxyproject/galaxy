@@ -236,7 +236,7 @@ def __main__():
         # number of sequences read from the dataset ( this may not be necessary ).
         if ref_sequences != seqs:
             stop_queues( lastz_job_queue, combine_data_queue )
-            stop_err( "The value of metadata.sequences (%d) differs from the number of sequences read from the reference ( %d)." % ( ref_sequences, seqs ) )
+            stop_err( "The value of metadata.sequences (%d) differs from the number of sequences read from the reference (%d)." % ( ref_sequences, seqs ) )
     else:
         # Reference is a locally cached 2bit file, split job across number of chroms in 2bit file
         tbf = TwoBitFile( open( options.input1, 'r' ) )
