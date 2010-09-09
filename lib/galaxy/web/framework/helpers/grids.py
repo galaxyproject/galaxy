@@ -366,7 +366,11 @@ class GridColumn( object ):
         else:
             query = query.order_by( self.model_class.table.c.get( self.key ).desc() )
         return query
-
+        
+class ReverseSortColumn( GridColumn ):
+    """ Column that reverses sorting; this is useful when the natural sort is descending. """
+    def sort( self, query, ascending ):
+        return GridColumn.sort( self, query, (not ascending) )
         
 class TextColumn( GridColumn ):
     """ Generic column that employs freetext and, hence, supports freetext, case-independent filtering. """
@@ -462,7 +466,7 @@ class CommunityRatingColumn( GridColumn, UsesItemRatings ):
         # Integrate subquery into main query.
         query = query.outerjoin( (ave_rating_subquery, referent_col==ave_rating_subquery.columns[fk_col.name]) )
         # Sort using subquery results; use coalesce to avoid null values.
-        if ascending:
+        if not ascending: # TODO: for now, reverse sorting b/c first sort is ascending, and that should be the natural sort.
             query = query.order_by( func.coalesce( ave_rating_subquery.c.avg_rating, 0 ).asc() )
         else:
             query = query.order_by( func.coalesce( ave_rating_subquery.c.avg_rating, 0 ).desc() )
@@ -475,9 +479,16 @@ class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
         self.sortable = False
         self.model_annotation_association_class = model_annotation_association_class
     def get_value( self, trans, grid, item ):
-        """ Returns item annotation. """
+        """ Returns first 150 characters of annotation. """
         annotation = self.get_item_annotation_str( trans.sa_session, item.user, item )
-        return iff( annotation, annotation, "" )
+        if annotation:
+            ann_snippet = annotation[:155]
+            if len( annotation ) > 155:
+                ann_snippet = ann_snippet[ :ann_snippet.rfind(' ') ]
+                ann_snippet += "..."
+        else:
+            ann_snippet = ""
+        return ann_snippet
     def get_single_filter( self, user, a_filter ):
         """ Filter by annotation and annotation owner. """
         return self.model_class.annotations.any( 

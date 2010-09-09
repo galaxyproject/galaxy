@@ -920,15 +920,16 @@
                     <div class="toolParamHelp">Apply tags to make it easy to search for and find items with the same tag.</div>
                 </div>
                 ## Workflow annotation.
+                ## Annotation elt.                
                 <div id="workflow-annotation-area" class="form-row">
                     <label>Annotation / Notes:</label>
-                    <span id="workflow-annotation" class="tooltip editable-text" original-title="Click to edit annotation">
-                    %if annotation == "":
-                        None
-                    %else:
+                    <div id="workflow-annotation" class="tooltip editable-text" original-title="Click to edit annotation">
+                    %if annotation:
                         ${annotation | h}
+                    %else:
+                        <em>Describe or add notes to workflow</em>
                     %endif
-                    </span>
+                    </div>
                     <div class="toolParamHelp">Add an annotation or notes to a workflow; annotations are available when a workflow is viewed.</div>
                 </div>
             </div>

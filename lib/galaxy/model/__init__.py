@@ -1010,6 +1010,14 @@ class LibraryFolder( object ):
         return name
     def get_api_value( self, view='collection' ):
         rval = {}
+        info_association, inherited = self.get_info_association()
+        if info_association:
+            if inherited:
+                template = info_association.template.current.latest_form
+            else:
+                template = info_association.template
+            rval['data_template'] = template.name
+        
         try:
             visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
         except AttributeError:
@@ -1075,6 +1083,15 @@ class LibraryDataset( object ):
         # display in other objects, we can't use the simpler method used by
         # other model classes.
         ldda = self.library_dataset_dataset_association
+        template_data = {}
+        for temp_info in ldda.info_association:
+            template = temp_info.template
+            content = temp_info.info.content
+            tmp_dict = {}
+            for i, field in enumerate(template.fields):
+                tmp_dict[field['label']] = content[i]
+            template_data[template.name] = tmp_dict
+        
         rval = dict( name = ldda.name,
                      uploaded_by = ldda.user.email,
                      message = ldda.message,
@@ -1083,7 +1100,8 @@ class LibraryDataset( object ):
                      data_type = ldda.ext,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
-                     misc_blurb = ldda.blurb )
+                     misc_blurb = ldda.blurb,
+                     template_data = template_data )
         for name, spec in ldda.metadata.spec.items():
             val = ldda.metadata.get( name )
             if isinstance( val, MetadataFile ):

@@ -45,7 +45,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
     use_async = True
     title = "Published Visualizations"
     model_class = model.Visualization
-    default_sort_key = "-update_time"
+    default_sort_key = "update_time"
     default_filter = dict( title="All", username="All" )
     columns = [
         grids.PublicURLColumn( "Title", key="title", filterable="advanced" ),
@@ -53,7 +53,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ),
         grids.CommunityRatingColumn( "Community Rating", key="rating" ), 
         grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationAllPublishedGrid" ),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
+        grids.ReverseSortColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
         grids.MulticolFilterColumn(  

@@ -327,9 +327,9 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
             t;
             
         if (use_textarea) {
-            t = $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text( old_text );
+            t = $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text( $.trim(old_text) );
         } else {
-            t = $("<input type='text'></input>").attr({ value: old_text, size: num_cols });
+            t = $("<input type='text'></input>").attr({ value: $.trim(old_text), size: num_cols });
         }
         t.attr("id", "renaming-active");
         t.blur( function() {
@@ -357,7 +357,10 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
                     },
                     success: function(processed_text) {
                         // Set new text and call finish method.
-                        text_elt.text( processed_text );
+                        if (processed_text != "")
+                            text_elt.text(processed_text);
+                        else
+                            text_elt.html("<em>None</em>");
                         if (on_finish) {
                             on_finish(t);
                         }
