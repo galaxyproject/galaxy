@@ -184,7 +184,6 @@ class ToolModule( WorkflowModule ):
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get("post_job_actions", {})
         module.workflow_outputs = d.get("workflow_outputs", [])
-
         return module
         
     @classmethod
