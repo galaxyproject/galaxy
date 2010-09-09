@@ -323,7 +323,7 @@ class ActionBox(object):
                 # "SetMetadataAction" : SetMetadataAction,
                 # "DeleteDatasetAction" : DeleteDatasetAction,
                 }
-    immediate_actions = ['ChangeDatatypeAction']
+    immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction']
 
     @classmethod
     def get_short_str(cls, action):
