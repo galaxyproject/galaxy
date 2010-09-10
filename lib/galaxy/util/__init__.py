@@ -32,6 +32,7 @@ log   = logging.getLogger(__name__)
 _lock = threading.RLock()
 
 gzip_magic = '\037\213'
+bz2_magic = 'BZh'
 
 def is_multi_byte( chars ):
     for char in chars:

@@ -15,6 +15,11 @@ from galaxy.datatypes.registry import Registry
 from galaxy import util
 from galaxy.util.json import *
 
+try:
+    import bz2
+except:
+    bz2 = None
+
 assert sys.version_info[:2] >= ( 2, 4 )
 
 def stop_err( msg, ret=1 ):
@@ -120,6 +125,23 @@ def check_gzip( temp_name ):
     if check_html( temp_name, chunk=chunk ):
         return ( True, False )
     return ( True, True )
+def check_bz2( temp_name ):
+    try:
+        temp = open( temp_name, "U" )
+        magic_check = temp.read( 3 )
+        temp.close()
+        if magic_check != util.bz2_magic:
+            return ( False, False )
+    except:
+        return( False, False )
+    CHUNK_SIZE = 2**15 # reKb
+    bzipped_file = bz2.BZ2File( temp_name, mode='rb' )
+    chunk = bzipped_file.read( CHUNK_SIZE )
+    bzipped_file.close()
+    # See if we have a compressed HTML file
+    if check_html( temp_name, chunk=chunk ):
+        return ( True, False )
+    return ( True, True )
 def check_zip( temp_name ):
     if zipfile.is_zipfile( temp_name ):
         return True
@@ -204,6 +226,34 @@ def add_file( dataset, registry, json_file, output_path ):
             shutil.move( uncompressed, dataset.path )
             dataset.name = dataset.name.rstrip( '.gz' )
             data_type = 'gzip'
+        if not data_type and bz2 is not None:
+            # See if we have a bz2 file, much like gzip
+            is_bzipped, is_valid = check_bz2( dataset.path )
+            if is_bzipped and not is_valid:
+                file_err( 'The gzipped uploaded file contains inappropriate content', dataset, json_file )
+                return
+            elif is_bzipped and is_valid:
+                # We need to uncompress the temp_name file
+                CHUNK_SIZE = 2**20 # 1Mb   
+                fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_bunzip2_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
+                bzipped_file = bz2.BZ2File( dataset.path, 'rb' )
+                while 1:
+                    try:
+                        chunk = bzipped_file.read( CHUNK_SIZE )
+                    except IOError:
+                        os.close( fd )
+                        os.remove( uncompressed )
+                        file_err( 'Problem decompressing bz2 compressed data', dataset, json_file )
+                        return
+                    if not chunk:
+                        break
+                    os.write( fd, chunk )
+                os.close( fd )
+                bzipped_file.close()
+                # Replace the gzipped file with the decompressed file
+                shutil.move( uncompressed, dataset.path )
+                dataset.name = dataset.name.rstrip( '.bz2' )
+                data_type = 'bz2'
         if not data_type:
             # See if we have a zip archive
             is_zipped = check_zip( dataset.path )
