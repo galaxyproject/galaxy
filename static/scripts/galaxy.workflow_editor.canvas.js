@@ -286,7 +286,12 @@ $.extend( Node.prototype, {
         this.tooltip = data.tooltip ? data.tooltip : ""
         this.annotation = data.annotation;
         this.post_job_actions = data.post_job_actions;
-        this.workflow_outputs = data.workflow_outputs
+        if (data.workflow_outputs){
+            this.workflow_outputs = data.workflow_outputs;            
+        }else{
+            this.workflow_outputs = [];
+        }
+
         
         if ( this.tool_errors ) {
             f.addClass( "tool-node-error" );
@@ -294,13 +299,26 @@ $.extend( Node.prototype, {
             f.removeClass( "tool-node-error" );
         }
         var node = this;
+        var output_width = Math.max(150, f.width());
         var b = f.find( ".toolFormBody" );
         b.find( "div" ).remove();
         var ibox = $("<div class='inputs'></div>").appendTo( b );
         $.each( data.data_inputs, function( i, input ) {
             var t = $("<div class='terminal input-terminal'></div>");
             node.enable_input_terminal( t, input.name, input.extensions );
-            ibox.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" ).prepend( t ) );
+            var ib = $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" );
+            ib.css({  position:'absolute',
+                        left: -1000,
+                        top: -1000,
+                        display:'none'});
+            $('body').append(ib);
+            output_width = Math.max(output_width, ib.outerWidth());
+            ib.css({ position:'',
+                       left:'',
+                       top:'',
+                       display:'' });
+            $('body').remove(ib);
+            ibox.append( ib.prepend( t ) );
         });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
             b.append( $( "<div class='rule'></div>" ) );
@@ -310,7 +328,7 @@ $.extend( Node.prototype, {
             node.enable_output_terminal( t, output.name, output.extensions );
             var label = output.name;
             if ( output.extensions.indexOf( 'input' ) < 0 ) {
-                label = label + " (" + output.extensions + ")";
+                label = label + " (" + output.extensions.join(", ") + ")";
             }
             var r = $("<div class='form-row dataRow'>" + label + "</div>" );
             if (node.type == 'tool'){
@@ -318,38 +336,49 @@ $.extend( Node.prototype, {
                     .css( { display: 'none' } )
                     .append(
                         $("<div class='buttons'></div>").append(
-                            $("<img/>").attr('src', image_path + '/fugue/asterisk-small.png').click( function() {
+                            $("<img/>").attr('src', image_path + '/fugue/asterisk-small-outline.png').click( function() {
                                 if ($.inArray(output.name, node.workflow_outputs) != -1){
                                     node.workflow_outputs.splice($.inArray(output.name, node.workflow_outputs), 1);
-                                    callout.hide();
+                                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
                                 }else{
                                     node.workflow_outputs.push(output.name);
                                     callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
                                 }
                                 workflow.has_changes = true;
                                 canvas_manager.draw_overview();
-                            })));
+                            })))
+                    .tipsy({delayIn:500, fallback: "Flag this as a workflow output.  All non-flagged outputs will be hidden." });
                 callout.css({
-                        top: 4,
+                        top: '50%',
+                        margin:'-8px 0px 0px 0px',
                         right: 8
                     });
-                if ($.inArray(output.name, node.workflow_outputs) != -1){
-                    callout.show();
-                }
+                callout.show();
                 r.append(callout);
                 r.bind( "hover", function() {
                     callout.find('img').attr('src', image_path + '/fugue/asterisk-small-yellow.png');
-                    callout.show();
                 });
                 r.bind( "mouseleave", function() {
                     callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
                     if ($.inArray(output.name, node.workflow_outputs) == -1){
-                        callout.hide();
+                        callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
                     }
                 });
             }
+            r.css({  position:'absolute',
+                        left: -1000,
+                        top: -1000,
+                        display:'none'});
+            $('body').append(r);
+            output_width = Math.max(output_width, r.outerWidth() + 17);
+            r.css({ position:'',
+                       left:'',
+                       top:'',
+                       display:'' });
+            $('body').remove(r);
             b.append( r.append( t ) );
         });
+        f.css( "width", Math.min(250, Math.max(f.width(), output_width )));
         workflow.node_changed( this );
     },
     update_field_data : function( data ) {
