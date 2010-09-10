@@ -7,21 +7,21 @@
         if isinstance( field[ 'widget' ], TextArea ) and field[ 'widget' ].value:
             has_contents = True
             label = field[ 'label' ]
-            widget = field[ 'widget' ]
+            value = '<pre>%s</pre>' % field[ 'widget' ].value
         elif isinstance( field[ 'widget' ], TextField ) and field[ 'widget' ].value:
             has_contents = True
             label = field[ 'label' ]
-            widget = field[ 'widget' ]
+            value = field[ 'widget' ].value
         elif isinstance( field[ 'widget' ], SelectField ) and field[ 'widget' ].options:
             for option_label, option_value, selected in field['widget'].options:
                 if selected:
                     has_contents = True
                     label = field[ 'label' ]
-                    widget = field[ 'widget' ]
+                    value = option_value
         elif isinstance( field[ 'widget' ], CheckboxField ) and field[ 'widget' ].checked:
             has_contents = True
             label = field[ 'label' ]
-            widget = field[ 'widget' ]
+            value = 'checked'
         elif isinstance( field[ 'widget' ], WorkflowField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
             has_contents = True
             label = field[ 'label' ]
@@ -40,11 +40,12 @@
             widget = field[ 'widget' ]
             address = trans.sa_session.query( trans.model.UserAddress ).get( int( widget.value ) )
             label = address.desc
+            value = address.get_html()
     %>
     %if has_contents:
         <div class="form-row">
             <label>${label}</label>
-            ${widget.get_html( disabled=True )}
+            ${value}
             <div class="toolParamHelp" style="clear: both;">
                 ${field[ 'helptext' ]}
             </div>

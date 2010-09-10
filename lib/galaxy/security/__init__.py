@@ -68,15 +68,19 @@ class RBACAgent:
         raise "Unimplemented Method"
     def set_dataset_permission( self, dataset, permission ):
         raise "Unimplemented Method"
-    def dataset_is_public( self, dataset ):
-        raise "Unimplemented Method"
-    def make_dataset_public( self, dataset ):
-        raise "Unimplemented Method"
     def set_all_library_permissions( self, dataset, permissions ):
         raise "Unimplemented Method"
     def library_is_public( self, library ):
         raise "Unimplemented Method"
     def make_library_public( self, library ):
+        raise "Unimplemented Method"
+    def folder_is_public( self, library ):
+        raise "Unimplemented Method"
+    def make_folder_public( self, folder, count=0 ):
+        raise "Unimplemented Method"
+    def dataset_is_public( self, dataset ):
+        raise "Unimplemented Method"
+    def make_dataset_public( self, dataset ):
         raise "Unimplemented Method"
     def get_permissions( self, library_dataset ):
         raise "Unimplemented Method"
@@ -343,6 +347,7 @@ class GalaxyRBACAgent( RBACAgent ):
                                              self.model.Role.table.c.type == self.model.Role.types.SHARING ) )
     def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False, bypass_manage_permission=False, default_access_private = False ):
         # bypass_manage_permission is used to change permissions of datasets in a userless history when logging in
+        flush_needed = False
         if user is None:
             return None
         if not permissions:
@@ -354,13 +359,16 @@ class GalaxyRBACAgent( RBACAgent ):
         # Delete all of the current default permissions for the user
         for dup in user.default_permissions:
             self.sa_session.delete( dup )
+            flush_needed = True
         # Add the new default permissions for the user
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
             for dup in [ self.model.DefaultUserPermissions( user, action, role ) for role in roles ]:
                 self.sa_session.add( dup )
-        self.sa_session.flush()
+                flush_needed = True
+        if flush_needed:
+            self.sa_session.flush()
         if history:
             for history in user.active_histories:
                 self.history_set_default_permissions( history, permissions=permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
@@ -375,6 +383,7 @@ class GalaxyRBACAgent( RBACAgent ):
         return permissions
     def history_set_default_permissions( self, history, permissions={}, dataset=False, bypass_manage_permission=False ):
         # bypass_manage_permission is used to change permissions of datasets in a user-less history when logging in
+        flush_needed = False
         user = history.user
         if not user:
             # default permissions on a user-less history are None
@@ -384,13 +393,16 @@ class GalaxyRBACAgent( RBACAgent ):
         # Delete all of the current default permission for the history
         for dhp in history.default_permissions:
             self.sa_session.delete( dhp )
+            flush_needed = True
         # Add the new default permissions for the history
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
             for dhp in [ self.model.DefaultHistoryPermissions( history, action, role ) for role in roles ]:
                 self.sa_session.add( dhp )
-        self.sa_session.flush()
+                flush_needed = True
+        if flush_needed:
+            self.sa_session.flush()
         if dataset:
             # Only deal with datasets that are not purged
             for hda in history.activatable_datasets:
@@ -417,21 +429,26 @@ class GalaxyRBACAgent( RBACAgent ):
         Set new permissions on a dataset, eliminating all current permissions
         permissions looks like: { Action : [ Role, Role ] }
         """
+        flush_needed = False
         # Delete all of the current permissions on the dataset
         for dp in dataset.actions:
             self.sa_session.delete( dp )
+            flush_needed = True
         # Add the new permissions on the dataset
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
             for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
                 self.sa_session.add( dp )
-        self.sa_session.flush()
+                flush_needed = True
+        if flush_needed:
+            self.sa_session.flush()
     def set_dataset_permission( self, dataset, permission={} ):
         """
         Set a specific permission on a dataset, leaving all other current permissions on the dataset alone
         permissions looks like: { Action : [ Role, Role ] }
         """
+        flush_needed = False
         for action, roles in permission.items():
             if isinstance( action, Action ):
                 action = action.action
@@ -439,21 +456,13 @@ class GalaxyRBACAgent( RBACAgent ):
             for dp in dataset.actions:
                 if dp.action == action:
                     self.sa_session.delete( dp )
+                    flush_needed = True
             # Add the new specific permission on the dataset
             for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
                 self.sa_session.add( dp )
-        self.sa_session.flush()
-    def dataset_is_public( self, dataset ):
-        # A dataset is considered public if there are no "access" actions associated with it.  Any
-        # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
-        return self.permitted_actions.DATASET_ACCESS.action not in [ a.action for a in dataset.actions ]
-    def make_dataset_public( self, dataset ):
-        # A dataset is considered public if there are no "access" actions associated with it.  Any
-        # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
-        for dp in dataset.actions:
-            if dp.action == self.permitted_actions.DATASET_ACCESS.action:
-                self.sa_session.delete( dp )
-        self.sa_session.flush()
+                flush_needed = True
+        if flush_needed:
+            self.sa_session.flush()
     def get_permissions( self, item ):
         """
         Return a dictionary containing the actions and associated roles on item
@@ -503,8 +512,10 @@ class GalaxyRBACAgent( RBACAgent ):
         self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
     def set_all_library_permissions( self, library_item, permissions={} ):
         # Set new permissions on library_item, eliminating all current permissions
+        flush_needed = False
         for role_assoc in library_item.actions:
             self.sa_session.delete( role_assoc )
+            flush_needed = True
         # Add the new permissions on library_item
         for item_class, permission_class in self.library_item_assocs:
             if isinstance( library_item, item_class ):
@@ -513,6 +524,7 @@ class GalaxyRBACAgent( RBACAgent ):
                         action = action.action
                     for role_assoc in [ permission_class( action, library_item, role ) for role in roles ]:
                         self.sa_session.add( role_assoc )
+                        flush_needed = True
                     if isinstance( library_item, self.model.LibraryDatasetDatasetAssociation ) and \
                         action == self.permitted_actions.LIBRARY_MANAGE.action:
                         # Handle the special case when we are setting the LIBRARY_MANAGE_PERMISSION on a
@@ -521,16 +533,58 @@ class GalaxyRBACAgent( RBACAgent ):
                         permissions = {}
                         permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = roles
                         self.set_dataset_permission( library_item.dataset, permissions )
-        self.sa_session.flush()
-    def library_is_public( self, library ):
+        if flush_needed:
+            self.sa_session.flush()
+    def library_is_public( self, library, contents=False ):
+        if contents:
+            # Check all contained folders and datasets to find any that are not public
+            if not self.folder_is_public( library.root_folder ):
+                return False
         # A library is considered public if there are no "access" actions associated with it.
         return self.permitted_actions.LIBRARY_ACCESS.action not in [ a.action for a in library.actions ]
-    def make_library_public( self, library ):
-        # A library is considered public if there are no "access" actions associated with it.
+    def make_library_public( self, library, contents=False ):
+        flush_needed = False
+        if contents:
+            # Make all contained folders (include deleted folders, but not purged folders), public
+            self.make_folder_public( library.root_folder )
+        # A library is considered public if there are no LIBRARY_ACCESS actions associated with it.
         for lp in library.actions:
             if lp.action == self.permitted_actions.LIBRARY_ACCESS.action:
                 self.sa_session.delete( lp )
-        self.sa_session.flush()
+                flush_needed = True
+        if flush_needed:
+            self.sa_session.flush()
+    def folder_is_public( self, folder ):
+        for sub_folder in folder.folders:
+            if not self.folder_is_public( sub_folder ):
+                return False
+        for library_dataset in folder.datasets:
+            if not self.dataset_is_public( library_dataset.library_dataset_dataset_association.dataset ):
+                return False
+        return True
+    def make_folder_public( self, folder ):
+        # Make all of the contents (include deleted contents, but not purged contents) of folder public
+        for sub_folder in folder.folders:
+            if not sub_folder.purged:
+                self.make_folder_public( sub_folder )
+        for library_dataset in folder.datasets:
+            dataset = library_dataset.library_dataset_dataset_association.dataset
+            if not dataset.purged and not self.dataset_is_public( dataset ):
+                self.make_dataset_public( dataset )
+    def dataset_is_public( self, dataset ):
+        # A dataset is considered public if there are no "access" actions associated with it.  Any
+        # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
+        return self.permitted_actions.DATASET_ACCESS.action not in [ a.action for a in dataset.actions ]
+    def make_dataset_public( self, dataset ):
+        # A dataset is considered public if there are no "access" actions associated with it.  Any
+        # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
+        flush_needed = False
+        for dp in dataset.actions:
+            if dp.action == self.permitted_actions.DATASET_ACCESS.action:
+                self.sa_session.delete( dp )
+                flush_needed = True
+        if flush_needed:
+            self.sa_session.flush()
     def derive_roles_from_access( self, trans, item_id, cntrller, library=False, **kwd ):
         # Check the access permission on a dataset.  If library is true, item_id refers to a library.  If library
         # is False, item_id refers to a dataset ( item_id must currently be decoded before being sent ).  The
@@ -700,8 +754,11 @@ class GalaxyRBACAgent( RBACAgent ):
     def set_entity_user_associations( self, users=[], roles=[], groups=[], delete_existing_assocs=True ):
         for user in users:
             if delete_existing_assocs:
+                flush_needed = False
                 for a in user.non_private_roles + user.groups:
                     self.sa_session.delete( a )
+                    flush_needed = True
+                if flush_needed:
                     self.sa_session.flush()
             self.sa_session.refresh( user )
             for role in roles:
@@ -713,8 +770,11 @@ class GalaxyRBACAgent( RBACAgent ):
     def set_entity_group_associations( self, groups=[], users=[], roles=[], delete_existing_assocs=True ):
         for group in groups:
             if delete_existing_assocs:
+                flush_needed = False
                 for a in group.roles + group.users:
                     self.sa_session.delete( a )
+                    flush_needed = True
+                if flush_needed:
                     self.sa_session.flush()
             for role in roles:
                 self.associate_components( group=group, role=role )
@@ -723,8 +783,11 @@ class GalaxyRBACAgent( RBACAgent ):
     def set_entity_role_associations( self, roles=[], users=[], groups=[], delete_existing_assocs=True ):
         for role in roles:
             if delete_existing_assocs:
+                flush_needed = False
                 for a in role.users + role.groups:
                     self.sa_session.delete( a )
+                    flush_needed = True
+                if flush_needed:
                     self.sa_session.flush()
             for user in users:
                 self.associate_components( user=user, role=role )
@@ -805,15 +868,15 @@ class GalaxyRBACAgent( RBACAgent ):
         # Add the new permissions on request_type
         item_class = self.model.RequestType
         permission_class = self.model.RequestTypePermissions
+        flush_needed = False
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
             for role_assoc in [ permission_class( action, request_type, role ) for role in roles ]:
                 self.sa_session.add( role_assoc )
-        self.sa_session.flush()
-
-
-
+                flush_needed = True
+        if flush_needed:
+            self.sa_session.flush()
 
 class HostAgent( RBACAgent ):
     """

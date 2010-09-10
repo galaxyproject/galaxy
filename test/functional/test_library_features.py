@@ -276,6 +276,17 @@ class TestLibraryFeatures( TwillTestCase ):
         # logged in as regular_user3
         self.logout()
         self.login( email=admin_user.email )
+        self.add_library_dataset( 'library_admin',
+                                  '1.bed',
+                                  self.security.encode_id( library_one.id ),
+                                  self.security.encode_id( library_one.root_folder.id ),
+                                  library_one.root_folder.name,
+                                  file_type='bed',
+                                  dbkey='hg18',
+                                  root=True )
+        global ldda_one
+        ldda_one = get_latest_ldda()
+        assert ldda_one is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_one from the database'
         for format in ( 'tbz', 'tgz', 'zip' ):
             archive = self.download_archive_of_library_files( cntrller='library',
                                                               library_id=self.security.encode_id( library_one.id ),
