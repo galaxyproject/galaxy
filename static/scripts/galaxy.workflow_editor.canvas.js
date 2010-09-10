@@ -355,6 +355,11 @@ $.extend( Node.prototype, {
                     });
                 callout.show();
                 r.append(callout);
+                if ($.inArray(output.name, node.workflow_outputs) == -1){
+                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                }else{
+                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                }
                 r.bind( "hover", function() {
                     callout.find('img').attr('src', image_path + '/fugue/asterisk-small-yellow.png');
                 });
@@ -362,6 +367,8 @@ $.extend( Node.prototype, {
                     callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
                     if ($.inArray(output.name, node.workflow_outputs) == -1){
                         callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                    }else{
+                        callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
                     }
                 });
             }
