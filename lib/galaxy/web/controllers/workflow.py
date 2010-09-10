@@ -4,15 +4,14 @@ import pkg_resources
 pkg_resources.require( "simplejson" )
 pkg_resources.require( "SVGFig" )
 import simplejson
-import base64, httplib, urllib, sgmllib
+import base64, httplib, urllib2, sgmllib, svgfig
 
-from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.tools.parameters import *
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.datatypes.data import Data
 from galaxy.util.odict import odict
-from galaxy.util.bunch import Bunch
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
@@ -22,8 +21,6 @@ from galaxy.model.orm import *
 from galaxy.model.item_attrs import *
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.jobs.actions.post import ActionBox
-
-import urllib2, svgfig
 
 class StoredWorkflowListGrid( grids.Grid ):    
     class StepsColumn( grids.GridColumn ):
@@ -898,6 +895,16 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         
     @web.expose
     @web.require_login( "use workflows" )
+    def export( self, trans, id=None, **kwd ):
+        """
+        Handles download/export workflow command.
+        """
+        stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
+        return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
+        
+        
+    @web.expose
+    @web.require_login( "use workflows" )
     def import_from_myexp( self, trans, myexp_id, myexp_username=None, myexp_password=None ):
         """
         Imports a workflow from the myExperiment website.
@@ -990,20 +997,29 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         parser = SingleTagContentsParser( 'id' )
         parser.feed( response_data )
         myexp_workflow_id = parser.tag_content
+        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( action='list' )
         if myexp_workflow_id:
-            return trans.show_message( "Workflow '%s' successfully exported to myExperiment." % stored.name )
+            return trans.show_message( \
+                "Workflow '%s' successfully exported to myExperiment. %s" % \
+                ( stored.name, workflow_list_str ), 
+                use_panels=True )
         else:
-            return trans.show_error_message("Workflow '%s' could not be exported to myExperiment. Error: %s" % ( stored.name, response_data ) )
-
+            return trans.show_error_message( \
+                "Workflow '%s' could not be exported to myExperiment. Error: %s. %s" % \
+                ( stored.name, response_data, workflow_list_str ), use_panels=True )
+            
     @web.json_pretty
     def export_workflow( self, trans, id ):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
-        
+
         This has slightly different information than the above. In particular,
         it does not attempt to decode forms and build UIs, it just stores
         the raw state.
+        
+        TODO: this is a legacy method; it should be removed once we have UI 
+        support for exporting/importing a workflow. 
         """
         user = trans.get_user()
         id = trans.security.decode_id( id )
@@ -1012,6 +1028,30 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
         self.security_check( trans.get_user(), stored, False, True )
         return self._workflow_to_dict( trans, stored )
+
+    @web.json_pretty
+    @web.require_login( "use workflows" )
+    def export_to_file( self, trans, id ):
+        """
+        Get the latest Workflow for the StoredWorkflow identified by `id` and
+        encode it as a json string that can be imported back into Galaxy
+        
+        This has slightly different information than the above. In particular,
+        it does not attempt to decode forms and build UIs, it just stores
+        the raw state.
+        """
+        
+        # Get workflow.
+        stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
+        
+        # Stream workflow to file.
+        stored_dict = self._workflow_to_dict( trans, stored )
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        sname = stored.name
+        sname = ''.join(c in valid_chars and c or '_' for c in sname)[0:150]
+        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-Workflow-%s.ga" % ( sname )
+        trans.response.set_content_type( 'application/galaxy-archive' )
+        return stored_dict
 
     @web.expose
     def import_workflow( self, trans, workflow_text=None, url=None ):

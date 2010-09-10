@@ -1,5 +1,5 @@
 ##
-## Base template for sharing/publishing/exporting an item. Template expects the following parameters:
+## Base template for sharing or publishing an item. Template expects the following parameters:
 ## (a) item - item to be shared.
 ##
 <%!
@@ -89,7 +89,7 @@
         {
             margin-left: 0;
         }
-        ## If page is displayed in panels, pad from edges for readabilit.
+        ## If page is displayed in panels, pad from edges for readability.
         %if context.get('use_panels'):
         div#center
         {
@@ -127,7 +127,7 @@
         item_name = get_item_name(item)
     %>
 
-    <h2>Sharing and Publishing ${item_class_name} '${item_name}'</h2>
+    <h2>Share or Publish ${item_class_name} '${item_name}'</h2>
 
     ## Require that user have a public username before sharing or publishing an item.
     %if trans.get_user().username is None or trans.get_user().username is "":
