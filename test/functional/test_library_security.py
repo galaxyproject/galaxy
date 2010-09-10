@@ -560,7 +560,6 @@ class TestLibrarySecurity( TwillTestCase ):
                              check_str3=ldda8.name )
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
-        """
         # Logged in as regular_user2
         self.logout()
         self.login( email=admin_user.email )
@@ -601,4 +600,3 @@ class TestLibrarySecurity( TwillTestCase ):
             refresh( user )
             if len( user.roles) != 1:
                 raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 1 )' % ( len( user.roles ), user.email ) )
-        """
