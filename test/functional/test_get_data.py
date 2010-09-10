@@ -39,6 +39,16 @@ class UploadData( TwillTestCase ):
         self.verify_dataset_correctness( '4.bed', hid=str( hda.hid ) )
         self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
         self.delete_history( id=self.security.encode_id( history.id ) )
+    def test_0012_upload_file( self ):
+        """Test uploading 4.bed.bz2, manually setting the file format"""
+        self.check_history_for_string( 'Your history is empty' )
+        history = get_latest_history_for_user( admin_user )
+        self.upload_file( '4.bed.bz2', dbkey='hg17', ftype='bed' )
+        hda = get_latest_hda()
+        assert hda is not None, "Problem retrieving hda from database"
+        self.verify_dataset_correctness( '4.bed', hid=str( hda.hid ) )
+        self.check_history_for_string( "<th>1.Chrom</th><th>2.Start</th><th>3.End</th>" )
+        self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0015_upload_file( self ):
         """Test uploading 1.scf, manually setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
