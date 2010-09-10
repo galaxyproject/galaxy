@@ -151,25 +151,9 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         except:
             library = None
-        # Deny that the library exists if the user does not have the LIBRARY_ACCESS permission.
-        if not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
-            message = "Invalid library id ( %s ) specified." % str( library_id )
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_libraries',
-                                                              use_panels=use_panels,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
         if params.get( 'library_info_button', False ):
-            # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission.
-            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library ) ):
-                message = "You are not authorized to modify library '%s'." % library.name
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  id=library_id,
-                                                                  use_panels=use_panels,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
+            self._check_modify( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
             old_name = library.name
             new_name = util.restore_text( params.get( 'name', 'No name' ) )
             if not new_name:
@@ -227,24 +211,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         except:
             library = None
-        # Deny that the library exists if the user does not have the LIBRARY_ACCESS permission.
-        if not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
-            message = "Invalid library id ( %s ) specified." % str( library_id )
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_libraries',
-                                                              use_panels=use_panels,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
-        # Deny access (even to view) if the user is not an admin and does not have the LIBRARY_MANAGE permission.
-        if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, library ) ):
-            message = "You are not authorized to manage permissions on library '%s'." % library.name
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              id=library_id,
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
+        self._check_manage( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
         if params.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
@@ -291,37 +259,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
         # library, which could be anything.
         if parent_folder:
             parent_library = parent_folder.parent_library
-        # Deny that the parent folder exists if the user does not have the LIBRARY_ACCESS permission on
-        # its parent library, or if they are not able to see the folder's contents.
-        if not parent_folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, parent_folder, trans.user ) ):
-            message = "Invalid parent folder id ( %s ) specified." % str( parent_id )
-            if cntrller == 'api':
-                return 400, message
-            # This doesn't give away the library's existence since
-            # browse_library will simply punt to browse_libraries if the
-            # user-supplied id is invalid or inaccessible.
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
-        # Deny access (even to view) if the user is not an admin and does not have the LIBRARY_ADD permission.
-        if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, parent_folder ) ):
-            message = "You are not authorized to create a folder in parent folder '%s'." % parent_folder.name
-            # Redirect to the real parent library since we know we have access to it.
-            if cntrller == 'api':
-                return 403, message
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted )
+        self._check_add( trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted )
         if params.get( 'new_folder_button', False ) or cntrller == 'api':
             new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
                                                         description=util.restore_text( params.description ) )
@@ -391,29 +330,9 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
         except:
             folder = None
-        # Deny that the parent folder exists if the user does not have the LIBRARY_ACCESS permission on
-        # its parent library, or if they are not able to see the folder's contents.
-        if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-            message = "Invalid folder id ( %s ) specified." % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
         if params.get( 'rename_folder_button', False ):
-            # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission
-            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, folder ) ):
-                message = "You are not authorized to modify folder '%s'." % folder.name
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  id=library_id,
-                                                                  use_panels=use_panels,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
+            self._check_modify( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             old_name = folder.name
             new_name = util.restore_text( params.name )
             new_description = util.restore_text( params.description )
@@ -468,28 +387,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
         except:
             folder = None
-        # Deny that the parent folder exists if the user does not have the LIBRARY_ACCESS permission on
-        # its parent library, or if they are not able to see the folder's contents.
-        if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-            message = "Invalid folder id ( %s ) specified." % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
-        # Deny access (even to view) if the user is not an admin and does not have the LIBRARY_MANAGE permission.
-        if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) ):
-            message = "You are not authorized to manage permissions on folder id ( %s )." % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              id=library_id,
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
+        self._check_manage( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
         if params.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
@@ -538,28 +437,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
         except:
             ldda = None
-        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-        # its parent library, or if they are not able to view the dataset itself.
-        if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
-            message = "Invalid library dataset id ( %s ) specified." % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
-        # Deny access (even to view) if the user is not an admin and does not have the LIBRARY_MODIFY permission.
-        if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ) ):
-            message = "You are not authorized to modify library dataset '%s'." % ldda.name
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              id=library_id,
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted )
+        self._check_modify( trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted )
         dbkey = params.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             dbkey = dbkey[0]
@@ -653,18 +532,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
         except:
             ldda = None
-        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-        # its parent library, or if they are not able to view the dataset itself.
-        if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
-            message = "Invalid library dataset id ( %s ) specified." % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted )
         if is_admin:
             # Get all associated hdas and lddas that use the same disk file.
             associated_hdas = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
@@ -720,31 +588,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 ldda = None
             if ldda:
                 library = ldda.library_dataset.folder.parent_library
-            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-            # its parent library, or if they are not able to view the dataset itself.
-            if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
-                message = "Invalid library dataset id ( %s ) specified." % str( id )
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
-            # Deny access (even to view) if the user is not an admin and does not
-            # have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
-            if not ( is_admin or \
-                     ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and 
-                       trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) ) ):
-                message = "You are not authorized to manage permissions on library dataset '%s'." % ldda.name
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  id=library_id,
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
+            self._check_access( trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted )
             lddas.append( ldda )
             libraries.append( library )
         library = libraries[0]
@@ -869,33 +713,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
             except:
                 replace_dataset = None
-            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-            # its parent library, or if they are not able to view the dataset itself.
-            if not replace_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, replace_dataset, trans.user ) ):
-                message = "Invalid library dataset id ( %s ) to replace specified." % replace_id
-                if cntrller == 'api':
-                    return 400, message
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
-            # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
-            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, replace_dataset ) ):
-                message = "You are not authorized to replace library dataset '%s'." % replace_dataset.name
-                if cntrller == 'api':
-                    return 403, message
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
+            self._check_access( trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted )
+            self._check_modify( trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted )
             library = replace_dataset.folder.parent_library
             folder = replace_dataset.folder
             # The name is stored - by the time the new ldda is created, replace_dataset.name
@@ -910,33 +729,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
             except:
                 folder = None
-            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-            # its parent library, or if they are not able to see the folder's contents.
-            if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-                message = "Invalid parent folder id ( %s ) specified." % str( folder_id )
-                if cntrller == 'api':
-                    return 400, message
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
-            # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
-            if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, folder ) ):
-                message = "You are not authorized to create a library dataset in parent folder '%s'." % folder.name
-                if cntrller == 'api':
-                    return 403, message
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
+            self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
+            self._check_add( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             library = folder.parent_library
         if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
@@ -1356,29 +1150,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
             except:
                 replace_dataset = None
-            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-            # its parent library, or if they are not able to view the dataset itself.
-            if not replace_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, replace_dataset, trans.user ) ):
-                message = "Invalid library dataset id ( %s ) to replace specified." % replace_id
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
-            # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
-            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, replace_dataset ) ):
-                message = "You are not authorized to replace library dataset '%s'." % replace_dataset.name
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
+            self._check_access( trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted )
+            self._check_modify( trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted )
             library = replace_dataset.folder.parent_library
             folder = replace_dataset.folder
             last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
@@ -1387,29 +1160,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
             except:
                 folder = None
-            # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-            # its parent library, or if they are not able to see the folder's contents.
-            if not folder or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-                message = "Invalid parent folder id ( %s ) specified." % str( folder_id )
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
-            # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
-            if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, folder ) ):
-                message = "You are not authorized to create a library dataset in parent folder '%s'." % folder.name
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
+            self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
+            self._check_add( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             library = folder.parent_library
             last_used_build = folder.genome_build
         # See if the current history is empty
@@ -1434,18 +1186,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                         hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
                     except:
                         hda = None
-                    # Deny that the dataset exists if the user does not have the DATASET_ACCESS permission.
-                    if not hda or \
-                       not ( trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ) and \
-                             hda.history.user == trans.user ):
-                        message = "Invalid history dataset id ( %s ) specified." % hda_id
-                        return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                          action='browse_library',
-                                                                          cntrller=cntrller,
-                                                                          id=library_id,
-                                                                          show_deleted=show_deleted,
-                                                                          message=util.sanitize_text( message ),
-                                                                          status='error' ) )
+                    self._check_access( trans, cntrller, is_admin, hda, current_user_roles, use_panels, library_id, show_deleted )
                     ldda = hda.to_library_dataset_dataset_association( target_folder=folder, replace_dataset=replace_dataset )
                     created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
                     dataset_names.append( ldda.name )
@@ -1531,18 +1272,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
         except:
             ldda = None
-        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-        # its parent library, or if they are not able to view the dataset itself.
-        if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
-            message = "Invalid library dataset id ( %s ) specified." % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted )
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
         ext = ldda.extension
         if ext in composite_extensions:
@@ -1584,29 +1314,9 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( id ) )
         except:
             library_dataset = None
-        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-        # its parent library, or if they are not able to view the dataset itself.
-        if not library_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, library_dataset, trans.user ) ):
-            message = "Invalid library dataset id ( %s ) specified." % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
         if params.get( 'edit_attributes_button', False ):
-            # Deny access if the user is not an admin and does not have the LIBRARY_MODIFY permission.
-            if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ) ):
-                message = "You are not authorized to modify library dataset '%s'." % library_dataset.name
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  id=library_id,
-                                                                  cntrller=cntrller,
-                                                                  use_panels=use_panels,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status = 'error' ) )
+            self._check_modify( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
             old_name = library_dataset.name
             new_name = util.restore_text( params.get( 'name', '' ) )
             new_info = util.restore_text( params.get( 'info', '' ) )
@@ -1653,31 +1363,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( id ) )
         except:
             library_dataset = None
-        # Deny that the dataset exists if the user does not have the LIBRARY_ACCESS permission on 
-        # its parent library, or if they are not able to view the dataset itself.
-        if not library_dataset or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, library_dataset, trans.user ) ):
-            message = "Invalid library dataset id ( %s ) specified." % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
-        # Deny access (even to view) if the user is not an admin and does not
-        # have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
-        if not ( is_admin or \
-                 ( trans.app.security_agent.can_manage_library_item( current_user_roles, library_dataset ) and 
-                   trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset ) ) ):
-            message = "You are not authorized to manage permissions on library dataset '%s'." % library_dataset.name
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              id=library_id,
-                                                              cntrller=cntrller,
-                                                              use_panels=use_panels,
-                                                              message=util.sanitize_text( message ),
-                                                              status='error' ) )
+        self._check_access( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
+        self._check_manage( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
         if params.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
@@ -1707,6 +1394,48 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )
+    @web.expose
+    def make_library_item_public( self, trans, cntrller, library_id, item_type, id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        current_user_roles = trans.get_current_user_roles()
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        if item_type == 'library':
+            library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( id ) )
+            self._check_access( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
+            self._check_manage( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
+            contents = util.string_as_bool( params.get( 'contents', 'False' ) )
+            trans.app.security_agent.make_library_public( library, contents=contents )
+            if contents:
+                message = "The data library (%s) and all it's contents have been made publicly accessible." % library.name
+            else:
+                message = "The data library (%s) has been made publicly accessible, but access to it's contents has been left unchanged." % library.name
+        elif item_type == 'folder':
+            folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( id ) )
+            self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
+            self._check_manage( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
+            trans.app.security_agent.make_folder_public( folder )
+            message = "All of the contents of folder (%s) have been made publicly accessible." % folder.name
+        elif item_type == 'ldda':
+            ldda = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
+            self._check_access( trans, cntrller, is_admin, ldda.library_dataset, current_user_roles, use_panels, library_id, show_deleted )
+            self._check_manage( trans, cntrller, is_admin, ldda.library_dataset, current_user_roles, use_panels, library_id, show_deleted )
+            trans.app.security_agent.make_dataset_public( ldda.dataset )
+            message = "The libary dataset (%s) has been made publicly accessible." % ldda.name
+        else:
+            message = "Invalid item_type (%s) received." % str( item_type )
+            status = 'error'
+        return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                          action='browse_library',
+                                                          cntrller=cntrller,
+                                                          use_panels=use_panels,
+                                                          id=library_id,
+                                                          show_deleted=show_deleted,
+                                                          message=util.sanitize_text( message ),
+                                                          status=status ) )
     @web.expose
     def act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ):
         class NgxZip( object ):
@@ -2462,6 +2191,97 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               show_deleted=show_deleted,
                                                               message=message,
                                                               status=status ) )
+    def _check_access( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
+        if isinstance( item, trans.model.HistoryDatasetAssociation ):
+            # Deny that the dataset exists if the user does not have the DATASET_ACCESS permission.
+            if not item or \
+               not ( trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ) and item.history.user==trans.user ):
+                message = "Invalid history dataset id (%s) specified." % str( item.id )
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  cntrller=cntrller,
+                                                                  id=library_id,
+                                                                  show_deleted=show_deleted,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+        # Deny that the item exists if the user does not have the LIBRARY_ACCESS permission on its parent library,
+        # or if they are not able to access the item itself.
+        if not item or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ) ):
+            message = "Invalid item id (%s) specified." % str( item.id )
+            if cntrller == 'api':
+                return 400, message
+            if isinstance( item, trans.model.Library ):
+                return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                                  action='browse_libraries',
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
+    def _check_add( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
+        # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
+        if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, item ) ):
+            message = "You are not authorized to add an item to '%s'." % item.name
+            # Redirect to the real parent library since we know we have access to it.
+            if cntrller == 'api':
+                return 403, message
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
+    def _check_manage( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
+        if isinstance( item, trans.model.LibraryDataset ):
+            # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
+            if not ( is_admin or \
+                     ( trans.app.security_agent.can_manage_library_item( current_user_roles, item ) and 
+                       trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset ) ) ):
+                message = "You are not authorized to manage permissions on library dataset '%s'." % library_dataset.name
+                if cntrller == 'api':
+                    return 403, message
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='browse_library',
+                                                                  id=library_id,
+                                                                  cntrller=cntrller,
+                                                                  use_panels=use_panels,
+                                                                  message=util.sanitize_text( message ),
+                                                                  status='error' ) )
+        # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE permission.
+        if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, item ) ):
+            message = "You are not authorized to manage permissions on '%s'." % item.name
+            if cntrller == 'api':
+                return 403, message
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              id=library_id,
+                                                              cntrller=cntrller,
+                                                              use_panels=use_panels,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
+    def _check_modify( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
+        # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission.
+        if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            message = "You are not authorized to modify '%s'." % item.name
+            if cntrller == 'api':
+                return 403, message
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              use_panels=use_panels,
+                                                              show_deleted=show_deleted,
+                                                              message=util.sanitize_text( message ),
+                                                              status='error' ) )
 
 # ---- Utility methods -------------------------------------------------------
 

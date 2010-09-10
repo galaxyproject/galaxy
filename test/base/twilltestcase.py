@@ -1705,12 +1705,18 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError, "String (%s) incorrectly displayed when browing library." % not_displayed1
             except:
                 pass
-    def browse_libraries_regular_user( self, check_str1='', check_str2='' ):
+    def browse_libraries_regular_user( self, check_str1='', check_str2='', not_displayed1='' ):
         self.visit_url( '%s/library/browse_libraries' % self.url )
         if check_str1:
             self.check_page_for_string( check_str1 )
         if check_str2:
             self.check_page_for_string( check_str2 )
+        if not_displayed1:
+            try:
+                self.check_page_for_string( not_displayed1 )
+                raise AssertionError, "String (%s) incorrectly displayed when browing library." % not_displayed1
+            except:
+                pass
     def browse_library( self, cntrller, id, show_deleted=False,
                         check_str1='', check_str2='', check_str3='', not_displayed='', not_displayed2='' ):
         self.visit_url( '%s/library_common/browse_library?cntrller=%s&id=%s&show_deleted=%s' % ( self.url, cntrller, id, str( show_deleted ) ) )
@@ -1798,11 +1804,25 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Permissions updated for library '%s'." % library_name
         self.check_page_for_string( check_str )
         self.home()
+    def make_library_item_public( self, library_id, id, cntrller='library_admin', item_type='library',
+                                  contents=False, library_name='', folder_name='', ldda_name='' ):
+        url = "%s/library_common/make_library_item_public?cntrller=%s&library_id=%s&item_type=%s&id=%s&contents=%s" % \
+            ( self.url, cntrller, library_id, item_type, id, str( contents ) )
+        self.visit_url( url )
+        if item_type == 'library':
+            if contents:
+                check_str = "The data library (%s) and all it's contents have been made publicly accessible." % library_name
+            else:
+                check_str = "The data library (%s) has been made publicly accessible, but access to it's contents has been left unchanged." % library_name
+        elif item_type == 'folder':
+            check_str = "All of the contents of folder (%s) have been made publicly accessible." % folder_name
+        elif item_type == 'ldda':
+            check_str = "The libary dataset (%s) has been made publicly accessible." % ldda_name
+        self.check_page_for_string( check_str )
 
     # Library folder stuff
     def add_folder( self, cntrller, library_id, folder_id, name='Folder One', description='This is Folder One' ):
         """Create a new folder"""
-        self.home()
         url = "%s/library_common/create_folder?cntrller=%s&library_id=%s&parent_id=%s" % ( self.url, cntrller, library_id, folder_id )
         self.visit_url( url )
         self.check_page_for_string( 'Create a new folder' )
@@ -2049,7 +2069,19 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.submit( "runtool_btn" )
         if check_str_after_submit:
-            self.check_page_for_string( check_str_after_submit )
+            try:
+                self.check_page_for_string( check_str_after_submit )
+            except:
+                self.library_wait( library_id )
+                try:
+                    self.check_page_for_string( check_str_after_submit )
+                except:
+                    self.library_wait( library_id )
+                    try:
+                        self.check_page_for_string( check_str_after_submit )
+                    except:
+                        self.library_wait( library_id )
+                        self.check_page_for_string( check_str_after_submit )
         self.library_wait( library_id )
         self.home()
     def act_on_multiple_datasets( self, cntrller, library_id, do_action, ldda_ids='', check_str1='' ):

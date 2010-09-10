@@ -226,6 +226,9 @@
                            <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Delete template</a>
                        %endif
                        %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and can_manage:
+                           %if not trans.app.security_agent.dataset_is_public( ldda.dataset ):
+                               <a class="action-button" href="${h.url_for( controller='library_common', action='make_library_item_public', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_type='ldda', id=trans.security.encode_id( ldda.dataset.id ), use_panels=use_panels, show_deleted=show_deleted )}">Make public</a>
+                           %endif
                            <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                        %endif
                        %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and can_modify:
@@ -314,7 +317,7 @@
                 %if folder.deleted:
                     </span>
                 %endif
-                %if not branch_deleted( folder ) and ( can_add or can_modify or can_manage ):
+                %if not branch_deleted( folder ):
                     %if not library.deleted:
                         <a id="folder_img-${folder.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="folder_img-${folder.id}-popup">
@@ -322,8 +325,12 @@
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add datasets</a>
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add sub-folder</a>
                             %endif
-                            %if not branch_deleted( folder ) and can_modify:
-                                <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
+                            %if not branch_deleted( folder ):
+                                %if can_modify:
+                                    <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
+                                %else:
+                                    <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">View information</a>
+                                %endif
                             %endif
                             %if not branch_deleted( folder ) and can_modify and not info_association:
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add template</a>
@@ -333,6 +340,9 @@
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Delete template</a>
                             %endif
                             %if not branch_deleted( folder ) and can_manage:
+                               %if not trans.app.security_agent.folder_is_public( folder ):
+                                   <a class="action-button" href="${h.url_for( controller='library_common', action='make_library_item_public', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_type='folder', id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Make public</a>
+                               %endif
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='folder_permissions', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                             %endif
                             %if can_modify:
@@ -445,6 +455,9 @@
                      <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Delete template</a>
                  %endif
                  %if can_manage:
+                     %if not trans.app.security_agent.library_is_public( library, contents=True ):
+                         <a class="action-button" href="${h.url_for( controller='library_common', action='make_library_item_public', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_type='library', id=trans.security.encode_id( library.id ), contents=True, use_panels=use_panels, show_deleted=show_deleted )}">Make public</a>
+                     %endif
                      <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                  %endif
              %elif can_modify and not library.purged:
