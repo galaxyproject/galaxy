@@ -47,7 +47,7 @@
     <extra_files type="file" name='Ranked_Marker_MAF.xls' value="rgtestouts/rgQC/Ranked_Marker_MAF.xls" compare="diff" />
     <extra_files type="file" name='Ranked_Marker_Missing_Genotype.xls' value="rgtestouts/rgQC/Ranked_Marker_Missing_Genotype.xls" compare="diff" lines_diff="5"/>
     <extra_files type="file" name='Ranked_Subject_Missing_Genotype.xls' value="rgtestouts/rgQC/Ranked_Subject_Missing_Genotype.xls" compare="diff" lines_diff="10"/>
-    <extra_files type="file" name='tinywga_fracmiss_cum.jpg' value="rgtestouts/rgQC/tinywga_fracmiss_cum.jpg" compare="sim_size" delta = "1000"/>     
+    <extra_files type="file" name='tinywga_fracmiss_cum.jpg' value="rgtestouts/rgQC/tinywga_fracmiss_cum.jpg" compare="sim_size" delta = "20000"/>     
     <extra_files type="file" name='tinywga_fracmiss_cum.pdf' value="rgtestouts/rgQC/tinywga_fracmiss_cum.pdf" compare="sim_size" delta = "1000"/>     
  </output>
  </test>

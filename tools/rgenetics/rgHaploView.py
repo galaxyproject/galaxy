@@ -521,4 +521,4 @@ if __name__ == "__main__":
         sys.stderr = NullDevice() 
     ld()
     if quiet:
-        sys.stderr = se # should be empty?
+        sys.stderr = None # should be empty?
