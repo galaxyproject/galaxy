@@ -673,6 +673,12 @@ class TwillTestCase( unittest.TestCase ):
                         self.files_re_match( local_name, temp_name, attributes=attributes )
                     elif compare == 're_match_multiline':
                         self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+	                elif compare == 'sim_size':
+	                    delta = attributes.get('delta','100')
+	                    s1 = len(data)
+	                    s2 = os.path.getsize(local_name)
+	                    if abs(s1-s2) > int(delta):
+	                       raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
                     else:
                         raise Exception, 'Unimplemented Compare type: %s' % compare
                     if extra_files:
