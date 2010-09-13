@@ -429,8 +429,7 @@ def ld():
     mainpdf = 'allnup.pdf'
     if os.path.exists(mainpdf):
         if not os.path.exists(mainthumb):
-            outf.write('<table><tr><td colspan="3"><a href="%s">Main combined LD 
-	    plot</a></td></tr></table>\n' % (mainpdf))
+            outf.write('<table><tr><td colspan="3"><a href="%s">Main combined LD plot</a></td></tr></table>\n' % (mainpdf))
         else:
             outf.write('<table><tr><td><a href="%s"><img src="%s" alt="Main combined LD image" hspace="10" align="middle">')
             outf.write('</td><td>Click this thumbnail to display the main combined LD image</td></tr></table>\n' % (mainpdf,mainthumb))
