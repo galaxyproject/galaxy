@@ -105,7 +105,7 @@
 lines_diff="20">
     <extra_files type="file" name='alljoin.pdf' value="rgtestouts/rgHaploView/alljoin.pdf" compare="sim_size" delta="3000"/>
     <extra_files type="file" name='allnup.pdf' value="rgtestouts/rgHaploView/allnup.pdf" compare="sim_size" delta="3000" />
-    <extra_files type="file" name='Log_rgHaploViewtest1.txt' value="rgtestouts/rgHaploView/Log_rgHaploViewtest1.txt" compare="diff" lines_diff="20"/>
+    <extra_files type="file" name='Log_rgHaploViewtest1.txt' value="rgtestouts/rgHaploView/Log_rgHaploViewtest1.txt" compare="diff" lines_diff="50"/>
     <extra_files type="file" name='rgHaploViewtest1.ped.TESTS' value="rgtestouts/rgHaploView/rgHaploViewtest1.ped.TESTS" compare="diff" 
             lines_diff="20"/>
     <extra_files type="file" name='rgHaploViewtest1.ped.TAGS' value="rgtestouts/rgHaploView/rgHaploViewtest1.ped.TAGS" compare="diff"
