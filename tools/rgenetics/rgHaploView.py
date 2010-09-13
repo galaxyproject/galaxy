@@ -187,8 +187,7 @@ def ld():
                         minpos = abspos
                 except:
                     abspos = epos + 999999999 # so next test fails
-            if useRsdict.get(snp,None) or (spos <> -9 and chrom == chromosome and (spos <= abspos <= 
-epos)):
+            if useRsdict.get(snp,None) or (spos <> -9 and chrom == chromosome and (spos <= abspos <= epos)):
                 if chromosome == '':
                     chromosome = chrom
                 chroms.setdefault(chrom,chrom)
@@ -220,7 +219,6 @@ epos)):
         tempPedName = os.path.join(outfpath,'%s.ped' % title)
         tempPed = file(tempPedName,'w')
         pngpath = '%s.LD.PNG' % tempPedName
-        #map = ['%s\t%s\t0\t%d' % (x[0],x[2],x[1]) for x in markers] # chrom,abspos,snp in genomic order
         map = ['%s\t%s' % (x[2],x[1]) for x in markers] # snp,abspos in genomic order for haploview
         tempMap.write('%s\n' % '\n'.join(map))
         tempMap.close()
@@ -271,7 +269,6 @@ epos)):
         # now have spos and epos for hapmap if hmpanels
         tempMapName = os.path.join(outfpath,'%s.info' % title)
         tempMap = file(tempMapName,'w')
-        #map = ['%s\t%s\t0\t%d' % (x[0],x[2],x[1]) for x in markers] # chrom,abspos,snp in genomic order
         tempMap.write('\n'.join(markers))
         tempMap.close()
         tempPedName = os.path.join(outfpath,'%s.ped' % title)
@@ -317,7 +314,6 @@ epos)):
     retval = p.wait()
     s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
     lf.write(s)
-
     inpng = '%s.LD.PNG' % DATA_FILE # stupid but necessary - can't control haploview name mangle
     inpng = inpng.replace(' ','')
     inpng = os.path.split(inpng)[-1]
@@ -369,7 +365,6 @@ epos)):
                 retval = p.wait()
                 inpng = 'Chromosome%s%s.LD.PNG' % (chromosome,panel)
                 inpng = inpng.replace(' ','') # mysterious spaces!
-                #inpng = os.path.join(outfpath,inpng)
                 outpng = '%d_HapMap_%s_%s.png' % (fnum,ptran,chromosome,)
                 # hack for stupid chb+jpt
                 outpng = outpng.replace(' ','')
@@ -392,10 +387,6 @@ epos)):
                     os.remove(os.path.join(outfpath,tmppng))
                 except:
                     pass
-    #vcl = 'rm *.LD.PNG' # remove - not needed any more
-    #p=subprocess.Popen(vcl,shell=True,cwd=outfpath)
-    #retval = p.wait()
-
     nimages = len(glob.glob(os.path.join(outfpath,'*.png'))) # rely on HaploView shouting - PNG @!
     lf.write('### nimages=%d\n' % nimages)
     if nimages > 0: # haploview may fail?
@@ -439,15 +430,12 @@ epos)):
     if os.path.exists(mainpdf):
         if not os.path.exists(mainthumb):
             outf.write('<table><tr><td colspan="3"><a href="%s">Main combined LD 
-plot</a></td></tr></table>\n' % (mainpdf))
+	    plot</a></td></tr></table>\n' % (mainpdf))
         else:
-            outf.write('<table><tr><td><a href="%s"><img src="%s" alt="Main combined LD image" hspace="10" 
-align="middle">')
-            outf.write('</td><td>Click this thumbnail to display the main combined LD 
-image</td></tr></table>\n' % (mainpdf,mainthumb))
+            outf.write('<table><tr><td><a href="%s"><img src="%s" alt="Main combined LD image" hspace="10" align="middle">')
+            outf.write('</td><td>Click this thumbnail to display the main combined LD image</td></tr></table>\n' % (mainpdf,mainthumb))
     else:
-        outf.write('(No main image was generated - this usually means a Haploview error connecting to 
-Hapmap site - please try later)<br/>\n')
+        outf.write('(No main image was generated - this usually means a Haploview error connecting to Hapmap site - please try later)<br/>\n')
     outf.write('## Called as %s' % sys.argv)
     """
     outf.write('<br><div><hr><ul>\n')
