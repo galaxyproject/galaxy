@@ -187,7 +187,8 @@ def ld():
                         minpos = abspos
                 except:
                     abspos = epos + 999999999 # so next test fails
-            if useRsdict.get(snp,None) or (spos <> -9 and chrom == chromosome and (spos <= abspos <= epos)):
+            if useRsdict.get(snp,None) or (spos <> -9 and chrom == chromosome and (spos <= abspos <= 
+epos)):
                 if chromosome == '':
                     chromosome = chrom
                 chroms.setdefault(chrom,chrom)
@@ -294,7 +295,7 @@ def ld():
     vcl = [javabin,'-jar',hvbin,'-n','-memory','%d' % memSize,'-pairwiseTagging',
            '-pedfile',DATA_FILE,'-info',INFO_FILE,'-tagrsqcounts',
            '-tagrsqcutoff',tagr2,
-           '-ldcolorscheme',ldType,'-log',hlogf]
+           '-ldcolorscheme',ldType]
     if minMaf:
         vcl += ['-minMaf','%f' % minMaf]
     if maxDist:
@@ -307,17 +308,12 @@ def ld():
         vcl += ['-chromosome',chromosome]
     if infotrack:
         vcl.append('-infoTrack')
-    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=ste)
+    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=ste,stdout=lf)
     retval = p.wait()
     s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
     lf.write(s)
-    try:
-        hlogl = file(hlogf,'r').readlines()
-        hlog += [x.strip() for x in hlogl]
-    except:
-        hlog += ['###Cannot open log file %s\n' % hlogf,]
     vcl = [mogrify, '-resize 800x400!', '*.PNG']
-    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath)
+    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=lf,stdout=lf)
     retval = p.wait()
     s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
     lf.write(s)
@@ -331,14 +327,14 @@ def ld():
     outpng = outpng.replace(' ','')
     outpng = os.path.split(outpng)[-1]
     vcl = [convert, '-resize 800x400!', inpng, tmppng]
-    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath)
+    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=lf,stdout=lf)
     retval = p.wait()
     s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
     lf.write(s)
     s = "text 10,300 '%s'" % title[:40]
     vcl = ['convert', '-pointsize 25','-fill maroon',
           '-draw "%s"' % s, tmppng, outpng]
-    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath)
+    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=lf,stdout=lf)
     retval = p.wait()
     s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
     lf.write(s)
@@ -358,7 +354,7 @@ def ld():
                 vcl = [javabin,'-jar',hvbin,'-n','-memory','%d' % memSize,
                   '-chromosome',chromosome, '-panel',panel.strip(),
                   '-hapmapDownload','-startpos',sp,'-endpos',ep,
-                  '-ldcolorscheme',ldType,'-log',hlogf,]
+                  '-ldcolorscheme',ldType]
                 if minMaf:
                     vcl += ['-minMaf','%f' % minMaf]
                 if maxDist:
@@ -369,17 +365,8 @@ def ld():
                     vcl.append('-compressedpng')
                 if infotrack:
                     vcl.append('-infoTrack')
-                p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=ste)
+                p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=ste,stdout=lf)
                 retval = p.wait()
-                try:
-                    hlogl = file(hlogf,'r').readlines()
-                    hlog += [x.strip() for x in hlogl]
-                except:
-                    hlog += ['###Cannot open log file %s\n' % hlogf,]
-                try:
-                    os.unlink(hlogf)
-                except:
-                    pass
                 inpng = 'Chromosome%s%s.LD.PNG' % (chromosome,panel)
                 inpng = inpng.replace(' ','') # mysterious spaces!
                 #inpng = os.path.join(outfpath,inpng)
@@ -390,14 +377,14 @@ def ld():
                 tmppng = tmppng.replace(' ','')
                 outpng = os.path.split(outpng)[-1]
                 vcl = [convert, '-resize 800x400!', inpng, tmppng]
-                p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath)
+                p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=lf,stdout=lf)
                 retval = p.wait()
                 s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
                 lf.write(s)
                 s = "text 10,300 'HapMap %s'" % ptran.strip()
                 vcl = [convert, '-pointsize 25','-fill maroon',
                       '-draw "%s"' % s, tmppng, outpng]
-                p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath)
+                p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath,stderr=lf,stdout=lf)
                 retval = p.wait()
                 s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
                 lf.write(s)
@@ -413,15 +400,15 @@ def ld():
     lf.write('### nimages=%d\n' % nimages)
     if nimages > 0: # haploview may fail?
         vcl = '%s -format pdf -resize 800x400! *.png' % mogrify
-        p=subprocess.Popen(vcl,shell=True,cwd=outfpath)
+        p=subprocess.Popen(vcl,shell=True,cwd=outfpath,stderr=lf,stdout=lf)
         retval = p.wait()
         lf.write('## executing %s returned %d\n' % (vcl,retval))
         vcl = '%s "*.pdf" --fitpaper true --outfile alljoin.pdf' % pdfjoin
-        p=subprocess.Popen(vcl,shell=True,cwd=outfpath)
+        p=subprocess.Popen(vcl,shell=True,cwd=outfpath,stderr=lf,stdout=lf)
         retval = p.wait()
         lf.write('## executing %s returned %d\n' % (vcl,retval))
         vcl = '%s alljoin.pdf --nup 1x%d --outfile allnup.pdf' % (pdfnup,nimages)
-        p=subprocess.Popen(vcl,shell=True,cwd=outfpath)
+        p=subprocess.Popen(vcl,shell=True,cwd=outfpath,stderr=lf,stdout=lf)
         retval = p.wait()
         lf.write('## executing %s returned %d\n' % (vcl,retval))
         #vcl = ['convert', 'allnup.pdf', 'allnup.png'] # this fails - bad pdf?
@@ -451,12 +438,16 @@ def ld():
     mainpdf = 'allnup.pdf'
     if os.path.exists(mainpdf):
         if not os.path.exists(mainthumb):
-            outf.write('<table><tr><td colspan="3"><a href="%s">Main combined LD plot</a></td></tr></table>\n' % (mainpdf))
+            outf.write('<table><tr><td colspan="3"><a href="%s">Main combined LD 
+plot</a></td></tr></table>\n' % (mainpdf))
         else:
-            outf.write('<table><tr><td><a href="%s"><img src="%s" alt="Main combined LD image" hspace="10" align="middle">')
-            outf.write('</td><td>Click this thumbnail to display the main combined LD image</td></tr></table>\n' % (mainpdf,mainthumb))
+            outf.write('<table><tr><td><a href="%s"><img src="%s" alt="Main combined LD image" hspace="10" 
+align="middle">')
+            outf.write('</td><td>Click this thumbnail to display the main combined LD 
+image</td></tr></table>\n' % (mainpdf,mainthumb))
     else:
-        outf.write('(No main image was generated - this usually means a Haploview error connecting to Hapmap site - please try later)<br/>\n')
+        outf.write('(No main image was generated - this usually means a Haploview error connecting to 
+Hapmap site - please try later)<br/>\n')
     outf.write('## Called as %s' % sys.argv)
     """
     outf.write('<br><div><hr><ul>\n')
@@ -513,12 +504,5 @@ def ld():
             pass
         
 if __name__ == "__main__":
-    quiet = True
-    if quiet:
-        # haploview blathering about log4j on test
-        # note the redirection prevents ANY error messages - turn off to see them
-        se = sys.stderr
-        sys.stderr = NullDevice() 
     ld()
-    if quiet:
-        sys.stderr = None # should be empty?
+
