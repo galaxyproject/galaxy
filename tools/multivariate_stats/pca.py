@@ -15,6 +15,15 @@ method = sys.argv[3]
 outfile = sys.argv[4]
 outfile2 = sys.argv[5]
 
+if method == 'svd':
+    scale = center = "FALSE"
+    if sys.argv[6] == 'both':
+        scale = center = "TRUE"
+    elif sys.argv[6] == 'center':
+        center = "TRUE"
+    elif sys.argv[6] == 'scale':
+        scale = "TRUE"
+    
 fout = open(outfile,'w')
 elems = []
 for i, line in enumerate( file ( infile )):
@@ -62,18 +71,27 @@ set_default_mode(NO_CONVERSION)
 try:
     if method == "cor":
         pc = r.princomp(r.na_exclude(dat), cor = r("TRUE"))
-    else:
+    elif method == "cov":
         pc = r.princomp(r.na_exclude(dat), cor = r("FALSE"))
+    elif method=="svd":
+        pc = r.prcomp(r.na_exclude(dat), center = r(center), scale = r(scale))
 except RException, rex:
     stop_err("Encountered error while performing PCA on the input data: %s" %(rex))
 
 set_default_mode(BASIC_CONVERSION)
 summary = r.summary(pc, loadings="TRUE")
 ncomps = len(summary['sdev'])
-comps = summary['sdev'].keys()
-sd = summary['sdev'].values()
-for i in range(ncomps):
-    sd[comps.index('Comp.%s' %(i+1))] = summary['sdev'].values()[i]
+
+if type(summary['sdev']) == type({}):
+    comps = summary['sdev'].keys()
+    sd = summary['sdev'].values()
+    for i in range(ncomps):
+        sd[comps.index('Comp.%s' %(i+1))] = summary['sdev'].values()[i]
+elif type(summary['sdev']) == type([]):
+    comps=[]
+    for i in range(ncomps):
+        comps.append('Comp.%s' %(i+1))
+        sd = summary['sdev']
 
 print >>fout, "#Component\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 print >>fout, "#Std. deviation\t%s" %("\t".join(["%.4g" % el for el in sd]))
@@ -90,12 +108,19 @@ print >>fout, "#Proportion of variance explained\t%s" %("\t".join(["%.4g" % el f
 
 print >>fout, "#Loadings\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 xcolnames = ["c%d" %(el+1) for el in x_cols]
-for i,val in enumerate(summary['loadings']):
+if 'loadings' in summary: #in case of princomp
+    loadings = 'loadings'
+elif 'rotation' in summary: #in case of prcomp
+    loadings = 'rotation'
+for i,val in enumerate(summary[loadings]):
     print >>fout, "%s\t%s" %(xcolnames[i], "\t".join(["%.4g" % el for el in val]))
 
 print >>fout, "#Scores\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
-
-for obs,sc in enumerate(summary['scores']):
+if 'scores' in summary: #in case of princomp
+    scores = 'scores'
+elif 'x' in summary: #in case of prcomp
+    scores = 'x'
+for obs,sc in enumerate(summary[scores]):
     print >>fout, "%s\t%s" %(obs+1, "\t".join(["%.4g" % el for el in sc]))
 
 r.pdf( outfile2, 8, 8 )

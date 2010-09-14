@@ -1,22 +1,38 @@
-<tool id="pca1" name="Principal Component Analysis" version="1.0.0">
+<tool id="pca1" name="Principal Component Analysis" version="1.0.1">
   <description> </description>
   <command interpreter="python">
     pca.py 
       $input1
       $var_cols
-      $method
+      $methodChoice.method
       $out_file1
       $out_file2
+      #if $methodChoice.method == "svd":
+      $methodChoice.scale
+      #end if
   </command>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
     <param name="var_cols" label="Select columns containing input variables " type="data_column" data_ref="input1" numerical="True" multiple="true" >
         <validator type="no_options" message="Please select at least one column."/>
     </param>
-    <param name="method" type="select" label="Method" help="The correlation matrix can only be used if there are no constant variables">
-        <option value="cor" selected="true">Correlation</option>
-        <option value="cov">Covariance</option>
-    </param>
+    <conditional name="methodChoice">
+        <param name="method" type="select" label="Method" help="The correlation matrix can only be used if there are no constant variables">
+            <option value="cor" selected="true">Eigenvectors of Correlation (princomp)</option>
+            <option value="cov">Eigenvectors of Covariance (princomp)</option>
+            <option value="svd">Singular Value Decomposition (prcomp)</option>
+        </param>
+        <when value="cor" />
+        <when value="cov" />
+        <when value="svd">
+            <param name="scale" type="select" label="Centering and Scaling" help="Can be used to center and/or scale variables">
+                <option value="none" selected="true">None</option>
+                <option value="center">Center only</option>
+                <option value="scale">Scale only</option>
+                <option value="both">Center and Scale</option>
+            </param>        
+        </when>
+    </conditional>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input1" />
@@ -40,6 +56,14 @@
         <output name="out_file1" file="pca_out3.tabular"/>
         <output name="out_file2" file="pca_out4.pdf"/>
     </test>
+    <test>
+        <param name="input1" value="iris.tabular"/>
+        <param name="var_cols" value="1,2,3,4"/>
+        <param name="method" value="svd"/>
+        <param name="scale" value="both"/>
+        <output name="out_file1" file="pca_out5.tabular"/>
+        <output name="out_file2" file="pca_out6.pdf"/>
+    </test>
   </tests>
   <help>
 
@@ -54,7 +78,7 @@
 
 **What it does**
 
-This tool uses the 'princomp' function from R statistical package to perform Principal Component Analysis (PCA) on the given numeric input data. It outputs two files, one containing the summary statistics of PCA, and the other containing biplots of the observations and principal components.   
+This tool performs Principal Component Analysis on the given numeric input data using functions from R statistical package - 'princomp' function (for Eigenvector based solution) and 'prcomp' function (for Singular value decomposition based solution). It outputs two files, one containing the summary statistics of PCA, and the other containing biplots of the observations and principal components.   
 
 *R Development Core Team (2009). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. ISBN 3-900051-07-0, URL http://www.R-project.org.*
 
@@ -69,7 +93,7 @@ This tool uses the 'princomp' function from R statistical package to perform Pri
 - The summary statistics in the output are described below:
 
   - Std. deviation: Standard deviations of the principal components
-  - Loadings: a list of eigen-vectors
+  - Loadings: a list of eigen-vectors/variable loadings
   - Scores: Scores of the input data on the principal components
 
   </help>
