@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # runs after the job (and after the default post-filter)
 import os
 from galaxy import eggs

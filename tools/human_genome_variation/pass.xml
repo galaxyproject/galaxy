@@ -1,0 +1,99 @@
+<tool id="hgv_pass" name="PASS" version="1.0.0">
+  <description>detects significant transcription factor binding sites from ChIP data in the genome</description>
+
+  <command interpreter="bash">
+    pass_wrapper.sh "$input" "$min_window" "$max_window" "$false_num" "$output"
+  </command>
+
+  <inputs>
+    <param format="gff" name="input" type="data" label="GFF dataset"/>
+    <param name="min_window" label="Smallest window size (by # of probes)" type="integer" value="2" />
+    <param name="max_window" label="Largest window size (by # of probes)" type="integer" value="6" />
+    <param name="false_num" label="Expected number of false positive intervals to be called" type="float" value="0.05" />
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <requirements>
+    <requirement type="binary">pass</requirement>
+    <requirement type="binary">sed</requirement>
+  </requirements>
+
+
+  <!-- we need to be able to set the seed for the random number generator
+  <test>
+    <test>
+      <param name="input" ftype="gff" value="pass_input.gff"/>
+      <param name="min_window" value="2"/>
+      <param name="max_window" value="6"/>
+      <param name="false_num" value="5"/>
+      <output name="output" file="pass_output.tab"/>
+    </test>
+  </tests>
+  -->
+
+  <help>
+**Dataset formats**
+
+The input is GFF_ format, and the output is tabular_.
+
+.. _GFF: ./static/formatHelp.html#gff
+
+.. _tabular: ./static/formatHelp.html#tab 
+
+-----
+
+**What it does**
+
+PASS (Poisson Approximation for Statistical Significance) detects significant transcription factor binding sites from ChIP data in the genome.  The method is probably the only peak calling method that accurately controls the false positive rate and FDR in ChIP data, which is important given the huge discrepancy in results obtained from different peak calling algorithms.  At the same time, the method achieves a similar or better power than existing methods.  Another unique feature of the method is that it allows varying thresholds to be used at different genomic locations for peak calling.  For example, if a position lies in a open chromatin region, is deplete of nucleosome positioning, or a co-binding protein has been detected within the neighborhood, then the position is more likely to be bound by the target protein of interest, and hence a lower threshold will be used to call significant peaks.  As a result, weak but real binding sites can be detected.
+
+-----
+
+**Hints**
+
+- ChIP-seq data:
+
+If the data is from ChIP-seq, you need to convert each ChIP-seq value into z-scores before using this program. Also for ChIP-seq,
+it is recommended that you group read counts within a neighborhood together, e.g., sum of reads within a 30bp window, for
+every 30bp shifting window. As a result, the ChIP-seq data looks like a ChIP-chip data in format.
+
+- Choosing window size options:
+
+The window size is related with probe tiling density, if probes are tiled at every 100bp, then smallest window = 2 largest window = 6 is good, because DNA fragment size is around 300~500bp.
+
+-----
+
+**Example**
+
+- input file ChIP-chip data file; Nimblegene GFF file format::
+
+    chr7 Nimblegen ID 40307603 40307652 1.668944
+    chr7 Nimblegen ID 40307703 40307752 0.8041307
+    chr7 Nimblegen ID 40307808 40307865 -1.089931
+    chr7 Nimblegen ID 40307920 40307969 1.055044
+    chr7 Nimblegen ID 40308005 40308068 2.447853
+    chr7 Nimblegen ID 40308125 40308174 0.1638694
+    chr7 Nimblegen ID 40308223 40308275 -0.04796628
+    chr7 Nimblegen ID 40308318 40308367 0.9335709
+    chr7 Nimblegen ID 40308526 40308584 0.5143972
+    chr7 Nimblegen ID 40308611 40308660 -1.089931
+    etc.
+
+    Chromosome, start, end, and score are required fields.
+
+- output file::
+
+    #ID     Chr     Start           End             WinSz   PeakValue       # of FPs        FDR
+    1       chr7    40310931        40311266        4       1.663446        0.208435        0.208435
+
+-----
+
+**References**
+
+Zhang Y (2008) Poisson Approximation for Significance in Genome-wide ChIP-chip Tiling Arrays. Bioinformatics, 24(24):2825-2831
+
+Chen KB and Zhang Y (2010) A Varying Threshold Method for ChIP Peak Calling Using Multiple Sources of Information. Submitted.
+  </help>
+</tool>

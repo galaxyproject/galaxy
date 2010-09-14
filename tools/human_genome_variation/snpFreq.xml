@@ -1,0 +1,98 @@
+<tool id="hgv_snpFreq" name="snpFreq" version="1.0.0">
+  <description>identify significant SNPs in case-control data</description>
+
+  <command interpreter="perl">
+    snpFreq2.pl $input $group1_1 $group1_2 $group1_3 $group2_1 $group2_2 $group2_3 0.05 $output
+  </command>
+
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Dataset" />
+    <param name="group1_1" label="Column with allele 1 count for group 1" type="data_column" data_ref="input" />
+    <param name="group1_2" label="Column with allele 2 count for group 1" type="data_column" data_ref="input" />
+    <param name="group1_3" label="Column with allele 3 count for group 1" type="data_column" data_ref="input" />
+    <param name="group2_1" label="Column with allele 1 count for group 2" type="data_column" data_ref="input" />
+    <param name="group2_2" label="Column with allele 2 count for group 2" type="data_column" data_ref="input" />
+    <param name="group2_3" label="Column with allele 3 count for group 2" type="data_column" data_ref="input" />
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <requirements>
+    <requirement type="binary">R</requirement>
+  </requirements>
+
+  <tests>
+    <test>
+      <param name="input" ftype="tabular" value="snpFreqInput.txt" dbkey="hg18" />
+      <param name="group1_1" value="4" />
+      <param name="group1_2" value="5" />
+      <param name="group1_3" value="6" />
+      <param name="group2_1" value="7" />
+      <param name="group2_2" value="8" />
+      <param name="group2_3" value="9" />
+      <output name="output" file="snpFreqTestOut.txt" />
+    </test>
+  </tests>
+
+  <help>
+**Dataset formats**
+
+The input is tabular_, with 6 columns with allele
+counts.  The output format is also tabular, with the input data plus the added 
+columns described below.
+
+-----
+
+**What it does**
+
+This identifies significant SNPs in case-control data, using R and the
+Fisher's Exact test to see if there is a
+significant difference in the allele counts.  R's qvalue
+package is used to correct for multiple testing.
+The input file must be tabular_ and include counts 
+for each position and each allele (AA aa Aa) for the 2 groups. 
+The order of the alleles is not important as long as it is the same for both
+groups.  All other columns are kept for the output only.
+The output adds 8 columns
+to the input file, namely the minimum expected counts of the 3 alleles
+for each group, the p-value, and the q-value.
+
+.. _tabular: ./static/formatHelp.html#tab
+
+-----
+
+**Example**
+
+- input file::
+
+	chr1	210	211	38	4	15	56	0	1	x
+	chr1	228	229	55	0	2	56	0	1	x
+	chr1	230	231	46	0	11	55	0	2	x
+	chr1	234	235	43	0	14	55	0	2	x
+	chr1	236	237	55	0	2	13	10	34	x
+	chr1	437	438	55	0	2	46	0	11	x
+	chr1	439	440	56	0	1	55	0	2	x
+	chr1	449	450	56	0	1	13	20	24	x
+	chr1	518	519	56	0	1	38	4	15	x
+
+Group 1 allele counts are columns 4 - 6, and group 2 are 7 - 9.
+
+Note the x column has no meaning and was added to this example to show other
+columns can be included and to make it easier to see where the new columns
+are appended in the output.
+
+- output file::
+
+	chr1    210     211     38      4       15      56      0       1       x       47      2       8       47      2       8       1.50219088598917e-05    6.32501425679652e-06
+	chr1    228     229     55      0       2       56      0       1       x       55.5    0       1.5     55.5    0       1.5     1       0.210526315789474
+	chr1    230     231     46      0       11      55      0       2       x       50.5    0       6.5     50.5    0       6.5     0.0155644201009862      0.00409590002657532
+	chr1    234     235     43      0       14      55      0       2       x       49      0       8       49      0       8       0.00210854461554067     0.000739840215979182
+	chr1    236     237     55      0       2       13      10      34      x       34      5       18      34      5       18      6.14613878554783e-17    4.31307984950725e-17
+	chr1    437     438     55      0       2       46      0       11      x       50.5    0       6.5     50.5    0       6.5     0.0155644201009862      0.00409590002657532
+	chr1    439     440     56      0       1       55      0       2       x       55.5    0       1.5     55.5    0       1.5     1       0.210526315789474
+	chr1    449     450     56      0       1       13      20      24      x       34.5    10      12.5    34.5    10      12.5    2.25757007974134e-18    2.37638955762246e-18
+	chr1    518     519     56      0       1       38      4       15      x       47      2       8       47      2       8       1.50219088598917e-05    6.32501425679652e-06
+  </help>
+</tool>

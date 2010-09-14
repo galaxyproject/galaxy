@@ -1,0 +1,100 @@
+<tool id="hgv_hilbertvis" name="HVIS" version="1.0.0">
+  <description>visualization of genomic data with the Hilbert curve</description>
+
+  <command interpreter="bash">
+    hilbertvis.sh $input $output $chromInfo "$chrom" $plot_value.score_col $level $mode
+    #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__)
+      1 4 5 7
+    #else
+      ${input.metadata.chromCol} ${input.metadata.startCol} ${input.metadata.endCol} ${input.metadata.strandCol}
+    #end if
+  </command>
+
+  <inputs>
+    <param name="input" type="data" format="interval,gff" label="Dataset">
+      <validator type="unspecified_build"/>
+      <validator type="metadata" check="chromCol" message="chromCol missing"/>
+      <validator type="metadata" check="startCol" message="startCol missing"/>
+      <validator type="metadata" check="endCol" message="endCol missing"/>
+    </param>
+    <param name="chrom" type="text" label="Sequence to plot" help="Name of sequence to plot.  If left blank, the first sequence in the dataset will be plotted."/>
+    <conditional name="plot_value">
+      <param name="choice" type="select" label="Value to plot">
+        <option value="score" selected="true">Score column from dataset</option>
+        <option value="exist">Same value for each base (existence)</option>
+      </param>
+      <when value="score">
+        <param name="score_col" type="data_column" data_ref="input" numerical="true" label="Score column"/>
+      </when>
+      <when value="exist">
+        <param name="score_col" type="hidden" value="-1"/>
+      </when>
+    </conditional>
+    <param name="level" type="integer" value="9" label="Level" help="Level of Hilvert curve.  The resulting image will have 2&lt;sup&gt;level&lt;/sup&gt; by 2&lt;sup&gt;level&lt;/sup&gt; pixels.">
+      <validator type="in_range" min="1" message="The level must be an integer &gt;= 1."/>
+    </param>
+    <param name="mode" type="select" label="Summarization mode" help="Method used to determine a value for a point in the plot which covers multiple values in the input.">
+      <option value="max">Maximal value in each bin</option>
+      <option value="min">Minimal value in each bin</option>
+      <option value="absmax" selected="true">Maximal absolute value in each bin</option>
+      <option value="mean">Mean value of each bin</option>
+    </param>
+  </inputs>
+
+  <outputs>
+    <data name="output" format="pdf"/>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="hvis_mkar_chr22.tab"/>
+      <param name="chrom" value="chr22"/>
+      <param name="choice" value="score"/>
+      <param name="score_col" value="15"/>
+      <param name="level" value="9"/>
+      <param name="mode" value="absmax"/>
+      <output name="output" file="hvis_mkar_chr22.pdf" compare="sim_size" delta="7168"/>
+    </test>
+  </tests>
+
+  <help>
+**Dataset formats**
+
+The input format is interval_ or gff_, the output is an image as a pdf.
+
+.. _interval: ./static/formatHelp.html#interval
+
+.. _gff: ./static/formatHelp.html#gff
+
+**What it does**
+
+HilbertVis_ uses the Hilbert space-filling curve to visualize the structure of position dependent data.  HilbertVis maps the traditional one-dimensional line visualization onto a two-dimensional square.  
+
+This diagram shows the path of a level 2 Hilbert curve.
+
+.. image:: ../static/images/hilbertvisDiagram.png
+
+The shade of a pixel represents the value within the bin as chosen by the summerization mode.  The pixels are arranged such that bins that are close to each other on the data vector are represented by pixels that are close to each other in the plot. Especially, adjacent bins are mapped to adjacent pixels. Hence, dark spots in a figure are a peak; the area of the spot in the two-dimensional plot is proportional to the width of the peak in the one-dimensional data, and the darkness of the spot corresponds to the height of the peak.
+
+The input file is tabular and contains a column with numbers or scores. 
+Examples of scores would be the coverage of aligned reads from ChIP-Seq data,
+conservation scores, SNP density, etc.
+
+The output is a two dimensional image showing hot spots, examples from 
+the HilbertVis_ homepage using ChIP-Seq
+
+.. image:: ../static/images/hilbertvis1.png
+
+-----
+
+.. image:: ../static/images/hilbertvis2.png
+
+.. _HilbertVis: http://www.ebi.ac.uk/huber-srv/hilbert/
+
+-----
+
+**Reference**
+
+Anders S. (2009) Visualization of genomic data with the Hilbert curve.  Bioinformatics, 25:1231-1235.
+  </help>
+</tool>

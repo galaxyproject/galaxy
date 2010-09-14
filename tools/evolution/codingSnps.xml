@@ -1,89 +1,136 @@
-<tool id="codingSnps" name="Amino-acid changes">
-  <description>caused by a set of SNPs</description>
+<tool id="hgv_codingSnps" name="aaChanges" version="1.0.0">
+  <description>amino-acid changes caused by a set of SNPs</description>
+
   <command interpreter="perl">
     codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 > $out_file1
   </command>
+
   <inputs>
-    <param format="interval" name="input1" type="data" label="SNPs"/>
-    <param format="interval" name="input2" type="data" label="genes"/>
-    <param name="col1" label="Column with SNPs" type="data_column" data_ref="input1" />
+    <param format="interval" name="input1" type="data" label="SNP dataset">
+      <validator type="dataset_metadata_in_file" filename="codingSnps.loc" metadata_name="dbkey" metadata_column="0" message="Sequences are not currently available for the specified build." split="\t" />
+    </param>
+    <param name="col1" type="data_column" data_ref="input1" label="Column with SNPs" />
+    <param format="interval" name="input2" type="data" label="Gene dataset">
+      <validator type="dataset_metadata_in_file" filename="codingSnps.loc" metadata_name="dbkey" metadata_column="0" message="Sequences are not currently available for the specified build." split="\t" />
+    </param>
   </inputs>
+
   <outputs>
-    <data format="input" name="out_file1" />
+    <data format="tabular" name="out_file1" />
   </outputs>
+
   <code file="codingSnps_filter.py"></code>
+
   <requirements>
+    <requirement type="binary">cat</requirement>
+    <requirement type="binary">sort</requirement>
     <requirement type="binary">twoBitToFa</requirement>
   </requirements>
+
   <tests>
     <test>
-	<param name="input1" value="codingSnps_input1.interval" dbkey="hg18" />
-	<param name="input2" value="codingSnps_input2.bed" dbkey="hg18" />
-	<param name="col1" value="6" />
-	<output name="output" file="codingSnps_output.interval" />
+      <param name="input1" ftype="interval" value="codingSnps_input1.interval" dbkey="hg18" />
+      <param name="col1" value="6" />
+      <param name="input2" ftype="interval" value="codingSnps_inputGenes1.bed" dbkey="hg18" />
+      <output name="output" file="codingSnps_output1.interval" />
+    </test>
+    <test>
+      <param name="input1" ftype="interval" value="codingSnps_input2.interval" dbkey="hg18" />
+      <param name="input2" ftype="interval" value="codingSnps_inputGenes2.bed" dbkey="hg18" />
+      <param name="col1" value="4" />
+      <output name="output" file="codingSnps_output2.interval" />
     </test>
   </tests>
 
   <help>
-This tool identifies which SNPs create amino-acid changes in the specified coding regions.
+.. class:: infomark
+
+The build must be defined for the input files and must be the same for both files.  Use the pencil icon to add the build to the files if necessary.
+
+-----
+
+**Dataset formats**
+
+The SNP dataset is in interval_ format with a column of SNPs as described below.
+The gene dataset is in BED_ format with 12 columns.
+The output dataset is also interval.
+
+-----
+
+**What it does**
+
+This tool identifies which SNPs create amino-acid changes in the specified 
+coding regions.  The first input file contains the SNPs and must be an interval file.
+It needs the chromosome, start, and end position as well as the SNP.  The 
+SNP can be given using ambiguous-nucleotide symbols or a list of two to four
+alleles 
+separated by '/'.  Any other columns in the first input file will not be
+used but will be kept for the output.  The second input file contains the genes
+to be used for defining the coding regions.  This file must be a BED file with
+the first 12 columns standard BED columns.  The output is the same as the
+first input file with
+several columns added: the name field from the line of the gene input file
+used, the amino acids, the codon number, and the reference nucleotide that 
+changed in the amino acid.
+The amino acids are listed with the reference amino acid first, then a colon,
+and then the amino acids for the alleles.  If a SNP is not in a coding region
+or is synonymous then it is not included in the output file.
+
+.. _BED: ./static/formatHelp.html#bed
+
+.. _interval: ./static/formatHelp.html#interval
+
+-----
 
 **Example**
 
 - first input file, with SNPs::
 
-    chr22       14440426        14440427        C/T
-    chr22       14494851        14494852        A/G
-    chr22       14494911        14494912        A/T
-    chr22       14550435        14550436        A/G
-    chr22       14611956        14611957        G/T
-    chr22       14612076        14612077        A/G
-    chr22       14668537        14668538        C
-    chr22       14668703        14668704        A/T
-    chr22       14668775        14668776        G
-    chr22       14680074        14680075        A/T
+    chr22   15660821        15660822        A/G
+    chr22   15825725        15825726        G/T
+    chr22   15827035        15827036        G
+    chr22   15827135        15827136        C/G
+    chr22   15830928        15830929        A/G
+    chr22   15830951        15830952        G
+    chr22   15830955        15830956        C/T
+    chr22   15848885        15848886        C/T
+    chr22   15849048        15849049        A/C
+    chr22   15919711	    15919712        A/G
     etc.
 
     alternatively indicating polymorphisms using ambiguous-nucleotide symbols:
-
-    chr22       14440426        14440427        Y
-    chr22       14494851        14494852        R
-    chr22       14494911        14494912        W
-    chr22       14550435        14550436        R
-    chr22       14611956        14611957        K
-    chr22       14612076        14612077        R
-    chr22       14668537        14668538        C
-    chr22       14668703        14668704        W
-    chr22       14668775        14668776        G
-    chr22       14680074        14680075        W
+    chr22   15660821        15660822        R
+    chr22   15825725        15825726        K
+    chr22   15827035        15827036        G
+    chr22   15827135        15827136        S
+    chr22   15830928        15830929        R
+    chr22   15830951        15830952        G
+    chr22   15830955        15830956        Y
+    chr22   15848885        15848886        Y
+    chr22   15849048        15849049        M
+    chr22   15919711        15919712        R
     etc.
 
 - second input file, with UCSC annotations for human genes::
 
-    chr22   14504263        14572999        uc002zkr.2      0       -       14504263        14504263        0       5       710,91,136,138,94,      0,38133,62547,62901,68642,
-    chr22   14527995        14572999        uc010gqo.1      0       -       14527995        14527995        0       4       3826,91,136,94, 0,14401,38815,44910,
-    chr22   14542065        14552264        uc002zkt.2      0       +       14542065        14542065        0       3       323,88,313,     0,2416,9886,
-    chr22   14559619        14561004        uc002zku.2      0       -       14559619        14559619        0       1       1385,   0,
-    chr22   14567164        14572999        uc002zkv.2      0       -       14567164        14567164        0       5       138,112,115,111,94,     0,1867,2099,3516,5741,
-    chr22   14620243        14620281        uc002zkw.1      0       -       14620243        14620243        0       1       38,     0,
-    chr22   14620300        14620339        uc002zkx.1      0       -       14620300        14620300        0       1       39,     0,
-    chr22   14621086        14621125        uc002zky.1      0       +       14621086        14621086        0       1       39,     0,
-    chr22   14622000        14622030        uc002zkz.1      0       -       14622000        14622000        0       1       30,     0,
-    chr22   14623380        14623414        uc002zla.1      0       -       14623380        14623380        0       1       34,     0,
+    chr22   15688363        15690225        uc010gqr.1      0       +       15688363        15688363        0       2       587,794,        0,1068,
+    chr22   15822826        15869112        uc002zlw.1      0       -       15823622        15869004        0       10      940,105,97,91,265,86,251,208,304,282,   0,1788,2829,3241,4163,6361,8006,26023,29936,46004,
+    chr22   15826991        15869112        uc010gqs.1      0       -       15829218        15869004        0       5       1380,86,157,304,282,    0,2196,21858,25771,41839,
+    chr22   15897459        15919682        uc002zlx.1      0       +       15897459        15897459        0       4       775,128,103,1720,       0,8303,10754,20503,
+    chr22   15945848        15971389        uc002zly.1      0       +       15945981        15970710        0       13      271,25,147,113,127,48,164,84,85,12,102,42,2193, 0,12103,12838,13816,15396,17037,17180,18535,19767,20632,20894,22768,23348,
     etc.
 
 - output file, showing non-synonymous substitutions in coding regions::
 
-    chr22    15452482        15452483        G       uc002zlp.1      Trp:Arg            320     A
-    chr22    15644564        15644565        T       uc002zlv.1      His:Asn            442     G
-    chr22    15645123        15645124        C       uc002zlv.1      Phe:Leu            255     A
-    chr22    15645193        15645194        A/G     uc002zlv.1      Pro:Leu/Pro        232     G
-    chr22    15660821        15660822        A/G     uc002zlv.1      Thr:Met/Thr        143     G
-    chr22    15969208        15969209        C/T     uc002zly.1      Ala:Ala/Val        367     C
-    chr22    15969208        15969209        C/T     uc010gqt.1      Ala:Ala/Val        315     C
-    chr22    15999075        15999076        C/G     uc002zmd.1      Arg:Arg/Ser        180     C
-    chr22    15999075        15999076        C/G     uc002zme.1      Arg:Arg/Ser        161     C
-    chr22    15999075        15999076        C/G     uc002zmf.1      Arg:Arg/Ser        369     C
+    chr22   15825725        15825726        G/T     uc002zlw.1      Gln:Pro/Gln     469     T
+    chr22   15827035        15827036        G       uc002zlw.1      Glu:Asp 414     C
+    chr22   15827135        15827136        C/G     uc002zlw.1      Gly:Gly/Ala     381     C
+    chr22   15830928        15830929        A/G     uc002zlw.1      Ala:Ser/Pro     281     C
+    chr22   15830951        15830952        G       uc002zlw.1      Leu:Pro 273     A
+    chr22   15830955        15830956        C/T     uc002zlw.1      Ser:Gly/Ser     272     T
+    chr22   15848885        15848886        C/T     uc002zlw.1      Ser:Trp/Stop    217     G
+    chr22   15848885        15848886        C/T     uc010gqs.1      Ser:Trp/Stop    200     G
+    chr22   15849048        15849049        A/C     uc002zlw.1      Gly:Stop/Gly    163     C
     etc.
-
-</help>
+  </help>
 </tool>

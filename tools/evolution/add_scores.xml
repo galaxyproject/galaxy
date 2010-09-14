@@ -1,27 +1,64 @@
-<tool id="add_scores" name="Add scores">
-  <description>for interspecies conservation at each SNPs</description>
+<tool id="hgv_add_scores" name="phyloP" version="1.0.0">
+  <description>interspecies conservation scores</description>
+
   <command>
     add_scores $input1 ${input1.metadata.dbkey} ${input1.metadata.chromCol} ${input1.metadata.startCol} ${GALAXY_DATA_INDEX_DIR}/add_scores.loc $out_file1
   </command>
+
   <inputs>
-    <param format="interval" name="input1" type="data" label="SNPs"/>
+    <param format="interval" name="input1" type="data" label="Dataset">
+      <validator type="unspecified_build"/>
+      <validator type="dataset_metadata_in_file" filename="add_scores.loc" metadata_name="dbkey" metadata_column="0" message="Data is currently not available for the specified build."/>
+    </param>
   </inputs>
+
   <outputs>
     <data format="input" name="out_file1" />
   </outputs>
+
+  <requirements>
+    <requirement type="binary">add_scores</requirement>
+  </requirements>
+
   <tests>
     <test>
-	<param name="input1" value="add_scores_input1.interval" dbkey="hg18" />
-	<output name="output" file="add_scores_output1.interval" />
+      <param name="input1" value="add_scores_input1.interval" ftype="interval" dbkey="hg18" />
+      <output name="output" file="add_scores_output1.interval" />
     </test>
     <test>
-	<param name="input1" value="add_scores_input2.bed" dbkey="hg18" />
-	<output name="output" file="add_scores_output2.interval" />
+      <param name="input1" value="add_scores_input2.bed" ftype="interval" dbkey="hg18" />
+      <output name="output" file="add_scores_output2.interval" />
     </test>
   </tests>
 
   <help>
-This tool adds a column that measures interspecies conservation at each SNP position, using conservation scores for primates computed by the phyloP program. It currently works only for hg18.
+.. class:: warningmark
+
+This currently works only for build hg18.
+
+-----
+
+**Dataset formats**
+
+The input dataset can be any interval_ format dataset.  
+The output dataset is also interval format.
+
+.. _interval: ./static/formatHelp.html#interval
+
+-----
+
+**What it does**
+
+This tool adds a column that measures interspecies conservation at each SNP 
+position, using conservation scores for primates pre-computed by the 
+phyloP program.  PhyloP performs an exact P-value computation under a 
+continuous Markov substitution model. 
+
+The chromosome and start position
+are used to look up the scores, so if a larger interval is in the input,
+only the score for the first nucleotide is returned.
+
+-----
 
 **Example**
 
@@ -39,7 +76,7 @@ This tool adds a column that measures interspecies conservation at each SNP posi
     chr22	14680074	14680075	A/T
     etc.
 
-- output file, showing non-synonymous substitutions in coding regions::
+- output file, showing conservation scores for primates::
 
     chr22	16440426	14440427	C/T	0.509
     chr22	15494851	14494852	A/G	0.427
@@ -50,11 +87,18 @@ This tool adds a column that measures interspecies conservation at each SNP posi
     chr22	14668537	14668538	C	0.419
     chr22	14668703	14668704	A/T	-1.462
     chr22	14668775	14668776	G	0.470
-    chr22	14680074	14680075	A/T	0.000
     chr22       14680074        14680075        A/T	0.303
     etc.
 
-"NA", means that the phyloP score was not available.
+"NA" means that the phyloP score was not available.
 
-</help>
+-----
+
+**Reference**
+
+Siepel A, Pollard KS, and Haussler D. New methods for detecting
+lineage-specific selection. In Proceedings of the 10th International
+Conference on Research in Computational Molecular Biology (RECOMB
+2006), pp. 190-205.
+  </help>
 </tool>

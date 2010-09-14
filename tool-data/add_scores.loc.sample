@@ -1,21 +1,21 @@
-#This is a sample file distributed with Galaxy that enables tools
-#to use a directory of gzipped genome files for use with add_scores.  You will 
-#need to supply these files and then create a add_scores.loc file 
-#similar to this one (store it in this directory) that points to 
-#the directories in which those files are stored. The add_scores.loc 
-#file has this format (white space characters are TAB characters):
+#This is a sample file distributed with Galaxy that enables tools to use a
+#directory of gzipped genome files for use with add_scores.  You will need to
+#supply these files and then create a add_scores.loc file similar to this one
+#(store it in this directory) that points to the directories in which those
+#files are stored.  The add_scores.loc file has this format (white space
+#characters are TAB characters):
 #
 #<build>	<file_path>
 #
 #So, for example, if your add_scores.loc began like this:
 #
-#hg18	/afs/bx.psu.edu/depot/data/genome/hg18/misc/phyloP/
+#hg18	/galaxy/data/hg18/misc/phyloP
 #
-#then your /afs/bx.psu.edu/depot/data/genome/hg18/misc/phyloP/ directory
-#would need to contain the following gzipped files, among others:
+#then your /galaxy/data/hg18/misc/phyloP directory would need to contain
+#the following gzipped files, among others:
 #
-#-rw-r--r-- 1 rico rico 161981190 2010-03-19 12:48 chr10.phyloP44way.primate.wigFix.gz
-#-rw-r--r-- 1 rico rico     54091 2010-03-19 12:56 chr10_random.phyloP44way.primate.wigFix.gz
-#-rw-r--r-- 1 rico rico 158621990 2010-03-19 12:46 chr11.phyloP44way.primate.wigFix.gz
+#-rw-r--r-- 1 g2data g2data 161981190 2010-03-19 12:48 chr10.phyloP44way.primate.wigFix.gz
+#-rw-r--r-- 1 g2data g2data     54091 2010-03-19 12:56 chr10_random.phyloP44way.primate.wigFix.gz
+#-rw-r--r-- 1 g2data g2data 158621990 2010-03-19 12:46 chr11.phyloP44way.primate.wigFix.gz
 #
-hg18	/galaxy/data/hg18/misc/phyloP
+#hg18	/galaxy/data/hg18/misc/phyloP
