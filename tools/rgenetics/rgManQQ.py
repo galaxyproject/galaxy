@@ -52,25 +52,29 @@ manhattan = function(chrom=NULL,offset=NULL,pvals=NULL, title=NULL, max.y="max",
                 lastbase=0
                 chrlist = unique(d$CHR)
                 nchr = length(chrlist) # may be any number?
-                if (nchr < 2) {
+                if (nchr >= 2) {
                 for (x in c(1:nchr)) {
                         i = chrlist[x] # need the chrom number - may not == index
                         if (x == 1) { # first time
                                 d[d$CHR==i, ]$pos=d[d$CHR==i, ]$BP
+                                tks = d[d$CHR==i, ]$pos[floor(length(d[d$CHR==i, ]$pos)/2)+1]
                         }       else {
                                 lastchr = chrlist[x-1] # previous whatever the list
                                 lastbase=lastbase+tail(subset(d,CHR==lastchr)$BP, 1)
                                 d[d$CHR==i, ]$pos=d[d$CHR==i, ]$BP+lastbase
+                                tks=c(tks, d[d$CHR==i, ]$pos[floor(length(d[d$CHR==i, ]$pos)/2)+1])
                         }
-                        ticks=c(ticks, d[d$CHR==i, ]$pos[floor(length(d[d$CHR==i, ]$pos)/2)+1])
                     ticklim=c(min(d$pos),max(d$pos))
+                    xlabs = chrlist
                     }
-                } else { # nchr >= 2
+                } else { # nchr is 1
+                   nticks = 10
                    last = max(offset)
                    first = min(offset)
-                   ticks = first
-                   t = (last-first)/9 # units per tick
-                   for (x in c(1:9)) ticks = c(ticks,round(x*t))
+                   tks = c()
+                   t = (last-first)/nticks # units per tick
+                   for (x in c(1:nticks)) tks = c(tks,round(x*t))
+                   xlabs = tks
                    ticklim = c(first,last)
                 } # else
                 if (grey) {mycols=rep(c("gray10","gray60"),max(d$CHR))
@@ -83,9 +87,12 @@ manhattan = function(chrom=NULL,offset=NULL,pvals=NULL, title=NULL, max.y="max",
                 # if (maxy<8) maxy=8
                 # only makes sense if genome wide is assumed - we could have a fine mapping region?  
                 if (annotate) d.annotate=d[as.numeric(substr(d$SNP,3,100)) %in% SNPlist, ]
-
-                manplot=qplot(pos,logp,data=d, ylab=expression(-log[10](italic(p))) , colour=factor(CHR))
-                manplot=manplot+scale_x_continuous(name="Chromosome", breaks=ticks, labels=(unique(d$CHR)))
+                if (nchr >= 2) {
+                        manplot=qplot(pos,logp,data=d, ylab=expression(-log[10](italic(p))) , colour=factor(CHR))
+                        manplot=manplot+scale_x_continuous(name="Chromosome", breaks=tks, labels=xlabs) }
+                else {
+                        manplot=qplot(BP,logp,data=d, ylab=expression(-log[10](italic(p))) , colour=factor(CHR))
+                        manplot=manplot+scale_x_continuous("BP") }                 
                 manplot=manplot+scale_y_continuous(limits=c(0,maxy), breaks=1:maxy, labels=1:maxy)
                 manplot=manplot+scale_colour_manual(value=mycols)
                 if (annotate) {  manplot=manplot + geom_point(data=d.annotate, colour=I("green3")) } 
@@ -198,7 +205,6 @@ def main():
         rgManQQ.py '$input_file' "$name" '$out_html' '$out_html.files_path' '$chrom_col' '$offset_col' '$pval_col'
     </command>
     """
-    print >> sys.stdout,'## rgManQQ.py. cl= \n%s' % ' '.join(['"%s"' % x for x in sys.argv])
     npar = 8
     if len(sys.argv) < npar:
             print >> sys.stdout, '## error - too few command line parameters - wanting %d' % npar
@@ -225,7 +231,7 @@ def main():
         pval_cols = 'c(%s)' % ','.join(map(str,p))
     except:
         pval_cols = 'c(0)'
-    if chrom_col == 1 or offset_col == 1: # was passed as zero - do not do manhattan plots
+    if chrom_col == 0 or offset_col == 0: # was passed as zero - do not do manhattan plots
         chrom_col = 0
         offset_col = 0
     grey = 0
@@ -263,3 +269,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
