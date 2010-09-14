@@ -16,7 +16,7 @@
                 --indexes-path="None"
             #else:
                 --own-file="None"
-                --indexes-path=$refGenomeSource.index.value
+                --indexes-path=$refGenomeSource.index
             #end if
             
             ## Are reads single-end or paired?
