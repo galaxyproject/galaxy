@@ -101,8 +101,7 @@
  <param name='infoTrack' value='noinfo' />
  <param name='hires' value='lo' />
  <param name='memsize' value='2048' />
- <output name='out_file1' file='rgtestouts/rgHaploView/rgHaploViewtest1.html' ftype='html' 
-lines_diff="20">
+ <output name='out_file1' file='rgtestouts/rgHaploView/rgHaploViewtest1.html' ftype='html' lines_diff="50">
     <extra_files type="file" name='alljoin.pdf' value="rgtestouts/rgHaploView/alljoin.pdf" compare="sim_size" delta="3000"/>
     <extra_files type="file" name='allnup.pdf' value="rgtestouts/rgHaploView/allnup.pdf" compare="sim_size" delta="3000" />
     <extra_files type="file" name='Log_rgHaploViewtest1.txt' value="rgtestouts/rgHaploView/Log_rgHaploViewtest1.txt" compare="diff" lines_diff="50"/>
