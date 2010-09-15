@@ -6,11 +6,8 @@
 #
 
 
-MCRROOT=${MCRROOT:-/galaxy/software/linux2.6-x86_64/bin/MCR-7.11}
+MCRROOT=${MCRROOT:-/galaxy/software/linux2.6-x86_64/bin/MCR-7.11/v711}
 MWE_ARCH=glnxa64
-
-exe_name=$( basename $0 )
-exe_dir=$( dirname $0 )
 
 if [ "$MWE_ARCH" = "sol64" ] ; then
   LD_LIBRARY_PATH=.:/usr/lib/lwp:${MCRROOT}/runtime/glnxa64
@@ -35,6 +32,6 @@ XAPPLRESDIR=${MCRROOT}/X11/app-defaults
 
 export LD_LIBRARY_PATH XAPPLRESDIR
 
-${exe_dir}/lps_tool $*
+lps_tool $*
 
 exit 0
