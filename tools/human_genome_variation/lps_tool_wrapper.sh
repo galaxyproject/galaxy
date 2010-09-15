@@ -5,7 +5,8 @@
 # the specified command.
 #
 
-MCRROOT=/opt/MATLAB/MATLAB_Compiler_Runtime/v711
+
+MCRROOT=${MCRROOT:-/galaxy/software/linux2.6-x86_64/bin/MCR-7.11}
 MWE_ARCH=glnxa64
 
 exe_name=$( basename $0 )

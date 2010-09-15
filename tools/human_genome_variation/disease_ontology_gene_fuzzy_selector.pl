@@ -8,6 +8,7 @@ use warnings;
 # disease ontology.
 # ontology: http://do-wiki.nubic.northwestern.edu/index.php/Main_Page
 # gene associations by FunDO: http://projects.bioinformatics.northwestern.edu/do_rif/
+# Sept 2010, switch to doLite
 # input: build outfile sourceFileLoc.loc term or partial term
 ##################################################################
 
@@ -23,7 +24,6 @@ my $term = shift @ARGV;
 $term =~ s/^'//; #remove quotes protecting from shell
 $term =~ s/'$//; 
 my $data;
-my $obo;
 open(LOC, $in) or die  "Couldn't open $in, $!\n";
 while (<LOC>) {
    chomp;
@@ -32,8 +32,6 @@ while (<LOC>) {
    if ($f[0] eq $build) { 
       if ($f[1] eq 'disease associated genes') { 
          $data = $f[2]; 
-      }elsif ($f[1] eq 'ontology') {
-         $obo = $f[2];
       }
    }
 }
@@ -53,8 +51,8 @@ open(FH, $data) or die "Couldn't open data file $data, $!\n";
 $term =~ s/\s+/|/g; #use OR between words
 while (<FH>) {
    chomp;
-   my @f = split(/\t/); #chrom start end strand geneID geneName DOID disease
-   if ($f[7] =~ /($term)/i) { 
+   my @f = split(/\t/); #chrom start end strand geneName geneID disease
+   if ($f[6] =~ /($term)/i) { 
       print OUT join("\t", @f), "\n";
    }elsif ($term eq 'disease') { #print all with disease
       print OUT join("\t", @f), "\n";

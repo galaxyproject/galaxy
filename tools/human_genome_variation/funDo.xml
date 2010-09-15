@@ -1,0 +1,96 @@
+<tool id="hgv_funDo" name="FunDO" Version="1.0.0">
+  <description>human genes associated with disease terms</description>
+
+  <command interpreter="perl">
+    disease_ontology_gene_fuzzy_selector.pl $build $out_file1 ${GALAXY_DATA_INDEX_DIR}/funDo.loc '$term'
+  </command>
+
+  <inputs>
+    <param name="build" type="select" label="Database build">
+      <options from_file="funDo.loc">
+        <column name="name" index="0"/>
+        <column name="value" index="0"/>
+        <filter type="unique_value" column="0"/>
+      </options>
+    </param>
+    <param name="term" size="40" type="text" label="Disease term(s)" />
+  </inputs>
+
+  <outputs>
+    <data format="interval" name="out_file1">
+    </data>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="term" value="lung"/>
+      <param name="build" value="hg18"/>
+      <output name="out_file1" file="funDo_output1.interval" />
+    </test>
+  </tests>
+
+  <help>
+**Data formats**
+
+There is no input dataset.  The output is in interval_ format.
+
+.. _interval: ./static/formatHelp.html#interval
+
+-----
+
+**What it does**
+
+This tool searches the disease-term field of the DOLite mappings
+used by the FunDO project and returns a set of genes that 
+are associated with terms matching the specified pattern.  (This is the
+reverse of what FunDO's own server does.)
+
+The search is case insensitive, and selects terms that contain any of
+the given words, either exactly or within a longer word (e.g. "nemia"
+selects not only "anemia", but also "hyperglycinemia", "tyrosinemias",
+and many other things).  Multiple words should be separated by spaces,
+not commas.  As a special case, entering the word "disease" returns all
+genes associated with any disease, even if that word does not actually
+appear in the term field.
+
+home page: http://django.nubic.northwestern.edu/fundo/
+
+-----
+
+**Example**
+
+Typing:: 
+
+    carcinoma
+
+results in::
+
+    1.          2.              3.              4.      5.      6.      7.              
+    chr11	89507465	89565427	+	NAALAD2	10003	Adenocarcinoma
+    chr15	50189113	50192264	-	BCL2L10	10017	Carcinoma
+    chr7	150535855	150555250	-	ABCF2	10061	Clear cell carcinoma
+    chr7	150540508	150555250	-	ABCF2	10061	Clear cell carcinoma
+    chr10	134925911	134940397	-	ADAM8	101	Adenocarcinoma
+    chr10	134925911	134940397	-	ADAM8	101	Adenocarcinoma
+    etc.
+
+where the column contents are as follows::
+
+ 1. chromosome name.
+ 2. start position of the gene.
+ 3. end position of the gene.
+ 4. strand.
+ 4. gene name.
+ 6. Entrez Gene ID.
+ 7. disease term.
+
+-----
+
+**References**
+
+Pan Du, Gang Feng,Jared Flatow, Jie Song, Michelle Holko, Warren A. Kibbe1 and
+Simon M. Lin.  From disease ontology to disease-ontology lite: statistical methods to adapt a general-purpose ontology for the test of gene-ontology associations.  Bioinformatics (2009) 25 (12):i63-i68. 
+
+Osborne JD, Flatow J, Holko M, Lin SM, Kibbe WA, Zhu LJ, Danila MI, Feng G, Chisholm RL. Annotating the human genome with Disease Ontology. BMC Genomics (2009) 10 S1:S6.
+  </help>
+</tool>
