@@ -46,7 +46,7 @@
 
 <div class="donemessagelarge">
 
-<p>The following job has been succesfully added to the queue:</p>
+<p>The following job has been successfully added to the queue:</p>
 
 %for data in out_data.values():
    <div style="padding: 10px"><b> ${data.hid}: ${data.name}</b></div>
@@ -56,7 +56,7 @@
 You can check the status of queued jobs and view the resulting 
 data by refreshing the <b>History</b> pane. When the job has been run
 the status will change from 'running' to 'finished' if completed 
-succesfully or 'error' if problems were encountered.
+successfully or 'error' if problems were encountered.
 </p>
 
 %if tool.options.refresh:
