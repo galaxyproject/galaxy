@@ -6,7 +6,7 @@ PerM
 #if $s.sourceOfRef.refSource == "history":
     $s.sourceOfRef.ref
 #else:
-    $s.sourceOfRef.index.value
+    $s.sourceOfRef.index
 #end if
 #if $s.mate.singleOrPairs == "single":
     $s.mate.reads

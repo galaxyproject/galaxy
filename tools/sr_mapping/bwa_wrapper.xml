@@ -5,7 +5,7 @@
 #if $genomeSource.refGenomeSource == "history":
 --ref=$genomeSource.ownFile
 #else:
---ref=$genomeSource.indices.value
+--ref=$genomeSource.indices
 #end if
 --fastq=$paired.input1
 #if $paired.sPaired == "paired":

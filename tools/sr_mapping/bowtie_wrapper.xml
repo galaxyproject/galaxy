@@ -50,7 +50,7 @@
       --icutoff="None"
      #end if
     #else:
-     --ref=$refGenomeSource.index.value
+     --ref=$refGenomeSource.index
      --indexSettings="None"
      --iautoB="None"
      --ipacked="None"
