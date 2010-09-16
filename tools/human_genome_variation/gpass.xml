@@ -47,7 +47,7 @@ The input dataset must be lped_, and the output is tabular_.
 **What it does**
 
 GPASS (Genome-wide Poisson Approximation for Statistical Significance)
-detects significant single-SNP associations in case control studies at a user-specified FDR.  Unlike previous methods, this tool can accurately approximate the genome-wide significance and FDR of SNP associations, while adjusting for millions of multiple comparisons, within seconds or minutes.
+detects significant single-SNP associations in case-control studies at a user-specified FDR.  Unlike previous methods, this tool can accurately approximate the genome-wide significance and FDR of SNP associations, while adjusting for millions of multiple comparisons, within seconds or minutes.
 
 The program has two main functionalities:
 
@@ -58,8 +58,7 @@ The program has two main functionalities:
             FDR = E(# of false positive SNPs / # of significant SNPs)
 
    This definition however is very inappropriate for association mapping, since SNPs are
-   highly correlated. 
-   The "true" FDR is therefore 10 / 11 = 91% false positive loci. Our FDR is
+   highly correlated.  Our FDR is
    defined differently to account for SNP correlations, and thus will obtain
    a proper FDR in terms of "proportion of false positive loci".
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export PATH=$PATH:$(dirname $0)
+
 input=$1
 min_window=$2
 max_window=$3

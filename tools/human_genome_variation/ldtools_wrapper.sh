@@ -5,6 +5,8 @@
 
 set -e
 
+export PATH=$PATH:$(dirname $0)
+
 # pagetag options
 input=
 rsquare=0.64

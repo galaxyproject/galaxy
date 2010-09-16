@@ -2,8 +2,10 @@
 
 use strict;
 use warnings;
-
+use File::Basename;
 use File::Temp qw/ tempfile /;
+
+$ENV{'PATH'} .= ':' . dirname($0);
 
 #this is a wrapper for gpass that converts a linkage pedigree file to input 
 #for this program

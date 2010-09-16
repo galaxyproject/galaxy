@@ -7,6 +7,8 @@
 
 set -e
 
+export PATH=$PATH:$(dirname $0)
+
 significance=
 posterior=
 new_args=

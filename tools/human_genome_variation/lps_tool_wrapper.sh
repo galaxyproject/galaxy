@@ -5,6 +5,7 @@
 # the specified command.
 #
 
+export PATH=$PATH:$(dirname $0)
 
 MCRROOT=${MCRROOT:-/galaxy/software/linux2.6-x86_64/bin/MCR-7.11/v711}
 MWE_ARCH=glnxa64
