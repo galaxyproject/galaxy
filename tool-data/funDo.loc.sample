@@ -7,5 +7,5 @@
 #Your funDo.loc file should include an entry per line for each disease
 #associated genes file you have stored.
 #
-hg18	disease associated genes	/galaxy/data/hg18/misc/funDo/genes-disease.Sept2010.interval
-hg19	disease associated genes	/galaxy/data/hg19/misc/funDo/genes-disease.Sept2010.interval
+#hg18	disease associated genes	/galaxy/data/hg18/misc/funDo/genes-disease.Sept2010.interval
+#hg19	disease associated genes	/galaxy/data/hg19/misc/funDo/genes-disease.Sept2010.interval
