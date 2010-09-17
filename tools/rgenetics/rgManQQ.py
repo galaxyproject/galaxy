@@ -138,9 +138,9 @@ qq = function(pvector, title=NULL, spartan=F) {
 # we need another string to avoid confusion over string substitutions with %in%
 # instantiate rcode2 string with infile,chromcol,offsetcol,pvalscols,title before saving and running
 
-rcode2 = """rgqqMan = function(infile="%s",chromcolumn=%d, offsetcolumn=%d, pvalscolumns=%s, 
+rcode2 = """rgqqMan = function(infile="%s",chromcolumn=%s, offsetcolumn=%s, pvalscolumns=%s, 
 title="%s",grey=%d) {
-rawd = read.table(infile,head=T,sep='\t')
+rawd = read.table(infile,head=T,sep='\\t')
 dn = names(rawd)
 cc = dn[chromcolumn]
 oc = dn[offsetcolumn] 
@@ -188,15 +188,54 @@ rgqqMan()
 
 
 def doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir):
-    """ draw a qq for pvals and a manhattan plot if chrom/offset <> 0
+    """ 
+    we may have an interval file or a tabular file - if interval, will have chr1... so need to adjust
+    to chrom numbers
+    draw a qq for pvals and a manhattan plot if chrom/offset <> 0
     contains some R scripts as text strings - we substitute defaults into the calls
     to make them do our bidding - and save the resulting code for posterity
     this can be called externally, I guess...for QC eg?
     """
-    rcmd = '%s%s' % (rcode,rcode2 % (input_fname,chrom_col,offset_col,pval_cols,title,grey))
+    ffd,filtered_fname = tempfile.mkstemp(prefix='rgManQQtemp')
+    f = open(filtered_fname,'w')
+    inf = open(input_fname,'r')
+    ohead = inf.readline().strip().split('\t') # see if we have a header
+    inf.seek(0) # rewind
+    newhead = ['pval%d' % (x+1) for x in pval_cols]
+    newhead.insert(0,'Offset')
+    newhead.insert(0,'Chrom')
+    havehead = 0
+    wewant = [chrom_col,offset_col]
+    wewant += pval_cols
+    try:
+        allnums = ['%d' % x for x in ohead] # this should barf if non numerics == header row?
+        f.write('\t'.join(newhead)) # for R to read
+        f.write('\n')
+    except:
+        havehead = 1
+        newhead = [ohead[chrom_col],ohead[offset_col]]
+        newhead += [ohead[x] for x in pval_cols]
+        f.write('\t'.join(newhead)) # use the original head
+        f.write('\n')
+    for i,row in enumerate(inf):
+        if i == 0 and havehead:
+            continue # ignore header
+        sr = row.strip().split('\t')
+        if len(sr) > 1:
+            if sr[chrom_col].lower().find('chr') <> -1:
+                sr[chrom_col] = sr[chrom_col][3:]
+            newr = [sr[x] for x in wewant] # grab cols we need
+            s = '\t'.join(newr)
+            f.write(s)
+            f.write('\n')
+    f.close()
+    pvc = [x+3 for x in range(len(pval_cols))] # 2 for offset and chrom, 1 for r offset start
+    pvc = 'c(%s)' % (','.join(map(str,pvc)))
+    rcmd = '%s%s' % (rcode,rcode2 % (filtered_fname,'1','2',pvc,title,grey))
     rlog,flist = RRun(rcmd=rcmd,title=ctitle,outdir=outdir)
     rlog.append('## R script=')
     rlog.append(rcmd)
+    os.unlink(filtered_fname)
     return rlog,flist
   
 
@@ -218,26 +257,28 @@ def main():
     outhtml = sys.argv[3]
     outdir = sys.argv[4]
     try:
-         chrom_col = int(sys.argv[5]) + 1
+         chrom_col = int(sys.argv[5])
     except:
-         chrom_col = 0
+         chrom_col = -1
     try:
-        offset_col = int(sys.argv[6]) + 1
+        offset_col = int(sys.argv[6])
     except:
-        offset_col = 0
+        offset_col = -1
     p = sys.argv[7].strip().split(',')
     try:
-        p = [int(x)+1 for x in p]
-        pval_cols = 'c(%s)' % ','.join(map(str,p))
+        p = [int(x) for x in p]
     except:
-        pval_cols = 'c(0)'
-    if chrom_col == 0 or offset_col == 0: # was passed as zero - do not do manhattan plots
-        chrom_col = 0
-        offset_col = 0
+        p = [-1]
+    if chrom_col == -1 or offset_col == -1: # was passed as zero - do not do manhattan plots
+        chrom_col = -1
+        offset_col = -1
     grey = 0
     if (sys.argv[8].lower() in ['1','true']):
        grey = 1
-    rlog,flist = doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir)
+    if p == [-1]:
+        print >> sys.stderr,'## Cannot run rgManQQ - missing pval column'
+        sys.exit(1)
+    rlog,flist = doManQQ(input_fname,chrom_col,offset_col,p,title,grey,ctitle,outdir)
     flist.sort()
     html = [galhtmlprefix % progname,]
     html.append('<h1>%s</h1>' % title)
