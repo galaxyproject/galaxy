@@ -7,6 +7,13 @@ import sys
 def delete_obj( obj ):
     sa_session.delete( obj )
     sa_session.flush()
+def delete_request_type_permissions( id ):
+    rtps = sa_session.query( galaxy.model.RequestTypePermissions ) \
+                     .filter( and_( galaxy.model.RequestTypePermissions.table.c.request_type_id==id ) ) \
+                     .order_by( desc( galaxy.model.RequestTypePermissions.table.c.create_time ) )
+    for rtp in rtps:
+        sa_session.delete( rtp )
+    sa_session.flush()
 def delete_user_roles( user ):
     for ura in user.roles:
         sa_session.delete( ura )
@@ -103,6 +110,16 @@ def get_private_role( user ):
         if role.name == user.email and role.description == 'Private Role for %s' % user.email:
             return role
     raise AssertionError( "Private role not found for user '%s'" % user.email )
+def get_request_by_name( name ):
+    return sa_session.query( galaxy.model.Request ) \
+                     .filter( and_( galaxy.model.Request.table.c.name==name,
+                                    galaxy.model.Request.table.c.deleted==False ) ) \
+                     .first()   
+def get_request_type_by_name( name ):
+    return sa_session.query( galaxy.model.RequestType ) \
+                     .filter( and_( galaxy.model.RequestType.table.c.name==name ) ) \
+                     .order_by( desc( galaxy.model.RequestType.table.c.create_time ) ) \
+                     .first()
 def get_role_by_name( name ):
     return sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
 def get_user( email ):
@@ -126,9 +143,9 @@ def get_user_role_associations_by_role( role ):
     return sa_session.query( galaxy.model.UserRoleAssociation ) \
                      .filter( galaxy.model.UserRoleAssociation.table.c.role_id == role.id ) \
                      .all()
-def mark_form_deleted( form ):
-    form.current.deleted = True
-    sa_session.add( form )
+def mark_obj_deleted( obj ):
+    obj.deleted = True
+    sa_session.add( obj )
     sa_session.flush()
 def refresh( obj ):
     sa_session.refresh( obj )

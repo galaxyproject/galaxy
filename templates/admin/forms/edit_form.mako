@@ -51,7 +51,7 @@ $(document).ready(function(){
 
 <%def name="render_selectbox_options( index, field_attr )">
     %if field_attr[0] == 'Type':
-        %if field_attr[1].get_selected()[0] == 'SelectField':
+        %if field_attr[1].get_selected( return_label=True ) == 'SelectField':
             <% options = field_attr[2] %>
             <div class="repeat-group-item">
                 <div class="form-row">
@@ -77,7 +77,7 @@ $(document).ready(function(){
 <%def name="render_field( index, field, saved )">
     %if saved:        
         <h4 class="msg_head"> 
-            <div class="form-row">${index+1}. ${field[0][1].value} (${field[2][1].get_selected()[1]})</div>
+            <div class="form-row">${index+1}. ${field[0][1].value} (${field[2][1].get_selected( return_value=True )})</div>
         </h4>
         <div class="msg_body">
     %else:

@@ -32,193 +32,192 @@ class TestLibraryFeatures( TwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         global admin_user_private_role
         admin_user_private_role = get_private_role( admin_user )
-    def test_005_create_library( self ):
-        """Testing creating a new library, then renaming it"""
+    def test_005_create_libraries( self ):
+        """Testing creating libraries used in this script, then renaming one of them"""
         # Logged in as admin_user
-        name = "library features Library1"
-        description = "library features Library1 description"
-        synopsis = "library features Library1 synopsis"
-        self.create_library( name=name, description=description, synopsis=synopsis )
-        self.browse_libraries_admin( check_str1=name, check_str2=description )
-        # Get the library object for later tests
-        global library_one
-        library_one = get_library( name, description, synopsis )
-        assert library_one is not None, 'Problem retrieving library named "%s" from the database' % name
+        for index in range( 0, 1 ):
+            name = 'library%s' % str( index + 1 )
+            description = '%s description' % name
+            synopsis = '%s synopsis' % name
+            self.create_library( name=name, description=description, synopsis=synopsis )
+            self.browse_libraries_admin( strings_displayed=[ name, description ] )
+        # Get the libraries for later use
+        global library1
+        library1 = get_library( 'library1', 'library1 description', 'library1 synopsis' )
+        assert library1 is not None, 'Problem retrieving library (library1) from the database'
         # Rename the library
-        new_name = "library features Library1 new name"
-        new_description = "library features Library1 new description"
-        new_synopsis = "library features Library1 new synopsis"
+        new_name = "library1 new name"
+        new_description = "library1 new description"
+        new_synopsis = "library1 new synopsis"
         self.library_info( 'library_admin',
-                            self.security.encode_id( library_one.id ),
-                            library_one.name,
+                            self.security.encode_id( library1.id ),
+                            library1.name,
                             new_name=new_name,
                             new_description=new_description,
                             new_synopsis=new_synopsis )
-        self.browse_libraries_admin( check_str1=new_name, check_str2=new_description )
+        self.browse_libraries_admin( strings_displayed=[ new_name, new_description ] )
         # Reset the library back to the original name and description
         self.library_info( 'library_admin',
-                            self.security.encode_id( library_one.id ),
-                            library_one.name,
+                            self.security.encode_id( library1.id ),
+                            library1.name,
                             new_name=name,
-                            new_description=description,
-                            new_synopsis=synopsis )
-        refresh( library_one )
-    def test_030_add_new_folder_to_root_folder( self ):
-        """Testing adding a folder to a library root folder"""
+                            new_description='library1 description',
+                            new_synopsis='library1 synopsis' )
+        refresh( library1 )
+    def test_030_add_folder_to_library1( self ):
+        """Testing adding a folder to a library1"""
         # logged in as admin_user
-        root_folder = library_one.root_folder
-        name = "Root Folder's Folder One"
-        description = "This is the root folder's Folder One"
+        root_folder = library1.root_folder
+        name = "folder1"
+        description = "folder1 description"
         self.add_folder( 'library_admin',
-                         self.security.encode_id( library_one.id ),
-                         self.security.encode_id( root_folder.id ),
+                         self.security.encode_id( library1.id ),
+                         self.security.encode_id( library1.root_folder.id ),
                          name=name,
                          description=description )
-        global folder_one
-        folder_one = get_folder( root_folder.id, name, description )
-        assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        global folder1
+        folder1 = get_folder( root_folder.id, name, description )
+        assert folder1 is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             check_str1=name,
-                             check_str2=description )
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ folder1.name, folder1.description ] )
     def test_035_add_subfolder_to_folder( self ):
-        """Testing adding a folder to a library folder"""
+        """Testing adding a folder to a folder"""
         # logged in as admin_user
         name = "Folder One's Subfolder"
         description = "This is the Folder One's subfolder"
         self.add_folder( 'library_admin',
-                         self.security.encode_id( library_one.id ),
-                         self.security.encode_id( folder_one.id ),
+                         self.security.encode_id( library1.id ),
+                         self.security.encode_id( folder1.id ),
                          name=name,
                          description=description )
-        global subfolder_one
-        subfolder_one = get_folder( folder_one.id, name, description )
-        assert subfolder_one is not None, 'Problem retrieving library folder named "Folder Ones Subfolder" from the database'
+        global subfolder1
+        subfolder1 = get_folder( folder1.id, name, description )
+        assert subfolder1 is not None, 'Problem retrieving subfolder1 from the database'
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             check_str1=name,
-                             check_str2=description )
-    def test_040_add_2nd_new_folder_to_root_folder( self ):
-        """Testing adding a 2nd folder to a library root folder"""
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ subfolder1.name, subfolder1.description ] )
+    def test_040_add_2nd_folder_to_library1( self ):
+        """Testing adding a 2nd folder to a library1"""
         # logged in as admin_user
-        root_folder = library_one.root_folder
-        name = "Folder Two"
-        description = "This is the root folder's Folder Two"
+        name = "folder2"
+        description = "folder2 description"
         self.add_folder( 'library_admin',
-                         self.security.encode_id( library_one.id ),
-                         self.security.encode_id( root_folder.id ),
+                         self.security.encode_id( library1.id ),
+                         self.security.encode_id( library1.root_folder.id ),
                          name=name,
                          description=description )
-        global folder_two
-        folder_two = get_folder( root_folder.id, name, description )
-        assert folder_two is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        global folder2
+        folder2 = get_folder( library1.root_folder.id, name, description )
+        assert folder2 is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             check_str1=name,
-                             check_str2=description )
-    def test_045_add_public_dataset_to_root_folders_2nd_subfolder( self ):
-        """Testing adding a public dataset to the root folder's 2nd sub-folder"""
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ folder2.name, folder2.description ] )
+    def test_045_add_public_dataset_to_folder2( self ):
+        """Testing adding a public dataset to folder2"""
         # Logged in as admin_user
-        message = "Testing adding a public dataset to the folder named %s" % folder_two.name
-        self.add_library_dataset( 'library_admin',
-                                  '2.bed',
-                                  self.security.encode_id( library_one.id ),
-                                  self.security.encode_id( folder_two.id ),
-                                  folder_two.name,
-                                  file_type='bed',
-                                  dbkey='hg18',
-                                  message=message.replace( ' ', '+' ),
-                                  root=False )
-        global ldda_two
-        ldda_two = get_latest_ldda()
-        assert ldda_two is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_two from the database'
+        filename = '2.bed'
+        ldda_message = "Testing uploading %s" % filename
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library1.id ),
+                                     folder_id=self.security.encode_id( folder2.id ),
+                                     filename=filename,
+                                     file_type='bed',
+                                     dbkey='hg18',
+                                     ldda_message=ldda_message,
+                                     strings_displayed=[ 'Upload files' ] )
+        global ldda2
+        ldda2 = get_latest_ldda()
+        assert ldda2 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda2 from the database'
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             check_str1='2.bed',
-                             check_str2=message,
-                             check_str3=admin_user.email )
-    def test_050_add_2nd_public_dataset_to_root_folders_2nd_subfolder( self ):
-        """Testing adding a 2nd public dataset to the root folder's 2nd sub-folder"""
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ ldda2.name, ldda2.message, admin_user.email ] )
+    def test_050_add_2nd_public_dataset_to_folder2( self ):
+        """Testing adding a 2nd public dataset folder2"""
         # Logged in as admin_user
-        message = "Testing adding a 2nd public dataset to the folder named %s" % folder_two.name
-        self.add_library_dataset( 'library_admin',
-                                  '3.bed',
-                                  self.security.encode_id( library_one.id ),
-                                  self.security.encode_id( folder_two.id ),
-                                  folder_two.name,
-                                  file_type='bed',
-                                  dbkey='hg18',
-                                  message=message.replace( ' ', '+' ),
-                                  root=False )
-        global ldda_three
-        ldda_three = get_latest_ldda()
-        assert ldda_three is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_three from the database'
+        filename='3.bed'
+        ldda_message = "Testing uploading %s" % filename
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library1.id ),
+                                     folder_id=self.security.encode_id( folder2.id ),
+                                     filename=filename,
+                                     file_type='bed',
+                                     dbkey='hg18',
+                                     ldda_message=ldda_message,
+                                     strings_displayed=[ 'Upload files' ] )
+        global ldda3
+        ldda3 = get_latest_ldda()
+        assert ldda3 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda3 from the database'
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             check_str1='3.bed',
-                             check_str2=message,
-                             check_str3=admin_user.email )
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ ldda3.name, ldda3.message, admin_user.email ] )
     def test_055_copy_dataset_from_history_to_subfolder( self ):
         """Testing copying a dataset from the current history to a subfolder"""
         # logged in as admin_user
         self.new_history()
         self.upload_file( "4.bed" )
         latest_hda = get_latest_hda()
-        self.add_history_datasets_to_library( 'library_admin',
-                                              self.security.encode_id( library_one.id ),
-                                              self.security.encode_id( subfolder_one.id ),
-                                              subfolder_one.name,
-                                              self.security.encode_id( latest_hda.id ),
-                                              root=False )
-        global ldda_four
-        ldda_four = get_latest_ldda()
-        assert ldda_four is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_four from the database'
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library1.id ),
+                                     folder_id=self.security.encode_id( subfolder1.id ),
+                                     upload_option='import_from_history',
+                                     hda_ids=self.security.encode_id( latest_hda.id ),
+                                     ldda_message='Imported from history',
+                                     strings_displayed=[ 'Active datasets in your current history' ] )
+        global ldda4
+        ldda4 = get_latest_ldda()
+        assert ldda4 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda4 from the database'
+        self.browse_library( 'library_admin',
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ ldda4.name, ldda4.message, admin_user.email ] )
     def test_060_editing_dataset_attribute_info( self ):
         """Testing editing a library dataset's attribute information"""
         # logged in as admin_user
         new_ldda_name = '4.bed ( version 1 )'
         self.ldda_edit_info( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             self.security.encode_id( subfolder_one.id ),
-                             self.security.encode_id( ldda_four.id ),
-                             ldda_four.name,
+                             self.security.encode_id( library1.id ),
+                             self.security.encode_id( subfolder1.id ),
+                             self.security.encode_id( ldda4.id ),
+                             ldda4.name,
                              new_ldda_name=new_ldda_name )
-        refresh( ldda_four )
-        self.browse_library( 'library_admin', self.security.encode_id( library_one.id ), check_str1=new_ldda_name )
+        refresh( ldda4 )
+        self.browse_library( 'library_admin',
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ new_ldda_name, ldda4.message ] )
     def test_065_uploading_new_dataset_version( self ):
         """Testing uploading a new version of a library dataset"""
         # logged in as admin_user
-        message = 'Testing uploading a new version of a dataset'
-        self.upload_new_dataset_version( 'library_admin',
-                                         '4.bed',
-                                         self.security.encode_id( library_one.id ),
-                                         self.security.encode_id( subfolder_one.id ),
-                                         subfolder_one.name,
-                                         self.security.encode_id( ldda_four.library_dataset.id ),
-                                         ldda_four.name,
-                                         file_type='auto',
-                                         dbkey='hg18',
-                                         message=message.replace( ' ', '+' ) )
-        global ldda_four_version_two
-        ldda_four_version_two = get_latest_ldda()
-        assert ldda_four_version_two is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_four_version_two from the database'
+        filename = '4.bed'
+        ldda_message = 'Testing uploading a new version of a dataset'
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library1.id ),
+                                     folder_id=self.security.encode_id( subfolder1.id ),
+                                     replace_id=self.security.encode_id( ldda4.library_dataset.id ),
+                                     filename=filename,
+                                     file_type='auto',
+                                     dbkey='hg18',
+                                     ldda_message=ldda_message,
+                                     strings_displayed=[ 'Upload files', 'You are currently selecting a new file to replace' ] )
+        global ldda4_version2
+        ldda4_version2 = get_latest_ldda()
+        assert ldda4_version2 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda4_version2 from the database'
         self.ldda_edit_info( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             self.security.encode_id( subfolder_one.id ),
-                             self.security.encode_id( ldda_four_version_two.id ),
-                             ldda_four_version_two.name,
-                             check_str1='This is the latest version of this library dataset' )
+                             self.security.encode_id( library1.id ),
+                             self.security.encode_id( subfolder1.id ),
+                             self.security.encode_id( ldda4_version2.id ),
+                             ldda4_version2.name,
+                             strings_displayed=[ 'This is the latest version of this library dataset' ] )
         # Check the previous version
         self.ldda_edit_info( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             self.security.encode_id( subfolder_one.id ),
-                             self.security.encode_id( ldda_four.id ),
-                             ldda_four.name,
-                             check_str1='This is an expired version of this library dataset' )
-        # Make sure ldda_four is no longer displayed in the library
+                             self.security.encode_id( library1.id ),
+                             self.security.encode_id( subfolder1.id ),
+                             self.security.encode_id( ldda4.id ),
+                             ldda4.name,
+                             strings_displayed=[ 'This is an expired version of this library dataset' ] )
+        # Make sure ldda4 is no longer displayed in the library
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             not_displayed=ldda_four.name )
+                             self.security.encode_id( library1.id ),
+                             strings_not_displayed=[ ldda4.name, ldda4.message ] )
     def test_070_upload_directory_of_files_from_libraries_view( self ):
         """Testing uploading a directory of files to a root folder from the Data Libraries view"""
         # logged in as admin_user
@@ -226,162 +225,157 @@ class TestLibraryFeatures( TwillTestCase ):
         # Libraries view since a sub-directory named the same as their email is not contained
         # in the configured user_library_import_dir ( in the test_data directory, only  regular_user1
         # and regular_user3 have directories ).  We'll need to give these 2 user LIBRARY_ADD permission
-        # on library_one to test this feature.
+        # on library1 to test this feature.
         permissions_in = [ 'LIBRARY_ADD' ]
         permissions_out = [ 'LIBRARY_ACCESS', 'LIBRARY_MODIFY', 'LIBRARY_MANAGE' ]
         role_ids = '%s,%s' % ( str( regular_user1_private_role.id ), str( regular_user3_private_role.id ) )
-        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
-        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on this library and it's contents.
-        self.library_permissions( self.security.encode_id( library_one.id ),
-                                  library_one.name,
+        self.library_permissions( self.security.encode_id( library1.id ),
+                                  library1.name,
                                   role_ids,
                                   permissions_in,
                                   permissions_out )
         self.logout()
         # Now that we have permissions set on the library, we can proceed to test uploading files
         self.login( email=regular_user1.email )
-        message = 'Uploaded all files in test-data/users/test1...'
+        ldda_message = 'Uploaded all files in test-data/users/test1...'
         # Since regular_user1 does not have any sub-directories contained within her configured
         # user_library_import_dir, the only option in her server_dir select list will be the
         # directory named the same as her email
-        check_str_after_submit = "Added 1 datasets to the library '%s' (each is selected)." % library_one.root_folder.name
-        self.upload_directory_of_files( 'library',
-                                        self.security.encode_id( library_one.id ),
-                                        self.security.encode_id( library_one.root_folder.id ),
-                                        server_dir=regular_user1.email,
-                                        message=message,
-                                        check_str_after_submit=check_str_after_submit )
+        self.upload_library_dataset( cntrller='library',
+                                     library_id=self.security.encode_id( library1.id ),
+                                     folder_id=self.security.encode_id( library1.root_folder.id ),
+                                     upload_option='upload_directory',
+                                     server_dir=regular_user1.email,
+                                     ldda_message=ldda_message,
+                                     strings_displayed = [ "Upload a directory of files" ] )
         self.browse_library( 'library',
-                             self.security.encode_id( library_one.id ),
-                             check_str1=regular_user1.email,
-                             check_str2=message )
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ regular_user1.email, ldda_message, '1.fasta' ] )
         self.logout()
         self.login( regular_user3.email )
-        message = 'Uploaded all files in test-data/users/test3.../run1'
+        ldda_message = 'Uploaded all files in test-data/users/test3.../run1'
         # Since regular_user2 has a subdirectory contained within her configured user_library_import_dir,
         # she will have a "None" option in her server_dir select list
-        self.upload_directory_of_files( 'library',
-                                        self.security.encode_id( library_one.id ),
-                                        self.security.encode_id( library_one.root_folder.id ),
-                                        server_dir='run1',
-                                        message=message,
-                                        check_str1='<option>None</option>',
-                                        check_str_after_submit=check_str_after_submit )
+        self.upload_library_dataset( cntrller='library',
+                                     library_id=self.security.encode_id( library1.id ),
+                                     folder_id=self.security.encode_id( library1.root_folder.id ),
+                                     upload_option='upload_directory',
+                                     server_dir='run1',
+                                     ldda_message=ldda_message,
+                                     strings_displayed=[ 'Upload a directory of files', '<option>None</option>' ] )
         self.browse_library( 'library',
-                             self.security.encode_id( library_one.id ),
-                             check_str1=regular_user3.email,
-                             check_str2=message )
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ regular_user3.email, ldda_message, '2.fasta' ] )
     def test_075_download_archive_of_library_files( self ):
-        """Testing downloading an archive of files from the library"""
+        """Testing downloading an archive of files from library1"""
         # logged in as regular_user3
         self.logout()
         self.login( email=admin_user.email )
-        self.add_library_dataset( 'library_admin',
-                                  '1.bed',
-                                  self.security.encode_id( library_one.id ),
-                                  self.security.encode_id( library_one.root_folder.id ),
-                                  library_one.root_folder.name,
-                                  file_type='bed',
-                                  dbkey='hg18',
-                                  root=True )
-        global ldda_one
-        ldda_one = get_latest_ldda()
-        assert ldda_one is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_one from the database'
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library1.id ),
+                                     folder_id=self.security.encode_id( library1.root_folder.id ),
+                                     filename='1.bed',
+                                     file_type='bed',
+                                     dbkey='hg18',
+                                     strings_displayed=[ 'Upload files' ] )
+        global ldda1
+        ldda1 = get_latest_ldda()
+        assert ldda1 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda1 from the database'
         for format in ( 'tbz', 'tgz', 'zip' ):
             archive = self.download_archive_of_library_files( cntrller='library',
-                                                              library_id=self.security.encode_id( library_one.id ),
-                                                              ldda_ids=[ self.security.encode_id( ldda_one.id ), self.security.encode_id( ldda_two.id ) ],
+                                                              library_id=self.security.encode_id( library1.id ),
+                                                              ldda_ids=[ self.security.encode_id( ldda1.id ), self.security.encode_id( ldda2.id ) ],
                                                               format=format )
-            self.check_archive_contents( archive, ( ldda_one, ldda_two ) )
+            self.check_archive_contents( archive, ( ldda1, ldda2 ) )
             os.remove( archive )
-    def test_080_mark_dataset_deleted( self ):
-        """Testing marking a library dataset as deleted"""
+    def test_080_mark_ldda2_deleted( self ):
+        """Testing marking ldda2 as deleted"""
         # Logged in as admin_user
         self.delete_library_item( 'library_admin',
-                                  self.security.encode_id( library_one.id ),
-                                  self.security.encode_id( ldda_two.library_dataset.id ),
-                                  ldda_two.name,
+                                  self.security.encode_id( library1.id ),
+                                  self.security.encode_id( ldda2.library_dataset.id ),
+                                  ldda2.name,
                                   item_type='library_dataset' )
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             not_displayed=ldda_two.name )
-    def test_085_display_and_hide_deleted_dataset( self ):
-        """Testing displaying and hiding a deleted library dataset"""
+                             self.security.encode_id( library1.id ),
+                             strings_not_displayed=[ ldda2.name, ldda2.message ] )
+    def test_085_display_and_hide_deleted_ldda2( self ):
+        """Testing displaying and hiding a deleted ldda2"""
         # Logged in as admin_user
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
+                             self.security.encode_id( library1.id ),
                              show_deleted=True,
-                             check_str1=ldda_two.name )
+                             strings_displayed=[ ldda2.name, ldda2.message ] )
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             not_displayed=ldda_two.name )
-    def test_090_mark_folder_deleted( self ):
-        """Testing marking a library folder as deleted"""
+                             self.security.encode_id( library1.id ),
+                             strings_not_displayed=[ ldda2.name, ldda2.message ] )
+    def test_090_mark_folder2_deleted( self ):
+        """Testing marking folder2 as deleted"""
         # Logged in as admin_user
         self.delete_library_item( 'library_admin',
-                                  self.security.encode_id( library_one.id ),
-                                  self.security.encode_id( folder_two.id ),
-                                  folder_two.name,
+                                  self.security.encode_id( library1.id ),
+                                  self.security.encode_id( folder2.id ),
+                                  folder2.name,
                                   item_type='folder' )
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             not_displayed=folder_two.name )
+                             self.security.encode_id( library1.id ),
+                             strings_not_displayed=[ folder2.name ] )
     def test_095_mark_folder_undeleted( self ):
         """Testing marking a library folder as undeleted"""
         # Logged in as admin_user
         self.undelete_library_item( 'library_admin',
-                                    self.security.encode_id( library_one.id ),
-                                    self.security.encode_id( folder_two.id ),
-                                    folder_two.name,
+                                    self.security.encode_id( library1.id ),
+                                    self.security.encode_id( folder2.id ),
+                                    folder2.name,
                                     item_type='folder' )
         # 2.bed was deleted before the folder was deleted, so state should have been saved.  In order
         # for 2.bed to be displayed, it would itself have to be marked undeleted.
         self.browse_library( 'library_admin',
-                             self.security.encode_id( library_one.id ),
-                             check_str1=folder_two.name,
-                             not_displayed=ldda_two.name )
+                             self.security.encode_id( library1.id ),
+                             strings_displayed=[ folder2.name ],
+                             strings_not_displayed=[ ldda2.name ] )
     def test_100_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
         # Logged in as admin_user
-        # First mark folder_two as deleted to further test state saving when we undelete the library
+        # First mark folder2 as deleted to further test state saving when we undelete the library
         self.delete_library_item( 'library_admin',
-                                  self.security.encode_id( library_one.id ),
-                                  self.security.encode_id( folder_two.id ),
-                                  folder_two.name,
+                                  self.security.encode_id( library1.id ),
+                                  self.security.encode_id( folder2.id ),
+                                  folder2.name,
                                   item_type='folder' )
         self.delete_library_item( 'library_admin',
-                                  self.security.encode_id( library_one.id ),
-                                  self.security.encode_id( library_one.id ),
-                                  library_one.name,
+                                  self.security.encode_id( library1.id ),
+                                  self.security.encode_id( library1.id ),
+                                  library1.name,
                                   item_type='library' )
-        self.browse_libraries_admin( not_displayed1=library_one.name )
-        self.browse_libraries_admin( deleted=True, check_str1=library_one.name )
+        self.browse_libraries_admin( strings_not_displayed=[ library1.name ] )
+        self.browse_libraries_admin( deleted=True, strings_displayed=[ library1.name ] )
     def test_105_mark_library_undeleted( self ):
         """Testing marking a library as undeleted"""
         # Logged in as admin_user
         self.undelete_library_item( 'library_admin',
-                                    self.security.encode_id( library_one.id ),
-                                    self.security.encode_id( library_one.id ),
-                                    library_one.name,
+                                    self.security.encode_id( library1.id ),
+                                    self.security.encode_id( library1.id ),
+                                    library1.name,
                                     item_type='library' )
-        self.browse_libraries_admin( check_str1=library_one.name )
+        self.browse_libraries_admin( strings_displayed=[ library1.name ] )
         self.browse_library( 'library_admin',
-                            self.security.encode_id( library_one.id ),
-                            check_str1=library_one.name,
-                            not_displayed=folder_two.name )
+                            self.security.encode_id( library1.id ),
+                            strings_displayed=[ library1.name ],
+                            strings_not_displayed=[ folder2.name ] )
     def test_110_purge_library( self ):
         """Testing purging a library"""
         # Logged in as admin_user
         self.delete_library_item( 'library_admin',
-                                  self.security.encode_id( library_one.id ),
-                                  self.security.encode_id( library_one.id ),
-                                  library_one.name,
+                                  self.security.encode_id( library1.id ),
+                                  self.security.encode_id( library1.id ),
+                                  library1.name,
                                   item_type='library' )
-        self.purge_library( self.security.encode_id( library_one.id ), library_one.name )
+        self.purge_library( self.security.encode_id( library1.id ), library1.name )
         # Make sure the library was purged
-        refresh( library_one )
-        if not ( library_one.deleted and library_one.purged ):
-            raise AssertionError( 'The library id %s named "%s" has not been marked as deleted and purged.' % ( str( library_one.id ), library_one.name ) )
+        refresh( library1 )
+        if not ( library1.deleted and library1.purged ):
+            raise AssertionError( 'The library id %s named "%s" has not been marked as deleted and purged.' % ( str( library1.id ), library1.name ) )
         def check_folder( library_folder ):
             for folder in library_folder.folders:
                 refresh( folder )
@@ -408,52 +402,14 @@ class TestLibraryFeatures( TwillTestCase ):
                 if not library_dataset.deleted:
                     raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' % \
                                           ( str( library_dataset.id ), library_dataset.name ) )
-        check_folder( library_one.root_folder )
-    def test_115_no_library_template( self ):
-        """Test library features when library has no template"""
-        # Logged in as admin_user
-        name = "library features Library Two"
-        description = "library features This is Library Two"
-        synopsis = "library features Library Two synopsis"
-        # Create a library, adding no template
-        self.create_library( name=name, description=description, synopsis=synopsis )
-        self.browse_libraries_admin( check_str1=name, check_str2=description )
-        global library_two
-        library_two = get_library( name, description, synopsis )
-        assert library_two is not None, 'Problem retrieving library named "%s" from the database' % name
-        # Add a dataset to the library
-        self.add_library_dataset( 'library_admin',
-                                  '3.bed',
-                                  self.security.encode_id( library_two.id ),
-                                  self.security.encode_id( library_two.root_folder.id ),
-                                  library_two.root_folder.name,
-                                  file_type='bed',
-                                  dbkey='hg18',
-                                  message='',
-                                  root=True )
-        ldda_three = get_latest_ldda()
-        assert ldda_three is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_three from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library_two.id ),
-                             check_str1='3.bed',
-                             check_str2=admin_user.email )
-        # TODO: add a functional test to cover adding a library dataset via url_paste here...
-        # TODO: Add a functional test to cover checking the space_to_tab checkbox here...
-        # Delete and purge the library
-        self.delete_library_item( 'library_admin',
-                                  self.security.encode_id( library_two.id ),
-                                  self.security.encode_id( library_two.id ),
-                                  library_two.name,
-                                  item_type='library' )
-        self.purge_library( self.security.encode_id( library_two.id ), library_two.name )
-        self.home()
+        check_folder( library1.root_folder )
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
         ##################
         # Purge all libraries
         ##################
-        for library in [ library_one, library_two ]:
+        for library in [ library1 ]:
             self.delete_library_item( 'library_admin',
                                       self.security.encode_id( library.id ),
                                       self.security.encode_id( library.id ),

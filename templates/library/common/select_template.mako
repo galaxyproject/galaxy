@@ -69,7 +69,7 @@ $( function() {
     </div>
 </div>
 <p/>
-%if template_select_list.get_selected() != ('Select one', 'none'):
+%if template_select_list.get_selected( return_label=True, return_value=True ) != ('Select one', 'none'):
     <div class="toolForm">
         <div class="toolFormTitle">Layout of selected template</div>
         <div class="toolFormBody">

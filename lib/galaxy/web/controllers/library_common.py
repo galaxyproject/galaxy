@@ -695,17 +695,24 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        ldda_message = util.restore_text( params.get( 'ldda_message', '' ) )
         deleted = util.string_as_bool( params.get( 'deleted', False ) )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        dbkey = params.get( 'dbkey', '?' )
         replace_id = params.get( 'replace_id', None )
         replace_dataset = None
         upload_option = params.get( 'upload_option', 'upload_file' )
+        if params.get( 'files_0|space_to_tab', False ):
+            space_to_tab = params.get( 'files_0|space_to_tab', '' )
+        else:
+            space_to_tab = params.get( 'space_to_tab', '' )
+        link_data_only = params.get( 'link_data_only', '' )
+        dbkey = params.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
+        roles = params.get( 'roles', '' )
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
         if replace_id not in [ None, 'None' ]:
@@ -725,24 +732,20 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             # Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
             upload_option = 'upload_file'
         else:
-            try:
-                folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-            except:
-                folder = None
+            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
             self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             self._check_add( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             library = folder.parent_library
         if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
         if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ) or cntrller == 'api':
-            # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
-            # on the dataset that would cause accessibility issues.
-            roles = params.get( 'roles', False )
             error = False
             if upload_option == 'upload_paths' and not trans.app.config.allow_library_path_paste:
                 error = True
                 message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
             elif roles:
+                # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
+                # on the dataset that would cause accessibility issues.
                 vars = dict( DATASET_ACCESS_in=roles )
                 permissions, in_roles, error, message = \
                     trans.app.security_agent.derive_roles_from_access( trans, library.id, cntrller, library=True, **vars )
@@ -780,14 +783,14 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                     widget.value = str( address.id )
                                     widget_dict[ 'widget' ] = widget
                                     processed_widgets.append( widget_dict )
-                                    # FIXME: ( hack ) It is now critical to update the value of 'field_%i', replacing the string
+                                    # It is now critical to update the value of 'field_%i', replacing the string
                                     # 'new' with the new address id.  This is necessary because the upload_dataset()
                                     # method below calls the handle_library_params() method, which does not parse the
                                     # widget fields, it instead pulls form values from kwd.  See the FIXME comments in the
                                     # handle_library_params() method, and the CheckboxField code in the next conditional.
                                     kwd[ 'field_%i' % index ] = str( address.id )
                                 else:
-                                    # The invalid address won't be saved, but we cannot dispaly error
+                                    # The invalid address won't be saved, but we cannot display error
                                     # messages on the upload form due to the ajax upload already occurring.
                                     # When we re-engineer the upload process ( currently under way ), we
                                     # will be able to check the form values before the ajax upload occurs
@@ -857,7 +860,6 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                        show_deleted=show_deleted,
                                                                        message=util.sanitize_text( message ), 
                                                                        status='done' ) )
-                    
                 else:
                     created_ldda_ids = ''
                     message = "Upload failed"
@@ -873,7 +875,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                                            show_deleted=show_deleted,
                                                            message=util.sanitize_text( message ),
                                                            status=status ) )
-        # Note: if the upload form was submitted due to refresh_on_demand for a form field, we cannot re-populate
+        # Note: if the upload form was submitted due to refresh_on_change for a form field, we cannot re-populate
         # the field for the selected file ( files_0|file_data ) if the user selected one.  This is because the value
         # attribute of the html input file type field is typically ignored by browsers as a security precaution. 
         
@@ -881,53 +883,33 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
         info_association, inherited = folder.get_info_association( inherited=True )
         if info_association and info_association.inheritable:
             widgets = folder.get_template_widgets( trans, get_contents=True )
-            # Handle form submission via refresh_on_change by keeping the contents of widget fields
-            populated_widgets = []
-            for index, widget_dict in enumerate( widgets ):
-                widget = widget_dict[ 'widget' ]
-                if isinstance( widget, AddressField ):
-                    value = util.restore_text( params.get( 'field_%i' % index, '' ) )
-                    if value:
-                        if value == 'new':
-                            # Adding a new address
-                            widget.value = value
-                            widget_dict[ 'widget' ] = widget
-                        elif value == 'none':
-                            widget.value = ''
-                            widget_dict[ 'widget' ] = widget
-                        else:
-                            # An existing address object was selected
-                            address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( int( value ) )
-                            widget_dict[ 'widget' ] = address_obj
-                populated_widgets.append( widget_dict )
-            widgets = populated_widgets
+            # Retain contents of widget fields when form was submitted via refresh_on_change.
+            widgets = self.populate_widgets_from_kwd( trans, widgets, **kwd )
         else:
             widgets = []
-        upload_option = params.get( 'upload_option', 'upload_file' )
-        # No dataset(s) specified, so display the upload form.  Send list of data formats to the form
-        # so the "extension" select list can be populated dynamically
+        # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
         file_formats = trans.app.datatypes_registry.upload_file_formats
         # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
         def get_dbkey_options( last_used_build ):
             for dbkey, build_name in util.dbnames:
                 yield build_name, dbkey, ( dbkey==last_used_build )
         dbkeys = get_dbkey_options( last_used_build )
-        # Send list of legitimate roles to the form so the dataset can be associated with 1 or more of them.
-        # If the library is public, all active roles are legitimate.  If the library is restricted by the
-        # LIBRARY_ACCESS permission, only those roles associated with that permission are legitimate.
-        roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
         trans.sa_session.refresh( history )
-        # If we're using nginx upload, override the form action
-        action = web.url_for( controller='library_common', action='upload_library_dataset' )
         if upload_option == 'upload_file' and trans.app.config.nginx_upload_path:
+            # If we're using nginx upload, override the form action -
             # url_for is intentionally not used on the base URL here -
             # nginx_upload_path is expected to include the proxy prefix if the
             # administrator intends for it to be part of the URL.
             action = trans.app.config.nginx_upload_path + '?nginx_redir=' + web.url_for( controller='library_common', action='upload_library_dataset' )
+        else:
+            action = web.url_for( controller='library_common', action='upload_library_dataset' )
+        upload_option_select_list = self._build_upload_option_select_list( trans, upload_option )
+        roles_select_list = self._build_roles_select_list( trans, cntrller, library, roles )
         return trans.fill_template( '/library/common/upload.mako',
                                     cntrller=cntrller,
+                                    upload_option_select_list=upload_option_select_list,
                                     upload_option=upload_option,
                                     action=action,
                                     library_id=library_id,
@@ -936,10 +918,13 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                     file_formats=file_formats,
                                     dbkeys=dbkeys,
                                     last_used_build=last_used_build,
-                                    roles=roles,
+                                    roles_select_list=roles_select_list,
                                     history=history,
                                     widgets=widgets,
+                                    space_to_tab=space_to_tab,
+                                    link_data_only=link_data_only,
                                     show_deleted=show_deleted,
+                                    ldda_message=ldda_message,
                                     message=message,
                                     status=status )
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
@@ -1137,13 +1122,26 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
     @web.expose
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
         params = util.Params( kwd )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        ldda_message = util.restore_text( params.get( 'ldda_message', '' ) )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         replace_id = params.get( 'replace_id', None )
         replace_dataset = None
-        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        upload_option = params.get( 'upload_option', 'import_from_history' )
+        if params.get( 'files_0|space_to_tab', False ):
+            space_to_tab = params.get( 'files_0|space_to_tab', '' )
+        else:
+            space_to_tab = params.get( 'space_to_tab', '' )
+        link_data_only = params.get( 'link_data_only', '' )
+        dbkey = params.get( 'dbkey', '?' )
+        if isinstance( dbkey, list ):
+            last_used_build = dbkey[0]
+        else:
+            last_used_build = dbkey
+        roles = params.get( 'roles', '' )
+        is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
         if replace_id not in [ None, 'None' ]:
             try:
@@ -1156,10 +1154,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             folder = replace_dataset.folder
             last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
         else:
-            try:
-                folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-            except:
-                folder = None
+            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
             self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             self._check_add( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             library = folder.parent_library
@@ -1187,7 +1182,16 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                     except:
                         hda = None
                     self._check_access( trans, cntrller, is_admin, hda, current_user_roles, use_panels, library_id, show_deleted )
-                    ldda = hda.to_library_dataset_dataset_association( target_folder=folder, replace_dataset=replace_dataset )
+                    if roles:
+                        role_ids = roles.split( ',' )
+                        role_obj_list = [ trans.sa_session.query( trans.model.Role ).get( role_id ) for role_id in role_ids ]
+                    else:
+                        role_obj_list = []
+                    ldda = hda.to_library_dataset_dataset_association( trans,
+                                                                       target_folder=folder,
+                                                                       replace_dataset=replace_dataset,
+                                                                       roles=role_obj_list,
+                                                                       ldda_message=ldda_message )
                     created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
                     dataset_names.append( ldda.name )
                     if not replace_dataset:
@@ -1235,31 +1239,72 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 message = 'Select at least one dataset from the list of active datasets in your current history'
                 status = 'error'
                 upload_option = params.get( 'upload_option', 'import_from_history' )
-                # Send list of data formats to the form so the "extension" select list can be populated dynamically
+                widgets = self._get_populated_widgets( folder )
+                # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
                 file_formats = trans.app.datatypes_registry.upload_file_formats
                 # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
                 def get_dbkey_options( last_used_build ):
                     for dbkey, build_name in util.dbnames:
                         yield build_name, dbkey, ( dbkey==last_used_build )
                 dbkeys = get_dbkey_options( last_used_build )
-                # Send list of legitimate roles to the form so the dataset can be associated with 1 or more of them.
-                roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
+                # Send the current history to the form to enable importing datasets from history to library
+                history = trans.get_history()
+                trans.sa_session.refresh( history )
+                action = 'add_history_datasets_to_library'
+                upload_option_select_list = self._build_upload_option_select_list( trans, upload_option )
+                roles_select_list = self._build_roles_select_list( trans, cntrller, library, roles )
                 return trans.fill_template( "/library/common/upload.mako",
-                                            action='add_history_datasets_to_library',
                                             cntrller=cntrller,
+                                            upload_option_select_list=upload_option_select_list,
                                             upload_option=upload_option,
+                                            action=action,
                                             library_id=library_id,
                                             folder_id=folder_id,
                                             replace_dataset=replace_dataset,
                                             file_formats=file_formats,
                                             dbkeys=dbkeys,
                                             last_used_build=last_used_build,
-                                            roles=roles,
+                                            roles_select_list=roles_select_list,
                                             history=history,
-                                            widgets=[],
+                                            widgets=widgets,
+                                            space_to_tab=space_to_tab,
+                                            link_data_only=link_data_only,
                                             show_deleted=show_deleted,
+                                            ldda_message=ldda_message,
                                             message=message,
                                             status=status )
+    def _build_roles_select_list( self, trans, cntrller, library, selected_roles ):
+        # Get the list of legitimate roles to display on the upload form.  If the library is public,
+        # all active roles are legitimate.  If the library is restricted by the LIBRARY_ACCESS permission, only
+        # the set of all roles associated with users that have that permission are legitimate.
+        legitimate_roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
+        if legitimate_roles:
+            # Build the roles multi-select list using the list of legitimate roles, making sure to select any that
+            # were selected before refresh_on_change, if one occurred.
+            roles_select_list = SelectField( "roles", multiple="true", size="5" )
+            for role in legitimate_roles:
+                roles_select_list.add_option( text=role.name, value=str( role.id ), selected=str( role.id ) in selected_roles )
+            return roles_select_list
+        else:
+            return None
+    def _build_upload_option_select_list( self, trans, upload_option ):
+        # Build the upload_option select list
+        upload_refresh_on_change_values = [ option_value for option_value, option_label in trans.model.LibraryDataset.upload_options ]
+        upload_option_select_list = SelectField( 'upload_option', 
+                                                 refresh_on_change=True, 
+                                                 refresh_on_change_values=upload_refresh_on_change_values )
+        for option_value, option_label in trans.model.LibraryDataset.upload_options:
+            upload_option_select_list.add_option( option_label, option_value, selected=option_value==upload_option )
+        return upload_option_select_list
+    def _get_populated_widgets( self, folder ):
+        # See if we have any inherited templates.
+        info_association, inherited = folder.get_info_association( inherited=True )
+        if info_association and info_association.inheritable:
+            widgets = folder.get_template_widgets( trans, get_contents=True )
+            # Retain contents of widget fields when form was submitted via refresh_on_change.
+            return self.populate_widgets_from_kwd( trans, widgets, **kwd )
+        else:
+            return []
     @web.expose
     def download_dataset_from_folder( self, trans, cntrller, id, library_id=None, **kwd ):
         """Catches the dataset id and displays file contents as directed"""
@@ -1993,6 +2038,14 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                     widget.value = ''
                 else:
                     widget.value = value
+            elif isinstance( widget, CheckboxField ):
+                # We need to check the value from kwd since util.Params would have munged the list if
+                # the checkbox is checked.
+                value = kwd.get( 'field_%i' % index, '' )
+                if CheckboxField.is_checked( value ):
+                    widget.value = 'true'
+            else:
+                widget.value = util.restore_text( params.get( 'field_%i' % index, '' ) )
         # Save updated template field contents
         field_contents = self.clean_field_contents( widgets, **kwd )
         if field_contents:

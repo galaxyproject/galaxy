@@ -24,7 +24,6 @@ class BaseField(object):
     def sample_field_types():
         return ['TextField', 'SelectField', 'CheckboxField', 'WorkflowField']
 
-
 class TextField(BaseField):
     """
     A standard text input box.
@@ -196,9 +195,10 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3">automatic</div>
     <div><input type="checkbox" name="bar" value="4" checked>bazooty</div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change = False, refresh_on_change_values = [] ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=[], size=None ):
         self.name = name
         self.multiple = multiple or False
+        self.size = size
         self.options = list()
         if display == "checkboxes":
             assert multiple, "Checkbox display only supported for multiple select"
@@ -264,7 +264,12 @@ class SelectField(BaseField):
     def get_html_default( self, prefix="", disabled=False ):
         if self.multiple:
             multiple = " multiple"
-        else: multiple = ""
+        else:
+            multiple = ""
+        if self.size:
+            size = ' size="%s"' % str( self.size )
+        else:
+            size = ''
         rval = []
         last_selected_value = ""
         for text, value, selected in self.options:
@@ -276,19 +281,36 @@ class SelectField(BaseField):
             rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, text ) )
         if last_selected_value:
             last_selected_value = ' last_selected_value="%s"' % escape( str( last_selected_value ), quote=True )
-        rval.insert( 0, '<select name="%s%s"%s%s%s%s>' % \
-                     ( prefix, self.name, multiple, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ),  ) )
+        rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>' % \
+                     ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
         rval.append( '</select>' )
         return "\n".join( rval )
-    def get_selected(self):
+    def get_selected( self, return_label=False, return_value=False, multi=False ):
         '''
-        This method returns the currently selected option's text and value
+        Return the currently selected option's label, value or both as a tuple.  For
+        multi-select lists, a list is returned.
         '''
-        for text, value, selected in self.options:
+        if multi:
+            selected_options = []
+        for label, value, selected in self.options:
             if selected:
-                return text, value
-        if self.options:
-            return self.options[0]
+                if return_label and return_value:
+                    if multi:
+                        selected_options.append( ( label, value ) )
+                    else:
+                        return ( label, value )
+                elif return_label:
+                    if multi:
+                        selected_options.append( label )
+                    else:
+                        return label
+                elif return_value:
+                    if multi:
+                        selected_options.append( value )
+                    else:
+                        return value
+        if multi:
+            return selected_options
         return None
 
 class DrillDownField( BaseField ):

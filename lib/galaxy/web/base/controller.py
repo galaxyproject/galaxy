@@ -269,22 +269,20 @@ class UsesFormDefinitionWidgets:
                 return True
         return False
     def clean_field_contents( self, widgets, **kwd ):
-        params = util.Params( kwd )
         field_contents = []
-        for index in range( len( widgets ) ):
-            widget = widgets[ index ][ 'widget' ]
-            field_value = params.get( 'field_%i' % ( index ), ''  )
+        for index, widget_dict in enumerate( widgets ):
+            widget = widget_dict[ 'widget' ]
+            value = kwd.get( widget.name, ''  )
             if isinstance( widget, CheckboxField ):
                 # CheckboxField values are lists if the checkbox is checked
-                field_value = str( widget.is_checked( field_value ) ).lower()
+                value = str( widget.is_checked( value ) ).lower()
             elif isinstance( widget, AddressField ):
                 # If the address was new, is has already been saved and widget.value is the new address.id
-                field_value = widget.value
-            field_contents.append( util.restore_text( field_value ) )
+                value = widget.value
+            field_contents.append( util.restore_text( value ) )
         return field_contents
     def field_param_values_ok( self, index, widget_type, **kwd ):
         # Make sure required fields have contents, etc
-        # TODO: Add support for other field types ( e.g., WorkflowField, etc )
         params = util.Params( kwd )
         if widget_type == 'AddressField':
             if not util.restore_text( params.get( 'field_%i_short_desc' % index, '' ) ) \
@@ -299,7 +297,6 @@ class UsesFormDefinitionWidgets:
         return True
     def save_widget_field( self, trans, field_obj, index, **kwd ):
         # Save a form_builder field object
-        # TODO: Add support for other field types ( e.g., WorkflowField, etc )
         params = util.Params( kwd )
         if isinstance( field_obj, trans.model.UserAddress ):
             field_obj.desc = util.restore_text( params.get( 'field_%i_short_desc' % index, '' ) )
@@ -313,6 +310,55 @@ class UsesFormDefinitionWidgets:
             field_obj.phone = util.restore_text( params.get( 'field_%i_phone' % index, '' ) )
             trans.sa_session.add( field_obj )
             trans.sa_session.flush()
+    def populate_widgets_from_kwd( self, trans, widgets, **kwd ):
+        # A form submitted via refresh_on_change requires us to populate the widgets with the contents of
+        # the form fields the user may have entered so that when the form refreshes the contents are retained.
+        params = util.Params( kwd )
+        populated_widgets = []
+        for widget_dict in widgets:
+            widget = widget_dict[ 'widget' ]
+            if params.get( widget.name, False ):
+                # The form included a field whose contents should be used to set the
+                # value of the current widget (widget.name is field_0, field_1, etc).
+                if isinstance( widget, AddressField ):
+                    value = util.restore_text( params.get( widget.name, '' ) )
+                    if value == 'new':
+                        # Adding a new address
+                        widget.value = value
+                        widget_dict[ 'widget' ] = widget
+                    elif value == 'none':
+                        widget.value = ''
+                        widget_dict[ 'widget' ] = widget
+                    else:
+                        # An existing address object was selected
+                        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( int( value ) )
+                        widget_dict[ 'widget' ] = address_obj
+                    # Populate the AddressField params with the form field contents
+                    widget_params_dict = {}
+                    for field_name, label, help_text in widget.fields():
+                        form_param_name = '%s_%s' % ( widget.name, field_name )
+                        widget_params_dict[ form_param_name ] = util.restore_text( params.get( form_param_name, '' ) )
+                    widget.params = widget_params_dict
+                elif isinstance( widget, CheckboxField ):
+                    # Check the value from kwd since util.Params would have
+                    # stringify'd the list if the checkbox is checked.
+                    value = kwd.get( widget.name, '' )
+                    if CheckboxField.is_checked( value ):
+                        widget.value = 'true'
+                        widget_dict[ 'widget' ] = widget
+                elif isinstance( widget, SelectField ):
+                    # Ensure the selected option remains selected.
+                    value = util.restore_text( params.get( widget.name, '' ) )
+                    processed_options = []
+                    for option_label, option_value, option_selected in widget.options:
+                        selected = value == option_value
+                        processed_options.append( ( option_label, option_value, selected ) )
+                    widget.options = processed_options
+                else:
+                    widget.value = util.restore_text( params.get( widget.name, '' ) )
+                    widget_dict[ 'widget' ] = widget
+            populated_widgets.append( widget_dict )
+        return populated_widgets
 
 class Sharable:
     """ Mixin for a controller that manages an item that can be shared. """

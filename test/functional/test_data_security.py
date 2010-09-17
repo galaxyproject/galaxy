@@ -55,12 +55,11 @@ class TestDataSecurity( TwillTestCase ):
             raise AssertionError( 'The DefaultHistoryPermission.action for history id %d is "%s", but it should be "%s"' \
                                   % ( latest_history.id, dhp.action, galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
         self.manage_roles_and_groups_for_user( self.security.encode_id( admin_user.id ),
-                                               check_str=admin_user.email )
+                                               strings_displayed=[ admin_user.email ] )
         # Try deleting the admin_user's private role
-        check_str = "You cannot eliminate a user's private role association."
         self.manage_roles_and_groups_for_user( self.security.encode_id( admin_user.id ),
                                                out_role_ids=str( admin_user_private_role.id ),
-                                               check_str=check_str )
+                                               strings_displayed = [ "You cannot eliminate a user's private role association." ] )
     def test_010_private_role_creation_and_default_history_permissions( self ):
         """Testing private role creation and changing DefaultHistoryPermissions for new histories"""
         # Logged in as admin_user

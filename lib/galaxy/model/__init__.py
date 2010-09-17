@@ -785,7 +785,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
             hda.set_peek()
         object_session( self ).flush()
         return hda
-    def to_library_dataset_dataset_association( self, target_folder, replace_dataset=None, parent_id=None, user=None ):
+    def to_library_dataset_dataset_association( self, trans, target_folder, replace_dataset=None, parent_id=None, user=None, roles=[], ldda_message='' ):
         if replace_dataset:
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that is being replaced with a new version.
             library_dataset = replace_dataset
@@ -796,6 +796,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
             object_session( self ).add( library_dataset )
             object_session( self ).flush()
         if not user:
+            # This should never happen since users must be authenticated to upload to a data library
             user = self.history.user
         ldda = LibraryDatasetDatasetAssociation( name=self.name, 
                                                  info=self.info,
@@ -812,9 +813,15 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                                  user=user )
         object_session( self ).add( ldda )
         object_session( self ).flush()
-        # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
+        # If roles were selected on the upload form, restrict access to the Dataset to those roles
+        for role in roles:
+            dp = trans.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role )
+            trans.sa_session.add( dp )
+            trans.sa_session.flush()
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         ldda.metadata = self.metadata
+        if ldda_message:
+            ldda.message = ldda_message
         if not replace_dataset:
             target_folder.add_library_dataset( library_dataset, genome_build=ldda.dbkey )
             object_session( self ).add( target_folder )
@@ -823,7 +830,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
         object_session( self ).add( library_dataset )
         object_session( self ).flush()
         for child in self.children:
-            child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder,
+            child_copy = child.to_library_dataset_dataset_association( trans,
+                                                                       target_folder=target_folder,
                                                                        replace_dataset=replace_dataset,
                                                                        parent_id=ldda.id,
                                                                        user=ldda.user )
@@ -951,8 +959,7 @@ class LibraryFolder( object ):
         # See if we have any associated templates.  The get_contents
         # param is passed by callers that are inheriting a template - these
         # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the 
-        # inherited template saved for the parent.
+        # fields on the upload form.
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -1037,6 +1044,10 @@ class LibraryFolder( object ):
 
 class LibraryDataset( object ):
     # This class acts as a proxy to the currently selected LDDA
+    upload_options = [ ( 'upload_file', 'Upload files' ),
+                       ( 'upload_directory', 'Upload directory of files' ),
+                       ( 'upload_paths', 'Upload files from filesystem paths' ),
+                       ( 'import_from_history', 'Import datasets from your current history' ) ]
     def __init__( self, folder=None, order_id=None, name=None, info=None, library_dataset_dataset_association=None, **kwd ):
         self.folder = folder
         self.order_id = order_id

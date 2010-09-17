@@ -313,9 +313,9 @@ $(document).ready(function(){
 	                    For selected sample(s): 
                         ${sample_ops.get_html()}
                     </div>
-                    %if 'none' not in sample_ops.get_selected() and len(selected_samples):
+                    %if 'none' not in sample_ops.get_selected( return_label=True, return_value=True ) and len(selected_samples):
                         <div class="form-row" style="background-color:#FAFAFA;">
-                            %if trans.app.model.Sample.bulk_operations.CHANGE_STATE in sample_ops.get_selected():
+                            %if trans.app.model.Sample.bulk_operations.CHANGE_STATE in sample_ops.get_selected( return_label=True, return_value=True ):
                                 <%
                                     widgets, title = request.type.change_state_widgets(trans)
                                 %>
@@ -336,12 +336,12 @@ $(document).ready(function(){
 		                            <input type="submit" name="change_state_button" value="Save"/>
 		                            <input type="submit" name="change_state_button" value="Cancel"/>
 		                        </div>
-		                    %elif trans.app.model.Sample.bulk_operations.SELECT_LIBRARY in sample_ops.get_selected():
+		                    %elif trans.app.model.Sample.bulk_operations.SELECT_LIBRARY in sample_ops.get_selected( return_label=True, return_value=True ):
 		                        <div class="form-row">
 			                        <label>Select data library:</label>
 			                        ${bulk_lib_ops[0].get_html()}
 		                        </div>
-		                        %if not 'none' in bulk_lib_ops[0].get_selected():
+		                        %if not 'none' in bulk_lib_ops[0].get_selected( return_label=True, return_value=True ):
 	                                <div class="form-row">
 				                        <label>Select folder:</label>
 				                        ${bulk_lib_ops[1].get_html()}

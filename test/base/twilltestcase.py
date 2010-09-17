@@ -231,11 +231,11 @@ class TwillTestCase( unittest.TestCase ):
         check_str = 'Deleted %d %s' % ( num_deleted, iff( num_deleted != 1, "histories", "history" ) )
         self.check_page_for_string( check_str )
         self.home()
-    def delete_current_history( self, check_str='' ):
+    def delete_current_history( self, strings_displayed=[] ):
         """Deletes the current history"""
         self.home()
         self.visit_page( "history/delete_current" )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
     def get_histories_as_data_list( self ):
@@ -305,53 +305,47 @@ class TwillTestCase( unittest.TestCase ):
         else:
             self.new_history()
         self.home()
-    def share_current_history( self, email, check_str='', check_str_after_submit='', check_str_after_submit2='',
-                               action='', action_check_str='', action_check_str_after_submit='' ):
+    def share_current_history( self, email, strings_displayed=[], strings_displayed_after_submit=[],
+                               action='', action_strings_displayed=[], action_strings_displayed_after_submit=[] ):
         """Share the current history with different users"""
         self.visit_url( "%s/history/share" % self.url )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( 'share', 'email', email )
         tc.submit( 'share_button' )
-        if check_str_after_submit:
-            self.check_page_for_string( check_str_after_submit )
-        if check_str_after_submit2:
-            self.check_page_for_string( check_str_after_submit2 )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         if action:
             # If we have an action, then we are sharing datasets with users that do not have access permissions on them
-            if action_check_str:
-                self.check_page_for_string( action_check_str )
+            for check_str in action_strings_displayed:
+                self.check_page_for_string( check_str )
             tc.fv( 'share_restricted', 'action', action )
             tc.submit( "share_restricted_button" )
-            if action_check_str_after_submit:
-                self.check_page_for_string( action_check_str_after_submit )
+            for check_str in action_strings_displayed_after_submit:
+                self.check_page_for_string( check_str )
         self.home()
-    def share_histories_with_users( self, ids, emails, check_str1='', check_str2='',
-                                    check_str_after_submit='', action=None, action_check_str=None ):
+    def share_histories_with_users( self, ids, emails, strings_displayed=[], strings_displayed_after_submit=[],
+                                    action=None, action_strings_displayed=[] ):
         """Share one or more histories with one or more different users"""
         self.visit_url( "%s/history/list?id=%s&operation=Share" % ( self.url, ids ) )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         tc.fv( 'share', 'email', emails )
         tc.submit( 'share_button' )
-        if check_str_after_submit:
-            self.check_page_for_string( check_str_after_submit )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         if action:
             # If we have an action, then we are sharing datasets with users that do not have access permissions on them
             tc.fv( 'share_restricted', 'action', action )
             tc.submit( "share_restricted_button" )
-            if action_check_str:
-                self.check_page_for_string( action_check_str )
+            for check_str in action_strings_displayed:
+                self.check_page_for_string( check_str )
         self.home()
-    def unshare_history( self, history_id, user_id, check_str1='', check_str2='', check_str_after_submit='' ):
+    def unshare_history( self, history_id, user_id, strings_displayed=[] ):
         """Unshare a history that has been shared with another user"""
         self.visit_url( "%s/history/list?id=%s&operation=share+or+publish" % ( self.url, history_id ) )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         self.visit_url( "%s/history/sharing?unshare_user=%s&id=%s" % ( self.url, user_id, history_id ) )
         self.home()
     def switch_history( self, id='', name='' ):
@@ -360,7 +354,7 @@ class TwillTestCase( unittest.TestCase ):
         if name:
             self.check_history_for_string( name )
         self.home()
-    def view_stored_active_histories( self, check_str='' ):
+    def view_stored_active_histories( self, strings_displayed=[] ):
         self.home()
         self.visit_page( "history/list" )
         self.check_page_for_string( 'Saved Histories' )
@@ -368,65 +362,63 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'operation=Rename' )
         self.check_page_for_string( 'operation=Switch' )
         self.check_page_for_string( 'operation=Delete' )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
-    def view_stored_deleted_histories( self, check_str='' ):
+    def view_stored_deleted_histories( self, strings_displayed=[] ):
         self.home()
         self.visit_page( "history/list?f-deleted=True" )
         self.check_page_for_string( 'Saved Histories' )
         self.check_page_for_string( '<input type="checkbox" name="id" value=' )
         self.check_page_for_string( 'operation=Undelete' )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
-    def view_shared_histories( self, check_str='', check_str2='' ):
+    def view_shared_histories( self, strings_displayed=[] ):
         self.home()
         self.visit_page( "history/list_shared" )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
         self.home()
-    def clone_history( self, history_id, clone_choice, check_str1='', check_str_after_submit='' ):
+    def clone_history( self, history_id, clone_choice, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
         self.visit_page( "history/clone?id=%s" % history_id )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         tc.fv( '1', 'clone_choice', clone_choice )
         tc.submit( 'clone_choice_button' )
-        if check_str_after_submit:
-            self.check_page_for_string( check_str_after_submit )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         self.home()
-    def make_accessible_via_link( self, history_id, check_str='', check_str_after_submit='' ):
+    def make_accessible_via_link( self, history_id, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
         self.visit_page( "history/list?operation=share+or+publish&id=%s" % history_id )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         # twill barfs on this form, possibly because it contains no fields, but not sure.
         # In any case, we have to mimic the form submission
         self.home()
         self.visit_page( 'history/sharing?id=%s&make_accessible_via_link=True' % history_id )
-        if check_str_after_submit:
-            self.check_page_for_string( check_str_after_submit )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         self.home()
-    def disable_access_via_link( self, history_id, check_str='', check_str_after_submit='' ):
+    def disable_access_via_link( self, history_id, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
         self.visit_page( "history/list?operation=share+or+publish&id=%s" % history_id )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         # twill barfs on this form, possibly because it contains no fields, but not sure.
         # In any case, we have to mimic the form submission
         self.home()
         self.visit_page( 'history/sharing?id=%s&disable_link_access=True' % history_id )
-        if check_str_after_submit:
-            self.check_page_for_string( check_str_after_submit )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         self.home()
-    def import_history_via_url( self, history_id, email, check_str_after_submit='' ):
+    def import_history_via_url( self, history_id, email, strings_displayed_after_submit=[] ):
         self.home()
         self.visit_page( "history/imp?&id=%s" % history_id )
-        if check_str_after_submit:
-            self.check_page_for_string( check_str_after_submit )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         self.home()
 
     # Functions associated with datasets (history items) and meta data
@@ -453,39 +445,38 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "edit?hid=%s" % hid )
         for subpatt in patt.split():
             tc.find(subpatt)
-    def delete_history_item( self, hda_id, check_str='' ):
+    def delete_history_item( self, hda_id, strings_displayed=[] ):
         """Deletes an item from a history"""
         try:
             hda_id = int( hda_id )
         except:
             raise AssertionError, "Invalid hda_id '%s' - must be int" % hda_id
         self.visit_url( "%s/root/delete?show_deleted_on_refresh=False&id=%s" % ( self.url, hda_id ) )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-    def undelete_history_item( self, hda_id, check_str='' ):
+    def undelete_history_item( self, hda_id, strings_displayed=[] ):
         """Un-deletes a deleted item in a history"""
         try:
             hda_id = int( hda_id )
         except:
             raise AssertionError, "Invalid hda_id '%s' - must be int" % hda_id
         self.visit_url( "%s/dataset/undelete?id=%s" % ( self.url, hda_id ) )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-    def display_history_item( self, hda_id, check_str='' ):
+    def display_history_item( self, hda_id, strings_displayed=[] ):
         """Displays a history item - simulates eye icon click"""
         self.visit_url( '%s/datasets/%s/display/' % ( self.url, self.security.encode_id( hda_id ) ) )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
-    def view_history( self, history_id, check_str='' ):
+    def view_history( self, history_id, strings_displayed=[] ):
         """Displays a history for viewing"""
         self.visit_url( '%s/history/view?id=%s' % ( self.url, self.security.encode_id( history_id ) ) )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
     def edit_hda_attribute_info( self, hda_id, new_name='', new_info='', new_dbkey='', new_startcol='',
-                                 check_str1='', check_str2='', check_str3='', check_str4='',
-                                 not_displayed1='', not_displayed2='', not_displayed3='' ):
+                                 strings_displayed=[], strings_not_displayed=[] ):
         """Edit history_dataset_association attribute information"""
         self.home()
         self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
@@ -506,43 +497,19 @@ class TwillTestCase( unittest.TestCase ):
         if submit_required:
             tc.submit( 'save' )
             self.check_page_for_string( 'Attributes updated' )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if check_str3:
-            self.check_page_for_string( check_str3 )
-        if check_str4:
-            self.check_page_for_string( check_str4 )
-        if not_displayed1:
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
             try:
-                self.check_page_for_string( not_displayed1 )
-                raise AssertionError, "String (%s) incorrectly displayed on Edit Attributes page." % not_displayed
-            except:
-                pass
-        if not_displayed2:
-            try:
-                self.check_page_for_string( not_displayed2 )
-                raise AssertionError, "String (%s) incorrectly displayed on Edit Attributes page." % not_displayed
-            except:
-                pass
-        if not_displayed3:
-            try:
-                self.check_page_for_string( not_displayed3 )
-                raise AssertionError, "String (%s) incorrectly displayed on Edit Attributes page." % not_displayed
+                self.check_page_for_string( check_str )
+                raise AssertionError, "String (%s) incorrectly displayed on Edit Attributes page." % check_str
             except:
                 pass
         self.home()
-    def check_hda_attribute_info( self, hda_id, check_str1='', check_str2='', check_str3='', check_str4='' ):
+    def check_hda_attribute_info( self, hda_id, strings_displayed=[] ):
         """Edit history_dataset_association attribute information"""
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if check_str3:
-            self.check_page_for_string( check_str3 )
-        if check_str4:
-            self.check_page_for_string( check_str4 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
     def auto_detect_metadata( self, hda_id ):
         """Auto-detect history_dataset_association metadata"""
         self.home()
@@ -673,16 +640,16 @@ class TwillTestCase( unittest.TestCase ):
                         self.files_re_match( local_name, temp_name, attributes=attributes )
                     elif compare == 're_match_multiline':
                         self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-	            elif compare == 'sim_size':
-	                delta = attributes.get('delta','100')
-	                s1 = len(data)
-	                s2 = os.path.getsize(local_name)
-	                if abs(s1-s2) > int(delta):
-	                   raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
-                    else:
-                        raise Exception, 'Unimplemented Compare type: %s' % compare
-                    if extra_files:
-                        self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
+    	            elif compare == 'sim_size':
+    	                delta = attributes.get('delta','100')
+    	                s1 = len(data)
+    	                s2 = os.path.getsize(local_name)
+    	                if abs(s1-s2) > int(delta):
+    	                   raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
+                        else:
+                            raise Exception, 'Unimplemented Compare type: %s' % compare
+                        if extra_files:
+                            self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
                 except AssertionError, err:
                     errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
                     errmsg += str( err )
@@ -801,9 +768,7 @@ class TwillTestCase( unittest.TestCase ):
                         pass
         return previously_created, username_taken, invalid_username
     def create_user_with_info( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
-        '''
-        This method registers a new user and also provides use info
-        '''
+        # This method creates a new user with associated info
         if user_info_forms == 'multiple':
             self.visit_url( "%s/user/create?user_info_select=%i&admin_view=False&use_panels=False" % ( self.url, user_info_form_id ) )
         else:
@@ -819,7 +784,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "field_%i" % index, info_value )
         tc.submit( "create_user_button" )
     def create_user_with_info_as_admin( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
-        # This method creates a new user with associated info
+        # This method creates a new user with associated info from the admin view
         self.home()
         if user_info_forms == 'multiple':
             self.visit_page( "admin/users?operation=create?user_info_select=%i&admin_view=False" % user_info_form_id )
@@ -836,15 +801,15 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "2", "field_%i" % index, info_value )
         tc.submit( "create_user_button" )
         self.check_page_for_string( "Created new user account (%s)" % email )
-    def edit_login_info( self, new_email, new_username, check_str1='' ):
+    def edit_login_info( self, new_email, new_username, strings_displayed=[] ):
         self.home()
         self.visit_url( "%s/user/show_info" % self.url )
         self.check_page_for_string( "Manage User Information" )
         tc.fv( "login_info", "email", new_email )
         tc.fv( "login_info", "username", new_username )
         tc.submit( "login_info_button" )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
     def change_password( self, password, new_password ):
         self.home()
         self.visit_page( "user/show_info" )
@@ -1211,7 +1176,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
     def manage_roles_and_groups_for_user( self, user_id, in_role_ids=[], out_role_ids=[],
-                                          in_group_ids=[], out_group_ids=[], check_str='' ):
+                                          in_group_ids=[], out_group_ids=[], strings_displayed=[] ):
         self.home()
         url = "%s/admin/manage_roles_and_groups_for_user?id=%s" % ( self.url, user_id )
         if in_role_ids:
@@ -1225,15 +1190,15 @@ class TwillTestCase( unittest.TestCase ):
         if in_role_ids or out_role_ids or in_group_ids or out_group_ids:
             url += "&user_roles_groups_edit_button=Save"
         self.visit_url( url )
-        if check_str:
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
 
     # Tests associated with roles
-    def browse_roles( self, check_str1='' ):
+    def browse_roles( self, strings_displayed=[] ):
         self.visit_url( '%s/admin/roles' % self.url )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
     def create_role( self,
                      name='Role One',
                      description="This is Role One",
@@ -1298,7 +1263,6 @@ class TwillTestCase( unittest.TestCase ):
         """Purge an existing role"""
         self.home()
         self.visit_url( "%s/admin/roles?operation=purge&id=%s" % ( self.url, role_id ) )
-        check_str = "The following have been purged from the database for role '%s': " % role_name
         check_str = "Purged 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
         self.home()
@@ -1330,10 +1294,10 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/admin/groups" % self.url )
         self.check_page_for_string( name )
         self.home()
-    def browse_groups( self, check_str1='' ):
+    def browse_groups( self, strings_displayed=[] ):
         self.visit_url( '%s/admin/groups' % self.url )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
     def rename_group( self, group_id, name='Group One Renamed' ):
         """Rename a group"""
         self.home()
@@ -1699,43 +1663,34 @@ class TwillTestCase( unittest.TestCase ):
         else:
             self.check_page_for_string = 'will now be inherited to contained folders and datasets'
         self.home()
-    def browse_libraries_admin( self, deleted=False, check_str1='', check_str2='', not_displayed1='' ):
+    def browse_libraries_admin( self, deleted=False, strings_displayed=[], strings_not_displayed=[] ):
         self.visit_url( '%s/library_admin/browse_libraries?sort=name&f-description=All&f-name=All&f-deleted=%s' % ( self.url, str( deleted ) ) )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if not_displayed1:
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
             try:
-                self.check_page_for_string( not_displayed1 )
-                raise AssertionError, "String (%s) incorrectly displayed when browing library." % not_displayed1
+                self.check_page_for_string( check_str )
+                raise AssertionError, "String (%s) incorrectly displayed when browing library." % check_str
             except:
                 pass
-    def browse_libraries_regular_user( self, check_str1='', check_str2='', not_displayed1='' ):
+    def browse_libraries_regular_user( self, strings_displayed=[], strings_not_displayed=[] ):
         self.visit_url( '%s/library/browse_libraries' % self.url )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if not_displayed1:
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
             try:
-                self.check_page_for_string( not_displayed1 )
-                raise AssertionError, "String (%s) incorrectly displayed when browing library." % not_displayed1
+                self.check_page_for_string( check_str )
+                raise AssertionError, "String (%s) incorrectly displayed when browing library." % check_str
             except:
                 pass
-    def browse_library( self, cntrller, id, show_deleted=False,
-                        check_str1='', check_str2='', check_str3='', not_displayed='', not_displayed2='' ):
+    def browse_library( self, cntrller, id, show_deleted=False, strings_displayed=[], strings_not_displayed=[] ):
         self.visit_url( '%s/library_common/browse_library?cntrller=%s&id=%s&show_deleted=%s' % ( self.url, cntrller, id, str( show_deleted ) ) )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if check_str3:
-            self.check_page_for_string( check_str3 )
-        if not_displayed:
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
             try:
-                self.check_page_for_string( not_displayed )
-                raise AssertionError, "String (%s) incorrectly displayed when browing library." % not_displayed
+                self.check_page_for_string( check_str )
+                raise AssertionError, "String (%s) incorrectly displayed when browing library." % check_str
             except:
                 pass
     def create_library( self, name='Library One', description='This is Library One', synopsis='Synopsis for Library One' ):
@@ -1767,34 +1722,24 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "edit_form", "field_default_1", field_default_1 )
         tc.submit( 'save_changes_button' )
         self.check_page_for_string( "The template for this data library has been updated with your changes." )
-    def library_info( self, cntrller, library_id, library_name, new_name='', new_description='', new_synopsis='',
-                           ele_1_field_name='', ele_1_contents='', ele_2_field_name='', ele_2_contents='', check_str1='' ):
+    def library_info( self, cntrller, library_id, library_name='', new_name='', new_description='', new_synopsis='', 
+                      template_fields=[], strings_displayed=[] ):
         """Edit information about a library, optionally using an existing template with up to 2 elements"""
         self.visit_url( "%s/library_common/library_info?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         if new_name and new_description and new_synopsis:
             tc.fv( '1', 'name', new_name )
             tc.fv( '1', 'description', new_description )
             tc.fv( '1', 'synopsis', new_synopsis )
             tc.submit( 'library_info_button' )
             self.check_page_for_string( "Information updated for library" )
-        # If there is a template, then there are 2 forms on this page and the template is the 2nd form
-        if ele_1_field_name and ele_1_contents and ele_2_field_name and ele_2_contents:
-            tc.fv( '2', ele_1_field_name, ele_1_contents )
-            tc.fv( '2', ele_2_field_name, ele_2_contents )
+        if template_fields:
+            for field_name, field_value in template_fields:
+                # The 2nd form on the page contains the template, and the form is named edit_info.
+                # Set the template field value
+                tc.fv( "edit_info", field_name, field_value )
             tc.submit( 'edit_info_button' )
-        elif ele_1_field_name and ele_1_contents:
-            tc.fv( '2', ele_1_field_name, ele_1_contents )
-            tc.submit( 'edit_info_button' )
-        self.home()
-    def set_library_info_field_template_field( self, cntrller, library_id, field_value ):
-        """Set the value of a single field in a template containing a field of type: CheckboxField, SelectField"""
-        self.visit_url( "%s/library_common/library_info?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
-        # The 2nd form on the page contains the template, and the form is named edit_info.
-        # Set the template field value
-        tc.fv( "edit_info", "field_0", field_value )
-        tc.submit( 'edit_info_button' )
         self.home()
     def library_permissions( self, library_id, library_name, role_ids_str, permissions_in, permissions_out, cntrller='library_admin' ):
         # role_ids_str must be a comma-separated string of role ids
@@ -1839,112 +1784,103 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
     def folder_info( self, cntrller, folder_id, library_id, name='', new_name='', description='',
-                     field_name='', contents='', check_str1='', check_str2='', not_displayed='' ):
+                     template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[],
+                     strings_displayed_after_submit=[], strings_not_displayed_after_submit=[] ):
         """Add information to a library using an existing template with 2 elements"""
         self.visit_url( "%s/library_common/folder_info?cntrller=%s&id=%s&library_id=%s" % \
                         ( self.url, cntrller, folder_id, library_id ) )
-        # Twill cannot handle the following call for some reason - it's buggy
-        # self.check_page_for_string( "Edit folder name and description" )
         if name and new_name and description:
             tc.fv( '1', "name", new_name )
             tc.fv( '1', "description", description )
             tc.submit( 'rename_folder_button' )
-            # Twill barfs on this, so keep it commented...
-            #self.check_page_for_string( "The information has been updated." )
-        if field_name and contents:
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
+            try:
+                self.check_page_for_string( check_str )
+                raise AssertionError, "String (%s) incorrectly displayed." % check_str
+            except:
+                pass
+        if template_refresh_field_contents:
+            # A template containing an AddressField is displayed on the form, so we need to refresh the form 
+            # with the received template_refresh_field_contents.  There are 2 forms on the folder_info page
+            # when in edit mode, and the 2nd one is the one we want.
+            self.refresh_form( "field_0", template_refresh_field_contents, form_no=2 )
+        if template_fields:
             # We have an information template associated with the folder, so
             # there are 2 forms on this page and the template is the 2nd form
-            tc.fv( '2', field_name, contents )
+            for field_name, field_value in template_fields:
+                tc.fv( "edit_info", field_name, field_value )
             tc.submit( 'edit_info_button' )
-            # Twill barfs on this, so keep it commented...
-            #self.check_page_for_string( 'The information has been updated.' )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if not_displayed:
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed_after_submit:
             try:
-                self.check_page_for_string( not_displayed )
-                raise AssertionError, "String (%s) should not have been displayed on folder info page." % not_displayed
+                self.check_page_for_string( check_str )
+                raise AssertionError, "String (%s) incorrectly displayed." % check_str
             except:
                 pass
         self.home()
-    def save_folder_template( self, cntrller, folder_id, library_id, field_name, field_value, check_str1='', check_str2='', check_str3='' ):
-        self.visit_url( "%s/library_common/folder_info?cntrller=%s&id=%s&library_id=%s" % \
-                        ( self.url, cntrller, folder_id, library_id ) )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if check_str3:
-            self.check_page_for_string( check_str3 )
-        # The 2nd form on the page contains the template, and the form is named edit_info.
-        # The CheckboxField may already be checked due to inherited template contents, but twill
-        # forces us to change a form value prior to submitting the form, so we'll check it.
-        tc.fv( "edit_info", field_name, field_value )
-        tc.submit( 'edit_info_button' )
-        self.home()
 
     # Library dataset stuff
-    def add_library_dataset( self, cntrller, filename, library_id, folder_id, folder_name,
-                             file_type='auto', dbkey='hg18', roles=[], message='', root=False,
-                             template_field_name1='', template_field_contents1='',
-                             template_field_name2='', template_field_contents2='',
-                             template_refresh_field_name='', template_refresh_field_contents='',
-                             field_0_short_desc='', field_0_name='', field_0_institution='',
-                             field_0_address='', field_0_city='', field_0_state='', field_0_postal_code='',
-                             field_0_country='', show_deleted='False', upload_option='upload_file',
-                             check_str1='', check_str2='', check_str3='', check_str4='' ):
-        """Add a dataset to a folder"""
-        filename = self.get_filename( filename )
-        self.visit_url( "%s/library_common/upload_library_dataset?cntrller=%s&library_id=%s&folder_id=%s&upload_option=%s&message=%s" % \
-                        ( self.url, cntrller, library_id, folder_id, upload_option, message.replace( ' ', '+' ) ) )
-        self.check_page_for_string( 'Upload files' )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if check_str3:
-            self.check_page_for_string( check_str3 )
-        if check_str4:
-            self.check_page_for_string( check_str4 )
-        # A template containing an AddressField may be displayed on the upload form.
-        # If this is the case, we need to refresh the form with the passeed tmplate_field_name1.
-        if template_refresh_field_name and template_refresh_field_contents:
-            self.refresh_form( template_refresh_field_name, template_refresh_field_contents )
-            tc.fv( "1", "field_0_short_desc", field_0_short_desc )
-            tc.fv( "1", "field_0_name", field_0_name )
-            tc.fv( "1", "field_0_institution", field_0_institution )
-            tc.fv( "1", "field_0_address", field_0_address )
-            tc.fv( "1", "field_0_city", field_0_city )
-            tc.fv( "1", "field_0_state", field_0_state )
-            tc.fv( "1", "field_0_postal_code", field_0_postal_code )
-            tc.fv( "1", "field_0_country", field_0_country )
-        # Add template field contents, if any...
-        if template_field_name1:
-            # The 2nd form on the page contains the template, and the form is named edit_info.
-            tc.fv( "edit_info", template_field_name1, template_field_contents1 )
-        if template_field_name2:
-            # The 2nd form on the page contains the template, and the form is named edit_info.
-            tc.fv( "edit_info", template_field_name2, template_field_contents2 )
+    def upload_library_dataset( self, cntrller, library_id, folder_id, filename='', server_dir='', replace_id='',
+                                upload_option='upload_file', file_type='auto', dbkey='hg18', space_to_tab='',
+                                link_data_only='', dont_preserve_dirs='', roles=[], ldda_message='', hda_ids='',
+                                template_refresh_field_contents='', template_fields=[], show_deleted='False', strings_displayed=[] ):
+        """Add datasets to library using any upload_option"""
+        # NOTE: due to the library_wait() method call at the end of this method, no tests should be done
+        # for strings_displayed_after_submit.
+        url = "%s/library_common/upload_library_dataset?cntrller=%s&library_id=%s&folder_id=%s" % \
+            ( self.url, cntrller, library_id, folder_id )
+        if replace_id:
+            # If we're uploading a new version of a library dataset, we have to include the replace_id param in the
+            # request because the form field named replace_id will not be displayed on the upload form if we dont.
+            url += "&replace_id=%s" % replace_id
+        self.visit_url( url )
+        if template_refresh_field_contents:
+            # A template containing an AddressField is displayed on the upload form, so we need to refresh the form 
+            # with the received template_refresh_field_contents.
+            self.refresh_form( "field_0", template_refresh_field_contents )
+        for tup in template_fields:
+            tc.fv( "1", tup[0], tup[1] )
         tc.fv( "1", "library_id", library_id )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "show_deleted", show_deleted )
-        tc.formfile( "1", "files_0|file_data", filename )
+        tc.fv( "1", "ldda_message", ldda_message )
         tc.fv( "1", "file_type", file_type )
         tc.fv( "1", "dbkey", dbkey )
-        tc.fv( "1", "message", message.replace( '+', ' ' ) )
+        if space_to_tab:
+            tc.fv( "1", "space_to_tab", space_to_tab )
+        if link_data_only:
+            tc.fv( "1", "link_data_only", link_data_only )
+        if dont_preserve_dirs:
+            tc.fv( "1", "dont_preserve_dirs", dont_preserve_dirs )
         for role_id in roles:
             tc.fv( "1", "roles", role_id )
-        tc.submit( "runtool_btn" )
-        if root:
-            check_str = "Added 1 datasets to the library '%s' (each is selected)." % folder_name
+        # Refresh the form by selecting the upload_option - we do this here to ensure
+        # all previously entered form contents are retained.
+        self.refresh_form( 'upload_option', upload_option )
+        if upload_option == 'import_from_history':
+            for check_str in strings_displayed:
+                self.check_page_for_string( check_str )
+            if hda_ids:
+                # Twill cannot handle multi-checkboxes, so the form can only have 1 hda_ids checkbox
+                tc.fv( "add_history_datasets_to_library", "hda_ids", '1' )
+            tc.submit( 'add_history_datasets_to_library_button' )
         else:
-            check_str = "Added 1 datasets to the folder '%s' (each is selected)." % folder_name
+            if filename:
+                filename = self.get_filename( filename )
+                tc.formfile( "1", "files_0|file_data", filename )
+            elif server_dir:
+                tc.fv( "1", "server_dir", server_dir )
+            for check_str in strings_displayed:
+                self.check_page_for_string( check_str )
+            tc.submit( "runtool_btn" )
+        # Give the files some time to finish uploading
         self.library_wait( library_id )
         self.home()
     def ldda_permissions( self, cntrller, library_id, folder_id, id, role_ids_str,
-                          permissions_in=[], permissions_out=[], check_str1='', ldda_name='' ):
+                          permissions_in=[], permissions_out=[], strings_displayed=[], ldda_name='' ):
         # role_ids_str must be a comma-separated string of role ids
         url = "%s/library_common/ldda_permissions?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
             ( self.url, cntrller, library_id, folder_id, id )
@@ -1957,18 +1893,13 @@ class TwillTestCase( unittest.TestCase ):
         if permissions_in or permissions_out:
             url += "&update_roles_button=Save"
             self.visit_url( url )
-        if check_str1:
-            check_str = check_str1
-        else:
-            check_str = "Permissions updated for dataset '%s'." % ldda_name
-        self.check_page_for_string( check_str )
+        if not strings_displayed:
+            strings_displayed = [ "Permissions updated for dataset '%s'." % ldda_name ]
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         self.home()
     def ldda_edit_info( self, cntrller, library_id, folder_id, ldda_id, ldda_name, new_ldda_name='',
-                        ele_1_field_name='', ele_1_contents='', ele_1_help='',
-                        ele_2_field_name='', ele_2_contents='', ele_2_help='',
-                        ele_3_field_name='', ele_3_contents='', ele_3_help='',
-                        check_str1='', check_str2='', check_str3='', check_str4='',
-                        not_displayed='' ):
+                        template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[] ):
         """Edit library_dataset_dataset_association information, optionally template element information"""
         self.visit_url( "%s/library_common/ldda_edit_info?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
                         ( self.url, cntrller, library_id, folder_id, ldda_id ) )        
@@ -1979,124 +1910,33 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( 'save' )
             check_str = "Attributes updated for library dataset '%s'." % new_ldda_name
             self.check_page_for_string( check_str )
-        # There are 4 forms on this page and the template is the 4th form
-        if ele_1_field_name and ele_1_contents:
-            ele_1_contents = ele_1_contents.replace( '+', ' ' )
-            tc.fv( '4', ele_1_field_name, ele_1_contents )
-        if ele_2_field_name and ele_2_contents:
-            ele_2_contents = ele_2_contents.replace( '+', ' ' )
-            tc.fv( '4', ele_2_field_name, ele_2_contents.replace( '+', ' ' ) )
-        if ele_3_field_name and ele_3_contents:
-            ele_3_contents = ele_3_contents.replace( '+', ' ' )
-            tc.fv( '4', ele_3_field_name, ele_3_contents )
-        if ele_1_field_name:
+        if template_refresh_field_contents:
+            # A template containing an AddressField is displayed on the upload form, so we need to refresh the form 
+            # with the received template_refresh_field_contents.  There are 4 forms on this page, and the template is
+            # contained in the 4th form named "edit_info".
+            self.refresh_form( "field_0", template_refresh_field_contents, form_no=4 )
+        if template_fields:
+            # We have an information template associated with the folder, so
+            # there are 2 forms on this page and the template is the 2nd form
+            for field_name, field_value in template_fields:
+                tc.fv( "edit_info", field_name, field_value )
             tc.submit( 'edit_info_button' )
-            self.check_page_for_string( 'This is the latest version of this library dataset' )
-            self.check_page_for_string( 'The information has been updated.' )
-            self.check_page_for_string( ele_1_contents )
-        if ele_2_field_name:
-            self.check_page_for_string( ele_2_contents )
-        if ele_3_field_name:
-            self.check_page_for_string( ele_3_contents )
-        if ele_1_help:
-            check_str = ele_1_help.replace( '+', ' ' )
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        if ele_2_help:
-            check_str = ele_2_help.replace( '+', ' ' )
-            self.check_page_for_string( check_str )
-        if ele_2_help:
-            check_str = ele_3_help.replace( '+', ' ' )
-            self.check_page_for_string( check_str )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if check_str3:
-            self.check_page_for_string( check_str3 )
-        if not_displayed:
+        for check_str in strings_not_displayed:
             try:
-                self.check_page_for_string( not_displayed )
-                raise AssertionError, "String (%s) should not have been displayed on ldda Edit Attributes page." % not_displayed
+                self.check_page_for_string( check_str )
+                raise AssertionError, "String (%s) should not have been displayed on ldda Edit Attributes page." % check_str
             except:
                 pass
         self.home()
-    def upload_new_dataset_version( self, cntrller, filename, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_type='auto',
-                                    dbkey='hg18', message='', template_field_name1='', template_field_contents1='' ):
-        """Upload new version(s) of a dataset"""
-        self.home()
-        filename = self.get_filename( filename )      
-        self.visit_url( "%s/library_common/upload_library_dataset?cntrller=%s&upload_option=upload_file&library_id=%s&folder_id=%s&replace_id=%s&message=%s" % \
-                        ( self.url, cntrller, library_id, folder_id, library_dataset_id, message ) )
-        self.check_page_for_string( 'Upload files' )
-        self.check_page_for_string( 'You are currently selecting a new file to replace' )
-        self.check_page_for_string( ldda_name )
-        tc.formfile( "1", "files_0|file_data", filename )
-        tc.fv( "1", "file_type", file_type )
-        tc.fv( "1", "dbkey", dbkey )
-        tc.fv( "1", "message", message.replace( '+', ' ' ) )
-        # Add template field contents, if any...
-        if template_field_name1:
-            tc.fv( "1", template_field_name1, template_field_contents1 )
-        tc.submit( "runtool_btn" )
-        check_str = "Added 1 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
-        self.check_page_for_string( check_str )
-        self.library_wait( library_id )
-        self.home()
-    def add_history_datasets_to_library( self, cntrller, library_id, folder_id, folder_name, hda_id, root=False ):
-        """Copy a dataset from the current history to a library folder"""
-        self.home()
-        self.visit_url( "%s/library_common/add_history_datasets_to_library?cntrller=%s&library_id=%s&folder_id=%s&hda_ids=%s&add_history_datasets_to_library_button=Add+selected+datasets" % \
-                        ( self.url, cntrller, library_id, folder_id, hda_id ) )
-        if root:
-            check_str = "Added 1 datasets to the library '%s' (each is selected)." % folder_name
-        else:
-            check_str = "Added 1 datasets to the folder '%s' (each is selected)." % folder_name
-        self.check_page_for_string( check_str )
-        self.home()
-    def upload_directory_of_files( self, cntrller, library_id, folder_id, server_dir, file_type='auto', dbkey='hg18', roles_tuple=[],
-                                   message='', check_str1='', check_str_after_submit='', template_field_name1='', template_field_contents1='' ):
-        """Add a directory of datasets to a folder"""
-        # roles is a list of tuples: [ ( role_id, role_description ) ]
-        url = "%s/library_common/upload_library_dataset?cntrller=%s&library_id=%s&folder_id=%s&upload_option=upload_directory" % \
-            ( self.url, cntrller, library_id, folder_id )
-        self.visit_url( url )
-        self.check_page_for_string( 'Upload a directory of files' )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        tc.fv( "1", "folder_id", folder_id )
-        tc.fv( "1", "file_type", file_type )
-        tc.fv( "1", "dbkey", dbkey )
-        tc.fv( "1", "message", message )
-        tc.fv( "1", "server_dir", server_dir )
-        for role_tuple in roles_tuple:
-            tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role name
-        # Add template field contents, if any...
-        if template_field_name1:
-            tc.fv( "1", template_field_name1, template_field_contents1 )
-        tc.submit( "runtool_btn" )
-        if check_str_after_submit:
-            try:
-                self.check_page_for_string( check_str_after_submit )
-            except:
-                self.library_wait( library_id )
-                try:
-                    self.check_page_for_string( check_str_after_submit )
-                except:
-                    self.library_wait( library_id )
-                    try:
-                        self.check_page_for_string( check_str_after_submit )
-                    except:
-                        self.library_wait( library_id )
-                        self.check_page_for_string( check_str_after_submit )
-        self.library_wait( library_id )
-        self.home()
-    def act_on_multiple_datasets( self, cntrller, library_id, do_action, ldda_ids='', check_str1='' ):
+    def act_on_multiple_datasets( self, cntrller, library_id, do_action, ldda_ids='', strings_displayed=[] ):
         # Can't use the ~/library_admin/libraries form as twill barfs on it so we'll simulate the form submission
         # by going directly to the form action
         self.visit_url( '%s/library_common/act_on_multiple_datasets?cntrller=%s&library_id=%s&ldda_ids=%s&do_action=%s' \
                         % ( self.url, cntrller, library_id, ldda_ids, do_action ) )
-        if check_str1:
-            self.check_page_for_string( check_str1 )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
     def download_archive_of_library_files( self, cntrller, library_id, ldda_ids, format ):
         self.home()
         # Here it would be ideal to have twill set form values and submit the form, but
@@ -2193,11 +2033,10 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Library '%s' and all of its contents have been purged" % library_name
         self.check_page_for_string( check_str )
         self.home()
-    def library_wait( self, library_id, cntrller='library_admin', maxiter=20 ):
+    def library_wait( self, library_id, cntrller='library_admin', maxiter=60 ):
         """Waits for the tools to finish"""
         count = 0
         sleep_amount = 1
-        self.home()
         while count < maxiter:
             count += 1
             self.visit_url( "%s/library_common/browse_library?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
@@ -2210,6 +2049,6 @@ class TwillTestCase( unittest.TestCase ):
         self.assertNotEqual(count, maxiter)
 
     # Tests associated with tags
-    def add_tag( self, item_id, item_class, context, new_tag, check_str='' ):
+    def add_tag( self, item_id, item_class, context, new_tag ):
         self.visit_url( "%s/tag/add_tag_async?item_id=%s&item_class=%s&context=%s&new_tag=%s" % \
                         ( self.url, item_id, item_class, context, new_tag ) )
