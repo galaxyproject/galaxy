@@ -7,39 +7,58 @@ set -e
 
 export PATH=$PATH:$(dirname $0)
 
-# pagetag options
+## pagetag options
 input=
 rsquare=0.64
 freq=0.00
 sample=###
 
-# senatag options
+## senatag options
 excluded=###
 required=###
 output=
 
 until [ $# -eq 0 ]
 do
-    if [[ $1 =~ "^rsquare=" ]]; then
-        rsquare=${1#rsquare=}
-    elif [[ $1 =~ "^freq=" ]]; then
-        freq=${1#freq=}
-    elif [[ $1 =~ "^input=" ]]; then
-        input=${1#input=}
-    elif [[ $1 =~ "^output=" ]]; then
-        output=${1#output=}
-    else
-        if [ -z "$new_args" ]; then
-            new_args=$1
-        else
-            new_args="$new_args $1"
-        fi
-    fi
+  case $1 in
+    rsquare=*)
+      rsquare=${1#rsquare=}
+      ;;
+    freq=*)
+      freq=${1#freq=}
+      ;;
+    input=*)
+      input=${1#input=}
+      ;;
+    output=*)
+      output=${1#output=}
+      ;;
+    *)
+      if [ -z "$new_args" ]; then
+        new_args=$1
+      else
+        new_args="$new_args $1"
+      fi
+      ;;
+  esac
 
-    shift
+  shift
 done
 
-pagetag.py --rsquare $rsquare --freq $freq $input snps.txt neighborhood.txt 2> /dev/null
+## run pagetag
+pagetag.py --rsquare $rsquare --freq $freq $input snps.txt neighborhood.txt &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "failed: pagetag.py --rsquare $rsquare --freq $freq $input snps.txt neighborhood.txt"
+	exit 1
+fi
+
+## run sentag
 senatag.py neighborhood.txt snps.txt > $output 2> /dev/null
+if [ $? -ne 0 ]; then
+	echo "failed: senatag.py neighborhood.txt snps.txt"
+	exit 1
+fi
+
+## cleanup
 rm -f snps.txt neighborhood.txt
 
