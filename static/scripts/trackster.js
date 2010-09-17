@@ -4,6 +4,7 @@
 
 var DENSITY = 200,
     FEATURE_LEVELS = 10,
+    MAX_FEATURE_DEPTH = 100,
     DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
@@ -997,7 +998,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     incremental_slots: function( level, features, no_detail, mode ) {
         if (!this.inc_slots[level]) {
             this.inc_slots[level] = {};
-            this.inc_slots[level].w_scale = 1 / level;
+            this.inc_slots[level].w_scale = level;
             this.inc_slots[level].mode = mode;
             this.s_e_by_tile[level] = {};
         }
@@ -1011,7 +1012,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             max_low = this.view.max_low;
             
         var slotted = [];
-        
         // Reset packing when we change display mode
         if (this.inc_slots[level].mode !== mode) {
             delete this.inc_slots[level];
@@ -1136,8 +1136,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         } else {
             // Calculate new slots incrementally for this new chunk of data and update height if necessary
             y_scale = ( no_detail ? this.vertical_nodetail_px : this.vertical_detail_px );
-            required_height = this.incremental_slots( this.view.zoom_res, result.data, no_detail, mode ) * y_scale + min_height;
-            slots = this.inc_slots[this.view.zoom_res];
+            var inc_scale = (w_scale < 0.0001 ? 1/view.zoom_res : w_scale);
+            required_height = this.incremental_slots( inc_scale, result.data, no_detail, mode ) * y_scale + min_height;
+            slots = this.inc_slots[inc_scale];
         }
         
         new_canvas.css({

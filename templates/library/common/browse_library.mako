@@ -206,7 +206,7 @@
                 %if ldda.library_dataset.deleted:
                    <span class="libraryItem-error">
                %endif
-               <a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}"><b>${ldda.name[:50]}</b></a>
+               <a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">${ldda.name[:50]}</a>
                %if ldda.library_dataset.deleted:
                    </span>
                %endif
@@ -308,11 +308,10 @@
             <td style="padding-left: ${folder_pad}px;">
                 <input type="checkbox" class="folderCheckbox"/>
                 
-                <span class="rowIcon"></span>
                 %if folder.deleted:
                     <span class="libraryItem-error">
                 %endif
-                <span class="expandLink"><a href="javascript:void(0);">${folder.name}</a></span>
+                <span class="expandLink"><span class="rowIcon"></span><a style="margin-left: 5px;" href="javascript:void(0);">${folder.name}</a></span>
                 
                 %if folder.deleted:
                     </span>
@@ -527,17 +526,17 @@
             </p>
             <ul style="padding-left: 1em; list-style-type: disc;">
                 %if 'gz' in comptypes:
-                    <li>gzip: Compression is fastest and yields a larger file, making it more suitable for fast network connections.
+                    <li>gzip: Recommended for fast network connections
                         %if trans.app.config.upstream_gzip:
                             NOTE: The file you receive will be an uncompressed .tar file - this is because the Galaxy server compresses it and your browser decompresses it on the fly.
                         %endif
                     </li>
                 %endif
                 %if 'bz2' in comptypes:
-                    <li>bzip2: Compression takes the most time but is better for slower network connections (that transfer slower than the rate of compression) since the resulting file size is smallest.</li>
+                    <li>bzip2: Recommended for slower network connections (smaller size but takes longer to compress)</li>
                 %endif
                 %if 'zip' in comptypes:
-                    <li>ZIP: Not recommended but is provided as an option for those on Windows without WinZip (since WinZip can read .bz2 and .gz files).</li>
+                    <li>zip: Not recommended but is provided as an option for those who cannot open the above formats</li>
                 %endif
             </ul>
         </div>
