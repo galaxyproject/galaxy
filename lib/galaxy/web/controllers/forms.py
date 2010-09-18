@@ -448,9 +448,11 @@ class Forms( BaseController ):
         layouts = set()
         try:
             reader = csv.reader(csv_file.file)
-            if form_type == trans.app.model.FormDefinition.types.SAMPLE:
-                for row in reader:
-                    options = row[5].split(',')
+            for row in reader:
+                if len(row) < 7: # ignore bogus rows
+		    continue
+                options = row[5].split(',')
+                if len(row) >= 8:
                     fields.append({'label': row[0], 
                                    'helptext': row[1], 
                                    'visible': row[2],
@@ -459,10 +461,8 @@ class Forms( BaseController ):
                                    'selectlist': options,
                                    'layout':row[6],
                                    'default': row[7]})
-                    layouts.add(row[6])
-            else:
-                for row in reader:
-                    options = row[5].split(',')
+                    layouts.add(row[6])             
+                else:
                     fields.append({'label': row[0], 
                                    'helptext': row[1], 
                                    'visible': row[2],
