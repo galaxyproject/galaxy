@@ -156,7 +156,7 @@ if (plen > 0) {
      mytitle = paste('p=',cname,', ',title,sep='')
      myfname = chartr(' ','_',cname)
      myqqplot = qq(rawd[,pvalscolumn],title=mytitle)
-     ggsave(filename=paste(myfname,"qqplot.png",sep='_'),myqqplot,width=8,height=11)
+     ggsave(filename=paste(myfname,"qqplot.png",sep='_'),myqqplot,width=11,height=8,dpi=100)
      print(paste('## qqplot on',cname,'done'))
      if ((chromcolumn > 0) & (offsetcolumn > 0)) {
          if (doreorder) {
@@ -168,7 +168,7 @@ if (plen > 0) {
          print(paste('## manhattan on',cname,'starting',chromcolumn,offsetcolumn,pvalscolumn))
          mymanplot= manhattan(chrom=rawd[,chromcolumn],offset=rawd[,offsetcolumn],pvals=rawd[,pvalscolumn],title=mytitle,grey=grey)
          print(paste('## manhattan plot on',cname,'done'))
-         ggsave(filename=paste(myfname,"manhattan.png",sep='_'),mymanplot,width=11,height=8)
+         ggsave(filename=paste(myfname,"manhattan.png",sep='_'),mymanplot,width=11,height=8,dpi=100)
          }
          else {
               print(paste('chrom column =',chromcolumn,'offset column = ',offsetcolumn,
@@ -187,7 +187,7 @@ rgqqMan()
 """
 
 
-def doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir):
+def doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir,beTidy=False):
     """ 
     we may have an interval file or a tabular file - if interval, will have chr1... so need to adjust
     to chrom numbers
@@ -235,7 +235,8 @@ def doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir)
     rlog,flist = RRun(rcmd=rcmd,title=ctitle,outdir=outdir)
     rlog.append('## R script=')
     rlog.append(rcmd)
-    os.unlink(filtered_fname)
+    if beTidy:
+        os.unlink(filtered_fname)
     return rlog,flist
   
 
