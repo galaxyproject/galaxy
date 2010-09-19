@@ -15,9 +15,7 @@ from amqplib import client_0_8 as amqp
 import csv, smtplib, socket
 log = logging.getLogger( __name__ )
 
-
 class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
-    
     @web.json
     def sample_state_updates( self, trans, ids=None, states=None, cntrller=None ):
         # Avoid caching
@@ -38,8 +36,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                         "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako", trans=trans, sample=sample, cntrller=cntrller ), 'utf-8' )
                     }
         return rval
-
-    
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def new(self, trans, **kwd):
@@ -88,7 +84,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                   **new_kwd) )
         elif params.get('refresh', False) == 'true':
             return self.__show_request_form(trans, **kwd)
-        
     def __select_request_type(self, trans, rtid):
         requesttype_list = trans.user.accessible_request_types(trans)
         rt_ids = ['none']
@@ -109,7 +104,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 else:
                     select_reqtype.add_option(rt.name, rt.id)
         return select_reqtype
-    
     def __show_request_form(self, trans, **kwd):
         params = util.Params( kwd )
         cntrller = util.restore_text( params.get( 'cntrller', 'requests'  ) )
@@ -295,8 +289,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                           id=trans.security.encode_id(request.id),
                                                           message=message ,
                                                           status='done') )
-
-        
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def edit(self, trans, **kwd):
@@ -344,7 +336,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                       **new_kwd) )
         elif params.get('refresh', False) == 'true':
             return self.__edit_request(trans, **kwd)
-        
     def __edit_request(self, trans, **kwd):
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
@@ -707,7 +698,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             else:
                 break
         return current_samples, details, edit_mode, libraries
-    
     def __library_widgets(self, trans, user, sample_index, libraries, sample=None, lib_id=None, folder_id=None, **kwd):
         '''
         This method creates the data library & folder selectbox for creating &
@@ -786,7 +776,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         for i, s in enumerate(current_samples):
             copy_list.add_option(s['name'], i)
         return copy_list  
-    
     def __sample_operation_selectbox(self, trans, request, **kwd):
         params = util.Params( kwd )
         cntrller = util.restore_text( params.get( 'cntrller', 'requests'  ) )
@@ -816,7 +805,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             else:
                 op_list.add_option(s, s)
         return op_list
-    
     def __selected_samples(self, trans, request, **kwd):
         params = util.Params( kwd )
         selected_samples = []
@@ -824,7 +812,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             if CheckboxField.is_checked(params.get('select_sample_%i' % s.id, '')):
                 selected_samples.append(s.id)
         return selected_samples
-
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def request_page(self, trans, **kwd):
@@ -873,8 +860,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                 lib_widget=lib_widget,
                                                 folder_widget=folder_widget))
             else:
-                src_library_id = current_samples[src_sample_index]['lib_widget'].get_selected()[1]
-                src_folder_id = current_samples[src_sample_index]['folder_widget'].get_selected()[1]
+                src_library_id = current_samples[src_sample_index]['lib_widget'].get_selected( return_value=True )
+                src_folder_id = current_samples[src_sample_index]['folder_widget'].get_selected( return_value=True )
                 for ns in range(num_sample_to_copy):
                     lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
                                                                        len(current_samples), 
@@ -1052,7 +1039,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                         sample_ops=sample_ops, 
                                         edit_mode=edit_mode, status=status, message=message,
                                         bulk_lib_ops=self.__library_widgets(trans, request.user, 0, libraries, None, **kwd))
-            
     def __import_samples(self, trans, cntrller, request, current_samples, details, libraries, **kwd):
         '''
         This method reads the samples csv file and imports all the samples
@@ -1103,7 +1089,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               id=trans.security.encode_id(request.id),
                                                               status='error',
                                                               message='Error in importing samples file' ))
-
     def __validate_barcode(self, trans, sample, barcode):
         '''
         This method makes sure that the given barcode about to be assigned to 
@@ -1131,8 +1116,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             if message:
                 break
         return message
-
-
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def delete_sample(self, trans, **kwd):
@@ -1249,9 +1232,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     dataset_files=sample.datasets,
                                     message=message, status=status, files=[],
                                     folder_path=folder_path )
-    #
     # Find sequencing requests & samples
-    #
     def __find_widgets(self, trans, **kwd):
         params = util.Params( kwd )
         request_states = SelectField('request_states', multiple=True, display="checkboxes")
@@ -1270,7 +1251,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 search_type.add_option(s, s)
         search_box = TextField('search_box', 50, kwd.get('search_box', ''))
         return request_states, search_type, search_box
-        
     @web.expose
     @web.require_admin
     def find( self, trans, **kwd ):
@@ -1321,13 +1301,3 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     cntrller=cntrller, request_states=request_states,
                                     samples=samples_list, search_type=search_type,
                                     results=results, search_box=search_box )
-    
-    
-    
-    
-    
-    
-    
-    
-        
-

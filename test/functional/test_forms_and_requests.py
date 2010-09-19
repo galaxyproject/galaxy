@@ -1,15 +1,8 @@
 import galaxy.model
 from galaxy.model.orm import *
-from galaxy.model.mapping import context as sa_session
 from base.twilltestcase import *
 from base.test_db_util import *
 
-not_logged_in_as_admin_security_msg = 'You must be logged in as an administrator to access this feature.'
-logged_in_as_admin_security_msg = 'You must be an administrator to access this feature.'
-not_logged_in_security_msg = 'You must be logged in to create/submit sequencing requests'
-form_one_name = "Request Form"
-form_two_name = "Sample Form"
-request_type_name = 'Test Requestype'
 sample_states = [  ( 'New', 'Sample entered into the system' ), 
                    ( 'Received', 'Sample tube received' ), 
                    ( 'Done', 'Sequence run complete' ) ]
@@ -22,17 +15,6 @@ address_dict = dict( short_desc="Office",
                      postal_code="007",
                      country="United+Kingdom",
                      phone="007-007-0007" )
-
-def get_latest_form(form_name):
-    fdc_list = sa_session.query( galaxy.model.FormDefinitionCurrent ) \
-                         .filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False ) \
-                         .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() )
-    for fdc in fdc_list:
-        sa_session.refresh( fdc )
-        sa_session.refresh( fdc.latest_form )
-        if form_name == fdc.latest_form.name:
-            return fdc.latest_form
-    return None
 
 class TestFormsAndRequests( TwillTestCase ):
     def test_000_initiate_users( self ):
@@ -113,12 +95,13 @@ class TestFormsAndRequests( TwillTestCase ):
         self.logout()
         self.login( email=admin_user.email )
         # create a form
-        global form_one_name
+        name = "Request Form"
         desc = "This is Form One's description"
         formtype = galaxy.model.FormDefinition.types.REQUEST
-        self.create_form( name=form_one_name, desc=desc, formtype=formtype, num_fields=0 )
+        self.create_form( name=name, desc=desc, formtype=formtype, num_fields=0 )
         # Get the form_definition object for later tests
-        form_one = get_latest_form(form_one_name)
+        global form_one
+        form_one = get_form( name )
         assert form_one is not None, 'Problem retrieving form named "%s" from the database' % name
         # edit form & add few more fields
         new_name = "Request Form (Renamed)"
@@ -128,7 +111,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.visit_page( 'forms/manage' )
         self.check_page_for_string( new_name )
         self.check_page_for_string( new_desc )
-        form_one_name = new_name
+        form_one = get_form( new_name )
     def test_015_add_form_fields( self ):
         """Testing adding fields to a form definition"""
         fields = [dict(name='Test field name one',
@@ -144,58 +127,62 @@ class TestFormsAndRequests( TwillTestCase ):
                        desc='Test field description three',
                        type='TextField',
                        required='required')]
-        form_one = get_latest_form(form_one_name)
-        self.form_add_field(form_one.current.id, form_one.name, form_one.desc, form_one.type, 
-                            field_index=len(form_one.fields), fields=fields)
-        form_one_latest = get_latest_form(form_one_name)
-        assert len(form_one_latest.fields) == len(form_one.fields)+len(fields)
+        self.form_add_field( form_one.current.id,
+                             form_one.name,
+                             form_one.desc,
+                             form_one.type, 
+                             field_index=len( form_one.fields ),
+                             fields=fields )
+        form_one_latest = get_form( form_one.name )
+        assert len( form_one_latest.fields ) == len( form_one.fields ) + len( fields )
     def test_020_create_sample_form( self ):
         """Testing creating another form (for samples)"""
-        global form_two_name
+        name = "Sample Form"
         desc = "This is Form Two's description"
         formtype = galaxy.model.FormDefinition.types.SAMPLE
         form_layout_name = 'Layout Grid One'
-        self.create_form( name=form_two_name, desc=desc, formtype=formtype, form_layout_name=form_layout_name )
+        self.create_form( name=name, desc=desc, formtype=formtype, form_layout_name=form_layout_name )
+        global form_two
+        form_two = get_form( name )
+        assert form_two is not None, "Error retrieving form %s from db" % name
         self.home()
         self.visit_page( 'forms/manage' )
-        self.check_page_for_string( form_two_name )
+        self.check_page_for_string( form_two.name )
         self.check_page_for_string( desc )
         self.check_page_for_string( formtype )
     def test_025_create_request_type( self ):
         """Testing creating a new requestype"""
-        request_form = get_latest_form(form_one_name)
-        sample_form = get_latest_form(form_two_name)
-        self.create_request_type(request_type_name, "test sequencer configuration", 
-                                 str(request_form.id), str(sample_form.id), sample_states )
-        global request_type
-        request_type = sa_session.query( galaxy.model.RequestType ) \
-                                 .filter( and_( galaxy.model.RequestType.table.c.name==request_type_name ) ) \
-                                 .order_by( desc( galaxy.model.RequestType.table.c.create_time ) ) \
-                                 .first()
-        assert request_type is not None, 'Problem retrieving sequencer configuration named "%s" from the database' % request_type_name
+        request_form = get_form( form_one.name )
+        sample_form = get_form( form_two.name )
+        name = 'Test Requestype'
+        self.create_request_type( name, "test sequencer configuration", str( request_form.id ), str( sample_form.id ), sample_states )
+        global request_type1
+        request_type1 = get_request_type_by_name( name )
+        assert request_type1 is not None, 'Problem retrieving sequencer configuration named "%s" from the database' % name
         # Set permissions
         permissions_in = [ k for k, v in galaxy.model.RequestType.permitted_actions.items() ]
         permissions_out = []
         # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
         # REQUEST_TYPE_ACCESS on this request_type
-        self.request_type_permissions(self.security.encode_id( request_type.id ),
-                                      request_type.name,
-                                      str( role_one.id ),
-                                      permissions_in,
-                                      permissions_out )
-        # Make sure the request_type is not accessible by regular_user2 since regular_user2 does not have Role1.
+        self.request_type_permissions( self.security.encode_id( request_type1.id ),
+                                       request_type1.name,
+                                       str( role_one.id ),
+                                       permissions_in,
+                                       permissions_out )
+        # Make sure the request_type1 is not accessible by regular_user2 since regular_user2 does not have Role1.
         self.logout()
         self.login( email=regular_user2.email )
         self.visit_url( '%s/requests_common/new?cntrller=requests&select_request_type=True' % self.url )
         try:
             self.check_page_for_string( 'There are no sequencer configurations created for a new request.' )
-            raise AssertionError, 'The request_type %s is accessible by %s when it should be restricted' % ( request_type.name, regular_user2.email )
+            raise AssertionError, 'The request_type %s is accessible by %s when it should be restricted' % ( request_type1.name, regular_user2.email )
         except:
             pass
         self.logout()
         self.login( email=admin_user.email )
     def test_030_create_address_and_library( self ):
         """Testing address & library creation"""
+        # ( 9/17/10 placed by gvk ) Hey, RC, why is this test here? The library is never used later in this script.
         # first create a library for the request so that it can be submitted later
         name = "TestLib001"
         description = "TestLib001 description"
@@ -247,23 +234,21 @@ class TestFormsAndRequests( TwillTestCase ):
         self.logout()
         self.login( email=regular_user1.email )
         self.add_user_address( regular_user1.id, address_dict )
-        global user_address
-        user_address = get_user_address( regular_user1, address_dict[ 'short_desc' ] )    
+        global user_address1
+        user_address1 = get_user_address( regular_user1, address_dict[ 'short_desc' ] )    
     def test_035_create_request( self ):
         """Testing creating, editing and submitting a request as a regular user"""
         # login as a regular user
         self.logout()
         self.login( email=regular_user1.email )
         # set field values
-        fields = ['option1', str(user_address.id), 'field three value'] 
+        fields = ['option1', str(user_address1.id), 'field three value'] 
         # create the request
-        request_name, request_desc = 'Request One', 'Request One Description'
-        self.create_request(request_type.id, request_name, request_desc, fields)
+        name = 'Request One'
+        desc = 'Request One Description'
+        self.create_request(request_type1.id, name, desc, fields)
         global request_one
-        request_one = sa_session.query( galaxy.model.Request ) \
-                                .filter( and_( galaxy.model.Request.table.c.name==request_name,
-                                               galaxy.model.Request.table.c.deleted==False ) ) \
-                                .first()        
+        request_one = get_request_by_name( name )        
         # check if the request's state is now set to 'new'
         assert request_one.state is not request_one.states.NEW, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.NEW )
@@ -273,15 +258,15 @@ class TestFormsAndRequests( TwillTestCase ):
         # add samples to this request
         self.add_samples( request_one.id, request_one.name, samples )
         # edit this request
-        fields = ['option2', str(user_address.id), 'field three value (edited)'] 
+        fields = ['option2', str(user_address1.id), 'field three value (edited)'] 
         self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', 
                           request_one.desc+' (Re-described)', fields)
-        sa_session.refresh( request_one )
+        refresh( request_one )
         # check if the request is showing in the 'new' filter
         self.check_request_grid(state=request_one.states.NEW, request_name=request_one.name)
         # submit the request
         self.submit_request( request_one.id, request_one.name )
-        sa_session.refresh( request_one )
+        refresh( request_one )
         # check if the request is showing in the 'submitted' filter
         self.check_request_grid(state=request_one.states.SUBMITTED, request_name=request_one.name)
         # check if the request's state is now set to 'submitted'
@@ -301,10 +286,10 @@ class TestFormsAndRequests( TwillTestCase ):
         self.add_bar_codes( request_one.id, request_one.name, bar_codes, request_one.samples )
         # change the states of all the samples of this request
         for sample in request_one.samples:
-            self.change_sample_state( request_one.id, request_one.name, sample.name, sample.id, request_type.states[1].id, request_type.states[1].name )
-            self.change_sample_state( request_one.id, request_one.name, sample.name, sample.id, request_type.states[2].id, request_type.states[2].name )
+            self.change_sample_state( request_one.id, request_one.name, sample.name, sample.id, request_type1.states[1].id, request_type1.states[1].name )
+            self.change_sample_state( request_one.id, request_one.name, sample.name, sample.id, request_type1.states[2].id, request_type1.states[2].name )
         self.home()
-        sa_session.refresh( request_one )
+        refresh( request_one )
         self.logout()
         self.login( email=regular_user1.email )
         # check if the request's state is now set to 'complete'
@@ -315,19 +300,16 @@ class TestFormsAndRequests( TwillTestCase ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         self.logout()
         self.login( email=admin_user.email )
-        request_name = "RequestTwo"
+        name = "RequestTwo"
+        # TODO: fix this test so it is no longer simulated.
         # simulate request creation
         url_str = '%s/requests_common/new?cntrller=requests_admin&create_request_button=Save&select_request_type=%i&select_user=%i&name=%s&refresh=True&field_2=%s&field_0=%s&field_1=%i' \
-                  % ( self.url, request_type.id, regular_user1.id, request_name, "field_2_value", 'option1', user_address.id )
-        print url_str
+                  % ( self.url, request_type1.id, regular_user1.id, name, "field_2_value", 'option1', user_address1.id )
         self.home()
         self.visit_url( url_str )
-        self.check_page_for_string( "The new request named <b>%s</b> has been created" % request_name )
+        self.check_page_for_string( "The new request named <b>%s</b> has been created" % name )
         global request_two
-        request_two = sa_session.query( galaxy.model.Request ) \
-                                .filter( and_( galaxy.model.Request.table.c.name==request_name,
-                                               galaxy.model.Request.table.c.deleted==False ) ) \
-                                .first()        
+        request_two = get_request_by_name( name )      
         # check if the request is showing in the 'new' filter
         self.check_request_admin_grid(state=request_two.states.NEW, request_name=request_two.name)
         # check if the request's state is now set to 'new'
@@ -340,7 +322,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.add_samples( request_two.id, request_two.name, samples )
         # submit the request
         self.submit_request_as_admin( request_two.id, request_two.name )
-        sa_session.refresh( request_two )
+        refresh( request_two )
         # check if the request is showing in the 'submitted' filter
         self.check_request_admin_grid(state=request_two.states.SUBMITTED, request_name=request_two.name)
         # check if the request's state is now set to 'submitted'
@@ -354,7 +336,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.logout()
         self.login( email=admin_user.email )
         self.reject_request( request_two.id, request_two.name, "Rejection test comment" )
-        sa_session.refresh( request_two )
+        refresh( request_two )
         # check if the request is showing in the 'rejected' filter
         self.check_request_admin_grid(state=request_two.states.REJECTED, request_name=request_two.name)
         # check if the request's state is now set to 'submitted'
@@ -363,14 +345,31 @@ class TestFormsAndRequests( TwillTestCase ):
     def test_055_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
-        # remove the request_type permissions
-        rt_actions = sa_session.query( galaxy.model.RequestTypePermissions ) \
-                               .filter(and_(galaxy.model.RequestTypePermissions.table.c.request_type_id==request_type.id) ) \
-                               .order_by( desc( galaxy.model.RequestTypePermissions.table.c.create_time ) ) \
-                               .all()
-        for a in rt_actions:
-            sa_session.delete( a )
-        sa_session.flush()
+        ##################
+        # Delete request_type permissions
+        ##################
+        for request_type in [ request_type1 ]:
+            delete_request_type_permissions( request_type.id )
+        ##################
+        # Mark all request_types deleted
+        ##################
+        for request_type in [ request_type1 ]:
+            mark_obj_deleted( request_type )
+        ##################
+        # Mark all requests deleted
+        ##################
+        for request in [ request_one, request_two ]:
+            mark_obj_deleted( request )
+        ##################
+        # Mark all forms deleted
+        ##################
+        for form in [ form_one, form_two ]:
+            self.mark_form_deleted( self.security.encode_id( form.current.id ) )
+        ##################
+        # Mark all user_addresses deleted
+        ##################
+        for user_address in [ user_address1 ]:
+            mark_obj_deleted( user_address )
         ##################
         # Purge all libraries
         ##################
@@ -382,22 +381,20 @@ class TestFormsAndRequests( TwillTestCase ):
                                       item_type='library' )
             self.purge_library( self.security.encode_id( library.id ), library.name )
         ##################
-        # Eliminate all non-private roles
+        # Delete all non-private roles
         ##################
         for role in [ role_one, role_two ]:
             self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
             self.purge_role( self.security.encode_id( role.id ), role.name )
             # Manually delete the role from the database
-            sa_session.refresh( role )
-            sa_session.delete( role )
-            sa_session.flush()
+            refresh( role )
+            delete( role )
         ##################
-        # Eliminate all groups
+        # Delete all groups
         ##################
         for group in [ group_one ]:
             self.mark_group_deleted( self.security.encode_id( group.id ), group.name )
             self.purge_group( self.security.encode_id( group.id ), group.name )
             # Manually delete the group from the database
             refresh( group )
-            sa_session.delete( group )
-            sa_session.flush()
+            delete( group )

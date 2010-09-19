@@ -1,3 +1,16 @@
+// Returns the number of keys (elements) in an array/dictionary.
+function obj_length(obj) {
+    if (obj.length !== undefined) {
+        return obj.length;
+    }
+
+    var count = 0;
+    for (var element in obj) {
+        count++;
+    }
+    return count;
+}
+
 $.fn.makeAbsolute = function(rebase) {
     return this.each(function() {
         var el = $(this);
@@ -60,11 +73,14 @@ function make_popupmenu( button_element, options ) {
     // }
     // container_element).css( "position", "relative" );
     var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></ul>" );
+    if (obj_length(options) <= 0) {
+        $("<li/>").html("No options").appendTo(menu_element);
+    }
     $.each( options, function( k, v ) {
-        if ( v ) {
-            $( "<li/>" ).html( k ).click( v ).appendTo( menu_element );
+        if (v) {
+            $("<li/>").html(k).click(v).appendTo(menu_element);
         } else {
-            $( "<li class='head'/>" ).html( k ).appendTo( menu_element );
+            $("<li class='head'/>").html(k).appendTo(menu_element);
         }
     });
     var wrapper = $( "<div class='popmenu-wrapper'>" );
@@ -100,19 +116,6 @@ function make_popup_menus() {
         $(this).remove();
         b.addClass( "popup" ).show();
     });
-}
-
-// Returns the number of keys (elements) in an array/dictionary.
-function array_length(an_array) {
-    if (an_array.length) {
-        return an_array.length;
-    }
-
-    var count = 0;
-    for (var element in an_array) {
-        count++;
-    }
-    return count;
 }
 
 // Alphanumeric/natural sort fn

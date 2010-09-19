@@ -136,17 +136,22 @@
     %endif
 </%def>
 
-<%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, widgets, roles, history, show_deleted )">
-    <% import os, os.path %>
+<%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, space_to_tab, link_data_only, widgets, roles_select_list, history, show_deleted )">
+    <%
+        import os, os.path
+        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
+    %>
     %if upload_option in [ 'upload_file', 'upload_directory', 'upload_paths' ]:
         <div class="toolForm" id="upload_library_dataset_tool_form">
-            %if upload_option == 'upload_directory':
-                <div class="toolFormTitle">Upload a directory of files</div>
-            %elif upload_option == 'upload_paths':
-                <div class="toolFormTitle">Upload files from filesystem paths</div>
-            %else:
-                <div class="toolFormTitle">Upload files</div>
-            %endif
+            <%
+                if upload_option == 'upload_directory':
+                    tool_form_title = 'Upload a directory of files'
+                elif upload_option == 'upload_paths':
+                    tool_form_title = 'Upload files from filesystem paths'
+                else:
+                    tool_form_title = 'Upload files'
+            %>
+            <div class="toolFormTitle">${tool_form_title}</div>
             <div class="toolFormBody">
                 <form name="upload_library_dataset" id="upload_library_dataset" action="${action}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="tool_id" value="upload1"/>
@@ -154,7 +159,6 @@
                     <input type="hidden" name="cntrller" value="${cntrller}"/>
                     <input type="hidden" name="library_id" value="${library_id}"/>
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
-                    <input type="hidden" name="upload_option" value="${upload_option}"/>
                     <input type="hidden" name="show_deleted" value="${show_deleted}"/>
                     %if replace_dataset not in [ None, 'None' ]:
                         <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
@@ -162,6 +166,21 @@
                             You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
                             <div style="clear: both"></div>
                         </div>
+                    %endif
+                    %if replace_dataset in [ None, 'None' ]:
+                        ## Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
+                        <div class="form-row">
+                            <label>Upload option:</label>
+                            <div class="form-row-input">
+                                ${upload_option_select_list.get_html()}
+                            </div>
+                            <div class="toolParamHelp" style="clear: both;">
+                                Choose upload option (file, directory, filesystem paths, current history).
+                            </div>
+                            <div style="clear: both"></div>
+                        </div>
+                    %else:
+                        <input type="hidden" name="upload_option" value="upload_file"/>
                     %endif
                     <div class="form-row">
                         <label>File Format:</label>
@@ -268,9 +287,16 @@
                     %endif
                     %if upload_option in ( 'upload_directory', 'upload_paths' ):
                         <div class="form-row">
+                        <%
+                            if link_data_only == 'No':
+                                checked = ' checked'
+                            else:
+                                checked = ''
+                            link_data_only_field = '<input type="checkbox" name="link_data_only" value="No"%s/>No' % checked
+                        %>
                             <label>Copy data into Galaxy?</label>
                             <div class="form-row-input">
-                                <input type="checkbox" name="link_data_only" value="No"/>No
+                                ${link_data_only_field}
                             </div>
                             <div class="toolParamHelp" style="clear: both;">
                                 Normally data uploaded with this tool is copied into Galaxy's "files" directory
@@ -290,12 +316,18 @@
                             Convert spaces to tabs:
                         </label>
                         <div class="form-row-input">
-                            ## The files grouping only makes sense in the upload_file context.
-                            %if upload_option == 'upload_file':
-                                <input type="checkbox" name="files_0|space_to_tab" value="Yes"/>Yes
-                            %else:
-                                <input type="checkbox" name="space_to_tab" value="Yes"/>Yes
-                            %endif
+                            <%
+                                if space_to_tab == 'true':
+                                    checked = ' checked'
+                                else:
+                                    checked = ''
+                                if upload_option == 'upload_file':
+                                    name = 'files_0|space_to_tab'
+                                else:
+                                    name = 'space_to_tab'
+                                space2tab = '<input type="checkbox" name="%s" value="true"%s/>Yes' % ( name, checked )
+                            %>
+                            ${space2tab}
                         </div>
                         <div class="toolParamHelp" style="clear: both;">
                             Use this option if you are entering intervals by hand.
@@ -320,22 +352,22 @@
                     <div class="form-row">
                         <label>Message:</label>
                         <div class="form-row-input">
-                            <textarea name="message" rows="3" cols="35"></textarea>
+                            %if ldda_message:
+                                <textarea name="ldda_message" rows="3" cols="35">${ldda_message}</textarea>
+                            %else:
+                                <textarea name="ldda_message" rows="3" cols="35"></textarea>
+                            %endif
                         </div>
                         <div class="toolParamHelp" style="clear: both;">
                             This information will be displayed in the "Information" column for this dataset in the data library browser
                         </div>
                         <div style="clear: both"></div>
                     </div>
-                    %if roles:
+                    %if roles_select_list:
                         <div class="form-row">
                             <label>Restrict dataset access to specific roles:</label>
                             <div class="form-row-input">
-                                <select name="roles" multiple="true" size="5">
-                                    %for role in roles:
-                                        <option value="${role.id}">${role.name}</option>
-                                    %endfor
-                                </select>
+                                ${roles_select_list.get_html()}
                             </div>
                             <div class="toolParamHelp" style="clear: both;">
                                 Multi-select list - hold the appropriate key while clicking to select multiple roles.  More restrictions can be applied after the upload is complete.  Selecting no roles makes a dataset public.
@@ -380,13 +412,39 @@
                 %if history and history.active_datasets:
                     <form name="add_history_datasets_to_library" action="${h.url_for( controller='library_common', action='add_history_datasets_to_library', cntrller=cntrller, library_id=library_id )}" enctype="multipart/form-data" method="post">
                         <input type="hidden" name="folder_id" value="${folder_id}"/>
-                        <input type="hidden" name="upload_option" value="${upload_option}"/>
+                        <input type="hidden" name="show_deleted" value="${show_deleted}"/>
+                        <input type="hidden" name="upload_option" value="import_from_history"/>
+                        <input type="hidden" name="ldda_message" value="${ldda_message}"/>
+                        <%
+                            if roles_select_list:
+                                role_ids_selected = roles_select_list.get_selected( return_value=True, multi=True )
+                                if role_ids_selected:
+                                    role_ids_selected = ','.join( role_ids_selected )
+                                else:
+                                    role_ids_selected = ''
+                            else:
+                                role_ids_selected = ''
+                        %>
+                        <input type="hidden" name="roles" value="${role_ids_selected}"/>
                         %if replace_dataset not in [ None, 'None' ]:
                             <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
                             <div class="form-row">
                                 You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
                                 <div style="clear: both"></div>
                             </div>
+                        %endif
+                        ## Render hidden template fields so the contents will be associated with the dataset
+                        %if widgets:
+                            %for i, field in enumerate( widgets ):
+                                <% widget = field[ 'widget' ] %>
+                                %if isinstance( field[ 'widget' ], CheckboxField ):
+                                    %if field[ 'widget' ].checked:
+                                        <input type="hidden" name="${widget.name}" value="true"/>
+                                    %endif
+                                %else:
+                                    <input type="hidden" name="${widget.name}" value="${widget.value}"/>
+                                %endif
+                            %endfor 
                         %endif
                         %for hda in history.active_datasets:
                             <div class="form-row">

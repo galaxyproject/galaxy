@@ -281,12 +281,12 @@ class TestDataSecurity( TwillTestCase ):
         group_ids = []
         for uga in admin_user.groups:
             group_ids.append( str( uga.group_id ) )
-        check_str = "User '%s' has been updated with %d associated roles and %d associated groups" % \
-        ( admin_user.email, len( role_ids ), len( group_ids ) )
+        strings_displayed = [ "User '%s' has been updated with %d associated roles and %d associated groups" % \
+                            ( admin_user.email, len( role_ids ), len( group_ids ) ) ]
         self.manage_roles_and_groups_for_user( self.security.encode_id( admin_user.id ),
                                                in_role_ids=role_ids,
                                                in_group_ids=group_ids,
-                                               check_str=check_str )
+                                               strings_displayed=strings_displayed )
         refresh( admin_user )
         # admin_user should now be associated with 4 roles: private, role_one, role_two, role_three
         if len( admin_user.roles ) != 4:
@@ -295,7 +295,7 @@ class TestDataSecurity( TwillTestCase ):
     def test_055_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         # Logged in as admin_user
-        self.browse_groups( check_str1=group_two.name )
+        self.browse_groups( strings_displayed=[ group_two.name ] )
         self.mark_group_deleted( self.security.encode_id( group_two.id ), group_two.name )
         refresh( group_two )
         if not group_two.deleted:
@@ -316,7 +316,7 @@ class TestDataSecurity( TwillTestCase ):
         """Testing marking a role as deleted"""
         # Logged in as admin_user
         self.home()
-        self.browse_roles( check_str1=role_two.name )
+        self.browse_roles( strings_displayed=[ role_two.name ] )
         self.mark_role_deleted( self.security.encode_id( role_two.id ), role_two.name )
         refresh( role_two )
         if not role_two.deleted:

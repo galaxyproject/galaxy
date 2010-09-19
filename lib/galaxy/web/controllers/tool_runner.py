@@ -133,12 +133,25 @@ class ToolRunner( BaseController ):
             else:
                 validated_params [ str(name) ] = value
         params_objects = validated_params
+        # Need to remap dataset parameters. Job parameters point to original 
+        # dataset used; parameter should be the analygous dataset in the 
+        # current history.
+        history = trans.get_history()
+        hda_source_dict = {} # Mapping from HDA in history to source HDAs.
+        for hda in history.datasets:
+            source_hda = hda.copied_from_history_dataset_association
+            while source_hda:#should this check library datasets as well?
+                hda_source_dict[ source_hda ] = hda
+                source_hda = source_hda.copied_from_history_dataset_association
+        for name, value in validated_params.items():
+            if isinstance( value, trans.app.model.HistoryDatasetAssociation ):
+                if value not in history.datasets:
+                    validated_params[ name ] = hda_source_dict[ value ]
         # Create a fake tool_state for the tool, with the parameters values 
         state = tool.new_state( trans )
         state.inputs = params_objects
         tool_state_string = util.object_to_string(state.encode(tool, trans.app))
         # Setup context for template
-        history = trans.get_history()
         vars = dict( tool_state=state, errors = {} )
         # Is the "add frame" stuff neccesary here?
         add_frame = AddFrameData()

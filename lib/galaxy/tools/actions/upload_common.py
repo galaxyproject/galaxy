@@ -40,7 +40,7 @@ def handle_library_params( trans, params, folder_id, replace_dataset=None ):
     # manipulated here.  The receivd params should be the original kwd from the initial request.
     library_bunch = util.bunch.Bunch()
     library_bunch.replace_dataset = replace_dataset
-    library_bunch.message = params.get( 'message', '' )
+    library_bunch.message = params.get( 'ldda_message', '' )
     # See if we have any template field contents
     library_bunch.template_field_contents = []
     template_id = params.get( 'template_id', None )

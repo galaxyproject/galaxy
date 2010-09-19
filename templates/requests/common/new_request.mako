@@ -67,7 +67,7 @@ $( function() {
 	                %endif
                 </div>
 
-               %if select_request_type.get_selected() != ('Select one', 'none'):
+               %if select_request_type.get_selected( return_label=True, return_value=True ) != ('Select one', 'none'):
                    %for i, field in enumerate(widgets):
                         <div class="form-row">
                             <label>${field['label']}</label>
