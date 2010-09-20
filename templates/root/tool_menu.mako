@@ -125,7 +125,7 @@
                         // Start a new ajax-request in X ms
                         $("#search-spinner").show();
                         this.timer = setTimeout(function () {
-                            $.get( "tool_search", { query: q }, function (data) {
+                            $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q }, function (data) {
                                 // input.removeClass(config.loadingClass);
                                 // Show live-search if results and search-term aren't empty
                                 $("#search-no-results").hide();
@@ -315,7 +315,7 @@
                 
                 ## Feedback when search returns no results.
                 <div id="search-no-results" style="display: none; padding-top: 5px">
-                    <em><strong>Your search did not match any tools.</strong></em>
+                    <em><strong>Search did not match any tools.</strong></em>
                 </div>
                 
                 ## Link to workflow management. The location of this may change, but eventually

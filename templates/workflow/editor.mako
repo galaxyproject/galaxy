@@ -51,6 +51,9 @@
     workflow = null;
     canvas_manager = null;
     active_ajax_call = false;
+    var galaxy_async = new GalaxyAsync();
+    galaxy_async.set_func_url(galaxy_async.set_user_pref, "${h.url_for( controller='user', action='set_user_pref_async' )}");
+    
     // jQuery onReady
     $( function() {
         
@@ -61,6 +64,123 @@
             );
             return;
         }
+        
+        // Init tool options.
+        %if trans.app.toolbox_search.enabled:
+        make_popupmenu( $("#tools-options-button"), {
+            ## Search tools menu item.
+            <%
+                show_tool_search = False
+                if trans.user:
+                    show_tool_search = trans.user.preferences.get( "workflow.show_tool_search", "True" )
+                    
+                if show_tool_search == "True":
+                    initial_text = "Hide Search"
+                else:
+                    initial_text = "Search Tools"
+            %>
+            "${initial_text}": function() {
+                // Show/hide menu and update vars, user preferences.
+                var menu = $('#tool-search');
+                if (menu.is(":visible"))
+                {
+                    // Hide menu.
+                    pref_value = "False";
+                    menu_option_text = "Search Tools";
+                    menu.toggle();
+                    
+                    // Reset search.
+                    reset_tool_search(true);
+                }
+                else
+                {
+                    // Show menu.
+                    pref_value = "True";
+                    menu_option_text = "Hide Search";
+                    menu.toggle();
+                }
+        
+                // Update menu option.
+                $("#tools-options-button-menu").find("li").eq(0).text(menu_option_text);
+        
+                galaxy_async.set_user_pref("workflow.show_tool_search", pref_value);
+            }
+        });
+        
+        // Init searching.
+        $("#tool-search-query").click( function (){
+            $(this).focus();
+            $(this).select();
+        })
+        .keyup( function () {
+            // Remove italics.
+            $(this).css("font-style", "normal");
+            
+            // Don't update if same value as last time
+            if ( this.value.length < 3 ) {
+                reset_tool_search(false);
+            } else if ( this.value != this.lastValue ) {
+                // Add class to denote that searching is active.
+                $(this).addClass("search_active");
+                // input.addClass(config.loadingClass);
+                // Add '*' to facilitate partial matching.
+                var q = this.value + '*';
+                // Stop previous ajax-request
+                if (this.timer) {
+                    clearTimeout(this.timer);
+                }
+                // Start a new ajax-request in X ms
+                $("#search-spinner").show();
+                this.timer = setTimeout(function () {
+                    
+                    $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q }, function (data) {
+                        // input.removeClass(config.loadingClass);
+                        // Show live-search if results and search-term aren't empty
+                        $("#search-no-results").hide();
+                        // Hide all tool sections.
+                        $(".toolSectionWrapper").hide();
+                        // This hides all tools but not workflows link (which is in a .toolTitle div).
+                        $(".toolSectionWrapper").find(".toolTitle").hide();
+                        if ( data.length != 0 ) {
+                            // Map tool ids to element ids and join them.
+                            var s = $.map( data, function( n, i ) { return "#link-" + n; } ).join( ", " );
+                            
+                            // First pass to show matching tools and their parents.
+                            $(s).each( function() {
+                                // Add class to denote match.
+                                $(this).parent().addClass("search_match");
+                                $(this).parent().show().parent().parent().show().parent().show();
+                            });
+                            
+                            // Hide labels that have no visible children.
+                            $(".toolPanelLabel").each( function() {
+                               var this_label = $(this);                                   
+                               var next = this_label.next();
+                               var no_visible_tools = true;
+                               // Look through tools following label and, if none are visible, hide label.
+                               while (next.length != 0 && next.hasClass("toolTitle"))
+                               {
+                                   if (next.is(":visible"))
+                                   {
+                                       no_visible_tools = false;
+                                       break;
+                                   }
+                                   else
+                                       next = next.next();
+                                }
+                                if (no_visible_tools)
+                                    this_label.hide();
+                            });
+                        } else {
+                            $("#search-no-results").show();
+                        }
+                        $("#search-spinner").hide();
+                    }, "json" );
+                }, 200 );
+            }
+            this.lastValue = this.value;
+        });
+        %endif          
         
         // Load jStore for local storage
         $.jStore.init("galaxy"); // Auto-select best storage
@@ -564,7 +684,7 @@
 <%def name="stylesheets()">
 
     ## Include "base.css" for styling tool menu and forms (details)
-	${h.css( "base", "autocomplete_tagging")}
+	${h.css( "base", "autocomplete_tagging", "tool_menu" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
@@ -593,25 +713,6 @@
         margin-left: 10px;
         margin-right: 10px;
     }
-    div.toolSectionPad {
-        margin: 0;
-        padding: 0;
-        height: 5px;
-        font-size: 0px;
-    }
-    div.toolSectionDetailsInner { 
-        margin-left: 5px;
-        margin-right: 5px;
-    }
-    div.toolSectionTitle {
-        padding-bottom: 0px;
-        font-weight: bold;
-    }
-    div.toolPanelLabel {
-      padding-top: 5px;
-      padding-bottom: 5px;
-      font-weight: bold;
-    }
     div.toolMenuGroupHeader {
         font-weight: bold;
         padding-top: 0.5em;
@@ -620,18 +721,6 @@
         font-style: italic;
         border-bottom: dotted #333 1px;
         margin-bottom: 0.5em;
-    }
-    div.toolTitle {
-        padding-top: 5px;
-        padding-bottom: 5px;
-        margin-left: 16px;
-        margin-right: 10px;
-        display: list-item;
-        list-style: square outside;
-    }
-    div.toolTitleNoSection {
-      padding-bottom: 0px;
-      font-weight: bold;
     }
     div.toolTitleDisabled {
         padding-top: 5px;
@@ -796,11 +885,9 @@
 
 ## Render a label in the tool panel
 <%def name="render_label( label )">
-    <div class="toolSectionPad"></div>
     <div class="toolPanelLabel" id="title_${label.id}">
         <span>${label.text}</span>
     </div>
-    <div class="toolSectionPad"></div>
 </%def>
 
 <%def name="overlay()">
@@ -810,19 +897,39 @@
 
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner">
-            Tools
+        <div class='unified-panel-header-inner'>
+            <div style="float: right">
+                <a class='panel-header-button popup' id="tools-options-button" href="#">${_('Options')}</a>
+            </div>
+            ${n_('Tools')}
         </div>
     </div>
     
     <div class="unified-panel-body" style="overflow: auto;">
-        <div class="toolMenu">
+            <div class="toolMenu">
+            ## Tool search.
+            <%
+                show_tool_search = False
+                if trans.user:
+                    show_tool_search = trans.user.preferences.get( "workflow.show_tool_search", "True" )
+            
+                if show_tool_search == "True":
+                    display = "block"
+                else:
+                    display = "none"
+            %>
+            <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
+                <input type="text" name="query" value="search tools" id="tool-search-query" style="width: 100%; font-style:italic; font-size: inherit"/>
+                <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>
+            </div>
+        
             <div class="toolSectionList">
                 %for key, val in app.toolbox.tool_panel.items():
+                    <div class="toolSectionWrapper">
                     %if key.startswith( 'tool' ):
                         ${render_tool( val, False )}
                     %elif key.startswith( 'section' ):
-                        <% section = val %>
+                    <% section = val %>
                         <div class="toolSectionTitle" id="title_${section.id}">
                             <span>${section.name}</span>
                         </div>
@@ -837,11 +944,16 @@
                                 %endfor
                             </div>
                         </div>
-                        <div class="toolSectionPad"></div>
                     %elif key.startswith( 'label' ):
                         ${render_label( val )}
                     %endif
+                    <div class="toolSectionPad"></div>
+                    </div>
                 %endfor
+            </div>
+            ## Feedback when search returns no results.
+            <div id="search-no-results" style="display: none; padding-top: 5px">
+                <em><strong>Search did not match any tools.</strong></em>
             </div>
             <div>&nbsp;</div>
             <div class="toolMenuGroupHeader">Workflow control</div>
@@ -857,6 +969,7 @@
             </div>                    
         </div>
     </div>
+    
 </%def>
 
 <%def name="center_panel()">
