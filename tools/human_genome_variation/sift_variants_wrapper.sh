@@ -80,6 +80,10 @@ else
 fi
 
 SIFT_exome_nssnvs.pl -i "$sift_input" -d "$db_dir" -o "$working_dir" $output_opts &> "$sift_output"
+if [ $? -ne 0 ]; then
+  echo "failed: SIFT_exome_nssnvs.pl -i \"$sift_input\" -d \"$db_dir\" -o \"$working_dir\" $output_opts"
+  exit 1
+fi
 
 ##
 ## locate the output file
