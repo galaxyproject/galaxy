@@ -1,26 +1,43 @@
 <tool id="mutation_visualize" name="Mutation Visualization" version="1.0.0">
   <description></description>
-  <command interpreter="python">visualize.py --input-file=$input --output-file=$out_file1 --zoom=$zoom_value $header_row</command>
+  <command interpreter="python">
+    visualize.py 
+        --input-file=$input1
+        --output-file=$out_file1
+        --zoom=$zoom_value
+        --position_col=$position_col
+        --ref_col=$ref_col
+        #for $f in $sample_chooser:
+            "${f.name}"
+            ${f.a_col}
+            ${f.totals_col}
+        #end for
+  </command>
   <inputs>
-    <param format="tabular" name="input" type="data" label="Compare sequences in"></param>
-    <param name="header_row" type="boolean" label="Header in dataset?" checked="yes" truevalue="" falsevalue="--noheaders"/>
+    <param format="tabular" name="input1" type="data" label="Compare sequences in"></param>
+    <param name="position_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Position Column" help="" />
+    <param name="ref_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Reference Base Column" help="" />
+
+    <repeat name="sample_chooser" title="Sample">
+      <param name="name" type="text" label="Label" help="Optional" />
+      <param name="a_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="A Column" help="" />
+      <param name="totals_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Totals Column" help="" />
+    </repeat>
+
     <param name="zoom_value" type="select" label="Zoom">
         <option value="1">1x</option>
         <option value="2">2x</option>
         <option value="3">3x</option>
         <option value="4">4x</option>
         <option value="5">5x</option>
+        <option value="interactive">Interactive</option>
     </param>
+    
   </inputs>
   <outputs>
     <data format="svg" name="out_file1" />
   </outputs>
   <help>
-.. class:: warningmark
-
-The SVG image produced by this tool may not display correctly in Mozilla Firefox. It works fine in Chrome and Safari.
-
------
 
 **Example**
 
@@ -35,6 +52,9 @@ Visualization:
 
 .. image:: ../static/images/mutation_visualization_example.png 
    :width: 150
+   
+Interactivity::
+  If interactive zoom/pan option is checked then the resultant image can be zoomed in or out: scroll mouse wheel; pan: drag using left mouse button. 
 
   </help>
 </tool>
