@@ -2,13 +2,15 @@
   <description>analysis of chemicals, diseases, or genes</description>
 
   <command interpreter="perl">
+    ctd.pl $input $numerical_column $inType.inputType
     #if $inType.inputType == "disease"
-      ctd.pl $input $numerical_column $inType.inputType $inType.report ANY $out_file1
+      $inType.report ANY
     #else if $inType.reportType.report == "cgixns"
-      ctd.pl $input $numerical_column $inType.inputType $inType.reportType.report $inType.reportType.actType $out_file1
+      $inType.reportType.report $inType.reportType.actType
     #else
-      ctd.pl $input $numerical_column $inType.inputType $inType.reportType.report ANY $out_file1
+      $inType.reportType.report ANY
     #end if
+    $out_file1
   </command>
 
   <inputs>
