@@ -63,10 +63,6 @@ def mainsvg(opts, args):
         show_pos = True
         position = row[int(opts.position_col)-1]
         ref = row[int(opts.ref_col)-1]
-        print 'position', position
-        print 'ref', ref
-        print 'count', count
-        
         # display positions
         if opts.zoom == 'interactive':
             textx = 0
@@ -143,8 +139,6 @@ if __name__ == '__main__':
     parser.add_option('-r', '--ref_col', dest='ref_col', action='store', default='c1')
     #parser.add_option('-n', '--interactive', dest='interactive', action='store_false', default='True')
     (opts, args) = parser.parse_args()
-    print opts
-    print args
     mainsvg(opts, args)
     sys.exit(1)
 
