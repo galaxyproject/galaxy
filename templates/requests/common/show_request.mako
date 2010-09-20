@@ -190,6 +190,7 @@ $(document).ready(function(){
     
 </div>
 <br/>
+<br/>
 <ul class="manage-table-actions">
     <li><a class="action-button" id="seqreq-${request.id}-popup" class="menubutton">Sequencing Request Actions</a></li>
     <div popupmenu="seqreq-${request.id}-popup">

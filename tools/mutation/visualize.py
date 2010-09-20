@@ -361,7 +361,6 @@ def mainsvg(opts, args):
         canv.save(opts.output_file)
 
 if __name__ == '__main__':
-    print os.getcwd()
     parser = optparse.OptionParser()
     parser.add_option('-i', '--input-file', dest='input_file', action='store')
     parser.add_option('-o', '--output-file', dest='output_file', action='store')

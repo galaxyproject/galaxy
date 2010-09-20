@@ -97,7 +97,7 @@ $(document).ready(function(){
 <ul class="manage-table-actions">
     <li>
         <a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_request_types', operation='view', id=trans.security.encode_id(request.type.id) )}">
-        <span>Sequencer information</span></a>
+        <span>Sequencer configuration "${request.type.name}"</span></a>
     </li>
     <li>
         <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='show', id=trans.security.encode_id(request.id) )}">
@@ -106,8 +106,8 @@ $(document).ready(function(){
 </ul>
 
 <form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', cntrller=cntrller, action='get_data', request_id=request.id)}" method="post" >
-    <div class="toolFormTitle">Select files for transfer</div>
     <div class="toolForm">
+        <div class="toolFormTitle">Select files for transfer</div>
         <div class="form-row">
             <label>Sample:</label>
             ${samples_selectbox.get_html()}
@@ -118,7 +118,6 @@ $(document).ready(function(){
             <label>Folder path on the sequencer:</label>
             <input type="text" name="folder_path" value="${folder_path}" size="100"/>
             <input type="submit" name="browse_button" value="List contents"/>
-            ##<input type="submit" name="open_folder" value="Open folder"/>
             <input type="submit" name="folder_up" value="Up"/>
         </div>
         <div class="form-row">
@@ -133,10 +132,6 @@ $(document).ready(function(){
             </div>
         </div>
         <div class="form-row">
-<!--            <div class="toolParamHelp" style="clear: both;">
-                After selecting dataset(s), be sure to click on the <b>Start transfer</b> button. 
-                Once the transfer is complete the dataset(s) will show up on this page.
-            </div>-->
             <input type="submit" name="select_show_datasets_button" value="Select & show datasets"/>
             <input type="submit" name="select_more_button" value="Select more"/>
         </div>

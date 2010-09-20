@@ -10,7 +10,7 @@
         <span>Browse this request</span></a>
     </li>
 </ul>
-<h3>User: ${sample.request.user.email}</h3>
+<h3>Sequencing Request "${sample.request.name}"</h3>
 
 %if message:
     ${render_msg( message, status )}

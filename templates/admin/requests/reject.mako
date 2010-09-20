@@ -16,9 +16,6 @@
         <span>Browse this request</span></a>
     </li>
 </ul>
-<h3>User: ${request.user.email}</h3>
-
-
 
 <div class="toolForm">
     <div class="toolFormTitle">Reject request</div>
