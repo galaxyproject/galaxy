@@ -1,0 +1,117 @@
+<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.1">
+    <description>Use NCBI BLAST+ tool to search a nucleotide database with nucleotide query sequence(s)</description>
+    <command>
+      blastn
+       -query "$query"
+       -db "$database"
+       -task $blast_type
+       -evalue $evalue_cutoff
+       -dust $filter_query
+       -out $output1
+       -outfmt $out_format
+    </command>
+    <inputs>
+        <param name="query" type="data" format="fasta" label="Query sequence(s)"/> 
+        <param name="database" type="select" display="radio" label="Nucelotide BLAST database">
+            <options from_file="blastdb.loc">
+              <column name="name" index="0"/>
+              <column name="value" index="1"/>
+            </options>
+        </param>
+        <param name="blast_type" type="select" display="radio" label="Type of BLAST">
+            <option value="megablast">megablast</option>
+            <option value="blastn">blastn</option>
+            <option value="blastn-short">blastn-short</option>
+            <option value="dc-megablast">dc-megablast</option>
+            <option value="vecscreen">vecscreen</option>
+        </param>
+        <!-- TODO - integer, min 4, what default?
+        <param name="word_size" type="integer" label="using word size" help="Size of best perfect match">
+            <option value="28">28</option>
+            <option value="16">16</option>
+        </param>
+        <param name="iden_cutoff" type="float" size="15" value="90.0" label="report hits above this identity" help="no cutoff if 0" />
+        -->
+        <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff" />
+        <param name="filter_query" type="select" label="Filter out low complexity regions (with DUST)?">
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+        </param>
+        <param name="out_format" type="select" label="Output format">
+            <option value="6">Tabular</option>
+            <option value="5">BLAST XML</option>
+            <option value="0">Pairwise text</option>
+            <!--
+            <option value="11">BLAST archive format (ASN.1)</option>
+            -->
+        </param>
+    </inputs>
+    <outputs>
+        <!-- TODO, can I get the caption rather than the value? e.g. 'NR' rather than a long path? -->
+        <data name="output1" format="tabular" label="${blast_type.value_label} on ${database.value_label}">
+            <change_format>
+                <when input="out_format" value="0" format="txt"/>
+            </change_format>
+            <change_format>
+                <when input="out_format" value="5" format="blastxml"/>
+            </change_format>
+        </data>
+    </outputs>
+    <requirements>
+        <requirement type="binary">blastn</requirement>
+    </requirements>
+    <tests>
+        <test>
+            <param name="input_query" value="megablast_wrapper_test1.fa" ftype="fasta"/>
+            <!-- database needs to match the entry in the blastdb.loc file (first column), which includes the last update date if appropriate --> 
+            <param name="database" value="phiX" />
+            <param name="blast_type" value="megablast" />
+            <!--
+            <param name="word_size" value="28" />
+            <param name="iden_cutoff" value="99.0" />
+            -->
+            <param name="evalue_cutoff" value="10.0" />
+            <param name="filter_query" value="yes" />
+            <param name="out_format" value="6" />
+            <output name="output1" file="megablast_wrapper_test1.out"/> 
+        </test>
+    </tests>
+    <help>
+    
+.. class:: warningmark
+
+**Note**. Database searches may take substantial amount of time. For large input datasets it is advisable to allow overnight processing.  
+
+-----
+
+**What it does**
+
+This tool runs NCBI BLAST+ blastn tool (which include *megablast*).
+
+-----
+
+**Output format**
+
+The default Output of this tool is tabular, containing 12 columns:
+
+1. Id of your sequence 
+2. GI of the database hit 
+3. % identity
+4. Alignment length
+5. # mismatches
+6. # gaps
+7. Start position in your sequence
+8. End position in your sequence
+9. Start position in database hit
+10. End position in database hit
+11. E-value
+12. Bit score
+
+-------
+
+**References**
+
+Zhang et al. A Greedy Algorithm for Aligning DNA Sequences. 2000. JCB: 203-214.
+
+    </help>
+</tool>

@@ -262,6 +262,9 @@
         <tool file="sr_assembly/velveth.xml" />
   </section>
   -->
+  <section name="NCBI BLAST+" id="ncbi_blast_plus_tools">
+   <tool file="ncbi_blast_plus/ncbi_blastn_wrapper.xml" />
+  </section>
   <section name="NGS: Mapping" id="solexa_tools">
    <tool file="sr_mapping/lastz_wrapper.xml" />
    <tool file="sr_mapping/lastz_paired_reads_wrapper.xml" />
