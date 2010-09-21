@@ -17,7 +17,7 @@
       <validator type="metadata" check="startCol" message="startCol missing"/>
       <validator type="metadata" check="endCol" message="endCol missing"/>
     </param>
-    <param name="chrom" type="text" label="Sequence to plot" help="Name of sequence to plot.  If left blank, the first sequence in the dataset will be plotted."/>
+    <param name="chrom" type="text" label="Sequence to plot" help="Name of sequence (from the chromosome column in the dataset) to plot.  If left blank, the first sequence in the dataset will be plotted."/>
     <conditional name="plot_value">
       <param name="choice" type="select" label="Value to plot">
         <option value="score" selected="true">Score column from dataset</option>
@@ -30,7 +30,7 @@
         <param name="score_col" type="hidden" value="-1"/>
       </when>
     </conditional>
-    <param name="level" type="integer" value="9" label="Level" help="Level of Hilvert curve.  The resulting image will have 2&lt;sup&gt;level&lt;/sup&gt; by 2&lt;sup&gt;level&lt;/sup&gt; pixels.">
+    <param name="level" type="integer" value="9" label="Level" help="Level of Hilbert curve.  The resulting image will have 2&lt;sup&gt;level&lt;/sup&gt; by 2&lt;sup&gt;level&lt;/sup&gt; pixels.">
       <validator type="in_range" min="1" message="The level must be an integer &gt;= 1."/>
     </param>
     <param name="mode" type="select" label="Summarization mode" help="Method used to determine a value for a point in the plot which covers multiple values in the input.">
@@ -60,36 +60,36 @@
   <help>
 **Dataset formats**
 
-The input format is interval_ or gff_, the output is an image as a pdf.
+The input format is interval_, the output is an image in PDF format.
 
 .. _interval: ./static/formatHelp.html#interval
 
-.. _gff: ./static/formatHelp.html#gff
-
 **What it does**
 
-HilbertVis_ uses the Hilbert space-filling curve to visualize the structure of position dependent data.  HilbertVis maps the traditional one-dimensional line visualization onto a two-dimensional square.  
-
-This diagram shows the path of a level 2 Hilbert curve.
+HilbertVis uses the Hilbert space-filling curve to visualize the structure of position-dependent data.  It maps the traditional one-dimensional line visualization onto a two-dimensional square.  For example, here is a diagram showing
+the path of a level-2 Hilbert curve.
 
 .. image:: ../static/images/hilbertvisDiagram.png
 
-The shade of a pixel represents the value within the bin as chosen by the summerization mode.  The pixels are arranged such that bins that are close to each other on the data vector are represented by pixels that are close to each other in the plot. Especially, adjacent bins are mapped to adjacent pixels. Hence, dark spots in a figure are a peak; the area of the spot in the two-dimensional plot is proportional to the width of the peak in the one-dimensional data, and the darkness of the spot corresponds to the height of the peak.
+The shade of each pixel represents the value for the corresponding bin of consecutive genomic positions, calculated according to the specified summarization mode.  The pixels are arranged so that bins that are close to each other on the data vector are represented by pixels that are close to each other in the plot. In particular, adjacent bins are mapped to adjacent pixels. Hence, dark spots in a figure represent a peak; the area of the spot in the two-dimensional plot is proportional to the width of the peak in the one-dimensional data, and the darkness of the spot corresponds to the height of the peak.
 
-The input file is tabular and contains a column with numbers or scores. 
-Examples of scores would be the coverage of aligned reads from ChIP-Seq data,
-conservation scores, SNP density, etc.
+The input file is interval and typically contains a column with scores or other
+numbers.  Examples of scores could be the coverage of aligned reads from 
+conservation scores, SNP density, ChIP-Seq data, etc.
 
-The output is a two dimensional image showing hot spots, examples from 
-the HilbertVis_ homepage using ChIP-Seq
+HilbertVis homepage: http://www.ebi.ac.uk/huber-srv/hilbert/
+
+-----
+
+**Examples**
+
+Here are some examples from the HilbertVis homepage, using ChIP-Seq data.
 
 .. image:: ../static/images/hilbertvis1.png
 
 -----
 
 .. image:: ../static/images/hilbertvis2.png
-
-.. _HilbertVis: http://www.ebi.ac.uk/huber-srv/hilbert/
 
 -----
 
