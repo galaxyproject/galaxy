@@ -205,7 +205,7 @@ containing +1 for cases, and -1 for controls.  The other columns should be
 0 or 1, with 1 representing the expected riskier value for each variable.
 For instance with SNPs the column would have a 1 if the individual (row)
 has the risk allele, or a 0 otherwise.  The output file has one line for each
-"variable, or "feature" in the input file, with a single column containing the
+variable, or "feature" in the input file, with a single column containing the
 calculated score for that feature.  The log file provides information about
 the input and the internal values obtained during the computation process.
 
