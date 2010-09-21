@@ -328,7 +328,7 @@ use_interactive = True
 
 # If running multiple Galaxy processes, one can be designated as the job
 # runner.  For more information, see:
-# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/LoadBalancing
+# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/WebApplicationScaling
 #enable_job_running = True
 
 # Should jobs be tracked through the database, rather than in memory.
