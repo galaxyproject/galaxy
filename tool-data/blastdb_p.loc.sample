@@ -1,0 +1,12 @@
+#This is a sample file distributed with Galaxy that is used to define a
+#list of protein BLAST databases, using two columns tab separated:
+#
+#<database caption>     <path to base name>
+#
+#For example:
+#
+#NCBI NR (non redundant)      /data/blastdb/nr
+#
+#where /data/blastdb/nr.* are the files making up the NR database.
+#
+#See also the blastdb.loc file which is for any nucleotide databases.

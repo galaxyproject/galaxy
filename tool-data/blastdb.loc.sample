@@ -28,3 +28,5 @@
 #wgs 30 Nov 2009	/depot/data2/galaxy/blastdb/wgs/wgs.chunk
 #test 20 Sep 2008	/depot/data2/galaxy/blastdb/test/test
 #...etc...
+#
+#See also blastdb_p.loc which is for any protein BLAST database.
