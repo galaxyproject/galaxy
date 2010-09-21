@@ -1,12 +1,11 @@
-#This is a sample file distributed with Galaxy that is used by some
-#short read tools.  The blastdb.loc file has this format:
+#This is a sample file distributed with Galaxy that is used to define a
+#list of nucelotide BLAST databases, using two columns tab separated:
 #
-#<database> <build_date>	<path to base name> 
+#<database caption>     <path to base name>
 #
-#where a single space separates the first two and a tab the last two.
+#The captions typically contain spaces and might end with the build date.
 #It is important that the actual database name does not have a space in it,
 #and that the first tab that appears in the line is right before the path.
-#The <build_date> can look any way you want.
 #
 #So, for example, if your database is nt and the path to your base name 
 #is /depot/data2/galaxy/blastdb/nt/nt.chunk, then the blastdb.loc entry 
