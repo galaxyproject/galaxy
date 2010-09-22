@@ -153,7 +153,7 @@ class TestLibrarySecurity( TwillTestCase ):
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files' ] )
         global ldda1
-        ldda1 = get_latest_ldda()
+        ldda1 = get_latest_ldda_by_name( filename )
         assert ldda1 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda1 from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library1.id ),
@@ -258,10 +258,10 @@ class TestLibrarySecurity( TwillTestCase ):
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files' ] )
         global ldda2
-        ldda2 = get_latest_ldda()
+        ldda2 = get_latest_ldda_by_name( filename )
         assert ldda2 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda2 from the database'
-        self.browse_library( 'library',
-                             self.security.encode_id( library1.id ),
+        self.browse_library( cntrller='library',
+                             id=self.security.encode_id( library1.id ),
                              strings_displayed=[ ldda2.name, ldda2.message, admin_user.email ] )
     def test_045_accessing_ldda2_with_role_associated_with_group_and_users( self ):
         """Testing accessing ldda2 with a role that is associated with a group and users"""
@@ -272,7 +272,7 @@ class TestLibrarySecurity( TwillTestCase ):
                              strings_displayed=[ ldda2.name, ldda2.message, admin_user.email ] )
         self.logout()
         # regular_user1 should be able to see 2.bed since she is associated with group_two
-        self.login( email = 'test1@bx.psu.edu' )
+        self.login( email = regular_user1.email )
         self.browse_library( 'library',
                              self.security.encode_id( library1.id ),
                              strings_displayed=[ folder1.name, ldda2.name, ldda2.message, admin_user.email ] )
@@ -293,9 +293,9 @@ class TestLibrarySecurity( TwillTestCase ):
                              self.security.encode_id( folder1.id ),
                              self.security.encode_id( ldda2.id ),
                              ldda2.name,
-                             strings_displayed=['2.bed',
-                                                'This is the latest version of this library dataset',
-                                                'Edit attributes of 2.bed' ] )
+                             strings_displayed=[ '2.bed',
+                                                 'This is the latest version of this library dataset',
+                                                 'Edit attributes of 2.bed' ] )
         self.act_on_multiple_datasets( 'library',
                                        self.security.encode_id( library1.id ),
                                        'import_to_history',
@@ -465,7 +465,7 @@ class TestLibrarySecurity( TwillTestCase ):
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files' ] )
         global ldda6
-        ldda6 = get_latest_ldda()
+        ldda6 = get_latest_ldda_by_name( filename )
         assert ldda6 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda6 from the database'
     def test_070_add_folder2_to_library2( self ):
         """Testing adding folder2 to a library2"""
@@ -495,7 +495,7 @@ class TestLibrarySecurity( TwillTestCase ):
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files' ] )
         global ldda7
-        ldda7 = get_latest_ldda()
+        ldda7 = get_latest_ldda_by_name( filename )
         assert ldda7 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda7 from the database'
     def test_080_add_subfolder2_to_folder2( self ):
         """Testing adding subfolder2 to a folder2"""
@@ -524,10 +524,10 @@ class TestLibrarySecurity( TwillTestCase ):
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files' ] )
         global ldda8
-        ldda8 = get_latest_ldda()
+        ldda8 = get_latest_ldda_by_name( filename )
         assert ldda8 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda8 from the database'
     def test_090_make_library2_and_contents_public( self ):
-        """Testing making library2 and all of it's contetns public"""
+        """Testing making library2 and all of it's contents public"""
         self.make_library_item_public( self.security.encode_id( library2.id ),
                                        self.security.encode_id( library2.id ),
                                        item_type='library',

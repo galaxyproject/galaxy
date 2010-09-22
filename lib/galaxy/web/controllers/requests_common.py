@@ -158,6 +158,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         for user in user_list:
             if not user.deleted:
                 user_ids.append(str(user.id))
+        # gvk - 9/22/10: TODO: why does select_user require a refresh_on_change?  Nothing in the
+        # code is apparent as to why this is done.
         select_user = SelectField('select_user', 
                                   refresh_on_change=True, 
                                   refresh_on_change_values=user_ids[1:])
@@ -830,24 +832,24 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         current_samples, details, edit_mode, libraries = self.__update_samples( trans, request, **kwd )
         selected_samples = self.__selected_samples(trans, request, **kwd)
         sample_ops = self.__sample_operation_selectbox(trans, request,**kwd)
-        if params.get('select_sample_operation', 'none') != 'none' and not len(selected_samples):
+        if params.get( 'select_sample_operation', False ) and not selected_samples:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='list',
                                                               operation='show',
                                                               id=trans.security.encode_id(request.id),
                                                               status='error',
                                                               message='Select at least one sample before selecting an operation.' ))
-        if params.get('import_samples_button', False) == 'Import samples':
+        if params.get( 'import_samples_button', False ):
             return self.__import_samples(trans, cntrller, request, current_samples, details, libraries, **kwd)
-        elif params.get('add_sample_button', False) == 'Add New':
+        elif params.get('add_sample_button', False ):
             # add an empty or filled sample
             # if the user has selected a sample no. to copy then copy the contents 
             # of the src sample to the new sample else an empty sample
-            src_sample_index = int(params.get( 'copy_sample', -1  ))
+            src_sample_index = int(params.get( 'copy_sample', -1 ) )
             # get the number of new copies of the src sample
-            num_sample_to_copy = int(params.get( 'num_sample_to_copy', 1  ))
+            num_sample_to_copy = int( params.get( 'num_sample_to_copy', 1 ) )
             if src_sample_index == -1:
-                for ns in range(num_sample_to_copy):
+                for ns in range( num_sample_to_copy ):
                     # empty sample
                     lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
                                                                        len(current_samples), 
@@ -882,10 +884,11 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                         request_details=self.request_details(trans, request.id),
                                         current_samples=current_samples,
                                         sample_copy=self.__copy_sample(current_samples), 
-                                        details=details, selected_samples=selected_samples,
+                                        details=details,
+                                        selected_samples=selected_samples,
                                         sample_ops=sample_ops,
                                         edit_mode=edit_mode)
-        elif params.get('save_samples_button', False) == 'Save':
+        elif params.get( 'save_samples_button', False ):
             # check for duplicate sample names
             message = ''
             for index in range(len(current_samples)-len(request.samples)):
@@ -974,7 +977,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               id=trans.security.encode_id(request.id),
                                                               status=status,
                                                               message=message ))
-        elif params.get('edit_samples_button', False) == 'Edit samples':
+        elif params.get( 'edit_samples_button', False ):
             edit_mode = 'True'
             return trans.fill_template( '/requests/common/show_request.mako',
                                         cntrller=cntrller,
@@ -985,12 +988,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                         sample_ops=sample_ops,
                                         details=details, libraries=libraries,
                                         edit_mode=edit_mode)
-        elif params.get('cancel_changes_button', False) == 'Cancel':
+        elif params.get( 'cancel_changes_button', False ):
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='list',
                                                               operation='show',
                                                               id=trans.security.encode_id(request.id)) )
-        elif params.get('change_state_button', False) == 'Save':
+        elif params.get( 'change_state_button', False ) == 'Save':
             comments = util.restore_text( params.comment )
             selected_state = int( params.select_state )
             new_state = trans.sa_session.query( trans.app.model.SampleState ).get( selected_state )
@@ -1003,12 +1006,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               cntrller=cntrller, 
                                                               action='update_request_state',
                                                               request_id=request.id ))
-        elif params.get('change_state_button', False) == 'Cancel':
+        elif params.get( 'change_state_button', False ) == 'Cancel':
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='list',
                                                               operation='show',
                                                               id=trans.security.encode_id(request.id)) )
-        elif params.get('change_lib_button', False) == 'Save':
+        elif params.get( 'change_lib_button', False ) == 'Save':
             library = trans.sa_session.query( trans.app.model.Library ).get( int( params.get( 'sample_0_library_id', None ) ) )
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( params.get( 'sample_0_folder_id', None ) ) )
             for sample_id in selected_samples:
@@ -1023,7 +1026,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               id=trans.security.encode_id(request.id),
                                                               status='done',
                                                               message='Changes made to the selected sample(s) are saved. ') )
-        elif params.get('change_lib_button', False) == 'Cancel':
+        elif params.get( 'change_lib_button', False ) == 'Cancel':
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='list',
                                                               operation='show',

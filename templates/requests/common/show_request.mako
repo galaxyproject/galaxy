@@ -1,165 +1,162 @@
-<%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/requests/common/sample_state.mako" import="render_sample_state" />
 <%namespace file="/requests/common/sample_datasets.mako" import="render_sample_datasets" />
 
+<%!
+    def inherit(context):
+        if context.get('use_panels'):
+            return '/webapps/galaxy/base_panels.mako'
+        else:
+            return '/base.mako'
+%>
+<%inherit file="${inherit(context)}"/>
 
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "library" )}
+</%def>
 
-<script type="text/javascript">
-$( function() {
-    $( "select[refresh_on_change='true']").change( function() {
-        var refresh = false;
-        var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
-        if ( refresh_on_change_values ) {
-            refresh_on_change_values = refresh_on_change_values.value.split( ',' );
-            var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
-            for( i= 0; i < refresh_on_change_values.length; i++ ) {
-                if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">
+        $( function() {
+            $( "select[refresh_on_change='true']").change( function() {
+                var refresh = false;
+                var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
+                if ( refresh_on_change_values ) {
+                    refresh_on_change_values = refresh_on_change_values.value.split( ',' );
+                    var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
+                    for( i= 0; i < refresh_on_change_values.length; i++ ) {
+                        if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
+                            refresh = true;
+                            break;
+                        }
+                    }
+                }
+                else {
                     refresh = true;
-                    break;
                 }
-            }
-        }
-        else {
-            refresh = true;
-        }
-        if ( refresh ){
-            $( "#show_request" ).submit();
-        }
-    });
-});
-</script>
-
-<script type="text/javascript">
-function showContent(vThis)
-{
-    // http://www.javascriptjunkie.com
-    // alert(vSibling.className + " " + vDef_Key);
-    vParent = vThis.parentNode;
-    vSibling = vParent.nextSibling;
-    while (vSibling.nodeType==3) { 
-        // Fix for Mozilla/FireFox Empty Space becomes a TextNode or Something
-        vSibling = vSibling.nextSibling;
-    };
-    if(vSibling.style.display == "none")
-    {
-        vThis.src="/static/images/fugue/toggle.png";
-        vThis.alt = "Hide";
-        vSibling.style.display = "block";
-    } else {
-        vSibling.style.display = "none";
-        vThis.src="/static/images/fugue/toggle-expand.png";
-        vThis.alt = "Show";
-    }
-    return;
-}
-</script>
-
-
-<script type="text/javascript">
-$(document).ready(function(){
-    //hide the all of the element with class msg_body
-    $(".msg_body").hide();
-    //toggle the componenet with class msg_body
-    $(".msg_head").click(function(){
-        $(this).next(".msg_body").slideToggle(0);
-    });
-});
-</script>
-
-<script type="text/javascript">
-    // Looks for changes in sample states using an async request. Keeps
-    // calling itself (via setTimeout) until all samples are in a terminal
-    // state.
-    var updater = function ( sample_states ) {
-        // Check if there are any items left to track
-        var empty = true;
-        for ( i in sample_states ) {
-            empty = false;
-            break;
-        }
-        if ( ! empty ) {
-            setTimeout( function() { updater_callback( sample_states ) }, 1000 );
-        }
-    };
-    var updater_callback = function ( sample_states ) {
-        // Build request data
-        var ids = []
-        var states = []
-        $.each( sample_states, function ( id, state ) {
-            ids.push( id );
-            states.push( state );
+                if ( refresh ){
+                    $( "#show_request" ).submit();
+                }
+            });
         });
-        // Make ajax call
-        $.ajax( {
-            type: "POST",
-            url: "${h.url_for( controller='requests_common', action='sample_state_updates' )}",
-            dataType: "json",
-            data: { ids: ids.join( "," ), states: states.join( "," ) },
-            success : function ( data ) {
-                $.each( data, function( id, val, cntrller ) {
-                    // Replace HTML
-                    var cell1 = $("#sampleState-" + id);
-                    cell1.html( val.html_state );
-                    var cell2 = $("#sampleDatasets-" + id);
-                    cell2.html( val.html_datasets );
-                    sample_states[ parseInt(id) ] = val.state;
-                });
-                updater( sample_states ); 
-            },
-            error: function() {
-                // Just retry, like the old method, should try to be smarter
-                updater( sample_states );
-            }
-        });
-    };
     
-	function checkAllFields()
-	{
-		var chkAll = document.getElementById('checkAll');
-		var checks = document.getElementsByTagName('input');
-		var boxLength = checks.length;
-		var allChecked = false;
-		var totalChecked = 0;
-        if ( chkAll.checked == true )
+        function showContent(vThis)
         {
-            for ( i=0; i < boxLength; i++ )
+            // http://www.javascriptjunkie.com
+            // alert(vSibling.className + " " + vDef_Key);
+            vParent = vThis.parentNode;
+            vSibling = vParent.nextSibling;
+            while (vSibling.nodeType==3) { 
+                // Fix for Mozilla/FireFox Empty Space becomes a TextNode or Something
+                vSibling = vSibling.nextSibling;
+            };
+            if(vSibling.style.display == "none")
             {
-	            if ( checks[i].name.indexOf( 'select_sample_' ) != -1)
-	            {
-	               checks[i].checked = true;
-	            }
-	        }
+                vThis.src="/static/images/fugue/toggle.png";
+                vThis.alt = "Hide";
+                vSibling.style.display = "block";
+            } else {
+                vSibling.style.display = "none";
+                vThis.src="/static/images/fugue/toggle-expand.png";
+                vThis.alt = "Show";
+            }
+            return;
         }
-        else
-        {
-            for ( i=0; i < boxLength; i++ )
+    
+        $(document).ready(function(){
+            //hide the all of the element with class msg_body
+            $(".msg_body").hide();
+            //toggle the componenet with class msg_body
+            $(".msg_head").click(function(){
+                $(this).next(".msg_body").slideToggle(0);
+            });
+        });
+    
+        // Looks for changes in sample states using an async request. Keeps
+        // calling itself (via setTimeout) until all samples are in a terminal
+        // state.
+        var updater = function ( sample_states ) {
+            // Check if there are any items left to track
+            var empty = true;
+            for ( i in sample_states ) {
+                empty = false;
+                break;
+            }
+            if ( ! empty ) {
+                setTimeout( function() { updater_callback( sample_states ) }, 1000 );
+            }
+        };
+        var updater_callback = function ( sample_states ) {
+            // Build request data
+            var ids = []
+            var states = []
+            $.each( sample_states, function ( id, state ) {
+                ids.push( id );
+                states.push( state );
+            });
+            // Make ajax call
+            $.ajax( {
+                type: "POST",
+                url: "${h.url_for( controller='requests_common', action='sample_state_updates' )}",
+                dataType: "json",
+                data: { ids: ids.join( "," ), states: states.join( "," ) },
+                success : function ( data ) {
+                    $.each( data, function( id, val, cntrller ) {
+                        // Replace HTML
+                        var cell1 = $("#sampleState-" + id);
+                        cell1.html( val.html_state );
+                        var cell2 = $("#sampleDatasets-" + id);
+                        cell2.html( val.html_datasets );
+                        sample_states[ parseInt(id) ] = val.state;
+                    });
+                    updater( sample_states ); 
+                },
+                error: function() {
+                    // Just retry, like the old method, should try to be smarter
+                    updater( sample_states );
+                }
+            });
+        };
+        
+    	function checkAllFields()
+    	{
+    		var chkAll = document.getElementById('checkAll');
+    		var checks = document.getElementsByTagName('input');
+    		var boxLength = checks.length;
+    		var allChecked = false;
+    		var totalChecked = 0;
+            if ( chkAll.checked == true )
             {
-                if ( checks[i].name.indexOf( 'select_sample_' ) != -1)
+                for ( i=0; i < boxLength; i++ )
                 {
-                   checks[i].checked = false
+    	            if ( checks[i].name.indexOf( 'select_sample_' ) != -1)
+    	            {
+    	               checks[i].checked = true;
+    	            }
+    	        }
+            }
+            else
+            {
+                for ( i=0; i < boxLength; i++ )
+                {
+                    if ( checks[i].name.indexOf( 'select_sample_' ) != -1)
+                    {
+                       checks[i].checked = false
+                    }
                 }
             }
+    	}
+    
+        function stopRKey(evt) {
+          var evt = (evt) ? evt : ((event) ? event : null);
+          var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+          if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
         }
-	}
-
-</script>
-
-<style type="text/css">
-.msg_head {
-    padding: 0px 0px;
-    cursor: pointer;
-}
-</style>
-
-<script type="text/javascript">
-    function stopRKey(evt) {
-      var evt = (evt) ? evt : ((event) ? event : null);
-      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
-      if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
-    }
-    document.onkeypress = stopRKey
-</script> 
+        document.onkeypress = stopRKey
+    </script>
+</%def>
 
 <% samples_not_ready = request.sequence_run_ready() %>
 %if samples_not_ready:
@@ -187,244 +184,218 @@ $(document).ready(function(){
 	        | <b>State</b>: ${request.state()}
 	    %endif
     </div>
-    
 </div>
-<br/>
-<br/>
+
+<br/><br/>
+
 <ul class="manage-table-actions">
     <li><a class="action-button" id="seqreq-${request.id}-popup" class="menubutton">Sequencing Request Actions</a></li>
     <div popupmenu="seqreq-${request.id}-popup">
         %if request.unsubmitted() and request.samples:
-            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller=cntrller, action='list', operation='Submit', id=trans.security.encode_id(request.id) )}">
-            <span>Submit</span></a>
+            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller=cntrller, action='list', operation='Submit', id=trans.security.encode_id(request.id) )}">Submit</a>
         %endif
-        <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">
-        <span>History</span></a>
-        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
-        <span>Edit</span></a>
+        <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">History</a>
+        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">Edit</a>
         %if cntrller == 'requests_admin' and trans.user_is_admin():
             %if request.submitted():
-                <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='reject', id=trans.security.encode_id(request.id))}">
-                <span>Reject</span></a>
-                <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', show_page=True, request_id=request.id)}">
-                <span>Select dataset(s) to transfer</span></a>
+                <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='reject', id=trans.security.encode_id(request.id))}">Reject</a>
+                <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', show_page=True, request_id=request.id)}">Select dataset(s) to transfer</a>
             %endif
         %endif
     </div>
-    <li>
-        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list')}">
-        <span>Browse requests</span></a>
-    </li>
+    <li><a class="action-button"  href="${h.url_for( controller=cntrller, action='list')}">Browse requests</a></li>
 </ul>
 
-
-
-<div>
-	<h4><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);" style="cursor:pointer;"/> Request Information</h4>
-	<div style="display:none;"  >
-	    <table class="grid" border="0">
-	        <tbody>
-	            <tr>
-		            <td valign="top" width="50%">
-                        <div class="form-row">
-                            <label>Description:</label>
-                            %if request.desc:
-                                ${request.desc}
-                            %else:
-                                <i>None</i>
-                            %endif
-                        </div>
-                        <div style="clear: both"></div>
-					    %for index, rd in enumerate(request_details):
-					        <div class="form-row">
-					            <label>${rd['label']}:</label>
-					            %if not rd['value']:
-					                <i>None</i>
-					            %else:                      
-					                %if rd['label'] == 'State':
-					                    <a href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
-					                %else:
-					                    ${rd['value']}     
-					                %endif
-					            %endif
-					        </div>
-					        <div style="clear: both"></div>
-					    %endfor
-					</td>
-					<td valign="top" width="50%">
-                        <div class="form-row">
-                            <label>Date created:</label>
-                            ${request.create_time}
-                        </div>
-                        <div class="form-row">
-                            <label>Date updated:</label>
-                            ${request.update_time}
-                        </div>
-	                    <div class="form-row">
-	                        <label>Email notification recipient(s):</label>
-	                        <% emails = ', '.join(request.notification['email']) %>
-	                        %if emails:
-	                            ${emails}
-	                        %else:
-	                            <i>None</i>
-	                        %endif
-	                    </div>
-	                    <div style="clear: both"></div>
-	                    <div class="form-row">
-	                        <label>Email notification on sample state(s):</label>
-	                        <% 
-	                            states = []
-	                            for ss in request.type.states:
-	                                if ss.id in request.notification['sample_states']:
-	                                    states.append(ss.name)
-	                            states = ', '.join(states)
-	                        %>
-	                        %if states:
-	                            ${states}
-	                        %else:
-	                            <i>None</i>
-	                        %endif
-	                    </div>
-	                    <div style="clear: both"></div>
-					</td>
-				</tr>
-		    </tbody>
-		</table>
-	    <div class="form-row">
-		    <ul class="manage-table-actions">
-		        <li>
-		            <a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
-		            <span>Edit request information</span></a>
-		        </li>
-		    </ul>
-	    </div>
-	</div>
-</div>
-
-<br/>
-
-##<div class="toolForm">
-    <form id="show_request" name="show_request" action="${h.url_for( controller='requests_common', cntrller=cntrller, action='request_page', edit_mode=edit_mode )}"  method="post" >
-        ##<div class="form-row">
-            %if current_samples:
-                ## first render the basic info grid 
-                ${render_basic_info_grid()}
-		        %if not request.new() and edit_mode == 'False' and len(sample_ops.options) > 1:
-                    <div class="form-row" style="background-color:#FAFAFA;">
-	                    For selected sample(s): 
-                        ${sample_ops.get_html()}
+<h4><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);" style="cursor:pointer;"/> Request Information</h4>
+<div style="display:none;"  >
+    <table class="grid" border="0">
+        <tbody>
+            <tr>
+	            <td valign="top" width="50%">
+                    <div class="form-row">
+                        <label>Description:</label>
+                        %if request.desc:
+                            ${request.desc}
+                        %else:
+                            <i>None</i>
+                        %endif
                     </div>
-                    %if 'none' not in sample_ops.get_selected( return_label=True, return_value=True ) and len(selected_samples):
-                        <div class="form-row" style="background-color:#FAFAFA;">
-                            %if trans.app.model.Sample.bulk_operations.CHANGE_STATE in sample_ops.get_selected( return_label=True, return_value=True ):
-                                <%
-                                    widgets, title = request.type.change_state_widgets(trans)
-                                %>
-			                    %for w in widgets:
-			                        <div class="form-row">
-			                            <label>
-			                                ${w[0]}:
-			                            </label>
-			                            ${w[1].get_html()}
-			                            %if w[0] == 'Comments':
-			                                <div class="toolParamHelp" style="clear: both;">
-			                                    Optional
-			                                </div>
-			                            %endif
-			                        </div>
-			                    %endfor
-		                        <div class="form-row">
-		                            <input type="submit" name="change_state_button" value="Save"/>
-		                            <input type="submit" name="change_state_button" value="Cancel"/>
-		                        </div>
-		                    %elif trans.app.model.Sample.bulk_operations.SELECT_LIBRARY in sample_ops.get_selected( return_label=True, return_value=True ):
-		                        <div class="form-row">
-			                        <label>Select data library:</label>
-			                        ${bulk_lib_ops[0].get_html()}
-		                        </div>
-		                        %if not 'none' in bulk_lib_ops[0].get_selected( return_label=True, return_value=True ):
-	                                <div class="form-row">
-				                        <label>Select folder:</label>
-				                        ${bulk_lib_ops[1].get_html()}
-			                        </div>
-			                        <div class="form-row">
-			                          <input type="submit" name="change_lib_button" value="Save"/>
-			                          <input type="submit" name="change_lib_button" value="Cancel"/>
-	                                </div>
-		                        %endif
-                            %endif
-                        </div>
-                    %endif
-		        %endif
-                ## then render the other grid(s)
-                <% trans.sa_session.refresh( request.type.sample_form ) %>
-                %for grid_index, grid_name in enumerate(request.type.sample_form.layout):
-                    ${render_grid( grid_index, grid_name, request.type.sample_form.fields_of_grid( grid_index ) )}
-                %endfor
-            %else:
-                <label>There are no samples.</label>
-            %endif
-        ##</div>      
-        %if request.samples and request.submitted():
-            <script type="text/javascript">
-                // Updater
-                updater({${ ",".join( [ '"%s" : "%s"' % ( s.id, s.current_state().name ) for s in request.samples ] ) }});
-            </script>
-        %endif
-        
-        %if edit_mode == 'False':
-            <table class="grid">
-                <tbody>
-                    <tr>
-                        <div class="form-row">
-
-                            %if request.unsubmitted():
-                                <td>
-                                    %if current_samples:
-                                        <label>Copy </label>
-                                        <input type="integer" name="num_sample_to_copy" value="1" size="3"/>
-                                        <label>sample(s) from sample</label>
-                                        ${sample_copy.get_html()}
-                                    %endif
-                                    <input type="submit" name="add_sample_button" value="Add New"/>
-                                </td>
-                            %endif
-                            <td>
-                                %if len(current_samples) and len(current_samples) <= len(request.samples):                     
-                                    <input type="submit" name="edit_samples_button" value="Edit samples"/>
-                                %endif
-                            </td>
-                        </div>
-                    </tr> 
-                </tbody>
-            </table>
-        %endif
-        %if request.samples or current_samples: 
-            <div class="form-row">
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="refresh" value="true" size="40"/>
-                </div>
-              <div style="clear: both"></div>
-            </div>            
-            %if edit_mode == 'True':   
-                <div class="form-row">
-                    <input type="submit" name="save_samples_button" value="Save"/>
-                    <input type="submit" name="cancel_changes_button" value="Cancel"/>
-                </div>
-            %elif edit_mode == 'True' or len(current_samples) > len(request.samples):
-                <div class="form-row">
-                    <input type="submit" name="save_samples_button" value="Save"/>
-                    <input type="submit" name="cancel_changes_button" value="Cancel"/>
-                </div>
-            %endif
-            
-        %endif
-        <input type="hidden" name="id" value="${trans.security.encode_id(request.id)}" />
-    </form>
-##</div>
-
+                    <div style="clear: both"></div>
+				    %for index, rd in enumerate(request_details):
+				        <div class="form-row">
+				            <label>${rd['label']}:</label>
+				            %if not rd['value']:
+				                <i>None</i>
+				            %else:                      
+				                %if rd['label'] == 'State':
+				                    <a href="${h.url_for( controller=cntrller, action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
+				                %else:
+				                    ${rd['value']}     
+				                %endif
+				            %endif
+				        </div>
+				        <div style="clear: both"></div>
+				    %endfor
+				</td>
+				<td valign="top" width="50%">
+                    <div class="form-row">
+                        <label>Date created:</label>
+                        ${request.create_time}
+                    </div>
+                    <div class="form-row">
+                        <label>Date updated:</label>
+                        ${request.update_time}
+                    </div>
+                    <div class="form-row">
+                        <label>Email notification recipient(s):</label>
+                        <% emails = ', '.join(request.notification['email']) %>
+                        %if emails:
+                            ${emails}
+                        %else:
+                            <i>None</i>
+                        %endif
+                    </div>
+                    <div style="clear: both"></div>
+                    <div class="form-row">
+                        <label>Email notification on sample state(s):</label>
+                        <% 
+                            states = []
+                            for ss in request.type.states:
+                                if ss.id in request.notification['sample_states']:
+                                    states.append(ss.name)
+                            states = ', '.join(states)
+                        %>
+                        %if states:
+                            ${states}
+                        %else:
+                            <i>None</i>
+                        %endif
+                    </div>
+                    <div style="clear: both"></div>
+				</td>
+			</tr>
+	    </tbody>
+	</table>
+    <div class="form-row">
+	    <ul class="manage-table-actions">
+	        <li><a class="action-button"  href="${h.url_for( controller=cntrller, action='list', operation='Edit', id=trans.security.encode_id(request.id))}">Edit request information</a></li>
+	    </ul>
+    </div>
+</div>
 <br/>
-
+<form id="show_request" name="show_request" action="${h.url_for( controller='requests_common', cntrller=cntrller, action='request_page', edit_mode=edit_mode )}"  method="post" >
+    <input type="hidden" name="id" value="${trans.security.encode_id(request.id)}" />
+    %if current_samples:
+        ## first render the basic info grid 
+        ${render_basic_info_grid()}
+        %if not request.new() and edit_mode == 'False' and len(sample_ops.options) > 1:
+            <div class="form-row" style="background-color:#FAFAFA;">
+                For selected sample(s): 
+                ${sample_ops.get_html()}
+            </div>
+            %if 'none' not in sample_ops.get_selected( return_label=True, return_value=True ) and len(selected_samples):
+                <div class="form-row" style="background-color:#FAFAFA;">
+                    %if trans.app.model.Sample.bulk_operations.CHANGE_STATE in sample_ops.get_selected( return_label=True, return_value=True ):
+                        <%
+                            widgets, title = request.type.change_state_widgets(trans)
+                        %>
+	                    %for w in widgets:
+	                        <div class="form-row">
+	                            <label>
+	                                ${w[0]}:
+	                            </label>
+	                            ${w[1].get_html()}
+	                            %if w[0] == 'Comments':
+	                                <div class="toolParamHelp" style="clear: both;">
+	                                    Optional
+	                                </div>
+	                            %endif
+	                        </div>
+	                    %endfor
+                        <div class="form-row">
+                            <input type="submit" name="change_state_button" value="Save"/>
+                            <input type="submit" name="change_state_button" value="Cancel"/>
+                        </div>
+                    %elif trans.app.model.Sample.bulk_operations.SELECT_LIBRARY in sample_ops.get_selected( return_label=True, return_value=True ):
+                        <div class="form-row">
+	                        <label>Select data library:</label>
+	                        ${bulk_lib_ops[0].get_html()}
+                        </div>
+                        %if not 'none' in bulk_lib_ops[0].get_selected( return_label=True, return_value=True ):
+                            <div class="form-row">
+		                        <label>Select folder:</label>
+		                        ${bulk_lib_ops[1].get_html()}
+	                        </div>
+	                        <div class="form-row">
+	                          <input type="submit" name="change_lib_button" value="Save"/>
+	                          <input type="submit" name="change_lib_button" value="Cancel"/>
+                            </div>
+                        %endif
+                    %endif
+                </div>
+            %endif
+        %endif
+        ## then render the other grid(s)
+        <% trans.sa_session.refresh( request.type.sample_form ) %>
+        %for grid_index, grid_name in enumerate(request.type.sample_form.layout):
+            ${render_grid( grid_index, grid_name, request.type.sample_form.fields_of_grid( grid_index ) )}
+        %endfor
+    %else:
+        <label>There are no samples.</label>
+    %endif  
+    %if request.samples and request.submitted():
+        <script type="text/javascript">
+            // Updater
+            updater({${ ",".join( [ '"%s" : "%s"' % ( s.id, s.current_state().name ) for s in request.samples ] ) }});
+        </script>
+    %endif
+    %if edit_mode == 'False':
+        <table class="grid">
+            <tbody>
+                <tr>
+                    <div class="form-row">
+                        %if request.unsubmitted():
+                            <td>
+                                %if current_samples:
+                                    <label>Copy </label>
+                                    <input type="integer" name="num_sample_to_copy" value="1" size="3"/>
+                                    <label>sample(s) from sample</label>
+                                    ${sample_copy.get_html()}
+                                %endif
+                                <input type="submit" name="add_sample_button" value="Add New"/>
+                            </td>
+                        %endif
+                        <td>
+                            %if len(current_samples) and len(current_samples) <= len(request.samples):                     
+                                <input type="submit" name="edit_samples_button" value="Edit samples"/>
+                            %endif
+                        </td>
+                    </div>
+                </tr> 
+            </tbody>
+        </table>
+    %endif
+    %if request.samples or current_samples: 
+        <div class="form-row">
+            <div style="float: left; width: 250px; margin-right: 10px;">
+                <input type="hidden" name="refresh" value="true" size="40"/>
+            </div>
+          <div style="clear: both"></div>
+        </div>            
+        %if edit_mode == 'True':   
+            <div class="form-row">
+                <input type="submit" name="save_samples_button" value="Save"/>
+                <input type="submit" name="cancel_changes_button" value="Cancel"/>
+            </div>
+        %elif edit_mode == 'True' or len(current_samples) > len(request.samples):
+            <div class="form-row">
+                <input type="submit" name="save_samples_button" value="Save"/>
+                <input type="submit" name="cancel_changes_button" value="Cancel"/>
+            </div>
+        %endif
+    %endif
+</form>
+<br/>
 %if request.unsubmitted():
     <form id="import" name="import" action="${h.url_for( controller='requests_common', action='request_page', edit_mode=edit_mode, request_id=trans.security.encode_id(request.id) )}" enctype="multipart/form-data" method="post" >
         <h4><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);"  style="cursor:pointer;"/> Import samples</h4>
@@ -438,10 +409,7 @@ $(document).ready(function(){
             </div>
         </div>
     </form>
-##</div>
 %endif
-
-
 
 <%def name="render_grid( grid_index, grid_name, fields_dict )">
     <br/>
@@ -515,10 +483,8 @@ $(document).ready(function(){
             </tr>
         <thead>
         <tbody>
-            <%
-            trans.sa_session.refresh( request )
-            %>
-            %for sample_index, info in enumerate(current_samples):
+            <% trans.sa_session.refresh( request ) %>
+            %for sample_index, info in enumerate( current_samples ):
                 <% 
                     if sample_index in range(len(request.samples)):
                         sample = request.samples[sample_index]
@@ -563,8 +529,6 @@ $(document).ready(function(){
                                     ${render_sample_datasets( cntrller, sample )}
                                 </td>
                             %endif
-                            
-                            
                         %else:                                                            
                             ${show_basic_info_form( sample_index, sample, info )}
                         %endif
@@ -589,7 +553,7 @@ $(document).ready(function(){
 <%def name="show_basic_info_form( sample_index, sample, info )">
     <td></td>
     <td>
-        <input type="text" name=sample_${sample_index}_name value="${info['name']}" size="10"/>
+        <input type="text" name="sample_${sample_index}_name" value="${info['name']}" size="10"/>
         <div class="toolParamHelp" style="clear: both;">
             <i>${' (required)' }</i>
         </div>
@@ -599,7 +563,7 @@ $(document).ready(function(){
             %if sample.request.unsubmitted():
                 <td></td>
             %else:
-                <td><input type="text" name=sample_${sample_index}_barcode value="${info['barcode']}" size="10"/></td>
+                <td><input type="text" name="sample_${sample_index}_barcode" value="${info['barcode']}" size="10"/></td>
             %endif
         %else:
             <td></td>
@@ -609,7 +573,7 @@ $(document).ready(function(){
             %if sample.request.unsubmitted():
                 <td></td>
             %else:
-                <td><input type="text" name=sample_${sample_index}_barcode value="${info['barcode']}" size="10"/></td>
+                <td><input type="text" name="sample_${sample_index}_barcode" value="${info['barcode']}" size="10"/></td>
             %endif
         %else:
             <td></td>
@@ -701,13 +665,3 @@ $(document).ready(function(){
         </td>
     %endfor   
 </%def>
-
-
-
-
-
-
-
-
-
-

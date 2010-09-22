@@ -7,13 +7,13 @@ sample_states = [  ( 'New', 'Sample entered into the system' ),
                    ( 'Received', 'Sample tube received' ), 
                    ( 'Done', 'Sequence run complete' ) ]
 address_dict = dict( short_desc="Office",
-                     name="James+Bond",
+                     name="James Bond",
                      institution="MI6" ,
-                     address="MI6+Headquarters",
+                     address="MI6 Headquarters",
                      city="London",
                      state="London",
                      postal_code="007",
-                     country="United+Kingdom",
+                     country="United Kingdom",
                      phone="007-007-0007" )
 
 class TestFormsAndRequests( TwillTestCase ):
@@ -90,72 +90,81 @@ class TestFormsAndRequests( TwillTestCase ):
         global role_two
         role_two = get_role_by_name( name )
         assert role_two is not None, 'Problem retrieving role named "Role Two" from the database'
-    def test_010_create_form( self ):
-        """Testing creating a new form and editing it"""
-        self.logout()
-        self.login( email=admin_user.email )
-        # create a form
-        name = "Request Form"
-        desc = "This is Form One's description"
-        formtype = galaxy.model.FormDefinition.types.REQUEST
-        self.create_form( name=name, desc=desc, formtype=formtype, num_fields=0 )
+    def test_010_create_request_form( self ):
+        """Testing creating a request form definition, editing the name and description and adding fields"""
+        # Logged in as admin_user
+        # Create a form definition
+        tmp_name = "Temp form"
+        tmp_desc = "Temp form description"
+        form_type = galaxy.model.FormDefinition.types.REQUEST
+        self.create_form( name=tmp_name,
+                          desc=tmp_desc,
+                          form_type=form_type,
+                          num_fields=0,
+                          strings_displayed=[ 'Create a new form definition' ],
+                          strings_displayed_after_submit=[ tmp_name, tmp_desc, form_type ] )
+        tmp_form = get_form( tmp_name )
+        # Edit the name and description of the form definition, and add 3 fields.
+        new_name = "Request Form"
+        new_desc = "Request Form description"
+        global test_field_name1
+        test_field_name1 = 'Test field name one'
+        global test_field_name2
+        test_field_name2 = 'Test field name two'
+        global test_field_name3
+        test_field_name3 = 'Test field name three'
+        field_dicts = [ dict( name=test_field_name1,
+                             desc='Test field description one',
+                             type='SelectField',
+                             required='optional',
+                             selectlist=[ 'option1', 'option2' ] ),
+                        dict( name=test_field_name2,
+                              desc='Test field description two',
+                              type='AddressField',
+                              required='optional' ),
+                        dict( name=test_field_name3,
+                              desc='Test field description three',
+                              type='TextField',
+                              required='required' ) ]
+        self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
+                        new_form_name=new_name,
+                        new_form_desc=new_desc,
+                        field_dicts=field_dicts,
+                        field_index=len( tmp_form.fields ),
+                        strings_displayed=[ 'Edit form definition "%s"' % tmp_name ],
+                        strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % new_name ] )
         # Get the form_definition object for later tests
         global form_one
-        form_one = get_form( name )
-        assert form_one is not None, 'Problem retrieving form named "%s" from the database' % name
-        # edit form & add few more fields
-        new_name = "Request Form (Renamed)"
-        new_desc = "This is Form One's Re-described"
-        self.edit_form( form_one.current.id, form_one.name, new_form_name=new_name, new_form_desc=new_desc )
-        self.home()
-        self.visit_page( 'forms/manage' )
-        self.check_page_for_string( new_name )
-        self.check_page_for_string( new_desc )
         form_one = get_form( new_name )
-    def test_015_add_form_fields( self ):
-        """Testing adding fields to a form definition"""
-        fields = [dict(name='Test field name one',
-                       desc='Test field description one',
-                       type='SelectField',
-                       required='optional',
-                       selectlist=['option1', 'option2']),
-                  dict(name='Test field name two',
-                       desc='Test field description two',
-                       type='AddressField',
-                       required='optional'),
-                  dict(name='Test field name three',
-                       desc='Test field description three',
-                       type='TextField',
-                       required='required')]
-        self.form_add_field( form_one.current.id,
-                             form_one.name,
-                             form_one.desc,
-                             form_one.type, 
-                             field_index=len( form_one.fields ),
-                             fields=fields )
-        form_one_latest = get_form( form_one.name )
-        assert len( form_one_latest.fields ) == len( form_one.fields ) + len( fields )
-    def test_020_create_sample_form( self ):
-        """Testing creating another form (for samples)"""
+        assert form_one is not None, 'Problem retrieving form named "%s" from the database' % new_name
+        assert len( form_one.fields ) == len( tmp_form.fields ) + len( field_dicts )
+    def test_015_create_sample_form( self ):
+        """Testing creating sample form definition"""
         name = "Sample Form"
         desc = "This is Form Two's description"
-        formtype = galaxy.model.FormDefinition.types.SAMPLE
+        form_type = galaxy.model.FormDefinition.types.SAMPLE
         form_layout_name = 'Layout Grid One'
-        self.create_form( name=name, desc=desc, formtype=formtype, form_layout_name=form_layout_name )
+        self.create_form( name=name,
+                          desc=desc,
+                          form_type=form_type,
+                          form_layout_name=form_layout_name,
+                          strings_displayed=[ 'Create a new form definition' ],
+                          strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % name ] )
         global form_two
         form_two = get_form( name )
         assert form_two is not None, "Error retrieving form %s from db" % name
-        self.home()
-        self.visit_page( 'forms/manage' )
-        self.check_page_for_string( form_two.name )
-        self.check_page_for_string( desc )
-        self.check_page_for_string( formtype )
-    def test_025_create_request_type( self ):
-        """Testing creating a new requestype"""
+    def test_020_create_request_type( self ):
+        """Testing creating a request_type"""
         request_form = get_form( form_one.name )
         sample_form = get_form( form_two.name )
         name = 'Test Requestype'
-        self.create_request_type( name, "test sequencer configuration", str( request_form.id ), str( sample_form.id ), sample_states )
+        self.create_request_type( name,
+                                  "test sequencer configuration",
+                                  str( request_form.id ),
+                                  str( sample_form.id ),
+                                  sample_states,
+                                  strings_displayed=[ 'Create a new sequencer configuration' ],
+                                  strings_displayed_after_submit=[ "Sequencer configuration <b>%s</b> has been created" % name ] )
         global request_type1
         request_type1 = get_request_type_by_name( name )
         assert request_type1 is not None, 'Problem retrieving sequencer configuration named "%s" from the database' % name
@@ -180,166 +189,207 @@ class TestFormsAndRequests( TwillTestCase ):
             pass
         self.logout()
         self.login( email=admin_user.email )
-    def test_030_create_address_and_library( self ):
-        """Testing address & library creation"""
-        # ( 9/17/10 placed by gvk ) Hey, RC, why is this test here? The library is never used later in this script.
-        # first create a library for the request so that it can be submitted later
-        name = "TestLib001"
-        description = "TestLib001 description"
-        synopsis = "TestLib001 synopsis"
-        self.create_library( name=name, description=description, synopsis=synopsis )
-        # Get the library object for later tests
-        global library_one
-        library_one = get_library( name, description, synopsis )
-        assert library_one is not None, 'Problem retrieving library named "%s" from the database' % name
-        # Make sure library_one is public
-        assert 'access library' not in [ a.action for a in library_one.actions ], 'Library %s is not public when first created' % library_one.name
-        # Set permissions on the library, sort for later testing.
-        permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
-        permissions_out = []
-        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
-        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on this library and it's contents.
-        self.library_permissions( self.security.encode_id( library_one.id ),
-                                  library_one.name,
-                                  str( role_one.id ),
-                                  permissions_in,
-                                  permissions_out )
-        # Make sure the library is accessible by admin_user
-        self.visit_url( '%s/library/browse_libraries' % self.url )
-        self.check_page_for_string( library_one.name )
-        # Make sure the library is not accessible by regular_user2 since regular_user2 does not have Role1.
-        self.logout()
-        self.login( email=regular_user2.email )
-        self.visit_url( '%s/library/browse_libraries' % self.url )
-        try:
-            self.check_page_for_string( library_one.name )
-            raise AssertionError, 'Library %s is accessible by %s when it should be restricted' % ( library_one.name, regular_user2.email )
-        except:
-            pass
-        self.logout()
-        self.login( email=admin_user.email )
-        # create folder
-        root_folder = library_one.root_folder
-        name = "Root Folder's Folder One"
-        description = "This is the root folder's Folder One"
-        self.add_folder( 'library_admin',
-                         self.security.encode_id( library_one.id ),
-                         self.security.encode_id( root_folder.id ),
-                         name=name,
-                         description=description )
-        global folder_one
-        folder_one = get_folder( root_folder.id, name, description )
-        assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
-        # create address
+    def test_025_create_request( self ):
+        """Testing creating a sequence run request"""
+        # logged in as admin_user
+        # Create a user_address
         self.logout()
         self.login( email=regular_user1.email )
         self.add_user_address( regular_user1.id, address_dict )
         global user_address1
-        user_address1 = get_user_address( regular_user1, address_dict[ 'short_desc' ] )    
-    def test_035_create_request( self ):
-        """Testing creating, editing and submitting a request as a regular user"""
-        # login as a regular user
-        self.logout()
-        self.login( email=regular_user1.email )
-        # set field values
-        fields = ['option1', str(user_address1.id), 'field three value'] 
-        # create the request
+        user_address1 = get_user_address( regular_user1, address_dict[ 'short_desc' ] )
+        # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
+        # is required for that field.
+        field_value_tuples = [ ( 'option1', False ), ( str( user_address1.id ), True ), ( 'field three value', False ) ] 
+        # Create the request
         name = 'Request One'
         desc = 'Request One Description'
-        self.create_request(request_type1.id, name, desc, fields)
+        self.create_request( cntrller='requests',
+                             request_type_id=str( request_type1.id ),
+                             name=name,
+                             desc=desc,
+                             field_value_tuples=field_value_tuples,
+                             strings_displayed=[ 'Add a new request',
+                                                 test_field_name1,
+                                                 test_field_name2,
+                                                 test_field_name3 ],
+                             strings_displayed_after_submit=[ name, desc ] )
         global request_one
         request_one = get_request_by_name( name )        
-        # check if the request's state is now set to 'new'
+        # Make sure the request's state is now set to NEW
         assert request_one.state is not request_one.states.NEW, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.NEW )
-        # sample fields
-        samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
-                    ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
-        # add samples to this request
-        self.add_samples( request_one.id, request_one.name, samples )
-        # edit this request
-        fields = ['option2', str(user_address1.id), 'field three value (edited)'] 
-        self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', 
-                          request_one.desc+' (Re-described)', fields)
+        # Sample fields - the tuple represents a sample name and a list of sample form field values
+        sample_value_tuples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
+                                ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
+        strings_displayed_after_submit = [ 'Unsubmitted' ]
+        for sample_name, field_values in sample_value_tuples:
+            strings_displayed_after_submit.append( sample_name )
+            for field_value in field_values:
+                strings_displayed_after_submit.append( field_value )
+        # Add samples to the request
+        self.add_samples( cntrller='requests',
+                          request_id=self.security.encode_id( request_one.id ),
+                          request_name=request_one.name,
+                          sample_value_tuples=sample_value_tuples,
+                          strings_displayed=[ 'Sequencing Request "%s"' % request_one.name,
+                                              'There are no samples.' ],
+                          strings_displayed_after_submit=strings_displayed_after_submit )
+    def test_030_edit_request( self ):
+        """Testing editing a sequence run request"""
+        # logged in as regular_user1
+        fields = [ 'option2', str( user_address1.id ), 'field three value (edited)' ]
+        new_name=request_one.name + ' (Renamed)'
+        new_desc=request_one.desc + ' (Re-described)'
+        self.edit_request( request_id=self.security.encode_id( request_one.id ),
+                           name=request_one.name,
+                           new_name=new_name, 
+                           new_desc=new_desc,
+                           new_fields=fields,
+                           strings_displayed=[ 'Edit sequencing request "%s"' % request_one.name ],
+                           strings_displayed_after_submit=[ new_name, new_desc ] )
         refresh( request_one )
         # check if the request is showing in the 'new' filter
-        self.check_request_grid(state=request_one.states.NEW, request_name=request_one.name)
-        # submit the request
-        self.submit_request( request_one.id, request_one.name )
+        self.check_request_grid( cntrller='requests',
+                                 state=request_one.states.NEW,
+                                 strings_displayed=[ request_one.name ] )
+    def test_035_submit_request( self ):
+        """Testing editing a sequence run request"""
+        # logged in as regular_user1
+        self.submit_request( cntrller='requests',
+                             request_id=self.security.encode_id( request_one.id ),
+                             request_name=request_one.name,
+                             strings_displayed_after_submit=[ 'The request <b>%s</b> has been submitted.' % request_one.name ] )
         refresh( request_one )
-        # check if the request is showing in the 'submitted' filter
-        self.check_request_grid(state=request_one.states.SUBMITTED, request_name=request_one.name)
-        # check if the request's state is now set to 'submitted'
+        # Make sure the request is showing in the 'submitted' filter
+        self.check_request_grid( cntrller='requests',
+                                 state=request_one.states.SUBMITTED,
+                                 strings_displayed=[ request_one.name ] )
+        # Make sure the request's state is now set to 'submitted'
         assert request_one.state is not request_one.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.SUBMITTED )
     def test_040_request_lifecycle( self ):
-        """Testing request lifecycle as it goes through all the states"""
-        # goto admin manage requests page
+        """Testing request life-cycle as it goes through all the states"""
+        # logged in as regular_user1
         self.logout()
         self.login( email=admin_user.email )
-        self.check_request_admin_grid(state=request_one.states.SUBMITTED, request_name=request_one.name)
-        self.visit_url( "%s/requests_admin/list?operation=show&id=%s" \
-                        % ( self.url, self.security.encode_id( request_one.id ) ))
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request_one.states.SUBMITTED,
+                                 strings_displayed=[ request_one.name ] )
+        self.visit_url( "%s/requests_admin/list?operation=show&id=%s" % ( self.url, self.security.encode_id( request_one.id ) ))
         self.check_page_for_string( 'Sequencing Request "%s"' % request_one.name )
-        # set bar codes for the samples
+        # Set bar codes for the samples
         bar_codes = [ '1234567890', '0987654321' ]
-        self.add_bar_codes( request_one.id, request_one.name, bar_codes, request_one.samples )
-        # change the states of all the samples of this request
+        strings_displayed_after_submit=[ 'Changes made to the sample(s) are saved.' ]
+        for bar_code in bar_codes:
+            strings_displayed_after_submit.append( bar_code )
+        self.add_bar_codes( request_id=self.security.encode_id( request_one.id ),
+                            request_name=request_one.name,
+                            bar_codes=bar_codes,
+                            samples=request_one.samples,
+                            strings_displayed_after_submit=strings_displayed_after_submit )
+        # Change the states of all the samples of this request to ultimately be COMPLETE
         for sample in request_one.samples:
-            self.change_sample_state( request_one.id, request_one.name, sample.name, sample.id, request_type1.states[1].id, request_type1.states[1].name )
-            self.change_sample_state( request_one.id, request_one.name, sample.name, sample.id, request_type1.states[2].id, request_type1.states[2].name )
-        self.home()
+            self.change_sample_state( request_id=self.security.encode_id( request_one.id ),
+                                      request_name=request_one.name,
+                                      sample_name=sample.name,
+                                      sample_id=sample.id,
+                                      new_state_id=request_type1.states[1].id,
+                                      new_state_name=request_type1.states[1].name )
+            self.change_sample_state( request_id=self.security.encode_id( request_one.id ),
+                                      request_name=request_one.name,
+                                      sample_name=sample.name,
+                                      sample_id=sample.id,
+                                      new_state_id=request_type1.states[2].id,
+                                      new_state_name=request_type1.states[2].name )
         refresh( request_one )
         self.logout()
         self.login( email=regular_user1.email )
         # check if the request's state is now set to 'complete'
-        self.check_request_grid(state='Complete', request_name=request_one.name)
+        self.check_request_grid( cntrller='requests',
+                                 state='Complete',
+                                 strings_displayed=[ request_one.name ] )
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.COMPLETE )
     def test_045_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
+        # Logged in as regular_user1
         self.logout()
         self.login( email=admin_user.email )
+        # Create the request
         name = "RequestTwo"
-        # TODO: fix this test so it is no longer simulated.
-        # simulate request creation
-        url_str = '%s/requests_common/new?cntrller=requests_admin&create_request_button=Save&select_request_type=%i&select_user=%i&name=%s&refresh=True&field_2=%s&field_0=%s&field_1=%i' \
-                  % ( self.url, request_type1.id, regular_user1.id, name, "field_2_value", 'option1', user_address1.id )
-        self.home()
-        self.visit_url( url_str )
-        self.check_page_for_string( "The new request named <b>%s</b> has been created" % name )
+        desc = 'Request Two Description'
+        # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
+        # is required for that field.
+        field_value_tuples = [ ( 'option2', False ), ( str( user_address1.id ), True ), ( 'field_2_value', False ) ] 
+        self.create_request( cntrller='requests_admin',
+                             request_type_id=str( request_type1.id ),
+                             select_user_id=str( regular_user1.id ),
+                             name=name,
+                             desc=desc,
+                             refresh='True',
+                             field_value_tuples=field_value_tuples,
+                             strings_displayed=[ 'Add a new request',
+                                                 test_field_name1,
+                                                 test_field_name2,
+                                                 test_field_name3 ],
+                             strings_displayed_after_submit=[ "The new request named <b>%s</b> has been created" % name ] )
         global request_two
         request_two = get_request_by_name( name )      
-        # check if the request is showing in the 'new' filter
-        self.check_request_admin_grid(state=request_two.states.NEW, request_name=request_two.name)
-        # check if the request's state is now set to 'new'
+        # Make sure the request is showing in the 'new' filter
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request_two.states.NEW,
+                                 strings_displayed=[ request_two.name ] )
+        # Make sure the request's state is now set to 'new'
         assert request_two.state is not request_two.states.NEW, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.NEW )
-        # sample fields
-        samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
-                    ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
-        # add samples to this request
-        self.add_samples( request_two.id, request_two.name, samples )
-        # submit the request
-        self.submit_request_as_admin( request_two.id, request_two.name )
+        # Sample fields - the tuple represents a sample name and a list of sample form field values
+        sample_value_tuples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
+                                ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
+        strings_displayed_after_submit = [ 'Unsubmitted' ]
+        for sample_name, field_values in sample_value_tuples:
+            strings_displayed_after_submit.append( sample_name )
+            for field_value in field_values:
+                strings_displayed_after_submit.append( field_value )
+        # Add samples to the request
+        self.add_samples( cntrller='requests_admin',
+                          request_id=self.security.encode_id( request_two.id ),
+                          request_name=request_two.name,
+                          sample_value_tuples=sample_value_tuples,
+                          strings_displayed=[ 'Sequencing Request "%s"' % request_two.name,
+                                              'There are no samples.' ],
+                          strings_displayed_after_submit=strings_displayed_after_submit )
+        # Submit the request
+        self.submit_request( cntrller='requests_admin',
+                             request_id=self.security.encode_id( request_two.id ),
+                             request_name=request_two.name,
+                             strings_displayed_after_submit=[ 'The request <b>%s</b> has been submitted.' % request_two.name ] )
         refresh( request_two )
-        # check if the request is showing in the 'submitted' filter
-        self.check_request_admin_grid(state=request_two.states.SUBMITTED, request_name=request_two.name)
-        # check if the request's state is now set to 'submitted'
+        # Make sure the request is showing in the 'submitted' filter
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request_two.states.SUBMITTED,
+                                 strings_displayed=[ request_two.name ] )
+        # Make sure the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.SUBMITTED )
-        # check if both the requests is showing in the 'All' filter
-        self.check_request_admin_grid(state='All', request_name=request_one.name)
-        self.check_request_admin_grid(state='All', request_name=request_two.name)
+        # Make sure both requests are showing in the 'All' filter
+        self.check_request_grid( cntrller='requests_admin',
+                                 state='All',
+                                 strings_displayed=[ request_one.name, request_two.name ] )
     def test_050_reject_request( self ):
-        '''Testing rejecting a request'''
-        self.logout()
-        self.login( email=admin_user.email )
-        self.reject_request( request_two.id, request_two.name, "Rejection test comment" )
+        """Testing rejecting a request"""
+        # Logged in as admin_user
+        self.reject_request( request_id=self.security.encode_id( request_two.id ),
+                             request_name=request_two.name,
+                             comment="Rejection test comment",
+                             strings_displayed=[ 'Reject Sequencing Request "%s"' % request_two.name ],
+                             strings_displayed_after_submit=[ 'Request <b>%s</b> has been rejected.' % request_two.name ] )
         refresh( request_two )
-        # check if the request is showing in the 'rejected' filter
-        self.check_request_admin_grid(state=request_two.states.REJECTED, request_name=request_two.name)
-        # check if the request's state is now set to 'submitted'
+        # Make sure the request is showing in the 'rejected' filter
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request_two.states.REJECTED,
+                                 strings_displayed=[ request_two.name ] )
+        # Make sure the request's state is now set to REJECTED
         assert request_two.state is not request_two.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.REJECTED )
     def test_055_reset_data_for_later_test_runs( self ):
@@ -370,16 +420,6 @@ class TestFormsAndRequests( TwillTestCase ):
         ##################
         for user_address in [ user_address1 ]:
             mark_obj_deleted( user_address )
-        ##################
-        # Purge all libraries
-        ##################
-        for library in [ library_one ]:
-            self.delete_library_item( 'library_admin',
-                                      self.security.encode_id( library.id ),
-                                      self.security.encode_id( library.id ),
-                                      library.name,
-                                      item_type='library' )
-            self.purge_library( self.security.encode_id( library.id ), library.name )
         ##################
         # Delete all non-private roles
         ##################

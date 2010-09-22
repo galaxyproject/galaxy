@@ -37,11 +37,16 @@ class TestLibraryFeatures( TwillTestCase ):
         # Logged in as admin_user
         for type in [ 'AddressField', 'CheckboxField', 'SelectField', 'TextArea', 'TextField', 'WorkflowField' ]:
             form_desc = '%s description' % type
+            num_options = 0
+            if type == 'SelectField':
+                # Pass number of options we want in our SelectField
+                num_options = 2
             # Create form for library template
-            self.create_single_field_type_form_definition( name=type,
-                                                           desc=form_desc,
-                                                           formtype=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
-                                                           field_type=type )
+            self.create_form( name=type,
+                              desc=form_desc,
+                              form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
+                              field_type=type,
+                              num_options=num_options )
         # Get all of the new form definitions for later use
         global AddressField_form
         AddressField_form = get_form( 'AddressField' )
@@ -147,7 +152,7 @@ class TestLibraryFeatures( TwillTestCase ):
         user_address1 = get_user_address( admin_user, short_desc )
         assert user_address1 is not None, 'Problem retrieving user_address1 from the database'
         global ldda1
-        ldda1 = get_latest_ldda()
+        ldda1 = get_latest_ldda_by_name( filename )
         assert ldda1 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda1 from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library1.id ),
@@ -269,7 +274,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      dbkey='hg18',
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'CheckboxField', 'checked' ] )
-        ldda = get_latest_ldda()
+        ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library2.id ),
@@ -290,9 +295,10 @@ class TestLibraryFeatures( TwillTestCase ):
                                    self.security.encode_id( SelectField_form.id ),
                                    SelectField_form.name )
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
+        # SelectField option names are zero-based
         self.library_info( 'library_admin',
                             self.security.encode_id( library3.id ),
-                            template_fields=[ ( 'field_0', 'Two' ) ] )
+                            template_fields=[ ( 'field_0', 'Option1' ) ] )
     def test_085_add_folder3_to_library3( self ):
         """Testing adding a folder to library3"""
         # Logged in as admin_user
@@ -320,10 +326,10 @@ class TestLibraryFeatures( TwillTestCase ):
         self.folder_info( cntrller='library_admin',
                           folder_id=self.security.encode_id( folder3.id ),
                           library_id=self.security.encode_id( library3.id ),
-                          template_fields=[ ( "field_0", 'Two' ) ],
+                          template_fields=[ ( "field_0", 'Option1' ) ],
                           strings_displayed=[ SelectField_form.name,
                                               'This is an inherited template and is not required to be used with this folder',
-                                              'Two' ] )
+                                              'Option1' ] )
     def test_100_add_ldda_to_folder3( self ):
         """
         Testing adding a new library dataset to library3's folder,
@@ -339,8 +345,8 @@ class TestLibraryFeatures( TwillTestCase ):
                                      file_type='bed',
                                      dbkey='hg18',
                                      ldda_message=ldda_message,
-                                     strings_displayed=[ 'SelectField', 'selected>Two' ] )
-        ldda = get_latest_ldda()
+                                     strings_displayed=[ 'SelectField', 'selected>Option1' ] )
+        ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library3.id ),
@@ -351,7 +357,7 @@ class TestLibraryFeatures( TwillTestCase ):
                              self.security.encode_id( folder3.id ),
                              self.security.encode_id( ldda.id ),
                              ldda.name,
-                             strings_displayed=[ 'SelectField', 'Two' ] )
+                             strings_displayed=[ 'SelectField', 'Option1' ] )
     def test_105_add_template_to_library4( self ):
         """ Testing add an inheritable template containing an TextArea to library4"""
         # Logged in as admin_user
@@ -406,7 +412,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      dbkey='hg18',
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'TextArea', 'This text should be inherited' ] )
-        ldda = get_latest_ldda()
+        ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library4.id ),
@@ -471,7 +477,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      dbkey='hg18',
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'TextField', 'This text should be inherited' ] )
-        ldda = get_latest_ldda()
+        ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library5.id ),
@@ -512,7 +518,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      strings_displayed=[ 'TextField',
                                                          'This text should be inherited',
                                                          'TextArea' ] )
-        ldda = get_latest_ldda()
+        ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library5.id ),
@@ -576,7 +582,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      dbkey='hg18',
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'WorkflowField', 'none' ] )
-        ldda = get_latest_ldda()
+        ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library6.id ),

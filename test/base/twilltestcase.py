@@ -767,68 +767,45 @@ class TwillTestCase( unittest.TestCase ):
                     except:
                         pass
         return previously_created, username_taken, invalid_username
-    def create_user_with_info( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
+    def create_user_with_info( self, email, password, username, user_info_values, user_info_select='', admin_view='False',
+                               strings_displayed=[], strings_displayed_after_submit=[] ):
         # This method creates a new user with associated info
-        if user_info_forms == 'multiple':
-            self.visit_url( "%s/user/create?user_info_select=%i&admin_view=False&use_panels=False" % ( self.url, user_info_form_id ) )
-        else:
-            self.visit_url( "%s/user/create?admin_view=False&use_panels=False" % self.url )
-        self.check_page_for_string( "Create account" )
+        self.visit_url( "%s/user/create?admin_view=%s&use_panels=False" % ( self.url, admin_view ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str)
         tc.fv( "1", "email", email )
         tc.fv( "1", "password", password )
         tc.fv( "1", "confirm", password )
         tc.fv( "1", "username", username )
-        if user_info_forms == 'multiple':
-            self.check_page_for_string( "User type" )
-        for index, info_value in enumerate(user_info_values):
+        if user_info_select:
+            # The user_info_select SelectField requires a refresh_on_change
+            self.refresh_form( 'user_info_select', user_info_select )
+        for index, info_value in enumerate( user_info_values ):
             tc.fv( "1", "field_%i" % index, info_value )
         tc.submit( "create_user_button" )
-    def create_user_with_info_as_admin( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
-        # This method creates a new user with associated info from the admin view
-        self.home()
-        if user_info_forms == 'multiple':
-            self.visit_page( "admin/users?operation=create?user_info_select=%i&admin_view=False" % user_info_form_id )
-        else:
-            self.visit_page( "admin/users?operation=create" )
-        self.check_page_for_string( "Create account" )
-        tc.fv( "2", "email", email )
-        tc.fv( "2", "password", password )
-        tc.fv( "2", "confirm", password )
-        tc.fv( "2", "username", username )
-        if user_info_forms == 'multiple':
-            self.check_page_for_string( "User type" )
-        for index, info_value in enumerate(user_info_values):
-            tc.fv( "2", "field_%i" % index, info_value )
-        tc.submit( "create_user_button" )
-        self.check_page_for_string( "Created new user account (%s)" % email )
-    def edit_login_info( self, new_email, new_username, strings_displayed=[] ):
-        self.home()
+    def edit_user_info( self, new_email='', new_username='', password='', new_password='',
+                        info_values=[], strings_displayed=[], strings_displayed_after_submit=[] ):
         self.visit_url( "%s/user/show_info" % self.url )
-        self.check_page_for_string( "Manage User Information" )
-        tc.fv( "login_info", "email", new_email )
-        tc.fv( "login_info", "username", new_username )
-        tc.submit( "login_info_button" )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-    def change_password( self, password, new_password ):
+        if new_email or new_username:
+            if new_email:
+                tc.fv( "login_info", "email", new_email )
+            if new_username:
+                tc.fv( "login_info", "username", new_username )
+            tc.submit( "login_info_button" )
+        if password and new_password:
+            tc.fv( "change_password", "current", password )
+            tc.fv( "change_password", "password", new_password )
+            tc.fv( "change_password", "confirm", new_password )
+            tc.submit( "change_password_button" )
+        if info_values:
+            for index, info_value in enumerate( info_values ):
+                tc.fv( "user_info", "field_%i" % index, info_value )
+            tc.submit( "edit_user_info_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         self.home()
-        self.visit_page( "user/show_info" )
-        self.check_page_for_string( "Manage User Information" )
-        tc.fv( "change_password", "current", password )
-        tc.fv( "change_password", "password", new_password )
-        tc.fv( "change_password", "confirm", new_password )
-        tc.submit( "change_password_button" )
-        self.check_page_for_string( 'The password has been changed.' )
-    def edit_user_info( self, info_values ):
-        self.home()
-        self.visit_page( "user/show_info" )
-        self.check_page_for_string( "Manage User Information" )
-        for index, info_value in enumerate(info_values):
-            tc.fv( "user_info", "field_%i" % index, info_value )
-        tc.submit( "edit_user_info_button" )
-        self.check_page_for_string( "The user information has been updated with the changes." )
-        for value in info_values:
-            self.check_page_for_string( value )
     def user_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id='2' ):
         # role.id = 2 is Private Role for test2@bx.psu.edu 
         # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
@@ -1340,133 +1317,88 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Form stuff
-    def create_form( self, name, desc, formtype, form_layout_name='', num_fields=1 ):
-        """
-        Create a new form definition.  Testing framework is still limited to only testing
-        one instance for each repeat. This has to do with the 'flat' nature of defining
-        test param values.  Using same-named parameters down different branches (having
-        different scope in the tool) cannot be properly tested when they both exist at the
-        same time.
-        """
-        self.home()
+    def create_form( self, name, desc, form_type, field_type='TextField', form_layout_name='',
+                     num_fields=1, num_options=0, strings_displayed=[], strings_displayed_after_submit=[] ):
+        """Create a new form definition."""
         self.visit_url( "%s/forms/new" % self.url )
-        self.check_page_for_string( 'Create a new form definition' )
-        tc.fv( "1", "name", name ) # form field 1 is the field named name...
-        tc.fv( "1", "description", desc ) # form field 1 is the field named desc...
-        tc.fv( "1", "form_type_selectbox", formtype )
-        tc.submit( "create_form_button" )
-        if formtype == "Sequencing Sample Form":
-            tc.submit( "add_layout_grid" )
-            tc.fv( "1", "grid_layout0", form_layout_name )
-        for index in range( num_fields ):
-            field_name = 'field_name_%i' % index
-            field_contents = 'Field %i' % index
-            field_help_name = 'field_helptext_%i' % index
-            field_help_contents = 'Field %i help' % index
-            tc.fv( "1", field_name, field_contents )
-            tc.fv( "1", field_help_name, field_help_contents )
-            tc.submit( "save_changes_button" )
-        if num_fields:
-            check_str = "The form '%s' has been updated with the changes." % name
+        for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        else:
-            self.home()
-            self.visit_url( "%s/forms/manage" % self.url )
-            self.check_page_for_string( name )
-            self.check_page_for_string( desc )
-            self.check_page_for_string( formtype )
-        self.home()
-    # Form stuff
-    def create_single_field_type_form_definition( self, name, desc, formtype, field_type ):
-        """
-        Create a new form definition containing 1 field of a specified type ( AddressField, CheckboxField, SelectField,
-        TextArea, TextField, WorkflowField ).  The form_type param value should not be 'Sequencing Sample Form,' use 
-        create_form() above for that.
-        """
-        self.home()
-        # Create a new form definition
-        self.visit_url( "%s/forms/new" % self.url )
-        self.check_page_for_string( 'Create a new form definition' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "description", desc )
-        tc.fv( "1", "form_type_selectbox", formtype )
+        tc.fv( "1", "form_type_selectbox", form_type )
         tc.submit( "create_form_button" )
-        # Add 1 AddressField to the new form definition
-        field_name = 'field_name_0'
-        field_contents = field_type
-        field_help_name = 'field_helptext_0'
-        field_help_contents = '%s help' % field_type
-        field_default = 'field_default_0'
-        field_default_contents = '%s default contents' % field_type
-        tc.fv( "1", field_name, field_contents )
-        tc.fv( "1", field_help_name, field_help_contents )
-        self.refresh_form( 'field_type_0', field_type )
-        if field_type == 'SelectField':
-            # Add 2 options so our select list is functional
-            tc.submit( "addoption_0" )
-            tc.fv( "1", "field_0_option_0", "One" )
-            tc.submit( "addoption_0" )
-            tc.fv( "1", "field_0_option_1", "Two" )
-        tc.fv( "1", field_default, field_default_contents )
+        if form_type == "Sequencing Sample Form":
+            tc.submit( "add_layout_grid" )
+            tc.fv( "1", "grid_layout0", form_layout_name )
+        # Add fields to the new form definition
+        for index1 in range( num_fields ):
+            field_name = 'field_name_%i' % index1
+            field_contents = field_type
+            field_help_name = 'field_helptext_%i' % index1
+            field_help_contents = 'Field %i help' % index1
+            field_default = 'field_default_0'
+            field_default_contents = '%s default contents' % form_type
+            tc.fv( "1", field_name, field_contents )
+            tc.fv( "1", field_help_name, field_help_contents )
+            if field_type == 'SelectField':
+                # SelectField field_type requires a refresh_on_change
+                self.refresh_form( 'field_type_0', field_type )
+                # Add options so our select list is functional
+                if num_options == 0:
+                    # Default to 2 options
+                    num_options = 2
+                for index2 in range( 1, num_options+1 ):
+                    tc.submit( "addoption_0" )
+                # Add contents to the new options fields
+                for index2 in range( num_options ):
+                    option_field_name = 'field_0_option_%i' % index2
+                    option_field_value = 'Option%i' % index2
+                    tc.fv( "1", option_field_name, option_field_value )
+            else:
+                tc.fv( "1", "field_type_0", field_type )
+            tc.fv( "1", field_default, field_default_contents )
         tc.submit( "save_changes_button" )
+        if num_fields == 0:
+            self.visit_url( "%s/forms/manage" % self.url )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         self.home()
-        self.visit_url( "%s/forms/manage" % self.url )
-        self.check_page_for_string( name )
-        self.check_page_for_string( desc )
-        self.check_page_for_string( formtype )
+    def edit_form( self, id, form_type='', new_form_name='', new_form_desc='', field_dicts=[], field_index=0,
+                   strings_displayed=[], strings_not_displayed=[], strings_displayed_after_submit=[] ):
+        """Edit form details; name and description"""
         self.home()
-    def edit_form( self, form_current_id, form_name, new_form_name="Form One's Name (Renamed)", new_form_desc="This is Form One's description (Re-described)"):
-        """
-        Edit form details; name & description
-        """
-        self.home()
-        self.visit_url( "%s/forms/manage?sort=create_time&f-name=All&f-desc=All&f-deleted=False&operation=Edit&id=%s" % ( self.url, self.security.encode_id(form_current_id) ) )
-        self.check_page_for_string( 'Edit form definition "%s"' % form_name )
-        tc.fv( "1", "name", new_form_name ) 
-        tc.fv( "1", "description", new_form_desc ) 
-        tc.submit( "save_changes_button" )
-        self.check_page_for_string( "The form '%s' has been updated with the changes." % new_form_name )
-        self.home()
-    def form_add_field( self, form_current_id, form_name, form_desc, form_type, form_layout_name='', field_index=0, fields=None):
-        """
-        Add a new fields to the form definition
-        """
-        self.home()
-        self.visit_url( "%s/forms/manage?sort=create_time&f-name=All&f-desc=All&f-deleted=False&operation=Edit&id=%s" % ( self.url, self.security.encode_id(form_current_id) ) )
-        self.check_page_for_string( 'Edit form definition "%s"' % form_name)
-        for i, field in enumerate(fields):
-            index = i+field_index
+        self.visit_url( "%s/forms/manage?operation=Edit&id=%s" % ( self.url, id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        if new_form_name:
+            tc.fv( "1", "name", new_form_name )
+        if new_form_desc:
+            tc.fv( "1", "description", new_form_desc )
+        for i, field_dict in enumerate( field_dicts ):
+            index = i + field_index
             tc.submit( "add_field_button" )
-            tc.fv( "1", "field_name_%i" % index, field['name'] )
-            tc.fv( "1", "field_helptext_%i" % index, field['desc'] )
-            tc.fv( "1", "field_type_%i" % index, field['type'] )
-            tc.fv( "1", "field_required_%i" % index, field['required'] )
-            if field['type'] == 'SelectField':
-                options = ''
-                for option_index, option in enumerate(field['selectlist']):
-                    url_str = "%s/forms/manage?operation=Edit&description=%s&grid_layout0=%s&id=%s&form_type_selectbox=%s&addoption_%i=Add&name=%s&field_name_%i=%s&field_helptext_%i=%s&field_type_%i=%s" % \
-                              (self.url, form_desc.replace(" ", "+"), form_layout_name.replace(" ", "+"), 
-                               self.security.encode_id(form_current_id), form_type.replace(" ", "+"), 
-                               index, form_name.replace(" ", "+"), index, field['name'].replace(" ", "+"), 
-                               index, field['desc'].replace(" ", "+"), index, field['type'])
-                    self.visit_url( url_str + options )
-                    tc.fv( "1", "field_%i_option_%i" % (index, option_index), option )
-                    options = options + "&field_%i_option_%i=%s" % (index, option_index, option)
+            field_name = "field_name_%i" % index
+            field_value = field_dict[ 'name' ]
+            field_help = "field_helptext_%i" % index
+            field_help_value = field_dict[ 'desc' ]
+            field_type = "field_type_%i" % index
+            field_type_value = field_dict[ 'type' ]
+            field_required = "field_required_%i" % index
+            field_required_value = field_dict[ 'required' ]
+            tc.fv( "1", field_name, field_value )
+            tc.fv( "1", field_help, field_help_value )
+            tc.fv( "1", field_required, field_required_value )
+            if field_type_value.lower() == 'selectfield':
+                # SelectFields require a refresh_on_change
+                self.refresh_form( field_type, field_type_value )
+                for option_index, option in enumerate( field_dict[ 'selectlist' ] ):
+                    tc.submit( "addoption_0" )
+                    tc.fv( "1", "field_%i_option_%i" % ( index, option_index ), option )
+            else:
+                tc.fv( "1", field_type, field_type_value )
         tc.submit( "save_changes_button" )
-        check_str = "The form '%s' has been updated with the changes." % form_name
-        self.check_page_for_string( check_str )
-        self.home()
-    def form_remove_field( self, form_id, form_name, field_name):
-        """
-        Remove a field from the form definition
-        """
-        self.home()
-        self.visit_url( "%s/forms/manage?operation=Edit&form_id=%i&show_form=True" % (self.url, form_id) )
-        self.check_page_for_string( 'Edit form definition "%s"' % form_name)
-        tc.submit( "remove_button" )
-        tc.submit( "save_changes_button" )
-        check_str = "The form '%s' has been updated with the changes." % form_name
-        self.check_page_for_string( check_str )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         self.home()
     def mark_form_deleted( self, form_id ):
         """Mark a form_definition as deleted"""
@@ -1478,20 +1410,16 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Requests stuff
-    def check_request_grid(self, state, request_name, deleted=False):
-        self.home()
-        self.visit_url('%s/requests/list?sort=create_time&f-state=%s&f-deleted=%s' \
-                       % (self.url, state.replace(' ', '+'), str(deleted)))
-        self.check_page_for_string( request_name )
-    def check_request_admin_grid(self, state, request_name, deleted=False):
-        self.home()
-        self.visit_url('%s/requests_admin/list?sort=create_time&f-state=%s&f-deleted=%s' \
-                       % (self.url, state.replace(' ', '+'), str(deleted)))
-        self.check_page_for_string( request_name )
-    def create_request_type( self, name, desc, request_form_id, sample_form_id, states ):
+    def check_request_grid( self, cntrller, state, deleted=False, strings_displayed=[] ):
+        self.visit_url( '%s/%s/list?sort=create_time&f-state=%s&f-deleted=%s' % \
+                        ( self.url, cntrller, state.replace( ' ', '+' ), str( deleted ) ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+    def create_request_type( self, name, desc, request_form_id, sample_form_id, states, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
         self.visit_url( "%s/requests_admin/create_request_type" % self.url )
-        self.check_page_for_string( 'Create a new sequencer configuration' )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         tc.fv( "1", "name", name )
         tc.fv( "1", "desc", desc )
         tc.fv( "1", "request_form_id", request_form_id )
@@ -1501,7 +1429,8 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv("1", "state_name_%i" % index, state[0])
             tc.fv("1", "state_desc_%i" % index, state[1])
         tc.submit( "save_request_type" )
-        self.check_page_for_string( "Sequencer configuration <b>%s</b> has been created" % name )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
     def request_type_permissions( self, request_type_id, request_type_name, role_ids_str, permissions_in, permissions_out ):
         # role_ids_str must be a comma-separated string of role ids
         url = "requests_admin/manage_request_types?operation=permissions&id=%s&update_roles_button=Save" % ( request_type_id )
@@ -1516,87 +1445,123 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Permissions updated for sequencer configuration '%s'" % request_type_name
         self.check_page_for_string( check_str )
         self.home()
-    def create_request( self, request_type_id, name, desc, fields ):
-        self.home()
-        self.visit_url( "%s/requests_common/new?select_request_type=%i&refresh=true&cntrller=requests" % ( self.url, 
-                                                                                                           request_type_id ) )
-        self.check_page_for_string( 'Add a new request' )
+    def create_request( self, cntrller, request_type_id, name, desc, field_value_tuples, select_user_id='',
+                        refresh='False', strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( "%s/requests_common/new?cntrller=%s&refresh=%s&select_request_type=True" % ( self.url, cntrller, refresh ) )
+        # The select_request_type SelectList requires a refresh_on_change
+        self.refresh_form( 'select_request_type', request_type_id )
+        if cntrller == 'requests_admin' and select_user_id:
+            # The admin is creating a request on behalf of another user
+            # The select_user SelectList requires a refresh_on_change
+            # gvk - 9/22/10: TODO: why does select_user require a refresh_on_change?  Nothing in the
+            # code is apparent as to why this is done.
+            self.refresh_form( 'select_user', select_user_id )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         tc.fv( "1", "name", name )
         tc.fv( "1", "desc", desc )
-        for index, field_value in enumerate(fields):
-            tc.fv( "1", "field_%i" % index, field_value )
+        for index, field_value_tuple in enumerate( field_value_tuples ):
+            field_name = "field_%i" % index
+            field_value, refresh_on_change = field_value_tuple
+            if refresh_on_change:
+                # TODO: If the field is an AddressField, we should test for adding a new address
+                # which would need to be handled here.  This currently only allows an existing
+                # user_address to be selected.
+                self.refresh_form( field_name, field_value )
+            else:
+                data = self.last_page()
+                file( 'greg.html', 'wb' ).write(data )
+                tc.fv( "1", field_name, field_value )
         tc.submit( "create_request_button" )
-        self.check_page_for_string( name )
-        self.check_page_for_string( desc )
-    def edit_request( self, request_id, name, new_name, new_desc, new_fields):
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
         self.home()
-        self.visit_url( "%s/requests/list?operation=Edit&id=%s" % (self.url, self.security.encode_id(request_id) ) )
+    def edit_request( self, request_id, name, new_name='', new_desc='', new_fields=[], strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( "%s/requests/list?operation=Edit&id=%s" % ( self.url, request_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         self.check_page_for_string( 'Edit sequencing request "%s"' % name )
-        tc.fv( "1", "name", new_name )
-        tc.fv( "1", "desc", new_desc )
-        for index, field_value in enumerate(new_fields):
+        if new_name:
+            tc.fv( "1", "name", new_name )
+        if new_desc:
+            tc.fv( "1", "desc", new_desc )
+        for index, field_value in enumerate( new_fields ):
             tc.fv( "1", "field_%i" % index, field_value )
         tc.submit( "save_changes_request_button" )
-        self.check_page_for_string( new_name )
-        self.check_page_for_string( new_desc )
-    def add_samples( self, request_id, request_name, samples ):
-        self.home()
-        url = "%s/requests/list?operation=show&id=%s" % ( self.url, self.security.encode_id( request_id ) )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def add_samples( self, cntrller, request_id, request_name, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( "%s/requests/list?operation=show&id=%s" % ( self.url, request_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        # Simulate clicking the add-sample_button on the form.  (gvk: 9/21/10 - TODO : There must be a bug in the mako template 
+        # because twill cannot find any forms on the page, but I cannot find it although I've spent time cleaning up the
+        # template code and looking for any problems. 
+        url = "%s/requests_common/request_page?cntrller=%s&edit_mode=False&id=%s" % ( self.url, cntrller, request_id )
+        # This should work, but although twill does not thorw any exceptions, the button click never occurs
+        # There are multiple forms on this page, and we'll only be using the form named show_request.
+        # for sample_index, sample_value_tuple in enumerate( sample_value_tuples ):
+        #     # Add the following form value to the already populated hidden field so that the show_request
+        #     # form is the current form
+        #     tc.fv( "1", "id", request_id )
+        #     tc.submit( 'add_sample_button' )
+        for sample_index, sample_value_tuple in enumerate( sample_value_tuples ):
+            sample_name, field_values = sample_value_tuple
+            sample_name = sample_name.replace( ' ', '+' )
+            field_name = "sample_%i_name" % sample_index
+            # The following form_value setting should work but since twill barfed on submitting the add_sample_button
+            # above, we have to simulate it by appending to the url.
+            # tc.fv( "1", field_name, sample_name )
+            url += "&%s=%s" % ( field_name, sample_name )
+            for field_index, field_value in enumerate( field_values ):
+                field_name = "sample_%i_field_%i" % ( sample_index, field_index )
+                field_value = field_value.replace( ' ', '+' )
+                # The following form_value setting should work but since twill barfed on submitting the add_sample_button
+                # above, we have to simulate it by appending to the url.
+                # tc.fv( "1", field_name, field_value )
+                url += "&%s=%s" % ( field_name , field_value )
+        # The following button submit should work but since twill barfed on submitting the add_sample_button
+        # above, we have to simulate it by appending to the url.
+        # tc.submit( "save_samples_button" )
+        url += "&save_samples_button=Save"
         self.visit_url( url )
-        self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
-        self.check_page_for_string( 'There are no samples.' )
-        # this redundant stmt below is add so that the second form in 
-        # the page gets selected
-        url = ["%s/requests_common/request_page?cntrller=requests&edit_mode=False&id=%s" % ( self.url, self.security.encode_id( request_id ) )]
-        for sample_index, sample in enumerate(samples):
-            sample_name, fields = sample
-            url.append("sample_%i_name=%s" % (sample_index, sample_name.replace(' ', '+')))
-            for field_index, field_value in enumerate(fields):
-                url.append("sample_%i_field_%i=%s" % ( sample_index, field_index , field_value.replace(' ', '+') ))
-        url.append("save_samples_button=Save")
-        self.visit_url('&'.join(url))
-        for sample_name, fields in samples:
-            self.check_page_for_string( sample_name )
-            self.check_page_for_string( 'Unsubmitted' )
-            for field_value in fields:
-                self.check_page_for_string( field_value )
-    def submit_request( self, request_id, request_name ):
-        self.home()
-        self.visit_url( "%s/requests/list?operation=Submit&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
-        self.check_page_for_string( 'The request <b>%s</b> has been submitted.' % request_name )
-    def submit_request_as_admin( self, request_id, request_name ):
-        self.home()
-        self.visit_url( "%s/requests_admin/list?operation=Submit&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
-        self.check_page_for_string( 'The request <b>%s</b> has been submitted.' % request_name )
-    def reject_request( self, request_id, request_name, comment ):
-        self.home()
-        self.visit_url( "%s/requests_admin/list?operation=Reject&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
-        self.check_page_for_string( 'Reject Sequencing Request "%s"' % request_name )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def submit_request( self, cntrller, request_id, request_name, strings_displayed_after_submit=[] ):
+        self.visit_url( "%s/%s/list?operation=Submit&id=%s" % ( self.url, cntrller, request_id ) )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def reject_request( self, request_id, request_name, comment, strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( "%s/requests_admin/list?operation=Reject&id=%s" % ( self.url, request_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         tc.fv( "1", "comment", comment )
         tc.submit( "reject_button" )
-        self.check_page_for_string( 'Request <b>%s</b> has been rejected.' % request_name )
-        self.visit_url( "%s/requests/list?&operation=show&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
-        self.check_page_for_string( comment )
-    def add_bar_codes( self, request_id, request_name, bar_codes, samples ):
-        self.home()
-        url = "%s/requests/list?operation=show&id=%s" % ( self.url, self.security.encode_id( request_id ) )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def add_bar_codes( self, request_id, request_name, bar_codes, samples, strings_displayed_after_submit=[] ):
+        # We have to simulate the form submission here since twill barfs on the page
+        # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
+        url = "%s/requests_common/request_page?cntrller=requests_admin&edit_mode=True&id=%s" % ( self.url, request_id )
+        for index, field_value in enumerate( bar_codes ):
+            sample_field_name = "sample_%i_name" % index
+            sample_field_value = samples[ index ].name.replace( ' ', '+' )
+            field_name = "sample_%i_barcode" % index
+            url += "&%s=%s" % ( field_name, field_value )
+            url += "&%s=%s" % ( sample_field_name, sample_field_value )
+        url += "&save_samples_button=Save"
         self.visit_url( url )
-        self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
-        url = ["%s/requests_common/request_page?save_samples_button=Save&cntrller=requests&edit_mode=True&id=%s" % ( self.url, self.security.encode_id( request_id ) )]
-        for index, bar_code in enumerate(bar_codes):
-            url.append("sample_%i_barcode=%s" % (index, bar_code ))
-            url.append("sample_%i_name=%s" % (index, samples[index].name.replace(' ', '+') ))
-        self.visit_url('&'.join(url))
-        self.check_page_for_string( 'Changes made to the sample(s) are saved.' )
-        for index, bar_code in enumerate(bar_codes):
-            self.check_page_for_string( bar_code )
-    def change_sample_state( self, request_id, request_name, sample_name, sample_id, new_state_id, new_state_name, comment='' ):
-        self.home()
-        url = "%s/requests/list?operation=show&id=%s" % ( self.url, self.security.encode_id( request_id ) )
-        self.visit_url( url )
-        self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
-        url = "%s/requests_common/request_page?cntrller=requests_admin&edit_mode=False&id=%s&comment=%s&change_state_button=Save&select_sample_operation=%s&refresh=true&select_sample_%i=true&select_sample_%i=true&select_state=%i" % \
-              (self.url, self.security.encode_id( request_id ), comment, "Change%20state", sample_id, sample_id, new_state_id )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def change_sample_state( self, request_id, request_name, sample_name, sample_id, new_state_id, new_state_name, comment='',
+                             strings_displayed=[], strings_displayed_after_submit=[] ):
+        # We have to simulate the form submission here since twill barfs on the page
+        # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
+        url = "%s/requests_common/request_page?cntrller=requests_admin&edit_mode=False&id=%s" % ( self.url, request_id )
+        # select_sample_%i=true must be included twice to simulate a CheckboxField checked setting.
+        url += "&comment=%s&select_sample_%i=true&select_sample_%i=true&select_state=%i" % ( comment, sample_id, sample_id, new_state_id )
+        url += "&select_sample_operation=Change%20state&refresh=true"
+        url += "&change_state_button=Save"
         self.visit_url( url )        
         self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
         self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%i" % (self.url, sample_id) )
@@ -1605,14 +1570,6 @@ class TwillTestCase( unittest.TestCase ):
     def add_user_address( self, user_id, address_dict ):
         self.home()
         self.visit_url( "%s/user/new_address?admin_view=False&user_id=%i" % ( self.url, user_id ) )
-        self.check_page_for_string( 'Add new address' )
-        for field_name, value in address_dict.items():
-            tc.fv( "1", field_name, value )
-        tc.submit( "new_address_button" )
-        self.check_page_for_string( 'Address (%s) has been added' % address_dict[ 'short_desc' ] )
-    def add_user_address_as_admin( self, user_id, address_dict ):
-        self.home()
-        self.visit_url( "%s/user/new_address?admin_view=True&user_id=%i" % ( self.url, user_id ) )
         self.check_page_for_string( 'Add new address' )
         for field_name, value in address_dict.items():
             tc.fv( "1", field_name, value )
@@ -1685,6 +1642,8 @@ class TwillTestCase( unittest.TestCase ):
                 pass
     def browse_library( self, cntrller, id, show_deleted=False, strings_displayed=[], strings_not_displayed=[] ):
         self.visit_url( '%s/library_common/browse_library?cntrller=%s&id=%s&show_deleted=%s' % ( self.url, cntrller, id, str( show_deleted ) ) )
+        data=self.last_page()
+        file( 'greg.html', 'wb' ).write( data )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         for check_str in strings_not_displayed:
@@ -1878,6 +1837,8 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "runtool_btn" )
         # Give the files some time to finish uploading
         self.library_wait( library_id )
+        data = self.last_page()
+        file( 'greg1.html', 'wb' ).write( data )
         self.home()
     def ldda_permissions( self, cntrller, library_id, folder_id, id, role_ids_str,
                           permissions_in=[], permissions_out=[], strings_displayed=[], ldda_name='' ):
@@ -2033,7 +1994,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Library '%s' and all of its contents have been purged" % library_name
         self.check_page_for_string( check_str )
         self.home()
-    def library_wait( self, library_id, cntrller='library_admin', maxiter=60 ):
+    def library_wait( self, library_id, cntrller='library_admin', maxiter=90 ):
         """Waits for the tools to finish"""
         count = 0
         sleep_amount = 1

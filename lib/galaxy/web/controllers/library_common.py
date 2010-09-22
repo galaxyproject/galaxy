@@ -906,7 +906,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
         else:
             action = web.url_for( controller='library_common', action='upload_library_dataset' )
         upload_option_select_list = self._build_upload_option_select_list( trans, upload_option )
-        roles_select_list = self._build_roles_select_list( trans, cntrller, library, roles )
+        roles_select_list = self._build_roles_select_list( trans, cntrller, library, util.listify( roles ) )
         return trans.fill_template( '/library/common/upload.mako',
                                     cntrller=cntrller,
                                     upload_option_select_list=upload_option_select_list,
@@ -1252,7 +1252,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 trans.sa_session.refresh( history )
                 action = 'add_history_datasets_to_library'
                 upload_option_select_list = self._build_upload_option_select_list( trans, upload_option )
-                roles_select_list = self._build_roles_select_list( trans, cntrller, library, roles )
+                roles_select_list = self._build_roles_select_list( trans, cntrller, library, util.listify( roles ) )
                 return trans.fill_template( "/library/common/upload.mako",
                                             cntrller=cntrller,
                                             upload_option_select_list=upload_option_select_list,
@@ -1273,7 +1273,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                             ldda_message=ldda_message,
                                             message=message,
                                             status=status )
-    def _build_roles_select_list( self, trans, cntrller, library, selected_roles ):
+    def _build_roles_select_list( self, trans, cntrller, library, selected_role_ids=[] ):
         # Get the list of legitimate roles to display on the upload form.  If the library is public,
         # all active roles are legitimate.  If the library is restricted by the LIBRARY_ACCESS permission, only
         # the set of all roles associated with users that have that permission are legitimate.
@@ -1283,7 +1283,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             # were selected before refresh_on_change, if one occurred.
             roles_select_list = SelectField( "roles", multiple="true", size="5" )
             for role in legitimate_roles:
-                roles_select_list.add_option( text=role.name, value=str( role.id ), selected=str( role.id ) in selected_roles )
+                selected = str( role.id ) in selected_role_ids
+                roles_select_list.add_option( text=role.name, value=str( role.id ), selected=selected )
             return roles_select_list
         else:
             return None

@@ -59,12 +59,10 @@ $(document).ready(function(){
                     %for i, option in enumerate(options):
                         <div class="form-row">
                             <b> ${i+1}</b>
-                            ${option[1].get_html()}
-                            ##<a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form.id, select_box_options='remove', field_index=index, option_index=i )}">Remove</a><br>                            
+                            ${option[1].get_html()}                          
                             <input type="submit" name="removeoption_${index}_${i}" value="Remove"/>
                         </div>
                     %endfor
-                    <input type="hidden" name="field_index" value="${index}"/>
                 </div>
             </div>
             <div class="form-row">

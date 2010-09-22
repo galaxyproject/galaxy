@@ -1,9 +1,6 @@
 from base.twilltestcase import *
 from base.test_db_util import *
 
-# TODO: ( gvk: 9/17/10 ) The code in this script was so horribly written that it could not be maintained. I will fix the worst code
-# as soon as I get a chance.  I've already gotten started, but have run out of time so I'm commenting out the broken tests for now...
-
 class TestUserInfo( TwillTestCase ):
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
@@ -35,154 +32,172 @@ class TestUserInfo( TwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         global admin_user_private_role
         admin_user_private_role = get_private_role( admin_user )
-    """
     def test_005_create_user_info_forms( self ):
-        Testing creating a new user info form and editing it
+        """Testing creating a new user info form and editing it"""
         # Logged in as admin_user
         # Create a the first form
         name = "Student"
         desc = "This is Student user info form's description"
-        formtype = get_user_info_form_definition()
-        self.create_form( name=name, desc=desc, formtype=formtype, num_fields=0 )
+        form_type = get_user_info_form_definition()
+        self.create_form( name=name,
+                          desc=desc,
+                          form_type=form_type,
+                          num_fields=0,
+                          strings_displayed=[ 'Create a new form definition' ],
+                          strings_displayed_after_submit=[ name, desc, form_type ] )
+        tmp_form = get_form( name )
+        # Add fields to the form
+        field_dicts = [ dict( name='Affiliation',
+                              desc='The type of  organization you are affiliated with',
+                              type='SelectField',
+                              required='optional',
+                              selectlist=[ 'Educational', 'Research', 'Commercial' ] ),
+                        dict( name='Name of Organization',
+                              desc='',
+                              type='TextField',
+                              required='optional' ),
+                        dict( name='Contact for feedback',
+                              desc='',
+                              type='CheckboxField',
+                              required='optional' ) ]
+        self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
+                        field_dicts=field_dicts,
+                        field_index=len( tmp_form.fields ),
+                        strings_displayed=[ 'Edit form definition "%s"' % name ],
+                        strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % name ] )
         # Get the form_definition object for later tests
         global form_one
         form_one = get_form( name )
         assert form_one is not None, 'Problem retrieving form named "%s" from the database' % name
-        # edit form & add few more fields
-        fields = [dict(name='Affiliation',
-                       desc='The type of  organization you are affiliated with',
-                       type='SelectField',
-                       required='optional',
-                       selectlist=['Educational', 'Research', 'Commercial']),
-                  dict(name='Name of Organization',
-                       desc='',
-                       type='TextField',
-                       required='optional'),
-                  dict(name='Contact for feedback',
-                       desc='',
-                       type='CheckboxField',
-                       required='optional')]
-        self.form_add_field( form_one.current.id,
-                             form_one.name,
-                             form_one.desc,
-                             form_one.type,
-                             field_index=len( form_one.fields ),
-                             fields=fields)
-        form_one_latest = get_form( form_one.name )        
-        assert len( form_one_latest.fields ) == len( form_one.fields ) + len( fields )
-        # create the second form
+        assert len( form_one.fields ) == len( tmp_form.fields ) + len( field_dicts )
+        # Create the second form
         name = "Researcher"
         desc = "This is Researcher user info form's description"
-        self.create_form( name=name, desc=desc, formtype=formtype, num_fields=0 )
+        self.create_form( name=name,
+                          desc=desc,
+                          form_type=form_type,
+                          num_fields=0,
+                          strings_displayed=[ 'Create a new form definition' ],
+                          strings_displayed_after_submit=[ name, desc, form_type ] )
+        tmp_form = get_form( name )
+        # Add fields to the form
+        field_dicts = [ dict( name='Affiliation',
+                              desc='The type of  organization you are affiliated with',
+                              type='SelectField',
+                              required='optional',
+                              selectlist=[ 'Educational', 'Research', 'Commercial' ] ),
+                        dict( name='Name of Organization',
+                              desc='',
+                              type='TextField',
+                              required='optional' ),
+                        dict( name='Contact for feedback',
+                              desc='',
+                              type='CheckboxField',
+                              required='optional' ) ]
+        self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
+                        field_dicts=field_dicts,
+                        field_index=len( tmp_form.fields ),
+                        strings_displayed=[ 'Edit form definition "%s"' % name ],
+                        strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % name ] )
         # Get the form_definition object for later tests
         global form_two
         form_two = get_form( name )
         assert form_two is not None, 'Problem retrieving form named "%s" from the database' % name
-        # edit form & add few more fields
-        fields = [dict(name='Affiliation',
-                       desc='The type of  organization you are affiliated with',
-                       type='SelectField',
-                       required='optional',
-                       selectlist=['Educational', 'Research', 'Commercial']),
-                  dict(name='Name of Organization',
-                       desc='',
-                       type='TextField',
-                       required='optional'),
-                  dict(name='Contact for feedback',
-                       desc='',
-                       type='CheckboxField',
-                       required='optional')]
-        self.form_add_field( form_two.current.id,
-                             form_two.name,
-                             form_two.desc,
-                             form_two.type,
-                             field_index=len( form_one.fields ),
-                             fields=fields )
-        form_two_latest = get_form( form_two.name )
-        assert len( form_two_latest.fields ) == len( form_two.fields ) + len( fields )
+        assert len( form_two.fields ) == len( tmp_form.fields ) + len( field_dicts )
     def test_010_user_reqistration_multiple_user_info_forms( self ):
-        Testing user registration with multiple user info forms
+        """Testing user registration with multiple user info forms"""
         # Logged in as admin_user
         self.logout()
-        # Create a new user with 'Student' user info form
-        user_info_values=[ 'Educational', 'Penn State', True ]
-        self.create_user_with_info( 'test11@bx.psu.edu',
-                                    'testuser',
-                                    'test11', 
-                                    user_info_forms='multiple',
-                                    user_info_form_id=form_one.id, 
-                                    user_info_values=user_info_values )
+        # Create a new user with 'Student' user info form.  The user_info_values will be the values
+        # filled into the fields defined in field_dicts above ( 'Educational' -> 'Affiliation,
+        # 'Penn State' -> 'Name of Organization', '1' -> 'Contact for feedback' )
+        email = 'test11@bx.psu.edu'
+        password = 'testuser'
+        username = 'test11'
+        user_info_values=[ 'Educational', 'Penn State', '1' ]
+        self.create_user_with_info( email=email,
+                                    password=password,
+                                    username=username, 
+                                    user_info_select=str( form_one.id ), 
+                                    user_info_values=user_info_values,
+                                    strings_displayed=[ "Create account", "User type" ] )
         global regular_user11
-        regular_user11 = get_user( 'test11@bx.psu.edu' )
-        assert regular_user11 is not None, 'Problem retrieving user with email "test11@bx.psu.edu" from the database'
+        regular_user11 = get_user( email )
+        assert regular_user11 is not None, 'Problem retrieving user with email "%s" from the database' % email
         global regular_user11_private_role
         regular_user11_private_role = get_private_role( regular_user11 )
         self.logout()
-        self.login( email=regular_user11.email, username='regular-user11' )
-        self.visit_url( "%s/user/show_info" % self.url )
-        self.check_page_for_string( "Manage User Information" )
-        self.check_page_for_string( user_info_values[0] )
-        self.check_page_for_string( user_info_values[1] )
-        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
+        self.login( email=regular_user11.email, username=username )
+        self.edit_user_info( strings_displayed=[ "Manage User Information",
+                                                 user_info_values[0],
+                                                 user_info_values[1],
+                                                 '<input type="checkbox" name="field_2" value="true" checked>' ] )
     def test_015_user_reqistration_single_user_info_forms( self ):
-        Testing user registration with a single user info form
+        """Testing user registration with a single user info form"""
         # Logged in as regular_user_11
         self.logout()
         self.login( email=admin_user.email )
         # Delete the 'Researcher' user info form
-        mark_form_deleted( form_two )
-        self.visit_url( '%s/forms/manage?sort=create_time&f-deleted=True' % self.url )
-        self.check_page_for_string( form_two.name )
-        # Create a new user with 'Student' user info form
-        user_info_values=['Educational', 'Penn State', True]
-        self.create_user_with_info( 'test12@bx.psu.edu', 'testuser', 'test12', 
-                                    user_info_forms='single',
-                                    user_info_form_id=form_one.id, 
-                                    user_info_values=user_info_values )
+        self.mark_form_deleted( self.security.encode_id( form_two.current.id ) )
+        # Create a new user with 'Student' user info form.  The user_info_values will be the values
+        # filled into the fields defined in field_dicts above ( 'Educational' -> 'Affiliation,
+        # 'Penn State' -> 'Name of Organization', '1' -> 'Contact for feedback' )
+        email = 'test12@bx.psu.edu'
+        password = 'testuser'
+        username = 'test12'
+        user_info_values=[ 'Educational', 'Penn State', '1' ]
+        self.create_user_with_info( email=email,
+                                    password=password,
+                                    username=username, 
+                                    user_info_select=form_one.id, 
+                                    user_info_values=user_info_values,
+                                    strings_displayed=[ "Create account" ] )
         global regular_user12
-        regular_user12 = get_user( 'test12@bx.psu.edu' )
-        assert regular_user12 is not None, 'Problem retrieving user with email "test12@bx.psu.edu" from the database'
+        regular_user12 = get_user( email )
+        assert regular_user12 is not None, 'Problem retrieving user with email "%s" from the database' % email
         global regular_user12_private_role
         regular_user12_private_role = get_private_role( regular_user12 )
         self.logout()
-        self.login( email=regular_user12.email, username='regular-user12' )
-        self.visit_url( "%s/user/show_info" % self.url )
-        self.check_page_for_string( "Manage User Information" )
-        self.check_page_for_string( user_info_values[0] )
-        self.check_page_for_string( user_info_values[1] )
-        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
+        self.login( email=regular_user12.email, username=username )
+        self.edit_user_info( strings_displayed=[ "Manage User Information",
+                                                 user_info_values[0],
+                                                 user_info_values[1],
+                                                 '<input type="checkbox" name="field_2" value="true" checked>' ] )
     def test_020_edit_user_info( self ):
-        Testing editing user info as a regular user
+        """Testing editing user info as a regular user"""
         # Logged in as regular_user_12
         # Test changing email and user name - first try an invalid user name
-        self.edit_login_info( new_email='test12_new@bx.psu.edu',
-                              new_username='test12_new',
-                              strings_displayed=[ "User name must contain only lower-case letters, numbers and '-'" ] )
+        self.edit_user_info( new_email='test12_new@bx.psu.edu',
+                             new_username='test12_new',
+                             strings_displayed_after_submit=[ "Public names must be at least four characters" ] )
         # Now try a valid user name
-        self.edit_login_info( new_email='test12_new@bx.psu.edu',
-                              new_username='test12-new',
-                              strings_displayed=[ 'The login information has been updated with the changes' ] )
+        self.edit_user_info( new_email='test12_new@bx.psu.edu',
+                             new_username='test12-new',
+                             strings_displayed_after_submit=[ 'The login information has been updated with the changes' ] )
         # Since we changed the user's account. make sure the user's private role was changed accordingly
         if not get_private_role( regular_user12 ):
             raise AssertionError, "The private role for %s was not correctly set when their account (email) was changed" % regular_user12.email
         # Test changing password
-        self.change_password( 'testuser', 'testuser#' )
+        self.edit_user_info( password='testuser',
+                             new_password='testuser#',\
+                             strings_displayed_after_submit=[ 'The password has been changed.' ] )
         self.logout()
         refresh( regular_user12 )
         # Test logging in with new email and password
         self.login( email=regular_user12.email, password='testuser#' )
         # Test editing the user info
-        self.edit_user_info( ['Research', 'PSU'] )
+        self.edit_user_info( info_values=[ 'Research', 'PSU' ],
+                             strings_displayed_after_submit=[ "The user information has been updated with the changes" ] )
     def test_999_reset_data_for_later_test_runs( self ):
-        Reseting data to enable later test runs to pass
+        """Reseting data to enable later test runs to pass"""
         # Logged in as regular_user_12
         self.logout()
         self.login( email=admin_user.email )
         ##################
-        # Mark all forms deleted
+        # Mark all forms deleted that have not yet been marked deleted ( form_two has )
         ##################
-        for form in [ form_one, form_two ]:
-            self.mark_form_deleted( form )
+        for form in [ form_one ]:
+            self.mark_form_deleted( self.security.encode_id( form.current.id ) )
         ###############
         # Purge appropriate users
         ###############
@@ -193,4 +208,3 @@ class TestUserInfo( TwillTestCase ):
             refresh( user )
             delete_user_roles( user )
             delete_obj( user )
-    """

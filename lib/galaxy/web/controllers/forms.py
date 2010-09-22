@@ -107,9 +107,7 @@ class Forms( BaseController ):
         return trans.fill_template( '/admin/forms/show_form_read_only.mako',
                                     form=fdc.latest_form )
     def __form_types_widget(self, trans, selected='none'):
-        form_type_selectbox = SelectField( 'form_type_selectbox', 
-                                           refresh_on_change=True, 
-                                           refresh_on_change_values=[trans.app.model.FormDefinition.types.SAMPLE] )
+        form_type_selectbox = SelectField( 'form_type_selectbox' )
         if selected == 'none':
             form_type_selectbox.add_option('Select one', 'none', selected=True)
         else:

@@ -127,7 +127,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files' ] )
         global ldda2
-        ldda2 = get_latest_ldda()
+        ldda2 = get_latest_ldda_by_name( filename )
         assert ldda2 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda2 from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library1.id ),
@@ -146,7 +146,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files' ] )
         global ldda3
-        ldda3 = get_latest_ldda()
+        ldda3 = get_latest_ldda_by_name( filename )
         assert ldda3 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda3 from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library1.id ),
@@ -155,7 +155,8 @@ class TestLibraryFeatures( TwillTestCase ):
         """Testing copying a dataset from the current history to a subfolder"""
         # logged in as admin_user
         self.new_history()
-        self.upload_file( "4.bed" )
+        filename = '4.bed'
+        self.upload_file( filename )
         latest_hda = get_latest_hda()
         self.upload_library_dataset( cntrller='library_admin',
                                      library_id=self.security.encode_id( library1.id ),
@@ -165,7 +166,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      ldda_message='Imported from history',
                                      strings_displayed=[ 'Active datasets in your current history' ] )
         global ldda4
-        ldda4 = get_latest_ldda()
+        ldda4 = get_latest_ldda_by_name( filename )
         assert ldda4 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda4 from the database'
         self.browse_library( 'library_admin',
                              self.security.encode_id( library1.id ),
@@ -199,7 +200,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files', 'You are currently selecting a new file to replace' ] )
         global ldda4_version2
-        ldda4_version2 = get_latest_ldda()
+        ldda4_version2 = get_latest_ldda_by_name( filename )
         assert ldda4_version2 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda4_version2 from the database'
         self.ldda_edit_info( 'library_admin',
                              self.security.encode_id( library1.id ),
@@ -271,15 +272,16 @@ class TestLibraryFeatures( TwillTestCase ):
         # logged in as regular_user3
         self.logout()
         self.login( email=admin_user.email )
+        filename = '1.bed'
         self.upload_library_dataset( cntrller='library_admin',
                                      library_id=self.security.encode_id( library1.id ),
                                      folder_id=self.security.encode_id( library1.root_folder.id ),
-                                     filename='1.bed',
+                                     filename=filename,
                                      file_type='bed',
                                      dbkey='hg18',
                                      strings_displayed=[ 'Upload files' ] )
         global ldda1
-        ldda1 = get_latest_ldda()
+        ldda1 = get_latest_ldda_by_name( filename )
         assert ldda1 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda1 from the database'
         for format in ( 'tbz', 'tgz', 'zip' ):
             archive = self.download_archive_of_library_files( cntrller='library',

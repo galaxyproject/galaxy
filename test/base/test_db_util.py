@@ -90,8 +90,10 @@ def get_latest_history_for_user( user ):
                                     galaxy.model.History.table.c.user_id==user.id ) ) \
                      .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                      .first()
-def get_latest_ldda():
+def get_latest_ldda_by_name( name ):
     return sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                     .filter( and_( galaxy.model.LibraryDatasetDatasetAssociation.table.c.name==name,
+                                    galaxy.model.LibraryDatasetDatasetAssociation.table.c.deleted == False ) ) \
                      .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
                      .first()
 def get_latest_lddas( limit ):
