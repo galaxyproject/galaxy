@@ -1104,6 +1104,7 @@ class LibraryDataset( object ):
             template_data[template.name] = tmp_dict
         
         rval = dict( name = ldda.name,
+                     file_name = ldda.file_name,
                      uploaded_by = ldda.user.email,
                      message = ldda.message,
                      date_uploaded = ldda.create_time.isoformat(),
