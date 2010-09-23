@@ -52,17 +52,12 @@ class Grid( object ):
                 column.model_class = self.model_class
         
     def __call__( self, trans, **kwargs ):
-        #
         # Get basics.
-        #
         webapp = kwargs.get( 'webapp', 'galaxy' )
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
-        
-        #
         # Build a base filter and sort key that is the combination of the saved state and defaults.
         # Saved state takes preference over defaults.
-        #
         base_filter = {}
         if self.default_filter:
             # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
@@ -86,11 +81,8 @@ class Grid( object ):
         use_default_filter = False
         if use_default_filter_str:
             use_default_filter = ( use_default_filter_str.lower() == 'true' )
-            
-        #
-        # Process filtering arguments to (a) build a query that represents the filter and (b) builds a
+        # Process filtering arguments to (a) build a query that represents the filter and (b) build a
         # dictionary that denotes the current filter.
-        #
         cur_filter_dict = {}
         for column in self.columns:
             if column.key:
@@ -153,16 +145,12 @@ class Grid( object ):
                         if not isinstance( column_filter, basestring ):
                             column_filter = unicode(column_filter)
                         extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
-        
-        #
         # Process sort arguments.
-        #
         sort_key = None
         if 'sort' in kwargs:
             sort_key = kwargs['sort']
         elif base_sort_key:
             sort_key = base_sort_key
-
         if sort_key:            
             if sort_key.startswith( "-" ):
                 ascending = False
@@ -170,22 +158,15 @@ class Grid( object ):
             else:
                 ascending = True
                 column_key = sort_key
-            
             # Sort key is a column key.
             for column in self.columns:
                 if column.key == column_key:
                     query = column.sort( query, ascending )
                     break
             extra_url_args['sort'] = sort_key
-        
-        #
         # There might be a current row
-        #
         current_item = self.get_current_item( trans, **kwargs )
-        
-        #
         # Process page number.
-        #
         if self.use_paging:
             if 'page' in kwargs:
                 if kwargs['page'] == 'all':
@@ -210,10 +191,7 @@ class Grid( object ):
             # Defaults.
             page_num = 1
             num_pages = 1
-            
-        #
         # Preserve grid state: save current filter and sort key.
-        #
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
             trans.get_user().preferences[pref_name] = unicode( to_json_string( cur_filter_dict ) )
@@ -229,10 +207,7 @@ class Grid( object ):
         params['async'] = ( 'async' in kwargs )
         params['webapp'] = webapp
         trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
-        
-        #
         # Render grid.
-        #
         def url( *args, **kwargs ):
             # Only include sort/filter arguments if not linking to another
             # page. This is a bit of a hack.
@@ -394,14 +369,18 @@ class TextColumn( GridColumn ):
         """ Returns a SQLAlchemy criterion derived for a single filter. Single filter is the most basic filter--usually a string--and cannot be a list. """
         model_class_key_field = getattr( self.model_class, self.key )
         return func.lower( model_class_key_field ).like( "%" + a_filter.lower() + "%" )
-        
     def sort( self, query, ascending ):
-        """ Sort column using case-insensitive alphabetical sorting. """
+        """Sort column using case-insensitive alphabetical sorting."""
         if ascending:
             query = query.order_by( func.lower( self.model_class.table.c.get( self.key ) ).asc() ) 
         else:
             query = query.order_by( func.lower( self.model_class.table.c.get( self.key ) ).desc() )
         return query
+
+class DateTimeColumn( TextColumn ):
+    def sort( self, query, ascending ):
+        """Sort query using this column."""
+        return GridColumn.sort( self, query, ascending )
 
 class IntegerColumn( TextColumn ):
     """
@@ -424,6 +403,9 @@ class IntegerColumn( TextColumn ):
         model_class_key_field = getattr( self.model_class, self.key )
         assert int( a_filter ), "The search entry must be an integer"
         return model_class_key_field == int( a_filter )
+    def sort( self, query, ascending ):
+        """Sort query using this column."""
+        return GridColumn.sort( self, query, ascending )
         
 class CommunityRatingColumn( GridColumn, UsesItemRatings ):
     """ Column that displays community ratings for an item. """
@@ -434,7 +416,6 @@ class CommunityRatingColumn( GridColumn, UsesItemRatings ):
                                     ave_item_rating=ave_item_rating, 
                                     num_ratings=num_ratings, 
                                     item_id=trans.security.encode_id( item.id ) )
-        
     def sort( self, query, ascending ):
         def get_foreign_key( source_class, target_class ):
             """ Returns foreign key in source class that references target class. """
@@ -446,18 +427,12 @@ class CommunityRatingColumn( GridColumn, UsesItemRatings ):
             if not target_fk:
                 raise RuntimeException( "No foreign key found between objects: %s, %s" % source_class.table, target_class.table )
             return target_fk
-        
-        #
         # Get the columns that connect item's table and item's rating association table.
-        #
         item_rating_assoc_class = getattr( model, '%sRatingAssociation' % self.model_class.__name__ )
         foreign_key = get_foreign_key( item_rating_assoc_class, self.model_class )
         fk_col = foreign_key.parent
         referent_col = foreign_key.get_referent( self.model_class.table )
-        
-        #
         # Do sorting using a subquery.
-        #
         db_session = query.session
         # Subquery to get average rating for each item.
         ave_rating_subquery = db_session.query( fk_col, \
@@ -586,7 +561,6 @@ class OwnerColumn( TextColumn ):
     """ Column that lists item's owner. """
     def get_value( self, trans, grid, item ):
         return item.user.username
-        
     def sort( self, query, ascending ):
         """ Sort column using case-insensitive alphabetical sorting on item's username. """
         if ascending:
@@ -594,7 +568,6 @@ class OwnerColumn( TextColumn ):
         else:
             query = query.order_by( func.lower( self.model_class.username ).desc() )
         return query
-    
 
 class PublicURLColumn( TextColumn ):
     """ Column displays item's public URL based on username and slug. """

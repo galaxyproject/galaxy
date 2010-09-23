@@ -27,7 +27,7 @@ class SpecifiedDateListGrid( grids.Grid ):
     class ToolColumn( grids.TextColumn ):
         def get_value( self, trans, grid, job ):
             return job.tool_id
-    class CreateTimeColumn( grids.TextColumn ):
+    class CreateTimeColumn( grids.DateTimeColumn ):
         def get_value( self, trans, grid, job ):
             return job.create_time
     class UserColumn( grids.GridColumn ):
@@ -71,32 +71,27 @@ class SpecifiedDateListGrid( grids.Grid ):
     columns = [
         JobIdColumn( "Id",
                      key="id",
-                     model_class=model.Job,
                      link=( lambda item: dict( operation="job_info", id=item.id, webapp="reports" ) ),
                      attach_popup=False,
                      filterable="advanced" ),
         StateColumn( "State",
                       key="state",
-                      model_class=model.Job,
                       attach_popup=False ),
         ToolColumn( "Tool Id",
                     key="tool_id",
-                    model_class=model.Job,
                     link=( lambda item: dict( operation="tool_per_month", id=item.id, webapp="reports" ) ),
                     attach_popup=False ),
         CreateTimeColumn( "Creation Time",
                           key="create_time",
-                          model_class=model.Job,
                           attach_popup=False ),
         UserColumn( "User",
-                    # Can't sort on this column since it is not a column in self.model_class
+                    key="email",
                     model_class=model.User,
                     link=( lambda item: dict( operation="user_per_month", id=item.id, webapp="reports" ) ),
                     attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         SpecifiedDateColumn( "Specified Date",
                              key="specified_date",
-                             model_class=model.Job,
                              visible=False ),
         EmailColumn( "Email",
                      key="email",
@@ -104,7 +99,6 @@ class SpecifiedDateListGrid( grids.Grid ):
                      visible=False ),
         grids.StateColumn( "State",
                            key="state",
-                           model_class=model.Job,
                            visible=False,
                            filterable="advanced" )
     ]
