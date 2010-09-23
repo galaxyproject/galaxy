@@ -4,7 +4,7 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.web.form_builder import SelectField
-from galaxy.item_attrs.ratings import UsesItemRatings
+from galaxy.model.item_attrs import UsesItemRatings
 import logging
 log = logging.getLogger( __name__ )
 
@@ -15,10 +15,10 @@ class ItemRatings( UsesItemRatings ):
     """Overrides rate_item method since we also allow for comments"""
     def rate_item( self, trans, user, item, rating, comment='' ):
         """ Rate an item. Return type is <item_class>RatingAssociation. """
-        item_rating = self.get_user_item_rating( trans.sa_session, user, item )
+        item_rating = self.get_user_item_rating( trans.sa_session, user, item, webapp_model=trans.model )
         if not item_rating:
             # User has not yet rated item; create rating.
-            item_rating_assoc_class = self._get_item_rating_assoc_class( trans, item )
+            item_rating_assoc_class = self._get_item_rating_assoc_class( item, webapp_model=trans.model )
             item_rating = item_rating_assoc_class()
             item_rating.user = trans.user
             item_rating.set_item( item )
@@ -32,25 +32,12 @@ class ItemRatings( UsesItemRatings ):
             item_rating.comment = comment
             trans.sa_session.flush()
         return item_rating
-    def get_avg_rating_html( self, avg_rating ):
-        # FIXME: the class="star" attribute in the input tag does not render correctly inside a table
-        # with the attribute class="grid-table", so just display the numerical avg_rating value until
-        # we can figure out why the styles don't work together.  When this is fixed, eliminate the following
-        # line and return the html.
-        return int( avg_rating )
-        html = ''
-        for index in range( 1, 6 ):
-            html += '<input name="avg_rating" type="radio" class="star" value="%s" disabled="disabled"' % str( index )
-            if avg_rating > ( index - 0.5 ) and avg_rating < ( index + 0.5 ):
-                html += ' checked="checked"'
-            html += '/>'
-        return html
 
 class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             return tool.name
-    class TypeColumn( grids.GridColumn ):
+    class TypeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             if tool.is_suite:
                 return 'Suite'
@@ -83,11 +70,7 @@ class ToolListGrid( grids.Grid ):
             if tool.user:
                 return tool.user.username
             return 'no user'
-    class RatingColumn( grids.TextColumn, ItemRatings ):
-        def get_value( self, trans, grid, tool ):
-            avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool )
-            return self.get_avg_rating_html( avg_rating )
-    class EmailColumn( grids.GridColumn ):
+    class EmailColumn( grids.TextColumn ):
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
@@ -109,7 +92,6 @@ class ToolListGrid( grids.Grid ):
                      attach_popup=False ),
         VersionColumn( "Version",
                        key="version",
-                       model_class=model.Tool,
                        attach_popup=False,
                        filterable="advanced" ),
         DescriptionColumn( "Description",
@@ -121,19 +103,17 @@ class ToolListGrid( grids.Grid ):
                         attach_popup=False,
                         filterable="advanced" ),
         UserColumn( "Uploaded By",
-                    model_class=model.User,
-                    link=( lambda item: dict( operation="tools_by_user", id=item.id, webapp="community" ) ),
-                    attach_popup=False,
-                    filterable="advanced" ),
-        RatingColumn( "Average Rating",
-                      attach_popup=False ),
+                     model_class=model.User,
+                     link=( lambda item: dict( operation="tools_by_user", id=item.id, webapp="community" ) ),
+                     attach_popup=False,
+                     filterable="advanced" ),
+        grids.CommunityRatingColumn( "Average Rating",
+                                     key="rating" ),
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
-                     key="email",
                      model_class=model.User,
                      visible=False ),
         ToolCategoryColumn( "Category",
-                            key="category",
                             model_class=model.Category,
                             visible=False )
     ]
@@ -332,7 +312,7 @@ class CommonController( BaseController, ItemRatings ):
                                                               action='browse_tools',
                                                               message='You are not allowed to view this tool',
                                                               status='error' ) )
-        avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool )
+        avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool, webapp_model=trans.model )
         can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
         can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
         can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
@@ -343,7 +323,7 @@ class CommonController( BaseController, ItemRatings ):
         categories = [ tca.category for tca in tool.categories ]
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         tool_file_contents = tarfile.open( tool.file_name, 'r' ).getnames()
-        tra = self.get_user_item_rating( trans.sa_session, trans.user, tool )
+        tra = self.get_user_item_rating( trans.sa_session, trans.user, tool, webapp_model=trans.model )
         visible_versions = trans.app.security_agent.get_visible_versions( trans.user, trans.user_is_admin(), cntrller, tool )
         if tool.is_rejected:
             # Include the comments regarding the reason for rejection
@@ -506,13 +486,13 @@ class CommonController( BaseController, ItemRatings ):
             rating = int( params.get( 'rating', '0' ) )
             comment = util.restore_text( params.get( 'comment', '' ) )
             rating = self.rate_item( trans, trans.user, tool, rating, comment )
-        avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool )
+        avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool, webapp_model=trans.model )
         can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
         can_edit = trans.app.security_agent.can_edit( trans.user, trans.user_is_admin(), cntrller, tool )
         can_delete = trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool )
         can_download = trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
-        tra = self.get_user_item_rating( trans.sa_session, trans.user, tool )
+        tra = self.get_user_item_rating( trans.sa_session, trans.user, tool, webapp_model=trans.model )
         return trans.fill_template( '/webapps/community/common/rate_tool.mako', 
                                     cntrller=cntrller,
                                     tool=tool,

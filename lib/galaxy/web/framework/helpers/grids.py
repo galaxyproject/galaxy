@@ -5,7 +5,6 @@ from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.odict import odict
 from galaxy.web.framework.helpers import to_unicode
-from galaxy import model
 from galaxy.model.item_attrs import *
 
 import sys, logging, math
@@ -161,7 +160,7 @@ class Grid( object ):
             # Sort key is a column key.
             for column in self.columns:
                 if column.key == column_key:
-                    query = column.sort( query, ascending )
+                    query = column.sort( trans, query, ascending )
                     break
             extra_url_args['sort'] = sort_key
         # There might be a current row
@@ -334,7 +333,7 @@ class GridColumn( object ):
             accepted_filters.append( GridColumnFilter( val, args) )
         return accepted_filters
     
-    def sort( self, query, ascending ):
+    def sort( self, trans, query, ascending ):
         """ Sort query using this column. """
         if ascending:
             query = query.order_by( self.model_class.table.c.get( self.key ).asc() ) 
@@ -344,7 +343,7 @@ class GridColumn( object ):
         
 class ReverseSortColumn( GridColumn ):
     """ Column that reverses sorting; this is useful when the natural sort is descending. """
-    def sort( self, query, ascending ):
+    def sort( self, trans, query, ascending ):
         return GridColumn.sort( self, query, (not ascending) )
         
 class TextColumn( GridColumn ):
@@ -369,7 +368,7 @@ class TextColumn( GridColumn ):
         """ Returns a SQLAlchemy criterion derived for a single filter. Single filter is the most basic filter--usually a string--and cannot be a list. """
         model_class_key_field = getattr( self.model_class, self.key )
         return func.lower( model_class_key_field ).like( "%" + a_filter.lower() + "%" )
-    def sort( self, query, ascending ):
+    def sort( self, trans, query, ascending ):
         """Sort column using case-insensitive alphabetical sorting."""
         if ascending:
             query = query.order_by( func.lower( self.model_class.table.c.get( self.key ) ).asc() ) 
@@ -378,9 +377,9 @@ class TextColumn( GridColumn ):
         return query
 
 class DateTimeColumn( TextColumn ):
-    def sort( self, query, ascending ):
+    def sort( self, trans, query, ascending ):
         """Sort query using this column."""
-        return GridColumn.sort( self, query, ascending )
+        return GridColumn.sort( self, trans, query, ascending )
 
 class IntegerColumn( TextColumn ):
     """
@@ -403,20 +402,19 @@ class IntegerColumn( TextColumn ):
         model_class_key_field = getattr( self.model_class, self.key )
         assert int( a_filter ), "The search entry must be an integer"
         return model_class_key_field == int( a_filter )
-    def sort( self, query, ascending ):
+    def sort( self, trans, query, ascending ):
         """Sort query using this column."""
-        return GridColumn.sort( self, query, ascending )
+        return GridColumn.sort( self, trans, query, ascending )
         
 class CommunityRatingColumn( GridColumn, UsesItemRatings ):
     """ Column that displays community ratings for an item. """
-    
     def get_value( self, trans, grid, item ):
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, item )
+        ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, item, webapp_model=trans.model )
         return trans.fill_template( "community_rating.mako", 
                                     ave_item_rating=ave_item_rating, 
                                     num_ratings=num_ratings, 
                                     item_id=trans.security.encode_id( item.id ) )
-    def sort( self, query, ascending ):
+    def sort( self, trans, query, ascending ):
         def get_foreign_key( source_class, target_class ):
             """ Returns foreign key in source class that references target class. """
             target_fk = None
@@ -428,7 +426,7 @@ class CommunityRatingColumn( GridColumn, UsesItemRatings ):
                 raise RuntimeException( "No foreign key found between objects: %s, %s" % source_class.table, target_class.table )
             return target_fk
         # Get the columns that connect item's table and item's rating association table.
-        item_rating_assoc_class = getattr( model, '%sRatingAssociation' % self.model_class.__name__ )
+        item_rating_assoc_class = getattr( trans.model, '%sRatingAssociation' % self.model_class.__name__ )
         foreign_key = get_foreign_key( item_rating_assoc_class, self.model_class )
         fk_col = foreign_key.parent
         referent_col = foreign_key.get_referent( self.model_class.table )
@@ -561,7 +559,7 @@ class OwnerColumn( TextColumn ):
     """ Column that lists item's owner. """
     def get_value( self, trans, grid, item ):
         return item.user.username
-    def sort( self, query, ascending ):
+    def sort( self, trans, query, ascending ):
         """ Sort column using case-insensitive alphabetical sorting on item's username. """
         if ascending:
             query = query.order_by( func.lower ( self.model_class.username ).asc() ) 

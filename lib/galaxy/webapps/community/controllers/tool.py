@@ -37,7 +37,6 @@ class ApprovedToolListGrid( ToolListGrid ):
     columns = [ col for col in ToolListGrid.columns ]
     columns.append(
         StateColumn( "Status",
-                     model_class=model.Tool,
                      link=( lambda item: dict( operation="tools_by_state", id=item.id, webapp="community" ) ),
                      visible=False,
                      attach_popup=False )
@@ -45,7 +44,6 @@ class ApprovedToolListGrid( ToolListGrid ):
     columns.append(
         ToolStateColumn( "State",
                          key="state",
-                         model_class=model.Tool,
                          visible=False,
                          filterable="advanced" )
     )
@@ -54,7 +52,6 @@ class MyToolsListGrid( ApprovedToolListGrid ):
     columns = [ col for col in ToolListGrid.columns ]
     columns.append(
         StateColumn( "Status",
-                     model_class=model.Tool,
                      link=( lambda item: dict( operation="tools_by_state", id=item.id, webapp="community" ) ),
                      visible=True,
                      attach_popup=False )
@@ -62,7 +59,6 @@ class MyToolsListGrid( ApprovedToolListGrid ):
     columns.append(
         ToolStateColumn( "State",
                          key="state",
-                         model_class=model.Tool,
                          visible=False,
                          filterable="advanced" )
     )

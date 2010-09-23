@@ -1,6 +1,11 @@
 from sqlalchemy.sql.expression import func
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
+import logging
+log = logging.getLogger( __name__ )
+
+class RuntimeException( Exception ):
+    pass     
 
 class UsesItemRatings:
     """ 
@@ -8,14 +13,14 @@ class UsesItemRatings:
         
         Class makes two assumptions:
         (1) item-rating association table is named <item_class>RatingAssocation
-        and is in galaxy.model;
         (2) item-rating association table has a column with a foreign key referencing 
         item table that contains the item's id.
-    """
-                    
-    def get_ave_item_rating_data( self, db_session, item ):
+    """      
+    def get_ave_item_rating_data( self, db_session, item, webapp_model=None ):
         """ Returns the average rating for an item."""
-        item_rating_assoc_class = self._get_item_rating_assoc_class( item )
+        if webapp_model is None:
+            webapp_model = galaxy.model
+        item_rating_assoc_class = self._get_item_rating_assoc_class( item, webapp_model=webapp_model )
         if not item_rating_assoc_class:
             raise RuntimeException( "Item does not have ratings: %s" % item.__class__.__name__ )
         item_id_filter = self._get_item_id_filter_str( item, item_rating_assoc_class )
@@ -28,12 +33,14 @@ class UsesItemRatings:
         num_ratings = int( db_session.query( func.count( item_rating_assoc_class.rating ) ).filter( item_id_filter ).scalar() )
         return ( ave_rating, num_ratings )
     
-    def rate_item( self, db_session, user, item, rating ):
+    def rate_item( self, db_session, user, item, rating, webapp_model=None ):
         """ Rate an item. Return type is <item_class>RatingAssociation. """
-        item_rating = self.get_user_item_rating( db_session, user, item )
+        if webapp_model is None:
+            webapp_model = galaxy.model
+        item_rating = self.get_user_item_rating( db_session, user, item, webapp_model=webapp_model )
         if not item_rating:
             # User has not yet rated item; create rating.
-            item_rating_assoc_class = self._get_item_rating_assoc_class( item )
+            item_rating_assoc_class = self._get_item_rating_assoc_class( item, webapp_model=webapp_model )
             item_rating = item_rating_assoc_class()
             item_rating.user = user
             item_rating.set_item( item )
@@ -46,9 +53,11 @@ class UsesItemRatings:
             db_session.flush()
         return item_rating
         
-    def get_user_item_rating( self, db_session, user, item ):
+    def get_user_item_rating( self, db_session, user, item, webapp_model=None ):
         """ Returns user's rating for an item. Return type is <item_class>RatingAssociation. """
-        item_rating_assoc_class = self._get_item_rating_assoc_class( item )
+        if webapp_model is None:
+            webapp_model = galaxy.model
+        item_rating_assoc_class = self._get_item_rating_assoc_class( item, webapp_model=webapp_model )
         if not item_rating_assoc_class:
             raise RuntimeException( "Item does not have ratings: %s" % item.__class__.__name__ )
         
@@ -56,13 +65,17 @@ class UsesItemRatings:
         item_id_filter = self._get_item_id_filter_str( item, item_rating_assoc_class )
         return db_session.query( item_rating_assoc_class ).filter_by( user=user ).filter( item_id_filter ).first()
         
-    def _get_item_rating_assoc_class( self, item ):
+    def _get_item_rating_assoc_class( self, item, webapp_model=None ):
         """ Returns an item's item-rating association class. """
+        if webapp_model is None:
+            webapp_model = galaxy.model
         item_rating_assoc_class = '%sRatingAssociation' % item.__class__.__name__
-        return getattr( galaxy.model, item_rating_assoc_class, None )
-        
-    def _get_item_id_filter_str( self, item, item_rating_assoc_class ):
+        return getattr( webapp_model, item_rating_assoc_class, None )
+
+    def _get_item_id_filter_str( self, item, item_rating_assoc_class, webapp_model=None ):
         # Get foreign key in item-rating association table that references item table.
+        if webapp_model is None:
+            webapp_model = galaxy.model
         item_fk = None
         for fk in item_rating_assoc_class.table.foreign_keys:
             if fk.references( item.table ):
