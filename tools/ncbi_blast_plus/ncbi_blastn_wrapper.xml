@@ -6,7 +6,7 @@
        -db "$database"
        -task $blast_type
        -evalue $evalue_cutoff
-       -dust $filter_query
+       -dust $adv_opts.filter_query
        -out $output1
        -outfmt $out_format
     </command>
@@ -33,7 +33,6 @@
         <param name="iden_cutoff" type="float" size="15" value="90.0" label="report hits above this identity" help="no cutoff if 0" />
         -->
         <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff" />
-        <param name="filter_query" type="boolean" label="Filter out low complexity regions (with DUST)" truevalue="yes" falsevalue="no" checked="true" />
         <param name="out_format" type="select" label="Output format">
             <option value="6">Tabular</option>
             <option value="5">BLAST XML</option>
@@ -42,6 +41,18 @@
             <option value="11">BLAST archive format (ASN.1)</option>
             -->
         </param>
+        <conditional name="adv_opts">
+            <param name="adv_opts_selector" type="select" label="Advanced Options">
+              <option value="basic" selected="True">Hide Advanced Options</option>
+              <option value="advanced">Show Advanced Options</option>
+            </param>
+            <when value="basic">
+                <param name="filter_query" type="hidden" value="yes" />
+            </when>
+            <when value="advanced">
+                <param name="filter_query" type="boolean" label="Filter out low complexity regions (with DUST)" truevalue="yes" falsevalue="no" checked="true" />
+            </when>
+        </conditional>
     </inputs>
     <outputs>
         <!-- TODO, can I get the caption rather than the value? e.g. 'NR' rather than a long path? -->
