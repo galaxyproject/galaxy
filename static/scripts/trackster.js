@@ -107,6 +107,7 @@ $.extend( View.prototype, {
         this.nav = $("<div/>").addClass("nav").appendTo(this.nav_container);
         this.overview = $("<div/>").addClass("overview").appendTo(this.nav);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
+        this.overview_box_background = $("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport);
         this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
         this.default_overview_height = this.overview_box.height();
         
@@ -379,11 +380,14 @@ $.extend( View.prototype, {
         this.zoom_res = Math.pow( FEATURE_LEVELS, Math.max(0,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) )));
         
         // Overview
-        this.overview_box.css( {
-            left: ( this.low / (this.max_high - this.max_low) ) * this.overview_viewport.width(),
-            // Minimum width for usability
-            width: Math.max( 12, (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width() )
-        }).show();
+        var left_px = ( this.low / (this.max_high - this.max_low) ) * this.overview_viewport.width();
+        var width_px = (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width();
+        
+        this.overview_box.css({ left: left_px, width: Math.max(12, width_px) - 2 }).show();
+        if (this.overview_highlight) {
+            this.overview_highlight.css({ left: left_px, width: width_px });
+        }
+        
         this.update_location(this.low, this.high);
         if (!nodraw) {
             for (var i = 0, len = this.tracks.length; i < len; i++) {
@@ -533,7 +537,19 @@ var TiledTrack = function() {
                 view.tracks[track_id].is_overview = false;
             }
         }
-    }
+    };
+    track_dropdown["Edit configuration"] = function() {
+        show_modal("Configure Track", track.gen_options(track.track_id), {
+            "Cancel": function() { hide_modal(); },
+            "OK": function() { track.update_options(track.track_id); hide_modal(); }
+        });
+    };
+    track_dropdown["Remove"] = function() {
+        view.remove_track(track);
+        if (view.num_tracks === 0) {
+            $("#no-tracks").show();
+        }
+    };
     make_popupmenu(track.name_div, track_dropdown);
     /*
     if (track.overview_check_div === undefined) {
@@ -617,9 +633,12 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         view.overview_box.height(view.default_overview_height);
         
         if (this.initial_canvas && this.is_overview) {
+            if (!view.overview_highlight) {
+                view.overview_highlight = $("<div />").addClass("overview-highlight").appendTo(view.overview_viewport);
+            }
             view.overview_viewport.append(this.initial_canvas);
-            view.overview_viewport.height(this.initial_canvas.height());
-            view.overview_box.height(this.initial_canvas.height());
+            view.overview_highlight.height(this.initial_canvas.height());
+            view.overview_viewport.height(this.initial_canvas.height() + view.overview_box.height());
         }
         $(window).trigger("resize");
     }
@@ -1330,7 +1349,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 j++;
             }
         }
-        parent_element.append( new_canvas );
+        parent_element.append(new_canvas);
         return new_canvas;
     }, gen_options: function(track_id) {
         var container = $("<div />").addClass("form-row");

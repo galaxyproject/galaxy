@@ -24,7 +24,11 @@ def make_url( api_key, url, args=None ):
 def get( api_key, url ):
     # Do the actual GET.
     url = make_url( api_key, url )
-    return simplejson.loads( urllib2.urlopen( url ).read() )
+    try:
+        return simplejson.loads( urllib2.urlopen( url ).read() )
+    except simplejson.decoder.JSONDecodeError, e:
+        print "URL did not return JSON data"
+        sys.exit(1)
 
 def post( api_key, url, data ):
     # Do the actual POST.
@@ -47,14 +51,14 @@ def display( api_key, url ):
         # Response is a collection as defined in the REST style.
         print 'Collection Members'
         print '------------------'
-        for i in r:
+        for n, i in enumerate(r):
             # All collection members should have a name and url in the response.
-            print i.pop( 'url' )
+            print '#%d: %s' % (n+1, i.pop( 'url' ) )
             print '  name: %s' % i.pop( 'name' )
             for k, v in i.items():
                 print '  %s: %s' % ( k, v )
         print ''
-        print '%d elements in collection' % len( r )
+        print '%d element(s) in collection' % len( r )
     elif type( r ) == dict:
         # Response is an element as defined in the REST style.
         print 'Member Information'
