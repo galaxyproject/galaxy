@@ -8,8 +8,6 @@ format convert: fasta to tabular
 
 import sys, os
 
-seq_hash = {}
-
 def __main__():
     infile = sys.argv[1]
     outfile = sys.argv[2]
@@ -25,12 +23,14 @@ def __main__():
         if not line or line.startswith( '#' ):
             continue
         if line.startswith( '>' ):
-            if i:
+            if i > 0:
                 out.write('\n')
             out.write(line[1:keep_first])
             out.write('\t')
         else:
             out.write(line)
+    if i > 0:
+        out.write('\n')
     out.close()
 
 if __name__ == "__main__" : __main__()
