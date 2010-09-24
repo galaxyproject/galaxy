@@ -33,10 +33,7 @@
         <param name="iden_cutoff" type="float" size="15" value="90.0" label="report hits above this identity" help="no cutoff if 0" />
         -->
         <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff" />
-        <param name="filter_query" type="select" label="Filter out low complexity regions (with DUST)?">
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-        </param>
+        <param name="filter_query" type="boolean" label="Filter out low complexity regions (with DUST)" truevalue="yes" falsevalue="no" checked="true" />
         <param name="out_format" type="select" label="Output format">
             <option value="6">Tabular</option>
             <option value="5">BLAST XML</option>
