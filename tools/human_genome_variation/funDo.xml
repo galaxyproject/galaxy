@@ -30,7 +30,7 @@
   </tests>
 
   <help>
-**Data formats**
+**Dataset formats**
 
 There is no input dataset.  The output is in interval_ format.
 
@@ -53,7 +53,7 @@ not commas.  As a special case, entering the word "disease" returns all
 genes associated with any disease, even if that word does not actually
 appear in the term field.
 
-home page: http://django.nubic.northwestern.edu/fundo/
+Website: http://django.nubic.northwestern.edu/fundo/
 
 -----
 

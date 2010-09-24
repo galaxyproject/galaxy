@@ -1,5 +1,5 @@
 <tool id="hgv_beam" name="BEAM" version="1.0.0">
-  <description>detects both single and multi-locus SNP associations in case-control studies</description>
+  <description>significant single- and multi-locus SNP associations in case-control studies</description>
 
   <command interpreter="bash">
     BEAM2_wrapper.sh map=${input.extra_files_path}/${input.metadata.base_name}.map ped=${input.extra_files_path}/${input.metadata.base_name}.ped $burnin $mcmc $pvalue significance=$significance posterior=$posterior
@@ -44,7 +44,13 @@
   <help>
 .. class:: infomark
 
-This tool can take a long time to run, depending on the number of SNPs, the sample size, and the number of MCMC steps specified.  If you have hundreds of thousands of SNPs, it may take over a day.  The main tasks that slow down this tool searching for interactions and dynamically partitioning the SNPs into blocks.  Optimization is certainly possible, but hasn't been done yet.  **If your only interest is to detect SNPs with primary effects (i.e., single-SNP associations), please use the GPASS tool instead.**
+This tool can take a long time to run, depending on the number of SNPs, the
+sample size, and the number of MCMC steps specified.  If you have hundreds
+of thousands of SNPs, it may take over a day.  The main tasks that slow down
+this tool are searching for interactions and dynamically partitioning the
+SNPs into blocks.  Optimization is certainly possible, but hasn't been done
+yet.  **If your only interest is to detect SNPs with primary effects (i.e.,
+single-SNP associations), please use the GPASS tool instead.**
 
 -----
 
@@ -113,7 +119,7 @@ This tool also partitions SNPs into blocks based on linkage disequilibrium (LD).
     8:      1 21222571      1.000   | 353 9 138 | 352 8 140 
     etc.
 
-    The "id" field is an internally used index.
+  The "id" field is an internally used index.
 
 -----
 

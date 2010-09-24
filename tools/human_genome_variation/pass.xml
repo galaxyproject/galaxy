@@ -1,5 +1,5 @@
 <tool id="hgv_pass" name="PASS" version="1.0.0">
-  <description>detects significant transcription factor binding sites from ChIP data in the genome</description>
+  <description>significant transcription factor binding sites from ChIP data</description>
 
   <command interpreter="bash">
     pass_wrapper.sh "$input" "$min_window" "$max_window" "$false_num" "$output"

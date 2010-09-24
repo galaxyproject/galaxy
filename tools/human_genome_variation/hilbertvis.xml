@@ -60,24 +60,36 @@
   <help>
 **Dataset formats**
 
-The input format is interval_, the output is an image in PDF format.
+The input format is interval_, and the output is an image in PDF format.
 
 .. _interval: ./static/formatHelp.html#interval
 
+-----
+
 **What it does**
 
-HilbertVis uses the Hilbert space-filling curve to visualize the structure of position-dependent data.  It maps the traditional one-dimensional line visualization onto a two-dimensional square.  For example, here is a diagram showing
-the path of a level-2 Hilbert curve.
+HilbertVis uses the Hilbert space-filling curve to visualize the structure of
+position-dependent data.  It maps the traditional one-dimensional line
+visualization onto a two-dimensional square.  For example, here is a diagram
+showing the path of a level-2 Hilbert curve.
 
 .. image:: ../static/images/hilbertvisDiagram.png
 
-The shade of each pixel represents the value for the corresponding bin of consecutive genomic positions, calculated according to the specified summarization mode.  The pixels are arranged so that bins that are close to each other on the data vector are represented by pixels that are close to each other in the plot. In particular, adjacent bins are mapped to adjacent pixels. Hence, dark spots in a figure represent a peak; the area of the spot in the two-dimensional plot is proportional to the width of the peak in the one-dimensional data, and the darkness of the spot corresponds to the height of the peak.
+The shade of each pixel represents the value for the corresponding bin of
+consecutive genomic positions, calculated according to the specified
+summarization mode.  The pixels are arranged so that bins that are close
+to each other on the data vector are represented by pixels that are close
+to each other in the plot.  In particular, adjacent bins are mapped to
+adjacent pixels.  Hence, dark spots in a figure represent a peak; the area
+of the spot in the two-dimensional plot is proportional to the width of the
+peak in the one-dimensional data, and the darkness of the spot corresponds to
+the height of the peak.
 
-The input file is interval and typically contains a column with scores or other
-numbers.  Examples of scores could be the coverage of aligned reads from 
-conservation scores, SNP density, ChIP-Seq data, etc.
+The input file is in interval format, and typically contains a column with
+scores or other numbers, such as conservation scores, SNP density, the
+coverage of aligned reads from ChIP-Seq data, etc.
 
-HilbertVis homepage: http://www.ebi.ac.uk/huber-srv/hilbert/
+Website: http://www.ebi.ac.uk/huber-srv/hilbert/
 
 -----
 

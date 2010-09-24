@@ -1,5 +1,5 @@
 <tool id="hgv_snpFreq" name="snpFreq" version="1.0.0">
-  <description>identify significant SNPs in case-control data</description>
+  <description>significant SNPs in case-control data</description>
 
   <command interpreter="perl">
     snpFreq2.pl $input $group1_1 $group1_2 $group1_3 $group2_1 $group2_2 $group2_3 0.05 $output
@@ -7,12 +7,12 @@
 
   <inputs>
     <param format="tabular" name="input" type="data" label="Dataset" />
-    <param name="group1_1" label="Column with allele 1 count for group 1" type="data_column" data_ref="input" />
-    <param name="group1_2" label="Column with allele 2 count for group 1" type="data_column" data_ref="input" />
-    <param name="group1_3" label="Column with allele 3 count for group 1" type="data_column" data_ref="input" />
-    <param name="group2_1" label="Column with allele 1 count for group 2" type="data_column" data_ref="input" />
-    <param name="group2_2" label="Column with allele 2 count for group 2" type="data_column" data_ref="input" />
-    <param name="group2_3" label="Column with allele 3 count for group 2" type="data_column" data_ref="input" />
+    <param name="group1_1" label="Column with genotype 1 count for group 1" type="data_column" data_ref="input" />
+    <param name="group1_2" label="Column with genotype 2 count for group 1" type="data_column" data_ref="input" />
+    <param name="group1_3" label="Column with genotype 3 count for group 1" type="data_column" data_ref="input" />
+    <param name="group2_1" label="Column with genotype 1 count for group 2" type="data_column" data_ref="input" />
+    <param name="group2_2" label="Column with genotype 2 count for group 2" type="data_column" data_ref="input" />
+    <param name="group2_3" label="Column with genotype 3 count for group 2" type="data_column" data_ref="input" />
   </inputs>
 
   <outputs>
@@ -37,29 +37,32 @@
   </tests>
 
   <help>
+
 **Dataset formats**
 
-The input is tabular_, with 6 columns with allele
-counts.  The output format is also tabular, with the input data plus the added 
-columns described below.
+The input is tabular_, with six columns of allele
+counts.  The output is also tabular, and includes all of the input data plus 
+the additional columns described below.
+
+.. _tabular: ./static/formatHelp.html#tab
 
 -----
 
 **What it does**
 
-This identifies significant SNPs in case-control data, using R and the
-Fisher's Exact test to see if there is a
-significant difference in the allele counts.  R's qvalue
-package is used to correct for multiple testing.
-The input file must be tabular_ and include counts 
-for each position and each allele (AA aa Aa) for the 2 groups. 
-The order of the alleles is not important as long as it is the same for both
-groups.  All other columns are kept for the output only.
-The output adds 8 columns
-to the input file, namely the minimum expected counts of the 3 alleles
-for each group, the p-value, and the q-value.
+This tool performs a basic analysis of bi-allelic SNPs in case-control
+data, using the R statistical environment and Fisher's exact test to
+identify SNPs with a significant difference in the allele frequencies
+between the two groups.  R's "qvalue" package is used to correct for
+multiple testing.
 
-.. _tabular: ./static/formatHelp.html#tab
+The input file includes counts for each allele combination (AA aa Aa)
+for each group at each SNP position.  The assignment of codes (1 2 3)
+to these genotypes is arbitrary, as long as it is consistent for both
+groups.  Any other input columns are ignored in the computation, but
+are copied to the output.  The output appends eight additional columns,
+namely the minimum expected counts of the three genotypes for each
+group, the p-value, and the q-value.
 
 -----
 
@@ -77,11 +80,12 @@ for each group, the p-value, and the q-value.
 	chr1	449	450	56	0	1	13	20	24	x
 	chr1	518	519	56	0	1	38	4	15	x
 
-Group 1 allele counts are columns 4 - 6, and group 2 are 7 - 9.
+Here the group 1 genotype counts are in columns 4 - 6, while those
+for group 2 are in columns 7 - 9.
 
-Note the x column has no meaning and was added to this example to show other
-columns can be included and to make it easier to see where the new columns
-are appended in the output.
+Note that the "x" column has no meaning.  It was added to this example
+to show that extra columns can be included, and to make it easier
+to see where the new columns are appended in the output.
 
 - output file::
 
@@ -94,5 +98,6 @@ are appended in the output.
 	chr1    439     440     56      0       1       55      0       2       x       55.5    0       1.5     55.5    0       1.5     1       0.210526315789474
 	chr1    449     450     56      0       1       13      20      24      x       34.5    10      12.5    34.5    10      12.5    2.25757007974134e-18    2.37638955762246e-18
 	chr1    518     519     56      0       1       38      4       15      x       47      2       8       47      2       8       1.50219088598917e-05    6.32501425679652e-06
+
   </help>
 </tool>

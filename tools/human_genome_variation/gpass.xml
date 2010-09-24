@@ -1,5 +1,5 @@
 <tool id="hgv_gpass" name="GPASS" version="1.0.0">
-  <description>detects significant single-SNP associations in case-control studies</description>
+  <description>significant single-SNP associations in case-control studies</description>
 
   <command interpreter="perl">
     gpass.pl ${input1.extra_files_path}/${input1.metadata.base_name}.map ${input1.extra_files_path}/${input1.metadata.base_name}.ped $output $fdr
@@ -34,7 +34,7 @@
   -->
 
   <help>
-**Data formats**
+**Dataset formats**
 
 The input dataset must be lped_, and the output is tabular_.
 

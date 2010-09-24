@@ -257,6 +257,8 @@
 
 The input and output datasets are tabular_.  
 
+.. _tabular: ./static/formatHelp.html#tab
+
 -----
 
 **What it does**
@@ -271,9 +273,7 @@ interaction type from the search-and-select box.  The choices that
 start with '-' are a subset of a choice above them; you can chose
 either the general interaction type or a more specific one.
 
-Home page: http://ctd.mdibl.org/
-
-.. _tabular: ./static/formatHelp.html#tab
+Website: http://ctd.mdibl.org/
 
 -----
 
