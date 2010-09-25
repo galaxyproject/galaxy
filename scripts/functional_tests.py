@@ -74,6 +74,7 @@ def main():
             nginx_upload_store = os.environ.get( 'GALAXY_TEST_NGINX_UPLOAD_STORE', None )
             if not nginx_upload_store:
                 raise Exception( 'Please set GALAXY_TEST_NGINX_UPLOAD_STORE to the path where the nginx upload module places uploaded files' )
+            default_cluster_job_runner = os.environ.get( 'GALAXY_TEST_DEFAULT_CLUSTER_JOB_RUNNER', 'pbs:///' )
             file_path = tempfile.mkdtemp( dir=base_file_path )
             new_file_path = tempfile.mkdtemp( dir=base_new_file_path )
             cluster_files_directory = os.path.join( new_file_path, 'pbs' )
@@ -95,7 +96,7 @@ def main():
                            track_jobs_in_database = 'True',
                            job_scheduler_policy = 'FIFO',
                            start_job_runners = 'pbs',
-                           default_cluster_job_runner = 'pbs:///', )
+                           default_cluster_job_runner = default_cluster_job_runner, )
             psu_production = True
         else:
             if 'GALAXY_TEST_DBPATH' in os.environ:
