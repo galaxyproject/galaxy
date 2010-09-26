@@ -26,6 +26,9 @@
 #end if
 --suppressHeader=$suppressHeader
   </command>
+  <requirements>
+    <requirement type='package'>bwa</requirement>
+  </requirements>
   <inputs>
     <conditional name="genomeSource">
       <param name="refGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?">

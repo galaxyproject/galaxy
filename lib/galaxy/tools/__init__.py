@@ -22,6 +22,7 @@ from parameters.input_translation import ToolInputTranslator
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.tools.deps import DependencyManager
 from galaxy.model import directory_hash_id
 from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
@@ -49,6 +50,7 @@ class ToolBox( object ):
         self.tool_panel = odict()
         self.tool_root_dir = tool_root_dir
         self.app = app
+        self.init_dependency_manager()
         try:
             self.init_tools( config_filename )
         except:
@@ -174,6 +176,11 @@ class ToolBox( object ):
         stored = self.app.model.context.query( self.app.model.StoredWorkflow ).get( id )
         return stored.latest_workflow
 
+    def init_dependency_manager( self ):
+        self.dependency_manager = None
+        if self.app.config.use_tool_dependencies:
+            self.dependency_manager = DependencyManager( [ self.app.config.tool_dependency_dir ] )
+
 class ToolSection( object ):
     """
     A group of tools with similar type/purpose that will be displayed as a
@@ -266,6 +273,17 @@ class ToolOutput( object ):
             raise IndexError( index )
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
+
+class ToolRequirement( object ):
+    """
+    Represents an external requirement that must be available for the tool to
+    run (for example, a program, package, or library). Requirements can 
+    optionally assert a specific version
+    """
+    def __init__( self ):
+        self.name = None
+        self.type = None
+        self.version = None
 
 class Tool:
     """
@@ -378,21 +396,7 @@ class Tool:
         # Parse tool help
         self.parse_help( root )
         # Description of outputs produced by an invocation of the tool
-        self.outputs = odict()
-        out_elem = root.find("outputs")
-        if out_elem:
-            for data_elem in out_elem.findall("data"):
-                output = ToolOutput( data_elem.get("name") )
-                output.format = data_elem.get("format", "data")
-                output.change_format = data_elem.findall("change_format")
-                output.metadata_source = data_elem.get("metadata_source", "")
-                output.parent = data_elem.get("parent", None)
-                output.label = util.xml_text( data_elem, "label" )
-                output.count = int( data_elem.get("count", 1) )
-                output.filters = data_elem.findall( 'filter' )
-                output.tool = self
-                output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
-                self.outputs[ output.name ] = output
+        self.parse_outputs( root )
         # Any extra generated config files for the tool
         self.config_files = []
         conf_parent_elem = root.find("configfiles")
@@ -426,6 +430,11 @@ class Tool:
                 log.exception( "Failed to parse tool tests" )
         else:
             self.tests = None
+        # Requirements (dependencies)
+        self.requirements = []
+        requirements_elem = root.find( "requirements" )
+        if requirements_elem:
+            self.parse_requirements( requirements_elem )
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible()
             
@@ -517,7 +526,28 @@ class Tool:
         # Pad out help pages to match npages ... could this be done better?
         while len( self.help_by_page ) < self.npages: 
             self.help_by_page.append( self.help )
-            
+     
+    def parse_outputs( self, root ):
+        """
+        Parse <outputs> elements and fill in self.outputs (keyed by name)
+        """
+        self.outputs = odict()
+        out_elem = root.find("outputs")
+        if not out_elem:
+            return
+        for data_elem in out_elem.findall("data"):
+            output = ToolOutput( data_elem.get("name") )
+            output.format = data_elem.get("format", "data")
+            output.change_format = data_elem.findall("change_format")
+            output.metadata_source = data_elem.get("metadata_source", "")
+            output.parent = data_elem.get("parent", None)
+            output.label = util.xml_text( data_elem, "label" )
+            output.count = int( data_elem.get("count", 1) )
+            output.filters = data_elem.findall( 'filter' )
+            output.tool = self
+            output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
+            self.outputs[ output.name ] = output
+
     def parse_tests( self, tests_elem ):
         """
         Parse any "<test>" elements, create a `ToolTestBuilder` for each and
@@ -699,6 +729,18 @@ class Tool:
         for name in param.get_dependencies():
             context[ name ].refresh_on_change = True
         return param
+
+    def parse_requirements( self, requirements_elem ):
+        """
+        Parse each requirement from the <requirements> element and add to
+        self.requirements
+        """
+        for requirement_elem in requirements_elem.findall( 'requirement' ):
+            requirement = ToolRequirement()
+            requirement.name = util.xml_text( requirement_elem )
+            requirement.type = requirement_elem.get( "type", "package" )
+            requirement.version = requirement_elem.get( "version" )
+            self.requirements.append( requirement )
     
     def check_workflow_compatible( self ):
         """
@@ -929,7 +971,8 @@ class Tool:
             key = prefix + input.name
             if isinstance( input, Repeat ):
                 group_state = state[input.name]
-                group_errors = [ {} for i in range( len( group_state ) ) ] #create list of empty errors for each previously existing state
+                # Create list of empty errors for each previously existing state
+                group_errors = [ {} for i in range( len( group_state ) ) ] 
                 group_old_errors = old_errors.get( input.name, None )
                 any_group_errors = False
                 # Check any removals before updating state -- only one
@@ -946,7 +989,9 @@ class Tool:
                         else:
                             group_errors[i] = { '__index__': 'Cannot remove repeat (min size=%i).' % input.min }
                             any_group_errors = True
-                            break #only need to find one that can't be removed due to size, since only one removal is processed at a time anyway
+                            # Only need to find one that can't be removed due to size, since only 
+                            # one removal is processed at # a time anyway
+                            break 
                 # Update state
                 max_index = -1
                 for i, rep_state in enumerate( group_state ):
@@ -1415,6 +1460,25 @@ class Tool:
             #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ) )
             raise
         return command_line
+
+    def build_dependency_shell_commands( self ):
+        """
+        Return a list of commands to be run to populate the current 
+        environment to include this tools requirements.
+        """
+        commands = []
+        for requirement in self.requirements:
+            # TODO: currently only supporting requirements of type package,
+            #       need to implement some mechanism for mapping other types
+            #       back to packages
+            log.debug( "Dependency %s", requirement.name )
+            if requirement.type == 'package':
+                script_file, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
+                if script_file is None:
+                    log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+                else:
+                    commands.append( 'source ' + script_file )
+        return commands
 
     def build_redirect_url_params( self, param_dict ):
         """Substitute parameter values into self.redirect_url_params"""

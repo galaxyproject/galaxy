@@ -54,6 +54,8 @@ class LocalJobRunner( object ):
         try:
             job_wrapper.prepare()
             command_line = job_wrapper.get_command_line()
+            if job_wrapper.dependency_shell_commands:
+                command_line = "; ".join( job_wrapper.dependency_shell_commands + [ command_line ] )
         except:
             job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)

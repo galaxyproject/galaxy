@@ -101,6 +101,13 @@ class Configuration( object ):
             raise ConfigurationError( "user_library_import_dir specified in config (%s) does not exist" % self.user_library_import_dir )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
+        # Location for dependencies
+        if 'tool_dependency_dir' in kwargs:
+            self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
+            self.use_tool_dependencies = True
+        else:
+            self.tool_dependency_dir = None
+            self.use_tool_dependencies = False
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
