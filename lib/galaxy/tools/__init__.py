@@ -248,6 +248,7 @@ class ToolOutput( object ):
     compatibility this behaves as if it were the tuple:
       (format, metadata_source, parent)  
     """
+
     def __init__( self, name, format=None, metadata_source=None, 
                   parent=None, label=None, filters = None, actions = None ):
         self.name = name
@@ -262,6 +263,7 @@ class ToolOutput( object ):
 
     def __len__( self ): 
         return 3
+
     def __getitem__( self, index ):
         if index == 0: 
             return self.format
@@ -271,6 +273,7 @@ class ToolOutput( object ):
             return self.parent
         else:
             raise IndexError( index )
+
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
 
@@ -289,7 +292,9 @@ class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
     """
+    
     tool_type = 'default'
+    
     def __init__( self, config_file, root, app ):
         """
         Load a tool from the config named by `config_file`
@@ -300,10 +305,14 @@ class Tool:
         self.app = app
         # Parse XML element containing configuration
         self.parse( root )
+    
     @property
     def sa_session( self ):
-        """Returns a SQLAlchemy session"""
+        """
+        Returns a SQLAlchemy session
+        """
         return self.app.model.context
+    
     def parse( self, root ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -323,13 +332,17 @@ class Tool:
             self.version = "1.0.0"
         # Support multi-byte tools
         self.is_multi_byte = util.string_as_bool( root.get( "is_multi_byte", False ) )
-        #Force history to fully refresh after job execution for this tool. Useful i.e. when an indeterminate number of outputs are created by a tool.
+        # Force history to fully refresh after job execution for this tool. 
+        # Useful i.e. when an indeterminate number of outputs are created by 
+        # a tool.
         self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
-        #load input translator, used by datasource tools to change names/values of incoming parameters
+        # Load input translator, used by datasource tools to change 
+        # names/values of incoming parameters
         self.input_translator = root.find( "request_param_translation" )
         if self.input_translator:
             self.input_translator = ToolInputTranslator.from_element( self.input_translator )
-        # Command line (template). Optional for tools that do not invoke a local program  
+        # Command line (template). Optional for tools that do not invoke a 
+        # local program  
         command = root.find("command")
         if command is not None and command.text is not None:
             self.command = command.text.lstrip() # get rid of leading whitespace
@@ -457,7 +470,9 @@ class Tool:
             # template.
             if self.nginx_upload and self.app.config.nginx_upload_path:
                 if '?' in urllib.unquote_plus( self.action ):
-                    raise Exception( 'URL parameters in a non-default tool action can not be used in conjunction with nginx upload.  Please convert them to hidden POST parameters' )
+                    raise Exception( 'URL parameters in a non-default tool action can not be used ' \
+                                     'in conjunction with nginx upload.  Please convert them to ' \
+                                     'hidden POST parameters' )
                 self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
                         urllib.unquote_plus(self.action))
             self.target = input_elem.get( "target", "galaxy_main" )
@@ -554,7 +569,9 @@ class Tool:
         store in `self.tests`.
         """
         self.tests = []
-        composite_data_names_counter = 0 #composite datasets need a unique name: each test occurs in a fresh history, but we'll keep it unique per set of tests
+        # Composite datasets need a unique name: each test occurs in a fresh 
+        # history, but we'll keep it unique per set of tests
+        composite_data_names_counter = 0 
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
             name = test_elem.get( 'name', 'Test-%d' % (i+1) )
             maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
@@ -570,18 +587,23 @@ class Tool:
                         value = None
                     attrib['children'] = list( param_elem.getchildren() )
                     if attrib['children']:
-                        #at this time, we can assume having children only occurs on DataToolParameter test items
-                        #but this could change and would cause the below parsing to change based upon differences in children items
+                        # At this time, we can assume having children only 
+                        # occurs on DataToolParameter test items but this could 
+                        # change and would cause the below parsing to change 
+                        # based upon differences in children items
                         attrib['metadata'] = []
                         attrib['composite_data'] = []
                         attrib['edit_attributes'] = []
-                        composite_data_name = None #composite datasets need to be renamed uniquely
+                        # Composite datasets need to be renamed uniquely
+                        composite_data_name = None 
                         for child in attrib['children']:
                             if child.tag == 'composite_data':
                                 attrib['composite_data'].append( child )
                                 if composite_data_name is None:
-                                    #generate a unique name; each test uses a fresh history
-                                    composite_data_name = '_COMPOSITE_RENAMED_%i_' % ( composite_data_names_counter )
+                                    # Generate a unique name; each test uses a 
+                                    # fresh history
+                                    composite_data_name = '_COMPOSITE_RENAMED_%i_' \
+                                        % ( composite_data_names_counter )
                                     composite_data_names_counter += 1
                             elif child.tag == 'metadata':
                                 attrib['metadata'].append( child )
@@ -590,7 +612,10 @@ class Tool:
                             elif child.tag == 'edit_attributes':
                                 attrib['edit_attributes'].append( child )
                         if composite_data_name:
-                            attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } ) #composite datasets need implicit renaming; inserted at front of list so explicit declarations take precedence
+                            # Composite datasets need implicit renaming; 
+                            # inserted at front of list so explicit declarations 
+                            # take precedence
+                            attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } ) 
                     test.add_param( attrib.pop( 'name' ), value, attrib )
                 for output_elem in test_elem.findall( "output" ):
                     attrib = dict( output_elem.attrib )
@@ -601,21 +626,27 @@ class Tool:
                     if file is None:
                         raise Exception( "Test output does not have a 'file'")
                     attributes = {}
-                    attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower() #method of comparison
-                    attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) ) # allow a few lines (dates etc) to vary in logs
-                    attributes['delta'] = int( attrib.pop( 'delta', '10000' ) ) # allow a file size to vary if sim_size compare
+                    # Method of comparison
+                    attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower() 
+                    # Number of lines to allow to vary in logs (for dates, etc) 
+                    attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) ) 
+                    # Allow a file size to vary if sim_size compare
+                    attributes['delta'] = int( attrib.pop( 'delta', '10000' ) ) 
                     attributes['sort'] = util.string_as_bool( attrib.pop( 'sort', False ) )
                     attributes['extra_files'] = []
                     for extra in output_elem.findall( 'extra_files' ):
-                        extra_type = extra.get( 'type', 'file' ) #file or directory, when directory, compare basename by basename
+                        # File or directory, when directory, compare basename 
+                        # by basename
+                        extra_type = extra.get( 'type', 'file' ) 
                         extra_name = extra.get( 'name', None )
-                        assert extra_type == 'directory' or extra_name is not None, 'extra_files type (%s) requires a name attribute' % extra_type
+                        assert extra_type == 'directory' or extra_name is not None, \
+                            'extra_files type (%s) requires a name attribute' % extra_type
                         extra_value = extra.get( 'value', None )
                         assert extra_value is not None, 'extra_files requires a value attribute'
                         extra_attributes = {}
-                        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower() #method of comparison
-                        extra_attributes['delta'] = extra.get( 'delta', '0' ) # allow a file size to vary if sim_size compare
-                        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) ) # allow a few lines (dates etc) to vary in logs
+                        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower() 
+                        extra_attributes['delta'] = extra.get( 'delta', '0' ) 
+                        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) ) 
                         extra_attributes['sort'] = util.string_as_bool( extra.get( 'sort', False ) )
                         attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )
                     test.add_output( name, file, attributes )
@@ -656,16 +687,16 @@ class Tool:
                 group.inputs = self.parse_input_elem( elem, enctypes, context )
                 group.default = int( elem.get( "default", 0 ) )
                 group.min = int( elem.get( "min", 0 ) )
-                group.max = float( elem.get( "max", "inf" ) ) #use float instead of int so that 'inf' can be used for no max
-                assert group.min <= group.max, ValueError( "Min repeat count must be less-than-or-equal to the max." )
-                group.default = min( max( group.default, group.min ), group.max ) #force default to be within min-max range
+                # Use float instead of int so that 'inf' can be used for no max
+                group.max = float( elem.get( "max", "inf" ) ) 
+                assert group.min <= group.max, \
+                    ValueError( "Min repeat count must be less-than-or-equal to the max." )
+                # Force default to be within min-max range
+                group.default = min( max( group.default, group.min ), group.max ) 
                 rval[group.name] = group
             elif elem.tag == "conditional":
                 group = Conditional()
                 group.name = elem.get( "name" )
-                
-                group.name = elem.get( "name" )
-                
                 group.value_ref = elem.get( 'value_ref', None )
                 group.value_ref_in_group = util.string_as_bool( elem.get( 'value_ref_in_group', 'True' ) )
                 value_from = elem.get( "value_from" )
@@ -680,7 +711,8 @@ class Tool:
                         case = ConditionalWhen()
                         case.value = case_value
                         if case_inputs:
-                            case.inputs = self.parse_input_elem( ElementTree.XML( "<when>%s</when>" % case_inputs ), enctypes, context )
+                            case.inputs = self.parse_input_elem( 
+                                ElementTree.XML( "<when>%s</when>" % case_inputs ), enctypes, context )
                         else:
                             case.inputs = {}
                         group.cases.append( case )
@@ -706,7 +738,8 @@ class Tool:
                 group.default_file_type = elem.get( 'default_file_type', group.default_file_type )
                 group.metadata_ref = elem.get( 'metadata_ref', group.metadata_ref )
                 rval[ group.file_type_name ].refresh_on_change = True
-                rval[ group.file_type_name ].refresh_on_change_values = self.app.datatypes_registry.get_composite_extensions()
+                rval[ group.file_type_name ].refresh_on_change_values = \
+                    self.app.datatypes_registry.get_composite_extensions()
                 group.inputs = self.parse_input_elem( elem, enctypes, context )
                 rval[ group.name ] = group
             elif elem.tag == "param":
@@ -940,16 +973,20 @@ class Tool:
                     log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
                     continue
                 if trans.user is None and trans.galaxy_session.current_history != data.history:
-                    log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)' % ( data.id, trans.galaxy_session.id ) ) 
+                    log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)' 
+                        % ( data.id, trans.galaxy_session.id ) ) 
                 elif data.history.user != trans.user:
-                    log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)' % ( data.id, trans.user.id ) )
+                    log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)' 
+                        % ( data.id, trans.user.id ) )
                 else:
                     data.state = data.states.ERROR
                     data.info = 'Upload of this dataset was interrupted.  Please try uploading again or'
                     self.sa_session.add( data )
                     self.sa_session.flush()
         # It's unlikely the user will ever see this.
-        return 'message.mako', dict( status='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
+        return 'message.mako', dict( status='error', 
+            message='Your upload was interrupted. If this was uninentional, please retry it.', 
+            refresh_frames=[], cont=None )
 
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):
@@ -1034,7 +1071,9 @@ class Tool:
                 old_current_case = group_state['__current_case__']
                 group_prefix = "%s|" % ( key )
                 # Deal with the 'test' element and see if it's value changed
-                if input.value_ref and not input.value_ref_in_group: #we are referencing an existant parameter, which is not part of this group
+                if input.value_ref and not input.value_ref_in_group: 
+                    # We are referencing an existent parameter, which is not 
+                    # part of this group
                     test_param_key = prefix + input.test_param.name
                 else:
                     test_param_key = group_prefix + input.test_param.name
@@ -1116,7 +1155,7 @@ class Tool:
                         group_errors.append( rep_errors )
                     else:
                         group_errors.append( {} )
-                #add new fileupload as needed
+                # Add new fileupload as needed
                 offset = 1
                 while len( writable_files ) > len( group_state ):
                     new_state = {}
@@ -1310,48 +1349,63 @@ class Tool:
                     current = values["__current_case__"]
                     wrap_values( input.cases[current].inputs, values )
                 elif isinstance( input, DataToolParameter ):
-                    ##FIXME: We're populating param_dict with conversions when wrapping values, 
-                    ##this should happen as a separate step before wrapping (or call this wrapping step something more generic)
-                    ##(but iterating this same list twice would be wasteful)
-                    #add explicit conversions by name to current parent
+                    ## FIXME: We're populating param_dict with conversions when 
+                    ##        wrapping values, this should happen as a separate 
+                    ##        step before wrapping (or call this wrapping step 
+                    ##        something more generic) (but iterating this same 
+                    ##        list twice would be wasteful)
+                    # Add explicit conversions by name to current parent
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                        #if we are at building cmdline step, then converters have already executed
+                        # If we are at building cmdline step, then converters 
+                        # have already executed
                         conv_ext, converted_dataset = input_values[ input.name ].find_conversion_destination( conversion_datatypes )
-                        #when dealing with optional inputs, we'll provide a valid extension to be used for None converted dataset
+                        # When dealing with optional inputs, we'll provide a 
+                        # valid extension to be used for None converted dataset
                         if not conv_ext:
                             conv_ext = conversion_extensions[0]
-                        #input_values[ input.name ] is None when optional dataset, 
-                        #'conversion' of optional dataset should create wrapper around NoneDataset for converter output
+                        # input_values[ input.name ] is None when optional 
+                        # dataset, 'conversion' of optional dataset should 
+                        # create wrapper around NoneDataset for converter output
                         if input_values[ input.name ] and not converted_dataset: 
-                            #input that converter is based from has a value, but converted dataset does not exist
-                            raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_values[ input.name ].extension, conversion_extensions )
+                            # Input that converter is based from has a value, 
+                            # but converted dataset does not exist
+                            raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s' 
+                                % ( input_values[ input.name ].extension, conversion_extensions ) )
                         else:
+                            # Trick wrapper into using target conv ext (when 
+                            # None) without actually being a tool parameter
                             input_values[ conversion_name ] = \
                                 DatasetFilenameWrapper( converted_dataset,
                                                         datatypes_registry = self.app.datatypes_registry,
-                                                        tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ), #trick wrapper into using target conv ext (when None) without actually being a tool parameter
+                                                        tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ), 
                                                         name = conversion_name )
-                    #wrap actual input dataset
+                    # Wrap actual input dataset
                     input_values[ input.name ] = \
                         DatasetFilenameWrapper( input_values[ input.name ],
                                                 datatypes_registry = self.app.datatypes_registry,
                                                 tool = self,
                                                 name = input.name )
                 elif isinstance( input, SelectToolParameter ):
-                    input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], self.app, other_values = param_dict )
+                    input_values[ input.name ] = SelectToolParameterWrapper( 
+                        input, input_values[ input.name ], self.app, other_values = param_dict )
                 else:
-                    input_values[ input.name ] = InputValueWrapper( input, input_values[ input.name ], param_dict )
+                    input_values[ input.name ] = InputValueWrapper( 
+                        input, input_values[ input.name ], param_dict )
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.check_values:
             wrap_values( self.inputs, param_dict )
-        ###FIXME: when self.check_values==True, input datasets are being wrapped twice 
-        ###    (above and below, creating 2 separate DatasetFilenameWrapper objects - first is overwritten by second),
-        ###is this necessary? - if we get rid of this way to access children, can we stop this redundancy, or is there another reason for this?
-        ###Only necessary when self.check_values is False (==external dataset tool?: can this be abstracted out as part of being a datasouce tool?) 
-        ###    but we still want (ALWAYS) to wrap input datasets 
-        ###    (this should be checked to prevent overhead of creating a new object?)
+        ## FIXME: when self.check_values==True, input datasets are being wrapped 
+        ##        twice (above and below, creating 2 separate 
+        ##        DatasetFilenameWrapper objects - first is overwritten by 
+        ##        second), is this necessary? - if we get rid of this way to 
+        ##        access children, can we stop this redundancy, or is there 
+        ##        another reason for this?
+        ## - Only necessary when self.check_values is False (==external dataset 
+        ##   tool?: can this be abstracted out as part of being a datasouce tool?) 
+        ## - But we still want (ALWAYS) to wrap input datasets (this should be 
+        ##   checked to prevent overhead of creating a new object?)
         # Additionally, datasets go in the param dict. We wrap them such that
         # if the bare variable name is used it returns the filename (for
         # backwards compatibility). We also add any child datasets to the
@@ -1368,7 +1422,8 @@ class Tool:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for name, hda in output_datasets.items():
-            # Write outputs to the working directory (for security purposes) if desired.
+            # Write outputs to the working directory (for security purposes) 
+            # if desired.
             if self.app.config.outputs_to_working_directory:
                 try:
                     false_path = [ dp.false_path for dp in output_paths if dp.real_path == hda.file_name ][0]
@@ -1386,17 +1441,22 @@ class Tool:
                 param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for out_name, output in self.outputs.iteritems():
             if out_name not in param_dict and output.filters:
-                #assume the reason we lack this output is because a filter failed to pass; for tool writing convienence, provide a NoneDataset
+                # Assume the reason we lack this output is because a filter 
+                # failed to pass; for tool writing convienence, provide a 
+                # NoneDataset
                 param_dict[ out_name ] = NoneDataset( datatypes_registry = self.app.datatypes_registry, ext = output.format )
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
-        # More convienent access to app.config.new_file_path; we don't need to wrap a string
-        # But this method of generating additional datasets should be considered DEPRECATED
+        # More convienent access to app.config.new_file_path; we don't need to 
+        # wrap a string, but this method of generating additional datasets 
+        # should be considered DEPRECATED
         # TODO: path munging for cluster/dataset server relocatability
         param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
-        # The following points to location (xxx.loc) files which are pointers to locally cached data
+        # The following points to location (xxx.loc) files which are pointers 
+        # to locally cached data
         param_dict['GALAXY_DATA_INDEX_DIR'] = self.app.config.tool_data_path
-        # For the upload tool, we need to know the root directory and the datatypes conf path, so we can load the datatypes registry
+        # For the upload tool, we need to know the root directory and the 
+        # datatypes conf path, so we can load the datatypes registry
         param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
         param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.abspath( self.app.config.datatypes_config )
         # Return the dictionary of parameters
@@ -1481,7 +1541,9 @@ class Tool:
         return commands
 
     def build_redirect_url_params( self, param_dict ):
-        """Substitute parameter values into self.redirect_url_params"""
+        """
+        Substitute parameter values into self.redirect_url_params
+        """
         if not self.redirect_url_params:
             return
         redirect_url_params = None            
@@ -1492,15 +1554,23 @@ class Tool:
         return redirect_url_params
 
     def parse_redirect_url( self, data, param_dict ):
-        """Parse the REDIRECT_URL tool param"""
-        # Tools that send data to an external application via a redirect must include the following 3 tool params:
-        # REDIRECT_URL - the url to which the data is being sent
-        # DATA_URL - the url to which the receiving application will send an http post to retrieve the Galaxy data
-        # GALAXY_URL - the url to which the external application may post data as a response
+        """
+        Parse the REDIRECT_URL tool param. Tools that send data to an external 
+        application via a redirect must include the following 3 tool params:
+        
+        1) REDIRECT_URL - the url to which the data is being sent
+        
+        2) DATA_URL - the url to which the receiving application will send an 
+           http post to retrieve the Galaxy data
+        
+        3) GALAXY_URL - the url to which the external application may post
+           data as a response
+        """
         redirect_url = param_dict.get( 'REDIRECT_URL' )
         redirect_url_params = self.build_redirect_url_params( param_dict )
-        # Add the parameters to the redirect url.  We're splitting the param string on '**^**'
-        # because the self.parse() method replaced white space with that separator.
+        # Add the parameters to the redirect url.  We're splitting the param 
+        # string on '**^**' because the self.parse() method replaced white 
+        # space with that separator.
         params = redirect_url_params.split( '**^**' )
         rup_dict = {}
         for param in params:
@@ -1549,26 +1619,37 @@ class Tool:
         pass
 
     def collect_associated_files( self, output, job_working_directory ):
+        """
+        Find extra files in the job working directory and move them into
+        the appropriate dataset's files directory
+        """
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
             try:
                 if len( os.listdir( temp_file_path ) ) > 0:
-                    store_file_path = os.path.join( os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), "dataset_%d_files" % hda.dataset.id )
+                    store_file_path = os.path.join( 
+                        os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), 
+                        "dataset_%d_files" % hda.dataset.id )
                     shutil.move( temp_file_path, store_file_path )
-                    # fix permissions
+                    # Fix permissions
                     for basedir, dirs, files in os.walk( store_file_path ):
                         util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
                         for file in files:
                             path = os.path.join( basedir, file )
+                            # Ignore symlinks
                             if os.path.islink( path ):
-                                continue # ignore symlinks
+                                continue 
                             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
             except:
                 continue
     
     def collect_child_datasets( self, output):
+        """
+        Look for child dataset files, create HDA and attach to parent.
+        """
         children = {}
-        #Loop through output file names, looking for generated children in form of 'child_parentId_designation_visibility_extension'
+        # Loop through output file names, looking for generated children in 
+        # form of 'child_parentId_designation_visibility_extension'
         for name, outdata in output.items():
             for filename in glob.glob(os.path.join(self.app.config.new_file_path,"child_%i_*" % outdata.id) ):
                 if not name in children:
@@ -1613,7 +1694,9 @@ class Tool:
                 self.sa_session.flush()
                 # Add child to return dict 
                 children[name][designation] = child_dataset
-                for dataset in outdata.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                # Need to update all associated output hdas, i.e. history was 
+                # shared with job running
+                for dataset in outdata.dataset.history_associations: 
                     if outdata == dataset: continue
                     # Create new child dataset
                     child_data = child_dataset.copy( parent_id = dataset.id )
@@ -1622,8 +1705,14 @@ class Tool:
         return children
         
     def collect_primary_datasets( self, output):
+        """
+        Find any additional datasets generated by a tool and attach (for 
+        cases where number of outputs is not known in advance).
+        """
         primary_datasets = {}
-        #Loop through output file names, looking for generated primary datasets in form of 'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
+        # Loop through output file names, looking for generated primary 
+        # datasets in form of:
+        #     'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
         for name, outdata in output.items():
             for filename in glob.glob(os.path.join(self.app.config.new_file_path,"primary_%i_*" % outdata.id) ):
                 if not name in primary_datasets:
@@ -1674,7 +1763,9 @@ class Tool:
                 outdata.history.add_dataset( primary_data )
                 # Add dataset to return dict 
                 primary_datasets[name][designation] = primary_data
-                for dataset in outdata.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                # Need to update all associated output hdas, i.e. history was 
+                # shared with job running
+                for dataset in outdata.dataset.history_associations: 
                     if outdata == dataset: continue
                     new_data = primary_data.copy()
                     dataset.history.add( new_data )
@@ -1683,6 +1774,10 @@ class Tool:
         return primary_datasets
 
 class DataSourceTool( Tool ):
+    """
+    Alternate implementation of Tool for data_source tools -- those that 
+    allow the user to query and extract data from another web site.
+    """
     tool_type = 'data_source'
     
     def _build_GALAXY_URL_parameter( self ):
@@ -1694,8 +1789,9 @@ class DataSourceTool( Tool ):
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
     
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
-        #TODO: Allow for a generic way for all Tools to have output dataset properties be set to input parameter values
-        #as defined in a tool XML
+        # TODO: Allow for a generic way for all Tools to have output dataset 
+        #       properties be set to input parameter values as defined in a 
+        #       tool XML
         dbkey = param_dict.get( 'dbkey' )
         organism = param_dict.get( 'organism' )
         table = param_dict.get( 'table' )
@@ -1721,15 +1817,18 @@ class DataSourceTool( Tool ):
                 # Setting data_type to tabular will force the data to be sniffed in exec_after_process()
                 data_type = 'tabular'
             data.change_datatype( data_type )
-            # Store external data source's request parameters temporarily in output file.
-            # In case the config setting for "outputs_to_working_directory" is True, we must write to
-            # the DatasetFilenameWrapper object in the param_dict since it's "false_path" attribute
-            # is the temporary path to the output dataset ( until the job is run ).  However,
-            # even if the "outputs_to_working_directory" setting is False, we can still open the file
-            # the same way for temporarily storing the request parameters.
-            
-            ## TODO: Input parameters should be jsonified and written into a <configfile> and passed to data_source.py,
-            ## instead of writing tab separated key, value pairs to the output file
+            # Store external data source's request parameters temporarily in 
+            # output file. In case the config setting for 
+            # "outputs_to_working_directory" is True, we must write to the
+            # DatasetFilenameWrapper object in the param_dict since it's 
+            # "false_path" attribute is the temporary path to the output dataset 
+            # ( until the job is run ).  However, even if the 
+            # "outputs_to_working_directory" setting is False, we can still 
+            # open the file the same way for temporarily storing the request 
+            # parameters.
+            ## TODO: Input parameters should be jsonified and written into a 
+            ##       <configfile> and passed to data_source.py, instead of 
+            ##       writing tab separated key, value pairs to the output file
             out = open( str( param_dict.get( name ) ), 'w' )
             for key, value in param_dict.items():
                 print >> out, '%s\t%s' % ( key, value )
@@ -1766,6 +1865,10 @@ class DataDestinationTool( Tool ):
     tool_type = 'data_destination'
 
 class SetMetadataTool( Tool ):
+    """
+    Tool implementation for special tool that sets metadata on an existing
+    dataset.
+    """
     tool_type = 'set_metadata'
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         for name, dataset in inp_data.iteritems():
@@ -1777,14 +1880,17 @@ class SetMetadataTool( Tool ):
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
                 return
-            # If setting external metadata has failed, how can we inform the user?
-            # For now, we'll leave the default metadata and set the state back to its original.
+            # If setting external metadata has failed, how can we inform the 
+            # user? For now, we'll leave the default metadata and set the state 
+            # back to its original.
             dataset.datatype.after_setting_metadata( dataset )
             if job and job.tool_id == '1.0.0':
                 dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
             else:
-                dataset._state = None #revert dataset.state to fall back to dataset.dataset.state
-            dataset.set_peek() #need to reset the peek, which may rely on metadata
+                # Revert dataset.state to fall back to dataset.dataset.state
+                dataset._state = None 
+            # Need to reset the peek, which may rely on metadata
+            dataset.set_peek() 
             self.sa_session.add( dataset )
             self.sa_session.flush()
     
@@ -1797,7 +1903,7 @@ class SetMetadataTool( Tool ):
             return self.exec_after_process( job_wrapper.app, inp_data, {}, job_wrapper.get_param_dict(), job = job )
 
 
-#load tool_type to ToolClass mappings
+# Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
@@ -1855,8 +1961,9 @@ class DatasetFilenameWrapper( object ):
     
     class MetadataWrapper:
         """
-        Wraps a Metadata Collection to return MetadataParameters wrapped according to the metadata spec.
-        Methods implemented to match behavior of a Metadata Collection.
+        Wraps a Metadata Collection to return MetadataParameters wrapped 
+        according to the metadata spec. Methods implemented to match behavior 
+        of a Metadata Collection.
         """
         def __init__( self, metadata ):
             self.metadata = metadata
@@ -1866,7 +1973,9 @@ class DatasetFilenameWrapper( object ):
                 if rval is None:
                     rval = self.metadata.spec[name].no_value
                 rval = self.metadata.spec[name].param.to_string( rval )
-                setattr( self, name, rval ) #lets store this value, so we don't need to recalculate if needed again
+                # Store this value, so we don't need to recalculate if needed 
+                # again
+                setattr( self, name, rval ) 
             return rval
         def __nonzero__( self ):
             return self.metadata.__nonzero__()
@@ -1883,7 +1992,7 @@ class DatasetFilenameWrapper( object ):
     def __init__( self, dataset, datatypes_registry = None, tool = None, name = None, false_path = None ):
         if not dataset:
             try:
-                #TODO: allow this to work when working with grouping
+                # TODO: allow this to work when working with grouping
                 ext = tool.inputs[name].extensions[0]
             except:
                 ext = 'data'
@@ -1892,11 +2001,13 @@ class DatasetFilenameWrapper( object ):
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
         self.false_path = false_path
+
     def __str__( self ):
         if self.false_path is not None:
             return self.false_path
         else:
             return self.dataset.file_name
+
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
             return self.false_path
