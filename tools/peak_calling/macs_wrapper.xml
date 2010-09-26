@@ -4,6 +4,7 @@
   <requirements>
     <requirement type="python-module">macs</requirement>
     <requirement type="binary">macs</requirement>
+    <requirement type="package">macs</requirement>
   </requirements>
   <inputs>
     <param name="experiment_name" type="text" value="MACS in Galaxy" size="50" label="Experiment Name"/>
