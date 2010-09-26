@@ -1,5 +1,8 @@
 <tool id="sam_merge" name="Merge BAM Files" version="1.1.0">
   <description>merges BAM files together</description>
+  <requirements>
+    <requirement type="package">samtools</requirement>
+  </requirements>
   <command interpreter="python">
    sam_merge.py 
       $input1

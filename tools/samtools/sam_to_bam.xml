@@ -1,5 +1,8 @@
 <tool id="sam_to_bam" name="SAM-to-BAM" version="1.1.0">
   <description>converts SAM format to BAM format</description>
+  <requirements>
+    <requirement type="package">samtools</requirement>
+  </requirements>
   <command interpreter="python">
 sam_to_bam.py --input1=$source.input1 --dbkey=${input1.metadata.dbkey} 
 #if $source.index_source == "history":

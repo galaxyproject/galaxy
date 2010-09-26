@@ -1,5 +1,8 @@
 <tool id="pileup_interval" name="Pileup-to-Interval" version="1.0.0">
   <description>condenses pileup format into ranges of bases</description>
+  <requirements>
+    <requirement type="package">samtools</requirement>
+  </requirements>
   <command interpreter="python">
     pileup_interval.py 
       --input=$input 

@@ -1,4 +1,7 @@
 <tool id="bam_to_sam" name="BAM-to-SAM" version="1.0.0">
+  <requirements>
+    <requirement type="package">samtools</requirement>
+  </requirements>
   <description>converts BAM format to SAM format</description>
   <command interpreter="python">bam_to_sam.py --input1=$input1 --output1=$output1</command>
   <inputs>
