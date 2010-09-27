@@ -173,6 +173,22 @@
     <tool file="taxonomy/lca.xml" />
     <tool file="taxonomy/poisson2test.xml" />
   </section>
+  <section name="Human Genome Variation" id="hgv">
+    <tool file="evolution/codingSnps.xml" />
+    <tool file="evolution/add_scores.xml" />
+    <tool file="human_genome_variation/sift.xml" />
+    <tool file="human_genome_variation/linkToGProfile.xml" />
+    <tool file="human_genome_variation/linkToDavid.xml"/>
+    <tool file="human_genome_variation/ctd.xml" />
+    <tool file="human_genome_variation/funDo.xml" />
+    <tool file="human_genome_variation/snpFreq.xml" />
+    <tool file="human_genome_variation/ldtools.xml" />
+    <tool file="human_genome_variation/pass.xml" />
+    <tool file="human_genome_variation/gpass.xml" />
+    <tool file="human_genome_variation/beam.xml" />
+    <tool file="human_genome_variation/lps.xml" />
+    <tool file="human_genome_variation/hilbertvis.xml" />
+  </section>
   <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss_5/emboss_antigenic.xml" />
     <tool file="emboss_5/emboss_backtranseq.xml" />
