@@ -344,7 +344,7 @@ class GridColumn( object ):
 class ReverseSortColumn( GridColumn ):
     """ Column that reverses sorting; this is useful when the natural sort is descending. """
     def sort( self, trans, query, ascending ):
-        return GridColumn.sort( self, query, (not ascending) )
+        return GridColumn.sort( self, trans, query, (not ascending) )
         
 class TextColumn( GridColumn ):
     """ Generic column that employs freetext and, hence, supports freetext, case-independent filtering. """
