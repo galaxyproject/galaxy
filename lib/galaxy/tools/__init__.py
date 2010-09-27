@@ -1533,11 +1533,11 @@ class Tool:
             #       back to packages
             log.debug( "Dependency %s", requirement.name )
             if requirement.type == 'package':
-                script_file, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
+                script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( requirement.name, requirement.version )
                 if script_file is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
                 else:
-                    commands.append( 'source ' + script_file )
+                    commands.append( 'PACKAGE_BASE=%s source %s' % ( base_path, script_file ) )
         return commands
 
     def build_redirect_url_params( self, param_dict ):

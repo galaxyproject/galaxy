@@ -36,7 +36,8 @@ class DependencyManager( object ):
         """
         Attempt to find a dependency named `name` at version `version`. If
         version is None, return the "default" version as determined using a 
-        symbolic link (if found).
+        symbolic link (if found). Returns a triple of:
+            env_script, base_path, real_version
         """
         if version is None:
             return self._find_dep_default( name )
@@ -45,9 +46,10 @@ class DependencyManager( object ):
 
     def _find_dep_versioned( self, name, version ):
         for base_path in self.base_paths:
-            script = os.path.join( base_path, name, version, 'env.sh' )
+            path = os.path.join( base_path, name, version )
+            script = os.path.join( path, 'env.sh' )
             if os.path.exists( script ):
-                return script, version
+                return script, path, version
         else:
             return None, None
 
@@ -60,7 +62,7 @@ class DependencyManager( object ):
                 real_version = os.path.basename( real_path )
                 script = os.path.join( real_path, 'env.sh' )
                 if os.path.exists( script ):
-                    return script, real_version
+                    return script, real_path, real_version
         else:
             return None, None
 
