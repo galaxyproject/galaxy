@@ -441,7 +441,7 @@ class AdminController( BaseController, Admin ):
                         del kwd[ k ]
                 category_id = kwd.get( 'id', None )
                 category = get_category( trans, category_id )
-                kwd[ 'f-category' ] = category.name
+                kwd[ 'f-Category.name' ] = category.name
         # Render the list view
         return self.tool_list_grid( trans, **kwd )
     @web.expose

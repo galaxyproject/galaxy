@@ -91,29 +91,33 @@ class Grid( object ):
                 if use_default_filter:
                     if self.default_filter:
                         column_filter = self.default_filter.get( column.key )
-                elif "f-" + column.key in kwargs:
+                elif "f-" + column.model_class.__name__ + ".%s" % column.key in kwargs:
+                    # Queries that include table joins cannot guarantee unique column names.  This problem is
+                    # handled by setting the column_filter value to <TableName>.<ColumnName>.
+                    column_filter = kwargs.get( "f-" + column.model_class.__name__ + ".%s" % column.key )
+                elif "f-" + column.key in kwargs:                    
                     column_filter = kwargs.get( "f-" + column.key )
                 elif column.key in base_filter:
                     column_filter = base_filter.get( column.key )
                 # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
                 def from_json_string_recurse(item):
-                   decoded_list = []
-                   if isinstance( item, basestring):
-                       try:
-                           # Not clear what we're decoding, so recurse to ensure that we catch everything.
-                            decoded_item = from_json_string( item ) 
-                            if isinstance( decoded_item, list):
-                                decoded_list = from_json_string_recurse( decoded_item )
-                            else:
-                                decoded_list = [ unicode( decoded_item ) ]
-                       except ValueError:
-                           decoded_list = [ unicode ( item ) ]
-                   elif isinstance( item, list):
-                       return_val = []
-                       for element in item:
-                           a_list = from_json_string_recurse( element )
-                           decoded_list = decoded_list + a_list
-                   return decoded_list
+                    decoded_list = []
+                    if isinstance( item, basestring):
+                        try:
+                            # Not clear what we're decoding, so recurse to ensure that we catch everything.
+                             decoded_item = from_json_string( item ) 
+                             if isinstance( decoded_item, list):
+                                 decoded_list = from_json_string_recurse( decoded_item )
+                             else:
+                                 decoded_list = [ unicode( decoded_item ) ]
+                        except ValueError:
+                            decoded_list = [ unicode ( item ) ]
+                    elif isinstance( item, list):
+                        return_val = []
+                        for element in item:
+                            a_list = from_json_string_recurse( element )
+                            decoded_list = decoded_list + a_list
+                    return decoded_list
                 # If column filter found, apply it.
                 if column_filter is not None:
                     # TextColumns may have a mix of json and strings.
@@ -128,7 +132,7 @@ class Grid( object ):
                     if column_filter == '':
                         continue
                     # Update query.
-                    query = column.filter( trans, trans.get_user(), query, column_filter )
+                    query = column.filter( trans, trans.user, query, column_filter )
                     # Upate current filter dict.
                     cur_filter_dict[ column.key ] = column_filter
                     # Carry filter along to newly generated urls; make sure filter is a string so
@@ -150,17 +154,30 @@ class Grid( object ):
             sort_key = kwargs['sort']
         elif base_sort_key:
             sort_key = base_sort_key
-        if sort_key:            
-            if sort_key.startswith( "-" ):
-                ascending = False
-                column_key = sort_key[1:]
+        if sort_key:
+            ascending = not( sort_key.startswith( "-" ) )
+            # Queries that include table joins cannot guarantee unique column names.  This problem is
+            # handled by setting the column_filter value to <TableName>.<ColumnName>.
+            table_name = None
+            if sort_key.find( '.' ) > -1:
+                a_list = sort_key.split( '.' )
+                if ascending:
+                    table_name = a_list[0]
+                else:
+                    table_name = a_list[0][1:]
+                column_name = a_list[1]
+            elif ascending:
+                column_name = sort_key
             else:
-                ascending = True
-                column_key = sort_key
+                column_name = sort_key[1:]
             # Sort key is a column key.
             for column in self.columns:
-                if column.key == column_key:
-                    query = column.sort( trans, query, ascending )
+                if column.key and column.key.find( '.' ) > -1:
+                    column_key = column.key.split( '.' )[1]
+                else:
+                    column_key = column.key
+                if ( table_name is None or table_name == column.model_class.__name__ ) and column_key == column_name:
+                    query = column.sort( trans, query, ascending, column_name=column_name )
                     break
             extra_url_args['sort'] = sort_key
         # There might be a current row
@@ -194,7 +211,6 @@ class Grid( object ):
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
             trans.get_user().preferences[pref_name] = unicode( to_json_string( cur_filter_dict ) )
-            
             if sort_key:
                 pref_name = unicode( self.__class__.__name__ + self.cur_sort_key_pref_name )
                 trans.get_user().preferences[pref_name] = unicode( to_json_string( sort_key ) )
@@ -282,9 +298,7 @@ class GridColumn( object ):
                   link=None, attach_popup=False, visible=True, ncells=1, \
                   # Valid values for filterable are ['standard', 'advanced', None]
                   filterable=None, sortable=True ):
-        """
-        Create a grid column. 
-        """
+        """Create a grid column."""
         self.label = label
         self.key = key
         self.model_class = model_class
@@ -297,7 +311,6 @@ class GridColumn( object ):
         self.filterable = filterable
         # Column must have a key to be sortable.
         self.sortable = ( self.key is not None and sortable )
-            
     def get_value( self, trans, grid, item ):
         if self.method:
             value = getattr( grid, self.method )( trans, item )
@@ -308,12 +321,10 @@ class GridColumn( object ):
         if self.format:
             value = self.format( value )
         return value
-        
     def get_link( self, trans, grid, item ):
         if self.link and self.link( item ):
             return self.link( item )
         return None
-        
     def filter( self, trans, user, query, column_filter ):
         """ Modify query to reflect the column filter. """
         if column_filter == "All":
@@ -323,7 +334,6 @@ class GridColumn( object ):
         elif column_filter == "False":
             query = query.filter_by( **{ self.key: False } )
         return query
-        
     def get_accepted_filters( self ):
         """ Returns a list of accepted filters for this column. """
         accepted_filters_vals = [ "False", "True", "All" ]
@@ -332,19 +342,20 @@ class GridColumn( object ):
             args = { self.key: val }
             accepted_filters.append( GridColumnFilter( val, args) )
         return accepted_filters
-    
-    def sort( self, trans, query, ascending ):
-        """ Sort query using this column. """
+    def sort( self, trans, query, ascending, column_name=None ):
+        """Sort query using this column."""
+        if column_name is None:
+            column_name = self.key
         if ascending:
-            query = query.order_by( self.model_class.table.c.get( self.key ).asc() ) 
+            query = query.order_by( self.model_class.table.c.get( column_name ).asc() ) 
         else:
-            query = query.order_by( self.model_class.table.c.get( self.key ).desc() )
+            query = query.order_by( self.model_class.table.c.get( column_name ).desc() )
         return query
         
 class ReverseSortColumn( GridColumn ):
     """ Column that reverses sorting; this is useful when the natural sort is descending. """
-    def sort( self, trans, query, ascending ):
-        return GridColumn.sort( self, trans, query, (not ascending) )
+    def sort( self, trans, query, ascending, column_name=None ):
+        return GridColumn.sort( self, trans, query, (not ascending), column_name=column_name )
         
 class TextColumn( GridColumn ):
     """ Generic column that employs freetext and, hence, supports freetext, case-independent filtering. """
@@ -365,21 +376,37 @@ class TextColumn( GridColumn ):
                 clause_list.append( self.get_single_filter( user, filter ) )
             return and_( *clause_list )
     def get_single_filter( self, user, a_filter ):
-        """ Returns a SQLAlchemy criterion derived for a single filter. Single filter is the most basic filter--usually a string--and cannot be a list. """
-        model_class_key_field = getattr( self.model_class, self.key )
-        return func.lower( model_class_key_field ).like( "%" + a_filter.lower() + "%" )
-    def sort( self, trans, query, ascending ):
-        """Sort column using case-insensitive alphabetical sorting."""
-        if ascending:
-            query = query.order_by( func.lower( self.model_class.table.c.get( self.key ) ).asc() ) 
+        """
+        Returns a SQLAlchemy criterion derived for a single filter. Single filter
+        is the most basic filter--usually a string--and cannot be a list.
+        """
+        # Queries that include table joins cannot guarantee that table column names will be
+        # unique, so check to see if a_filter is of type <TableName>.<ColumnName>.
+        if self.key.find( '.' ) > -1:
+            a_key = self.key.split( '.' )[1]
         else:
-            query = query.order_by( func.lower( self.model_class.table.c.get( self.key ) ).desc() )
+            a_key = self.key
+        model_class_key_field = getattr( self.model_class, a_key )
+        return func.lower( model_class_key_field ).like( "%" + a_filter.lower() + "%" )
+    def sort( self, trans, query, ascending, column_name=None ):
+        """Sort column using case-insensitive alphabetical sorting."""
+        if column_name is None:
+            column_name = self.key
+        if ascending:
+            query = query.order_by( func.lower( self.model_class.table.c.get( column_name ) ).asc() ) 
+        else:
+            query = query.order_by( func.lower( self.model_class.table.c.get( column_name ) ).desc() )
         return query
 
 class DateTimeColumn( TextColumn ):
-    def sort( self, trans, query, ascending ):
+    def sort( self, trans, query, ascending, column_name=None ):
         """Sort query using this column."""
-        return GridColumn.sort( self, trans, query, ascending )
+        return GridColumn.sort( self, trans, query, ascending, column_name=column_name )
+
+class BooleanColumn( TextColumn ):
+    def sort( self, trans, query, ascending, column_name=None ):
+        """Sort query using this column."""
+        return GridColumn.sort( self, trans, query, ascending, column_name=column_name )
 
 class IntegerColumn( TextColumn ):
     """
@@ -402,9 +429,9 @@ class IntegerColumn( TextColumn ):
         model_class_key_field = getattr( self.model_class, self.key )
         assert int( a_filter ), "The search entry must be an integer"
         return model_class_key_field == int( a_filter )
-    def sort( self, trans, query, ascending ):
+    def sort( self, trans, query, ascending, column_name=None ):
         """Sort query using this column."""
-        return GridColumn.sort( self, trans, query, ascending )
+        return GridColumn.sort( self, trans, query, ascending, column_name=column_name )
         
 class CommunityRatingColumn( GridColumn, UsesItemRatings ):
     """ Column that displays community ratings for an item. """
@@ -414,7 +441,7 @@ class CommunityRatingColumn( GridColumn, UsesItemRatings ):
                                     ave_item_rating=ave_item_rating, 
                                     num_ratings=num_ratings, 
                                     item_id=trans.security.encode_id( item.id ) )
-    def sort( self, trans, query, ascending ):
+    def sort( self, trans, query, ascending, column_name=None ):
         def get_foreign_key( source_class, target_class ):
             """ Returns foreign key in source class that references target class. """
             target_fk = None
@@ -431,11 +458,11 @@ class CommunityRatingColumn( GridColumn, UsesItemRatings ):
         fk_col = foreign_key.parent
         referent_col = foreign_key.get_referent( self.model_class.table )
         # Do sorting using a subquery.
-        db_session = query.session
         # Subquery to get average rating for each item.
-        ave_rating_subquery = db_session.query( fk_col, \
-                                                func.avg( item_rating_assoc_class.table.c.rating \
-                                                ).label('avg_rating') ).group_by( fk_col ).subquery()
+        ave_rating_subquery = trans.sa_session.query( fk_col, \
+                                                      func.avg( item_rating_assoc_class.table.c.rating ).label('avg_rating') ) \
+                                              .group_by( fk_col ) \
+                                              .subquery()
         # Integrate subquery into main query.
         query = query.outerjoin( (ave_rating_subquery, referent_col==ave_rating_subquery.columns[fk_col.name]) )
         # Sort using subquery results; use coalesce to avoid null values.
@@ -559,7 +586,7 @@ class OwnerColumn( TextColumn ):
     """ Column that lists item's owner. """
     def get_value( self, trans, grid, item ):
         return item.user.username
-    def sort( self, trans, query, ascending ):
+    def sort( self, trans, query, ascending, column_name=None ):
         """ Sort column using case-insensitive alphabetical sorting on item's username. """
         if ascending:
             query = query.order_by( func.lower ( self.model_class.username ).asc() ) 

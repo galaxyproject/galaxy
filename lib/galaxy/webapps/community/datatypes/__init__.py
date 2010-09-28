@@ -83,11 +83,11 @@ class Tool( object ):
                 continue
             if root.tag == 'tool':
                 if 'id' not in root.keys():
-                    raise DatatypeVerificationError( "Tool xml file (%s) does not include the required 'id' attribute in the <tool> tag" % str( xml_file ) )
+                    raise DatatypeVerificationError( "Tool xml file (%s) does not include the required 'id' attribute in the &lt;tool&gt; tag" % str( xml_file ) )
                 if 'name' not in root.keys():
-                    raise DatatypeVerificationError( "Tool xml file (%s) does not include the required 'name' attribute in the <tool> tag" % str( xml_file ) )
+                    raise DatatypeVerificationError( "Tool xml file (%s) does not include the required 'name' attribute in the &lt;tool&gt; tag" % str( xml_file ) )
                 if 'version' not in root.keys():
-                    raise DatatypeVerificationError( "Tool xml file (%s) does not include the required 'version' attribute in the <tool> tag" % str( xml_file ) )
+                    raise DatatypeVerificationError( "Tool xml file (%s) does not include the required 'version' attribute in the &lt;tool&gt; tag" % str( xml_file ) )
                 if tool_tags:
                     # We are verifying the tools inside a tool suite, so the current tag should have been found in the suite_config.xml
                     # file parsed in the ToolSuite verify() method.  The tool_tags dictionary should include a key matching the current

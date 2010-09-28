@@ -37,7 +37,7 @@ class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             return tool.name
-    class TypeColumn( grids.TextColumn ):
+    class TypeColumn( grids.BooleanColumn ):
         def get_value( self, trans, grid, tool ):
             if tool.is_suite:
                 return 'Suite'
@@ -83,7 +83,7 @@ class ToolListGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="name",
+                    key="Tool.name",
                     link=( lambda item: dict( operation="view_tool", id=item.id, webapp="community" ) ),
                     attach_popup=False
                     ),
@@ -100,21 +100,23 @@ class ToolListGrid( grids.Grid ):
                            ),
         CategoryColumn( "Category",
                         model_class=model.Category,
-                        attach_popup=False,
-                        filterable="advanced" ),
+                        key="Category.name",
+                        attach_popup=False ),
         UserColumn( "Uploaded By",
                      model_class=model.User,
                      link=( lambda item: dict( operation="tools_by_user", id=item.id, webapp="community" ) ),
                      attach_popup=False,
-                     filterable="advanced" ),
+                     key="username" ),
         grids.CommunityRatingColumn( "Average Rating",
                                      key="rating" ),
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
                      model_class=model.User,
+                     key="email",
                      visible=False ),
         ToolCategoryColumn( "Category",
                             model_class=model.Category,
+                            key="Category.name",
                             visible=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
@@ -130,6 +132,7 @@ class ToolListGrid( grids.Grid ):
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ) \
+                               .join( model.User.table ) \
                                .join( model.ToolEventAssociation.table ) \
                                .join( model.Event.table ) \
                                .outerjoin( model.ToolCategoryAssociation.table ) \

@@ -20,6 +20,7 @@ class StateColumn( grids.TextColumn ):
         else:
             state_color = state
         return '<div class="count-box state-color-%s">%s</div>' % ( state_color, state )
+
 class ToolStateColumn( grids.StateColumn ):
     def filter( self, trans, user, query, column_filter ):
         """Modify query to filter self.model_class by state."""
@@ -174,7 +175,7 @@ class ToolController( BaseController ):
                         del kwd[ k ]
                 category_id = kwd.get( 'id', None )
                 category = get_category( trans, category_id )
-                kwd[ 'f-category' ] = category.name
+                kwd[ 'f-Category.name' ] = category.name
                 # Make sure only the latest version of a tool whose state is APPROVED are displayed.
                 kwd[ 'f-state' ] = trans.model.Tool.states.APPROVED
         # Render the list view
