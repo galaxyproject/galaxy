@@ -52,11 +52,11 @@ print Rcmd "
 	#options(show.error.messages = FALSE);
 	
 	#load necessary packages
-	library(tcltk);
+	suppressPackageStartupMessages(library(tcltk));
 	library(qvalue);
 	
 	#read the p-values of the multiple simultaneous tests from the input file $p_valuesInputFile
-	p <- scan(\"$p_valuesInputFile\");
+	p <- scan(\"$p_valuesInputFile\", quiet = TRUE);
 	
 	#compute the q-values that correspond to the p-values of the multiple simultaneous tests
 	qobj <- qvalue(p, pi0.meth = \"$pi0_method\", lambda = $lambdaValue, fdr.level = $fdr_level, robust = $robustValue);
