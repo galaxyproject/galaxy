@@ -81,7 +81,7 @@ def main():
         case = ''
         if ignorecase == 1:
             case = '-f' 
-        command_line = "sort -t $'\t' " + case + " -k" + str(group_col+1) +"," + str(group_col+1) + " -o " + tmpfile.name + " " + inputfile
+        command_line = "sort -t '	' " + case + " -k" + str(group_col+1) +"," + str(group_col+1) + " -o " + tmpfile.name + " " + inputfile
     except Exception, exc:
         stop_err( 'Initialization error -> %s' %str(exc) )
     
