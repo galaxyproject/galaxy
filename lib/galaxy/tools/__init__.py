@@ -1901,7 +1901,9 @@ class SetMetadataTool( Tool ):
             for dataset_assoc in job.input_datasets:
                 inp_data[dataset_assoc.name] = dataset_assoc.dataset
             return self.exec_after_process( job_wrapper.app, inp_data, {}, job_wrapper.get_param_dict(), job = job )
-
+            
+class ExportHistoryTool( Tool ):
+    tool_type = 'export_history'
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}

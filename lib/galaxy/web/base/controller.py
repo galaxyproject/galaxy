@@ -67,7 +67,11 @@ class SharableItemSecurity:
             if ( item.user != user ) and ( not item.importable ) and ( user not in item.users_shared_with_dot_users ):
                 error( "%s is not accessible to current user" % item.__class__.__name__ )
         return item
-        
+
+#
+# TODO: need to move UsesHistory, etc. mixins to better location - perhaps lib/galaxy/model/XXX ?
+#       
+
 class UsesHistoryDatasetAssociation:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
     def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False ):

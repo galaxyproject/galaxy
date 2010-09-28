@@ -1,5 +1,6 @@
 import logging, threading, sys, os, time, subprocess, string, tempfile, re, traceback, shutil
 
+import galaxy
 from galaxy import util, model
 from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
@@ -288,7 +289,8 @@ class JobWrapper( object ):
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         self.output_paths = None
         self.tool_provided_job_metadata = None
-        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job ) #wrapper holding the info required to restore and clean up from files used for setting metadata externally
+        # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
+        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )        
         
     def get_param_dict( self ):
         """
@@ -591,6 +593,7 @@ class JobWrapper( object ):
                 shutil.rmtree( self.working_directory )
             if self.app.config.set_metadata_externally:
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
+            galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
         

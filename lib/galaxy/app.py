@@ -8,6 +8,7 @@ import galaxy.model
 import galaxy.datatypes.registry
 import galaxy.security
 from galaxy.tags.tag_handler import GalaxyTagHandler
+from galaxy.tools.imp_exp import load_history_imp_exp_tools
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -46,6 +47,8 @@ class UniverseApplication( object ):
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
         # Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
+        # Load history import/export tools
+        load_history_imp_exp_tools( self.toolbox )
         #load external metadata tool
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load datatype indexers

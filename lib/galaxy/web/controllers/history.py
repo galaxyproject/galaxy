@@ -485,7 +485,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                 #
                 # Create history.
                 #
-                history_attr_file_name = '%s/%s' % ( temp_output_dir, 'history_attrs.txt')
+                history_attr_file_name = os.path.join( temp_output_dir, 'history_attrs.txt')
                 if not file_in_dir( history_attr_file_name, temp_output_dir ):
                     raise Exception( "Invalid location for history attributes file: %s" % history_attr_file_name )
                 history_attr_in = open( history_attr_file_name, 'rb' )
@@ -525,7 +525,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                 #
                 # Create datasets.
                 #
-                datasets_attrs_file_name = '%s/%s' % ( temp_output_dir, 'datasets_attrs.txt')
+                datasets_attrs_file_name = os.path.join( temp_output_dir, 'datasets_attrs.txt')
                 if not file_in_dir( datasets_attrs_file_name, temp_output_dir ):
                     raise Exception( "Invalid location for dataset attributes file: %s" % datasets_attrs_file_name )
                 datasets_attr_in = open( datasets_attrs_file_name, 'rb' )
@@ -568,8 +568,8 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                     trans.sa_session.flush()
         
                     # Do security check and copy dataset data.
-                    temp_dataset_file_name = '%s/datasets/%s' % ( temp_output_dir, dataset_attrs['file_name'] )
-                    if not file_in_dir( temp_dataset_file_name, temp_output_dir + "/datasets" ):
+                    temp_dataset_file_name = os.path.join( temp_output_dir, dataset_attrs['file_name'] )
+                    if not file_in_dir( temp_dataset_file_name, os.path.join( temp_output_dir, "datasets" ) ):
                         raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
                     shutil.move( temp_dataset_file_name, hda.file_name )
         
@@ -585,7 +585,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                 #
         
                 # Read jobs attributes.
-                jobs_attr_file_name = '%s/%s' % ( temp_output_dir, 'jobs_attrs.txt')
+                jobs_attr_file_name = os.path.join( temp_output_dir, 'jobs_attrs.txt')
                 if not file_in_dir( jobs_attr_file_name, temp_output_dir ):
                     raise Exception( "Invalid location for jobs' attributes file: %s" % jobs_attr_file_name )
                 jobs_attr_in = open( jobs_attr_file_name, 'rb' )
@@ -670,65 +670,20 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
             web.FormBuilder( web.url_for(), "Import a History from an Archive", submit_text="Submit" )
                 .add_input( "file", "Archived History File", "archived_history", value=None, error=None ) 
                             )
-      
+                            
+    @web.expose      
     def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
-        """ Export a history. """
-        
+        """ Export a history to an archive. """
+                
+        #        
         # Convert options to booleans.
+        #
         if isinstance( gzip, basestring ):
             gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )            
         if isinstance( include_hidden, basestring ):
             include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
         if isinstance( include_deleted, basestring ):
             include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )    
-        
-        #
-        # Helper methods/classes.
-        #
-
-        # TODO: replace unicode wrangler with to_unicode_utf8 in web helper.
-        def unicode_wrangler( a_string ):
-            """ Convert strings to unicode in utf-8 format. Method should be used for all user input. """
-            a_string_type = type ( a_string )
-            if a_string_type is str:
-                return unicode( a_string, 'utf-8' )
-            elif a_string_type is unicode:
-                return a_string.encode( 'utf-8' )
-
-        def get_item_tag_dict( item ):
-            """ Create dictionary of an item's tags. """
-            tags = {}
-            for tag in item.tags:
-                tag_user_tname = unicode_wrangler( tag.user_tname )
-                tag_user_value = unicode_wrangler( tag.user_value )
-                tags[ tag_user_tname ] = tag_user_value
-            return tags    
-            
-        class HistoryDatasetAssociationEncoder( simplejson.JSONEncoder ):
-            """ Custom JSONEncoder for a HistoryDatasetAssociation. """
-            def default( self, obj ):
-                """ Encode an HDA, default encoding for everything else. """
-                if isinstance( obj, model.HistoryDatasetAssociation ):
-                    return {
-                        "__HistoryDatasetAssociation__" : True,
-                        "create_time" : obj.create_time.__str__(),
-                        "update_time" : obj.update_time.__str__(),
-                        "hid" : obj.hid,
-                        "name" : unicode_wrangler( obj.name ),
-                        "info" : unicode_wrangler( obj.info ),
-                        "blurb" : obj.blurb,
-                        "peek" : obj.peek,
-                        "extension" : obj.extension,
-                        "metadata" : dict( obj.metadata.items() ),
-                        "parent_id" : obj.parent_id,
-                        "designation" : obj.designation,
-                        "deleted" : obj.deleted,
-                        "visible" : obj.visible,
-                        "file_name" : obj.file_name.split('/')[-1],
-                        "annotation" : unicode_wrangler( obj.annotation ),
-                        "tags" : get_item_tag_dict( obj ),
-                    }       
-                return simplejson.JSONEncoder.default( self, obj )
         
         #
         # Get history to export.
@@ -738,163 +693,47 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         else:
             # Use current history.
             history = trans.history
+            id = trans.security.encode_id( history.id )
         
         if not history:
             return trans.show_error_message( "This history does not exist or you cannot export this history." )
             
-        history_export_dir_name = "./database/export"
-        archive_file_name = '%s/%s.tar' % ( history_export_dir_name, trans.security.encode_id( history.id ) )
-        if gzip:
-            archive_file_name += '.gz'
-        
         #
-        # Do export.
+        # If history has already been exported and it has not changed since export, stream it.
         #
-        
-        # TODO: for now, always create archive when exporting; this is for debugging purposes.
-        if True:
-            # Condition for only creating an archive when history is newer than archive:
-            #not os.path.exists ( archive_file_name ) or datetime.utcfromtimestamp( os.path.getmtime( archive_file_name ) ) < history.update_time:
-            
-            # Create archive and stream back to client.
-            try:    
-                # Use temporary directory for temp output files.
-                temp_output_dir = tempfile.mkdtemp()
-        
-                #
-                # Write history attributes to file.
-                #
-                history_attrs = {
-                    "create_time" : history.create_time.__str__(),
-                    "update_time" : history.update_time.__str__(),
-                    "name" : unicode_wrangler( history.name ),
-                    "hid_counter" : history.hid_counter,
-                    "genome_build" : history.genome_build,
-                    "annotation" : unicode_wrangler( self.get_item_annotation_str( trans.sa_session, history.user, history ) ),
-                    "tags" : get_item_tag_dict( history )
-                }
-                history_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
-                history_attrs_out = open( history_attrs_file_name, 'w' )
-                history_attrs_out.write( to_json_string( history_attrs ) )
-                history_attrs_out.close()
-                                    
-                #
-                # Write datasets' attributes to file.
-                #
-                datasets = self.get_history_datasets( trans, history )
-                included_datasets = []
-                datasets_attrs = []
-                for dataset in datasets:
-                    if not dataset.visible and not include_hidden:
-                        continue
-                    if dataset.deleted and not include_deleted:
-                        continue
-                    dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
-                    datasets_attrs.append( dataset )
-                    included_datasets.append( dataset )
-                datasets_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
-                datasets_attrs_out = open( datasets_attrs_file_name, 'w' )
-                datasets_attrs_out.write( to_json_string( datasets_attrs, cls=HistoryDatasetAssociationEncoder ) )
-                datasets_attrs_out.close()
-        
-                #
-                # Write jobs attributes file.
-                #
-        
-                # Get all jobs associated with included HDAs.
-                jobs_dict = {}
-                for hda in included_datasets:
-                    # Get the associated job, if any. If this hda was copied from another,
-                    # we need to find the job that created the origial hda
-                    job_hda = hda
-                    while job_hda.copied_from_history_dataset_association: #should this check library datasets as well?
-                        job_hda = job_hda.copied_from_history_dataset_association
-                    if not job_hda.creating_job_associations:
-                        # No viable HDA found.
-                        continue
-            
-                    # Get the job object.
-                    job = None
-                    for assoc in job_hda.creating_job_associations:
-                        job = assoc.job
-                        break
-                    if not job:
-                        # No viable job.
-                        continue
-                
-                    jobs_dict[ job.id ] = job
-                
-                # Get jobs' attributes.
-                jobs_attrs = []
-                for id, job in jobs_dict.items():
-                    job_attrs = {}
-                    job_attrs[ 'tool_id' ] = job.tool_id
-                    job_attrs[ 'tool_version' ] = job.tool_version
-                    job_attrs[ 'state' ] = job.state
-                                    
-                    # Get the job's parameters
-                    try:
-                        params_objects = job.get_param_values( trans.app )
-                    except:
-                        # Could not get job params.
-                        continue
-
-                    params_dict = {}
-                    for name, value in params_objects.items():
-                        params_dict[ name ] = value
-                    job_attrs[ 'params' ] = params_dict
-            
-                    # Get input, output datasets.
-                    input_datasets = [ assoc.dataset.hid for assoc in job.input_datasets ]
-                    job_attrs[ 'input_datasets' ] = input_datasets
-                    output_datasets = [ assoc.dataset.hid for assoc in job.output_datasets ]
-                    job_attrs[ 'output_datasets' ] = output_datasets
-            
-                    jobs_attrs.append( job_attrs )
-            
-                jobs_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
-                jobs_attrs_out = open( jobs_attrs_file_name, 'w' )
-                jobs_attrs_out.write( to_json_string( jobs_attrs, cls=HistoryDatasetAssociationEncoder ) )
-                jobs_attrs_out.close()
-
-                #
-                # Write archive and include: (a) history attributes file; (b) datasets attributes file; 
-                # (c) jobs attributes file; and (d) datasets files.
-                #
-                tarfile_mode = "w"
-                if gzip:
-                    tarfile_mode += ":gz"
-                history_archive = tarfile.open( archive_file_name, tarfile_mode )
-                history_archive.add( history_attrs_file_name, arcname="history_attrs.txt" )
-                history_archive.add( datasets_attrs_file_name, arcname="datasets_attrs.txt" )
-                history_archive.add( jobs_attrs_file_name, arcname="jobs_attrs.txt" )
-                for i, dataset in enumerate( included_datasets ):
-                    history_archive.add( dataset.file_name, arcname="datasets/%s" % dataset.file_name.split('/')[-1] )
-                history_archive.close()
-
-                # Remove temp directory.
-                if os.path.exists( temp_output_dir ):
-                    shutil.rmtree( temp_output_dir )        
-            except Exception, e:
-                return trans.show_error_message( 'Error creating history archive. ' + str( e ) )
-        
-        #
-        # Stream archive.
-        #
-        if os.path.exists( archive_file_name ):
-            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            hname = history.name
-            hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
-            trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-History-%s.tar" % ( hname )
-            if gzip:
-                trans.response.headers["Content-Disposition"] += ".gz"
-                trans.response.set_content_type( 'application/x-gzip' )
-            else:
-                trans.response.set_content_type( 'application/x-tar' )
-            return open( archive_file_name )
-        else:
-            return trans.show_error_message( 'Archive file does not exist.' )
-    
+        jeha = trans.sa_session.query( model.JobExportHistoryArchive ).filter_by( history=history ) \
+                .order_by( model.JobExportHistoryArchive.id.desc() ).first()
+        if jeha and ( jeha.job.state not in [ model.Job.states.ERROR, model.Job.states.DELETED ] ) \
+           and jeha.job.update_time > history.update_time:
+            if jeha.job.state == model.Job.states.OK:
+                # Stream archive.
+                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                hname = history.name
+                hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
+                trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-History-%s.tar" % ( hname )
+                if jeha.compressed:
+                    trans.response.headers["Content-Disposition"] += ".gz"
+                    trans.response.set_content_type( 'application/x-gzip' )
+                else:
+                    trans.response.set_content_type( 'application/x-tar' )
+                return open( jeha.dataset.file_name )
+            elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
+                return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
+                        % ( { 'n' : history.name, 's' : url_for( action="export_archive", id=id, qualified=True ) } ) )
+                    
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.tools_by_id[ '__EXPORT_HISTORY__' ]
+        params = { 
+            'history_to_export' : history, 
+            'compress' : gzip, 
+            'include_hidden' : include_hidden, 
+            'include_deleted' : include_deleted }
+        history_exp_tool.execute( trans, incoming = params, set_output_hid = True )
+        return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
+                                    the archive or import it to another Galaxy server: \
+                                    <a href='%(u)s'>%(u)s</a>" \
+                                    % ( { 'n' : history.name, 'u' : url_for( action="export_archive", id=id, qualified=True ) } ) )
+                    
     @web.expose
     @web.json
     @web.require_login( "get history name and link" )
@@ -904,7 +743,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         
         if self.create_item_slug( trans.sa_session, history ):
             trans.sa_session.flush()
-        return_dict = { "name" : history.name, "link" : url_for( action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
+        return_dict = { 
+            "name" : history.name, 
+            "link" : url_for( action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
         return return_dict
         
     @web.expose

@@ -373,6 +373,17 @@ JobExternalOutputMetadata.table = Table( "job_external_output_metadata", metadat
     Column( "filename_override_metadata", String( 255 ) ),
     Column( "job_runner_external_pid", String( 255 ) ) )
     
+JobExportHistoryArchive.table = Table( "job_export_history_archive", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "compressed", Boolean, index=True, default=False ),
+    Column( "history_attrs_filename", TEXT ),
+    Column( "datasets_attrs_filename", TEXT ),
+    Column( "jobs_attrs_filename", TEXT )
+    )
+    
 PostJobAction.table = Table("post_job_action", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False),
@@ -1204,6 +1215,11 @@ assign_mapper( context, JobExternalOutputMetadata, JobExternalOutputMetadata.tab
     properties=dict( job = relation( Job ), 
                      history_dataset_association = relation( HistoryDatasetAssociation, lazy = False ),
                      library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, lazy = False ) ) )
+                     
+assign_mapper( context, JobExportHistoryArchive, JobExportHistoryArchive.table,
+    properties=dict( job = relation( Job ),
+                     history = relation( History ),
+                     dataset = relation( Dataset ) ) )
 
 assign_mapper( context, PostJobAction, PostJobAction.table,
     properties=dict(workflow_step = relation( WorkflowStep, backref='post_job_actions', primaryjoin=(WorkflowStep.table.c.id == PostJobAction.table.c.workflow_step_id))))

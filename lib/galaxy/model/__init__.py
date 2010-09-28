@@ -217,6 +217,18 @@ class JobExternalOutputMetadata( object ):
         elif self.library_dataset_dataset_association:
             return self.library_dataset_dataset_association
         return None
+        
+class JobExportHistoryArchive( object ):
+    def __init__( self, job=None, history=None, dataset=None, compressed=False, \
+                  history_attrs_filename=None, datasets_attrs_filename=None, 
+                  jobs_attrs_filename=None ):
+        self.job = job
+        self.history = history
+        self.dataset = dataset
+        self.compressed = compressed
+        self.history_attrs_filename = history_attrs_filename
+        self.datasets_attrs_filename = datasets_attrs_filename
+        self.jobs_attrs_filename = jobs_attrs_filename
 
 class Group( object ):
     def __init__( self, name = None ):

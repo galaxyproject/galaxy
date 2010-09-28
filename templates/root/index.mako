@@ -43,9 +43,9 @@
             "Show structure": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
             },
-            ##"Export to File": function() {
-            ##    galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
-            ##},
+            "Export to File": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
+            },
             "Delete": function()
             {
                 if ( confirm( "Really delete the current history?" ) )
