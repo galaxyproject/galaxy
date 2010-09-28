@@ -1,7 +1,7 @@
-<tool id="ncbi_tblastn_wrapper" name="NCBI BLAST+ tblastn" version="0.0.1">
-    <description>Search translated nucleotide database with protein query sequence(s)</description>
+<tool id="ncbi_tblastx_wrapper" name="NCBI BLAST+ tblastx" version="0.0.1">
+    <description>Search translated nucleotide database with translated nucleotide query sequence(s)</description>
     <command>
-      tblastn
+      tblastx
        -query "$query"
        -db "$database"
        -evalue $evalue_cutoff
@@ -11,7 +11,7 @@
        -num_threads 8
     </command>
     <inputs>
-        <param name="query" type="data" format="fasta" label="Protein query sequence(s)"/> 
+        <param name="query" type="data" format="fasta" label="Nucleotide query sequence(s)"/> 
         <param name="database" type="select" display="radio" label="Nucelotide BLAST database">
             <options from_file="blastdb.loc">
               <column name="name" index="0"/>
@@ -42,7 +42,7 @@
     </inputs>
     <outputs>
         <!-- TODO, can I get the caption rather than the value? e.g. 'NT' rather than a long path? -->
-        <data name="output1" format="tabular" label="tblastn on ${database.value_label}">
+        <data name="output1" format="tabular" label="tblastx on ${database.value_label}">
             <change_format>
                 <when input="out_format" value="0" format="txt"/>
             </change_format>
@@ -55,20 +55,33 @@
         <requirement type="binary">blastn</requirement>
     </requirements>
     <tests>
+        <test>
+            <param name="input_query" value="megablast_wrapper_test1.fa" ftype="fasta"/>
+            <!-- database needs to match the entry in the blastdb.loc file (first column), which includes the last update date if appropriate --> 
+            <param name="database" value="phiX" />
+            <param name="blast_type" value="megablast" />
+            <!--
+            <param name="word_size" value="28" />
+            <param name="iden_cutoff" value="99.0" />
+            -->
+            <param name="evalue_cutoff" value="10.0" />
+            <param name="filter_query" value="yes" />
+            <param name="out_format" value="6" />
+            <output name="output1" file="megablast_wrapper_test1.out"/> 
+        </test>
     </tests>
     <help>
     
 .. class:: warningmark
 
-**Note**. Database searches may take substantial amount of time.
-For large input datasets it is advisable to allow overnight processing.  
+**Note**. Database searches may take substantial amount of time. For large input datasets it is advisable to allow overnight processing.  
 
 -----
 
 **What it does**
 
 Search a *translated nucleotide database* using a *protein query*,
-using the NCBI BLAST+ tblastn command line tool.
+using the NCBI BLAST+ tblastx command line tool.
 
 -----
 

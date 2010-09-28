@@ -1,7 +1,7 @@
-<tool id="ncbi_tblastn_wrapper" name="NCBI BLAST+ tblastn" version="0.0.1">
-    <description>Search translated nucleotide database with protein query sequence(s)</description>
+<tool id="ncbi_blastx_wrapper" name="NCBI BLAST+ blastx" version="0.0.1">
+    <description>Search protein database with translated nucleotide query sequence(s)</description>
     <command>
-      tblastn
+      blastx
        -query "$query"
        -db "$database"
        -evalue $evalue_cutoff
@@ -11,9 +11,9 @@
        -num_threads 8
     </command>
     <inputs>
-        <param name="query" type="data" format="fasta" label="Protein query sequence(s)"/> 
-        <param name="database" type="select" display="radio" label="Nucelotide BLAST database">
-            <options from_file="blastdb.loc">
+        <param name="query" type="data" format="fasta" label="Nucleotide query sequence(s)"/> 
+        <param name="database" type="select" display="radio" label="Protein BLAST database">
+            <options from_file="blastdb_p.loc">
               <column name="name" index="0"/>
               <column name="value" index="1"/>
             </options>
@@ -41,8 +41,8 @@
         </conditional>
     </inputs>
     <outputs>
-        <!-- TODO, can I get the caption rather than the value? e.g. 'NT' rather than a long path? -->
-        <data name="output1" format="tabular" label="tblastn on ${database.value_label}">
+        <!-- TODO, can I get the caption rather than the value? e.g. 'NR' rather than a long path? -->
+        <data name="output1" format="tabular" label="blastx on ${database.value_label}">
             <change_format>
                 <when input="out_format" value="0" format="txt"/>
             </change_format>
@@ -67,8 +67,8 @@ For large input datasets it is advisable to allow overnight processing.
 
 **What it does**
 
-Search a *translated nucleotide database* using a *protein query*,
-using the NCBI BLAST+ tblastn command line tool.
+Search a *protein database* using a *translated nucleotide query*,
+using the NCBI BLAST+ blastx command line tool.
 
 -----
 

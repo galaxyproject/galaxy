@@ -12,8 +12,8 @@
        -num_threads 8
     </command>
     <inputs>
-        <param name="query" type="data" format="fasta" label="Query sequence(s)"/> 
-        <param name="database" type="select" display="radio" label="Nucelotide BLAST database">
+        <param name="query" type="data" format="fasta" label="Nucleotide query sequence(s)"/> 
+        <param name="database" type="select" display="radio" label="Nucleotide BLAST database">
             <options from_file="blastdb.loc">
               <column name="name" index="0"/>
               <column name="value" index="1"/>
@@ -26,13 +26,6 @@
             <option value="dc-megablast">dc-megablast</option>
             <option value="vecscreen">vecscreen</option>
         </param>
-        <!-- TODO - integer, min 4, what default?
-        <param name="word_size" type="integer" label="using word size" help="Size of best perfect match">
-            <option value="28">28</option>
-            <option value="16">16</option>
-        </param>
-        <param name="iden_cutoff" type="float" size="15" value="90.0" label="report hits above this identity" help="no cutoff if 0" />
-        -->
         <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff" />
         <param name="out_format" type="select" label="Output format">
             <option value="6">Tabular</option>
@@ -89,19 +82,22 @@
     
 .. class:: warningmark
 
-**Note**. Database searches may take substantial amount of time. For large input datasets it is advisable to allow overnight processing.  
+**Note**. Database searches may take substantial amount of time.
+For large input datasets it is advisable to allow overnight processing.  
 
 -----
 
 **What it does**
 
-This tool runs NCBI BLAST+ blastn tool (which include *megablast*).
+Search a *nucleotide database* using a *nucleotide query*,
+using the NCBI BLAST+ blastn command line tool.
+Algorithms include blastn, megablast, and discontiguous megablast.
 
 -----
 
 **Output format**
 
-The default Output of this tool is tabular, containing 12 columns:
+The default output of this tool is tabular, containing 12 columns:
 
 1. Id of your sequence 
 2. GI of the database hit 
