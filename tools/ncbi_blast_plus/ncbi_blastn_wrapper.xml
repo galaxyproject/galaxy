@@ -1,5 +1,5 @@
 <tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.1">
-    <description>Use NCBI BLAST+ tool to search a nucleotide database with nucleotide query sequence(s)</description>
+    <description>Search nucleotide database with nucleotide query sequence(s)</description>
     <command>
       blastn
        -query "$query"

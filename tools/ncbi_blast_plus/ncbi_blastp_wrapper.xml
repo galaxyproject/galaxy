@@ -1,5 +1,5 @@
 <tool id="ncbi_blastp_wrapper" name="NCBI BLAST+ blastp" version="0.0.1">
-    <description>Use NCBI BLAST+ tool to search a protein database with protein query sequence(s)</description>
+    <description>Search protein database with protein query sequence(s)</description>
     <command>
       blastp
        -query "$query"
