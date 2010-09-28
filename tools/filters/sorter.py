@@ -39,7 +39,7 @@ def main():
         stop_err('Error parsing input parameters\n' + str(ex))
 
     # Launch sort.
-    cmd = "sort -f -t $'\t' %s %s %s" % (' '.join(cols), outputfile, inputfile)
+    cmd = "sort -f -t '	' %s %s %s" % (' '.join(cols), outputfile, inputfile)
     try:
         os.system(cmd)
     except Exception, ex:
