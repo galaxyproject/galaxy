@@ -1,0 +1,26 @@
+<tool id="blast_filter_fasta" name="BLAST filter FASTA file" version="0.0.1">
+    <description>Divide a FASTA file based on BLAST hits</description>
+    <command interpreter="python">
+      blast_filter_fasta.py $blast_file $in_file $out_positive_file $out_negative_file
+    </command>
+    <inputs>
+        <param name="blast_file" type="data" format="tabular" label="Tabular BLAST output"/> 
+        <param name="in_file" type="data" format="fasta" label="BLAST query FASTA file"/> 
+    </inputs>
+    <outputs>
+        <data name="out_positive_file" format="fasta" label="Sequences with BLAST hits" />
+        <data name="out_negative_file" format="fasta" label="Sequences without BLAST hits" />
+    </outputs>
+    <requirements>
+    </requirements>
+    <tests>
+    </tests>
+    <help>
+    
+**What it does**
+
+Takes a multi-sequence FASTA and the tabular output of running BLAST on it, and
+divides the FASTA file in two: those sequence with a BLAST hit, and those without.
+
+    </help>
+</tool>
