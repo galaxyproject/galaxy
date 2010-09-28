@@ -56,12 +56,12 @@ single-SNP associations), please use the GPASS tool instead.**
 
 **Dataset formats**
 
-The input dataset is in lped_ format.  The output datasets are both
-tabular_.
+The input dataset must be in lped_ format.  The output datasets are both tabular_.
+(`Dataset missing?`_)
 
 .. _lped: ./static/formatHelp.html#lped
-
 .. _tabular: ./static/formatHelp.html#tabular
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -77,9 +77,9 @@ This tool also partitions SNPs into blocks based on linkage disequilibrium (LD).
 
 - input map file::
 
-    1 rs0 0 738547
-    1 rs1 0 5597094
-    1 rs2 0 9424115
+    1  rs0  0  738547
+    1  rs1  0  5597094
+    1  rs2  0  9424115
     etc.
 
 - input ped file::
@@ -90,33 +90,33 @@ This tool also partitions SNPs into blocks based on linkage disequilibrium (LD).
 
 - first output file, significance.txt::
 
-    ID      chr     position        results
-    rs0     chr1    738547          10 20 score= 45.101397 , df= 8 , p= 0.000431 , N=1225
+    ID   chr   position  results
+    rs0  chr1  738547    10 20 score= 45.101397 , df= 8 , p= 0.000431 , N=1225
 
 - second output file, posterior.txt::
 
-    id:     chr position     marginal + interaction = total posterior
-    0:      1 738547        0.0000 + 0.0000 = 0.0000
-    1:      1 5597094       0.0000 + 0.0000 = 0.0000
-    2:      1 9424115       0.0000 + 0.0000 = 0.0000
-    3:      1 13879818      0.0000 + 0.0000 = 0.0000
-    4:      1 13934751      0.0000 + 0.0000 = 0.0000
-    5:      1 16803491      0.0000 + 0.0000 = 0.0000
-    6:      1 17236854      0.0000 + 0.0000 = 0.0000
-    7:      1 18445387      0.0000 + 0.0000 = 0.0000
-    8:      1 21222571      0.0000 + 0.0000 = 0.0000
+    id:  chr position  marginal + interaction = total posterior
+    0:   1 738547      0.0000 + 0.0000 = 0.0000
+    1:   1 5597094     0.0000 + 0.0000 = 0.0000
+    2:   1 9424115     0.0000 + 0.0000 = 0.0000
+    3:   1 13879818    0.0000 + 0.0000 = 0.0000
+    4:   1 13934751    0.0000 + 0.0000 = 0.0000
+    5:   1 16803491    0.0000 + 0.0000 = 0.0000
+    6:   1 17236854    0.0000 + 0.0000 = 0.0000
+    7:   1 18445387    0.0000 + 0.0000 = 0.0000
+    8:   1 21222571    0.0000 + 0.0000 = 0.0000
     etc.
 
-    id:     chr position block_boundary     | allele counts in cases and controls
-    0:      1 738547        1.000   | 156 93 251 | 169 83 248 
-    1:      1 5597094       1.000   | 323 19 158 | 328 16 156 
-    2:      1 9424115       1.000   | 366 6 128 | 369 11 120 
-    3:      1 13879818      1.000   | 252 31 217 | 278 32 190 
-    4:      1 13934751      1.000   | 246 64 190 | 224 58 218 
-    5:      1 16803491      1.000   | 91 160 249 | 91 174 235 
-    6:      1 17236854      1.000   | 252 43 205 | 249 44 207 
-    7:      1 18445387      1.000   | 205 66 229 | 217 56 227 
-    8:      1 21222571      1.000   | 353 9 138 | 352 8 140 
+    id:  chr position block_boundary  | allele counts in cases and controls
+    0:   1 738547      1.000          | 156 93 251 | 169 83 248 
+    1:   1 5597094     1.000          | 323 19 158 | 328 16 156 
+    2:   1 9424115     1.000          | 366 6 128 | 369 11 120 
+    3:   1 13879818    1.000          | 252 31 217 | 278 32 190 
+    4:   1 13934751    1.000          | 246 64 190 | 224 58 218 
+    5:   1 16803491    1.000          | 91 160 249 | 91 174 235 
+    6:   1 17236854    1.000          | 252 43 205 | 249 44 207 
+    7:   1 18445387    1.000          | 205 66 229 | 217 56 227 
+    8:   1 21222571    1.000          | 353 9 138 | 352 8 140 
     etc.
 
   The "id" field is an internally used index.
@@ -125,8 +125,13 @@ This tool also partitions SNPs into blocks based on linkage disequilibrium (LD).
 
 **References**
 
-Zhang Y and Liu JS (2007). Bayesian Inference of Epistatic Interactions in Case-Control Studies. Nature Genetics, 39:1167-1173
+Zhang Y, Liu JS. (2007)
+Bayesian inference of epistatic interactions in case-control studies.
+Nat Genet. 39(9):1167-73. Epub 2007 Aug 26.
 
-Zhang Y, Zhang J, Liu JS (2010) Block-based Bayesian Epistasis Association Mapping with Application to WTCCC Type 1 Diabetes Data. Submitted.
+Zhang Y, Zhang J, Liu JS. (2010)
+Block-based bayesian epistasis association mapping with application to WTCCC type 1 diabetes data.
+Submitted.
+
   </help>
 </tool>

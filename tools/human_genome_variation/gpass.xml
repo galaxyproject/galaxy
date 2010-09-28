@@ -36,11 +36,12 @@
   <help>
 **Dataset formats**
 
-The input dataset must be lped_, and the output is tabular_.
+The input dataset must be in lped_ format, and the output is tabular_.
+(`Dataset missing?`_)
 
 .. _lped: ./static/formatHelp.html#lped
-
 .. _tabular: ./static/formatHelp.html#tab
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -80,9 +81,9 @@ Otherwise use permutation.
 
 - input map file::
 
-    1 rs0 0 738547
-    1 rs1 0 5597094
-    1 rs2 0 9424115
+    1  rs0  0  738547
+    1  rs1  0  5597094
+    1  rs2  0  9424115
     etc.
 
 - input ped file::
@@ -93,17 +94,19 @@ Otherwise use permutation.
 
 - output dataset, showing significant SNPs and their p-values and FDR::
 
-    #ID     chr     position        Statistics      adj-Pvalue      FDR
-    rs35    chr1    136606952       4.890849        0.991562        0.682138
-    rs36    chr1    137748344       4.931934        0.991562        0.795827
-    rs44    chr2    14423047        7.712832        0.665086        0.218776
+    #ID   chr   position   Statistics  adj-Pvalue  FDR
+    rs35  chr1  136606952  4.890849    0.991562    0.682138
+    rs36  chr1  137748344  4.931934    0.991562    0.795827
+    rs44  chr2  14423047   7.712832    0.665086    0.218776
     etc.
 
 -----
 
 **Reference**
 
-Zhang Y and Liu JS (2010). Fast and Accurate Significance Approximation for
-Genome-wide Association Studies, submitted.
+Zhang Y, Liu JS. (2010)
+Fast and accurate significance approximation for genome-wide association studies.
+Submitted.
+
   </help>
 </tool>

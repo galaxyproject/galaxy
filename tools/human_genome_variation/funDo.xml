@@ -65,32 +65,37 @@ Typing::
 
 results in::
 
-    1.          2.              3.              4.      5.      6.      7.              
-    chr11	89507465	89565427	+	NAALAD2	10003	Adenocarcinoma
-    chr15	50189113	50192264	-	BCL2L10	10017	Carcinoma
-    chr7	150535855	150555250	-	ABCF2	10061	Clear cell carcinoma
-    chr7	150540508	150555250	-	ABCF2	10061	Clear cell carcinoma
-    chr10	134925911	134940397	-	ADAM8	101	Adenocarcinoma
-    chr10	134925911	134940397	-	ADAM8	101	Adenocarcinoma
+    1.     2.         3.         4. 5.       6.     7.
+    chr11  89507465   89565427   +  NAALAD2  10003  Adenocarcinoma
+    chr15  50189113   50192264   -  BCL2L10  10017  Carcinoma
+    chr7   150535855  150555250  -  ABCF2    10061  Clear cell carcinoma
+    chr7   150540508  150555250  -  ABCF2    10061  Clear cell carcinoma
+    chr10  134925911  134940397  -  ADAM8    101    Adenocarcinoma
+    chr10  134925911  134940397  -  ADAM8    101    Adenocarcinoma
     etc.
 
 where the column contents are as follows::
 
- 1. chromosome name.
- 2. start position of the gene.
- 3. end position of the gene.
- 4. strand.
- 4. gene name.
- 6. Entrez Gene ID.
- 7. disease term.
+ 1. chromosome name
+ 2. start position of the gene
+ 3. end position of the gene
+ 4. strand
+ 4. gene name
+ 6. Entrez Gene ID
+ 7. disease term
 
 -----
 
 **References**
 
-Pan Du, Gang Feng,Jared Flatow, Jie Song, Michelle Holko, Warren A. Kibbe1 and
-Simon M. Lin.  From disease ontology to disease-ontology lite: statistical methods to adapt a general-purpose ontology for the test of gene-ontology associations.  Bioinformatics (2009) 25 (12):i63-i68. 
+Du P, Feng G, Flatow J, Song J, Holko M, Kibbe WA, Lin SM. (2009)
+From disease ontology to disease-ontology lite: statistical methods to adapt a general-purpose
+ontology for the test of gene-ontology associations.
+Bioinformatics. 25(12):i63-8.
 
-Osborne JD, Flatow J, Holko M, Lin SM, Kibbe WA, Zhu LJ, Danila MI, Feng G, Chisholm RL. Annotating the human genome with Disease Ontology. BMC Genomics (2009) 10 S1:S6.
+Osborne JD, Flatow J, Holko M, Lin SM, Kibbe WA, Zhu LJ, Danila MI, Feng G, Chisholm RL. (2009)
+Annotating the human genome with Disease Ontology.
+BMC Genomics. 10 Suppl 1:S6.
+
   </help>
 </tool>

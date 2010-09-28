@@ -74,10 +74,11 @@ The list is limited to 400 IDs.
 
 The input dataset is tabular_ format.  The output dataset is html_ format with 
 a link to the DAVID website as described below.
+(`Dataset missing?`_)
 
 .. _tabular: ./static/formatHelp.html#tab
-
 .. _html: ./static/formatHelp.html#html
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -97,8 +98,13 @@ lists of genes.
 
 **References**
 
-Huang DW, Sherman BT, Lempicki RA. Systematic and integrative analysis of large gene lists using DAVID Bioinformatics Resources. Nature Protoc. 2009;4(1):44-57.
+Huang DW, Sherman BT, Lempicki RA. (2009) Systematic and integrative analysis
+of large gene lists using DAVID bioinformatics resources.
+Nat Protoc. 4(1):44-57.
 
-Dennis G Jr, Sherman BT, Hosack DA, Yang J, Gao W, Lane HC, Lempicki RA.  DAVID: Database for Annotation, Visualization, and Integrated Discovery. Genome Biol. 2003;4(5):P3.
+Dennis G, Sherman BT, Hosack DA, Yang J, Gao W, Lane HC, Lempicki RA. (2003)
+DAVID: database for annotation, visualization, and integrated discovery.
+Genome Biol. 4(5):P3. Epub 2003 Apr 3.
+
   </help>
 </tool>

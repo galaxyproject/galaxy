@@ -76,15 +76,17 @@
   <help>
 .. class:: warningmark
 
-This currently works for builds hg18 or hg19.
+This currently works only for builds hg18 or hg19.
 
 -----
 
 **Dataset formats**
 
 The input and output datasets are tabular_. 
+(`Dataset missing?`_)
 
 .. _tabular: ./static/formatHelp.html#tab
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -114,40 +116,47 @@ Website: http://sift.jcvi.org/
 
 - input file::
 
-    chr3    81780820    +   T/C
-    chr2    230341630   +   G/A
-    chr2    43881517    +   A/T
-    chr2    43857514    +   T/C
-    chr6    88375602    +   G/A
-    chr22   29307353    -   T/A
-    chr10   115912482   -   G/T
-    chr10   115900918   -   C/T
-    chr16   69875502    +   G/T
+    chr3   81780820   +  T/C
+    chr2   230341630  +  G/A
+    chr2   43881517   +  A/T
+    chr2   43857514   +  T/C
+    chr6   88375602   +  G/A
+    chr22  29307353   -  T/A
+    chr10  115912482  -  G/T
+    chr10  115900918  -  C/T
+    chr16  69875502   +  G/T
     etc.
 
 - output file::
 
-    #Chrom Position  Strand Allele Codons  Transcript ID   Protein ID      Substitution Region   dbSNP ID     SNP Type      Prediction Score Median Info Num seqs at position User Comment
-    chr3   81780820  +      T/C    AGA-gGA ENST00000264326 ENSP00000264326 R190G        EXON CDS rs2229519:C  Nonsynonymous DAMAGING   0.04  3.06        149
-    chr2   230341630 +      G/T    -       ENST00000389045 ENSP00000373697 NA           EXON CDS rs1803846:A  Unknown       Not scored NA    NA          NA
-    chr2   43881517  +      A/T    ATA-tTA ENST00000260605 ENSP00000260605 I230L        EXON CDS rs11556157:T Nonsynonymous TOLERATED  0.47  3.19        7
-    chr2   43857514  +      T/C    TTT-TcT ENST00000260605 ENSP00000260605 F33S         EXON CDS rs2288709:C  Nonsynonymous TOLERATED  0.61  3.33        6
-    chr6   88375602  +      G/A    GTT-aTT ENST00000257789 ENSP00000257789 V217I        EXON CDS rs2307389:A  Nonsynonymous TOLERATED  0.75  3.17        13
-    chr22  29307353  +      T/A    ACC-tCC ENST00000335214 ENSP00000334612 T264S        EXON CDS rs42942:A    Nonsynonymous TOLERATED  0.4   3.14        23
-    chr10  115912482 +      C/A    CGA-CtA ENST00000369285 ENSP00000358291 R179L        EXON CDS rs12782946:T Nonsynonymous TOLERATED  0.06  4.32        2
-    chr10  115900918 +      G/A    CAA-tAA ENST00000369287 ENSP00000358293 Q271*        EXON CDS rs7095762:T  Nonsynonymous N/A        N/A   N/A         N/A
-    chr16  69875502  +      G/T    ACA-AaA ENST00000338099 ENSP00000337512 T608K        EXON CDS rs3096381:T  Nonsynonymous TOLERATED  0.12  3.41        3
+    #Chrom  Position   Strand  Allele  Codons   Transcript ID    Protein ID       Substitution  Region    dbSNP ID      SNP Type       Prediction  Score  Median Info  Num seqs at position  User Comment
+    chr3    81780820   +       T/C     AGA-gGA  ENST00000264326  ENSP00000264326  R190G         EXON CDS  rs2229519:C   Nonsynonymous  DAMAGING    0.04   3.06         149
+    chr2    230341630  +       G/T     -        ENST00000389045  ENSP00000373697  NA            EXON CDS  rs1803846:A   Unknown        Not scored  NA     NA           NA
+    chr2    43881517   +       A/T     ATA-tTA  ENST00000260605  ENSP00000260605  I230L         EXON CDS  rs11556157:T  Nonsynonymous  TOLERATED   0.47   3.19         7
+    chr2    43857514   +       T/C     TTT-TcT  ENST00000260605  ENSP00000260605  F33S          EXON CDS  rs2288709:C   Nonsynonymous  TOLERATED   0.61   3.33         6
+    chr6    88375602   +       G/A     GTT-aTT  ENST00000257789  ENSP00000257789  V217I         EXON CDS  rs2307389:A   Nonsynonymous  TOLERATED   0.75   3.17         13
+    chr22   29307353   +       T/A     ACC-tCC  ENST00000335214  ENSP00000334612  T264S         EXON CDS  rs42942:A     Nonsynonymous  TOLERATED   0.4    3.14         23
+    chr10   115912482  +       C/A     CGA-CtA  ENST00000369285  ENSP00000358291  R179L         EXON CDS  rs12782946:T  Nonsynonymous  TOLERATED   0.06   4.32         2
+    chr10   115900918  +       G/A     CAA-tAA  ENST00000369287  ENSP00000358293  Q271*         EXON CDS  rs7095762:T   Nonsynonymous  N/A         N/A    N/A          N/A
+    chr16   69875502   +       G/T     ACA-AaA  ENST00000338099  ENSP00000337512  T608K         EXON CDS  rs3096381:T   Nonsynonymous  TOLERATED   0.12   3.41         3
     etc.
 
 -----
 
 **References**
 
-Predicting Deleterious Amino Acid Substitutions, Genome Res. 2001 May; 11(5): 863.874.
-Accounting for Human Polymorphisms Predicted to Affect Protein Function, Genome Res. 2002 December; 436-446
+Ng PC, Henikoff S. (2001) Predicting deleterious amino acid substitutions.
+Genome Res. 11(5):863-74.
 
-SIFT: predicting amino acid changes that affect protein function, Nucleic Acids Research, 2003, Vol. 31, No. 13 3812-3814
-Predicting the effects of coding non-synonymous variants on protein function using the SIFT algorithm, Nature Protocols 4, - 1073 - 1081 (2009)
+Ng PC, Henikoff S. (2002) Accounting for human polymorphisms predicted to affect protein function.
+Genome Res. 12(3):436-46.
+
+Ng PC, Henikoff S. (2003) SIFT: Predicting amino acid changes that affect protein function.
+Nucleic Acids Res. 31(13):3812-4.
+
+Kumar P, Henikoff S, Ng PC. (2009) Predicting the effects of coding non-synonymous variants
+on protein function using the SIFT algorithm.
+Nat Protoc. 4(7):1073-81. Epub 2009 Jun 25.
 
   </help>
 </tool>

@@ -40,10 +40,11 @@ This currently works only for build hg18.
 
 **Dataset formats**
 
-The input dataset can be any interval_ format dataset.  
-The output dataset is also interval format.
+The input can be any interval_ format dataset.  The output is also in interval format.
+(`Dataset missing?`_)
 
 .. _interval: ./static/formatHelp.html#interval
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -64,41 +65,42 @@ only the score for the first nucleotide is returned.
 
 - input file, with SNPs::
 
-    chr22	16440426	14440427	C/T
-    chr22	15494851	14494852	A/G
-    chr22	14494911	14494912	A/T
-    chr22	14550435	14550436	A/G
-    chr22	14611956	14611957	G/T
-    chr22	14612076	14612077	A/G
-    chr22	14668537	14668538	C
-    chr22	14668703	14668704	A/T
-    chr22	14668775	14668776	G
-    chr22	14680074	14680075	A/T
+    chr22  16440426  14440427  C/T
+    chr22  15494851  14494852  A/G
+    chr22  14494911  14494912  A/T
+    chr22  14550435  14550436  A/G
+    chr22  14611956  14611957  G/T
+    chr22  14612076  14612077  A/G
+    chr22  14668537  14668538  C
+    chr22  14668703  14668704  A/T
+    chr22  14668775  14668776  G
+    chr22  14680074  14680075  A/T
     etc.
 
 - output file, showing conservation scores for primates::
 
-    chr22	16440426	14440427	C/T	0.509
-    chr22	15494851	14494852	A/G	0.427
-    chr22	14494911	14494912	A/T	NA
-    chr22	14550435	14550436	A/G	NA
-    chr22	14611956	14611957	G/T	-2.142
-    chr22	14612076	14612077	A/G	0.369
-    chr22	14668537	14668538	C	0.419
-    chr22	14668703	14668704	A/T	-1.462
-    chr22	14668775	14668776	G	0.470
-    chr22       14680074        14680075        A/T	0.303
+    chr22  16440426  14440427  C/T  0.509
+    chr22  15494851  14494852  A/G  0.427
+    chr22  14494911  14494912  A/T  NA
+    chr22  14550435  14550436  A/G  NA
+    chr22  14611956  14611957  G/T  -2.142
+    chr22  14612076  14612077  A/G  0.369
+    chr22  14668537  14668538  C    0.419
+    chr22  14668703  14668704  A/T  -1.462
+    chr22  14668775  14668776  G    0.470
+    chr22  14680074  14680075  A/T  0.303
     etc.
 
-"NA" means that the phyloP score was not available.
+  "NA" means that the phyloP score was not available.
 
 -----
 
 **Reference**
 
-Siepel A, Pollard KS, and Haussler D. New methods for detecting
-lineage-specific selection. In Proceedings of the 10th International
-Conference on Research in Computational Molecular Biology (RECOMB
-2006), pp. 190-205.
+Siepel A, Pollard KS, Haussler D. (2006)
+New methods for detecting lineage-specific selection.
+In Proceedings of the 10th International Conference on Research in Computational
+Molecular Biology (RECOMB 2006), pp. 190-205.
+
   </help>
 </tool>

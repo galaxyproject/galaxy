@@ -256,8 +256,10 @@
 **Dataset formats**
 
 The input and output datasets are tabular_.  
+(`Dataset missing?`_)
 
 .. _tabular: ./static/formatHelp.html#tab
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -280,35 +282,39 @@ Website: http://ctd.mdibl.org/
 **Examples**
 
 - input data file:
-	HBB
+    HBB
 
-- select column c1, Identifier type = Genes, and Data to extract = All disease relationships
+- select Column = c1, Identifier type = Genes, and Data to extract = All disease relationships
 
 - output file::
 
     #Input  GeneSymbol  GeneName          GeneID  DiseaseName                  DiseaseID     GeneDiseaseRelation         OmimIDs  PubMedIDs
-    hbb    HBB         hemoglobin, beta  3043    Abnormalities, Drug-Induced  MESH:D000014  inferred via Ethanol                 17676605|18926900
-    hbb    HBB         hemoglobin, beta  3043    Abnormalities, Drug-Induced  MESH:D000014  inferred via Valproic Acid           8875741
+    hbb     HBB         hemoglobin, beta  3043    Abnormalities, Drug-Induced  MESH:D000014  inferred via Ethanol                 17676605|18926900
+    hbb     HBB         hemoglobin, beta  3043    Abnormalities, Drug-Induced  MESH:D000014  inferred via Valproic Acid           8875741
     etc.
 
 Another example: 
 
 - same input file:
-       HBB
+    HBB
 
-- select column c1, Identifier type = Genes, Data to extract =  Curated chemical-gene interactions, and Interaction type = ANY
+- select Column = c1, Identifier type = Genes, Data to extract = Curated chemical-gene interactions, and Interaction type = ANY
 
 - output file::
 
     #Input  GeneSymbol  GeneName          GeneID  ChemicalName             ChemicalID  CasRN    Organism         OrganismID  Interaction                                         InteractionTypes  PubMedIDs
-    hbb    HBB         hemoglobin, beta  3043    1-nitronaphthalene       C016614     86-57-7  Macaca mulatta   9544        1-nitronaphthalene metabolite binds to HBB protein  binding           16453347
-    hbb    HBB         hemoglobin, beta  3043    2,6-diisocyanatotoluene  C026942     91-08-7  Cavia porcellus  10141       2,6-diisocyanatotoluene binds to HBB protein        binding           8728499
+    hbb     HBB         hemoglobin, beta  3043    1-nitronaphthalene       C016614     86-57-7  Macaca mulatta   9544        1-nitronaphthalene metabolite binds to HBB protein  binding           16453347
+    hbb     HBB         hemoglobin, beta  3043    2,6-diisocyanatotoluene  C026942     91-08-7  Cavia porcellus  10141       2,6-diisocyanatotoluene binds to HBB protein        binding           8728499
     etc.
 
 -----
 
 **Reference**
 
-Davis AP, Murphy CG, Saraceni-Richards CA, Rosenstein MC, Wiegers TC, Mattingly CJ. Comparative Toxicogenomics Database: a knowledgebase and discovery tool for chemical.gene.disease networks. Nucleic Acids Res. 2009 Jan;37(Database issue):D786-92.
+Davis AP, Murphy CG, Saraceni-Richards CA, Rosenstein MC, Wiegers TC, Mattingly CJ. (2009)
+Comparative Toxicogenomics Database: a knowledgebase and discovery tool for
+chemical-gene-disease networks.
+Nucleic Acids Res. 37(Database issue):D786-92. Epub 2008 Sep 9.
+
   </help>
 </tool>

@@ -36,15 +36,17 @@
       <output name="out_file1" file="linkToGProfile_1.out" />
     </test>
   </tests>
+
   <help>
 **Dataset formats**
 
 The input dataset is tabular_ with a column of identifiers.
 The output dataset is html_ with a link to g:Profiler.
+(`Dataset missing?`_)
 
 .. _tabular: ./static/formatHelp.html#tab
-
 .. _html: ./static/formatHelp.html#html
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -73,6 +75,9 @@ the results to run other g:Profiler tools using the same list of IDs.
 
 **Reference**
 
-\J. Reimand, M. Kull, H. Peterson, J. Hansen, J. Vilo: g:Profiler -- a web-based toolset for functional profiling of gene lists from large-scale experiments (2007) NAR 35 W193-W200
+Reimand J, Kull M, Peterson H, Hansen J, Vilo J. (2007) g:Profiler -- a web-based
+toolset for functional profiling of gene lists from large-scale experiments.
+Nucleic Acids Res. 35(Web Server issue):W193-200. Epub 2007 May 3.
+
   </help>
 </tool>

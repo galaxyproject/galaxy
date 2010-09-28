@@ -61,8 +61,10 @@
 **Dataset formats**
 
 The input format is interval_, and the output is an image in PDF format.
+(`Dataset missing?`_)
 
 .. _interval: ./static/formatHelp.html#interval
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -107,6 +109,9 @@ Here are some examples from the HilbertVis homepage, using ChIP-Seq data.
 
 **Reference**
 
-Anders S. (2009) Visualization of genomic data with the Hilbert curve.  Bioinformatics, 25:1231-1235.
+Anders S. (2009)
+Visualization of genomic data with the Hilbert curve.
+Bioinformatics. 25(10):1231-5. Epub 2009 Mar 17.
+
   </help>
 </tool>

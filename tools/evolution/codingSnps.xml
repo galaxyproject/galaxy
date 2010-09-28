@@ -53,12 +53,12 @@ Use the pencil icon to add the build to the files if necessary.
 **Dataset formats**
 
 The SNP dataset is in interval_ format, with a column of SNPs as described below.
-The gene dataset is in BED_ format with 12 columns.
-The output dataset is also interval.
+The gene dataset is in BED_ format with 12 columns.  The output dataset is also interval.
+(`Dataset missing?`_)
 
 .. _interval: ./static/formatHelp.html#interval
-
 .. _BED: ./static/formatHelp.html#bed
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -87,51 +87,53 @@ or is synonymous then it is not included in the output file.
 
 - first input file, with SNPs::
 
-    chr22   15660821        15660822        A/G
-    chr22   15825725        15825726        G/T
-    chr22   15827035        15827036        G
-    chr22   15827135        15827136        C/G
-    chr22   15830928        15830929        A/G
-    chr22   15830951        15830952        G
-    chr22   15830955        15830956        C/T
-    chr22   15848885        15848886        C/T
-    chr22   15849048        15849049        A/C
-    chr22   15919711	    15919712        A/G
+    chr22  15660821  15660822  A/G
+    chr22  15825725  15825726  G/T
+    chr22  15827035  15827036  G
+    chr22  15827135  15827136  C/G
+    chr22  15830928  15830929  A/G
+    chr22  15830951  15830952  G
+    chr22  15830955  15830956  C/T
+    chr22  15848885  15848886  C/T
+    chr22  15849048  15849049  A/C
+    chr22  15919711  15919712  A/G
     etc.
 
-    alternatively indicating polymorphisms using ambiguous-nucleotide symbols:
-    chr22   15660821        15660822        R
-    chr22   15825725        15825726        K
-    chr22   15827035        15827036        G
-    chr22   15827135        15827136        S
-    chr22   15830928        15830929        R
-    chr22   15830951        15830952        G
-    chr22   15830955        15830956        Y
-    chr22   15848885        15848886        Y
-    chr22   15849048        15849049        M
-    chr22   15919711        15919712        R
+  or, indicating polymorphisms using ambiguous-nucleotide symbols::
+
+    chr22  15660821  15660822  R
+    chr22  15825725  15825726  K
+    chr22  15827035  15827036  G
+    chr22  15827135  15827136  S
+    chr22  15830928  15830929  R
+    chr22  15830951  15830952  G
+    chr22  15830955  15830956  Y
+    chr22  15848885  15848886  Y
+    chr22  15849048  15849049  M
+    chr22  15919711  15919712  R
     etc.
 
 - second input file, with UCSC annotations for human genes::
 
-    chr22   15688363        15690225        uc010gqr.1      0       +       15688363        15688363        0       2       587,794,        0,1068,
-    chr22   15822826        15869112        uc002zlw.1      0       -       15823622        15869004        0       10      940,105,97,91,265,86,251,208,304,282,   0,1788,2829,3241,4163,6361,8006,26023,29936,46004,
-    chr22   15826991        15869112        uc010gqs.1      0       -       15829218        15869004        0       5       1380,86,157,304,282,    0,2196,21858,25771,41839,
-    chr22   15897459        15919682        uc002zlx.1      0       +       15897459        15897459        0       4       775,128,103,1720,       0,8303,10754,20503,
-    chr22   15945848        15971389        uc002zly.1      0       +       15945981        15970710        0       13      271,25,147,113,127,48,164,84,85,12,102,42,2193, 0,12103,12838,13816,15396,17037,17180,18535,19767,20632,20894,22768,23348,
+    chr22  15688363  15690225  uc010gqr.1  0  +  15688363  15688363  0  2   587,794,  0,1068,
+    chr22  15822826  15869112  uc002zlw.1  0  -  15823622  15869004  0  10  940,105,97,91,265,86,251,208,304,282,  0,1788,2829,3241,4163,6361,8006,26023,29936,46004,
+    chr22  15826991  15869112  uc010gqs.1  0  -  15829218  15869004  0  5   1380,86,157,304,282,  0,2196,21858,25771,41839,
+    chr22  15897459  15919682  uc002zlx.1  0  +  15897459  15897459  0  4   775,128,103,1720,  0,8303,10754,20503,
+    chr22  15945848  15971389  uc002zly.1  0  +  15945981  15970710  0  13  271,25,147,113,127,48,164,84,85,12,102,42,2193,  0,12103,12838,13816,15396,17037,17180,18535,19767,20632,20894,22768,23348,
     etc.
 
 - output file, showing non-synonymous substitutions in coding regions::
 
-    chr22   15825725        15825726        G/T     uc002zlw.1      Gln:Pro/Gln     469     T
-    chr22   15827035        15827036        G       uc002zlw.1      Glu:Asp 414     C
-    chr22   15827135        15827136        C/G     uc002zlw.1      Gly:Gly/Ala     381     C
-    chr22   15830928        15830929        A/G     uc002zlw.1      Ala:Ser/Pro     281     C
-    chr22   15830951        15830952        G       uc002zlw.1      Leu:Pro 273     A
-    chr22   15830955        15830956        C/T     uc002zlw.1      Ser:Gly/Ser     272     T
-    chr22   15848885        15848886        C/T     uc002zlw.1      Ser:Trp/Stop    217     G
-    chr22   15848885        15848886        C/T     uc010gqs.1      Ser:Trp/Stop    200     G
-    chr22   15849048        15849049        A/C     uc002zlw.1      Gly:Stop/Gly    163     C
+    chr22  15825725  15825726  G/T  uc002zlw.1  Gln:Pro/Gln   469  T
+    chr22  15827035  15827036  G    uc002zlw.1  Glu:Asp       414  C
+    chr22  15827135  15827136  C/G  uc002zlw.1  Gly:Gly/Ala   381  C
+    chr22  15830928  15830929  A/G  uc002zlw.1  Ala:Ser/Pro   281  C
+    chr22  15830951  15830952  G    uc002zlw.1  Leu:Pro       273  A
+    chr22  15830955  15830956  C/T  uc002zlw.1  Ser:Gly/Ser   272  T
+    chr22  15848885  15848886  C/T  uc002zlw.1  Ser:Trp/Stop  217  G
+    chr22  15848885  15848886  C/T  uc010gqs.1  Ser:Trp/Stop  200  G
+    chr22  15849048  15849049  A/C  uc002zlw.1  Gly:Stop/Gly  163  C
     etc.
+
   </help>
 </tool>

@@ -172,15 +172,17 @@
       <output name="log_file" file="lps_arrhythmia_log.txt"/>
     </test>
   </tests>
+
   <help>
 **Dataset formats**
 
-The input and output datasets are tabular_.  The columns are described 
-below.  There is a second output dataset (a log) that is in text_ format.
+The input and output datasets are tabular_.  The columns are described below.
+There is a second output dataset (a log) that is in text_ format.
+(`Dataset missing?`_)
 
 .. _tabular: ./static/formatHelp.html#tab
-
 .. _text: ./static/formatHelp.html#text
+.. _Dataset missing?: ./static/formatHelp.html
 
 -----
 
@@ -217,19 +219,19 @@ Website: http://pages.cs.wisc.edu/~swright/LPS/
 
 - input file::
 
-    +1    1    0    0    0    0    1    0    1    1    ...
-    +1    1    1    1    0    0    1    0    1    1    ...
-    +1    1    0    1    0    1    0    1    0    1    ...
+    +1   1   0   0   0   0   1   0   1   1   ...
+    +1   1   1   1   0   0   1   0   1   1   ...
+    +1   1   0   1   0   1   0   1   0   1   ...
     etc.
 
 - output results file::
 
-   0
-   0
-   0
-   0
-   0.025541
-   etc.
+    0
+    0
+    0
+    0
+    0.025541
+    etc.
 
 - output log file::
 
@@ -243,16 +245,31 @@ Website: http://pages.cs.wisc.edu/~swright/LPS/
 
 **References**
 
-Koh K, Kim S-J, and Boyd S. (2007) An Interior-Point Method for Large-Scale l1-Regularized Logistic Regression. Journal of Machine Learning Research, 8:1519-1555.
+Koh K, Kim S-J, Boyd S. (2007)
+An interior-point method for large-scale l1-regularized logistic regression.
+Journal of Machine Learning Research. 8:1519-1555.
 
-Shi W, Wahba G, Wright S, Lee K, Klein R, and Klein B. (2008) LASSO-Patternsearch Algorithm with Application to Ophthalmology and Genomic Data. Statistics And Its Interface, 1:137-153.
+Shi W, Wahba G, Wright S, Lee K, Klein R, Klein B. (2008)
+LASSO-Patternsearch algorithm with application to ophthalmology and genomic data.
+Stat Interface. 1(1):137-153.
 
-Wright S, Novak R, and Figueiredo M. (2009) Sparse reconstruction via separable approximation. IEEE Transactions on Signal Processing, 57:2479-2403.
+<!--
+Wright S, Novak R, Figueiredo M. (2009)
+Sparse reconstruction via separable approximation.
+IEEE Transactions on Signal Processing. 57:2479-2403.
 
-Shi J, Yin W, Osher S, and Sajda P. (2010) A fast hybrid algorithm for large scale l1-regularized logistic regression. Journal of Machine Learning Research, 11:713-741.
+Shi J, Yin W, Osher S, Sajda P. (2010)
+A fast hybrid algorithm for large scale l1-regularized logistic regression.
+Journal of Machine Learning Research. 11:713-741.
 
-Byrd R, Chin G, Neveitt W, and Nocedal J. (2010) On the use of stochastic Hessian information in unconstrained optimization. Technical Report. Northwestern University. June 16, 2010.
+Byrd R, Chin G, Neveitt W, Nocedal J. (2010)
+On the use of stochastic Hessian information in unconstrained optimization.
+Technical Report. Northwestern University. June 16, 2010.
 
-Wright S. (2010) Accelerated block-coordinate relaxation for regularized optimization. Technical Report. University of Wisconsin. August 10, 2010.
+Wright S. (2010)
+Accelerated block-coordinate relaxation for regularized optimization.
+Technical Report. University of Wisconsin. August 10, 2010.
+-->
+
   </help>
 </tool>
