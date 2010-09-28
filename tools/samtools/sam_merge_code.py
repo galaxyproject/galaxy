@@ -1,9 +1,8 @@
-import sets
 from galaxy.tools.parameters import DataToolParameter
 
 def validate_input( trans, error_map, param_values, page_param_map ):
-    dbkeys = sets.Set()
-    data_param_names = sets.Set()
+    dbkeys = set()
+    data_param_names = set()
     data_params = 0
     for name, param in page_param_map.iteritems():
         if isinstance( param, DataToolParameter ):
