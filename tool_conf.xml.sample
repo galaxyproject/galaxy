@@ -264,6 +264,7 @@
   -->
   <section name="NCBI BLAST+" id="ncbi_blast_plus_tools">
    <tool file="ncbi_blast_plus/ncbi_blastn_wrapper.xml" />
+   <tool file="ncbi_blast_plus/ncbi_tblastn_wrapper.xml" />
    <tool file="ncbi_blast_plus/ncbi_blastp_wrapper.xml" />
    <tool file="ncbi_blast_plus/blast_filter_fasta.xml" />
   </section>
