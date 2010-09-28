@@ -1,6 +1,6 @@
 <tool id="axt_to_lav_1" name="AXT to LAV">
   <description>Converts an AXT formatted file to LAV format</description>
-  <command interpreter="python">axt_to_lav.py /galaxy/data/$dbkey_1/seq/%s.nib:$dbkey_1:${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey_1}.len /depot/data2/galaxy/$dbkey_2/seq/%s.nib:$dbkey_2:${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey_2}.len $align_input $lav_file $seq_file1 $seq_file2</command>
+  <command interpreter="python">axt_to_lav.py /galaxy/data/$dbkey_1/seq/%s.nib:$dbkey_1:${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey_1}.len /galaxy/data/$dbkey_2/seq/%s.nib:$dbkey_2:${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey_2}.len $align_input $lav_file $seq_file1 $seq_file2</command>
   <inputs>
     <param name="align_input" type="data" format="axt" label="Alignment File" optional="False"/>
     <param name="dbkey_1" type="genomebuild" label="Genome"/>
@@ -53,8 +53,8 @@ This tool converts an AXT formatted file to the LAV format.
 
     #:lav
     s {
-      &quot;/depot/data2/galaxy/hg16/seq/chr19.nib&quot; 1 63811651 0 1
-      &quot;/depot/data2/galaxy/mm5/seq/chr11.nib-&quot; 1 121648857 0 1
+      &quot;/galaxy/data/hg16/seq/chr19.nib&quot; 1 63811651 0 1
+      &quot;/galaxy/data/mm5/seq/chr11.nib-&quot; 1 121648857 0 1
     }
     h {
       &quot;> hg16.chr19&quot;
