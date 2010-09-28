@@ -4,7 +4,7 @@
 ### the remaining arguments on the command line
 
 # Function that writes a message to stderr and exits
-function fail
+fail()
 {
     echo "$@" >&2
     exit 1
