@@ -43,27 +43,9 @@ ${h.css( "history", "autocomplete_tagging", "trackster" )}
         <div style="float:left;" id="title"></div>
         <a class="panel-header-button right-float" href="${h.url_for( controller='visualization', action='list' )}">Close</a>
         <a id="save-button" class="panel-header-button right-float" href="javascript:void(0);">Save</a>
-        <a id="refresh-button" class="panel-header-button right-float" href="javascript:void(0);" onclick="view.update_options();return false;">Refresh</a>
+        <a id="add-track" class="panel-header-button right-float" href="javascript:void(0);">Add Tracks</a>
     </div>
 </div>
-
-</%def>
-
-<%def name="right_panel()">
-    <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner">Configuration
-            <a id="add-track" class="panel-header-button right-float" href="javascript:void(0);">Add Tracks</a>
-        </div>
-    </div>
-    <form action="#" onsubmit="view.update_options();return false;">
-        <div id="show-hide-move">
-            <div id="no-tracks" class="warningmessage" style="margin: 5px; display:none;">
-                There are currently no tracks in this browser. Add tracks via the button above.
-            </div>
-            <ul id="sortable-ul"></ul>
-        </div>
-        <input type="submit" id="refresh-button" value="Refresh" style="display:none" />
-    </form>
 
 </%def>
 

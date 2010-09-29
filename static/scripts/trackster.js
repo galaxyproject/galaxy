@@ -383,7 +383,7 @@ $.extend( View.prototype, {
         var left_px = ( this.low / (this.max_high - this.max_low) ) * this.overview_viewport.width();
         var width_px = (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width();
         
-        this.overview_box.css({ left: left_px, width: Math.max(12, width_px) - 2 }).show();
+        this.overview_box.css({ left: left_px, width: Math.max(12, width_px) }).show();
         if (this.overview_highlight) {
             this.overview_highlight.css({ left: left_px, width: width_px });
         }
