@@ -53,7 +53,16 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
                 tag_user_tname = to_unicode( tag.user_tname )
                 tag_user_value = to_unicode( tag.user_value )
                 tags[ tag_user_tname ] = tag_user_value
-            return tags    
+            return tags
+            
+        def prepare_metadata( metadata ):
+            """ Prepare metatdata for exporting. """
+            for name, value in metadata.items():
+                # Metadata files are not needed for export because they can be
+                # regenerated.
+                if isinstance( value, trans.app.model.MetadataFile ):
+                    del metadata[ name ]
+            return metadata
             
         class HistoryDatasetAssociationEncoder( simplejson.JSONEncoder ):
             """ Custom JSONEncoder for a HistoryDatasetAssociation. """
@@ -70,7 +79,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
                         "blurb" : obj.blurb,
                         "peek" : obj.peek,
                         "extension" : obj.extension,
-                        "metadata" : dict( obj.metadata.items() ),
+                        "metadata" : prepare_metadata( dict( obj.metadata.items() ) ),
                         "parent_id" : obj.parent_id,
                         "designation" : obj.designation,
                         "deleted" : obj.deleted,
@@ -78,7 +87,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
                         "file_name" : obj.file_name,
                         "annotation" : to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags" : get_item_tag_dict( obj ),
-                    }       
+                    }
                 return simplejson.JSONEncoder.default( self, obj )
         
         #
