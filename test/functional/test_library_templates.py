@@ -358,6 +358,29 @@ class TestLibraryFeatures( TwillTestCase ):
                              self.security.encode_id( ldda.id ),
                              ldda.name,
                              strings_displayed=[ 'SelectField', 'Option1' ] )
+        # Import a dataset from the current history
+        filename = '8.bed'
+        self.new_history( name='import with SelectField' )
+        self.upload_file( filename )
+        hda = get_latest_hda()
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library3.id ),
+                                     folder_id=self.security.encode_id( folder3.id ),
+                                     upload_option='import_from_history',
+                                     hda_ids=self.security.encode_id( hda.id ),
+                                     strings_displayed=[ '<input type="hidden" name="field_0" value="Option1"/>' ] )
+        ldda = get_latest_ldda_by_name( filename )
+        assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
+        self.browse_library( 'library_admin',
+                             self.security.encode_id( library3.id ),
+                             strings_displayed=[ ldda.name, admin_user.email ] )
+        # Make sure the library template contents were correctly saved
+        self.ldda_edit_info( 'library_admin',
+                             self.security.encode_id( library3.id ),
+                             self.security.encode_id( folder3.id ),
+                             self.security.encode_id( ldda.id ),
+                             ldda.name,
+                             strings_displayed=[ 'SelectField', 'Option1' ] )
     def test_105_add_template_to_library4( self ):
         """ Testing add an inheritable template containing an TextArea to library4"""
         # Logged in as admin_user

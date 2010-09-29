@@ -1824,7 +1824,10 @@ class TwillTestCase( unittest.TestCase ):
                 self.check_page_for_string( check_str )
             if hda_ids:
                 # Twill cannot handle multi-checkboxes, so the form can only have 1 hda_ids checkbox
-                tc.fv( "add_history_datasets_to_library", "hda_ids", '1' )
+                try:
+                    tc.fv( "add_history_datasets_to_library", "hda_ids", hda_ids )
+                except:
+                    tc.fv( "add_history_datasets_to_library", "hda_ids", '1' )
             tc.submit( 'add_history_datasets_to_library_button' )
         else:
             if filename:

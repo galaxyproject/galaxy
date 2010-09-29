@@ -1,56 +1,67 @@
-<%def name="render_template_field( field )">
+<%def name="render_template_field( field, render_as_hidden=False )">
     <%
         from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
-        
+
+        widget = field[ 'widget' ]
         has_contents = False
+        label = field[ 'label' ]
         value = ''
-        if isinstance( field[ 'widget' ], TextArea ) and field[ 'widget' ].value:
+        if isinstance( widget, TextArea ) and widget.value:
             has_contents = True
-            label = field[ 'label' ]
-            value = '<pre>%s</pre>' % field[ 'widget' ].value
-        elif isinstance( field[ 'widget' ], TextField ) and field[ 'widget' ].value:
+            if render_as_hidden:
+                value = widget.value
+            else:
+                value = '<pre>%s</pre>' % widget.value
+        elif isinstance( widget, TextField ) and widget.value:
             has_contents = True
-            label = field[ 'label' ]
-            value = field[ 'widget' ].value
-        elif isinstance( field[ 'widget' ], SelectField ) and field[ 'widget' ].options:
-            for option_label, option_value, selected in field['widget'].options:
+            value = widget.value
+        elif isinstance( widget, SelectField ) and widget.options:
+            for option_label, option_value, selected in widget.options:
                 if selected:
                     has_contents = True
-                    label = field[ 'label' ]
                     value = option_value
-        elif isinstance( field[ 'widget' ], CheckboxField ) and field[ 'widget' ].checked:
+        elif isinstance( widget, CheckboxField ) and widget.checked:
             has_contents = True
-            label = field[ 'label' ]
-            value = 'checked'
-        elif isinstance( field[ 'widget' ], WorkflowField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
-            has_contents = True
-            label = field[ 'label' ]
-            widget = field[ 'widget' ]
-            workflow_user = widget.user
-            if workflow_user:
-                for workflow in workflow_user.stored_workflows:
-                    if not workflow.deleted and str( widget.value ) == str( workflow.id ):
-                        value = workflow.name
-                        break
+            if render_as_hidden:
+                value = 'true'
             else:
-                # If we didn't find the selected workflow option above, we'll just print the value
-                value = field[ 'widget' ].value
-        elif isinstance( field[ 'widget' ], AddressField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
+                value = 'checked'
+        elif isinstance( widget, WorkflowField ) and str( widget.value ).lower() not in [ 'none' ]:
             has_contents = True
-            widget = field[ 'widget' ]
-            address = trans.sa_session.query( trans.model.UserAddress ).get( int( widget.value ) )
-            label = address.desc
-            value = address.get_html()
+            if render_as_hidden:
+                value = widget.value
+            else:
+                workflow_user = widget.user
+                if workflow_user:
+                    for workflow in workflow_user.stored_workflows:
+                        if not workflow.deleted and str( widget.value ) == str( workflow.id ):
+                            value = workflow.name
+                            break
+                else:
+                    # If we didn't find the selected workflow option above, we'll just print the value
+                    value = widget.value
+        elif isinstance( widget, AddressField ) and str( widget.value ).lower() not in [ 'none' ]:
+            has_contents = True
+            if render_as_hidden:
+                value = widget.value
+            else:
+                address = trans.sa_session.query( trans.model.UserAddress ).get( int( widget.value ) )
+                label = address.desc
+                value = address.get_html()
     %>
     %if has_contents:
-        <div class="form-row">
-            <label>${label}</label>
-            ${value}
-            <div class="toolParamHelp" style="clear: both;">
-                ${field[ 'helptext' ]}
+        % if render_as_hidden:
+            <input type="hidden" name="${widget.name}" value="${value}"/>
+        %else:
+            <div class="form-row">
+                <label>${label}</label>
+                ${value}
+                <div class="toolParamHelp" style="clear: both;">
+                    ${field[ 'helptext' ]}
+                </div>
+                <div style="clear: both"></div>
             </div>
-            <div style="clear: both"></div>
-        </div>
+        %endif
     %endif
 </%def>
             
@@ -436,14 +447,7 @@
                         ## Render hidden template fields so the contents will be associated with the dataset
                         %if widgets:
                             %for i, field in enumerate( widgets ):
-                                <% widget = field[ 'widget' ] %>
-                                %if isinstance( field[ 'widget' ], CheckboxField ):
-                                    %if field[ 'widget' ].checked:
-                                        <input type="hidden" name="${widget.name}" value="true"/>
-                                    %endif
-                                %else:
-                                    <input type="hidden" name="${widget.name}" value="${widget.value}"/>
-                                %endif
+                                ${render_template_field( field, render_as_hidden=True )}
                             %endfor 
                         %endif
                         %for hda in history.active_datasets:
