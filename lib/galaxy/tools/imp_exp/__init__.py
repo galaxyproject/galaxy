@@ -199,9 +199,10 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
         options = ""
         if jeha.compressed:
             options = "-G"
-        return "%s %s %s %s %s %s" % ( os.path.join( os.path.abspath( os.getcwd() ), "export_history.sh" ), \
-                                       options, history_attrs_filename, datasets_attrs_filename, \
-                                       jobs_attrs_filename, jeha.dataset.file_name )
+        return "python %s %s %s %s %s %s" % ( 
+            os.path.join( os.path.abspath( os.getcwd() ), "lib/galaxy/tools/imp_exp/export_history.py" ), \
+            options, history_attrs_filename, datasets_attrs_filename, jobs_attrs_filename, \
+            jeha.dataset.file_name )
                                     
     def cleanup_after_job( self, db_session ):
         """ Remove temporary directory and attribute files generated during setup for this job. """

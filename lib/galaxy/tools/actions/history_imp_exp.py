@@ -54,9 +54,6 @@ class ExportHistoryToolAction( ToolAction ):
         job_wrapper = JobExportHistoryArchiveWrapper( job )
         cmd_line = job_wrapper.setup_job( trans, jeha, include_hidden=incoming[ 'include_hidden' ], \
                                             include_deleted=incoming[ 'include_deleted' ] )
-                                            
-        # Save jeha.
-        trans.sa_session.flush()
         
         #
         # Add parameters to job_parameter table.

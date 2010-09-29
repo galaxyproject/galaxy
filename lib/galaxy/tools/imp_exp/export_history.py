@@ -2,20 +2,13 @@
 """
 Export a history to an archive file using attribute files.
 
-NOTE: This should not be called directly. Use the set_metadata.sh script in Galaxy's
-top level directly.
-
 usage: %prog history_attrs dataset_attrs job_attrs out_file
     -G, --gzip: gzip archive file
-    -D, --delete_dir: delete attribute files' directory if operation completed successfully
 """
+
 from galaxy import eggs
-import os, pkg_resources, tempfile, tarfile
-pkg_resources.require( "bx-python" )
-import sys, traceback, fileinput
 from galaxy.util.json import *
-from warnings import warn
-from bx.cookbook import doc_optparse
+import optparse, sys, os, tempfile, tarfile
 
 def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, out_file, gzip=False ):
     """ Create archive from the given attribute/metadata files and save it to out_file. """
@@ -63,17 +56,15 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
         # Status.
         return 'Created history archive.'
     except Exception, e:
-        return 'Error creating history archive: %s' + str( e ), sys.stderr
+        return 'Error creating history archive: %s' % str( e ), sys.stderr
 
 if __name__ == "__main__":
     # Parse command line.
-    options, args = doc_optparse.parse( __doc__ )
-    try:
-        gzip = bool( options.gzip )
-        delete_dir = bool( options.delete_dir )
-        history_attrs, dataset_attrs, job_attrs, out_file = args
-    except:
-        doc_optparse.exception()
+    parser = optparse.OptionParser()
+    parser.add_option( '-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.' )
+    (options, args) = parser.parse_args()    
+    gzip = bool( options.gzip )
+    history_attrs, dataset_attrs, job_attrs, out_file = args
     
     # Create archive.
     status = create_archive( history_attrs, dataset_attrs, job_attrs, out_file, gzip )
