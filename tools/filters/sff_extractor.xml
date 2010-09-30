@@ -14,7 +14,7 @@
         <param name="fastq_output" type="boolean" truevalue="fastq_true" falsevalue="fastq_false" checked="False" label="Do you want FASTQ file instead of FASTA + FASTA quality file?" />
     </inputs>
     <outputs>
-        <data format="fastq" name="out_file1" >
+        <data format="fastqsanger" name="out_file1" >
             <filter>fastq_output is True</filter>
         </data>
         <data format="xml" name="out_file2">
