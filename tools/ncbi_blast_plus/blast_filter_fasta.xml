@@ -1,10 +1,13 @@
 <tool id="blast_filter_fasta" name="BLAST filter FASTA file" version="0.0.1">
     <description>Divide a FASTA file based on BLAST hits</description>
     <command interpreter="python">
-      blast_filter_fasta.py $blast_file $in_file $out_positive_file $out_negative_file
+      blast_filter_fasta.py $blast_file $blast_col $in_file $out_positive_file $out_negative_file
     </command>
     <inputs>
         <param name="blast_file" type="data" format="tabular" label="Tabular BLAST output"/> 
+        <param name="blast_col" type="integer" value="1" label="Column containing FASTA identifiers">
+            <validator type="in_range" min="1" />
+        </param>
         <param name="in_file" type="data" format="fasta" label="BLAST query FASTA file"/> 
     </inputs>
     <outputs>
@@ -19,8 +22,12 @@
     
 **What it does**
 
-Takes a multi-sequence FASTA and the tabular output of running BLAST on it, and
-divides the FASTA file in two: those sequence with a BLAST hit, and those without.
+Typical use would be to take a multi-sequence FASTA and the tabular output of
+running BLAST on it, and divides the FASTA file in two: those sequence with a
+BLAST hit, and those without.
+
+In the default NCBI BLAST+ tabular output, the query sequence ID is in column
+one, and the ID of the match from the database is in column two.
 
     </help>
 </tool>
