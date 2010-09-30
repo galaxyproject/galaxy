@@ -120,7 +120,7 @@
         <param name="c1" type="float" value="1e-3" help="Parameter defining the margin by which the first-order step is required to decrease before being taken.">
           <validator type="in_range" message="0.0 &lt; c1 &lt; 1.0" min="0.0" max="1.0"/>
         </param>
-        <param name="maxIter" type="integer" value="10000" label="Maximum number of iterations"/>
+        <param name="maxIter" type="integer" value="10000" label="Maximum number of iterations" help="Terminate with error if we exceed this."/>
         <param name="stopTol" type="float" value="1e-6" label="Stop tolerance" help="Convergence tolerance for target value of lambda."/>
         <param name="intermediateTol" type="float" value="1e-4" label="Intermediate tolerance" help="Convergence tolerance for intermediate values of lambda."/>
         <param name="finalOnly" type="select" format="integer" label="Final only">
@@ -132,8 +132,8 @@
   </inputs>
 
   <outputs>
-    <data name="output_file" format="tabular"/>
-    <data name="log_file" format="txt"/>
+    <data name="output_file" format="tabular" label="${tool.name} on ${on_string}: results"/>
+    <data name="log_file" format="txt" label="${tool.name} on ${on_string}: log"/>
   </outputs>
 
   <requirements>
@@ -188,28 +188,52 @@ There is a second output dataset (a log) that is in text_ format.
 
 **What it does**
 
-The LASSO-Patternsearch algorithm efficiently identifies patterns of multiple
-dichotomous risk factors for outcomes of interest in demographic and genomic
-studies.  It is designed for the case where there is a possibly very large
-number of candidate patterns but it is believed that only a relatively small
-number are important.
+The LASSO-Patternsearch algorithm fits your dataset to an L1-regularized
+logistic regression model.  A benefit of using L1-regularization is
+that it typically yields a weight vector with relatively few non-zero
+coefficients.
 
-If the "risky" direction (with respect to the outcome of interest) is known
-for all or almost all variables, the results are readily interpretable.
-If the risky direction is coded correctly for all of the variables, the
-fitted model can be expected to be sparser than that for any other coding.
-However, if a small number of risky variables are coded in the "wrong" way,
-this usually can be detected.
+For example, say you have a dataset containing M rows (subjects)
+and N columns (attributes) where one of these N attributes is binary,
+indicating whether or not the subject has some property of interest P.
+In simple terms, LPS calculates a weight for each of the other attributes
+in your dataset.  This weight indicates how "relevant" that attribute
+is for predicting whether or not a given subject has property P.
+The L1-regularization causes most of these weights to be equal to zero,
+which means LPS will find a "small" subset of the remaining N-1 attributes
+in your dataset that can be used to predict P.
 
-The input file is tabular with rows representing individuals and columns
-representing variables.  There is one special column, the label column,
-containing +1 for cases, and -1 for controls.  The other columns should be
-0 or 1, with 1 representing the expected riskier value for each variable.
-For instance with SNPs the column would have a 1 if the individual (row)
-has the risk allele, or a 0 otherwise.  The output file has one line for each
-variable, or "feature" in the input file, with a single column containing the
-calculated score for that feature.  The log file provides information about
-the input and the internal values obtained during the computation process.
+In other words, LPS can be used for feature selection.
+
+The input dataset is tabular, and must contain a label column which
+indicates whether or not a given row has property P.  In the current
+version of this tool, P must be encoded using +1 and -1.  The Lambda_fac
+parameter ranges from 0 to 1, and controls how sparse the weight
+vector will be.  At the low end, when Lambda_fac = 0, there will be
+no regularization.  At the high end, when Lambda_fac = 1, there will be
+"too much" regularization, and all of the weights will equal zero.
+
+The LPS tool creates two output datasets.  The first, called the results
+file, is a tabular dataset containing one column of weights for each
+value of the regularization parameter lambda that was tried.  The weight
+columns are in order from left to right by decreasing values of lambda.
+The first N-1 rows in each column are the weights for the N-1 attributes
+in your input dataset.  The final row is a constant, the intercept.
+
+Let **x** be a row from your input dataset and let **b** be a column
+from the results file.  To compute the probability that row **x** has
+a label value of +1:
+
+  Probability(row **x** has label value = +1) = 1 / [1 + exp{**x** \* **b**\[1..n-1\] + **b**\[n\]}]
+
+where **x** \* **b**\[1..n-1\] represents matrix multiplication.
+
+The second output dataset, called the log file, is a text file which
+contains additional data about the fitted L1-regularized logistic
+regression model.  These data include the number of features, the
+computed value of lambda_max, the actual values of lambda used, the
+optimal values of the log-likelihood and regularized log-likelihood
+functions, the number of non-zeros, and the number of iterations.
 
 Website: http://pages.cs.wisc.edu/~swright/LPS/
 
@@ -235,11 +259,16 @@ Website: http://pages.cs.wisc.edu/~swright/LPS/
 
 - output log file::
 
-    Data set has 100 vectors with 50 features
-    calculateLambdaMax: n=50, m=100, m+=50, m-=50
-    computed value of lambda_max: 5.0000e-01
-    lambda=2.50e-02 solution has     10 nonzeros.
-    It required   546 iterations
+    Data set has 100 vectors with 50 features.
+      calculateLambdaMax: n=50, m=100, m+=50, m-=50
+      computed value of lambda_max: 5.0000e-01
+     
+    lambda=2.96e-02 solution:
+      optimal log-likelihood function value: 6.46e-01
+      optimal *regularized* log-likelihood function value: 6.79e-01
+      number of nonzeros at the optimum:      5
+      number of iterations required:     43
+    etc.
 
 -----
 
