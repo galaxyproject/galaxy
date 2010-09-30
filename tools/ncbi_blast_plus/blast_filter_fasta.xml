@@ -5,9 +5,7 @@
     </command>
     <inputs>
         <param name="blast_file" type="data" format="tabular" label="Tabular BLAST output"/> 
-        <param name="blast_col" type="integer" value="1" label="Column containing FASTA identifiers">
-            <validator type="in_range" min="1" />
-        </param>
+        <param name="blast_col" type="data_column" data_ref="blast_file" numerical="true" value="1" label="Column containing FASTA identifiers" />
         <param name="in_file" type="data" format="fasta" label="BLAST query FASTA file"/> 
     </inputs>
     <outputs>
