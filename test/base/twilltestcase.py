@@ -646,10 +646,10 @@ class TwillTestCase( unittest.TestCase ):
     	                s2 = os.path.getsize(local_name)
     	                if abs(s1-s2) > int(delta):
     	                   raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
-                        else:
-                            raise Exception, 'Unimplemented Compare type: %s' % compare
-                        if extra_files:
-                            self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
+                    else:
+                        raise Exception, 'Unimplemented Compare type: %s' % compare
+                    if extra_files:
+                        self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
                 except AssertionError, err:
                     errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
                     errmsg += str( err )
