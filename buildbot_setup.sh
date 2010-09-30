@@ -108,4 +108,10 @@ for dir in $DIRS; do
     fi
 done
 
+# for wig_to_bigWig
+if [ ! -f "tool-data/shared/ucsc/chrom/hg17.len" -a -f "test-data/wig_to_bigwig_hg17.len" ]; then
+    mkdir -p tool-data/shared/ucsc/chrom
+    cp test-data/wig_to_bigwig_hg17.len tool-data/shared/ucsc/chrom/hg17.len
+fi
+
 python ./scripts/fetch_eggs.py all
