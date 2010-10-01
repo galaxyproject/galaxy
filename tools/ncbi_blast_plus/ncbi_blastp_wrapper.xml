@@ -6,7 +6,7 @@
        -db "$database"
        -task $blast_type
        -evalue $evalue_cutoff
-       -seg $adv_opts.filter_query
+       $adv_opts.filter_query
        -out $output1
        -outfmt $out_format
        -num_threads 8
@@ -38,10 +38,11 @@
               <option value="advanced">Show Advanced Options</option>
             </param>
             <when value="basic">
-                <param name="filter_query" type="hidden" value="yes" />
+                <param name="filter_query" type="hidden" value="" />
             </when>
             <when value="advanced">
-                <param name="filter_query" type="boolean" label="Filter out low complexity regions (with SEG)" truevalue="yes" falsevalue="no" checked="true" />
+                <!-- Could use a select (yes, no, other) where other allows setting 'window locut hicut' -->
+                <param name="filter_query" type="boolean" label="Filter out low complexity regions (with SEG)" truevalue="-seg yes" falsevalue="-seg no" checked="true" />
             </when>
         </conditional>
     </inputs>
