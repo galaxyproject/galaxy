@@ -3,7 +3,11 @@
     <command>
       blastn
        -query "$query"
-       -db "$database"
+#if $db_opts.db_opts_selector == "db":
+       -db "$db_opts.database"
+#else:
+       -subject "$db_opts.subject"
+#end if
        -task $blast_type
        -evalue $evalue_cutoff
        $adv_opts.filter_query
@@ -14,12 +18,25 @@
     </command>
     <inputs>
         <param name="query" type="data" format="fasta" label="Nucleotide query sequence(s)"/> 
-        <param name="database" type="select" display="radio" label="Nucleotide BLAST database">
-            <options from_file="blastdb.loc">
-              <column name="name" index="0"/>
-              <column name="value" index="1"/>
-            </options>
-        </param>
+        <conditional name="db_opts">
+            <param name="db_opts_selector" type="select" label="Subject database/sequences">
+              <option value="db" selected="True">BLAST Database</option>
+              <option value="file">FASTA file</option>
+            </param>
+            <when value="db">
+                <param name="database" type="select" display="radio" label="Nucleotide BLAST database">
+                    <options from_file="blastdb.loc">
+                      <column name="name" index="0"/>
+                      <column name="value" index="1"/>
+                    </options>
+                </param>
+                <param name="subject" type="hidden" value="" /> 
+            </when>
+            <when value="file">
+                <param name="database" type="hidden" value="" /> 
+                <param name="subject" type="data" format="fasta" label="Nucleotide FASTA file to use as database"/> 
+            </when>
+        </conditional>
         <param name="blast_type" type="select" display="radio" label="Type of BLAST">
             <option value="megablast">megablast</option>
             <option value="blastn">blastn</option>
@@ -57,8 +74,7 @@
         </conditional>
     </inputs>
     <outputs>
-        <!-- TODO, can I get the caption rather than the value? e.g. 'NT' rather than a long path? -->
-        <data name="output1" format="tabular" label="${blast_type.value_label} on ${database.value_label}">
+        <data name="output1" format="tabular" label="${blast_type.value_label} on ${db_opts.db_opts_selector}">
             <change_format>
                 <when input="out_format" value="0" format="txt"/>
             </change_format>
