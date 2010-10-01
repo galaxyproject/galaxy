@@ -23,7 +23,7 @@
               <option value="file">FASTA file</option>
             </param>
             <when value="db">
-                <param name="database" type="select" display="radio" label="Nucleotide BLAST database">
+                <param name="database" type="select" label="Nucleotide BLAST database">
                     <options from_file="blastdb.loc">
                       <column name="name" index="0"/>
                       <column name="value" index="1"/>
