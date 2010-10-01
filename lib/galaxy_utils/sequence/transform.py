@@ -19,10 +19,10 @@ def DNA_complement( sequence ):
 def RNA_complement( sequence ):
     return sequence.translate( RNA_COMPLEMENT )
 #returns the reverse complement of the sequence
-def DNA_reverse_complement( self, sequence ):
+def DNA_reverse_complement( sequence ):
     sequence = reverse( sequence )
     return DNA_complement( sequence )
-def RNA_reverse_complement( self, sequence ):
+def RNA_reverse_complement( sequence ):
     sequence = reverse( sequence )
     return RNA_complement( sequence )
 def to_DNA( sequence ):
