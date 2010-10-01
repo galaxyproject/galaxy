@@ -5,30 +5,6 @@
     from galaxy.web.form_builder import CheckboxField
     inheritable_check_box = CheckboxField( 'inheritable' )
 %>
-<script type="text/javascript">
-$( function() {
-    $( "select[refresh_on_change='true']").change( function() {
-        var refresh = false;
-        var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
-        if ( refresh_on_change_values ) {
-            refresh_on_change_values = refresh_on_change_values.value.split( ',' );
-            var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
-            for( i= 0; i < refresh_on_change_values.length; i++ ) {
-                if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
-                    refresh = true;
-                    break;
-                }
-            }
-        }
-        else {
-            refresh = true;
-        }
-        if ( refresh ){
-            $( "#select_template" ).submit();
-        }
-    });
-});
-</script>
 
 <br/><br/>
 <ul class="manage-table-actions">

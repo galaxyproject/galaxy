@@ -13,43 +13,24 @@ from galaxy.util.expressions import ExpressionContext
 ${h.css( "base", "autocomplete_tagging" )}
 ${h.js( "jquery", "galaxy.base", "jquery.autocomplete" )}
 <script type="text/javascript">
-$( function() {
-    $( "select[refresh_on_change='true']").change( function() {
-        var refresh = false;
-        var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
-        if ( refresh_on_change_values ) {
-            refresh_on_change_values = refresh_on_change_values.value.split( ',' );
-            var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
-            for( i= 0; i < refresh_on_change_values.length; i++ ) {
-                if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
-                    refresh = true;
-                    break;
-                }
+$(function() {
+    $(window).bind("refresh_on_change", function() {
+        $(':file').each( function() {
+            var file = $(this);
+            var file_value = file.val();
+            if (file_value) {
+                // disable file input, since we don't want to upload the file on refresh
+                var file_name = $(this).attr("name");
+                file.attr( { name: 'replaced_file_input_' + file_name, disabled: true } );
+                // create a new hidden field which stores the filename and has the original name of the file input
+                var new_file_input = $('<input type="hidden" />');
+                new_file_input.attr( { "value": file_value, "name": file_name } );
+                file.after(new_file_input);
             }
-        }
-        else {
-            refresh = true;
-        }
-        if ( refresh ){
-            $( ':file' ).each( function() {
-                var file_value = $( this )[0].value;
-                if ( file_value ) {
-                    //disable file input, since we don't want to upload the file on refresh
-                    var file_name = $( this )[0].name;
-                    $( this )[0].name = 'replaced_file_input_' + file_name
-                    $( this )[0].disable = true;
-                    //create a new hidden field which stores the filename and has the original name of the file input
-                    var new_file_input = document.createElement( 'input' );
-                    new_file_input.type = 'hidden';
-                    new_file_input.value = file_value;
-                    new_file_input.name = file_name;
-                    document.getElementById( 'tool_form' ).appendChild( new_file_input );
-                }
-            } );
-            $( "#tool_form" ).submit();
-        }
-    });    
+        });
+    });
 });
+
 %if not add_frame.debug:
     if( window.name != "galaxy_main" ) {
         location.replace( '${h.url_for( controller='root', action='index', tool_id=tool.id )}' );

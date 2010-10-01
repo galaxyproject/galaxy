@@ -119,7 +119,7 @@ function make_popup_menus() {
 }
 
 // Alphanumeric/natural sort fn
-function naturalSort(a, b){
+function naturalSort(a, b) {
     // setup temp-scope variables for comparison evauluation
     var re = /(-?[0-9\.]+)/g,
         x = a.toString().toLowerCase() || '',
@@ -249,45 +249,24 @@ function replace_big_select_inputs(min_length, max_length) {
         $(document).bind("convert_dbkeys", function() { submit_hook(); } );
         
         // If select is refresh on change, mirror this behavior.
-        if (select_elt.attr('refresh_on_change') == 'true')
-        {
+        if (select_elt.attr('refresh_on_change') == 'true') {
             // Get refresh vals.
-            var refresh_vals = select_elt.attr('refresh_on_change_values');
-            if (refresh_vals !== undefined)
-                refresh_vals = refresh_vals.split(",");
-                
+            var ref_on_change_vals = select_elt.attr('refresh_on_change_values'),
+                last_selected_value = select_elt.attr("last_selected_value");
+            if (ref_on_change_vals !== undefined)
+                ref_on_change_vals = ref_on_change_vals.split(',');
+            
             // Function that attempts to refresh based on the value in the text element.
-            var try_refresh_fn = function() 
-            {
-                //
-                // If value entered can be matched to value, do so and refresh by submitting parent form.
-                //
-                
+            var try_refresh_fn = function() {
                 // Get new value and see if it can be matched.
-                var cur_value = text_input_elt.attr('value');
-                var new_value = select_mapping[cur_value];
-                if (new_value !== null && new_value !== undefined) 
-                {
-                    // Do refresh if new value is refresh value or if there are no refresh values.
-                    refresh = false;
-                    if (refresh_vals !== undefined)
-                    {
-                        for (var i= 0; i < refresh_vals.length; i++ )
-                            if (new_value == refresh_vals[i])
-                            {
-                                refresh = true;
-                                break;
-                            }
+                var new_value = select_mapping[text_input_elt.attr('value')];
+                if (new_value !== null && new_value !== undefined) {
+                    if ($.inArray(new_value, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
+                        return;
                     }
-                    else
-                        // Refresh for all values.
-                        refresh = true;
-
-                    if (refresh)
-                    {
-                        text_input_elt.attr('value', new_value);
-                        text_input_elt.parents('form').submit();
-                    }
+                    text_input_elt.attr('value', new_value);
+                    $(window).trigger("refresh_on_change");
+                    text_input_elt.parents('form').submit();
                 }
             };
             
@@ -295,15 +274,17 @@ function replace_big_select_inputs(min_length, max_length) {
             // case a user may have manually entered a value that needs to be refreshed).
             text_input_elt.bind("result", try_refresh_fn);
             text_input_elt.keyup( function(e) {
-                if ( e.keyCode === 13 ) // Return key
+                if (e.keyCode === 13) { // Return key
                     try_refresh_fn();
+                }
             });
             
-            // Disable return key so that it does not submit the form automatically. This is done because elememnt should behave like a 
+            // Disable return key so that it does not submit the form automatically. This is done because element should behave like a 
             // select (enter = select), not text input (enter = submit form).
             text_input_elt.keydown( function(e) {
-                if ( e.keyCode === 13 ) // Return key
+                if (e.keyCode === 13) { // Return key
                     return false;
+                }
             });
         }
     });
@@ -482,13 +463,13 @@ function commatize( number ) {
 }
 
 // Reset tool search to start state.
-function reset_tool_search( initValue )
-{
+function reset_tool_search( initValue ) {
     // Function may be called in top frame or in tool_menu_frame; 
     // in either case, get the tool menu frame.
     var tool_menu_frame = $("#galaxy_tools").contents();
-    if (tool_menu_frame.length == 0)
+    if (tool_menu_frame.length == 0) {
         tool_menu_frame = $(document);
+    }
         
     // Remove classes that indicate searching is active.
     $(this).removeClass("search_active");
@@ -499,18 +480,18 @@ function reset_tool_search( initValue )
     tool_menu_frame.find(".toolTitle").show();
     tool_menu_frame.find(".toolPanelLabel").show();
     tool_menu_frame.find(".toolSectionWrapper").each( function() {
-        if ($(this).attr('id') != 'recently_used_wrapper')
+        if ($(this).attr('id') != 'recently_used_wrapper') {
             // Default action.
             $(this).show();
-        else if ($(this).hasClass("user_pref_visible"))
+        } else if ($(this).hasClass("user_pref_visible")) {
             $(this).show();
+        }
     });
     tool_menu_frame.find("#search-no-results").hide();
     
     // Reset search input.
     tool_menu_frame.find("#search-spinner").hide();
-    if (initValue)
-    {
+    if (initValue) {
         var search_input = tool_menu_frame.find("#tool-search-query");
         search_input.val("search tools");
         search_input.css("font-style", "italic");
@@ -518,20 +499,17 @@ function reset_tool_search( initValue )
 }
 
 // Create GalaxyAsync object.
-function GalaxyAsync(log_action) 
-{
+var GalaxyAsync = function(log_action) {
     this.url_dict = {};
     this.log_action = (log_action === undefined ? false : log_action);
 }
 
-GalaxyAsync.prototype.set_func_url = function( func_name, url )
-{
-    this.url_dict[func_name] = url;   
+GalaxyAsync.prototype.set_func_url = function( func_name, url ) {
+    this.url_dict[func_name] = url;
 };
 
 // Set user preference asynchronously.
-GalaxyAsync.prototype.set_user_pref = function( pref_name, pref_value )
-{
+GalaxyAsync.prototype.set_user_pref = function( pref_name, pref_value ) {
     // Get URL.
     var url = this.url_dict[arguments.callee];
     if (url === undefined) { return false; }
@@ -544,8 +522,7 @@ GalaxyAsync.prototype.set_user_pref = function( pref_name, pref_value )
 };
 
 // Log user action asynchronously.
-GalaxyAsync.prototype.log_user_action = function( action, context, params )
-{
+GalaxyAsync.prototype.log_user_action = function( action, context, params ) {
     if (!this.log_action) { return; }
         
     // Get URL.
@@ -588,7 +565,24 @@ $(".trackster-add").live("click", function() {
 });
 
 
+
 $(document).ready( function() {
+    $("select[refresh_on_change='true']").change( function() {
+        var select_field = $(this),
+            select_val = select_field.val(),
+            refresh = false,
+            ref_on_change_vals = select_field.attr("refresh_on_change_values");
+        if (ref_on_change_vals) {
+            ref_on_change_vals = ref_on_change_vals.split(',');
+            var last_selected_value = select_field.attr("last_selected_value");
+            if ($.inArray(select_val, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
+                return;
+            }
+        }
+        $(window).trigger("refresh_on_change");
+        select_field.get(0).form.submit();
+    });
+    
     // Links with confirmation
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );
