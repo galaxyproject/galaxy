@@ -6,6 +6,7 @@
        -db "$database"
        -evalue $evalue_cutoff
        $adv_opts.filter_query
+       $adv_opts.strand
        -out $output1
        -outfmt $out_format
        -num_threads 8
@@ -34,10 +35,16 @@
             </param>
             <when value="basic">
                 <param name="filter_query" type="hidden" value="" />
+                <param name="strand" type="hidden" value="" />
             </when>
             <when value="advanced">
                 <!-- Could use a select (yes, no, other) where other allows setting 'window locut hicut' -->
                 <param name="filter_query" type="boolean" label="Filter out low complexity regions (with SEG)" truevalue="-seg yes" falsevalue="-seg no" checked="true" />
+                <param name="strand" type="select" label="Query strand(s) to search against database/subject">
+                    <option value="-strand both">Both</option>
+                    <option value="-strand plus">Plus (forward)</option>
+                    <option value="-strand minus">Minus (reverse complement)</option>
+                </param>
             </when>
         </conditional>
     </inputs>
