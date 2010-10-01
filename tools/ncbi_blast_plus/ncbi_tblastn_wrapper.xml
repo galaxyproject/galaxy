@@ -59,7 +59,6 @@
         </conditional>
     </inputs>
     <outputs>
-        <!-- TODO, can I get the caption rather than the value? e.g. 'NT' rather than a long path? -->
         <data name="output1" format="tabular" label="tblastn on ${db_opts.db_opts_selector}">
             <change_format>
                 <when input="out_format" value="0" format="txt"/>

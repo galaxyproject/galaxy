@@ -33,7 +33,7 @@
             </when>
             <when value="file">
                 <param name="database" type="hidden" value="" /> 
-                <param name="subject" type="data" format="fasta" label="Protein subject sequence(s)"/> 
+                <param name="subject" type="data" format="fasta" label="Protein FASTA file to use as database"/> 
             </when>
         </conditional>
         <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff" />
