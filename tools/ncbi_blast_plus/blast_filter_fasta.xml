@@ -1,12 +1,15 @@
-<tool id="blast_filter_fasta" name="BLAST filter FASTA file" version="0.0.1">
+<tool id="blast_filter_fasta" name="Filter FASTA using BLAST output" version="0.0.1">
     <description>Divide a FASTA file based on BLAST hits</description>
     <command interpreter="python">
       blast_filter_fasta.py $blast_file $blast_col $in_file $out_positive_file $out_negative_file
     </command>
     <inputs>
+        <param name="in_file" type="data" format="fasta" label="FASTA file to filter"/> 
         <param name="blast_file" type="data" format="tabular" label="Tabular BLAST output"/> 
-        <param name="blast_col" type="data_column" data_ref="blast_file" numerical="true" value="1" label="Column containing FASTA identifiers" />
-        <param name="in_file" type="data" format="fasta" label="BLAST query FASTA file"/> 
+        <param name="blast_col" type="select" label="Column containing FASTA identifiers">
+            <option value="1">Column 1 - BLAST query ID</option>
+            <option value="2">Column 2 - BLAST match ID</option>
+        </param>
     </inputs>
     <outputs>
         <data name="out_positive_file" format="fasta" label="Sequences with BLAST hits" />
@@ -21,11 +24,14 @@
 **What it does**
 
 Typical use would be to take a multi-sequence FASTA and the tabular output of
-running BLAST on it, and divides the FASTA file in two: those sequence with a
+running BLAST on it, and divide the FASTA file in two: those sequence with a
 BLAST hit, and those without.
 
 In the default NCBI BLAST+ tabular output, the query sequence ID is in column
 one, and the ID of the match from the database is in column two.
+
+This allows you to filter the FASTA file for the subjects in the BLAST search,
+rather than filtering the FASTA file for the queries in the BLAST search.
 
     </help>
 </tool>
