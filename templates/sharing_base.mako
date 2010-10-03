@@ -241,8 +241,7 @@
                             <% user = association.user %>
                             <tr>
                                 <td>
-                                    ${user.email}
-                                    <a id="user-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                                    <div class="menubutton popup" id="user-${i}-popup">${user.email}</div>
                                 </td>
                                 <td>
                                     <div popupmenu="user-${i}-popup">

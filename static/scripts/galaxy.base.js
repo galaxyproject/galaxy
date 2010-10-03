@@ -43,7 +43,7 @@ function attach_popupmenu( button_element, wrapper ) {
         $("#popup-helper").unbind( "click.popupmenu" ).hide();
         // $(document).unbind( "click.popupmenu" ); 
     };
-    var click = function( e ) {
+    var click_handler = function( e ) {
         // var o = $(button_element).offset();
         $("#popup-helper").bind( "click.popupmenu", clean ).show();
         // $(document).bind( "click.popupmenu", clean );
@@ -62,7 +62,7 @@ function attach_popupmenu( button_element, wrapper ) {
         } );
         return false;
     };
-    $( button_element ).click( click );
+    $(button_element).bind("click", click_handler);
 }
 
 function make_popupmenu( button_element, options ) {
@@ -112,6 +112,10 @@ function make_popup_menus() {
             };
         });
         var b = $( "#" + $(this).attr( 'popupmenu' ) );
+        b.find("a").bind("click", function(e) {
+            e.stopPropagation(); // Stop bubbling so clicking on the link goes through
+            return true;
+        });
         make_popupmenu( b, options );
         $(this).remove();
         b.addClass( "popup" ).show();

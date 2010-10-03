@@ -34,9 +34,10 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">
-        <a href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
+        <div class="menubutton split popup" id="library-${library.id}-popup">
+            <a href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">${library.name[:50]}</a>
+        </div>
         %if can_add or can_modify or can_manage:
-            <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="library-${library.id}-popup">
                 %if not library.deleted:
                     %if can_add and not library.info_association:
