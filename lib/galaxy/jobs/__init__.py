@@ -321,6 +321,20 @@ class JobWrapper( object ):
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+        
+        # Set up output dataset association for export history jobs. Because job 
+        # uses a Dataset rather than an HDA or LDA, it's necessary to set up a 
+        # fake dataset association that provides the needed attributes for
+        # preparing a job.
+        class FakeDatasetAssociation ( object ):
+            def __init__( self, dataset=None ):
+                self.dataset = dataset
+                self.file_name = dataset.file_name
+                self.metadata = dict()
+                self.children = []
+        jeha = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
+        if jeha:
+            out_data[ "output_file" ] = FakeDatasetAssociation( dataset=jeha.dataset )
         # These can be passed on the command line if wanted as $userId $userEmail
         if job.history and job.history.user: # check for anonymous user!
             userId = '%d' % job.history.user.id
@@ -632,13 +646,21 @@ class JobWrapper( object ):
                     return self.false_path
 
         job = self.sa_session.query( model.Job ).get( self.job_id )
+        # Job output datasets are combination of output datasets, library datasets, and jeha datasets.
+        jeha = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
             for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
                 self.output_paths.append( DatasetPath( data.id, data.file_name, false_path ) )
+            if jeha:
+                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % jeha.dataset.id ) )
+                self.output_paths.append( DatasetPath( jeha.dataset.id, jeha.dataset.file_name, false_path ) )
         else:
             self.output_paths = [ DatasetPath( da.dataset.dataset.id, da.dataset.file_name ) for da in job.output_datasets + job.output_library_datasets ]
+            if jeha:
+                self.output_paths.append( DatasetPath( jeha.dataset.id, jeha.dataset.file_name ) )
+
         return self.output_paths
 
     def get_output_file_id( self, file ):

@@ -15,12 +15,15 @@ def load_history_imp_exp_tools( toolbox ):
         <tool id="__EXPORT_HISTORY__" name="Export History" version="0.1" tool_type="export_history">
           <type class="ExportHistoryTool" module="galaxy.tools"/>
           <action module="galaxy.tools.actions.history_imp_exp" class="ExportHistoryToolAction"/>
-          <command>$__SET_EXPORT_HISTORY_COMMAND_LINE__</command>
+          <command>$__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ $output_file</command>
           <inputs>
             <param name="__HISTORY_TO_EXPORT__" type="hidden"/>
             <param name="compress" type="boolean"/>
-            <param name="__SET_EXPORT_HISTORY_COMMAND_LINE__" type="hidden"/>
+            <param name="__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__" type="hidden"/>
           </inputs>
+          <outputs>
+            <data format="gzip" name="output_file"/>
+          </outputs>
         </tool>
         """
     tmp_name = tempfile.NamedTemporaryFile()
@@ -40,7 +43,9 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
         # jeha = job_export_history_archive for the job.
         """ Perform setup for job to export a history into an archive. Method generates 
             attribute files for export, sets the corresponding attributes in the jeha
-            object, and returns a command line for running the job. """
+            object, and returns a command line for running the job. The command line
+            includes the command, inputs, and options; it does not include the output 
+            file because it must be set at runtime. """
             
         #
         # Helper methods/classes.
@@ -199,10 +204,9 @@ class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
         options = ""
         if jeha.compressed:
             options = "-G"
-        return "python %s %s %s %s %s %s" % ( 
+        return "python %s %s %s %s %s" % ( 
             os.path.join( os.path.abspath( os.getcwd() ), "lib/galaxy/tools/imp_exp/export_history.py" ), \
-            options, history_attrs_filename, datasets_attrs_filename, jobs_attrs_filename, \
-            jeha.dataset.file_name )
+            options, history_attrs_filename, datasets_attrs_filename, jobs_attrs_filename )
                                     
     def cleanup_after_job( self, db_session ):
         """ Remove temporary directory and attribute files generated during setup for this job. """

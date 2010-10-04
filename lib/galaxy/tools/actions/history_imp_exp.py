@@ -61,7 +61,7 @@ class ExportHistoryToolAction( ToolAction ):
         
         # Set additional parameters.
         incoming[ '__HISTORY_TO_EXPORT__' ] = history.id
-        incoming[ '__SET_EXPORT_HISTORY_COMMAND_LINE__' ] = cmd_line
+        incoming[ '__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__' ] = cmd_line
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
             
