@@ -620,7 +620,7 @@ SampleDataset.table = Table('sample_dataset', metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
     Column( "name", TrimmedString( 255 ), nullable=False ),
-    Column( "file_path", TrimmedString( 255 ), nullable=False ),
+    Column( "file_path", TEXT ),
     Column( "status", TrimmedString( 255 ), nullable=False ),
     Column( "error_msg", TEXT ),
     Column( "size", TrimmedString( 255 ) ) )
