@@ -23,8 +23,8 @@ $(function() {
                 var file_name = $(this).attr("name");
                 file.attr( { name: 'replaced_file_input_' + file_name, disabled: true } );
                 // create a new hidden field which stores the filename and has the original name of the file input
-                var new_file_input = $('<input type="hidden" />');
-                new_file_input.attr( { "value": file_value, "name": file_name } );
+                var new_file_input = $(document.createElement('input'));
+                new_file_input.attr( { "type", "hidden", "value": file_value, "name": file_name } );
                 file.after(new_file_input);
             }
         });
