@@ -2246,22 +2246,30 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               message=message,
                                                               status=status ) )
     def _check_access( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
+        can_access = True
         if isinstance( item, trans.model.HistoryDatasetAssociation ):
-            # Deny that the dataset exists if the user does not have the DATASET_ACCESS permission.
-            if not item or \
-               not ( trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ) and item.history.user==trans.user ):
-                message = "Invalid history dataset id (%s) specified." % str( item.id )
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  id=library_id,
-                                                                  show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='error' ) )
-        # Deny that the item exists if the user does not have the LIBRARY_ACCESS permission on its parent library,
-        # or if they are not able to access the item itself.
-        if not item or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ) ):
-            message = "Invalid item id (%s) specified." % str( item.id )
+            # Make sure the user has the DATASET_ACCESS permission on the history_dataset_association.
+            if not item:
+                message = "Invalid history dataset (%s) specified." % str( item )
+                can_access = False
+            elif not trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ) and item.history.user==trans.user:
+                message = "You do not have permission to access the history dataset with id (%s)." % str( item.id )
+                can_access = False
+        else:
+            # Make sure the user has the LIBRARY_ACCESS permission on the library item.
+            if not item:
+                message = "Invalid library item (%s) specified." % str( item )
+                can_access = False
+            elif not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ) ):
+                if isinstance( item, trans.model.Library ):
+                    item_type = 'data library'
+                elif isinstance( item, trans.model.LibraryFolder ):
+                    item_type = 'folder'
+                else:
+                    item_type = '(unknown item type)'
+                message = "You do not have permission to access the %s with id (%s)." % ( item_type, str( item.id ) )
+                can_access = False
+        if not can_access:
             if cntrller == 'api':
                 return 400, message
             if isinstance( item, trans.model.Library ):
@@ -2282,7 +2290,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
     def _check_add( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
         if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, item ) ):
-            message = "You are not authorized to add an item to '%s'." % item.name
+            message = "You are not authorized to add an item to (%s)." % item.name
             # Redirect to the real parent library since we know we have access to it.
             if cntrller == 'api':
                 return 403, message
@@ -2300,7 +2308,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             if not ( is_admin or \
                      ( trans.app.security_agent.can_manage_library_item( current_user_roles, item ) and 
                        trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset ) ) ):
-                message = "You are not authorized to manage permissions on library dataset '%s'." % library_dataset.name
+                message = "You are not authorized to manage permissions on library dataset (%s)." % library_dataset.name
                 if cntrller == 'api':
                     return 403, message
                 return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -2312,7 +2320,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                   status='error' ) )
         # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE permission.
         if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, item ) ):
-            message = "You are not authorized to manage permissions on '%s'." % item.name
+            message = "You are not authorized to manage permissions on (%s)." % item.name
             if cntrller == 'api':
                 return 403, message
             return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -2325,7 +2333,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
     def _check_modify( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission.
         if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
-            message = "You are not authorized to modify '%s'." % item.name
+            message = "You are not authorized to modify (%s)." % item.name
             if cntrller == 'api':
                 return 403, message
             return trans.response.send_redirect( web.url_for( controller='library_common',
