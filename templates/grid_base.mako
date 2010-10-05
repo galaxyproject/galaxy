@@ -304,8 +304,7 @@
             }
             
             // Add button that displays filter and provides a button to delete it.
-            var t = $("<span>" + value +
-                      "&nbsp;<a href='#'><img src='${h.url_for('/static/images/delete_tag_icon_gray.png')}'/></a></span>");
+            var t = $("<span>" + value + "<a href='#'><img class='delete-search-icon' /></a></span>");
             t.addClass('text-filter-val');
             t.click(function() {
                 // Remove filter condition.
@@ -614,50 +613,78 @@
     ${parent.stylesheets()}
     ${h.css( "autocomplete_tagging", "jquery.rating" )}
     <style>
-       ## Not generic to all grids -- move to base?
-       .count-box {
-           min-width: 1.1em;
-           padding: 5px;
-           border-width: 1px;
-           border-style: solid;
-           text-align: center;
-           display: inline-block;
-       }
-       .text-filter-val {
-           border: solid 1px #AAAAAA;
-           padding: 1px 3px 1px 3px;
-           margin-right: 5px;
-           -moz-border-radius: .5em;
-           -webkit-border-radius: .5em;
-           font-style: italic;
-       }
-       .page-link a, .inactive-link {
-           padding: 0px 7px 0px 7px;
-       }
-       .inactive-link, .current-filter {
-           font-style: italic;
-       }
-       .submit-image {
-           vertical-align: text-bottom;
-           margin: 0;
-           padding: 0;
-       }
-       .no-padding-or-margin {
-           margin: 0;
-           padding: 0;
-       }
-       .gray-background {
-           background-color: #DDDDDD;
-       }
-       .loading-elt-overlay {
-           background-color : white;
-           opacity : 0.5;
-           width : 100%;
-           height : 100%;
-           z-index : 14000;
-           position : absolute;
-           display: none;
-       }
+        .count-box {
+            min-width: 1.1em;
+            padding: 5px;
+            border-width: 1px;
+            border-style: solid;
+            text-align: center;
+            display: inline-block;
+        }
+        .text-filter-val {
+            border: solid 1px #AAAAAA;
+            padding: 1px 3px 1px 3px;
+            margin-right: 5px;
+            -moz-border-radius: .5em;
+            -webkit-border-radius: .5em;
+            font-style: italic;
+            
+        }
+        .page-link a, .inactive-link {
+            padding: 0px 7px 0px 7px;
+        }
+        .inactive-link, .current-filter {
+            font-style: italic;
+        }
+        .submit-image {
+            background: url(${h.url_for('/static/images/fugue/magnifier-left.png')}) no-repeat right transparent;
+            background-color: #eee;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            border: 0;
+            border-left: 1px solid #ccc;
+            margin: 0;
+            padding: 0;
+            display: block;
+            float: right;
+        }
+        #more-search-options td {
+            padding: 3px;
+        }
+        .delete-search-icon {
+            background: url(${h.url_for("/static/images/delete_tag_icon_gray.png")}) center no-repeat;
+            display: inline-block;
+            width: 10px;
+            cursor: pointer;
+            height: 16px;
+            vertical-align: middle;
+        }
+        .search-box-input {
+            border: 0;
+            margin: 0;
+            margin-left: 2px;
+            padding: 0;
+            float: left;
+        }
+        .search-box {
+            vertical-align: bottom;
+            display: inline-block;
+            padding: 0;
+            border: 1px solid #aaa;
+        }
+        .gray-background {
+            background-color: #DDDDDD;
+        }
+        .loading-elt-overlay {
+            background-color : white;
+            opacity : 0.5;
+            width : 100%;
+            height : 100%;
+            z-index : 14000;
+            position : absolute;
+            display: none;
+        }
     </style>
 </%def>
 
@@ -824,7 +851,9 @@
                                     cls = "menubutton split"
 
                             %>
-                            %if href:
+                            %if len(grid.operations) == 0:
+                                <td><a class="label" href="${href}">${v}</a></td>
+                            %elif href:
                                 <td><div id="${id}" class="${cls}" style="float: left;"><a class="label" href="${href}">${v}</a></div></td>
                             %else:
                                 <td><div id="${id}" class="${cls}"><label for="${encoded_id}">${v}</label></div></td>

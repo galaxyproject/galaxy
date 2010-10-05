@@ -131,6 +131,7 @@ $.extend( View.prototype, {
             view.location_span.hide();
             view.chrom_select.hide();
             view.nav_input.css("display", "inline-block");
+            view.nav_input.select();
             view.nav_input.focus();
         });
         if (this.vis_id !== undefined) {
@@ -539,9 +540,12 @@ var TiledTrack = function() {
         }
     };
     track_dropdown["Edit configuration"] = function() {
+        var cancel_fn = function() { hide_modal(); };
+        var ok_fn = function() { track.update_options(track.track_id); hide_modal(); };
+
         show_modal("Configure Track", track.gen_options(track.track_id), {
-            "Cancel": function() { hide_modal(); },
-            "OK": function() { track.update_options(track.track_id); hide_modal(); }
+            "Cancel": cancel_fn,
+            "OK": ok_fn
         });
     };
     track_dropdown["Remove"] = function() {

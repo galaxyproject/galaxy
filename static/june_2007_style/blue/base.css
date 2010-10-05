@@ -11,6 +11,7 @@ a:link,a:visited,a:active{color:#303030;}
 h1,h2,h3,h4{color:#023858;}
 h1:first-child,h2:first-child,h3:first-child,h4:first-child{margin-top:0px;}
 hr{border:none;height:0px;border-bottom:dotted #303030 1px;}
+table{border-collapse:collapse;}
 th{text-align:left;}
 div.toolForm{border:solid #d8b365 1px;}
 div.toolFormTitle{font-weight:bold;padding:5px;padding-left:10px;padding-right:10px;background:#ebd9b2;background-repeat:repeat-x;background-position:top;border-bottom:solid #d8b365 1px;}

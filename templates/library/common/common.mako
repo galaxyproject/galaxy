@@ -472,7 +472,7 @@
 <%def name="render_actions_on_multiple_items()">
     <tfoot>
         <tr>
-            <td colspan="4" style="padding-left: 42px;">
+            <td colspan="5" style="padding-left: 42px;">
                 For selected items:
                 <select name="do_action" id="action_on_selected_items">
                     %if ( trans.user_is_admin() and cntrller=='library_admin' ):

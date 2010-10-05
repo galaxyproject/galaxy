@@ -14,7 +14,7 @@
         %if column.filterable == "advanced":
             <td align="left" style="padding-left: 10px">${column_label}:</td>
         %endif
-        <td>
+        <td style="padding: 0;">
             %if isinstance(column, TextColumn):
                 <form class="text-filter-form" column_key="${column.key}" action="${url( dict() )}" method="get" >
                     ## Carry forward filtering criteria with hidden inputs.
@@ -40,7 +40,7 @@
                                     <span class='text-filter-val'>
                                         ${cur_filter_dict[column.key]}
                                         <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                                        <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>                                
+                                        <a href="${url( filter_all.get_url_args() )}"><span class="delete-search-icon" /></a>                                
                                     </span>
                                 %endif
                             %elif isinstance( column_filter, list ):
@@ -54,17 +54,17 @@
                                             del new_filter[ i ]
                                             new_column_filter = GridColumnFilter( "", { column.key : h.to_json_string( new_filter ) } )
                                         %>
-                                        <a href="${url( new_column_filter.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>
+                                        <a href="${url( new_column_filter.get_url_args() )}"><span class="delete-search-icon" /></a>
                                     </span>
                                 %endfor
                             %endif
                         %endif
                     </span>
                     ## Print input field for column.
-                    <span>
+                    <span class="search-box">
                         <% value = iff( column.filterable == "standard", column.label.lower(), "") %>
-                        <input class="no-padding-or-margin" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="15"/>
-                        <input class='submit-image' type='image' src='${h.url_for('/static/images/mag_glass.png')}' alt='Filter'/>
+                        <input class="search-box-input" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="15"/>
+                        <button class="submit-image" type="submit" title='Search'/>
                     </span>
                 </form>
             %else:
@@ -98,7 +98,7 @@
     ## Standard search.
     <div>
         <table><tr>
-            <td>
+            <td style="padding: 0;">
                 <table>
                 %for column in grid.columns:
                     %if column.filterable == "standard":
@@ -124,7 +124,7 @@
                 %>
                 %if show_advanced_search_link:
                     <% args = { "advanced-search" : True } %>
-                    | <a href="${url( args )}" class="advanced-search-toggle">Advanced Search</a>
+                    <a style="margin-left: 10px;" href="${url( args )}" class="advanced-search-toggle">Advanced Search</a>
                 %endif
             </td>
         </tr></table>
@@ -144,12 +144,11 @@
                     cur_filter_dict[column.key] != default_filter_dict[column.key]:
                         advanced_search_display = "block"
     %>
-    <div id="more-search-options" style="display: ${advanced_search_display}; padding-top: 5px">
-        <table style="border: 1px solid gray;">
+    <div id="more-search-options" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;">
+        <table>
             <tr><td style="text-align: left" colspan="100">
-                Advanced Search | 
                 <% args = { "advanced-search" : False } %>
-                <a href="${url( args )}" class="advanced-search-toggle">Close</a>
+                <a href="${url( args )}" class="advanced-search-toggle">Close Advanced Search</a>
                 ## Link to clear all filters.
                 ##|
                 ##<%

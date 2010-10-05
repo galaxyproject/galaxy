@@ -25,7 +25,6 @@ templates = [ ( "base.css.tmpl", "base.css" ),
               ( "history.css.tmpl", "history.css" ),
               ( "tool_menu.css.tmpl", "tool_menu.css" ),
               ( "iphone.css.tmpl", "iphone.css" ),
-              ( "reset.css.tmpl", "reset.css" ),
               ( "autocomplete_tagging.css.tmpl", "autocomplete_tagging.css" ),
               ( "trackster.css.tmpl", "trackster.css" ) ]
 
