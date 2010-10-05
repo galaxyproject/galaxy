@@ -65,15 +65,16 @@
                     <option value="-strand minus">Minus (reverse complement)</option>
                 </param>
                 <param name="matrix" type="select" label="Scoring matrix">
-                    <option value="-matrix BLOSUM62">BLOSUM62 (default)</option>
                     <option value="-matrix BLOSUM90">BLOSUM90</option>
                     <option value="-matrix BLOSUM80">BLOSUM80</option>
+                    <option value="-matrix BLOSUM62" selected="true">BLOSUM62 (default)</option>
                     <option value="-matrix BLOSUM50">BLOSUM50</option> 
                     <option value="-matrix BLOSUM45">BLOSUM45</option>
                     <option value="-matrix PAM250">PAM250</option>
                     <option value="-matrix PAM70">PAM70</option>
                     <option value="-matrix PAM30">PAM30</option>
                 </param>
+
             </when>
         </conditional>
     </inputs>
