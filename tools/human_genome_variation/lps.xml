@@ -224,9 +224,9 @@ Let **x** be a row from your input dataset and let **b** be a column
 from the results file.  To compute the probability that row **x** has
 a label value of +1:
 
-  Probability(row **x** has label value = +1) = 1 / [1 + exp{**x** \* **b**\[1..n-1\] + **b**\[n\]}]
+  Probability(row **x** has label value = +1) = 1 / [1 + exp{**x** \* **b**\[1..N-1\] + **b**\[N\]}]
 
-where **x** \* **b**\[1..n-1\] represents matrix multiplication.
+where **x** \* **b**\[1..N-1\] represents matrix multiplication.
 
 The second output dataset, called the log file, is a text file which
 contains additional data about the fitted L1-regularized logistic

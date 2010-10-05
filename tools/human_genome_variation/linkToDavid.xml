@@ -72,7 +72,7 @@ The list is limited to 400 IDs.
 
 **Dataset formats**
 
-The input dataset is tabular_ format.  The output dataset is html_ format with 
+The input dataset is in tabular_ format.  The output dataset is html_ with
 a link to the DAVID website as described below.
 (`Dataset missing?`_)
 

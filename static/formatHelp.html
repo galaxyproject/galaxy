@@ -1,5 +1,13 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<head><title>Galaxy Data Formats</title>
+<head>
+<title>Galaxy Data Formats</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+	hr  { margin-top: 3ex; margin-bottom: 1ex; border: 1px inset }
+</style>
 </head>
 <body>
 <h2>Galaxy Data Formats</h2>
@@ -18,16 +26,15 @@ data, or even the correct columns needed by the tool, but filtering
 by format at least makes the list to select from a bit shorter.
 <p>
 Some of the formats are defined hierarchically, going from very
-general ones like <a href="#tab">tabular</a> (which includes any text
+general ones like <a href="#tab">Tabular</a> (which includes any text
 file with tab-separated columns), to more restrictive sub-formats
-like <a href="#interval">interval</a> (where three of the columns
+like <a href="#interval">Interval</a> (where three of the columns
 must be the chromosome, start position, and end position), and on
-to even more specific ones such as <a href="#bed">BED</a> or
-<a href="#gff">GFF</a> that have additional requirements.  So for
-example if a tool's required input format is tabular, then all of
-your history items whose format is recorded as tabular will be
-listed, along with those in all sub-formats that also qualify as
-tabular (interval, BED, GFF, etc.).
+to even more specific ones such as <a href="#bed">BED</a> that have
+additional requirements.  So for example if a tool's required input
+format is Tabular, then all of your history items whose format is
+recorded as Tabular will be listed, along with those in all
+sub-formats that also qualify as Tabular (Interval, BED, GFF, etc.).
 <p>
 There are two usual methods for changing a dataset's format in
 Galaxy: if the file contents are already in the required format but
@@ -37,7 +44,7 @@ manually by clicking on the pencil icon beside that dataset in your
 history.  Or, if the file contents really are in a different format,
 Galaxy provides a number of format conversion tools (e.g. in the
 Text Manipulation and Convert Formats categories).  For instance,
-if the tool you want to run requires tabular but your columns are
+if the tool you want to run requires Tabular but your columns are
 delimited by spaces or commas, you can use the "Convert delimiters
 to TAB" tool under Text Manipulation to reformat your data.  However
 if your files are in a completely unsupported format, then you need
@@ -47,7 +54,7 @@ to convert them yourself before uploading.
 
 <h3>Format Descriptions</h3>
 <ul>
-<li><a href="#ab1">Ab1</a>
+<li><a href="#ab1">AB1</a>
 <li><a href="#axt">AXT</a>
 <li><a href="#bam">BAM</a>
 <li><a href="#bed">BED</a>
@@ -55,19 +62,19 @@ to convert them yourself before uploading.
 <li><a href="#binseq">Binseq.zip</a>
 <li><a href="#fasta">FASTA</a>
 <li><a href="#fastqsolexa">FastqSolexa</a>
-<li><a href="#fped">fped</a>
+<li><a href="#fped">FPED</a>
 <li><a href="#gff">GFF</a>
 <li><a href="#gff3">GFF3</a>
 <li><a href="#gtf">GTF</a>
 <li><a href="#html">HTML</a>
 <li><a href="#interval">Interval</a>
 <li><a href="#lav">LAV</a>
-<li><a href="#lped">lped</a>
+<li><a href="#lped">LPED</a>
 <li><a href="#maf">MAF</a>
-<li><a href="#pbed">pbed</a>
+<li><a href="#pbed">PBED</a>
 <li><a href="#psl">PSL</a>
-<li><a href="#scf">Scf</a>
-<li><a href="#sff">Sff</a>
+<li><a href="#scf">SCF</a>
+<li><a href="#sff">SFF</a>
 <li><a href="#table">Table</a>
 <li><a href="#tab">Tabular</a>
 <li><a href="#txtseqzip">Txtseq.zip</a>
@@ -75,17 +82,23 @@ to convert them yourself before uploading.
 <li><a href="#text">Other text type</a>
 </ul>
 <p>
+
+<div><a name="ab1"></a></div>
 <hr>
-
-<strong>Ab1</strong>
-<a name="ab1"/>
+<strong>AB1</strong>
 <p>
-A binary sequence file in 'ab1' format with a '.ab1' file extension.
-You must manually select this file format when uploading the file.
-<hr/>
+This is one of the ABIF family of binary sequence formats from
+Applied Biosystems Inc.
+<!-- Their PDF
+<a href="http://www.appliedbiosystems.com/support/software_community/ABIF_File_Format.pdf"
+>format specification</a> is unfortunately password-protected. -->
+Files should have a '<code>.ab1</code>' file extension.  You must
+manually select this file format when uploading the file.
+<p>
 
+<div><a name="axt"></a></div>
+<hr>
 <strong>AXT</strong>
-<a name="axt"/>
 <p>
 Used for pairwise alignment output from BLASTZ, after post-processing.
 Each alignment block contains three lines: a summary line and two
@@ -94,44 +107,53 @@ The summary line contains chromosomal position and size information
 about the alignment, and consists of nine required fields.
 <a href="http://main.genome-browser.bx.psu.edu/goldenPath/help/axt.html"
 >More information</a>
+<!-- (not available on Main)
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>FASTA<br/>
-Convert Formats&rarr;AXT to FASTA
-<li>LAV<br/>
-Convert Formats&rarr;AXT to LAV
+<li>FASTA<br>
+Convert Formats &rarr; AXT to FASTA
+<li>LAV<br>
+Convert Formats &rarr; AXT to LAV
 </ul></dl>
-<hr/>
-
-<strong>BAM</strong>
-<a name="bam"/>
+-->
 <p>
-A binary file compressed in the BGZF format with a '.bam' file
-extension.
-<a href="http://samtools.sourceforge.net/SAM1.pdf">SAM</a> format
-is the human readable text version of these files.
+
+<div><a name="bam"></a></div>
+<hr>
+<strong>BAM</strong>
+<p>
+A binary alignment file compressed in the BGZF format with a
+'<code>.bam</code>' file extension.
+<!-- You must manually select this file format when uploading the file. -->
+<a href="http://samtools.sourceforge.net/SAM1.pdf">SAM</a>
+is the human-readable text version of this format.
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>pileup<br/>
-NGS: SAM Tools&rarr;Generate pileup<br/>
-<li>interval<br/>
-First you have to go to pileup as above then
-NGS: SAM Tools&rarr;Pileup-to-Interval
+<li>SAM<br>
+NGS: SAM Tools &rarr; BAM-to-SAM
+<li>Pileup<br>
+NGS: SAM Tools &rarr; Generate pileup
+<li>Interval<br>
+First convert to Pileup as above, then use
+NGS: SAM Tools &rarr; Pileup-to-Interval
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="bed"></a></div>
+<hr>
 <strong>BED</strong>
-<a name="bed"/>
 <p>
 <ul>
-<li> also qualifies as tabular
-<li> also qualifies as interval
+<li> also qualifies as Tabular
+<li> also qualifies as Interval
 </ul>
 This tab-separated format describes a genomic interval, but has
 strict field specifications for use in genome browsers.  BED files
 can have from 3 to 12 columns, but the order of the columns matters,
 and only the end ones can be omitted.  Some groups of columns must
-be all present or all absent.
+be all present or all absent.  As in Interval format (but unlike
+GFF and its relatives), the interval endpoints use a 0-based,
+half-open numbering system.
 <a href="http://main.genome-browser.bx.psu.edu/goldenPath/help/hgTracksHelp.html#BED"
 >Field specifications</a>
 <p>
@@ -142,17 +164,18 @@ chr22 2000 6000 cloneB 900 - 2000 6000 0 2 433,399, 0,3601
 </pre>
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>GFF<br/>
-Convert Formats&rarr;BED-to-GFF
+<li>GFF<br>
+Convert Formats &rarr; BED-to-GFF
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="bedgraph"></a></div>
+<hr>
 <strong>BedGraph</strong>
-<a name="bedgraph"/>
 <p>
 <ul>
-<li> also qualifies as tabular
-<li> also qualifies as interval
+<li> also qualifies as Tabular
+<li> also qualifies as Interval
 <li> also qualifies as BED
 </ul>
 <a href="http://main.genome-browser.bx.psu.edu/goldenPath/help/bedgraph.html"
@@ -160,26 +183,28 @@ Convert Formats&rarr;BED-to-GFF
 that is displayed as a wiggle score in tracks.  Unlike in Wiggle
 format, the exact value of this score can be retrieved after being
 loaded as a track.
-<hr/>
-
-<strong>Binseq.zip</strong>
-<a name="binseq"/>
 <p>
-A zipped archive consisting of binary sequence files in either
-'ab1' or 'scf' format.  All files in this archive must have the same
-file extension which is one of '.ab1' or '.scf'.  You must manually
-select this file format when uploading the file.
-<hr/>
 
+<div><a name="binseq"></a></div>
+<hr>
+<strong>Binseq.zip</strong>
+<p>
+A zipped archive consisting of binary sequence files in either AB1
+or SCF format.  All files in this archive must have the same file
+extension which is one of '<code>.ab1</code>' or '<code>.scf</code>'.
+You must manually select this file format when uploading the file.
+<p>
+
+<div><a name="fasta"></a></div>
+<hr>
 <strong>FASTA</strong>
-<a name="fasta"/>
 <p>
 A sequence in 
 <a href="http://www.ncbi.nlm.nih.gov/blast/fasta.shtml">FASTA</a>
 format consists of a single-line description, followed by lines of
 sequence data.  The first character of the description line is a
-greater-than ("&gt;") symbol.  All lines should be shorter than 80
-characters.
+greater-than ('<code>&gt;</code>') symbol.  All lines should be
+shorter than 80 characters.
 <pre>
 >sequence1
 atgcgtttgcgtgc
@@ -190,16 +215,17 @@ tggcgcggtga
 </pre>
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>tabular<br/>
-Convert Formats&rarr;FASTA-to-Tabular
+<li>Tabular<br>
+Convert Formats &rarr; FASTA-to-Tabular
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="fastqsolexa"></a></div>
+<hr>
 <strong>FastqSolexa</strong>
-<a name="fastqsolexa"/>
 <p>
 <a href="http://maq.sourceforge.net/fastq.shtml">FastqSolexa</a>
-is the Illumina (Solexa) variant of the Fastq format, which stores
+is the Illumina (Solexa) variant of the FASTQ format, which stores
 sequences and quality scores in a single file.
 <pre>
 @seq1  
@@ -224,82 +250,97 @@ GAGTTCTCGTCGCCTGTAGGCACCATCAATCGTATG
 </pre>
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>FASTA<br/>
-Convert Formats&rarr;FASTQ to FASTA    
+<li>FASTA<br>
+NGS: QC and manipulation &rarr; Generic FASTQ manipulation &rarr; FASTQ to FASTA
+<li>Tabular<br>
+NGS: QC and manipulation &rarr; Generic FASTQ manipulation &rarr; FASTQ to Tabular
 </ul></dl>
-<hr/>
+<p>
 
-<strong>fped</strong>
-<a name="fped"/>
+<div><a name="fped"></a></div>
+<hr>
+<strong>FPED</strong>
 <p>
 Also known as the FBAT format, for use with the
 <a href="http://biosun1.harvard.edu/~fbat/fbat.htm">FBAT</a> program.
 It consists of a pedigree file and a phenotype file.
-<hr/>
+<p>
 
+<div><a name="gff"></a></div>
+<hr>
 <strong>GFF</strong>
-<a name="gff"/>
 <p>
 <ul>
-<li> also qualifies as tabular
-<li> also qualifies as interval
+<li> also qualifies as Tabular
 </ul>
 GFF is a tab-separated format somewhat similar to BED, but it has
 different columns and is more flexible.  There are
 <a href="http://main.genome-browser.bx.psu.edu/FAQ/FAQformat#format3"
 >nine required fields</a>.
+Note that unlike Interval and BED, GFF and its relatives (GFF3, GTF)
+use 1-based inclusive coordinates to specify genomic intervals.
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>BED<br/>
-Convert Formats&rarr;GFF-to-BED
+<li>BED<br>
+Convert Formats &rarr; GFF-to-BED
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="gff3"></a></div>
+<hr>
 <strong>GFF3</strong>
-<a name="gff3"/>
 <p>
 <ul>
-<li> also qualifies as tabular
-<li> also qualifies as interval
+<li> also qualifies as Tabular
 </ul>
 The <a href="http://www.sequenceontology.org/gff3.shtml">GFF3</a>
-format addresses the most common extensions to GFF, while preserving
-backward compatibility with previous formats.
-<hr/>
+format addresses the most common extensions to GFF, while attempting
+to preserve compatibility with previous formats.
+Note that unlike Interval and BED, GFF and its relatives (GFF3, GTF)
+use 1-based inclusive coordinates to specify genomic intervals.
+<p>
 
+<div><a name="gtf"></a></div>
+<hr>
 <strong>GTF</strong>
-<a name="gtf"/>
 <p>
 <ul>
-<li> also qualifies as tabular
-<li> also qualifies as interval
+<li> also qualifies as Tabular
 </ul>
 <a href="http://main.genome-browser.bx.psu.edu/FAQ/FAQformat#format4"
->GTF</a> is a format for describing genes and other features
-associated with DNA, RNA, and protein sequences.
+>GTF</a> is a format for describing genes and other features associated
+with DNA, RNA, and protein sequences.  It is a refinement to GFF that
+tightens the specification.
+Note that unlike Interval and BED, GFF and its relatives (GFF3, GTF)
+use 1-based inclusive coordinates to specify genomic intervals.
+<!-- (not available on Main)
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>BedGraph<br/>
-Convert Formats&rarr;GTF-to-BEDGraph
+<li>BedGraph<br>
+Convert Formats &rarr; GTF-to-BEDGraph
 </ul></dl>
-<hr/>
+-->
+<p>
 
+<div><a name="html"></a></div>
+<hr>
 <strong>HTML</strong>
-<a name="html"/>
 <p>
 This format is an HTML web page.  Click the eye icon next to the
 dataset to view it in your browser.
-<hr/>
+<p>
 
+<div><a name="interval"></a></div>
+<hr>
 <strong>Interval</strong>
-<a name="interval">
 <p>
 <ul>
-<li> also qualifies as tabular
+<li> also qualifies as Tabular
 </ul>
 This Galaxy format represents genomic intervals.  It is tab-separated,
 but has the added requirement that three of the columns must be the
-chromosome name, start position, and end position.  An optional
+chromosome name, start position, and end position, where the positions
+use a 0-based, half-open numbering system (see below).  An optional
 strand column can also be specified, and an initial header row can
 be used to label the columns, which do not have to be in any special
 order.  Arbitrary additional columns can also be present.
@@ -317,7 +358,8 @@ Required fields:
 </ul>
 Optional:
 <ul>
-<li>STRAND - Defines the strand, either '+' or '-'.
+<li>STRAND - Defines the strand, either '<code>+</code>' or
+'<code>-</code>'.
 <li>Header row
 </ul>
 Example:
@@ -328,173 +370,202 @@ Example:
 </pre>
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>BED<br/>
+<li>BED<br>
 The exact changes needed and tools to run will vary with what fields
-are in the interval file and what type of BED you are converting to.
-In general you will likely use Text Manipulation&rarr;Compute, Cut,
+are in the Interval file and what type of BED you are converting to.
+In general you will likely use Text Manipulation &rarr; Compute, Cut,
 or Merge Columns.
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="lav"></a></div>
+<hr>
 <strong>LAV</strong>
-<a name="lav"/>
 <p>
 <a href="http://www.bx.psu.edu/miller_lab/dist/lav_format.html">LAV</a>
 is the raw pairwise alignment format that is output by BLASTZ.  The
 first line begins with <code>#:lav</code>.
+<!-- (not available on Main)
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>BED<br/>
-Convert Formats&rarr;LAV to BED
+<li>BED<br>
+Convert Formats &rarr; LAV to BED
 </ul></dl>
-<hr/>
-
-<strong>lped</strong>
-<a name="lped"/>
+-->
 <p>
-This is the linkage pedigree format, which consists of separate
-<code>map</code> and <code>ped</code> files.  Together these files
-describe SNPs; the map file contains the position and an identifier
-for the SNP, while the pedigree file has the alleles.
-To upload this format into Galaxy, do not use auto-detect for the
-file format; instead select <code>lped</code>.  You will then be
-given two sections for uploading files, one for the pedigree file
-and one for the map file.  For more information, see
-<a href="http://www.broadinstitute.org/science/programs/medical-and-population-genetics/haploview/input-file-formats-0">linkage pedigree</a>,
-<a href="http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml#map">map</a>,
-and/or <a href="http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml#ped">ped</a>.
+
+<div><a name="lped"></a></div>
+<hr>
+<strong>LPED</strong>
+<p>
+This is the linkage pedigree format, which consists of separate MAP and PED
+files.  Together these files describe SNPs; the map file contains the position
+and an identifier for the SNP, while the pedigree file has the alleles.  To
+upload this format into Galaxy, do not use Auto-detect for the file format;
+instead select <code>lped</code>.  You will then be given two sections for
+uploading files, one for the pedigree file and one for the map file.  For more
+information, see
+<a href="http://www.broadinstitute.org/science/programs/medical-and-population-genetics/haploview/input-file-formats-0"
+>linkage pedigree</a>,
+<a href="http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml#map">MAP</a>,
+and/or <a href="http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml#ped">PED</a>.
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>pbed<br/>Automatic
-<li>fped<br/>Automatic
+<li>PBED<br>Automatic
+<li>FPED<br>Automatic
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="maf"></a></div>
+<hr>
 <strong>MAF</strong>
-<a name="maf"/>
 <p>
-Multiple alignment format that is output by TBA and Multiz.  The
-first line begins with <code>##maf</code>.  This word is followed by
-whitespace-separated "variable=value pairs".  There should be no
-whitespace surrounding the "=".
 <a href="http://main.genome-browser.bx.psu.edu/FAQ/FAQformat#format5"
->More information</a>
+>MAF</a> is the multi-sequence alignment format that is output by TBA
+and Multiz.  The first line begins with '<code>##maf</code>'.  This
+word is followed by whitespace-separated "variable<code>=</code>value"
+pairs.  There should be no whitespace surrounding the '<code>=</code>'.
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>BED<br/>
-Convert Formats&rarr;MAF to BED
-<li>interval<br/>
-Convert Formats&rarr;MAF to Interval
-<li>FASTA<br/>
-Convert Formats&rarr;MAF to FASTA
+<li>BED<br>
+Convert Formats &rarr; MAF to BED
+<li>Interval<br>
+Convert Formats &rarr; MAF to Interval
+<li>FASTA<br>
+Convert Formats &rarr; MAF to FASTA
 </ul></dl>
-<hr/>
-
-<strong>pbed</strong>
-<a name="pbed"/>
 <p>
-This is the binary version of the lped file format.
+
+<div><a name="pbed"></a></div>
+<hr>
+<strong>PBED</strong>
+<p>
+This is the binary version of the LPED format.
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>lped<br/>Automatic
+<li>LPED<br>Automatic
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="psl"></a></div>
+<hr>
 <strong>PSL</strong>
-<a name="psl"/>
 <p>
 <a href="http://main.genome-browser.bx.psu.edu/FAQ/FAQformat#format2">PSL</a>
 format is used for alignments returned by
 <a href="http://genome.ucsc.edu/cgi-bin/hgBlat?command=start">BLAT</a>.
 It does not include any sequence.
-<hr/>
-
-<strong>Scf</strong>
-<a name="scf"/>
 <p>
-A binary sequence file in 'scf' format with a '.scf' file extension.
-You must manually select this file format when uploading the file.
+
+<div><a name="scf"></a></div>
+<hr>
+<strong>SCF</strong>
+<p>
+This is a binary sequence format originally designed for the Staden
+sequence handling software package.  Files should have a
+'<code>.scf</code>' file extension.  You must manually select this
+file format when uploading the file.
 <a href="http://staden.sourceforge.net/manual/formats_unix_2.html"
 >More information</a>
-<hr/>
-
-<strong>Sff</strong>
-<a name="sff"/>
 <p>
-A binary file in 'Standard Flowgram Format' with a '.sff' file extension.
+
+<div><a name="sff"></a></div>
+<hr>
+<strong>SFF</strong>
+<p>
+This is a binary sequence format used by the Roche 454 GS FLX
+sequencing machine, and is documented on p.&nbsp;528 of their
+<a href="http://sequence.otago.ac.nz/download/GS_FLX_Software_Manual.pdf"
+>software manual</a>.  Files should have a '<code>.sff</code>' file
+extension.
+<!-- You must manually select this file format when uploading the file. -->
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>FASTA<br/>
-Convert Formats&rarr;SFF converter
-<li>FASTQ<br/>
-Convert Formats&rarr;SFF converter
+<li>FASTA<br>
+Convert Formats &rarr; SFF converter
+<li>FASTQ<br>
+Convert Formats &rarr; SFF converter
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="table"></a></div>
+<hr>
 <strong>Table</strong>
-<a name="table"/>
 <p>
 Text data separated into columns by something other than tabs.
-<hr/>
+<p>
 
+<div><a name="tab"></a></div>
+<hr>
 <strong>Tabular (tab-delimited)</strong>
-<a name="tab"/>
 <p>
 One or more columns of text data separated by tabs.
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>FASTA<br/>
-Convert Formats&rarr;Tabular-to-FASTA<br/>
-The tabular file must have a title and sequence column.
-<li>interval<br/>
-If the tabular file has the chromosome, or is all on one chromosome,
-and has a position you can create an interval file (e.g. for SNPs).
-If it is all on one chromosome, use Text Manipulation&rarr;Add column
-to add a chromosome column.  If the given position is 1-based, use
-Text Manipulation&rarr;Compute with the position column minus 1 to
-get the start, and use the original given column for the end.
-If the given position is 0-based, use it as the start, and compute
-that plus 1 to get the end.
+<li>FASTA<br>
+Convert Formats &rarr; Tabular-to-FASTA<br>
+The Tabular file must have a title and sequence column.
+<li>FASTQ<br>
+NGS: QC and manipulation &rarr; Generic FASTQ manipulation &rarr; Tabular to FASTQ
+<li>Interval<br>
+If the Tabular file has a chromosome column (or is all on one
+chromosome) and has a position column, you can create an Interval
+file (e.g. for SNPs).  If it is all on one chromosome, use
+Text Manipulation &rarr; Add column to add a CHROM column.
+If the given position is 1-based, use
+Text Manipulation &rarr; Compute with the position column minus 1 to
+get the START, and use the original given column for the END.
+If the given position is 0-based, use it as the START, and compute
+that plus 1 to get the END.
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="txtseqzip"></a></div>
+<hr>
 <strong>Txtseq.zip</strong>
-<a name="txtseqzip"/>
 <p>
 A zipped archive consisting of flat text sequence files.  All files
-in this archive must have the same file extension of '.txt'.  You
-must manually select this file format when uploading the file.
-<hr/>
-
-<strong>Wiggle custom track</strong>
-<a name="wig"/>
+in this archive must have the same file extension of
+'<code>.txt</code>'.  You must manually select this file format when
+uploading the file.
 <p>
-The wiggle format is line-oriented.  Wiggle data is preceded by a
-track definition line, which specifies the type of wiggle.  There
-are three different types, for different uses.
+
+<div><a name="wig"></a></div>
+<hr>
+<strong>Wiggle custom track</strong>
+<p>
+Wiggle tracks are typically used to display per-nucleotide scores
+in a genome browser.  The Wiggle format for custom tracks is
+line-oriented, and the wiggle data is preceded by a track definition
+line that specifies which of three different types is being used.
 <a href="http://main.genome-browser.bx.psu.edu/goldenPath/help/wiggle.html"
 >More information</a>
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>interval<br/>
-Convert Formats&rarr;Wiggle-to-Interval<br/>
-As a second step this could be converted to BED-3 or BED-4 by removing
-columns, using Text Manipulation&rarr;Cut columns from a table.
+<li>Interval<br>
+Get Genomic Scores &rarr; Wiggle-to-Interval
+<li>As a second step this could be converted to 3- or 4-column BED,
+by removing extra columns using
+Text Manipulation &rarr; Cut columns from a table.
 </ul></dl>
-<hr/>
+<p>
 
+<div><a name="text"></a></div>
+<hr>
 <strong>Other text type</strong>
-<a name="text"/>
 <p>
 Any text file.
 <dl><dt>Can be converted to:
 <dd><ul>
-<li>tabular<br/>
-If this has fields separated by spaces, commas, or some other
-delimiter it can be converted to tabular using
-Text Manipulation&rarr;Convert delimiters to TAB
+<li>Tabular<br>
+If the text has fields separated by spaces, commas, or some other
+delimiter, it can be converted to Tabular by using
+Text Manipulation &rarr; Convert delimiters to TAB.
 </ul></dl>
+<p>
+
 <!-- blank lines so internal links will jump farther to end -->
-<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+<br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br>
 </body>
 </html>
