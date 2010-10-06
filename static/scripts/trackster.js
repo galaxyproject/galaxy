@@ -199,9 +199,9 @@ $.extend( View.prototype, {
             this.original_low = view.low;
             this.current_height = e.clientY;
             this.current_x = e.offsetX;
-            this.active = (e.clientX < view.viewport_container.width() - 16) ? true : false; // Fix webkit scrollbar
+            this.enable_pan = (e.clientX < view.viewport_container.width() - 16) ? true : false; // Fix webkit scrollbar
         }).bind( "drag", function( e ) {
-            if (!this.active) { return; }
+            if (!this.enable_pan || this.in_reordering) { return; }
             var container = $(this);
             var delta = e.offsetX - this.current_x;
             var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
@@ -338,7 +338,7 @@ $.extend( View.prototype, {
         track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[this.tracks.indexOf(track)];
         this.num_tracks -= 1;
-    },
+    },/* No longer needed as config is done inline, one track at a time
     update_options: function() {
         this.has_changes = true;
         var sorted = $("ul#sortable-ul").sortable('toArray');
@@ -353,7 +353,7 @@ $.extend( View.prototype, {
                 track.update_options(track_id);
             }
         }
-    },
+    },*/
     reset: function() {
         this.low = this.max_low;
         this.high = this.max_high;
@@ -439,6 +439,7 @@ $.extend( Track.prototype, {
         this.container_div = $("<div />").addClass('track')
         if (!this.hidden) {
             this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
+            this.drag_div = $("<div class='draghandle' />").appendTo(this.header_div);
             this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
             this.name_div.text(this.name);
         }
@@ -555,6 +556,7 @@ var TiledTrack = function() {
         }
     };
     make_popupmenu(track.name_div, track_dropdown);
+    
     /*
     if (track.overview_check_div === undefined) {
         track.overview_check_div = $("<div class='right-float' />").css("margin-top", "-3px").appendTo(track.header_div);

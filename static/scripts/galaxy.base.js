@@ -551,6 +551,9 @@ $(".trackster-add").live("click", function() {
         success: function(table_html) {
             var parent = window.parent;
             parent.show_modal("Add to Browser:", table_html, {
+                "Cancel": function() {
+                    parent.hide_modal();
+                },
                 "Insert into selected": function() {
                     $(parent.document).find('input[name=id]:checked').each(function() {
                         var vis_id = $(this).val();
@@ -559,9 +562,6 @@ $(".trackster-add").live("click", function() {
                 },
                 "Insert into new browser": function() {
                     parent.location = dataset_jquery.attr("new-url");
-                },
-                "Cancel": function() {
-                    parent.hide_modal();
                 }
             });
         }

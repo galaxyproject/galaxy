@@ -114,12 +114,14 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 $("#no-tracks").show();
             }
             $("#title").text(view.title + " (" + view.dbkey + ")");
-            $("ul#sortable-ul").sortable({
-                update: function(event, ui) {
-                    for (var track_id in view.tracks) {
-                        var track = view.tracks[track_id];
-                    }
-                }
+            $(".viewport-container").sortable({
+                start: function(e, ui) {
+                    view.in_reordering = true;
+                },
+                stop: function(e, ui) {
+                    view.in_reordering = false;
+                },
+                handle: ".draghandle",
             });
             
             window.onbeforeunload = function() {
@@ -157,6 +159,9 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     error: function() { alert( "Grid refresh failed" ); },
                     success: function(table_html) {
                         show_modal("Add Track &mdash; Select Dataset(s)", table_html, {
+                            "Cancel": function() {
+                                hide_modal();
+                            },
                             "Insert": function() {
                                 $('input[name=id]:checked').each(function() {
                                     var item_id = $(this).val();
@@ -169,21 +174,18 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
 
                                 });
                                 hide_modal();
-                            },
-                            "Cancel": function() {
-                                hide_modal();
                             }
                         });
                     }
                 });
             });
-
+            
             $("#save-button").bind("click", function(e) {
-                view.update_options();
-                var sorted = $("ul#sortable-ul").sortable('toArray');
-                var payload = [];
+                var sorted = $(".viewport-container").sortable('toArray'),
+                    payload = [];
+                    
                 for (var i in sorted) {
-                    var track_id = parseInt(sorted[i].split("track_")[1].split("_li")[0]),
+                    var track_id = parseInt(sorted[i].split("track_")[1]),
                         track = view.tracks[track_id];
                     
                     payload.push( {
