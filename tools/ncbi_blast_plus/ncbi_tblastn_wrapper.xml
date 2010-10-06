@@ -16,6 +16,11 @@ $adv_opts.matrix
 -out $output1
 -outfmt $out_format
 -num_threads 8
+## Need int(str(...)) because $adv_opts.max_hits is an InputValueWrapper object not a string
+## Note -max_target_seqs overrides -num_descriptions and -num_alignments
+#if (str($adv_opts.max_hits) and int(str($adv_opts.max_hits)) > 0):
+-max_target_seqs $adv_opts.max_hits
+#end if
     </command>
     <inputs>
         <param name="query" type="data" format="fasta" label="Protein query sequence(s)"/> 
@@ -55,6 +60,7 @@ $adv_opts.matrix
             <when value="basic">
                 <param name="filter_query" type="hidden" value="" />
                 <param name="matrix" type="hidden" value="" />
+                <param name="max_hits" type="hidden" value="" />
             </when>
             <when value="advanced">
                 <!-- Could use a select (yes, no, other) where other allows setting 'window locut hicut' -->
@@ -68,6 +74,10 @@ $adv_opts.matrix
                     <option value="-matrix PAM250">PAM250</option>
                     <option value="-matrix PAM70">PAM70</option>
                     <option value="-matrix PAM30">PAM30</option>
+                </param>
+                <!-- Why doesn't optional override a validator? I want to accept an empty string OR a non-negative integer -->
+                <param name="max_hits" type="integer" value="0" lable="Maximum hits to show" help="Use zero for default limits">
+                    <validator type="in_range" min="0" />
                 </param>
             </when>
         </conditional>

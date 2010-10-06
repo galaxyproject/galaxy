@@ -3,7 +3,8 @@
     <command>
 ## The command is a Cheetah template which allows some Python based syntax.
 ## Lines starting hash hash are comments. Galaxy will turn newlines into spaces
-blastn -query "$query"
+blastn
+-query "$query"
 #if $db_opts.db_opts_selector == "db":
   -db "$db_opts.database"
 #else:
@@ -16,6 +17,11 @@ $adv_opts.strand
 -out $output1
 -outfmt $out_format
 -num_threads 8
+## Need int(str(...)) because $adv_opts.max_hits is an InputValueWrapper object not a string
+## Note -max_target_seqs overrides -num_descriptions and -num_alignments
+#if (str($adv_opts.max_hits) and int(str($adv_opts.max_hits)) > 0):
+-max_target_seqs $adv_opts.max_hits
+#end if
     </command>
     <inputs>
         <param name="query" type="data" format="fasta" label="Nucleotide query sequence(s)"/> 
@@ -62,6 +68,7 @@ $adv_opts.strand
             <when value="basic">
                 <param name="filter_query" type="hidden" value="" />
                 <param name="strand" type="hidden" value="" />
+                <param name="max_hits" type="hidden" value="" />
             </when>
             <when value="advanced">
                 <!-- Could use a select (yes, no, other) where other allows setting 'level window linker' -->
@@ -70,6 +77,10 @@ $adv_opts.strand
                     <option value="-strand both">Both</option>
                     <option value="-strand plus">Plus (forward)</option>
                     <option value="-strand minus">Minus (reverse complement)</option>
+                </param>
+                <!-- Why doesn't optional override a validator? I want to accept an empty string OR a non-negative integer -->
+                <param name="max_hits" type="integer" value="0" lable="Maximum hits to show" help="Use zero for default limits">
+                    <validator type="in_range" min="0" />
                 </param>
             </when>
         </conditional>
