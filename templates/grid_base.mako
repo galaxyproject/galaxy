@@ -860,13 +860,19 @@
                                     cls = "menubutton split"
 
                             %>
-                            %if len(grid.operations) == 0:
-                                <td><a class="label" href="${href}">${v}</a></td>
-                            %elif href:
-                                <td><div id="${id}" class="${cls}" style="float: left;"><a class="label" href="${href}">${v}</a></div></td>
+                            <td>
+                            %if href:
+                                %if len(grid.operations) != 0:
+                                <div id="${id}" class="${cls}" style="float: left;">
+                                %endif
+                                    <a class="label" href="${href}">${v}</a>
+                                %if len(grid.operations) != 0:
+                                </div>
+                                %endif
                             %else:
-                                <td><div id="${id}" class="${cls}"><label for="${encoded_id}">${v}</label></div></td>
+                                <div id="${id}" class="${cls}"><label for="${encoded_id}">${v}</label></div>
                             %endif
+                            </td>
                         %endfor
                     %endif
                 %endfor
