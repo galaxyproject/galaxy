@@ -11,6 +11,7 @@ from galaxy import util
 from cgi import escape
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
+import galaxy_utils.sequence.vcf
 from sniff import *
 
 log = logging.getLogger(__name__)
@@ -459,3 +460,18 @@ class ElandMulti( Tabular ):
     
     def sniff( self, filename ):
         return False
+        
+class Vcf( Tabular ):
+    file_ext = 'vcf'
+    
+    def sniff( self, filename ):
+        try:
+            # If reader can read and parse file, it's VCF.
+            for line in list( galaxy_utils.sequence.vcf.Reader( open( filename ) ) ):
+                pass
+            return True
+        except:
+            return False
+        
+    def get_track_type( self ):
+        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree"}

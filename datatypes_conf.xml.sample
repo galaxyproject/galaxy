@@ -111,6 +111,10 @@
         <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
         <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
         <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" display_in_upload="true"/>
+        <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
+            <converter file="vcf_to_interval_index_converter.xml" target_datatype="interval_index"/>
+            <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>    
+        </datatype>
         <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
         <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
             <converter file="wiggle_to_array_tree_converter.xml" target_datatype="array_tree"/>
@@ -285,6 +289,7 @@
         <sniffer type="galaxy.datatypes.tabular:Pileup"/>
         <sniffer type="galaxy.datatypes.interval:Interval"/>
         <sniffer type="galaxy.datatypes.tabular:Sam"/>
+        <sniffer type="galaxy.datatypes.tabular:Vcf"/>
         <!--
         Keep this commented until the sniff method in the assembly.py
         module is fixed to not read the entire file.

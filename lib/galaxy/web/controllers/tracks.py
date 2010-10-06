@@ -9,7 +9,7 @@ is redirected to the browser interface, which loads the appropriate datasets.
 
 """
 
-import math, re, logging, glob, pkg_resources
+import re, pkg_resources
 pkg_resources.require( "bx-python" )
 
 from bx.seq.twobit import TwoBitFile
@@ -17,7 +17,7 @@ from galaxy import model
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
-from galaxy.web.framework.helpers import time_ago, grids
+from galaxy.web.framework.helpers import grids
 from galaxy.util.bunch import Bunch
 
 from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider

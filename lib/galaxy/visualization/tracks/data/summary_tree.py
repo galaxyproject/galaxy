@@ -19,6 +19,10 @@ class SummaryTreeDataProvider( object ):
         if st is None:
             st = summary_tree_from_file( self.dataset.file_name )
             CACHE[filename] = st
+            
+        # If chrom is not found in blocks, try removing the first three 
+        # characters (e.g. 'chr') and see if that works. This enables the
+        # provider to handle chrome names defined as chrXXX and as XXX.
         if chrom in st.chrom_blocks:
             pass
         elif chrom[3:] in st.chrom_blocks:

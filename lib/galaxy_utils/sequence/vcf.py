@@ -23,6 +23,8 @@ class VariantCall33( VariantCall ):
     required_header_length = len( required_header_fields )
     
     def __init__( self, vcf_line, metadata, sample_names ):
+        # Raw line is needed for indexing file.
+        self.raw_line = vcf_line
         self.line = vcf_line.rstrip( '\n\r' )
         self.metadata = metadata
         self.sample_names = sample_names
@@ -59,10 +61,14 @@ class Reader( object ):
         self.vcf_file = fh
         self.metadata = {}
         self.header_fields = None
+        self.metadata_len = 0
         self.sample_names = []
         self.vcf_class = None
+        
+        # Read file metadata.
         while True:
             line = self.vcf_file.readline()
+            self.metadata_len += len( line )
             assert line, 'Invalid VCF file provided.'
             line = line.rstrip( '\r\n' )
             if self.vcf_class and line.startswith( self.vcf_class.header_startswith ):
