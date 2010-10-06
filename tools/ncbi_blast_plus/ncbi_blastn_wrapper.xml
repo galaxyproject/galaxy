@@ -49,7 +49,10 @@ $adv_opts.strand
             <option value="blastn">blastn</option>
             <option value="blastn-short">blastn-short</option>
             <option value="dc-megablast">dc-megablast</option>
+            <!-- Using BLAST 2.2.24+ this gives an error:
+            BLAST engine error: Program type 'vecscreen' not supported
             <option value="vecscreen">vecscreen</option>
+            -->
         </param>
         <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff" />
         <param name="out_format" type="select" label="Output format">
