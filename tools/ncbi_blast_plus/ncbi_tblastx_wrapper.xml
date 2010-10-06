@@ -83,7 +83,7 @@ $adv_opts.matrix
                     <option value="-matrix PAM30">PAM30</option>
                 </param>
                 <!-- Why doesn't optional override a validator? I want to accept an empty string OR a non-negative integer -->
-                <param name="max_hits" type="integer" value="0" lable="Maximum hits to show (in plain text output)" help="Use zero for default limits">
+                <param name="max_hits" type="integer" value="0" label="Maximum hits to show" help="Use zero for default limits">
                     <validator type="in_range" min="0" />
                 </param>
             </when>
