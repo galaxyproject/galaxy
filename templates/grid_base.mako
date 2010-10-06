@@ -91,6 +91,10 @@
             %endif
         %endif
         
+        $(".search-box-input").live("click", function() {
+            $(this).css("font-style", "normal");
+        });
+        
         //
         // Code to handle grid operations: filtering, sorting, paging, and operations.
         //
@@ -304,7 +308,7 @@
             }
             
             // Add button that displays filter and provides a button to delete it.
-            var t = $("<span>" + value + "<a href='#'><img class='delete-search-icon' /></a></span>");
+            var t = $("<span>" + value + "<a href='javascript:void(0);'><span class='delete-search-icon' /></a></span>");
             t.addClass('text-filter-val');
             t.click(function() {
                 // Remove filter condition.
@@ -623,12 +627,11 @@
         }
         .text-filter-val {
             border: solid 1px #AAAAAA;
-            padding: 1px 3px 1px 3px;
+            padding: 1px 2px 1px 3px;
             margin-right: 5px;
             -moz-border-radius: .5em;
             -webkit-border-radius: .5em;
             font-style: italic;
-            
         }
         .page-link a, .inactive-link {
             padding: 0px 7px 0px 7px;
@@ -652,20 +655,26 @@
         #more-search-options td {
             padding: 3px;
         }
+        #more-search-options table {
+            border-collapse: separate;
+        }
         .delete-search-icon {
             background: url(${h.url_for("/static/images/delete_tag_icon_gray.png")}) center no-repeat;
             display: inline-block;
             width: 10px;
             cursor: pointer;
-            height: 16px;
+            height: 18px;
             vertical-align: middle;
+            margin-left: 2px;
+            
         }
         .search-box-input {
             border: 0;
-            margin: 0;
-            margin-left: 2px;
-            padding: 0;
+            margin: 1px 0 0 2px;
             float: left;
+            outline: medium none;
+            font-style: italic;
+            font-size: inherit;
         }
         .search-box {
             vertical-align: bottom;
