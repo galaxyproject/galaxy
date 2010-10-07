@@ -161,7 +161,6 @@ class TextToolParameter( ToolParameter ):
     """
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
-        self.name = elem.get( 'name' )
         self.size = elem.get( 'size' )
         self.value = elem.get( 'value' )
         self.area = string_as_bool( elem.get( 'area', False ) )
@@ -271,7 +270,6 @@ class BooleanToolParameter( ToolParameter ):
         ToolParameter.__init__( self, tool, elem )
         self.truevalue = elem.get( 'truevalue', 'true' )
         self.falsevalue = elem.get( 'falsevalue', 'false' )
-        self.name = elem.get( 'name' )
         self.checked = string_as_bool( elem.get( 'checked' ) )
     def get_html_field( self, trans=None, value=None, other_values={} ):
         checked = self.checked
@@ -308,7 +306,6 @@ class FileToolParameter( ToolParameter ):
         Example: C{<param name="bins" type="file" />}
         """
         ToolParameter.__init__( self, tool, elem )
-        self.name = elem.get( 'name' )
         self.ajax = string_as_bool( elem.get( 'ajax-upload' ) )
     def get_html_field( self, trans=None, value=None, other_values={}  ):
         return form_builder.FileField( self.name, ajax = self.ajax, value = value )
@@ -371,7 +368,6 @@ class HiddenToolParameter( ToolParameter ):
     """    
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
-        self.name = elem.get( 'name' )
         self.value = elem.get( 'value' )
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self.value )
@@ -391,7 +387,6 @@ class BaseURLToolParameter( ToolParameter ):
     """
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
-        self.name = elem.get( 'name' )
         self.value = elem.get( 'value', '' )
     def get_value( self, trans ):
         # url = trans.request.base + self.value
@@ -1393,7 +1388,6 @@ class DataToolParameter( ToolParameter ):
 #     """  
 #     def __init__( self, tool, elem ):
 #         ToolParameter.__init__( self, tool, elem )
-#         self.name = elem.get('name')
 #     def get_html( self, trans, value=None, other_values={} ):
 #         assert trans.history is not None, "HistoryIDParameter requires a history"
 #         self.html = form_builder.HiddenField( self.name, trans.history.id ).get_html()
