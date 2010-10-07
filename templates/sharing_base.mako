@@ -15,7 +15,7 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
-<%namespace file="./display_common.mako" import="*" />
+<%namespace file="/display_common.mako" import="*" />
 <%namespace file="/message.mako" import="render_msg" />
 
 ##
@@ -157,7 +157,7 @@
                         if item.published:
                             item_status = item_status + " and published"    
                     %>
-                    This ${item_class_name_lc} <strong>${item_status}</strong>. 
+                    This ${item_class_name_lc} is currently <strong>${item_status}</strong>. 
                     <div>
                         <p>Anyone can view and import this ${item_class_name_lc} by visiting the following URL:
 
@@ -195,10 +195,10 @@
                             %else: ## item.published == True
                                 ## Item is importable and published. User can unpublish or disable import and unpublish.
                                 <input class="action-button" type="submit" name="unpublish" value="Unpublish ${item_class_name}">
-                                <div class="toolParamHelp">Removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
+                                <div class="toolParamHelp">Removes this ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
                                 <br>
                                 <input class="action-button" type="submit" name="disable_link_access_and_unpublish" value="Disable Access to ${item_class_name} via Link and Unpublish">
-                                <div class="toolParamHelp">Disables ${item_class_name_lc}'s link so that it is not accessible and removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
+                                <div class="toolParamHelp">Disables this ${item_class_name_lc}'s link so that it is not accessible and removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
                             %endif
                 
                     </form>

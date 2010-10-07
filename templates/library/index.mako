@@ -4,7 +4,7 @@
 <%
     self.has_left_panel=False
     self.has_right_panel=False
-    self.active_view="libraries"
+    self.active_view="shared"
 %>
 </%def>
 

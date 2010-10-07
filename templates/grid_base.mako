@@ -812,7 +812,7 @@
         <% num_rows_rendered = 0 %>
         %if query.count() == 0:
             ## No results.
-            <tr><td></td><td><em>No Items</em></td></tr>
+            <tr><td colspan="100"><em>No Items</em></td></tr>
             <% num_rows_rendered = 1 %>
         %endif
         %for i, item in enumerate( query ):
