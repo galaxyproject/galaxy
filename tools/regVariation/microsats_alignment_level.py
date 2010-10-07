@@ -34,7 +34,7 @@ def main():
         fout = open(outfile, "w")
         print >>fout, "#Block\tSeq1_Name\tSeq1_Start\tSeq1_End\tSeq1_Type\tSeq1_Length\tSeq1_RepeatNumber\tSeq1_Unit\tSeq2_Name\tSeq2_Start\tSeq2_End\tSeq2_Type\tSeq2_Length\tSeq2_RepeatNumber\tSeq2_Unit"
         #sputnik_cmd = os.path.join(os.path.split(sys.argv[0])[0], "sputnik")
-        sputnik_cmd = "bx-sputnik"
+        sputnik_cmd = "sputnik"
         input = infile.read()
         skipped = 0
         block_num = 0
