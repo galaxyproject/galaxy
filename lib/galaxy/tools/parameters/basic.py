@@ -215,7 +215,7 @@ class FloatToolParameter( TextToolParameter ):
     """
     Parameter that takes a real number value.
     
-    >>> p = FloatToolParameter( None, XML( '<param name="blah" type="integer" size="4" value="3.141592" />' ) )
+    >>> p = FloatToolParameter( None, XML( '<param name="blah" type="float" size="4" value="3.141592" />' ) )
     >>> print p.name
     blah
     >>> print p.get_html()
