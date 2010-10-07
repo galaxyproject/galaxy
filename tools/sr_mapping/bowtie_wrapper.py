@@ -56,6 +56,7 @@ usage: bowtie_wrapper.py [options]
     -c, --icutoff=c: Number of first bases of the reference sequence to index
     -x, --indexSettings=x: Whether or not indexing options are to be set
     -H, --suppressHeader=H: Suppress header
+    --do_not_build_index: Flag to specify that provided file is already indexed and to just use 'as is'
 """
 
 import optparse, os, shutil, subprocess, sys, tempfile
@@ -118,6 +119,7 @@ def __main__():
     parser.add_option( '-c', '--icutoff', dest='icutoff', help='Number of first bases of the reference sequence to index' )
     parser.add_option( '-x', '--indexSettings', dest='index_settings', help='Whether or not indexing options are to be set' )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
+    parser.add_option( '--do_not_build_index', dest='do_not_build_index', action="store_true", default=False, help='Flag to specify that provided file is already indexed, use as is' )
     (options, args) = parser.parse_args()
     stdout = ''
 
@@ -129,7 +131,7 @@ def __main__():
     else:
         colorspace = ''
     # index if necessary
-    if options.genomeSource == 'history':
+    if options.genomeSource == 'history' and not options.do_not_build_index:
         # set up commands
         if options.index_settings =='indexPreSet':
             indexing_cmds = '%s' % colorspace

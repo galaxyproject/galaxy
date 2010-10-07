@@ -12,6 +12,10 @@
     --snpfrac="None"
     --keepends="None"
     #if $refGenomeSource.genomeSource == "history":
+       #if $refGenomeSource.ownFile.extension.startswith( 'bowtie_' ):
+       --ref="${refGenomeSource.ownFile.extra_files_path}/${refGenomeSource.ownFile.metadata.base_name}"
+       --do_not_build_index
+       #else:
      --ref=$refGenomeSource.ownFile
      --indexSettings=$refGenomeSource.indexParams.indexSettings
      #if $refGenomeSource.indexParams.indexSettings == "indexFull":
@@ -49,6 +53,7 @@
       --iendian="None"
       --iseed="None"
       --icutoff="None"
+     #end if
      #end if
     #else:
      --ref=$refGenomeSource.index
@@ -203,9 +208,9 @@
         </param>
       </when>
       <when value="history">
-        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
+        <param name="ownFile" type="data" format="bowtie_base_index,fasta" metadata_name="dbkey" label="Select the reference genome" />
         <conditional name="indexParams">
-          <param name="indexSettings" type="select" label="Choose whether to use Default options for building indices or to Set your own">
+          <param name="indexSettings" type="select" label="Choose whether to use Default options for building indices or to Set your own" help="These settings are ignored when using a prebuilt index">
             <option value="indexPreSet">Default</option>
             <option value="indexFull">Set your own</option>
           </param> 

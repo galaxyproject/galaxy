@@ -45,10 +45,14 @@
         <datatype extension="csv" type="galaxy.datatypes.tabular:Tabular"/>
         <!-- End MSI added Datatypes -->
         <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
+        <datatype extension="bowtie_color_index" type="galaxy.datatypes.ngsindex:BowtieColorIndex" mimetype="text/html" display_in_upload="False"/>
+        <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="False"/>
         <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
         <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
         <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
             <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
+            <converter file="fasta_to_bowtie_base_index_converter.xml" target_datatype="bowtie_base_index"/>
+            <converter file="fasta_to_bowtie_color_index_converter.xml" target_datatype="bowtie_color_index"/>
         </datatype>
         <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true"/>
         <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true"/>
