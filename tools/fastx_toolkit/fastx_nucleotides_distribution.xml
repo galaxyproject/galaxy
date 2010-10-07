@@ -1,5 +1,6 @@
 <tool id="cshl_fastx_nucleotides_distribution" name="Draw nucleotides distribution chart">
 	<description></description>
+	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
 	<command>fastx_nucleotide_distribution_graph.sh -t '$input.name' -i $input -o $output</command>
 	
 	<inputs>

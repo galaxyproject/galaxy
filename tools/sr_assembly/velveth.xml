@@ -48,7 +48,7 @@
                 <data format="velvet" name="out_file1" />
 	</outputs>
 	<requirements>
-		<requirement type="binary">velveth</requirement>
+		<requirement type="package">velvet</requirement>
 	</requirements>
 	<tests>
           <test>

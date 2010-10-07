@@ -1,5 +1,8 @@
 <tool id="find_diag_hits" name="Find diagnostic hits" version="1.0.0">
     <description></description>
+    <requirements>
+        <requirement type="package">taxonomy</requirement>
+    </requirements>
     <command interpreter="python">find_diag_hits.py $input1 $id_col $rank_list $out_format $out_file1</command>
     <inputs>
         <param format="taxonomy" name="input1" type="data" label="Find diagnostic hits in"/>

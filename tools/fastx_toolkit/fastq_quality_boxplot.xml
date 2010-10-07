@@ -1,5 +1,6 @@
 <tool id="cshl_fastq_quality_boxplot" name="Draw quality score boxplot">
 	<description></description>
+	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
 	
 	<command>fastq_quality_boxplot_graph.sh -t '$input.name' -i $input -o $output</command>
 	

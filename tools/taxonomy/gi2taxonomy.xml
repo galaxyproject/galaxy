@@ -1,5 +1,8 @@
 <tool id="Fetch Taxonomic Ranks" name="Fetch taxonomic representation" version="1.1.0">
   <description></description>
+    <requirements>
+        <requirement type="package">taxonomy</requirement>
+    </requirements>
   <command interpreter="python">gi2taxonomy.py $input $giField $idField $out_file1 ${GALAXY_DATA_INDEX_DIR}</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Show taxonomic representation for"></param>

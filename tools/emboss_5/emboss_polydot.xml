@@ -1,6 +1,7 @@
 <tool id="EMBOSS: polydot77" name="polydot" version="5.0.0">
   <!-- produces png file, not added functional tests -->
   <description>Displays all-against-all dotplots of a set of sequences</description>
+  <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl polydot -sequence $input1 -graph png -goutfile $output2 -outfeat $output1 -wordsize $wordsize -boxit $boxit -dumpfeat yes -gap
   $gap -auto</command>
   <inputs>

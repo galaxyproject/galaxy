@@ -2,7 +2,7 @@
   <description>converter</description>
   <command>grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1 -blockSize=$blockSize -itemsPerSlot=$itemsPerSlot $clip $unc 2&gt;&amp;1 || echo "Error running wigToBigWig." >&amp;2</command>
   <requirements>
-    <requirement type="binary">wigToBigWig</requirement>
+    <requirement type="package">ucsc_tools</requirement>
   </requirements>
   <inputs>
     <param format="wig" name="input1" type="data" label="Convert">

@@ -1,5 +1,8 @@
 <tool id="tophat" name="Tophat" version="1.0.14">
     <description>Find splice junctions using RNA-seq data</description>
+    <requirements>
+        <requirement type="package">tophat</requirement>
+    </requirements>
     <command interpreter="python">
         tophat_wrapper.py
             ## Change this to accomodate the number of threads you have available.

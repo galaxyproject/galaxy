@@ -1,5 +1,6 @@
 <tool id="cshl_fastx_trimmer" name="Trim sequences">
 	<description></description>
+	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
 	<command>zcat -f '$input' | fastx_trimmer -v -f $first -l $last -o $output</command>
 
 	<inputs>

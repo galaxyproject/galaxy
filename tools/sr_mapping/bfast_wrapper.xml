@@ -322,7 +322,7 @@ For **postprocess**::
 
   </help>
   <requirements>
-    <requirement type="binary">bfast</requirement>
+    <requirement type="package">bfast</requirement>
   </requirements>
   <tests>
     <test>

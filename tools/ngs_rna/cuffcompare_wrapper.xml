@@ -1,5 +1,8 @@
 <tool id="cuffcompare" name="Cuffcompare" version="0.8.3">
     <description>compare assembled transcripts to a reference annotation and track Cufflinks transcripts across multiple experiments</description>
+    <requirements>
+        <requirement type="package">cufflinks</requirement>
+    </requirements>
     <command interpreter="python">
         cuffcompare_wrapper.py 
             --transcripts-accuracy-output=$transcripts_accuracy

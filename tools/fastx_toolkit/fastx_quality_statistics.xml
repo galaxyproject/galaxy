@@ -1,5 +1,6 @@
 <tool id="cshl_fastx_quality_statistics" name="Compute quality statistics">
 	<description></description>
+	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
 	<command>zcat -f $input | fastx_quality_stats -o $output -Q 33</command>
 
 	<inputs>

@@ -1,5 +1,8 @@
 <tool id="cuffdiff" name="Cuffdiff" version="0.8.3">
     <description>find significant changes in transcript expression, splicing, and promoter use</description>
+    <requirements>
+        <requirement type="package">cufflinks</requirement>
+    </requirements>
     <command interpreter="python">
         cuffdiff_wrapper.py
             --FDR=$fdr

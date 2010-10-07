@@ -52,7 +52,7 @@
         <data format="sam" name="output1" />
     </outputs>
     <requirements>
-        <requirement type="binary">lastz</requirement>
+        <requirement type="package">lastz</requirement>
     </requirements>
     <tests>
         <test>

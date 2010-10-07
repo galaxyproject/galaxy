@@ -1,5 +1,6 @@
 <tool id="cshl_fastx_clipper" name="Clip" version="1.0.1" >
   <description>adapter sequences</description>
+	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
   <command>
     zcat -f $input | fastx_clipper -l $minlength -a $clip_source.clip_sequence -d $keepdelta -o $output -v $KEEP_N $DISCARD_OPTIONS
   </command>

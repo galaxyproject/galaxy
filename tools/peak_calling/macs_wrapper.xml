@@ -3,7 +3,6 @@
   <command interpreter="python">macs_wrapper.py $options_file $output_bed_file $output_extra_files $output_extra_files.files_path</command>
   <requirements>
     <requirement type="python-module">macs</requirement>
-    <requirement type="binary">macs</requirement>
     <requirement type="package">macs</requirement>
   </requirements>
   <inputs>

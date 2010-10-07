@@ -1,5 +1,8 @@
 <tool id="poisson2test" name="Poisson two-sample test" version="1.0.0">
   <description></description>
+    <requirements>
+        <requirement type="package">taxonomy</requirement>
+    </requirements>
   <command interpreter="python">poisson2test.py $input1 $input2 $input3 $input4 $input5 $output1 2>/dev/null </command>
   <inputs>
     <param name="input1" format="tabular" type="data" label="Input File"/>

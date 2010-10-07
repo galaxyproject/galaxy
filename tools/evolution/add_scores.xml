@@ -17,7 +17,7 @@
   </outputs>
 
   <requirements>
-    <requirement type="binary">add_scores</requirement>
+    <requirement type="package">add_scores</requirement>
   </requirements>
 
   <tests>

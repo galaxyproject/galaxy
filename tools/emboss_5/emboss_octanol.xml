@@ -1,6 +1,7 @@
 <tool id="EMBOSS: octanol63" name="octanol" version="5.0.0">
   <!-- graphics output with filename, no functional tests added -->  
   <description>Displays protein hydropathy</description>
+  <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
   <command interpreter="perl">emboss_single_outputfile_wrapper.pl octanol -sequence $input1 -graph png -goutfile $out_file1 -width $width -octanolplot $octanolplot -interfaceplot $interfaceplot
   -differenceplot $differenceplot -auto</command>
   <inputs>

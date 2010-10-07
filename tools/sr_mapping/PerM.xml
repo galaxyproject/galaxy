@@ -1,6 +1,9 @@
 <tool id="PerM" name="Map with PerM" version="1.0.0">
   <description>for SOLiD and Illumina</description>
   <!-- works with PerM version 0.2.6 -->
+  <requirements>
+      <requirement type="package">perm</requirement>
+  </requirements>
   <command>
 PerM
 #if $s.sourceOfRef.refSource == "history":

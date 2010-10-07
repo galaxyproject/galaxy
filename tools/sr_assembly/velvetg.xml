@@ -184,7 +184,7 @@
                 <data format="fasta" name="contigs" label="${tool.name} on ${on_string}: Contigs"/>
 	</outputs>
 	<requirements>
-		<requirement type="binary">velvetg</requirement>
+		<requirement type="package">velvet</requirement>
 	</requirements>
 	<tests>
 	  <test>

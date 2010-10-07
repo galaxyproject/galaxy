@@ -1,4 +1,5 @@
 <tool id="bowtie_color_wrapper" name="Map with Bowtie for SOLiD" version="1.0.0">
+  <requirements><requirement type='package'>bowtie</requirement></requirements>
   <description></description>
   <command interpreter="python">
     bowtie_wrapper.py 

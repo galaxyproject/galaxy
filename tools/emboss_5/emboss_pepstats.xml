@@ -1,5 +1,6 @@
 <tool id="EMBOSS: pepstats71" name="pepstats" version="5.0.0">
   <description>Protein statistics</description>
+  <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
   <command>pepstats -sequence $input1 -outfile $out_file1 -termini $termini -auto</command>
   <inputs>
     <param format="data" name="input1" type="data">

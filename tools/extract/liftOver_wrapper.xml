@@ -30,7 +30,7 @@
     <data format="input" name="out_file2" label="${tool.name} on ${on_string} [ UNMAPPED COORDINATES ]" />
   </outputs>
   <requirements>
-    <requirement type="binary">liftOver</requirement>
+    <requirement type="package">ucsc_tools</requirement>
   </requirements>
   <tests>
     <test>

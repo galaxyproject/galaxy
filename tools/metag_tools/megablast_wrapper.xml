@@ -34,7 +34,7 @@
         <data name="output1" format="tabular"/>
     </outputs>
     <requirements>
-        <requirement type="binary">megablast</requirement>
+        <requirement type="package">megablast</requirement>
     </requirements>
     <tests>
         <test>

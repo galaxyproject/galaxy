@@ -1,5 +1,6 @@
 <tool id="cshl_fastx_artifacts_filter" name="Remove sequencing artifacts">
 	<description></description>
+	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
 	<command>zcat -f '$input' | fastx_artifacts_filter -v -o "$output"</command>
 
 	<inputs>
