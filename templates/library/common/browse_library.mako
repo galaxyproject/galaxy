@@ -45,64 +45,89 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ${h.js("class", "jquery.jstore")}
     ${self.grid_javascripts()}
 </%def>
 
 <%def name="grid_javascripts()">
     <script type="text/javascript">
-        $(function () {
-            $("#library-grid").each( function() {
+        $(function() {
+            $.jStore.init("galaxy"); // Auto-select best storage
+            var storage_id = "library-expand-state-${trans.security.encode_id(library.id)}";
+            
+            var restore_folder_state = function() {
+                var state = $.jStore.store(storage_id);
+                if (state) {
+                    for (var id in state) {
+                        if (state[id] === true) {
+                            var row = $("#" + id),
+                                index = row.parent().children().index(row);
+                            row.addClass("expanded").show();
+                            row.siblings().filter("tr[parent='" + index + "']").show();
+                        }
+                    }
+                }
+            };
+                
+            var save_folder_state = function() {
+                var state = {};
+                $("tr.folderRow").each( function() {
+                    var folder = $(this);
+                    state[folder.attr("id")] = folder.hasClass("expanded");
+                });
+                $.jStore.store(storage_id, state);
+            };
+            
+            $("#library-grid").each(function() {
                // Recursively fill in children and descendents of each row
-               var process_row = function( q, parents ) {
+               var process_row = function(q, parents) {
                     // Find my index
-                    var index = $(q).parent().children().index( $(q) );
+                    var index = q.parent().children().index(q);
                     // Find my immediate children
-                    var children = $(q).siblings().filter( "[parent='" + index + "']" );
+                    var children = q.siblings().filter("[parent='" + index + "']");
                     // Recursively handle them
                     var descendents = children;
                     children.each( function() {
-                        child_descendents = process_row( $(this), parents.add( q ) );
-                        descendents = descendents.add( child_descendents );
+                        child_descendents = process_row( $(this), parents.add(q) );
+                        descendents = descendents.add(child_descendents);
                     });
                     // Set up expand / hide link
-                    // HACK: assume descendents are invisible. The caller actually
-                    //       ensures this for the root node. However, if we start
-                    //       remembering folder states, we'll need something
-                    //       more sophisticated here.
-                    var visible = false;
                     var expand_fn = function() {
-                        if ( visible ) {
+                        if ( q.hasClass("expanded") ) {
                             descendents.hide();
-                            descendents.removeClass( "expanded" );
-                            q.removeClass( "expanded" );
-                            visible = false;
+                            descendents.removeClass("expanded");
+                            q.removeClass("expanded");
                         } else {
                             children.show();
-                            q.addClass( "expanded" );
-                            visible = true;
+                            q.addClass("expanded");
                         }
+                        save_folder_state();
                     };
                     $(q).find("span.expandLink").click(expand_fn);
                     $(q).find("span.expandLink a").click(expand_fn);
                     // Check/uncheck boxes in subfolders.
-                    q.children( "td" ).children( "input[type=checkbox]" ).click( function() {
+                    q.children("td").children("input[type=checkbox]").click( function() {
                         if ( $(this).is(":checked") ) {
-                            descendents.find( "input[type=checkbox]").attr( 'checked', true );
+                            descendents.find("input[type=checkbox]").attr("checked", true);
                         } else {
-                            descendents.find( "input[type=checkbox]").attr( 'checked', false );
+                            descendents.find("input[type=checkbox]").attr("checked", false);
                             // If you uncheck a lower level checkbox, uncheck the boxes above it
                             // (since deselecting a child means the parent is not fully selected any
                             // more).
-                            parents.children( "td" ).children( "input[type=checkbox]" ).attr( "checked", false );
+                            parents.children("td").children("input[type=checkbox]").attr("checked", false);
                         }
                     });
                     // return descendents for use by parent
                     return descendents;
                }
-               $(this).find( "tbody tr" ).not( "[parent]").each( function() {
+               $(this).find("tbody tr").not("[parent]").each( function() {
                     descendents = process_row( $(this), $([]) );
                     descendents.hide();
                });
+            });
+            
+            $.jStore.engineReady(function() {
+                restore_folder_state();
             });
         });
         
@@ -313,7 +338,7 @@
         info_association, inherited = folder.get_info_association( restrict=True )
     %>
     %if not root_folder and ( not folder.deleted or show_deleted ):
-        <tr class="folderRow libraryOrFolderRow"
+        <tr id="folder-${trans.security.encode_id(folder.id)}" class="folderRow libraryOrFolderRow"
             %if parent is not None:
                 parent="${parent}"
                 style="display: none;"
@@ -372,7 +397,7 @@
                 %endif
             <td>
             %if folder.description:
-                ${folder.description}</i>
+                ${folder.description}
             %endif
             <td colspan="3"></td>
         </tr>
