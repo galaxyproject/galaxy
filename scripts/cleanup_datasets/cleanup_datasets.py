@@ -56,7 +56,7 @@ def main():
         database_connection = configuration['database_connection']
     else:
         database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % configuration["database_file"]
-    file_path = configuration['file_path']
+    file_path = configuration.get('file_path', "database/files")
     app = CleanupDatasetsApplication( database_connection=database_connection, file_path=file_path )
     cutoff_time = datetime.utcnow() - timedelta( days=options.days )
     now = strftime( "%Y-%m-%d %H:%M:%S" )
