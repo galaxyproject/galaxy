@@ -78,7 +78,7 @@
     %>
     
     ## Lab menu.
-    %if trans.user and trans.user.accessible_request_types(trans):
+    %if trans.user and trans.user.requests:
         <%
             menu_options = [
                              [ 'Sequencing Requests', h.url_for( controller='/requests', action='index' ) ],
