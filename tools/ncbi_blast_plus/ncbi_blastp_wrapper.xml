@@ -25,6 +25,8 @@ $adv_opts.matrix
 #if (str($adv_opts.word_size) and int(str($adv_opts.word_size)) > 0):
 -word_size $adv_opts.word_size
 #end if
+##Ungapped disabled for now - see comments below
+##$adv_opts.ungapped
     </command>
     <inputs>
         <param name="query" type="data" format="fasta" label="Protein query sequence(s)"/> 
@@ -70,6 +72,10 @@ $adv_opts.matrix
                 <param name="matrix" type="hidden" value="" />
                 <param name="max_hits" type="hidden" value="" />
                 <param name="word_size" type="hidden" value="" />
+                <!--
+                Ungapped disabled for now, see comments below
+                <param name="ungapped" type="hidden" value="" />
+                -->
             </when>
             <when value="advanced">
                 <!-- Could use a select (yes, no, other) where other allows setting 'window locut hicut' -->
@@ -92,6 +98,12 @@ $adv_opts.matrix
                 <param name="word_size" type="integer" value="0" label="Word size for wordfinder algorithm" help="Use zero for default, otherwise minimum 2.">
                     <validator type="in_range" min="0" />
                 </param>
+                <!--
+                Can't use '-ungapped' on its own, error back is:
+                Composition-adjusted searched are not supported with an ungapped search, please add -comp_based_stats F or do a gapped search
+                Tried using '-ungapped -comp_based_stats F' and blastp crashed with 'Attempt to access NULL pointer.'
+                <param name="ungapped" type="boolean" label="Perform ungapped alignment only?" truevalue="-ungapped -comp_based_stats F" falsevalue="" checked="false" />
+                -->
             </when>
         </conditional>
     </inputs>

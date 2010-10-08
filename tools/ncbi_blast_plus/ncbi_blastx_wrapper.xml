@@ -25,6 +25,7 @@ $adv_opts.matrix
 #if (str($adv_opts.word_size) and int(str($adv_opts.word_size)) > 0):
 -word_size $adv_opts.word_size
 #end if
+$adv_opts.ungapped
     </command>
     <inputs>
         <param name="query" type="data" format="fasta" label="Nucleotide query sequence(s)"/> 
@@ -67,6 +68,7 @@ $adv_opts.matrix
                 <param name="matrix" type="hidden" value="" />
                 <param name="max_hits" type="hidden" value="" />
                 <param name="word_size" type="hidden" value="" />
+                <param name="ungapped" type="hidden" value="" />
             </when>
             <when value="advanced">
                 <!-- Could use a select (yes, no, other) where other allows setting 'window locut hicut' -->
@@ -94,6 +96,7 @@ $adv_opts.matrix
                 <param name="word_size" type="integer" value="0" label="Word size for wordfinder algorithm" help="Use zero for default, otherwise minimum 2.">
                     <validator type="in_range" min="0" />
                 </param>
+                <param name="ungapped" type="boolean" label="Perform ungapped alignment only?" truevalue="-ungapped" falsevalue="" checked="false" />
             </when>
         </conditional>
     </inputs>
