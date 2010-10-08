@@ -9,10 +9,11 @@ from pysam import csamtools
 from math import floor, ceil, log
 import logging
 log = logging.getLogger(__name__)
+from base import TracksDataProvider
 
 MAX_VALS = 5000 # only display first MAX_VALS datapoints
 
-class BamDataProvider( object ):
+class BamDataProvider( TracksDataProvider ):
     """
     Provides access to intervals from a sorted indexed BAM file.
     """

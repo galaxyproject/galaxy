@@ -8,15 +8,11 @@ Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.interval_index_file import Indexes
 from galaxy.datatypes.interval import Bed, Gff
-from galaxy.datatypes.tabular import Vcf
+from base import TracksDataProvider
 
 MAX_VALS = 5000 # only display first MAX_VALS features
 
-class IntervalIndexDataProvider( object ):
-    def __init__( self, converted_dataset, original_dataset ):
-        self.original_dataset = original_dataset
-        self.converted_dataset = converted_dataset
-    
+class IntervalIndexDataProvider( TracksDataProvider ):
     def get_data( self, chrom, start, end, **kwargs ):
         start, end = int(start), int(end)
         source = open( self.original_dataset.file_name )
@@ -66,10 +62,7 @@ class IntervalIndexDataProvider( object ):
                         block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
                         blocks = zip(block_sizes, block_starts)
                         payload.append( [ (start + block[1], start + block[1] + block[0]) for block in blocks] )
-                elif isinstance( self.original_dataset.datatype, Vcf ):
-                    # VCF dataset.
-                    payload.append( feature[2] ) # name
-                    
+                                            
             results.append(payload)
         
         return { 'data': results, 'message': message }

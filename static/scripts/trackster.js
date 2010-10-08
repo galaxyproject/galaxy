@@ -1348,8 +1348,45 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 }
                                 ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
                                 ctx.fillStyle = block_color;
+                            }                            
+                        }                        
+                    }
+                } else if (result.dataset_type === 'vcf') {
+                    if (no_detail) {
+                        ctx.fillStyle = block_color;
+                        ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
+                    }
+                    else { // Show blocks, labels, etc.                        
+                        // Unpack.
+                        var ref_base = feature[4], alt_base = feature[5], qual = feature[6];
+                    
+                        // Draw block for entry.
+                        thickness = 9;
+                        y_start = 1;
+                        ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, thickness);
+                    
+                        // Add label for entry.
+                        if (mode !== "Dense" && feature_name !== undefined && feature_start > tile_low) {
+                            // Draw label
+                            ctx.fillStyle = label_color;
+                            if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+                                ctx.textAlign = "left";
+                                ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
+                            } else {
+                                ctx.textAlign = "right";
+                                ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
                             }
+                            ctx.fillStyle = block_color;
                         }
+                    
+                        // Show additional data on block.
+                        var vcf_label = ref_base + " / " + alt_base;
+                        if (feature_start > tile_low && ctx.measureText(vcf_label).width < (f_end - f_start)) {
+                            ctx.fillStyle = "white";
+                            ctx.textAlign = "center";
+                            ctx.fillText(vcf_label, left_offset + f_start + (f_end-f_start)/2, y_center + 8);
+                            ctx.fillStyle = block_color;
+                        } 
                     }
                 }
                 j++;

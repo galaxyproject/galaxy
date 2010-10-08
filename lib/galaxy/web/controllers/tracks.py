@@ -24,6 +24,7 @@ from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
 from galaxy.visualization.tracks.data.interval_index import IntervalIndexDataProvider
 from galaxy.visualization.tracks.data.bam import BamDataProvider
 from galaxy.visualization.tracks.data.summary_tree import SummaryTreeDataProvider
+from galaxy.visualization.tracks.data.vcf import VCFDataProvider
 
 # Message strings returned to browser
 messages = Bunch(
@@ -36,10 +37,11 @@ messages = Bunch(
 )
 
 # Mapping from dataset type to a class that can fetch data from a file of that
-# type. This also needs to be more flexible.
+# type. First key is converted dataset type; if result is another dict, second key
+# is original dataset type. TODO: This needs to be more flexible.
 dataset_type_to_data_provider = {
     "array_tree": ArrayTreeDataProvider,
-    "interval_index": IntervalIndexDataProvider,
+    "interval_index": { "vcf": VCFDataProvider, "default" : IntervalIndexDataProvider },
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider
 }
@@ -300,15 +302,28 @@ class TracksController( BaseController, UsesVisualization ):
                     frequencies, max_v, avg_v, delta = summary
                     return { 'dataset_type': data_sources['index'], 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
         
-        dataset_type = data_sources['data']
-        data_provider = dataset_type_to_data_provider[ dataset_type ]( dataset.get_converted_dataset(trans, dataset_type), dataset )
+        # Get data provider.
+        tracks_dataset_type = data_sources['data']
+        value = dataset_type_to_data_provider[ tracks_dataset_type ]
+        if isinstance( value, dict ):
+            # Get converter by dataset extension; if there is no data provider,
+            # get the default
+            data_provider_class = value.get( dataset.ext, value.get( "default" ) )
+        else:
+            data_provider_class = value
+        data_provider = data_provider_class( dataset.get_converted_dataset(trans, tracks_dataset_type), dataset )
         
+        # Get and return data from data_provider.
         data = data_provider.get_data( chrom, low, high, **kwargs )
         message = None
         if isinstance(data, dict) and 'message' in data:
             message = data['message']
-            data = data['data']
-        return { 'dataset_type': dataset_type, 'extra_info': extra_info, 'data': data, 'message': message }
+            dataset_type = data.get( 'data_type', tracks_dataset_type )
+            track_data = data['data']
+        else:
+            track_data = data
+        return { 'dataset_type': dataset_type, 'extra_info': extra_info, 'data': track_data, 'message': message }
+        
     
     @web.json
     def save( self, trans, **kwargs ):

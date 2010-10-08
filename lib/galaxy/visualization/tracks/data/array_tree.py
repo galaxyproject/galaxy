@@ -7,8 +7,9 @@ pkg_resources.require( "numpy" )
 pkg_resources.require( "bx-python" )
 from bx.arrays.array_tree import FileArrayTreeDict
 from math import floor, ceil, log, pow
+from base import TracksDataProvider
 
-class ArrayTreeDataProvider( object ):
+class ArrayTreeDataProvider( TracksDataProvider ):
     def __init__( self, dataset, original_dataset ):
         self.dataset = dataset
         
