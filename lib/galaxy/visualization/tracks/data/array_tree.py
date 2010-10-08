@@ -12,7 +12,7 @@ from base import TracksDataProvider
 class ArrayTreeDataProvider( TracksDataProvider ):
         
     def get_stats( self, chrom ):
-        f = open( self.dataset.file_name )
+        f = open( self.converted_dataset.file_name )
         d = FileArrayTreeDict( f )
         try:
             chrom_array_tree = d[chrom]

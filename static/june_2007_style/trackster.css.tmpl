@@ -42,7 +42,8 @@
     margin-right: 5px;
 }
 .intro {
-    margin-top: 200px;
+    z-index: 1000;
+/*    margin-top: 200px;*/
     margin-left: auto;
     margin-right: auto;
     color: #555;
@@ -63,13 +64,22 @@
     border-bottom: solid gray 1px;
     margin: 0;
 }
+.overview-close {
+    font: 9px verdana;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    padding: 5px;
+    z-index: 500;
+    background-color: white;
+}
 .overview-highlight {
     opacity: 0.5;
     top: 0px;
     position: absolute;
     z-index: 100;
     border-style: solid;
-    border-color: #6a6;
+    border-color: #484848;
     border-width: 0px 1px;
 }
 .overview-boxback {
@@ -81,16 +91,23 @@
     background: #eee;
 }
 .overview-box {
+    cursor: pointer;
     opacity: 0.5;
     bottom: 0px;
     z-index: 100;
     position: absolute;
     margin-top: 0px;
     height: 14px;
-    background: #cfc url(../images/visualization/draggable_horizontal.png) center center no-repeat;
+    background: #484848 url(../images/visualization/draggable_horizontal.png) center center no-repeat;
     border-style: solid;
-    border-color: #6a6;
+    border-color: #484848;
     border-width: 0px 1px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+.overview-box:hover {
+    background-color: #838383;
+    border-color: #838383;
 }
 .viewport-canvas {
     width: 100%;

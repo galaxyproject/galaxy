@@ -318,11 +318,11 @@ class TracksController( BaseController, UsesVisualization ):
         message = None
         if isinstance(data, dict) and 'message' in data:
             message = data['message']
-            dataset_type = data.get( 'data_type', tracks_dataset_type )
+            tracks_dataset_type = data.get( 'data_type', tracks_dataset_type )
             track_data = data['data']
         else:
             track_data = data
-        return { 'dataset_type': dataset_type, 'extra_info': extra_info, 'data': track_data, 'message': message }
+        return { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info, 'data': track_data, 'message': message }
         
     
     @web.json

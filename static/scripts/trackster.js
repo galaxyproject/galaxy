@@ -98,15 +98,17 @@ $.extend( View.prototype, {
         var parent_element = this.container,
             view = this;
         this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(parent_element);        
-        this.content_div = $("<div/>").addClass("content").css("position", "relative").hide().appendTo(parent_element);
-        this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide().appendTo(parent_element);
+        this.content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
+        this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide(); // Future overlay
         
         this.nav_container = $("<div/>").addClass("nav-container").appendTo(parent_element);
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.nav_container);
         this.nav = $("<div/>").addClass("nav").appendTo(this.nav_container);
         this.overview = $("<div/>").addClass("overview").appendTo(this.nav);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
+        this.overview_close = $("<a href='javascript:void(0);'>Close Overview</a>").addClass("overview-close").hide().appendTo(this.overview_viewport);
+        this.overview_highlight = $("<div />").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
         this.overview_box_background = $("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport);
         this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
         this.default_overview_height = this.overview_box.height();
@@ -156,7 +158,6 @@ $.extend( View.prototype, {
                 }
                 view.chrom_select.html(chrom_options);
                 view.intro_div.show();
-                view.content_div.hide();
                 view.chrom_select.bind("change", function() {
                     view.change_chrom(view.chrom_select.val());
                 });
@@ -193,6 +194,16 @@ $.extend( View.prototype, {
 
             var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.max_high - view.max_low) );
             view.move_delta(-delta_chrom);
+        });
+        
+        this.overview_close.bind("click", function() {
+            for (var track_id in view.tracks) {
+                view.tracks[track_id].is_overview = false;
+            }
+            $(this).siblings().filter("canvas").remove();
+            $(this).parent().css("height", view.overview_box.height());
+            view.overview_highlight.hide();
+            $(this).hide();
         });
         
         this.viewport_container.bind( "dragstart", function( e ) {
@@ -262,10 +273,8 @@ $.extend( View.prototype, {
             if (view.chrom === "") {
                 // No chrom selected
                 view.intro_div.show();
-                view.content_div.hide();
             } else {
                 view.intro_div.hide();
-                view.content_div.show();
             }
             view.chrom_select.val(view.chrom);
             view.max_high = found.len;
@@ -381,10 +390,14 @@ $.extend( View.prototype, {
         this.zoom_res = Math.pow( FEATURE_LEVELS, Math.max(0,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) )));
         
         // Overview
-        var left_px = ( this.low / (this.max_high - this.max_low) ) * this.overview_viewport.width();
+        var left_px = this.low / (this.max_high - this.max_low) * this.overview_viewport.width();
         var width_px = (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width();
+        var min_width_px = 13;
         
-        this.overview_box.css({ left: left_px, width: Math.max(12, width_px) }).show();
+        this.overview_box.css({ left: left_px, width: Math.max(min_width_px, width_px) }).show();
+        if (width_px < min_width_px) {
+            this.overview_box.css("left", left_px - (min_width_px - width_px)/2);
+        }
         if (this.overview_highlight) {
             this.overview_highlight.css({ left: left_px, width: width_px });
         }
@@ -530,7 +543,7 @@ var TiledTrack = function() {
         }
     }
     var track_dropdown = {};
-    track_dropdown["Set track as overview"] = function() {
+    track_dropdown["Set as overview"] = function() {
         view.overview_viewport.find("canvas").remove();
         track.is_overview = true;
         track.set_overview();
@@ -639,11 +652,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         view.overview_box.height(view.default_overview_height);
         
         if (this.initial_canvas && this.is_overview) {
-            if (!view.overview_highlight) {
-                view.overview_highlight = $("<div />").addClass("overview-highlight").appendTo(view.overview_viewport);
-            }
+            view.overview_close.show();
             view.overview_viewport.append(this.initial_canvas);
-            view.overview_highlight.height(this.initial_canvas.height());
+            view.overview_highlight.show().height(this.initial_canvas.height());
             view.overview_viewport.height(this.initial_canvas.height() + view.overview_box.height());
         }
         $(window).trigger("resize");
@@ -791,13 +802,15 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             $('#linetrack_' + track_id + '_minval').remove();
             $('#linetrack_' + track_id + '_maxval').remove();
             
+            track.container_div.css("position", "relative");
+            
             var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(round_1000(track.prefs.min_value));
             var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(round_1000(track.prefs.max_value));
             
-            max_label.css({ position: "relative", top: "32px", left: "10px" });
+            max_label.css({ position: "absolute", top: "22px", left: "10px" });
             max_label.prependTo(track.container_div);
     
-            min_label.css({ position: "relative", top: track.height_px + 32 + "px", left: "10px" });
+            min_label.css({ position: "absolute", top: track.height_px + 11 + "px", left: "10px" });
             min_label.prependTo(track.container_div);
         });
     },
