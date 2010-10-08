@@ -10,8 +10,6 @@ from math import floor, ceil, log, pow
 from base import TracksDataProvider
 
 class ArrayTreeDataProvider( TracksDataProvider ):
-    def __init__( self, dataset, original_dataset ):
-        self.dataset = dataset
         
     def get_stats( self, chrom ):
         f = open( self.dataset.file_name )
@@ -48,7 +46,7 @@ class ArrayTreeDataProvider( TracksDataProvider ):
         if 'stats' in kwargs:
             return self.get_stats(chrom)
             
-        f = open( self.dataset.file_name )
+        f = open( self.converted_dataset.file_name )
         d = FileArrayTreeDict( f )
         
         # Get the right chromosome

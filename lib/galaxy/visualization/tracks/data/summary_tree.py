@@ -6,18 +6,16 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from galaxy.visualization.tracks.summary import *
 from math import ceil, log
 from galaxy.util.lrucache import LRUCache
+from base import TracksDataProvider
 
 CACHE = LRUCache(20) # Store 20 recently accessed indices for performance
 
-class SummaryTreeDataProvider( object ):
-    def __init__( self, dataset, original_dataset ):
-        self.dataset = dataset
-        
+class SummaryTreeDataProvider( TracksDataProvider ):
     def get_summary( self, chrom, start, end, **kwargs):
-        filename = self.dataset.file_name
+        filename = self.converted_dataset.file_name
         st = CACHE[filename]
         if st is None:
-            st = summary_tree_from_file( self.dataset.file_name )
+            st = summary_tree_from_file( self.converted_dataset.file_name )
             CACHE[filename] = st
             
         # If chrom is not found in blocks, try removing the first three 

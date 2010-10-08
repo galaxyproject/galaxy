@@ -16,19 +16,14 @@ MAX_VALS = 5000 # only display first MAX_VALS datapoints
 class BamDataProvider( TracksDataProvider ):
     """
     Provides access to intervals from a sorted indexed BAM file.
-    """
-    def __init__( self, index, original_dataset ):
-        
-        self.index = index
-        self.original_dataset = original_dataset
-        
+    """        
     def get_data( self, chrom, start, end, **kwargs ):
         """
         Fetch intervals in the region 
         """
         start, end = int(start), int(end)
         # Attempt to open the BAM file with index
-        bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', index_filename=self.index.file_name )
+        bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', index_filename=self.converted_dataset.file_name )
         message = None
         try:
             data = bamfile.fetch(start=start, end=end, reference=chrom)
