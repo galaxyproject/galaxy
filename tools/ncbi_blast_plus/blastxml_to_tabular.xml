@@ -1,0 +1,41 @@
+<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.1">
+    <description>Convert BLAST XML output to tabular</description>
+    <command interpreter="python">
+      blastxml_to_tabular.py $blastxml_file $tabular_file
+    </command>
+    <inputs>
+        <param name="blastxml_file" type="data" format="blastxml" label="BLAST results as XML"/> 
+    </inputs>
+    <outputs>
+        <data name="tabular_file" format="tabular" label="BLAST results as tabular" />
+    </outputs>
+    <requirements>
+    </requirements>
+    <tests>
+    </tests>
+    <help>
+    
+**What it does**
+
+NCBI BLAST+ (and the older NCBI 'legacy' BLAST) can output in a range of formats including
+tabular and a more detailed XML format. A complex workflow may need both the XML and the
+tabular output.
+
+This tool takes the BLAST XML output and converts it into the 12 column tabular equivalent:
+
+1. Id of your sequence 
+2. GI of the database hit 
+3. % identity
+4. Alignment length
+5. # mismatches
+6. # gaps
+7. Start position in your sequence
+8. End position in your sequence
+9. Start position in database hit
+10. End position in database hit
+11. E-value
+12. Bit score
+
+
+    </help>
+</tool>
