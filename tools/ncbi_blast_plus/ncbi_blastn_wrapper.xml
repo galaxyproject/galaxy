@@ -22,6 +22,9 @@ $adv_opts.strand
 #if (str($adv_opts.max_hits) and int(str($adv_opts.max_hits)) > 0):
 -max_target_seqs $adv_opts.max_hits
 #end if
+#if (str($adv_opts.word_size) and int(str($adv_opts.word_size)) > 0):
+-word_size $adv_opts.word_size
+#end if
     </command>
     <inputs>
         <param name="query" type="data" format="fasta" label="Nucleotide query sequence(s)"/> 
@@ -72,6 +75,7 @@ $adv_opts.strand
                 <param name="filter_query" type="hidden" value="" />
                 <param name="strand" type="hidden" value="" />
                 <param name="max_hits" type="hidden" value="" />
+                <param name="word_size" type="hidden" value="" />
             </when>
             <when value="advanced">
                 <!-- Could use a select (yes, no, other) where other allows setting 'level window linker' -->
@@ -82,7 +86,11 @@ $adv_opts.strand
                     <option value="-strand minus">Minus (reverse complement)</option>
                 </param>
                 <!-- Why doesn't optional override a validator? I want to accept an empty string OR a non-negative integer -->
-                <param name="max_hits" type="integer" value="0" lable="Maximum hits to show" help="Use zero for default limits">
+                <param name="max_hits" type="integer" value="0" label="Maximum hits to show" help="Use zero for default limits">
+                    <validator type="in_range" min="0" />
+                </param>
+                <!-- I'd like word_size to be optional, with minimum 4 for blastn -->
+                <param name="word_size" type="integer" value="0" label="Word size for wordfinder algorithm" help="Use zero for default, otherwise minimum 4.">
                     <validator type="in_range" min="0" />
                 </param>
             </when>
