@@ -385,15 +385,14 @@ def get_data_provider( name=None, original_dataset=None ):
             data_provider = value
     elif original_dataset:
         # Look for data provider in mapping.
-        data_provider = \
-            dataset_type_to_data_provider.get( original_dataset.datatype.__class__, None )
-        
-        # If get_track_type is available, then dataset can be added to trackster 
-        # and hence has at least a generic data provider.
-        try:
-            original_dataset.datatype.get_track_type()
-            data_provider = TracksDataProvider
-        except:
-            pass
+        data_provider = dataset_type_to_data_provider.get( original_dataset.datatype.__class__, None )
+        if not data_provider:
+            # If get_track_type is available, then dataset can be added to trackster 
+            # and hence has at least a generic data provider.
+            try:
+                original_dataset.datatype.get_track_type()
+                data_provider = TracksDataProvider
+            except:
+                pass
     return data_provider
 
