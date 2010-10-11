@@ -141,12 +141,12 @@
                 logout_url = h.url_for( controller='/user', action='logout' )
             menu_options.append( [ 'Logout', logout_url, "_top" ] )
             menu_options.append( None )
-            menu_options.append( [ 'Saved Histories', h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
-            menu_options.append( [ 'Saved Datasets', h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
-            if app.config.get_bool( 'enable_pages', False ):
-                menu_options.append( [ 'Saved Pages', h.url_for( controller='/page', action='list' ), "_top" ] )
-            if app.config.enable_api:
-                menu_options.append( [ 'API Keys', h.url_for( controller='/user', action='api_keys' ), "galaxy_main" ] )
+        menu_options.append( [ 'Saved Histories', h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
+        menu_options.append( [ 'Saved Datasets', h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
+        if app.config.get_bool( 'enable_pages', False ):
+            menu_options.append( [ 'Saved Pages', h.url_for( controller='/page', action='list' ), "_top" ] )
+        if app.config.enable_api:
+            menu_options.append( [ 'API Keys', h.url_for( controller='/user', action='api_keys' ), "galaxy_main" ] )
     
         extra_class = "loggedin-only"
         visible = ( trans.user != None )
