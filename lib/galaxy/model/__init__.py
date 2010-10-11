@@ -5,21 +5,19 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import os.path, os, errno, sys, codecs, operator
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
 from galaxy import util
-import tempfile
 import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.security import RBACAgent, get_permitted_actions
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations
-import logging, smtplib, socket
-log = logging.getLogger( __name__ )
 from sqlalchemy.orm import object_session
-import pexpect
+import os.path, os, errno, codecs, operator, smtplib, socket, pexpect, logging
+
+log = logging.getLogger( __name__ )
 
 datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
 
@@ -41,7 +39,6 @@ class User( object ):
         # Relationships
         self.histories = []
         self.credentials = []
-        
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash( text_type=cleartext )
@@ -55,8 +52,8 @@ class User( object ):
                 if role not in roles:
                     roles.append( role )
         return roles
-    def accessible_libraries(self, trans, actions):
-        # get all permitted libraries for this user
+    def accessible_libraries( self, trans, actions ):
+        # Get all permitted libraries for this user
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted == False ) \
                                         .order_by( trans.app.model.Library.name )
@@ -74,18 +71,19 @@ class User( object ):
             if can_show:
                 libraries[ library ] = hidden_folder_ids
         return libraries
-    def accessible_request_types(self, trans):
-        # get all permitted libraries for this user
-        all_rt_list = trans.sa_session.query( trans.app.model.RequestType ) \
-                                      .filter( trans.app.model.RequestType.table.c.deleted == False ) \
-                                      .order_by( trans.app.model.RequestType.name )
-        roles = self.all_roles()
-        rt_list = []
-        for rt in all_rt_list:
-            for permission in rt.actions:
-                if permission.role.id in [r.id for r in roles]:
-                   rt_list.append(rt) 
-        return list(set(rt_list))
+    def accessible_request_types( self, trans ):
+        active_request_types = trans.sa_session.query( trans.app.model.RequestType ) \
+                                               .filter( trans.app.model.RequestType.table.c.deleted == False ) \
+                                               .order_by( trans.app.model.RequestType.name )
+        # Filter active_request_types to those that can be accessed by this user
+        role_ids = [ r.id for r in self.all_roles() ]
+        accessible_request_types = set()
+        for request_type in active_request_types:
+            for permission in request_type.actions:
+                if permission.role.id in role_ids:
+                   accessible_request_types.add( request_type )
+        accessible_request_types = [ request_type for request_type in accessible_request_types ]
+        return accessible_request_types
     
 class Job( object ):
     """
@@ -1505,12 +1503,12 @@ class FormDefinition( object ):
         params = util.Params( kwd )
         widgets = []
         for index, field in enumerate( self.fields ):
+            field_type = field[ 'type' ]
             field_name = 'field_%i' % index
             # determine the value of the field
             if field_name in kwd:
-                # the user had already filled out this field and the same form is re-rendered 
-                # due to some reason like required fields have been left out.
-                if field[ 'type' ] == 'CheckboxField':
+                # The form was submitted via refresh_on_change
+                if field_type == 'CheckboxField':
                     value = CheckboxField.is_checked( params.get( field_name, False ) )
                 else:
                     value = util.restore_text( params.get( field_name, '' ) )
@@ -1521,7 +1519,7 @@ class FormDefinition( object ):
                 except:
                     # If there was an error getting the saved value, we'll still
                     # display the widget, but it will be empty.
-                    if field[ 'type' ] == 'CheckboxField':
+                    if field_type == 'CheckboxField':
                         # Since we do not have contents, set checkbox value to False
                         value = False
                     else:
@@ -1529,21 +1527,21 @@ class FormDefinition( object ):
                         value = '' 
             else:
                 # if none of the above, then leave the field empty
-                if field[ 'type' ] == 'CheckboxField':
+                if field_type == 'CheckboxField':
                     # Since we do not have contents, set checkbox value to False
                     value = False
                 else:
                     # Set other field types to the default value of the field
                     value = field.get('default', '')
-            # create the field widget
-            field_widget = eval( field[ 'type' ] )( field_name )
-            if field[ 'type' ] == 'TextField':
+            # Create the field widget
+            field_widget = eval( field_type )( field_name )
+            if field_type == 'TextField':
                 field_widget.set_size( 40 )
                 field_widget.value = value
-            elif field[ 'type' ] == 'TextArea':
+            elif field_type == 'TextArea':
                 field_widget.set_size( 3, 40 )
                 field_widget.value = value
-            elif field['type'] == 'AddressField':
+            elif field_type == 'AddressField':
                 field_widget.user = user
                 field_widget.value = value
                 field_widget.params = params
@@ -1551,13 +1549,13 @@ class FormDefinition( object ):
                 field_widget.user = user
                 field_widget.value = value
                 field_widget.params = params
-            elif field[ 'type' ] == 'SelectField':
+            elif field_type == 'SelectField':
                 for option in field[ 'selectlist' ]:
                     if option == value:
                         field_widget.add_option( option, option, selected=True )
                     else:
                         field_widget.add_option( option, option )
-            elif field[ 'type' ] == 'CheckboxField':
+            elif field_type == 'CheckboxField':
                 field_widget.set_checked( value )
             if field[ 'required' ] == 'required':
                 req = 'Required'
@@ -1586,8 +1584,7 @@ class Request( object ):
                     SUBMITTED = 'In Progress',
                     REJECTED = 'Rejected',
                     COMPLETE = 'Complete'   )
-    def __init__(self, name=None, desc=None, request_type=None, user=None, 
-                 form_values=None, notification=None):
+    def __init__( self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None ):
         self.name = name
         self.desc = desc
         self.type = request_type
@@ -1595,59 +1592,79 @@ class Request( object ):
         self.user = user
         self.notification = notification
         self.samples_list = []
-    def state(self):
-        if self.events:
-            return self.events[0].state
+    @property
+    def state( self ):
+        latest_event = self.latest_event
+        if latest_event:
+            return latest_event.state
         return None
-    def common_state(self):
-        '''
-        This method returns the state of this request's sample when they are all
-        in one common state. If not this returns None
-        '''
-        for s in self.samples:
-            if s.current_state().id != self.samples[0].current_state().id:
-                return False
-        return self.samples[0].current_state()
-    def last_comment(self):
+    @property
+    def latest_event( self ):
         if self.events:
-            if self.events[0].comment:
-                return self.events[0].comment
-            else:
-                return ''
+            return self.events[0]
+        return None
+    @property
+    def samples_have_common_state( self ):
+        """
+        Returns the state of this request's samples when they are all
+        in one common state. Otherwise returns False.
+        """
+        state_for_comparison = self.samples[0].state
+        if state_for_comparison is None:
+            for s in self.samples:
+                if s.state is not None:
+                    return False
+        for s in self.samples:
+            if s.state.id != state_for_comparison.id:
+                return False
+        return state_for_comparison
+    @property
+    def last_comment( self ):
+        latest_event = self.latest_event
+        if latest_event:
+            if latest_event.comment:
+                return latest_event.comment
+            return ''
         return 'No comment'
-    def has_sample(self, sample_name):
+    def has_sample( self, sample_name ):
         for s in self.samples:
             if s.name == sample_name:
                 return s
         return False
-    def unsubmitted(self):
-        return self.state() in [ self.states.REJECTED, self.states.NEW ]
-    def rejected(self):
-        return self.state() == self.states.REJECTED
-    def submitted(self):
-        return self.state() == self.states.SUBMITTED
-    def new(self):
-        return self.state() == self.states.NEW
-    def complete(self):
-        return self.state() == self.states.COMPLETE
-    def sequence_run_ready(self):
+    @property
+    def is_unsubmitted( self ):
+        return self.state in [ self.states.REJECTED, self.states.NEW ]
+    @property
+    def is_rejected( self ):
+        return self.state == self.states.REJECTED
+    @property
+    def is_submitted( self ):
+        return self.state == self.states.SUBMITTED
+    @property
+    def is_new( self ):
+        return self.state == self.states.NEW
+    @property
+    def is_complete( self ):
+        return self.state == self.states.COMPLETE
+    @property
+    def has_samples_without_library_destinations( self ):
+        # Return all samples that are not associated with a library
         samples = []
         for s in self.samples:
             if not s.library:
-                samples.append(s.name)
+                samples.append( s.name )
         return samples
-    def send_email_notification(self, trans, common_state, final_state=False):
-        # check if an email notification is configured to be sent when the samples 
+    def send_email_notification( self, trans, common_state, final_state=False ):
+        # Check if an email notification is configured to be sent when the samples 
         # are in this state
-        if common_state.id not in self.notification['sample_states']:
+        if self.notification and common_state.id not in self.notification[ 'sample_states' ]:
             return
         comments = ''
-        # send email
-        if self.notification['email'] and trans.app.config.smtp_server is not None:
-            host = trans.request.host.split(':')[0]
-            if host in ['localhost', '127.0.0.1']:
+        # Send email
+        if trans.app.config.smtp_server is not None and self.notification and self.notification[ 'email' ]:
+            host = trans.request.host.split( ':' )[0]
+            if host in [ 'localhost', '127.0.0.1' ]:
                 host = socket.getfqdn()
-            
             body = """
 Galaxy Sample Tracking Notification
 ===================================
@@ -1662,39 +1679,39 @@ Number of samples:        %(num_samples)s
 All samples in state:     %(sample_state)s
 
 """
-            values = dict(user=self.user.email, 
-                          request_name=self.name, 
-                          request_type=self.type.name, 
-                          request_state=self.state(), 
-                          num_samples=str(len(self.samples)), 
-                          sample_state=common_state.name, 
-                          create_time=self.create_time, 
-                          submit_time=self.create_time)
+            values = dict( user=self.user.email, 
+                           request_name=self.name, 
+                           request_type=self.type.name, 
+                           request_state=self.state, 
+                           num_samples=str( len( self.samples ) ), 
+                           sample_state=common_state.name, 
+                           create_time=self.create_time, 
+                           submit_time=self.create_time )
             body = body % values
             # check if this is the final state of the samples
             if final_state:
                 txt = "Sample Name -> Data Library/Folder\r\n"
                 for s in self.samples:
-                    txt = txt + "%s -> %s/%s\r\n" % (s.name, s.library.name, s.folder.name)
+                    txt = txt + "%s -> %s/%s\r\n" % ( s.name, s.library.name, s.folder.name )
                 body = body + txt
             to = self.notification['email']
             frm = 'galaxy-no-reply@' + host
             subject = "Galaxy Sample Tracking notification: '%s' sequencing request" % self.name
-            message = "From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" % (frm, ", ".join(to), subject, body)
+            message = "From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" % ( frm, ", ".join( to ), subject, body )
             try:
                 s = smtplib.SMTP()
-                s.connect(trans.app.config.smtp_server)
-                s.sendmail(frm, to, message)
+                s.connect( trans.app.config.smtp_server )
+                s.sendmail( frm, to, message )
                 s.quit()
-                comments = "Email notification sent to %s." % ", ".join(to).strip().strip(',')
+                comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
             except:
                 comments = "Email notification failed."
             # update the request history with the email notification event
         elif not trans.app.config.smtp_server:
             comments = "Email notification failed as SMTP server not set in config file"
         if comments:
-            event = trans.app.model.RequestEvent(self, self.state(), comments)
-            trans.sa_session.add(event)
+            event = trans.app.model.RequestEvent( self, self.state, comments )
+            trans.sa_session.add( event )
             trans.sa_session.flush()
         return comments
     
@@ -1710,37 +1727,16 @@ class RequestType( object ):
                                     EXPERIMENT_NAME = 'Prepend experiment name',
                                     EXPERIMENT_AND_SAMPLE_NAME = 'Prepend experiment and sample name')
     permitted_actions = get_permitted_actions( filter='REQUEST_TYPE' )
-    def __init__(self, name=None, desc=None, request_form=None, sample_form=None,
-                 datatx_info=None):
+    def __init__( self, name=None, desc=None, request_form=None, sample_form=None, datatx_info=None ):
         self.name = name
         self.desc = desc
         self.request_form = request_form
         self.sample_form = sample_form
         self.datatx_info = datatx_info
-    def last_state(self):
+    @property
+    def state( self ):
+        # The states mapper for this object orders ascending
         return self.states[-1]
-    
-    def change_state_widgets(self, trans, sample=None):
-        if sample:
-            curr_state = sample.current_state()
-        else:
-            curr_state = self.states[0]
-        states_input = SelectField('select_state')
-        for state in self.states:
-            if curr_state.name == state.name:
-                states_input.add_option(state.name, state.id, selected=True)
-            else:
-                states_input.add_option(state.name, state.id)
-        widgets = []
-        if sample:
-            widgets.append(('Select the new state of the sample from the list of possible state(s)',
-                          states_input))
-        else:
-            widgets.append(('Select the new state of the selected sample(s) from the list of possible state(s)',
-                          states_input))
-        widgets.append(('Comments', TextField('comment', 50)))
-        title = 'Change current state'
-        return widgets, title
         
 class RequestTypePermissions( object ):
     def __init__( self, action, request_type, role ):
@@ -1749,16 +1745,15 @@ class RequestTypePermissions( object ):
         self.role = role
     
 class Sample( object ):
-    bulk_operations = Bunch(CHANGE_STATE = 'Change state', 
-                            SELECT_LIBRARY = 'Select data library and folder')
+    bulk_operations = Bunch( CHANGE_STATE = 'Change state', 
+                             SELECT_LIBRARY = 'Select data library and folder' )
     transfer_status = Bunch( NOT_STARTED = 'Not started',
                              IN_QUEUE = 'In queue',
                              TRANSFERRING = 'Transferring dataset',
                              ADD_TO_LIBRARY = 'Adding to data library',
                              COMPLETE = 'Complete',
-                             ERROR = 'Error')
-    def __init__(self, name=None, desc=None, request=None, form_values=None, 
-                 bar_code=None, library=None, folder=None):
+                             ERROR = 'Error' )
+    def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None):
         self.name = name
         self.desc = desc
         self.request = request
@@ -1766,29 +1761,39 @@ class Sample( object ):
         self.bar_code = bar_code
         self.library = library
         self.folder = folder
-    def current_state(self):
-        if self.events:
-            return self.events[0].state
+    @property
+    def state( self ):
+        latest_event = self.latest_event
+        if latest_event:
+            return latest_event.state
         return None
-    def untransferred_dataset_files(self):
+    @property
+    def latest_event( self ):
+        if self.events:
+            return self.events[0]
+        return None
+    @property
+    def untransferred_dataset_files( self ):
         count = 0
         for df in self.datasets:
             if df.status == self.transfer_status.NOT_STARTED:
                 count = count + 1
         return count
-    def inprogress_dataset_files(self):
+    @property
+    def inprogress_dataset_files( self ):
         count = 0
         for df in self.datasets:
             if df.status not in [self.transfer_status.NOT_STARTED, self.transfer_status.COMPLETE]:
                 count = count + 1
         return count
-    def transferred_dataset_files(self):
+    @property
+    def transferred_dataset_files( self ):
         count = 0
         for df in self.datasets:
             if df.status == self.transfer_status.COMPLETE:
                 count = count + 1
         return count
-    def dataset_size(self, filepath):
+    def dataset_size( self, filepath ):
         def print_ticks(d):
             pass
         datatx_info = self.request.type.datatx_info

@@ -60,8 +60,7 @@ class FormsGrid( grids.Grid ):
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
     global_actions = [
-        grids.GridAction( "Create new form", dict( controller='forms', 
-                                                      action='new' ) )
+        grids.GridAction( "Create new form", dict( controller='forms', action='create_form' ) )
     ]
 
 class Forms( BaseController ):
@@ -123,7 +122,7 @@ class Forms( BaseController ):
     
     @web.expose
     @web.require_admin
-    def new( self, trans, **kwd ):
+    def create_form( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -132,7 +131,7 @@ class Forms( BaseController ):
             fd, message = self.__save_form( trans, fdc_id=None, **kwd )
             if not fd:
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='new',
+                                                                  action='create_form',
                                                                   message=message,
                                                                   status='error',
                                                                   name=util.restore_text( params.get( 'name', '' ) ),
@@ -174,7 +173,7 @@ class Forms( BaseController ):
             trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='forms',
                                                           action='manage',
-                                                          message='%i form(s) is deleted.' % len(id_list), 
+                                                          message='%i forms have been deleted.' % len(id_list), 
                                                           status='done') )
     def __undelete( self, trans, **kwd ):
         id_list = util.listify( kwd['id'] )
@@ -192,7 +191,7 @@ class Forms( BaseController ):
             trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='forms',
                                                           action='manage',
-                                                          message='%i form(s) is undeleted.' % len(id_list), 
+                                                          message='%i forms have been undeleted.' % len(id_list), 
                                                           status='done') )
     @web.expose
     def edit( self, trans, response_redirect=None, **kwd ):
@@ -470,7 +469,7 @@ class Forms( BaseController ):
                                    'default': row[6]})
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
-                                                              action='new',
+                                                              action='create_form',
                                                               status='error',
                                                               message='Error in importing <b>%s</b> file' % csv_file.file))
         self.__imported_from_file = True
@@ -501,7 +500,7 @@ class Forms( BaseController ):
         # validate fields
         for field in current_form[ 'fields' ]:
             if not field[ 'label' ]:
-                return None, "All the field label(s) must be completed."
+                return None, "All the field labels must be completed."
         # create a new form definition
         fd = trans.app.model.FormDefinition(name=current_form[ 'name' ], 
                                             desc=current_form[ 'desc' ], 

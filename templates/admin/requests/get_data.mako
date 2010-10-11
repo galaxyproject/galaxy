@@ -1,19 +1,15 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
 <script type="text/javascript">
 $(document).ready(function(){
     //hide the all of the element with class msg_body
     $(".msg_body").hide();
-    //toggle the componenet with class msg_body
+    //toggle the component with class msg_body
     $(".msg_head").click(function(){
         $(this).next(".msg_body").slideToggle(450);
     });
 });
-
-
-
 
 </script>
 
@@ -30,7 +26,7 @@ $(document).ready(function(){
                 type: "POST",
                 url: "${h.url_for( controller='requests_admin', action='get_file_details' )}",
                 dataType: "json",
-                data: { id: request_id, folder_path: document.get_data.folder_path.value+selected_value },
+                data: { id: request_id, folder_path: document.get_data.folder_path.value + selected_value },
                 success : function ( data ) {
                     cell.html( '<label>'+data+'</label>' )
                 }
@@ -40,13 +36,11 @@ $(document).ready(function(){
         {
             cell.html( '' )
         }
-        
-       
    }
 </script>
 
 <script type="text/javascript">
-   function open_folder1(request_id, folder_path)
+   function open_folder1( request_id, folder_path )
    {
        var w = document.get_data.files_list.selectedIndex;
        var selected_value = document.get_data.files_list.options[w].value;
@@ -79,13 +73,10 @@ $(document).ready(function(){
    }
 </script>
 
-
 <style type="text/css">
 .msg_head {
     padding: 0px 0px;
     cursor: pointer;
-}
-
 }
 </style>
 
@@ -96,23 +87,23 @@ $(document).ready(function(){
 <br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_request_types', operation='view', id=trans.security.encode_id(request.type.id) )}">
+        <a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_request_types', operation='view', id=trans.security.encode_id( request.type.id ) )}">
         <span>Sequencer configuration "${request.type.name}"</span></a>
     </li>
     <li>
-        <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='show', id=trans.security.encode_id(request.id) )}">
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">
         <span>Browse this request</span></a>
     </li>
 </ul>
 
-<form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', cntrller=cntrller, action='get_data', request_id=request.id)}" method="post" >
+<form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', cntrller=cntrller, action='get_data', request_id=trans.security.encode_id( request.id )}" method="post" >
     <div class="toolForm">
         <div class="toolFormTitle">Select files for transfer</div>
         <div class="form-row">
             <label>Sample:</label>
-            ${samples_selectbox.get_html()}
+            ${sample_id_select_field.get_html()}
             <div class="toolParamHelp" style="clear: both;">
-                Select the sample with which you want to associate the dataset(s)
+                Select the sample with which you want to associate the datasets
             </div>
             <br/>
             <label>Folder path on the sequencer:</label>
@@ -122,14 +113,11 @@ $(document).ready(function(){
         </div>
         <div class="form-row">
             <select name="files_list" id="files_list" style="max-width: 60%; width: 98%; height: 150px; font-size: 100%;" ondblclick="open_folder1(${request.id}, '${folder_path}')" onChange="display_file_details(${request.id}, '${folder_path}')" multiple>
-                %for index, f in enumerate(files):
+                %for index, f in enumerate( files ):
                     <option value="${f}">${f}</option>
                 %endfor
             </select> 
             <br/>
-            <div id="file_details" class="toolParamHelp" style="clear: both;">
-                
-            </div>
         </div>
         <div class="form-row">
             <input type="submit" name="select_show_datasets_button" value="Select & show datasets"/>

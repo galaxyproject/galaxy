@@ -10,16 +10,14 @@ ${render_msg('A dataset can be renamed only if its status is "Not Started"', 'ok
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=sample.id )}">
-        <span>Browse datasets</span></a>
+        <a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Browse datasets</a>
     </li>
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_admin', action='list', operation='show', id=trans.security.encode_id(sample.request.id) )}">
-        <span>Browse this request</span></a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Browse this request</a>
     </li>
 </ul>
 
-<form name="rename_datasets" id="rename_datasets" action="${h.url_for( controller='requests_admin', action='rename_datasets', id_list=id_list, sample_id=trans.security.encode_id(sample.id))}" method="post" >
+<form name="rename_datasets" id="rename_datasets" action="${h.url_for( controller='requests_admin', action='rename_datasets', id_list=id_list, sample_id=trans.security.encode_id( sample.id ) )}" method="post" >
     <table class="grid">
     <thead>
         <tr>

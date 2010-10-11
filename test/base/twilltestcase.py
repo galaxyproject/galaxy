@@ -1320,7 +1320,7 @@ class TwillTestCase( unittest.TestCase ):
     def create_form( self, name, desc, form_type, field_type='TextField', form_layout_name='',
                      num_fields=1, num_options=0, strings_displayed=[], strings_displayed_after_submit=[] ):
         """Create a new form definition."""
-        self.visit_url( "%s/forms/new" % self.url )
+        self.visit_url( "%s/forms/create_form" % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( "1", "name", name )
@@ -1405,13 +1405,13 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         url = "%s/forms/manage?operation=delete&id=%s" % ( self.url, form_id )
         self.visit_url( url )
-        check_str = "1 form(s) is deleted."
+        check_str = "1 forms have been deleted."
         self.check_page_for_string( check_str )
         self.home()
 
     # Requests stuff
     def check_request_grid( self, cntrller, state, deleted=False, strings_displayed=[] ):
-        self.visit_url( '%s/%s/list?sort=create_time&f-state=%s&f-deleted=%s' % \
+        self.visit_url( '%s/%s/browse_requests?sort=create_time&f-state=%s&f-deleted=%s' % \
                         ( self.url, cntrller, state.replace( ' ', '+' ), str( deleted ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
@@ -1445,17 +1445,16 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Permissions updated for sequencer configuration '%s'" % request_type_name
         self.check_page_for_string( check_str )
         self.home()
-    def create_request( self, cntrller, request_type_id, name, desc, field_value_tuples, select_user_id='',
-                        refresh='False', strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/requests_common/new?cntrller=%s&refresh=%s&select_request_type=True" % ( self.url, cntrller, refresh ) )
-        # The select_request_type SelectList requires a refresh_on_change
-        self.refresh_form( 'select_request_type', request_type_id )
-        if cntrller == 'requests_admin' and select_user_id:
+    def create_request( self, cntrller, request_type_id, name, desc, field_value_tuples, other_users_id='',
+                        strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( "%s/requests_common/create_request?cntrller=%s" % ( self.url, cntrller ) )
+        # The request_type SelectList requires a refresh_on_change
+        self.refresh_form( 'request_type_id', request_type_id )
+        if cntrller == 'requests_admin' and other_users_id:
             # The admin is creating a request on behalf of another user
-            # The select_user SelectList requires a refresh_on_change
-            # gvk - 9/22/10: TODO: why does select_user require a refresh_on_change?  Nothing in the
-            # code is apparent as to why this is done.
-            self.refresh_form( 'select_user', select_user_id )
+            # The user_id SelectField requires a refresh_on_change so that the selected
+            # user's addresses will be populated in the AddressField widget
+            self.refresh_form( "user_id", other_users_id )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( "1", "name", name )
@@ -1469,15 +1468,14 @@ class TwillTestCase( unittest.TestCase ):
                 # user_address to be selected.
                 self.refresh_form( field_name, field_value )
             else:
-                data = self.last_page()
-                file( 'greg.html', 'wb' ).write(data )
                 tc.fv( "1", field_name, field_value )
         tc.submit( "create_request_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
-    def edit_request( self, request_id, name, new_name='', new_desc='', new_fields=[], strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/requests/list?operation=Edit&id=%s" % ( self.url, request_id ) )
+    def edit_basic_request_info( self, cntrller, request_id, name, new_name='', new_desc='', new_fields=[],
+                                 strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( "%s/requests_common/edit_basic_request_info?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.check_page_for_string( 'Edit sequencing request "%s"' % name )
@@ -1487,21 +1485,21 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "desc", new_desc )
         for index, field_value in enumerate( new_fields ):
             tc.fv( "1", "field_%i" % index, field_value )
-        tc.submit( "save_changes_request_button" )
+        tc.submit( "edit_basic_request_info_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def add_samples( self, cntrller, request_id, request_name, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/requests/list?operation=show&id=%s" % ( self.url, request_id ) )
+        self.visit_url( "%s/requests_common/manage_request?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         # Simulate clicking the add-sample_button on the form.  (gvk: 9/21/10 - TODO : There must be a bug in the mako template 
         # because twill cannot find any forms on the page, but I cannot find it although I've spent time cleaning up the
         # template code and looking for any problems. 
-        url = "%s/requests_common/request_page?cntrller=%s&edit_mode=False&id=%s" % ( self.url, cntrller, request_id )
+        url = "%s/requests_common/manage_request?cntrller=%s&id=%s" % ( self.url, cntrller, request_id )
         # This should work, but although twill does not thorw any exceptions, the button click never occurs
-        # There are multiple forms on this page, and we'll only be using the form named show_request.
+        # There are multiple forms on this page, and we'll only be using the form named manage_request.
         # for sample_index, sample_value_tuple in enumerate( sample_value_tuples ):
-        #     # Add the following form value to the already populated hidden field so that the show_request
+        #     # Add the following form value to the already populated hidden field so that the manage_request
         #     # form is the current form
         #     tc.fv( "1", "id", request_id )
         #     tc.submit( 'add_sample_button' )
@@ -1528,11 +1526,11 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def submit_request( self, cntrller, request_id, request_name, strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/%s/list?operation=Submit&id=%s" % ( self.url, cntrller, request_id ) )
+        self.visit_url( "%s/requests_common/submit_request?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def reject_request( self, request_id, request_name, comment, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/requests_admin/list?operation=Reject&id=%s" % ( self.url, request_id ) )
+        self.visit_url( "%s/requests_admin/reject?id=%s" % ( self.url, request_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( "1", "comment", comment )
@@ -1542,7 +1540,7 @@ class TwillTestCase( unittest.TestCase ):
     def add_bar_codes( self, request_id, request_name, bar_codes, samples, strings_displayed_after_submit=[] ):
         # We have to simulate the form submission here since twill barfs on the page
         # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
-        url = "%s/requests_common/request_page?cntrller=requests_admin&edit_mode=True&id=%s" % ( self.url, request_id )
+        url = "%s/requests_common/manage_request?cntrller=requests_admin&id=%s&edit_samples_button=Edit+samples" % ( self.url, request_id )
         for index, field_value in enumerate( bar_codes ):
             sample_field_name = "sample_%i_name" % index
             sample_field_value = samples[ index ].name.replace( ' ', '+' )
@@ -1553,18 +1551,18 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-    def change_sample_state( self, request_id, request_name, sample_name, sample_id, new_state_id, new_state_name, comment='',
+    def change_sample_state( self, request_id, request_name, sample_name, sample_id, new_sample_state_id, new_state_name, comment='',
                              strings_displayed=[], strings_displayed_after_submit=[] ):
         # We have to simulate the form submission here since twill barfs on the page
         # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
-        url = "%s/requests_common/request_page?cntrller=requests_admin&edit_mode=False&id=%s" % ( self.url, request_id )
+        url = "%s/requests_common/manage_request?cntrller=requests_admin&id=%s" % ( self.url, request_id )
         # select_sample_%i=true must be included twice to simulate a CheckboxField checked setting.
-        url += "&comment=%s&select_sample_%i=true&select_sample_%i=true&select_state=%i" % ( comment, sample_id, sample_id, new_state_id )
-        url += "&select_sample_operation=Change%20state&refresh=true"
+        url += "&comment=%s&select_sample_%i=true&select_sample_%i=true&sample_state_id=%i" % ( comment, sample_id, sample_id, new_sample_state_id )
+        url += "&sample_operation=Change%20state&refresh=true"
         url += "&change_state_button=Save"
         self.visit_url( url )        
         self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
-        self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%i" % (self.url, sample_id) )
+        self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%i" % ( self.url, sample_id ) )
         self.check_page_for_string( 'Events for Sample "%s"' % sample_name )
         self.check_page_for_string( new_state_name )
     def add_user_address( self, user_id, address_dict ):

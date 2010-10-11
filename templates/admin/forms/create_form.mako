@@ -8,7 +8,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create a new form definition</div>
     <div class="toolFormBody">
-        <form name="create_form" action="${h.url_for( controller='forms', action='new', create_form=True )}" enctype="multipart/form-data" method="post" >
+        <form name="create_form" action="${h.url_for( controller='forms', action='create_form', create_form=True )}" enctype="multipart/form-data" method="post" >
             %for label, input in inputs:
                 <div class="form-row">
                     <label>${label}</label>

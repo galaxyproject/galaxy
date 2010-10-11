@@ -1,7 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
 %if message:
     ${render_msg( message, status )}
 %endif
@@ -64,32 +63,32 @@
 </%def>
 
 <div class="toolForm">
-    %if form.desc:
-        <div class="toolFormTitle">${form.name} - <i> ${form.desc}</i> (${form.type})
-            <a id="form-${form.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            <div popupmenu="form-${form.id}-popup">
-                <a class="action-button" href="${h.url_for( controller='forms', action='manage', operation='Edit', id=trans.security.encode_id(form.current.id) )}">Edit</a>
+    %if form_definition.desc:
+        <div class="toolFormTitle">${form_definition.name} - <i> ${form_definition.desc}</i> (${form_definition.type})
+            <a id="form_definition-${form_definition.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="form_definition-${form_definition.id}-popup">
+                <a class="action-button" href="${h.url_for( controller='forms', action='manage', operation='Edit', id=trans.security.encode_id(form_definition.current.id) )}">Edit</a>
             </div>
         </div>
     %else:
-        <div class="toolFormTitle">${form.name} (${form.type})
-        <a id="form-${form.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-        <div popupmenu="form-${form.id}-popup">
-            <a class="action-button" href="${h.url_for( controller='forms', action='manage', operation='Edit', id=trans.security.encode_id(form.current.id) )}">Edit</a>
+        <div class="toolFormTitle">${form_definition.name} (${form_definition.type})
+        <a id="form_definition-${form_definition.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+        <div popupmenu="form_definition-${form_definition.id}-popup">
+            <a class="action-button" href="${h.url_for( controller='forms', action='manage', operation='Edit', id=trans.security.encode_id(form_definition.current.id) )}">Edit</a>
         </div>
         </div>
     %endif
     <form name="library" action="${h.url_for( controller='forms', action='manage' )}" method="post" >
-        %if form.type == trans.app.model.FormDefinition.types.SAMPLE:
-            %if not len(form.layout):
-                ${render_grid( 0, '', form.fields_of_grid( None ) )}
+        %if form_definition.type == trans.app.model.FormDefinition.types.SAMPLE:
+            %if not len(form_definition.layout):
+                ${render_grid( 0, '', form_definition.fields_of_grid( None ) )}
             %else:
-                %for grid_index, grid_name in enumerate(form.layout):
-                    ${render_grid( grid_index, grid_name, form.fields_of_grid( grid_index ) )}
+                %for grid_index, grid_name in enumerate(form_definition.layout):
+                    ${render_grid( grid_index, grid_name, form_definition.fields_of_grid( grid_index ) )}
                 %endfor
             %endif
         %else:
-            %for index, field in enumerate(form.fields):
+            %for index, field in enumerate(form_definition.fields):
                 <div class="form-row">
                     <label>${field['label']}</label>
                     %if field['helptext']:

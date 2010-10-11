@@ -1,6 +1,3 @@
-
-
-
 <%def name="custom_javascripts()">
     <script type="text/javascript">
         $("#select-dataset-action-button").bind( "click", function(e) {
@@ -10,7 +7,7 @@
                 error: function() { alert( "Couldn't create new browser" ) },
                 success: function(form_html) {
                     show_modal("Select file", form_html, {
-                        "Cancel": function() { window.location = "${h.url_for( controller='requests_admin', action='list' )}"; },
+                        "Cancel": function() { window.location = "${h.url_for( controller='requests_admin', action='browse_requests' )}"; },
                         "Continue": function() { $(document).trigger("convert_dbkeys"); continue_fn(); }
                     });
                     $("#new-title").focus();
@@ -28,4 +25,3 @@
 </%def>
 
 <%inherit file="/grid_base.mako"/>
-

@@ -8,7 +8,7 @@ from common import *
 
 log = logging.getLogger( __name__ )
 
-class StateColumn( grids.TextColumn ):
+class StateColumn( grids.StateColumn ):
     def get_value( self, trans, grid, tool ):
         state = tool.state
         if state == trans.model.Tool.states.APPROVED:

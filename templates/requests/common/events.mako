@@ -4,12 +4,10 @@
 <h2>History of Sequencing Request "${request.name}"</h2>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller=cntrller, action='list', operation='show', id=trans.security.encode_id(request.id) )}">
-        <span>Browse this request</span></a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Browse this request</a>
     </li>
     <li>
-        <a class="action-button"  href="${h.url_for( controller=cntrller, action='list')}">
-        <span>Browse all requests</span></a>
+        <a class="action-button"  href="${h.url_for( controller=cntrller, action='browse_requests' )}">Browse all requests</a>
     </li>
 </ul>
 

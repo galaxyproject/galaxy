@@ -1,7 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
 %if message:
     ${render_msg( message, status )}
 %endif
@@ -88,6 +87,5 @@
             <input type="submit" name="save_request_type" value="Save"/>
             </div>
         </form>
-
     %endif
 </div>

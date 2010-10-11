@@ -515,3 +515,55 @@ def get_suite():
     """Get unittest suite for this module"""
     import doctest, sys
     return doctest.DocTestSuite( sys.modules[__name__] )
+
+# --------- Utility methods -----------------------------
+
+def build_select_field( trans, objs, label_attr,  select_field_name, initial_value='none',
+                        selected_value='none', refresh_on_change=False, multiple=False, display=None, size=None ):
+    """
+    Build a SelectField given a set of objects.  The received params are:
+    - objs: the set of object used to populate the option list
+    - label_attr: the attribute of each obj (e.g., name, email, etc ) whose value is used to populate each option label.  If the string
+      'self' is passed as label_attr, each obj in objs is assumed to be a string, so the obj itself is used
+    - select_field_name: the name of the SelectField
+    - initial_value: the vlaue of the first option in the SelectField - allows for an option telling the user to select something
+    - selected_value: the value of the currently selected option
+    - refresh_on_change: True if the SelectField should perform a refresh_on_change
+    """
+    values = [ initial_value ]
+    for obj in objs:
+        if label_attr == 'self':
+            # Each obj is a string
+            values.append( obj )
+        else:
+            values.append( trans.security.encode_id( obj.id ) )
+    if refresh_on_change:
+        refresh_on_change_values = values
+    else:
+        refresh_on_change_values = []
+    select_field = SelectField( name=select_field_name, 
+                                multiple=multiple,
+                                display=display,
+                                refresh_on_change=refresh_on_change, 
+                                refresh_on_change_values=refresh_on_change_values,
+                                size=size )
+    if display is None:
+        # only insert an initial "Select one" option if we are not displaying check boxes or radio buttons
+        if selected_value == initial_value:
+            select_field.add_option( 'Select one', initial_value, selected=True )
+        else:
+            select_field.add_option( 'Select one', initial_value )
+    for obj in objs:
+        if label_attr == 'self':
+            # Each obj is a string
+            if str( selected_value ) == str( obj ):
+                select_field.add_option( obj, obj, selected=True )
+            else:
+                select_field.add_option( obj, obj )
+        else:
+            label = getattr( obj, label_attr )
+            if str( selected_value ) == str( obj.id ) or str( selected_value ) == trans.security.encode_id( obj.id ):
+                select_field.add_option( label, trans.security.encode_id( obj.id ), selected=True )
+            else:
+                select_field.add_option( label, trans.security.encode_id( obj.id ) )
+    return select_field

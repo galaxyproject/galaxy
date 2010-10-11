@@ -78,16 +78,14 @@
     %>
     
     ## Lab menu.
-    %if trans.user and trans.user.requests:
-        <%
-            menu_options = [
-                             [ 'Sequencing Requests', h.url_for( controller='/requests', action='index' ) ],
-                             [ 'Find Samples', h.url_for( controller='/requests', action='find_index' ) ],
-                             [ 'Help', app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" ), "galaxy_main" ]
-                           ]
-            tab( "lab", "Lab", None, menu_options=menu_options )
-        %>
-    %endif
+    <%
+        menu_options = [
+                         [ 'Sequencing Requests', h.url_for( controller='/requests', action='index' ) ],
+                         [ 'Find Samples', h.url_for( controller='/requests', action='find_samples_index' ) ],
+                         [ 'Help', app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" ), "galaxy_main" ]
+                       ]
+        tab( "lab", "Lab", None, menu_options=menu_options, visible=( trans.user and trans.user.requests ) )
+    %>
 
     ## Visualization menu.
     %if app.config.get_bool( 'enable_tracks', False ):

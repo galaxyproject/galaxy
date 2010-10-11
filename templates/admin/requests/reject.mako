@@ -8,18 +8,16 @@
 <h2>Reject Sequencing Request "${request.name}"</h2>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_admin', action='list', operation='events', id=trans.security.encode_id(request.id) )}">
-        <span>Events</span></a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id(request.id) )}">Events</a>
     </li>
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_admin', action='list', operation='show', id=trans.security.encode_id(request.id) )}">
-        <span>Browse this request</span></a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller=cntrller, id=trans.security.encode_id(request.id) )}">Browse this request</a>
     </li>
 </ul>
 
 <div class="toolForm">
     <div class="toolFormTitle">Reject request</div>
-        <form name="event" action="${h.url_for( controller='requests_admin', action='reject', id=trans.security.encode_id(request.id))}" method="post" >
+        <form name="event" action="${h.url_for( controller='requests_admin', action='reject', id=trans.security.encode_id( request.id ) )}" method="post" >
             <div class="form-row">
                 Rejecting this request will move the request state to <b>Rejected</b>.
             </div>

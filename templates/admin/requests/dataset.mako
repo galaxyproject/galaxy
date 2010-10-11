@@ -1,17 +1,17 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
 %if message:
     ${render_msg( message, status )}
 %endif
 
-<br/>
-<br/>
+<br/><br/>
+
+<% sample = sample_dataset.sample %>
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='show_datatx_page', cntrller='requests_admin', sample_id=trans.security.encode_id(sample.id) )}">
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller='requests_admin', sample_id=trans.security.encode_id( sample.id ) )}">
         <span>Browse datasets</span></a>
     </li>
 </ul>
