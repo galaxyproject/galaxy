@@ -9,7 +9,7 @@ from galaxy.model.orm import *
 from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
-from galaxy.visualization.tracks.data.base import dataset_to_data_provider
+from galaxy.visualization.tracks.data_providers import get_data_provider
 
 from Cheetah.Template import Template
 
@@ -170,7 +170,7 @@ class UsesVisualization( SharableItemSecurity ):
                         prefs = {}
                     dataset = hda_query.get( dataset_id )
                     track_type, _ = dataset.datatype.get_track_type()
-                    track_data_provider_class = dataset_to_data_provider( dataset )
+                    track_data_provider_class = get_data_provider( original_dataset=dataset )
                     track_data_provider = track_data_provider_class( original_dataset=dataset )
                     
                     tracks.append( {

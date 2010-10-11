@@ -20,12 +20,7 @@ from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import grids
 from galaxy.util.bunch import Bunch
 
-from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
-from galaxy.visualization.tracks.data.interval_index import IntervalIndexDataProvider
-from galaxy.visualization.tracks.data.bam import BamDataProvider
-from galaxy.visualization.tracks.data.summary_tree import SummaryTreeDataProvider
-from galaxy.visualization.tracks.data.vcf import VcfDataProvider
-from galaxy.visualization.tracks.data.base import dataset_to_data_provider
+from galaxy.visualization.tracks.data_providers import *
 
 # Message strings returned to browser
 messages = Bunch(
@@ -36,17 +31,6 @@ messages = Bunch(
     DATA = "data",
     ERROR = "error"
 )
-
-# Mapping from dataset type to a class that can fetch data from a file of that
-# type. First key is converted dataset type; if result is another dict, second key
-# is original dataset type. TODO: This needs to be more flexible.
-# TODO: move this mapping into TracksDataProvider
-dataset_type_to_data_provider = {
-    "array_tree": ArrayTreeDataProvider,
-    "interval_index": { "vcf": VcfDataProvider, "default" : IntervalIndexDataProvider },
-    "bai": BamDataProvider,
-    "summary_tree": SummaryTreeDataProvider
-}
 
 class DatasetSelectionGrid( grids.Grid ):
     class DbKeyColumn( grids.GridColumn ):
@@ -152,7 +136,7 @@ class TracksController( BaseController, UsesVisualization ):
         hda_query = trans.sa_session.query( model.HistoryDatasetAssociation )
         dataset = hda_query.get( dataset_id )
         track_type, _ = dataset.datatype.get_track_type()
-        track_data_provider_class = dataset_to_data_provider( dataset )
+        track_data_provider_class = get_data_provider( original_dataset=dataset )
         track_data_provider = track_data_provider_class( original_dataset=dataset )
         
         track = {
@@ -296,7 +280,7 @@ class TracksController( BaseController, UsesVisualization ):
         extra_info = None
         if 'index' in data_sources:
             # Have to choose between indexer and data provider
-            indexer = dataset_type_to_data_provider[data_sources['index']]( dataset.get_converted_dataset(trans, data_sources['index']), dataset )
+            indexer = get_data_provider( name=data_sources['index'] )( dataset.get_converted_dataset(trans, data_sources['index']), dataset )
             summary = indexer.get_summary( chrom, low, high, **kwargs )
             if summary is not None and kwargs.get("mode", "Auto") == "Auto":
                 # Only check for summary if it's Auto mode (which is the default)
@@ -309,13 +293,7 @@ class TracksController( BaseController, UsesVisualization ):
         
         # Get data provider.
         tracks_dataset_type = data_sources['data']
-        value = dataset_type_to_data_provider[ tracks_dataset_type ]
-        if isinstance( value, dict ):
-            # Get converter by dataset extension; if there is no data provider,
-            # get the default
-            data_provider_class = value.get( dataset.ext, value.get( "default" ) )
-        else:
-            data_provider_class = value
+        data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
         data_provider = data_provider_class( dataset.get_converted_dataset(trans, tracks_dataset_type), dataset )
         
         # Get and return data from data_provider.
