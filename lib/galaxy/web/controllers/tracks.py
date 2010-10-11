@@ -24,7 +24,8 @@ from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
 from galaxy.visualization.tracks.data.interval_index import IntervalIndexDataProvider
 from galaxy.visualization.tracks.data.bam import BamDataProvider
 from galaxy.visualization.tracks.data.summary_tree import SummaryTreeDataProvider
-from galaxy.visualization.tracks.data.vcf import VCFDataProvider
+from galaxy.visualization.tracks.data.vcf import VcfDataProvider
+from galaxy.visualization.tracks.data.base import dataset_to_data_provider
 
 # Message strings returned to browser
 messages = Bunch(
@@ -39,9 +40,10 @@ messages = Bunch(
 # Mapping from dataset type to a class that can fetch data from a file of that
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
+# TODO: move this mapping into TracksDataProvider
 dataset_type_to_data_provider = {
     "array_tree": ArrayTreeDataProvider,
-    "interval_index": { "vcf": VCFDataProvider, "default" : IntervalIndexDataProvider },
+    "interval_index": { "vcf": VcfDataProvider, "default" : IntervalIndexDataProvider },
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider
 }
@@ -150,12 +152,15 @@ class TracksController( BaseController, UsesVisualization ):
         hda_query = trans.sa_session.query( model.HistoryDatasetAssociation )
         dataset = hda_query.get( dataset_id )
         track_type, _ = dataset.datatype.get_track_type()
+        track_data_provider_class = dataset_to_data_provider( dataset )
+        track_data_provider = track_data_provider_class( original_dataset=dataset )
         
         track = {
             "track_type": track_type,
             "name": dataset.name,
             "dataset_id": dataset.id,
             "prefs": {},
+            "filters": track_data_provider.get_filters()
         }
         return track
         

@@ -1,10 +1,3 @@
-"""
-VCF data provider for the Galaxy track browser.
-
-Payload format: 
-[ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score]
-"""
-
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.interval_index_file import Indexes
 from galaxy.datatypes.tabular import Vcf
@@ -12,8 +5,15 @@ from base import TracksDataProvider
 
 MAX_VALS = 5000 # only display first MAX_VALS features
 
-class VCFDataProvider( TracksDataProvider ):
-    """ Provides data for VCF tracks. """
+class VcfDataProvider( TracksDataProvider ):
+    """
+    VCF data provider for the Galaxy track browser.
+
+    Payload format: 
+    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score]
+    """
+    
+    col_name_data_index_mapping = { 'Qual' : 6 }
     
     def get_data( self, chrom, start, end, **kwargs ):
         """ Returns data in region defined by chrom, start, and end. """

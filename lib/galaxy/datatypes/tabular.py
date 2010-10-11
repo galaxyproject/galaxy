@@ -462,7 +462,14 @@ class ElandMulti( Tabular ):
         return False
         
 class Vcf( Tabular ):
+    """ Variant Call Format for describing SNPs and other simple genome variations. """
+    
     file_ext = 'vcf'
+    column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]
+    
+    MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="viz_filter_columns", default=[5] )
     
     def sniff( self, filename ):
         try:
@@ -472,6 +479,21 @@ class Vcf( Tabular ):
             return True
         except:
             return False
+            
+    def make_html_table( self, dataset, skipchars=[] ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        try:
+            # Generate column header
+            out.append( '<tr>' )
+            for i, name in enumerate( self.column_names ):
+                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % exc
+        return out
         
     def get_track_type( self ):
         return "FeatureTrack", {"data": "interval_index", "index": "summary_tree"}
