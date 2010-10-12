@@ -73,13 +73,13 @@
                 dataType: "json",
                 data: { ids: ids.join( "," ), states: states.join( "," ) },
                 success : function ( data ) {
-                    $.each( data, function( cntrller, id, val ) {
+                    $.each( data, function(id, val, cntrller ) {
                         // Replace HTML
                         var cell1 = $("#sampleState-" + id);
                         cell1.html( val.html_state );
                         var cell2 = $("#sampleDatasets-" + id);
                         cell2.html( val.html_datasets );
-                        sample_states[ parseInt(id) ] = val.state;
+                        sample_states[ parseInt( id ) ] = val.state;
                     });
                     updater( sample_states ); 
                 },
@@ -272,7 +272,6 @@
                             <input type="submit" name="cancel_change_state_button" value="Cancel"/>
                         </div>
                     %elif sample_operation_selected_value == trans.app.model.Sample.bulk_operations.SELECT_LIBRARY:
-                    ## sample_operation_selected_value == 'Select data library and folder'
                     <% libraries_selected_value = libraries_select_field.get_selected( return_value=True ) %>
                         <div class="form-row">
 	                        <label>Select data library:</label>
@@ -303,7 +302,7 @@
     %if request.samples and request.is_submitted:
         <script type="text/javascript">
             // Updater
-            updater({${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( s.id ), s.state.name ) for s in request.samples ] ) }});
+            updater({${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
         </script>
     %endif
     %if not managing_samples:

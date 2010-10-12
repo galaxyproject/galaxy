@@ -105,8 +105,7 @@ class RequestsGrid( grids.Grid ):
 
 class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
     @web.json
-    def sample_state_updates( self, trans, cntrller, ids=None, states=None ):
-        pass
+    def sample_state_updates( self, trans, ids=None, states=None, cntrller=None ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
@@ -118,16 +117,16 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             for id, state in zip( ids, states ):
                 sample = trans.sa_session.query( self.app.model.Sample ).get( id )
                 if sample.state.name != state:
-                    rval[id] = { "state": sample.state.name,
-                                 "datasets": len( sample.datasets ),
-                                 "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
-                                                                             sample=sample,
-                                                                             cntrller=cntrller ),
-                                                                             'utf-8' ),
-                                 "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
-                                                                                sample=sample,
-                                                                                cntrller=cntrller ),
-                                                                                'utf-8' ) }
+                    rval[ id ] = { "state": sample.state.name,
+                                   "datasets": len( sample.datasets ),
+                                   "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
+                                                                               sample=sample,
+                                                                               cntrller=cntrller ),
+                                                                               'utf-8' ),
+                                   "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
+                                                                                  sample=sample,
+                                                                                  cntrller=cntrller ),
+                                                                                  'utf-8' ) }
         return rval
     @web.expose
     @web.require_login( "create sequencing requests" )
