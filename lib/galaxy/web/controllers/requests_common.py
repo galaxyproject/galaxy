@@ -516,7 +516,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     trans.sa_session.add( s )
                 trans.sa_session.flush()
                 num_undeleted += 1
-        message += '%i requests have been undeleted.' % num_deleted
+        message += '%i requests have been undeleted.' % num_undeleted
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='browse_requests',
                                                           status=status,
@@ -570,7 +570,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 email_addresses.append( util.restore_text( email_address ) )
             # Make sure email addresses are valid
             err_msg = ''
-            for email_address in additional_email_addresses:
+            for email_address in email_addresses:
                 err_msg += self.__validate_email( email_address )
             if err_msg:
                 status = 'error'
