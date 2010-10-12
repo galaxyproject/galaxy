@@ -45,7 +45,10 @@ class TracksDataProvider( object ):
         try:
             column_names = self.original_dataset.datatype.column_names
         except AttributeError:
-            column_names = range( self.original_dataset.metadata.columns )
+            try:
+                column_names = range( self.original_dataset.metadata.columns )
+            except: # Give up
+                return []
             
         # Dataset must have column types; if not, cannot create filters.
         try:

@@ -452,7 +452,7 @@ $.extend( Track.prototype, {
         this.container_div = $("<div />").addClass('track')
         if (!this.hidden) {
             this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
-            this.drag_div = $("<div class='draghandle' />").appendTo(this.header_div);
+            if (this.view.editor) { this.drag_div = $("<div class='draghandle' />").appendTo(this.header_div); }
             this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
             this.name_div.text(this.name);
         }

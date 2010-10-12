@@ -51,7 +51,7 @@ ${h.css( "history", "autocomplete_tagging", "trackster" )}
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", "jquery.autocomplete", "trackster", "jquery.ui.sortable.slider" )}
 
 <script type="text/javascript">
 
@@ -64,6 +64,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
         
         %if config:
             view = new View( $("#center"), "${config.get('chrom')}", "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
+            view.editor = true;
             %for track in config.get('tracks'):
                 view.add_track(
                     new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['prefs']} )
@@ -73,6 +74,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
         %else:
             var continue_fn = function() {
                 view = new View( $("#center"), undefined, $("#new-title").val(), undefined, $("#new-dbkey").val() );
+                view.editor = true;
                 init();
                 hide_modal();
             };
@@ -109,7 +111,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
         
         // Execute initializer for EDITOR specific javascript
         function init() {
-            
             if (view.num_tracks === 0) {
                 $("#no-tracks").show();
             }
