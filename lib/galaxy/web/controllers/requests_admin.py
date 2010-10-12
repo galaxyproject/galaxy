@@ -102,8 +102,7 @@ class DataTransferGrid( grids.Grid ):
             return sample_dataset.status
     # Grid definition
     title = "Sample Datasets"
-    # TODO: can this be grid.mako???
-    template = "admin/requests/datasets_grid.mako"
+    template = "admin/requests/grid.mako"
     model_class = model.SampleDataset
     default_sort_key = "-create_time"
     num_rows_per_page = 50
@@ -118,7 +117,9 @@ class DataTransferGrid( grids.Grid ):
         SizeColumn( "Size",
                     #key='size',
                     filterable="advanced" ),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        grids.GridColumn( "Last Updated", 
+                          key="update_time", 
+                          format=time_ago ),
         StatusColumn( "Status",
                       #key='status',
                       filterable="advanced" ),
@@ -560,7 +561,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             lfp = trans.model.LibraryFolderPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
                                                         folder, 
                                                         datatx_user_private_role )
-            trans.sa_session.add( dp )
+            trans.sa_session.add( lfp )
             trans.sa_session.flush()
         return datatx_user
     def __send_message( self, trans, datatx_info, sample, id_list ):
