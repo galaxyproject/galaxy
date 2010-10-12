@@ -92,7 +92,7 @@ class RequestsGrid( grids.Grid ):
                    )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[6] ], 
+                                                cols_to_filter=[ columns[0], columns[1] ], 
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -859,7 +859,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     # The user has selected a sample to copy.
                     library_id = current_samples[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
                     folder_id = current_samples[ copy_sample_index ][ 'folder_select_field' ].get_selected( return_value=True )
-                    name = current_samples[ copy_sample_index ][ 'name' ] + '_%i' % ( index )
+                    name = current_samples[ copy_sample_index ][ 'name' ] + '_%i' % ( index+1 )
                     library_id = 'none'
                     folder_id = 'none'
                     field_values = [ val for val in current_samples[ copy_sample_index ][ 'field_values' ] ]
@@ -867,7 +867,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     # The user has not selected a sample to copy (may just be adding a sample).
                     library_id = None
                     folder_id = None
-                    name = 'Sample_%i' % sample_index
+                    name = 'Sample_%i' % ( sample_index+1 )
                     field_values = [ '' for field in request.type.sample_form.fields ]
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,

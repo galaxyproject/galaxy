@@ -135,7 +135,7 @@
     <div class="toolParamHelp" style="clear: both;">
 	    <b>Sequencer</b>: ${request.type.name} 
 	    %if is_admin:
-	        | <b>User</b>: ${request.user.username}
+	        | <b>User</b>: ${request.user.email}
 	    %endif
 	    %if request.is_submitted:
 	        | <b>State</b>: <i>${request.state}</i>
