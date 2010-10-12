@@ -96,7 +96,7 @@ $(document).ready(function(){
     </li>
 </ul>
 
-<form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', cntrller=cntrller, action='get_data', request_id=trans.security.encode_id( request.id )}" method="post" >
+<form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', cntrller=cntrller, action='get_data', request_id=trans.security.encode_id( request.id ) )}" method="post" >
     <div class="toolForm">
         <div class="toolFormTitle">Select files for transfer</div>
         <div class="form-row">

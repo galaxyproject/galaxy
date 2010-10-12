@@ -66,7 +66,7 @@
 	                %for sample in samples:
 	                    <div class="form-row">
                             Sample: <b>${sample.name}</b> | Barcode: ${sample.bar_code}<br/>
-                            State: ${sample.state}<br/>
+                            State: ${sample.state.name}<br/>
                             Datasets: <a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${sample.transferred_dataset_files}/${len( sample.datasets )}</a><br/>
                             %if is_admin:
                                <i>User: ${sample.request.user.email}</i>

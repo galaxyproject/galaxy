@@ -382,7 +382,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         if a_path and not a_path.endswith( os.sep ):
             a_path += os.sep
         return a_path
-    def __build_sample_id_select_field( self, request, selected_value ):
+    def __build_sample_id_select_field( self, trans, request, selected_value ):
         return build_select_field( trans, request.samples, 'name', 'sample_id', selected_value=selected_value, refresh_on_change=False )
     @web.expose
     @web.require_admin
@@ -392,15 +392,15 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         status = params.get( 'status', 'done' )
         request_id = kwd.get( 'request_id', None )
         try:
-            request = trans.sa_session.query( trans.model.Request ).get( request_id  )
+            request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', request_id )
         files_list = util.listify( params.get( 'files_list', '' ) ) 
         folder_path = util.restore_text( params.get( 'folder_path', request.type.datatx_info[ 'data_dir' ] ) )
         selected_value = kwd.get( 'sample_id', 'none' )
-        sample_id_select_field = self.__build_sample_id_select_field( request, selected_value )
+        sample_id_select_field = self.__build_sample_id_select_field( trans, request, selected_value )
         if not folder_path:
-            return trans.fill_template( '/admin/requests/dataset_transfer.mako',
+            return trans.fill_template( '/admin/requests/get_data.mako',
                                         cntrller='requests_admin',
                                         request=request,
                                         sample_id_select_field=sample_id_select_field,
@@ -413,7 +413,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
                 if sample.datasets:
                     folder_path = os.path.dirname( sample.datasets[-1].file_path )
-            return trans.fill_template( '/admin/requests/dataset_transfer.mako',
+            return trans.fill_template( '/admin/requests/get_data.mako',
                                         cntrller='requests_admin',
                                         request=request,
                                         sample_id_select_field=sample_id_select_field,
@@ -424,7 +424,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         elif params.get( 'browse_button', False ):
             # get the filenames from the remote host
             files = self.__get_files( trans, request.type, folder_path )
-            return trans.fill_template( '/admin/requests/dataset_transfer.mako',
+            return trans.fill_template( '/admin/requests/get_data.mako',
                                         cntrller='requests_admin',
                                         request=request,
                                         sample_id_select_field=sample_id_select_field,
@@ -435,7 +435,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         elif params.get( 'folder_up', False ):
             # get the filenames from the remote host
             files = self.__get_files( trans, request.type, folder_path )
-            return trans.fill_template( '/admin/requests/dataset_transfer.mako',
+            return trans.fill_template( '/admin/requests/get_data.mako',
                                         cntrller='requests_admin',
                                         request=request,
                                         sample_id_select_field=sample_id_select_field,
@@ -449,7 +449,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 folder_path = self.__check_path( folder_path )
             # get the filenames from the remote host
             files = self.__get_files( trans, request.type, folder_path )
-            return trans.fill_template( '/admin/requests/dataset_transfer.mako',
+            return trans.fill_template( '/admin/requests/get_data.mako',
                                         cntrller='requests_admin',
                                         request=request,
                                         sample_id_select_field=sample_id_select_field,
