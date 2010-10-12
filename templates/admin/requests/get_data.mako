@@ -2,18 +2,15 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 <script type="text/javascript">
-$(document).ready(function(){
-    //hide the all of the element with class msg_body
-    $(".msg_body").hide();
-    //toggle the component with class msg_body
-    $(".msg_head").click(function(){
-        $(this).next(".msg_body").slideToggle(450);
+    $(document).ready(function(){
+        //hide the all of the element with class msg_body
+        $(".msg_body").hide();
+        //toggle the component with class msg_body
+        $(".msg_head").click(function(){
+            $(this).next(".msg_body").slideToggle(450);
+        });
     });
-});
 
-</script>
-
-<script type="text/javascript">
    function display_file_details(request_id, folder_path)
    {
        var w = document.get_data.files_list.selectedIndex;
@@ -37,9 +34,7 @@ $(document).ready(function(){
             cell.html( '' )
         }
    }
-</script>
 
-<script type="text/javascript">
    function open_folder1( request_id, folder_path )
    {
        var w = document.get_data.files_list.selectedIndex;
@@ -80,25 +75,24 @@ $(document).ready(function(){
 }
 </style>
 
-%if message:
-    ${render_msg( message, status )}
-%endif
 <br/>
 <br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_request_types', operation='view', id=trans.security.encode_id( request.type.id ) )}">
-        <span>Sequencer configuration "${request.type.name}"</span></a>
+        <a class="action-button" href="${h.url_for( controller='requests_admin', action='view_request_type', id=trans.security.encode_id( request.type.id ) )}">Sequencer configuration "${request.type.name}"</a>
     </li>
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">
-        <span>Browse this request</span></a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Browse this request</a>
     </li>
 </ul>
 
-<form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', cntrller=cntrller, action='get_data', request_id=trans.security.encode_id( request.id ) )}" method="post" >
-    <div class="toolForm">
-        <div class="toolFormTitle">Select files for transfer</div>
+%if message:
+    ${render_msg( message, status )}
+%endif
+
+<div class="toolForm">
+    <div class="toolFormTitle">Select files for transfer</div>
+    <form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', action='get_data', cntrller=cntrller, request_id=trans.security.encode_id( request.id )}" method="post" >
         <div class="form-row">
             <label>Sample:</label>
             ${sample_id_select_field.get_html()}
@@ -123,5 +117,5 @@ $(document).ready(function(){
             <input type="submit" name="select_show_datasets_button" value="Select & show datasets"/>
             <input type="submit" name="select_more_button" value="Select more"/>
         </div>
-    </div>
-</form>
+    </form>
+</div>

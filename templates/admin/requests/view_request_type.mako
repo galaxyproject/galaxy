@@ -64,7 +64,7 @@
         </div>
         <div class="form-row">
             <label>Add experiment name and the sample name to the dataset name?</label>
-            ${rename_dataset_selectbox.get_html()}
+            ${rename_dataset_select_field.get_html()}
             <div class="toolParamHelp" style="clear: both;">
                 The datasets are renamed by prepending the experiment name and the sample name to the dataset name. <br/>This
                 makes sure that dataset names remain unique in Galaxy even when they have the

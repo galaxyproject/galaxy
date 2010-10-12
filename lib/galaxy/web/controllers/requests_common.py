@@ -106,6 +106,7 @@ class RequestsGrid( grids.Grid ):
 class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
     @web.json
     def sample_state_updates( self, trans, ids=None, states=None, cntrller=None ):
+        # TODO fix this mthod - cntrller is required in the signature.
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'

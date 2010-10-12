@@ -146,6 +146,8 @@
 </div>
 
 <br/><br/>
+<font color="red"><b><i>A dataset can be renamed only if its status is "Not Started"</i></b></font>
+
 <ul class="manage-table-actions">
     <li><a class="action-button" id="seqreq-${request.id}-popup" class="menubutton">Sequencing Request Actions</a></li>
     <div popupmenu="seqreq-${request.id}-popup">
@@ -157,7 +159,7 @@
         %if is_admin:
             %if request.is_submitted:
                 <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject</a>
-                <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', show_page=True, request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
+                <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
             %endif
         %endif
     </div>

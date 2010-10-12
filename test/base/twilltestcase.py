@@ -1433,7 +1433,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
     def request_type_permissions( self, request_type_id, request_type_name, role_ids_str, permissions_in, permissions_out ):
         # role_ids_str must be a comma-separated string of role ids
-        url = "requests_admin/manage_request_types?operation=permissions&id=%s&update_roles_button=Save" % ( request_type_id )
+        url = "requests_admin/request_type_permissions?id=%s&update_roles_button=Save" % ( request_type_id )
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, role_ids_str )

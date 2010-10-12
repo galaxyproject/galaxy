@@ -19,51 +19,51 @@
 <div class="toolForm">
     <div class="toolFormTitle">Dataset Information</div>
     <div class="toolFormBody">
-            <div class="form-row">
-                <label>Name:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${sample_dataset.name}
-                </div>
-                <div style="clear: both"></div>
+        <div class="form-row">
+            <label>Name:</label>
+            <div style="float: left; width: 250px; margin-right: 10px;">
+                ${sample_dataset.name}
             </div>
-            <div class="form-row">
-                <label>File on the Sequencer:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${sample_dataset.file_path}
-                </div>
-                <div style="clear: both"></div>
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>File on the Sequencer:</label>
+            <div style="float: left; width: 250px; margin-right: 10px;">
+                ${sample_dataset.file_path}
             </div>
-            <div class="form-row">
-                <label>Size:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${sample_dataset.size}
-                </div>
-                <div style="clear: both"></div>
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Size:</label>
+            <div style="float: left; width: 250px; margin-right: 10px;">
+                ${sample_dataset.size}
             </div>
-            <div class="form-row">
-                <label>Created on:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${sample_dataset.create_time}
-                </div>
-                <div style="clear: both"></div>
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Created on:</label>
+            <div style="float: left; width: 250px; margin-right: 10px;">
+                ${sample_dataset.create_time}
             </div>
-            <div class="form-row">
-                <label>Updated on:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${sample_dataset.update_time}
-                </div>
-                <div style="clear: both"></div>
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Updated on:</label>
+            <div style="float: left; width: 250px; margin-right: 10px;">
+                ${sample_dataset.update_time}
             </div>
-            <div class="form-row">
-                <label>Transfer status:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${sample_dataset.status}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Transfer status:</label>
+            <div style="float: left; width: 250px; margin-right: 10px;">
+                ${sample_dataset.status}
+                %if sample_dataset.status == sample.transfer_status.ERROR:
                     <br/>
-                    %if sample_dataset.status == sample.transfer_status.ERROR:
-                        ${sample_dataset.error_msg}
-                    %endif 
-                </div>
-                <div style="clear: both"></div>
+                    ${sample_dataset.error_msg}
+                %endif 
             </div>
+            <div style="clear: both"></div>
+        </div>
     </div>
 </div>

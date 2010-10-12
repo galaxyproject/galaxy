@@ -67,9 +67,9 @@ class RequestTypeGrid( grids.Grid ):
                            key='desc',
                            filterable="advanced" ),
         RequestFormColumn( "Request Form", 
-                           link=( lambda item: iff( item.deleted, None, dict( operation="view_form", id=item.request_form.id ) ) ) ),
+                           link=( lambda item: iff( item.deleted, None, dict( operation="view_form_definition", id=item.request_form.id ) ) ) ),
         SampleFormColumn( "Sample Form", 
-                           link=( lambda item: iff( item.deleted, None, dict( operation="view_form", id=item.sample_form.id ) ) ) ),
+                           link=( lambda item: iff( item.deleted, None, dict( operation="view_form_definition", id=item.sample_form.id ) ) ) ),
         grids.DeletedColumn( "Deleted", 
                              key="deleted", 
                              visible=False, 
@@ -110,18 +110,15 @@ class DataTransferGrid( grids.Grid ):
     use_paging = True
     columns = [
         NameColumn( "Name", 
-                    #key="name", 
                     link=( lambda item: dict( operation="view", id=item.id ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         SizeColumn( "Size",
-                    #key='size',
                     filterable="advanced" ),
         grids.GridColumn( "Last Updated", 
                           key="update_time", 
                           format=time_ago ),
         StatusColumn( "Status",
-                      #key='status',
                       filterable="advanced" ),
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
@@ -197,15 +194,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                               events={ '.ssword:*' : datatx_info[ 'password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )
         return unicode( output.replace( '\n', '<br/>' ) )
-    @web.json
-    def open_folder( self, trans, id, folder_path ):
-        def print_ticks( d ):
-            pass
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
-        request = trans.sa_session.query( trans.model.Request ).get( int( id ) )
-        return self.__get_files( trans, request.type, folder_path )
     @web.expose
     @web.require_admin
     def reject( self, trans, **kwd ):
@@ -246,29 +234,30 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
     @web.expose
     @web.require_admin
     def manage_datasets( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
-            dataset_id = kwd.get( 'id', None )
-            if not dataset_id:
-                return invalid_id_redirect( trans, 'requests_admin', dataset_id )
-            id_list = util.listify( dataset_id )
+            sample_dataset_id = params.get( 'id', None )
+            if not sample_dataset_id:
+                return invalid_id_redirect( trans, 'requests_admin', sample_dataset_id )
+            id_list = util.listify( sample_dataset_id )
             if operation == "view":
-                sample_dataset_id = trans.security.decode_id( kwd['id'] )
-                sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( sample_dataset_id )
+                sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
                 return trans.fill_template( '/admin/requests/dataset.mako',
                                             sample_dataset=sample_dataset )
             elif operation == "delete":
                 not_deleted = []
-                for id in id_list:
-                    sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( id ) )
+                for sample_dataset_id in id_list:
+                    sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
                     sample_id = sample_dataset.sample_id
                     if sample_dataset.status == sample_dataset.sample.transfer_status.NOT_STARTED:
                         trans.sa_session.delete( sample_dataset )
                         trans.sa_session.flush()
                     else:
                         not_deleted.append( sample_dataset.name )
-                message = '%i datasets have been successfully deleted. ' % ( len( id_list ) - len( not_deleted ) )
-                status = 'done'
+                message = '%i datasets have been deleted. ' % ( len( id_list ) - len( not_deleted ) )
                 if not_deleted:
                     status = 'warning'
                     message = message + '%s could not be deleted because their transfer status is not "Not Started". ' % str( not_deleted )
@@ -278,21 +267,21 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                                   status=status,
                                                                   message=message ) )
             elif operation == "rename":
-                sample_dataset_id = id_list[0]
                 sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
                 return trans.fill_template( '/admin/requests/rename_datasets.mako', 
                                             sample=sample_dataset.sample,
                                             id_list=id_list )
             elif operation == "start transfer":
-                sample_dataset_id = id_list[0]
                 sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
                 self.__start_datatx( trans, sample_dataset.sample, id_list )
         # Render the grid view
-        sample_id = kwd.get( 'sample_id', None )
+        sample_id = params.get( 'sample_id', None )
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', sample_id )
+        request_id = trans.security.encode_id( sample.request.id )
+        library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Datasets of sample "%s"' % sample.name
         self.datatx_grid.global_actions = [ grids.GridAction( "Refresh", 
                                                               dict( controller='requests_admin', 
@@ -301,24 +290,25 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                             grids.GridAction( "Select datasets", 
                                                               dict( controller='requests_admin', 
                                                                     action='get_data',
-                                                                    request_id=trans.security.encode_id( sample.request.id ),
+                                                                    request_id=request_id,
                                                                     folder_path=sample.request.type.datatx_info[ 'data_dir' ],
-                                                                    sample_id=sample_id,
-                                                                    show_page=True ) ),
+                                                                    sample_id=sample_id ) ),
                                             grids.GridAction( 'Data library "%s"' % sample.library.name, 
                                                               dict( controller='library_common', 
                                                                     action='browse_library', 
                                                                     cntrller='library_admin', 
-                                                                    id=trans.security.encode_id( sample.library.id ) ) ),
+                                                                    id=library_id ) ),
                                             grids.GridAction( "Browse this request", 
                                                               dict( controller='requests_common', 
                                                                     action='manage_request',
                                                                     cntrller='requests_admin',
-                                                                    id=trans.security.encode_id( sample.request.id ) ) ) ]
+                                                                    id=request_id ) ) ]
         return self.datatx_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def rename_datasets( self, trans, **kwd ):
+        # This method is called from the DataTransferGrid when a user is renaming 1 or more
+        # SampleDatasets.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -327,64 +317,35 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', sample_id )
-        if params.get( 'save_button', False ):
-            id_list = util.listify( kwd['id_list'] )
-            for id in id_list:
-                sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( id ) )
-                prepend = util.restore_text( params.get( 'prepend_%i' % sample_dataset.id, ''  ) )
-                name = util.restore_text( params.get( 'name_%i' % sample_dataset.id, sample_dataset.name ) )
-                if prepend == 'None':
-                    sample_dataset.name = name
+        # id_list is list of SampleDataset ids, which is a subset of all
+        # of the SampleDatasets associated with the Sample.  The user may
+        # or may not have selected all of the SampleDatasets for renaming.
+        id_list = util.listify( kwd.get( 'id_list', [] ) )
+        # Get all of the SampleDatasets
+        sample_datasets = []
+        for sample_dataset_id in id_list:
+            sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
+            sample_datasets.append( sample_dataset )
+        if params.get( 'rename_datasets_button', False ):
+            for sample_dataset in sample_datasets:
+                encoded_id = trans.security.encode_id( sample_dataset.id )
+                selected_option = util.restore_text( params.get( 'rename_datasets_for_sample_%s' % encoded_id, '' ) )
+                new_name = util.restore_text( params.get( 'new_name_%s' % encoded_id, '' ) )
+                if selected_option == 'none':
+                    sample_dataset.name = new_name
                 else: 
-                    sample_dataset.name = '%s_%s' % ( prepend, name )
+                    sample_dataset.name = '%s_%s' % ( selected_option, new_name )
                 trans.sa_session.add( sample_dataset )
                 trans.sa_session.flush()
+            message = 'Changes saved successfully.'
             return trans.fill_template( '/admin/requests/rename_datasets.mako', 
                                         sample=sample,
-                                        id_list=id_list,
-                                        message='Changes saved successfully.',
-                                        status='done' )
+                                        sample_datasets=sample_datasets,
+                                        message=message,
+                                        status=status )
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_datasets',
                                                           sample_id=sample_id ) )
-    def __get_files( self, trans, request_type, folder_path ):
-        # Retrieves the filenames to be transferred from the remote host.
-        # FIXME: sample is used in this method, but no sample obj is received...
-        datatx_info = request_type.datatx_info
-        if not datatx_info[ 'host' ] or not datatx_info[ 'username' ] or not datatx_info[ 'password' ]:
-            status = 'error'
-            message = "Error in sequencer login information." 
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='view_dataset_transfer', 
-                                                              cntrller='requests_admin' ,
-                                                              sample_id=trans.security.encode_id( sample.id ),
-                                                              status=status,
-                                                              message=message ) )
-        def print_ticks( d ):
-            pass
-        cmd  = 'ssh %s@%s "ls -p \'%s\'"' % ( datatx_info['username'], datatx_info['host'], folder_path )
-        output = pexpect.run( cmd,
-                              events={ '.ssword:*' : datatx_info['password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
-                              timeout=10 )
-        if 'No such file or directory' in output:
-            status = 'error'
-            message = "No folder named (%s) exists on the sequencer." % folder_path
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='view_dataset_transfer',
-                                                              cntrller='requests_admin' ,
-                                                              sample_id=trans.security.encode_id( sample.id ),
-                                                              folder_path=folder_path,
-                                                              status=status,
-                                                              message=message ) ) 
-        
-        return output.splitlines()
-    def __check_path( self, a_path ):
-        # Return a valid folder_path
-        if a_path and not a_path.endswith( os.sep ):
-            a_path += os.sep
-        return a_path
-    def __build_sample_id_select_field( self, trans, request, selected_value ):
-        return build_select_field( trans, request.samples, 'name', 'sample_id', selected_value=selected_value, refresh_on_change=False )
     @web.expose
     @web.require_admin
     def get_data( self, trans, **kwd ):
@@ -396,132 +357,129 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', request_id )
-        files_list = util.listify( params.get( 'files_list', '' ) ) 
+        files_list = util.listify( params.get( 'files_list', [] ) ) 
         folder_path = util.restore_text( params.get( 'folder_path', request.type.datatx_info[ 'data_dir' ] ) )
         selected_value = kwd.get( 'sample_id', 'none' )
-        sample_id_select_field = self.__build_sample_id_select_field( trans, request, selected_value )
-        if not folder_path:
-            return trans.fill_template( '/admin/requests/get_data.mako',
-                                        cntrller='requests_admin',
-                                        request=request,
-                                        sample_id_select_field=sample_id_select_field,
-                                        files=[], 
-                                        folder_path=folder_path )
-        folder_path = self.__check_path( folder_path )
-        sample_id = kwd.get( 'sample_id', None )
-        if params.get( 'show_page', False ):
-            if sample_id:
+        sample_id_select_field = self.__build_sample_id_select_field( request, selected_value )
+        # The __get_files() method redirects here with a status of 'error' and a message if there
+        # was a problem retrieving the files.
+        if folder_path and status != 'error':
+            folder_path = self.__check_path( folder_path )
+            sample_id = params.get( 'sample_id', None )
+            try:
                 sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
-                if sample.datasets:
-                    folder_path = os.path.dirname( sample.datasets[-1].file_path )
-            return trans.fill_template( '/admin/requests/get_data.mako',
-                                        cntrller='requests_admin',
-                                        request=request,
-                                        sample_id_select_field=sample_id_select_field,
-                                        files=[], 
-                                        folder_path=folder_path,
-                                        status=status,
-                                        message=message )
-        elif params.get( 'browse_button', False ):
-            # get the filenames from the remote host
-            files = self.__get_files( trans, request.type, folder_path )
-            return trans.fill_template( '/admin/requests/get_data.mako',
-                                        cntrller='requests_admin',
-                                        request=request,
-                                        sample_id_select_field=sample_id_select_field,
-                                        files=files, 
-                                        folder_path=folder_path,
-                                        status=status,
-                                        message=message )
-        elif params.get( 'folder_up', False ):
-            # get the filenames from the remote host
-            files = self.__get_files( trans, request.type, folder_path )
-            return trans.fill_template( '/admin/requests/get_data.mako',
-                                        cntrller='requests_admin',
-                                        request=request,
-                                        sample_id_select_field=sample_id_select_field,
-                                        files=files, 
-                                        folder_path=folder_path,
-                                        status=status,
-                                        message=message )
-        elif params.get( 'open_folder', False ):
-            if len( files_list ) == 1:
-                folder_path = os.path.join( folder_path, files_list[0] )
-                folder_path = self.__check_path( folder_path )
-            # get the filenames from the remote host
-            files = self.__get_files( trans, request.type, folder_path )
-            return trans.fill_template( '/admin/requests/get_data.mako',
-                                        cntrller='requests_admin',
-                                        request=request,
-                                        sample_id_select_field=sample_id_select_field,
-                                        files=files, 
-                                        folder_path=folder_path,
-                                        status=status,
-                                        message=message )
-        elif params.get( 'select_show_datasets_button', False ):
-            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
-            retval = self.__save_sample_datasets( trans, sample, files_list, folder_path )
-            if retval:
-                message = 'The datasets %s have been selected for sample <b>%s</b>' % ( str( retval )[1:-1].replace( "'", "" ), sample.name )
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='manage_datasets',
-                                                              sample_id=sample_id,
-                                                              message=message,
-                                                              status=status ) )
-        elif params.get( 'select_more_button', False ):
-            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
-            retval = self.__save_sample_datasets( trans, sample, files_list, folder_path )
-            if retval:
-                message='The datasets %s have been selected for sample <b>%s</b>' % ( str( retval )[1:-1].replace( "'", "" ), sample.name )
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='get_data', 
-                                                              request_id=trans.security.encode_id( sample.request.id ),
-                                                              folder_path=folder_path,
-                                                              sample_id=sample_id,
-                                                              open_folder=True,
-                                                              message=message,
-                                                              status=status ) )
+            except:
+                return invalid_id_redirect( trans, 'requests_admin', sample_id )
+            # Get the filenames from the remote host
+            files = self.__get_files( trans, request, folder_path )
+            if params.get( 'open_folder', False ):
+                if len( files_list ) == 1:
+                    folder_path = os.path.join( folder_path, files_list[0] )
+                    folder_path = self.__check_path( folder_path )
+            elif params.get( 'select_show_datasets_button', False ) or params.get( 'select_more_button', False ):
+                sample_dataset_file_names = self.__save_sample_datasets( trans, sample, files_list, folder_path )
+                if sample_dataset_file_names:
+                    message = 'Datasets (%s) have been selected for sample (%s)' % \
+                        ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), sample.name )
+                if params.get( 'select_show_datasets_button', False ):
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                      action='manage_datasets',
+                                                                      sample_id=sample_id,
+                                                                      message=message,
+                                                                      status=status ) )
+                else: # 'select_more_button' was clicked
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                      action='get_data', 
+                                                                      request_id=request_id,
+                                                                      folder_path=folder_path,
+                                                                      sample_id=sample_id,
+                                                                      open_folder=True,
+                                                                      message=message,
+                                                                      status=status ) )
+        return trans.fill_template( '/admin/requests/dataset_transfer.mako',
+                                    cntrller='requests_admin',
+                                    request=request,
+                                    sample_id_select_field=sample_id_select_field,
+                                    files=files, 
+                                    folder_path=folder_path,
+                                    status=status,
+                                    message=message )
+    @web.json
+    def open_folder( self, trans, id, folder_path ):
+        def print_ticks( d ):
+            pass
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        request = trans.sa_session.query( trans.model.Request ).get( int( id ) )
+        return self.__get_files( trans, request, folder_path )
+    def __get_files( self, trans, request, folder_path ):
+        # Retrieves the filenames to be transferred from the remote host.
+        ok = True
+        datatx_info = request.type.datatx_info
+        if not datatx_info[ 'host' ] or not datatx_info[ 'username' ] or not datatx_info[ 'password' ]:
+            status = 'error'
+            message = "Error in sequencer login information."
+            ok = False
+        def print_ticks( d ):
+            pass
+        cmd  = 'ssh %s@%s "ls -p \'%s\'"' % ( datatx_info['username'], datatx_info['host'], folder_path )
+        output = pexpect.run( cmd,
+                              events={ '.ssword:*' : datatx_info['password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
+                              timeout=10 )
+        if 'No such file or directory' in output:
+            status = 'error'
+            message = "No folder named (%s) exists on the sequencer." % folder_path
+            ok = False
+        if ok:
+            return output.splitlines()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='get_data', 
-                                                          request_id=trans.security.encode_id( sample.request.id ),
-                                                          folder_path=folder_path,
-                                                          show_page=True ) )
+                                                              action='get_data',
+                                                              request_id=trans.security.encode_id( request.id ),
+                                                              folder_path=folder_path,
+                                                              status=status,
+                                                              message=message ) )
+    def __check_path( self, a_path ):
+        # Return a valid folder_path
+        if a_path and not a_path.endswith( os.sep ):
+            a_path += os.sep
+        return a_path
     def __save_sample_datasets( self, trans, sample, files_list, folder_path ):
-        files = []
+        sample_dataset_file_names = []
         if files_list:
             for f in files_list:
                 filepath = os.path.join( folder_path, f )
                 if f[-1] == os.sep:
-                    # the selected item is a folder so transfer all the folder contents
-                    # FIXME 
-                    #self.__get_files_in_dir(trans, sample, filepath)
+                    # FIXME: The selected item is a folder so transfer all the folder contents
+                    request_id = trans.security.ecnode_id( sample.request.id )
                     return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='get_data', 
-                                                                      request=sample.request,
+                                                                      request_id=request_id,
                                                                       folder_path=folder_path,
                                                                       open_folder=True ) )
                 else:
+                    name = self.__dataset_name( sample, filepath.split( '/' )[-1] )
                     sample_dataset = trans.model.SampleDataset( sample=sample,
                                                                 file_path=filepath,
                                                                 status=sample.transfer_status.NOT_STARTED,
-                                                                name=self.__dataset_name( sample, filepath.split( '/' )[-1] ),
+                                                                name=name,
                                                                 error_msg='',
                                                                 size=sample.dataset_size( filepath ) )
                     trans.sa_session.add( sample_dataset )
                     trans.sa_session.flush()
-                    files.append( str( sample_dataset.name ) )
-        return files
+                    sample_dataset_file_names.append( str( sample_dataset.name ) )
+        return sample_dataset_file_names
     def __dataset_name( self, sample, filepath ):
         name = filepath.split( '/' )[-1]
         options = sample.request.type.rename_dataset_options
         option = sample.request.type.datatx_info.get( 'rename_dataset', options.NO ) 
         if option == options.NO:
             return name
-        elif option == options.SAMPLE_NAME:
+        if option == options.SAMPLE_NAME:
             return sample.name + '_' + name
-        elif option == options.EXPERIMENT_AND_SAMPLE_NAME:
+        if option == options.EXPERIMENT_AND_SAMPLE_NAME:
             return sample.request.name + '_' + sample.name + '_' + name
-        elif opt == options.EXPERIMENT_NAME:
+        if opt == options.EXPERIMENT_NAME:
             return sample.request.name + '_' + name
     def __setup_datatx_user( self, trans, library, folder ):
         """
@@ -625,7 +583,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             status = "error"
         else:
             self.__send_message( trans, datatx_info, sample, id_list )
-            message = "%i datasets have been queued for transfer from the sequencer. Click on <b>Refresh</b> button above to get the latest transfer status." % len( id_list )
+            message = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to see the latest transfer status." % len( id_list )
             status = "done"
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_datasets',
@@ -635,91 +593,46 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
     # Request Type Stuff
     @web.expose
     @web.require_admin
-    def manage_request_types( self, trans, **kwd ):
+    def browse_request_types( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             obj_id = kwd.get( 'id', None )
-            if obj_id is None:
-                return invalid_id_redirect( trans, 'requests_admin', obj_id, action='manage_request_types' )
-            if operation == "view":
-                return self.__view_request_type( trans, **kwd )
-            elif operation == "view_form":
-                return self.__view_form( trans, **kwd )
-            elif operation == "delete":
-                return self.__delete_request_type( trans, **kwd )
-            elif operation == "undelete":
-                return self.__undelete_request_type( trans, **kwd )
-            elif operation == "clone":
-                return self.__clone_request_type( trans, **kwd )
-            elif operation == "permissions":
-                return self.__show_request_type_permissions( trans, **kwd )
+            if operation == "view_form_definition":
+                return self.view_form_definition( trans, **kwd )
         # Render the grid view
         return self.requesttype_grid( trans, **kwd )
-    def __view_request_type( self, trans, **kwd ):
-        request_type_id = kwd.get( 'id', None )
-        try:
-            request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='manage_request_types' )
-        forms = self.get_all_forms( trans )
-        rename_dataset_selectbox = self.__build_rename_dataset_select_list( trans, request_type )
-        return trans.fill_template( '/admin/requests/view_request_type.mako', 
-                                    request_type=request_type,
-                                    forms=forms,
-                                    rename_dataset_selectbox=rename_dataset_selectbox )
-    def __view_form(self, trans, **kwd):
-        form_definition_id = kwd.get( 'id', None )
-        try:
-            form_definition = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( form_definition_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', form_definition_id, action='manage_request_types' )
-        return trans.fill_template( '/admin/forms/show_form_read_only.mako',
-                                    form_definition=form_definition )
     @web.expose
     @web.require_admin
     def create_request_type( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )   
+        status = params.get( 'status', 'done' )
+        rt_info_widgets, rt_states_widgets = self.__create_request_type_form( trans, **kwd )
+        rename_dataset_select_field = self.__build_rename_dataset_select_field( trans )
         if params.get( 'add_state_button', False ):
-            rt_info_widgets, rt_states_widgets = self.__create_request_type_form( trans, **kwd )
+            # FIXME: why do we append a tuple of 2 empty strings????
             rt_states_widgets.append( ( "", "" ) )
-            rename_dataset_selectbox = self.__build_rename_dataset_select_list( trans )
-            return trans.fill_template( '/admin/requests/create_request_type.mako', 
-                                        rt_info_widgets=rt_info_widgets,
-                                        rt_states_widgets=rt_states_widgets,
-                                        rename_dataset_selectbox=rename_dataset_selectbox,
-                                        message=message,
-                                        status=status )
         elif params.get( 'remove_state_button', False ):
-            rt_info_widgets, rt_states_widgets = self.__create_request_type_form( trans, **kwd )
             index = int( params.get( 'remove_state_button', '' ).split(" ")[2] )
             del rt_states_widgets[ index-1 ]
-            rename_dataset_selectbox = self.__build_rename_dataset_select_list( trans )
-            return trans.fill_template( '/admin/requests/create_request_type.mako', 
-                                        rt_info_widgets=rt_info_widgets,
-                                        rt_states_widgets=rt_states_widgets,
-                                        rename_dataset_selectbox=rename_dataset_selectbox,
-                                        message=message,
-                                        status=status )
         elif params.get( 'save_request_type', False ):
             request_type, message = self.__save_request_type( trans, **kwd )
             if not request_type:
-                return trans.fill_template( '/admin/requests/create_request_type.mako', 
-                                            message=message,
-                                            status='error' )
-            message = 'Sequencer configuration <b>%s</b> has been created' % request_type.name
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='manage_request_types',
-                                                              message=message,
-                                                              status=status ) )
+                status='error'
+            else:
+                message = 'Sequencer configuration (%s) has been created' % request_type.name
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='browse_request_types',
+                                                                  message=message,
+                                                                  status=status ) )
         elif params.get( 'save_changes', False ):
-            request_type_id = kwd.get( 'rt_id', None )
+            request_type_id = params.get( 'rt_id', None )
             try:
                 request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
             except:
-                return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='manage_request_types' )
-            # Data transfer info - make sure password is retrieved from kwd rathe rthan Params since Params may have munged the characters.
+                return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='browse_request_types' )
+            # Data transfer info - make sure password is retrieved from kwd rather
+            # than Params since Params may have munged the characters.
             request_type.datatx_info = dict( host=util.restore_text( params.get( 'host', '' ) ),
                                              username=util.restore_text( params.get( 'username', '' ) ),
                                              password=kwd.get( 'password', '' ),
@@ -731,51 +644,48 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             trans.sa_session.flush()
             message = 'Changes made to sequencer configuration <b>%s</b> has been saved' % request_type.name
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='manage_request_types',
-                                                              operation='view',
+                                                              action='view_request_type',
                                                               id=request_type_id,
                                                               message=message,
                                                               status=status ) )
-        else:
-            rt_info_widgets, rt_states_widgets = self.__create_request_type_form( trans, **kwd )
-            rename_dataset_selectbox = self.__build_rename_dataset_select_list( trans )
-            return trans.fill_template( '/admin/requests/create_request_type.mako',
-                                        rt_info_widgets=rt_info_widgets,
-                                        rt_states_widgets=rt_states_widgets,
-                                        rename_dataset_selectbox=rename_dataset_selectbox,
-                                        message=message,
-                                        status=status )
+        return trans.fill_template( '/admin/requests/create_request_type.mako',
+                                    rt_info_widgets=rt_info_widgets,
+                                    rt_states_widgets=rt_states_widgets,
+                                    rename_dataset_select_field=rename_dataset_select_field,
+                                    message=message,
+                                    status=status )
     def __create_request_type_form( self, trans, **kwd ):
-        request_forms = self.get_all_forms( trans, 
-                                            filter=dict( deleted=False ),
-                                            form_type=trans.model.FormDefinition.types.REQUEST )
-        sample_forms = self.get_all_forms( trans, 
-                                           filter=dict( deleted=False ),
-                                           form_type=trans.model.FormDefinition.types.SAMPLE )
-        if not request_forms or not sample_forms:
+        request_form_definitionss = self.get_all_forms( trans, 
+                                                        filter=dict( deleted=False ),
+                                                        form_type=trans.model.FormDefinition.types.REQUEST )
+        sample_form_definitions = self.get_all_forms( trans, 
+                                                      filter=dict( deleted=False ),
+                                                      form_type=trans.model.FormDefinition.types.SAMPLE )
+        if not request_form_definitionss or not sample_form_definitions:
             return [],[]
         params = util.Params( kwd )
-        rt_info_widgets = []
-        rt_info_widgets.append( dict( label='Name', 
-                                      widget=TextField( 'name', 40, util.restore_text( params.get( 'name', '' ) ) ) ) )
-        rt_info_widgets.append( dict( label='Description', 
-                                      widget=TextField( 'desc', 40, util.restore_text( params.get( 'desc', '' ) ) ) ) )
-        rf_selectbox = SelectField( 'request_form_id' )
-        for fd in request_forms:
-            if str( fd.id ) == params.get( 'request_form_id', ''  ):
-                rf_selectbox.add_option( fd.name, fd.id, selected=True )
-            else:
-                rf_selectbox.add_option( fd.name, fd.id )
-        rt_info_widgets.append( dict( label='Request form', 
-                                      widget=rf_selectbox ) )
-        sf_selectbox = SelectField( 'sample_form_id' )
-        for fd in sample_forms:
-            if str( fd.id ) == params.get( 'sample_form_id', ''  ):
-                sf_selectbox.add_option( fd.name, fd.id, selected=True )
-            else:
-                sf_selectbox.add_option( fd.name, fd.id )
-        rt_info_widgets.append( dict( label='Sample form', 
-                                      widget=sf_selectbox ) )
+        request_form_id = params.get( 'request_form_id', 'none' )
+        sample_form_id = params.get( 'sample_form_id', 'none' )
+        request_form_id_select_field = build_select_field( trans,
+                                                           objs=request_form_definitionss,
+                                                           label_attr='id',
+                                                           select_field_name='request_form_id',
+                                                           selected_value=request_form_id,
+                                                           refresh_on_change=False )
+        sample_form_id_select_field = build_select_field( trans,
+                                                           objs=sample_form_definitions,
+                                                           label_attr='id',
+                                                           select_field_name='sample_form_id',
+                                                           selected_value=sample_form_id,
+                                                           refresh_on_change=False )
+        rt_info_widgets = [ dict( label='Name', 
+                                  widget=TextField( 'name', 40, util.restore_text( params.get( 'name', '' ) ) ) ),
+                            dict( label='Description', 
+                                  widget=TextField( 'desc', 40, util.restore_text( params.get( 'desc', '' ) ) ) ),
+                            dict( label='Request form',
+                                  widget=request_form_id_select_field ),
+                            dict( label='Sample form',
+                                  widget=sample_form_id_select_field ) ]
         # Possible sample states
         rt_states = []
         i=0
@@ -787,26 +697,14 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             else:
                 break
         return rt_info_widgets, rt_states
-    def __build_rename_dataset_select_list( self, trans, rt=None ):
-        if rt:
-            sel_opt = rt.datatx_info.get( 'rename_dataset', trans.model.RequestType.rename_dataset_options.NO )
-        else:
-            sel_opt = trans.model.RequestType.rename_dataset_options.NO
-        rename_dataset_selectbox = SelectField( 'rename_dataset' )
-        for opt, opt_name in trans.model.RequestType.rename_dataset_options.items():
-            if sel_opt == opt_name: 
-                rename_dataset_selectbox.add_option( opt_name, opt_name, selected=True )
-            else:
-                rename_dataset_selectbox.add_option( opt_name, opt_name )
-        return rename_dataset_selectbox  
     def __save_request_type(self, trans, **kwd):
         params = util.Params( kwd )
         name = util.restore_text( params.get( 'name', ''  ) )
         desc = util.restore_text( params.get( 'desc', '' ) )
         request_form_id = params.get( 'request_form_id', None )
-        request_form = trans.sa_session.query( trans.model.FormDefinition ).get( int( request_form_id ) )
+        request_form = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( request_form_id ) )
         sample_form_id = params.get( 'sample_form_id', None )
-        sample_form = trans.sa_session.query( trans.model.FormDefinition ).get( int( sample_form_id ) )
+        sample_form = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( sample_form_id ) )
         data_dir = util.restore_text( params.get( 'data_dir', ''  ) )
         data_dir = self.__check_path( data_dir )
         # Data transfer info - Make sure password is retrieved from kwd rather than Params
@@ -836,43 +734,73 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 i = i + 1
             else:
                 break
-        message = "The new sequencer configuration named '%s' with %s states has been created" % ( request_type.name, i )
+        message = "The new sequencer configuration named (%s) with %s states has been created" % ( request_type.name, i )
         return request_type, message
-    def __delete_request_type( self, trans, **kwd ):
+    @web.expose
+    @web.require_admin
+    def view_request_type( self, trans, **kwd ):
+        request_type_id = kwd.get( 'id', None )
+        try:
+            request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='browse_request_types' )
+        forms = self.get_all_forms( trans )
+        rename_dataset_select_field = self.__build_rename_dataset_select_field( trans, request_type )
+        return trans.fill_template( '/admin/requests/view_request_type.mako', 
+                                    request_type=request_type,
+                                    forms=forms,
+                                    rename_dataset_select_field=rename_dataset_select_field )
+    @web.expose
+    @web.require_admin
+    def view_form_definition( self, trans, **kwd ):
+        form_definition_id = kwd.get( 'id', None )
+        try:
+            form_definition = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( form_definition_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', form_definition_id, action='browse_request_types' )
+        return trans.fill_template( '/admin/forms/show_form_read_only.mako',
+                                    form_definition=form_definition )
+    @web.expose
+    @web.require_admin
+    def delete_request_type( self, trans, **kwd ):
         rt_id = kwd.get( 'id', '' )
         rt_id_list = util.listify( rt_id )
         for rt_id in rt_id_list:
             try:
                 request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( rt_id ) )
             except:
-                return invalid_id_redirect( trans, 'requests_admin', rt_id, action='manage_request_types' )
+                return invalid_id_redirect( trans, 'requests_admin', rt_id, action='browse_request_types' )
             request_type.deleted = True
             trans.sa_session.add( request_type )
             trans.sa_session.flush()
         status = 'done'
         message = '%i sequencer configurations has been deleted' % len( rt_id_list )
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='manage_request_types',
+                                                          action='browse_request_types',
                                                           message=message,
                                                           status='done' ) )
-    def __undelete_request_type( self, trans, **kwd ):
+    @web.expose
+    @web.require_admin
+    def undelete_request_type( self, trans, **kwd ):
         rt_id = kwd.get( 'id', '' )
         rt_id_list = util.listify( rt_id )
         for rt_id in rt_id_list:
             try:
                 request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( rt_id ) )
             except:
-                return invalid_id_redirect( trans, 'requests_admin', rt_id, action='manage_request_types' )
+                return invalid_id_redirect( trans, 'requests_admin', rt_id, action='browse_request_types' )
             request_type.deleted = False
             trans.sa_session.add( request_type )
             trans.sa_session.flush()
         status = 'done'
         message = '%i sequencer configurations have been undeleted' % len( rt_id_list )
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='manage_request_types',
+                                                          action='browse_request_types',
                                                           message=message,
                                                           status=status ) )
-    def __show_request_type_permissions( self, trans, **kwd ):
+    @web.expose
+    @web.require_admin
+    def request_type_permissions( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -880,7 +808,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         try:
             request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
         except:
-            return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='manage_request_types' )
+            return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='browse_request_types' )
         roles = trans.sa_session.query( trans.model.Role ) \
                                 .filter( trans.model.Role.table.c.deleted==False ) \
                                 .order_by( trans.model.Role.table.c.name )
@@ -897,3 +825,30 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                     roles=roles,
                                     status=status,
                                     message=message )
+    # ===== Methods for building SelectFields used on various admin_requests forms
+    def __build_sample_id_select_field( self, request, selected_value ):
+        return build_select_field( trans, request.samples, 'name', 'sample_id', selected_value=selected_value, refresh_on_change=False )
+    def __build_rename_dataset_select_field( self, trans, request_type=None ):
+        if request_type:
+            selected_value = request_type.datatx_info.get( 'rename_dataset', trans.model.RequestType.rename_dataset_options.NO )
+        else:
+            selected_value = trans.model.RequestType.rename_dataset_options.NO
+        return build_select_field( trans,
+                                   objs=[ v for k, v in trans.model.RequestType.rename_dataset_options.items() ],
+                                   label_attr='self',
+                                   select_field_name='rename_dataset',
+                                   selected_value=selected_value,
+                                   refresh_on_change=False )
+# ===== Methods for building SelectFields used on various admin_requests forms - used outside this controller =====
+def build_rename_datasets_for_sample_select_field( trans, sample_dataset, selected_value='none' ):
+    options = []
+    for option_index, option in enumerate( sample_dataset.file_path.split( os.sep )[ :-1 ] ):
+        option = option.strip()
+        if option:
+           options.append( option )
+    return build_select_field( trans,
+                               objs=options,
+                               label_attr='self',
+                               select_field_name='rename_datasets_for_sample_%s' % trans.security.encode_id( sample_dataset.id ),
+                               selected_value=selected_value,
+                               refresh_on_change=False )
