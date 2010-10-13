@@ -6,7 +6,7 @@
 .nav-controls a{padding:0 0.4em;}
 .nav-input{font-size:12px;width:30em;z-index:1000;}
 .location{display:inline-block;width:15em;margin:0px 10px;}
-.draghandle{float:left;background:transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;width:10px;height:12px;margin-right:5px;}
+.draghandle{cursor:move;float:left;background:transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;width:10px;height:12px;}
 .intro{z-index:1000;margin-left:auto;margin-right:auto;color:#555;text-align:center;font-size:16px;}
 .overview{width:100%;margin:0px;color:white;}
 .overview-viewport{position:relative;height:14px;background:white;border-bottom:solid gray 1px;margin:0;}
@@ -18,11 +18,12 @@
 .viewport-canvas{width:100%;height:100px;}
 .yaxislabel{color:#777;}
 .line-track .track-content{border-top:1px solid #ddd;border-bottom:1px solid #ddd;}
-.track{background:white;}
+.track{background:white;margin-bottom:1px;}
 .track-header{text-align:left;padding:4px 0px;color:#666;}
+.track-header .menubutton{margin-left:3px;}
 .track-content{overflow:hidden;text-align:center;}
-.track.error{margin-bottom:2px;background-color:#ECB4AF;}
-.track.nodata{margin-bottom:2px;background-color:#ddd;}
+.track.error{background-color:#ECB4AF;}
+.track.nodata{background-color:#ddd;}
 .loading{min-height:100px;}
 .label-track{}
 .label-track .label{border-left:solid #999 1px;padding:1px;display:inline-block;}

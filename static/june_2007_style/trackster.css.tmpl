@@ -35,11 +35,11 @@
     margin: 0px 10px;
 }
 .draghandle {
+    cursor: move;
     float: left;
     background: transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;
     width: 10px;
     height: 12px;
-    margin-right: 5px;
 }
 .intro {
     z-index: 1000;
@@ -127,6 +127,7 @@
     /* border-top: solid #DDDDDD 1px; */
     /* border-bottom: solid #DDDDDD 1px; */
     background: white;
+    margin-bottom: 1px;
 }
 
 .track-header {
@@ -135,17 +136,19 @@
     color: #666;
 }
 
+.track-header .menubutton {
+    margin-left: 3px;
+}
+
 .track-content {
     overflow: hidden;
     text-align: center;
 }
 
 .track.error {
-    margin-bottom: 2px;
     background-color: #ECB4AF;
 }
 .track.nodata {
-    margin-bottom: 2px;
     background-color: #ddd;
 }
 

@@ -97,7 +97,7 @@ class SummaryTreeDataProvider( TracksDataProvider ):
 
         resolution = max(1, ceil(float(kwargs['resolution'])))
 
-        level = ceil( log( resolution, st.block_size ) )
+        level = ceil( log( resolution, st.block_size ) ) - 1
         level = int(max( level, 0 ))
         if level <= 0:
             return None
@@ -167,6 +167,7 @@ class BamDataProvider( TracksDataProvider ):
         Fetch intervals in the region 
         """
         start, end = int(start), int(end)
+        no_detail = "no_detail" in kwargs
         # Attempt to open the BAM file with index
         bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', index_filename=self.converted_dataset.file_name )
         message = None
@@ -189,16 +190,20 @@ class BamDataProvider( TracksDataProvider ):
                 message = "Only the first %s pairs are being displayed." % MAX_VALS
                 break
             qname = read.qname
+            if no_detail:
+                seq = len(read.seq)
+            else:
+                seq = read.seq
             if read.is_proper_pair:
                 if qname in paired_pending: # one in dict is always first
                     pair = paired_pending[qname]
-                    results.append( [ qname, pair['start'], read.pos + read.rlen, read.seq, [pair['start'], pair['end'], pair['seq']], [read.pos, read.pos + read.rlen, read.seq] ] )
+                    results.append( [ qname, pair['start'], read.pos + read.rlen, seq, read.cigar, [pair['start'], pair['end'], pair['seq']], [read.pos, read.pos + read.rlen, seq] ] )
                     # results.append( [read.qname, pair['start'], read.pos + read.rlen, qname, [pair['start'], pair['end']], [read.pos, read.pos + read.rlen] ] )
                     del paired_pending[qname]
                 else:
-                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read.rlen, 'seq': read.seq, 'mate_start': read.mpos, 'rlen': read.rlen }
+                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read.rlen, 'seq': seq, 'mate_start': read.mpos, 'rlen': read.rlen, 'cigar': read.cigar }
             else:
-                results.append( [qname, read.pos, read.pos + read.rlen, read.seq] )
+                results.append( [qname, read.pos, read.pos + read.rlen, seq, read.cigar] )
         # take care of reads whose mates are out of range
         for qname, read in paired_pending.iteritems():
             if read['mate_start'] < read['start']:
@@ -212,7 +217,7 @@ class BamDataProvider( TracksDataProvider ):
                 r1 = [read['start'], read['end'], read['seq']]
                 r2 = [read['mate_start'], read['mate_start'] + read['rlen']]
 
-            results.append( [ qname, start, end, read['seq'], r1, r2 ] )
+            results.append( [ qname, start, end, read['seq'], read['cigar'], r1, r2 ] )
 
         bamfile.close()
         return { 'data': results, 'message': message }
