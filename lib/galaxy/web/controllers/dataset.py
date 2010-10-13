@@ -324,56 +324,56 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         current_user_roles = trans.get_current_user_roles()
-        if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-            if data.state == trans.model.Dataset.states.UPLOAD:
-                return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
-            
-            if filename and filename != "index":
-                # For files in extra_files_path
-                file_path = os.path.join( data.extra_files_path, filename )
-                if os.path.exists( file_path ):
-                    mime, encoding = mimetypes.guess_type( file_path )
-                    if not mime:
-                        try:
-                            mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
-                        except:
-                            mime = "text/plain"
-                
-                    trans.response.set_content_type( mime )
-                    return open( file_path )
-                else:
-                    return "Could not find '%s' on the extra files path %s." % (filename,file_path)
-            
-            mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-            trans.response.set_content_type(mime)
-            trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
-            
-            if to_ext: # Saving the file
-                if data.ext in composite_extensions:
-                    return self.archive_composite_dataset( trans, data, **kwd )
-                else:                    
-                    trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
-                    if to_ext[0] != ".":
-                        to_ext = "." + to_ext
-                    valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                    fname = data.name
-                    fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s]%s" % (data.hid, fname, to_ext)
-                    return open( data.file_name )
-            if os.path.exists( data.file_name ):
-                max_peek_size = 1000000 # 1 MB
-                if preview and (not isinstance(data.datatype, datatypes.binary.Binary)) and os.stat( data.file_name ).st_size > max_peek_size:
-                    trans.response.set_content_type( "text/html" )
-                    return trans.stream_template_mako( "/dataset/large_file.mako",
-                                                    truncated_data = open( data.file_name ).read(max_peek_size),
-                                                    data = data )
-                else:
-                    return open( data.file_name )
-            else:
-                raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
-        else:
+        if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
+        
+        if data.state == trans.model.Dataset.states.UPLOAD:
+            return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
+        
+        if filename and filename != "index":
+            # For files in extra_files_path
+            file_path = os.path.join( data.extra_files_path, filename )
+            if os.path.exists( file_path ):
+                mime, encoding = mimetypes.guess_type( file_path )
+                if not mime:
+                    try:
+                        mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
+                    except:
+                        mime = "text/plain"
             
+                trans.response.set_content_type( mime )
+                return open( file_path )
+            else:
+                return "Could not find '%s' on the extra files path %s." % (filename,file_path)
+        
+        mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
+        trans.response.set_content_type(mime)
+        trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
+        
+        if to_ext or isinstance(data.datatype, datatypes.binary.Binary) or isinstance(data.datatype, datatypes.images.Image): # Saving the file, or binary/image file
+            if data.extension in composite_extensions:
+                return self.archive_composite_dataset( trans, data, **kwd )
+            else:                    
+                trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
+                if not to_ext:
+                    to_ext = data.extension
+                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                fname = data.name
+                fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
+                trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, to_ext)
+                return open( data.file_name )
+        if not os.path.exists( data.file_name ):
+            raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
+        
+        max_peek_size = 1000000 # 1 MB
+        if preview and os.stat( data.file_name ).st_size > max_peek_size:
+            trans.response.set_content_type( "text/html" )
+            return trans.stream_template_mako( "/dataset/large_file.mako",
+                                            truncated_data = open( data.file_name ).read(max_peek_size),
+                                            data = data )
+        else:
+            return open( data.file_name )
+                        
     @web.expose
     @web.require_login( "see all available datasets" )
     def list( self, trans, **kwargs ):
