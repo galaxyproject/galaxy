@@ -68,13 +68,6 @@
    }
 </script>
 
-<style type="text/css">
-.msg_head {
-    padding: 0px 0px;
-    cursor: pointer;
-}
-</style>
-
 <br/>
 <br/>
 <ul class="manage-table-actions">
@@ -92,7 +85,7 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">Select files for transfer</div>
-    <form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', action='get_data', cntrller=cntrller, request_id=trans.security.encode_id( request.id )}" method="post" >
+    <form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', action='get_data', cntrller=cntrller, request_id=trans.security.encode_id( request.id ))}" method="post" >
         <div class="form-row">
             <label>Sample:</label>
             ${sample_id_select_field.get_html()}

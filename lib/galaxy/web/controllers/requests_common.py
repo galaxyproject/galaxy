@@ -105,8 +105,7 @@ class RequestsGrid( grids.Grid ):
 
 class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
     @web.json
-    def sample_state_updates( self, trans, ids=None, states=None, cntrller=None ):
-        # TODO fix this mthod - cntrller is required in the signature.
+    def sample_state_updates( self, trans, cntrller, ids=None, states=None ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
@@ -424,13 +423,19 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             except:
                 invalid_id_redirect( trans, cntrller, folder_id )
             for sample_id in selected_samples:
-                sample = trans.sa_session.query( trans.model.Sample ).get( sample_id )
+                sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
                 sample.library = library
                 sample.folder = folder
                 trans.sa_session.add( sample )
                 trans.sa_session.flush()
             trans.sa_session.refresh( request )
             message = 'Changes made to the selected samples have been saved. '
+            return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                              action='manage_request',
+                                                              cntrller=cntrller,
+                                                              id=request_id,
+                                                              status=status,
+                                                              message=message ) )
         elif params.get( 'cancel_change_lib_button', False ):
             return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                               action='manage_request',
@@ -859,7 +864,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     # The user has selected a sample to copy.
                     library_id = current_samples[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
                     folder_id = current_samples[ copy_sample_index ][ 'folder_select_field' ].get_selected( return_value=True )
-                    name = current_samples[ copy_sample_index ][ 'name' ] + '_%i' % ( index+1 )
+                    name = current_samples[ copy_sample_index ][ 'name' ] + '_%i' % ( len( current_samples ) + 1 )
                     library_id = 'none'
                     folder_id = 'none'
                     field_values = [ val for val in current_samples[ copy_sample_index ][ 'field_values' ] ]
@@ -867,7 +872,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     # The user has not selected a sample to copy (may just be adding a sample).
                     library_id = None
                     folder_id = None
-                    name = 'Sample_%i' % ( sample_index+1 )
+                    name = 'Sample_%i' % ( len( current_samples ) + 1 )
                     field_values = [ '' for field in request.type.sample_form.fields ]
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,

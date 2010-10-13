@@ -62,7 +62,7 @@
             // Build request data
             var ids = []
             var states = []
-            $.each( sample_states, function ( id, state ) {
+            $.each( sample_states, function ( id, state, cntrller ) {
                 ids.push( id );
                 states.push( state );
             });
@@ -73,7 +73,7 @@
                 dataType: "json",
                 data: { ids: ids.join( "," ), states: states.join( "," ) },
                 success : function ( data ) {
-                    $.each( data, function(id, val, cntrller ) {
+                    $.each( data, function( cntrller, id, val ) {
                         // Replace HTML
                         var cell1 = $("#sampleState-" + id);
                         cell1.html( val.html_state );
@@ -146,8 +146,6 @@
 </div>
 
 <br/><br/>
-<font color="red"><b><i>A dataset can be renamed only if its status is "Not Started"</i></b></font>
-
 <ul class="manage-table-actions">
     <li><a class="action-button" id="seqreq-${request.id}-popup" class="menubutton">Sequencing Request Actions</a></li>
     <div popupmenu="seqreq-${request.id}-popup">
