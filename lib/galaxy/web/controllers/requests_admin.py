@@ -393,7 +393,8 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 # get the sample these datasets are associated with
                 try:
                     sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( selected_sample_id ) )
-                    sample.library.id and sample.folder.id
+                    if sample.name in sample.request.has_samples_without_library_destinations:
+                        raise Exception()
                 except:
                     # if no sample (with associated library & folder) has been selected
                     status = 'error'

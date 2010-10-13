@@ -132,37 +132,37 @@
 
 <div class="grid-header">
     <h2>Sequencing Request "${request.name}"</h2>
+
+	<ul class="manage-table-actions">
+	    <li><a class="action-button" id="seqreq-${request.id}-popup" class="menubutton">Sequencing Request Actions</a></li>
+	    <div popupmenu="seqreq-${request.id}-popup">
+	        %if request.is_unsubmitted and request.samples:
+	            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests_common', action='submit_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Submit</a>
+	        %endif
+	        <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">History</a>
+	        <a class="action-button"  href="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit</a>
+	        %if is_admin:
+	            %if request.is_submitted:
+	                <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject</a>
+	                <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
+	            %endif
+	        %endif
+	    </div>
+	    <li><a class="action-button"  href="${h.url_for( controller=cntrller, action='browse_requests' )}">Browse requests</a></li>
+	</ul>
+
     <div class="toolParamHelp" style="clear: both;">
-	    <b>Sequencer</b>: ${request.type.name} 
-	    %if is_admin:
-	        | <b>User</b>: ${request.user.email}
-	    %endif
-	    %if request.is_submitted:
-	        | <b>State</b>: <i>${request.state}</i>
-	    %else:
-	        | <b>State</b>: ${request.state}
-	    %endif
+        <b>Sequencer</b>: ${request.type.name} 
+        %if is_admin:
+            | <b>User</b>: ${request.user.email}
+        %endif
+        %if request.is_submitted:
+            | <b>State</b>: <i>${request.state}</i>
+        %else:
+            | <b>State</b>: ${request.state}
+        %endif
     </div>
 </div>
-
-<br/><br/>
-<ul class="manage-table-actions">
-    <li><a class="action-button" id="seqreq-${request.id}-popup" class="menubutton">Sequencing Request Actions</a></li>
-    <div popupmenu="seqreq-${request.id}-popup">
-        %if request.is_unsubmitted and request.samples:
-            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests_common', action='submit_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Submit</a>
-        %endif
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">History</a>
-        <a class="action-button"  href="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit</a>
-        %if is_admin:
-            %if request.is_submitted:
-                <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject</a>
-                <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
-            %endif
-        %endif
-    </div>
-    <li><a class="action-button"  href="${h.url_for( controller=cntrller, action='browse_requests' )}">Browse requests</a></li>
-</ul>
 
 %if request.has_samples_without_library_destinations:
     ${render_msg( "Select a target data library and folder for all the samples before starting the sequence run", "warning" )}
