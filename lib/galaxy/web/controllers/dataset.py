@@ -350,7 +350,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         trans.response.set_content_type(mime)
         trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
         
-        if to_ext or isinstance(data.datatype, datatypes.binary.Binary) or isinstance(data.datatype, datatypes.images.Image): # Saving the file, or binary/image file
+        if to_ext or isinstance(data.datatype, datatypes.binary.Binary): # Saving the file, or binary file
             if data.extension in composite_extensions:
                 return self.archive_composite_dataset( trans, data, **kwd )
             else:                    
@@ -366,13 +366,13 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
         
         max_peek_size = 1000000 # 1 MB
-        if preview and os.stat( data.file_name ).st_size > max_peek_size:
+        if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
+            return open( data.file_name )
+        else:
             trans.response.set_content_type( "text/html" )
             return trans.stream_template_mako( "/dataset/large_file.mako",
                                             truncated_data = open( data.file_name ).read(max_peek_size),
                                             data = data )
-        else:
-            return open( data.file_name )
                         
     @web.expose
     @web.require_login( "see all available datasets" )
