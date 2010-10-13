@@ -12,11 +12,12 @@ blastn
 #end if
 -task $blast_type
 -evalue $evalue_cutoff
-$adv_opts.filter_query
-$adv_opts.strand
 -out $output1
 $out_format
 -num_threads 8
+#if $adv_opts.adv_opts_selector=="advanced":
+$adv_opts.filter_query
+$adv_opts.strand
 ## Need int(str(...)) because $adv_opts.max_hits is an InputValueWrapper object not a string
 ## Note -max_target_seqs overrides -num_descriptions and -num_alignments
 #if (str($adv_opts.max_hits) and int(str($adv_opts.max_hits)) > 0):
@@ -26,6 +27,8 @@ $out_format
 -word_size $adv_opts.word_size
 #end if
 $adv_opts.ungapped
+## End of advanced options:
+#end if
     </command>
     <inputs>
         <param name="query" type="data" format="fasta" label="Nucleotide query sequence(s)"/> 
@@ -78,13 +81,7 @@ $adv_opts.ungapped
               <option value="basic" selected="True">Hide Advanced Options</option>
               <option value="advanced">Show Advanced Options</option>
             </param>
-            <when value="basic">
-                <param name="filter_query" type="hidden" value="" />
-                <param name="strand" type="hidden" value="" />
-                <param name="max_hits" type="hidden" value="" />
-                <param name="word_size" type="hidden" value="" />
-                <param name="ungapped" type="hidden" value="" />
-            </when>
+            <when value="basic" />
             <when value="advanced">
                 <!-- Could use a select (yes, no, other) where other allows setting 'level window linker' -->
                 <param name="filter_query" type="boolean" label="Filter out low complexity regions (with DUST)" truevalue="-dust yes" falsevalue="-dust no" checked="true" />
