@@ -62,7 +62,7 @@ $adv_opts.ungapped
             <option value="vecscreen">vecscreen</option>
             -->
         </param>
-        <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff" />
+        <param name="evalue_cutoff" type="float" size="15" value="0.001" label="Set expectation value cutoff" />
         <param name="out_format" type="select" label="Output format">
             <option value="-outfmt 6" selected="True">Tabular</option>
             <option value="-outfmt 5">BLAST XML</option>
