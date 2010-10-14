@@ -88,7 +88,7 @@ class RequestsGrid( grids.Grid ):
         StateColumn( "State", 
                      key='state',
                      filterable="advanced",
-                     link=( lambda item: iff( item.deleted, None, dict( operation="events", id=item.id ) ) )
+                     link=( lambda item: iff( item.deleted, None, dict( operation="request_events", id=item.id ) ) )
                    )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
@@ -105,7 +105,7 @@ class RequestsGrid( grids.Grid ):
 
 class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
     @web.json
-    def sample_state_updates( self, trans, cntrller, ids=None, states=None ):
+    def sample_state_updates( self, trans, ids=None, states=None ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
@@ -120,12 +120,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     rval[ id ] = { "state": sample.state.name,
                                    "datasets": len( sample.datasets ),
                                    "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
-                                                                               sample=sample,
-                                                                               cntrller=cntrller ),
+                                                                               sample=sample),
                                                                                'utf-8' ),
                                    "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
-                                                                                  sample=sample,
-                                                                                  cntrller=cntrller ),
+                                                                                  sample=sample ),
                                                                                   'utf-8' ) }
         return rval
     @web.expose
@@ -865,8 +863,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     library_id = current_samples[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
                     folder_id = current_samples[ copy_sample_index ][ 'folder_select_field' ].get_selected( return_value=True )
                     name = current_samples[ copy_sample_index ][ 'name' ] + '_%i' % ( len( current_samples ) + 1 )
-                    library_id = 'none'
-                    folder_id = 'none'
                     field_values = [ val for val in current_samples[ copy_sample_index ][ 'field_values' ] ]
                 else:
                     # The user has not selected a sample to copy (may just be adding a sample).

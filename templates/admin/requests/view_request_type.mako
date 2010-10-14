@@ -11,7 +11,7 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">Sequencer configuration information</div>
-    <form name="view_request_type" action="${h.url_for( controller='requests_admin', action='create_request_type', rt_id=request_type.id)}" method="post" >
+    <form name="view_request_type" action="${h.url_for( controller='requests_admin', action='create_request_type', rt_id=trans.security.encode_id( request_type.id ))}" method="post" >
         <div class="form-row">
             <label>Name</label>
             ${request_type.name}

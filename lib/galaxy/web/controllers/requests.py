@@ -52,6 +52,12 @@ class Requests( BaseController ):
                                                                   action='undelete_request',
                                                                   cntrller='requests',
                                                                   **kwd ) )
+            if operation == "request_events":
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  action='request_events',
+                                                                  cntrller='requests',
+                                                                  **kwd ) )
+
         # If there are requests that have been rejected, show a message as a reminder to the user
         rejected = 0
         for request in trans.sa_session.query( trans.app.model.Request ) \

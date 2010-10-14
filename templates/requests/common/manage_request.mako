@@ -62,7 +62,7 @@
             // Build request data
             var ids = []
             var states = []
-            $.each( sample_states, function ( id, state, cntrller ) {
+            $.each( sample_states, function ( id, state ) {
                 ids.push( id );
                 states.push( state );
             });
@@ -73,7 +73,7 @@
                 dataType: "json",
                 data: { ids: ids.join( "," ), states: states.join( "," ) },
                 success : function ( data ) {
-                    $.each( data, function( cntrller, id, val ) {
+                    $.each( data, function( id, val ) {
                         // Replace HTML
                         var cell1 = $("#sampleState-" + id);
                         cell1.html( val.html_state );
@@ -140,7 +140,6 @@
 	            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests_common', action='submit_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Submit</a>
 	        %endif
 	        <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">History</a>
-	        <a class="action-button"  href="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit</a>
 	        %if is_admin:
 	            %if request.is_submitted:
 	                <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject</a>
@@ -178,6 +177,13 @@
 
 <h4><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);" style="cursor:pointer;"/> Request Information</h4>
 <div style="display:none;">
+    <div class="form-row">
+        <ul class="manage-table-actions">
+            <li>
+                <a class="action-button"  href="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit request informaton</a>
+            </li>
+        </ul>
+    </div>
     <table class="grid" border="0">
         <tbody>
             <tr>
@@ -452,7 +458,7 @@
                             %if sample.request.is_unsubmitted:
                                 <td>Unsubmitted</td>
                             %else:
-                                <td id="sampleState-${sample.id}">${render_sample_state( cntrller, sample )}</td>
+                                <td><a id="sampleState-${sample.id}" href="${h.url_for( controller='requests_common', action='sample_events', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${render_sample_state( sample )}</a></td>
                             %endif
                             %if info['library']:
                                 %if cntrller == 'requests':
@@ -469,9 +475,9 @@
                                 <td></td>
                             %endif
                             %if request.is_submitted or request.is_complete: 
-                                <td id="sampleDatasets-${sample.id}">
-                                    ${render_sample_datasets( cntrller, sample )}
-                                </td>
+                                <td><a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">
+                                    ${render_sample_datasets( sample )}
+                                </a></td>
                             %endif
                         %else:                                                            
                             ${show_basic_info_form( sample_index, sample, info )}

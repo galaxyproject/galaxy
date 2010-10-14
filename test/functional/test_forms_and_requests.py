@@ -160,8 +160,8 @@ class TestFormsAndRequests( TwillTestCase ):
         name = 'Test Requestype'
         self.create_request_type( name,
                                   "test sequencer configuration",
-                                  str( request_form.id ),
-                                  str( sample_form.id ),
+                                  self.security.encode_id( request_form.id ),
+                                  self.security.encode_id( sample_form.id ),
                                   sample_states,
                                   strings_displayed=[ 'Create a new sequencer configuration' ],
                                   strings_displayed_after_submit=[ "Sequencer configuration (%s) has been created" % name ] )

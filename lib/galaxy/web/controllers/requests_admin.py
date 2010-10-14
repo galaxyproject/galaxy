@@ -163,6 +163,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                                   action='manage_request',
                                                                   cntrller='requests_admin',
                                                                   **kwd ) )
+            if operation == "request_events":
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  action='request_events',
+                                                                  cntrller='requests_admin',
+                                                                  **kwd ) )
             if operation == "reject":
                 return self.reject_request( trans, **kwd )
             if operation == "view_type":
@@ -423,7 +428,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                                       request_id=request_id,
                                                                       folder_path=folder_path,
                                                                       sample_id=sample.id,
-                                                                      open_folder=True,
                                                                       message=message,
                                                                       status=status ) )
             # Get the filenames from the remote host
@@ -590,21 +594,31 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                            FOLDER_ID=str(sample.folder.id),
                            DATASETS=datasets )
         # Send the message 
-        conn = amqp.Connection( host=trans.app.config.amqp['host'] + ":" + trans.app.config.amqp['port'], 
-                                userid=trans.app.config.amqp['userid'], 
-                                password=trans.app.config.amqp['password'], 
-                                virtual_host=trans.app.config.amqp['virtual_host'], 
-                                insist=False )    
-        chan = conn.channel()
-        msg = amqp.Message( data.replace( '\n', '' ).replace( '\r', '' ), 
-                            content_type='text/plain', 
-                            application_headers={'msg_type': 'data_transfer'} )
-        msg.properties["delivery_mode"] = 2
-        chan.basic_publish( msg,
-                            exchange=trans.app.config.amqp['exchange'],
-                            routing_key=trans.app.config.amqp['routing_key'] )
-        chan.close()
-        conn.close()
+        try:
+            conn = amqp.Connection( host=trans.app.config.amqp['host'] + ":" + trans.app.config.amqp['port'], 
+                                    userid=trans.app.config.amqp['userid'], 
+                                    password=trans.app.config.amqp['password'], 
+                                    virtual_host=trans.app.config.amqp['virtual_host'], 
+                                    insist=False )    
+            chan = conn.channel()
+            msg = amqp.Message( data.replace( '\n', '' ).replace( '\r', '' ), 
+                                content_type='text/plain', 
+                                application_headers={'msg_type': 'data_transfer'} )
+            msg.properties["delivery_mode"] = 2
+            chan.basic_publish( msg,
+                                exchange=trans.app.config.amqp['exchange'],
+                                routing_key=trans.app.config.amqp['routing_key'] )
+            chan.close()
+            conn.close()
+        except Exception, e:
+            message = "Error in sending the data transfer message to the Galaxy AMQP message queue:<br/>%s" % str(e)
+            status = "error"
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_datasets',
+                                                              sample_id=trans.security.encode_id( sample.id ),
+                                                              status=status,
+                                                              message=message) )
+
     def __start_datatx( self, trans, sample, selected_sample_datasets ):
         datatx_user = self.__setup_datatx_user( trans, sample.library, sample.folder )
         # Validate sequencer information
