@@ -71,7 +71,7 @@
                             %else:
                                 State: ${sample.state.name}<br/>
                             %endif
-                            Datasets: <a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${sample.transferred_dataset_files}/${len( sample.datasets )}</a><br/>
+                            Datasets: <a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}/${len( sample.datasets )}</a><br/>
                             %if is_admin:
                                <i>User: ${sample.request.user.email}</i>
                             %endif

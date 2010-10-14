@@ -163,7 +163,7 @@
     </div>
 </div>
 
-%if request.has_samples_without_library_destinations:
+%if request.samples_without_library_destinations:
     ${render_msg( "Select a target data library and folder for all the samples before starting the sequence run", "warning" )}
 %endif
 

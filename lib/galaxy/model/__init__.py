@@ -1647,12 +1647,12 @@ class Request( object ):
     def is_complete( self ):
         return self.state == self.states.COMPLETE
     @property
-    def has_samples_without_library_destinations( self ):
+    def samples_without_library_destinations( self ):
         # Return all samples that are not associated with a library
         samples = []
-        for s in self.samples:
-            if not s.library:
-                samples.append( s.name )
+        for sample in self.samples:
+            if not sample.library:
+                samples.append( sample )
         return samples
     def send_email_notification( self, trans, common_state, final_state=False ):
         # Check if an email notification is configured to be sent when the samples 
@@ -1774,25 +1774,25 @@ class Sample( object ):
         return None
     @property
     def untransferred_dataset_files( self ):
-        count = 0
-        for df in self.datasets:
-            if df.status == self.transfer_status.NOT_STARTED:
-                count = count + 1
-        return count
+        untransferred_datasets = []
+        for dataset in self.datasets:
+            if dataset.status == self.transfer_status.NOT_STARTED:
+                untransferred_datasets.append( dataset )
+        return untransferred_datasets
     @property
     def inprogress_dataset_files( self ):
-        count = 0
-        for df in self.datasets:
-            if df.status not in [self.transfer_status.NOT_STARTED, self.transfer_status.COMPLETE]:
-                count = count + 1
-        return count
+        inprogress_datasets = []
+        for dataset in self.datasets:
+            if dataset.status not in [ self.transfer_status.NOT_STARTED, self.transfer_status.COMPLETE ]:
+                inprogress_datasets.append( dataset )
+        return inprogress_datasets
     @property
     def transferred_dataset_files( self ):
-        count = 0
-        for df in self.datasets:
-            if df.status == self.transfer_status.COMPLETE:
-                count = count + 1
-        return count
+        transferred_datasets = []
+        for dataset in self.datasets:
+            if dataset.status == self.transfer_status.COMPLETE:
+                transferred_datasets.append( dataset )
+        return transferred_datasets
     def dataset_size( self, filepath ):
         def print_ticks(d):
             pass

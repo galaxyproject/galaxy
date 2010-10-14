@@ -244,6 +244,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        sample_id = params.get( 'sample_id', None )
+        try:
+            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', sample_id )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             sample_dataset_id = params.get( 'id', None )
@@ -262,48 +267,44 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             elif operation == "delete":
                 not_deleted = []
                 for sample_dataset in selected_sample_datasets:
-                    sample_id = sample_dataset.sample.id
-                    if sample_dataset.status == trans.app.model.Sample.transfer_status.NOT_STARTED:
+                    # Make sure the dataset has been transferred before deleting it.
+                    if sample_dataset in sample.untransferred_dataset_files:
                         trans.sa_session.delete( sample_dataset )
                         trans.sa_session.flush()
                     else:
                         not_deleted.append( sample_dataset.name )
-                message = '%i datasets have been deleted. ' % ( len( id_list ) - len( not_deleted ) )
+                message = '%i datasets have been deleted.' % ( len( id_list ) - len( not_deleted ) )
                 if not_deleted:
                     status = 'warning'
-                    message = message + '%s could not be deleted because their transfer status is not "Not Started". ' % str( not_deleted )
+                    message = message + '  %s could not be deleted because their transfer status is not "Not Started". ' % str( not_deleted )
                 return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                   action='manage_datasets',
-                                                                  sample_id=trans.security.encode_id( sample_id ),
+                                                                  sample_id=sample_id,
                                                                   status=status,
                                                                   message=message ) )
             elif operation == "rename":
-                # if none of the selected sample datasets are in the NOT_STARTED state,
-                # then display error message
-                flag = True
-                for sd in selected_sample_datasets:
-                    if sd.status == trans.app.model.Sample.transfer_status.NOT_STARTED:
-                        flag = False
+                # If one of the selected sample datasets is in the NOT_STARTED state,
+                # then display an error message.  A NOT_STARTED state implies the dataset
+                # has not yet been transferred.
+                no_datasets_transferred = True
+                for selected_sample_dataset in selected_sample_datasets:
+                    if selected_sample_dataset in sample.untransferred_dataset_files:
+                        no_datasets_transferred = False
                         break
-                if flag:
+                if no_datasets_transferred:
                     status = 'error'
-                    message = 'A dataset can be renamed only if it is in the <b>Not Started</b> state.'
+                    message = 'A dataset can be renamed only if it is in the "Not Started" state.'
                     return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='manage_datasets',
-                                                                      sample_id=trans.security.encode_id( selected_sample_datasets[0].sample.id ),
+                                                                      sample_id=sample_id,
                                                                       status=status,
                                                                       message=message ) )
                 return trans.fill_template( '/admin/requests/rename_datasets.mako', 
-                                            sample=selected_sample_datasets[0].sample,
+                                            sample=sample,
                                             id_list=id_list )
             elif operation == "start transfer":
-                self.__start_datatx( trans, selected_sample_datasets[0].sample, selected_sample_datasets )
+                self.__start_datatx( trans, sample, selected_sample_datasets )
         # Render the grid view
-        sample_id = params.get( 'sample_id', None )
-        try:
-            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', sample_id )
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Datasets of sample "%s"' % sample.name
@@ -392,25 +393,26 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             folder_path = self.__check_path( folder_path )
             if params.get( 'folder_up', False ):
                 if folder_path[-1] == os.sep:
-                    folder_path = os.path.dirname(folder_path[:-1])
+                    folder_path = os.path.dirname( folder_path[:-1] )
                 folder_path = self.__check_path( folder_path )
             elif params.get( 'select_show_datasets_button', False ) or params.get( 'select_more_button', False ):
                 # get the sample these datasets are associated with
                 try:
                     sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( selected_sample_id ) )
-                    if sample.name in sample.request.has_samples_without_library_destinations:
-                        raise Exception()
                 except:
-                    # if no sample (with associated library & folder) has been selected
+                    return invalid_id_redirect( trans, 'requests_admin', selected_sample_id )
+                if sample in sample.request.samples_without_library_destinations:
+                    # Display an error if a sample has been selected that
+                    # has not yet been associated with a destination library.
                     status = 'error'
-                    message = 'Select a sample with associated data library and folder before selecting the dataset(s).'
+                    message = 'Select a sample with associated data library and folder before selecting the datasets.'
                     return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='get_data',
-                                                                      request_id=trans.security.encode_id( request.id ),
+                                                                      request_id=request_id,
                                                                       folder_path=folder_path,
                                                                       status=status,
                                                                       message=message ) )
-                # save the sample datasets 
+                # Save the sample datasets 
                 sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_files, folder_path )
                 if sample_dataset_file_names:
                     message = 'Datasets (%s) have been selected for sample (%s)' % \
@@ -419,7 +421,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                     return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='manage_datasets',
                                                                       request_id=request_id,
-                                                                      sample_id=trans.security.encode_id( sample.id ),
+                                                                      sample_id=selected_sample_id,
                                                                       message=message,
                                                                       status=status ) )
                 else: # 'select_more_button' was clicked
