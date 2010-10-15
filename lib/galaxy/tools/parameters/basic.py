@@ -562,7 +562,8 @@ class SelectToolParameter( ToolParameter ):
                 if value == '':
                     value = None
                 else:
-                    value = value.split( "\n" )
+                    if not isinstance( value, list ):
+                        value = value.split( "\n" )
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, context )
         if isinstance( value, list ):
@@ -773,16 +774,30 @@ class ColumnListParameter( SelectToolParameter ):
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
         """
-        if type( value ) == list:
-            # We have a multi-select list
-            new_value = []
-            for item in value:
-                if item.startswith( "c" ):
-                    item = item[1:]
-                new_value.append( item )
-            value = new_value
-        elif value and value.startswith( "c" ):
-            value = value[1:]
+        def _strip_c( column ):
+            column = column.strip().lower()
+            if column.startswith( 'c' ):
+                column = column[1:]
+            return column
+        if self.multiple:
+            #split on newline and ,
+            if value:
+                column_list = []
+                if not isinstance( value, list ):
+                    value = value.split( '\n' )
+                for column in value:
+                    for column2 in column.split( ',' ):
+                        column2 = column2.strip()
+                        if column2:
+                            column_list.append( column2 )
+                value = map( _strip_c, column_list )
+            else:
+                value = []
+        else:
+            if value:
+                value = _strip_c( value )
+            else:
+                value = None
         return super( ColumnListParameter, self ).from_html( value, trans, context )
     def get_column_list( self, trans, other_values ):
         """
