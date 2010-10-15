@@ -340,8 +340,7 @@ class UsesFormDefinitionWidgets:
                         widget_dict[ 'widget' ] = widget
                     else:
                         # An existing address object was selected
-                        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( int( value ) )
-                        widget_dict[ 'widget' ] = address_obj
+                        widget_dict[ 'widget' ] = widget
                     # Populate the AddressField params with the form field contents
                     widget_params_dict = {}
                     for field_name, label, help_text in widget.fields():

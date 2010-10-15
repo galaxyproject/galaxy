@@ -21,7 +21,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Create a new request</div>
+    <div class="toolFormTitle">Create a new sequencing request</div>
     %if len( request_type_select_field.options ) == 1:
         There are no sequencer configurations available for ${trans.user.email} to create sequencing requests.
     %else:

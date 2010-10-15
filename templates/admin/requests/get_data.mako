@@ -104,7 +104,9 @@
                     <option value="${f}">${f}</option>
                 %endfor
             </select> 
-            <br/>
+        </div>
+        <div class="form-row">
+            <div id="file_details" class="toolParamHelp" style="clear: both;background-color:#FAFAFA;"></div>
         </div>
         <div class="form-row">
             <input type="submit" name="select_show_datasets_button" value="Select & show datasets"/>

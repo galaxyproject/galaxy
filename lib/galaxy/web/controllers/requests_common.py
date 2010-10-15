@@ -140,9 +140,20 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             request_type = None
         # user_id will not be 'none' if an admin user is submitting this request on behalf of another user
         # and they selected that user's id from the user_id SelectField.
+        user_id_encoded = True
         user_id = params.get( 'user_id', 'none' )
         if user_id != 'none':
-            user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
+            try: 
+                user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
+            except TypeError, e:
+                # We must have an email address rather than an encoded user id
+                # This is because the galaxy.base.js creates a search+select box 
+                # when there are more than 20 items in a selectfield
+                user = trans.sa_session.query( trans.model.User ) \
+                                       .filter( trans.model.User.table.c.email==util.restore_text( user_id ) ) \
+                                       .first()
+                user_id_encoded = False
+                
         elif not is_admin:
             user = trans.user
         else:
@@ -151,6 +162,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             name = util.restore_text( params.get( 'name', '' ) )
             if is_admin and user_id == 'none':
                 message = 'Select the user on behalf of whom you are submitting this request.'
+                status = 'error'
+            elif user is None:
+                message = 'Invalid user ID (%s)' % str(user_id)
                 status = 'error'
             elif not name:
                 message = 'Enter the name of the request.'
@@ -170,10 +184,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         widgets = []
         if request_type is not None or status == 'error':
             # Either the user selected a request_type or an error exists on the form.
-            if is_admin:
-                widgets.append( dict( label='Select user',
-                                      widget=self.__build_user_id_select_field( trans, selected_value=user_id ),
-                                      helptext='Submit the request on behalf of the selected user (Required)'))
             widgets.append( dict( label='Name of the Experiment', 
                                   widget=TextField( 'name', 40, util.restore_text( params.get( 'name', ''  ) ) ), 
                                   helptext='(Required)') )
@@ -182,9 +192,20 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                   helptext='(Optional)') )
             if request_type is not None:
                 widgets += request_type.request_form.get_widgets( user, **kwd )
-            # In case there is an error on the form, make sure to populate widget fields with anything the user
-            # may have already entered.
-            self.populate_widgets_from_kwd( trans, widgets, **kwd )
+        # In case there is an error on the form, make sure to populate widget fields with anything the user
+        # may have already entered.
+        self.populate_widgets_from_kwd( trans, widgets, **kwd )
+        if request_type is not None or status == 'error':
+            # Either the user selected a request_type or an error exists on the form.
+            if is_admin:
+                if not user_id_encoded:
+                    selected_user_id = trans.security.encode_id( user.id )
+                else:
+                    selected_user_id = user_id
+                user_widget = dict( label='Select user',
+                                    widget=self.__build_user_id_select_field( trans, selected_value=selected_user_id ),
+                                    helptext='Submit the request on behalf of the selected user (Required)')
+                widgets = [ user_widget ] + widgets
         return trans.fill_template( '/requests/common/create_request.mako',
                                     cntrller=cntrller,
                                     request_type_select_field=request_type_select_field,
@@ -873,7 +894,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                            user=request.user, 
-                                                                                                           sample_index=sample_index, 
+                                                                                                           sample_index=len( current_samples ), 
                                                                                                            libraries=libraries,
                                                                                                            sample=None, 
                                                                                                            library_id=library_id,

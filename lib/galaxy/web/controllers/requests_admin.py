@@ -184,23 +184,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                                   **kwd ) )
         # Render the list view
         return self.request_grid( trans, **kwd )
-    @web.json
-    def get_file_details( self, trans, id, folder_path ):
-        def print_ticks( d ):
-            # pexpect timeout method
-            pass
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
-        request = trans.sa_session.query( trans.model.Request ).get( int( id ) )
-        datatx_info = request.type.datatx_info
-        cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( datatx_info['username'],
-                                                 datatx_info['host'],
-                                                 folder_path )
-        output = pexpect.run( cmd,
-                              events={ '.ssword:*' : datatx_info[ 'password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
-                              timeout=10 )
-        return unicode( output.replace( '\n', '<br/>' ) )
     @web.expose
     @web.require_admin
     def reject( self, trans, **kwd ):
@@ -244,11 +227,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        sample_id = params.get( 'sample_id', None )
-        try:
-            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', sample_id )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             sample_dataset_id = params.get( 'id', None )
@@ -268,7 +246,9 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 not_deleted = []
                 for sample_dataset in selected_sample_datasets:
                     # Make sure the dataset has been transferred before deleting it.
-                    if sample_dataset in sample.untransferred_dataset_files:
+                    if sample_dataset in sample_dataset.sample.untransferred_dataset_files:
+                        # save the sample to which these datasets belong to
+                        sample = sample_dataset.sample
                         trans.sa_session.delete( sample_dataset )
                         trans.sa_session.flush()
                     else:
@@ -279,7 +259,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                     message = message + '  %s could not be deleted because their transfer status is not "Not Started". ' % str( not_deleted )
                 return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                   action='manage_datasets',
-                                                                  sample_id=sample_id,
+                                                                  sample_id=trans.security.encode_id( sample.id ),
                                                                   status=status,
                                                                   message=message ) )
             elif operation == "rename":
@@ -288,7 +268,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 # has not yet been transferred.
                 no_datasets_transferred = True
                 for selected_sample_dataset in selected_sample_datasets:
-                    if selected_sample_dataset in sample.untransferred_dataset_files:
+                    if selected_sample_dataset in selected_sample_dataset.sample.untransferred_dataset_files:
                         no_datasets_transferred = False
                         break
                 if no_datasets_transferred:
@@ -296,15 +276,20 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                     message = 'A dataset can be renamed only if it is in the "Not Started" state.'
                     return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='manage_datasets',
-                                                                      sample_id=sample_id,
+                                                                      sample_id=trans.security.encode_id( selected_sample_datasets[0].sample.id ),
                                                                       status=status,
                                                                       message=message ) )
                 return trans.fill_template( '/admin/requests/rename_datasets.mako', 
-                                            sample=sample,
+                                            sample=selected_sample_datasets[0].sample,
                                             id_list=id_list )
             elif operation == "start transfer":
-                self.__start_datatx( trans, sample, selected_sample_datasets )
+                self.__start_datatx( trans, selected_sample_datasets[0].sample, selected_sample_datasets )
         # Render the grid view
+        sample_id = params.get( 'sample_id', None )
+        try:
+            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', sample_id )
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Datasets of sample "%s"' % sample.name
@@ -395,6 +380,10 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 if folder_path[-1] == os.sep:
                     folder_path = os.path.dirname( folder_path[:-1] )
                 folder_path = self.__check_path( folder_path )
+            elif params.get( 'open_folder', False ):
+                if len(selected_files) == 1:
+                    folder_path = os.path.join(folder_path, selected_files[0])
+                folder_path = self.__check_path( folder_path )
             elif params.get( 'select_show_datasets_button', False ) or params.get( 'select_more_button', False ):
                 # get the sample these datasets are associated with
                 try:
@@ -443,8 +432,26 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                     status=status,
                                     message=message )
     @web.json
+    def get_file_details( self, trans, id, folder_path ):
+        def print_ticks( d ):
+            # pexpect timeout method
+            pass
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        request = trans.sa_session.query( trans.model.Request ).get( int( id ) )
+        datatx_info = request.type.datatx_info
+        cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( datatx_info['username'],
+                                                 datatx_info['host'],
+                                                 folder_path )
+        output = pexpect.run( cmd,
+                              events={ '.ssword:*' : datatx_info[ 'password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
+                              timeout=10 )
+        return unicode( output.replace( '\n', '<br/>' ) )
+    @web.json
     def open_folder( self, trans, id, folder_path ):
         def print_ticks( d ):
+            # pexpect timeout method
             pass
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
