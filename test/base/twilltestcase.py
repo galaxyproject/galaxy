@@ -1540,7 +1540,7 @@ class TwillTestCase( unittest.TestCase ):
     def add_bar_codes( self, request_id, request_name, bar_codes, samples, strings_displayed_after_submit=[] ):
         # We have to simulate the form submission here since twill barfs on the page
         # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
-        url = "%s/requests_common/manage_request?cntrller=requests_admin&id=%s&edit_samples_button=Edit+samples" % ( self.url, request_id )
+        url = "%s/requests_common/manage_request?cntrller=requests_admin&id=%s&managing_samples=True" % ( self.url, request_id )
         for index, field_value in enumerate( bar_codes ):
             sample_field_name = "sample_%i_name" % index
             sample_field_value = samples[ index ].name.replace( ' ', '+' )
@@ -1551,20 +1551,23 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-    def change_sample_state( self, request_id, request_name, sample_name, sample_id, new_sample_state_id, new_state_name, comment='',
+    def change_sample_state( self, request_id, request_name, sample_names, sample_ids, new_sample_state_id, new_state_name, comment='',
                              strings_displayed=[], strings_displayed_after_submit=[] ):
         # We have to simulate the form submission here since twill barfs on the page
         # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
         url = "%s/requests_common/manage_request?cntrller=requests_admin&id=%s" % ( self.url, request_id )
-        # select_sample_%i=true must be included twice to simulate a CheckboxField checked setting.
-        url += "&comment=%s&select_sample_%i=true&select_sample_%i=true&sample_state_id=%i" % ( comment, sample_id, sample_id, new_sample_state_id )
+        url += "&comment=%s&sample_state_id=%s" % ( comment, self.security.encode_id( new_sample_state_id ) )
+        # select_sample_%i=true must be included twice for each sample to simulate a CheckboxField checked setting.
+        for sample_id in sample_ids:
+            url += "&select_sample_%i=true&select_sample_%i=true" % ( sample_id, sample_id )
         url += "&sample_operation=Change%20state&refresh=true"
         url += "&change_state_button=Save"
         self.visit_url( url )        
         self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
-        self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%i" % ( self.url, sample_id ) )
-        self.check_page_for_string( 'Events for Sample "%s"' % sample_name )
-        self.check_page_for_string( new_state_name )
+        for sample_id, sample_name in zip( sample_ids, sample_names ):
+            self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%s" % ( self.url, self.security.encode_id( sample_id ) ) )
+            self.check_page_for_string( 'Events for Sample "%s"' % sample_name )
+            self.check_page_for_string( new_state_name )
     def add_user_address( self, user_id, address_dict ):
         self.home()
         self.visit_url( "%s/user/new_address?admin_view=False&user_id=%i" % ( self.url, user_id ) )

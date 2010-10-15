@@ -209,7 +209,7 @@ class TestFormsAndRequests( TwillTestCase ):
                              name=name,
                              desc=desc,
                              field_value_tuples=field_value_tuples,
-                             strings_displayed=[ 'Create a new request',
+                             strings_displayed=[ 'Create a new sequencing request',
                                                  test_field_name1,
                                                  test_field_name2,
                                                  test_field_name3 ],
@@ -272,8 +272,6 @@ class TestFormsAndRequests( TwillTestCase ):
     def test_040_request_lifecycle( self ):
         """Testing request life-cycle as it goes through all the states"""
         # logged in as regular_user1
-        """
-        TODO: debug this test case...
         self.logout()
         self.login( email=admin_user.email )
         self.check_request_grid( cntrller='requests_admin',
@@ -292,19 +290,18 @@ class TestFormsAndRequests( TwillTestCase ):
                             samples=request_one.samples,
                             strings_displayed_after_submit=strings_displayed_after_submit )
         # Change the states of all the samples of this request to ultimately be COMPLETE
-        for sample in request_one.samples:
-            self.change_sample_state( request_id=self.security.encode_id( request_one.id ),
-                                      request_name=request_one.name,
-                                      sample_name=sample.name,
-                                      sample_id=self.security.encode_id( sample.id ),
-                                      new_sample_state_id=request_type1.states[1].id,
-                                      new_state_name=request_type1.states[1].name )
-            self.change_sample_state( request_id=self.security.encode_id( request_one.id ),
-                                      request_name=request_one.name,
-                                      sample_name=sample.name,
-                                      sample_id=self.security.encode_id( sample.id ),
-                                      new_sample_state_id=request_type1.states[2].id,
-                                      new_state_name=request_type1.states[2].name )
+        self.change_sample_state( request_id=self.security.encode_id( request_one.id ),
+                                  request_name=request_one.name,
+                                  sample_names=[ sample.name for sample in request_one.samples ],
+                                  sample_ids=[ sample.id for sample in request_one.samples ],
+                                  new_sample_state_id=request_type1.states[1].id,
+                                  new_state_name=request_type1.states[1].name )
+        self.change_sample_state( request_id=self.security.encode_id( request_one.id ),
+                                  request_name=request_one.name,
+                                  sample_names=[ sample.name for sample in request_one.samples ],
+                                  sample_ids=[ sample.id for sample in request_one.samples ],
+                                  new_sample_state_id=request_type1.states[2].id,
+                                  new_state_name=request_type1.states[2].name )
         refresh( request_one )
         self.logout()
         self.login( email=regular_user1.email )
@@ -314,7 +311,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                  strings_displayed=[ request_one.name ] )
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.COMPLETE )
-        """
+        
     def test_045_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         # Logged in as regular_user1
@@ -332,7 +329,7 @@ class TestFormsAndRequests( TwillTestCase ):
                              name=name,
                              desc=desc,
                              field_value_tuples=field_value_tuples,
-                             strings_displayed=[ 'Create a new request',
+                             strings_displayed=[ 'Create a new sequencing request',
                                                  test_field_name1,
                                                  test_field_name2,
                                                  test_field_name3 ],
