@@ -456,7 +456,7 @@ var Track = function (name, view, parent_element) {
 };
 $.extend( Track.prototype, {
     init_global: function () {
-        this.container_div = $("<div />").addClass('track')
+        this.container_div = $("<div />").addClass('track').css("position", "relative");
         if (!this.hidden) {
             this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
             if (this.view.editor) { this.drag_div = $("<div class='draghandle' />").appendTo(this.header_div); }
@@ -561,9 +561,17 @@ var TiledTrack = function() {
         }
     };
     track_dropdown["Edit configuration"] = function() {
-        var cancel_fn = function() { hide_modal(); };
-        var ok_fn = function() { track.update_options(track.track_id); hide_modal(); };
+        var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+            ok_fn = function() { track.update_options(track.track_id); hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+            check_enter_esc = function(e) {
+                if ((e.keyCode || e.which) === 27) { // Escape key
+                    cancel_fn();
+                } else if ((e.keyCode || e.which) === 13) { // Enter key
+                    ok_fn();
+                }
+            };
 
+        $(window).bind("keypress.check_enter_esc", check_enter_esc);        
         show_modal("Configure Track", track.gen_options(track.track_id), {
             "Cancel": cancel_fn,
             "OK": ok_fn
@@ -771,8 +779,8 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
 
 var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.track_type = "LineTrack";
-    this.display_modes = ["Line", "Filled", "Intensity"];
-    this.mode = "Line";
+    this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
+    this.mode = "Histogram";
     Track.call( this, name, view, view.viewport_container );
     TiledTrack.call( this );
     
@@ -780,7 +788,7 @@ var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.dataset_id = dataset_id;
     this.data_cache = new Cache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
-    this.prefs = { 'min_value': undefined, 'max_value': undefined, 'mode': 'Line' };
+    this.prefs = { 'color': 'black', 'min_value': undefined, 'max_value': undefined, 'mode': this.mode };
     if (prefs.min_value !== undefined) { this.prefs.min_value = prefs.min_value; }
     if (prefs.max_value !== undefined) { this.prefs.max_value = prefs.max_value; }
 };
@@ -806,10 +814,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             track.total_frequency = data.total_frequency;
         
             // Draw y-axis labels if necessary
-            $('#linetrack_' + track_id + '_minval').remove();
-            $('#linetrack_' + track_id + '_maxval').remove();
-            
-            track.container_div.css("position", "relative");
+            track.container_div.find(".yaxislabel").remove();
             
             var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(round_1000(track.prefs.min_value));
             var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(round_1000(track.prefs.max_value));
@@ -886,7 +891,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             mode = this.mode;
             
         ctx.beginPath();
-        
+        ctx.fillStyle = this.prefs.color;
         // for intensity, calculate delta x in pixels to for width of box
         if (data.length > 1) {
             var delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
@@ -896,51 +901,42 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         
         var x_scaled, y;
         
-        for ( var i = 0; i < data.length; i++ ) {
-            x_scaled = (data[i][0] - tile_low) * w_scale;
+        for (var i = 0, len = data.length; i < len; i++) {
+            x_scaled = Math.round((data[i][0] - tile_low) * w_scale);
             y = data[i][1];
+            if (y === null) {
+                if (in_path && mode === "Filled") {
+                    ctx.lineTo(x_scaled, height_px);
+                }
+                in_path = false;
+                continue;
+            }
+            if (y < min_value) {
+                y = min_value;
+            } else if (y > max_value) {
+                y = max_value;
+            }
             
-            if ( mode == "Intensity" ) {
-                // DRAW INTENSITY
-                if (y === null) {
-                    continue;
-                }
-                if (y <= min_value) {
-                    y = min_value;
-                } else if (y >= max_value) {
-                    y = max_value;
-                }
+            if (mode === "Histogram") {
+                y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
+                ctx.fillRect(x_scaled, y, delta_x_px, height_px - y);
+            } else if (mode === "Intensity" ) {
                 y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
                 ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
-                ctx.fillRect(x_scaled, 0, delta_x_px, this.height_px);
-            }
-            else {
-                // Missing data causes us to stop drawing
-                if (y === null) {
-                    if (in_path && mode === "Filled") {
-                        ctx.lineTo(x_scaled, height_px);
-                    }
-                    in_path = false;
-                    continue;
+                ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
+            } else {
+                // console.log(y, this.min_value, this.vertical_range, (y - this.min_value) / this.vertical_range * this.height_px);
+                y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
+                // console.log(canvas.get(0).height, canvas.get(0).width);
+                if (in_path) {
+                    ctx.lineTo(x_scaled, y);
                 } else {
-                    // console.log(y, this.min_value, this.vertical_range, (y - this.min_value) / this.vertical_range * this.height_px);
-                    if (y <= min_value) {
-                        y = min_value;
-                    } else if (y >= max_value) {
-                        y = max_value;
-                    }
-                    y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
-                    // console.log(canvas.get(0).height, canvas.get(0).width);
-                    if (in_path) {
+                    in_path = true;
+                    if (mode === "Filled") {
+                        ctx.moveTo(x_scaled, height_px);
                         ctx.lineTo(x_scaled, y);
                     } else {
-                        in_path = true;
-                        if (mode === "Filled") {
-                            ctx.moveTo(x_scaled, height_px);
-                            ctx.lineTo(x_scaled, y);
-                        } else {
-                            ctx.moveTo(x_scaled, y);
-                        }
+                        ctx.moveTo(x_scaled, y);
                     }
                 }
             }
@@ -958,7 +954,10 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }, gen_options: function(track_id) {
         var container = $("<div />").addClass("form-row");
         
-        var minval = 'track_' + track_id + '_minval',
+        var color = 'track_' + track_id + '_color',
+            color_label = $('<label />').attr("for", color).text("Color:"),
+            color_input = $('<input />').attr("id", color).attr("name", color).val(this.prefs.color),
+            minval = 'track_' + track_id + '_minval',
             min_label = $('<label></label>').attr("for", minval).text("Min value:"),
             min_val = (this.prefs.min_value === undefined ? "" : this.prefs.min_value),
             min_input = $('<input></input>').attr("id", minval).val(min_val),
@@ -967,13 +966,16 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             max_val = (this.prefs.max_value === undefined ? "" : this.prefs.max_value),
             max_input = $('<input></input>').attr("id", maxval).val(max_val);
 
-        return container.append(min_label).append(min_input).append(max_label).append(max_input);
+        return container.append(min_label).append(min_input).append(max_label)
+                .append(max_input).append(color_label).append(color_input);
     }, update_options: function(track_id) {
         var min_value = $('#track_' + track_id + '_minval').val(),
             max_value = $('#track_' + track_id + '_maxval').val();
-        if ( min_value !== this.prefs.min_value || max_value !== this.prefs.max_value ) {
+            color = $('#track_' + track_id + '_color').val();
+        if ( min_value !== this.prefs.min_value || max_value !== this.prefs.max_value || color !== this.prefs.color ) {
             this.prefs.min_value = parseFloat(min_value);
             this.prefs.max_value = parseFloat(max_value);
+            this.prefs.color = color;
             this.vertical_range = this.prefs.max_value - this.prefs.min_value;
             // Update the y-axis
             $('#linetrack_' + track_id + '_minval').text(this.prefs.min_value);
@@ -1199,12 +1201,18 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.fillStyle = block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
+        this.container_div.find(".yaxislabel").remove();
         
-        if (result.dataset_type == "summary_tree") {
+        if (result.dataset_type == "summary_tree") {            
             var points = result.data,
                 max = result.max,
                 avg = result.avg,
                 delta_x_px = Math.ceil(result.delta * w_scale);
+            
+            var max_label = $("<div />").addClass('yaxislabel').text(max);
+            
+            max_label.css({ position: "absolute", top: "22px", left: "10px" });
+            max_label.prependTo(this.container_div);
                 
             for ( var i = 0, len = points.length; i < len; i++ ) {
                 var x = Math.floor( (points[i][0] - tile_low) * w_scale );
