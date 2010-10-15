@@ -197,6 +197,10 @@ class IntegerToolParameter( TextToolParameter ):
                 raise ValueError( "An integer is required" )
         elif self.value is None:
             raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be an integer" )
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        if isinstance( value, int ):
+            value = str( value )
+        return super( IntegerToolParameter, self ).get_html_field( trans=trans, value=value, other_values=other_values )
     def from_html( self, value, trans=None, other_values={} ):
         try: 
             return int( value )
@@ -235,6 +239,10 @@ class FloatToolParameter( TextToolParameter ):
                 raise ValueError( "A real number is required" )
         elif self.value is None:
             raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be a real number" )
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        if isinstance( value, float ):
+            value = str( value )
+        return super( FloatToolParameter, self ).get_html_field( trans=trans, value=value, other_values=other_values )
     def from_html( self, value, trans=None, other_values={} ):
         try: 
             return float( value )
