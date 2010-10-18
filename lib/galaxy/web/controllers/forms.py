@@ -104,7 +104,7 @@ class Forms( BaseController ):
                                                               message='Invalid form',
                                                               status='error' ) )
         return trans.fill_template( '/admin/forms/show_form_read_only.mako',
-                                    form=fdc.latest_form )
+                                    form_definition=fdc.latest_form )
     def __form_types_widget(self, trans, selected='none'):
         form_type_selectbox = SelectField( 'form_type_selectbox' )
         if selected == 'none':
