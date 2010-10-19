@@ -20,7 +20,7 @@
 
     <repeat name="sample_chooser" title="Sample">
       <param name="name" type="text" label="Label" help="Optional" />
-      <param name="a_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="A Column" help="" />
+      <param name="a_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Base A Column" help="" />
       <param name="totals_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Totals Column" help="" />
     </repeat>
 
@@ -60,27 +60,42 @@
     </test>
   </tests>
   <help>
-
-**Example**
+**What it does**
 
 This tool allows you to visualize mutations described in a tabular input file. It generates an SVG image which can be viewed in any web browser.
 
+You will need to specify the position and reference columns in the input file. Then click on the 'Add new Sample' to add samples in the input file that you would like to visualize. For each sample you select, specify the column for base 'A', the totals column and enter a name.
+This tool assumes the columns specifying bases A, C, G, T are placed consecutively and in that order in an input file.
+
+Interactivity: If interactive zoom option is selected, then the resultant image can be zoomed in or out using the scroll mouse wheel and can be panned by dragging the image using left mouse button. 
+
+-----
+
+**General Example**
+
 Given the input file::
   
-                              gm blood                                    gm cheek
   chrM    72      73      G   26394   4       49  0   26447   26398   1   23389   3       45  0   23437   23392   1
   chrM    149     150     T   11      50422   2   96  50531   50435   1   4       45417   1   65  45487   45422   1
   
-You will need to specify the position and reference columns in the input file. Then click on the 'Add new Sample' to add samples in the input file that you would like to visualize. For each sample you select, specify the column for base 'A' and the totals column.
-This tool assumes the columns specifying bases A, C, G, T are placed consecutively and in that order in an input file.
+To visualize the two samples in the input file, the following parameters are selected before running the tool::
+  
+  Position column:        2
+  Reference Base column:  4
+  Sample 1 Label:         gm blood 
+  Sample 1 Base A column: 5 
+  Sample 1 Totals column: 9 
+  Sample 2 Label:         gm cheek 
+  Sample 2 Base A column: 12 
+  Sample 2 Totals column: 16 
 
-Visualization:
+Visualization output:
 
 .. image:: ../static/images/mutation_visualization_example.png 
    :width: 150
    
-Interactivity::
-  If interactive zoom option is selected, then the resultant image can be zoomed in or out using the scroll mouse wheel and can be panned by dragging the image using left mouse button. 
+Here the left-most column represents the position and the background color is the reference base color. Each column on its right describe each sample.
+In the output above, the blue bar is the longest, which means that base A is maximum in position 72 for both the samples.  
 
   </help>
 </tool>
