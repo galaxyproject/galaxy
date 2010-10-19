@@ -74,7 +74,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
     $(function() {
         
         %if config:
-            view = new View( $("#center"), "${config.get('chrom')}", "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
+            view = new View( $("#center"), "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
             view.editor = true;
             %for track in config.get('tracks'):
                 view.add_track(
@@ -84,7 +84,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             init();
         %else:
             var continue_fn = function() {
-                view = new View( $("#center"), undefined, $("#new-title").val(), undefined, $("#new-dbkey").val() );
+                view = new View( $("#center"), $("#new-title").val(), undefined, $("#new-dbkey").val() );
                 view.editor = true;
                 init();
                 hide_modal();

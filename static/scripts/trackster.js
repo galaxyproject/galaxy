@@ -4,8 +4,9 @@
 
 var DENSITY = 200,
     FEATURE_LEVELS = 10,
-    MAX_FEATURE_DEPTH = 100,
-    DATA_ERROR = "There was an error in indexing this dataset. ",
+    MAX_FEATURE_DEPTH = 50,
+    CONNECTOR_COLOR = "#ccc",
+    DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
@@ -75,12 +76,11 @@ $.extend( Cache.prototype, {
     }
 });
 
-var View = function( container, chrom, title, vis_id, dbkey ) {
+var View = function( container, title, vis_id, dbkey ) {
     this.container = container;
     this.vis_id = vis_id;
     this.dbkey = dbkey;
     this.title = title;
-    this.chrom = chrom;
     this.tracks = [];
     this.label_tracks = [];
     this.max_low = 0;
@@ -271,7 +271,7 @@ $.extend( View.prototype, {
         }
         if (chrom !== view.chrom) {
             view.chrom = chrom;
-            if (view.chrom === "") {
+            if (!view.chrom) {
                 // No chrom selected
                 view.intro_div.show();
             } else {
@@ -1203,7 +1203,7 @@ var FeatureTrack = function ( name, view, dataset_id, filters, prefs ) {
     this.data_cache = new Cache(20);
     this.left_offset = 200;
     
-    this.prefs = { 'block_color': 'black', 'label_color': 'black', 'show_counts': true };
+    this.prefs = { 'block_color': '#444', 'label_color': 'black', 'show_counts': true };
     if (prefs.block_color !== undefined) { this.prefs.block_color = prefs.block_color; }
     if (prefs.label_color !== undefined) { this.prefs.label_color = prefs.label_color; }
     if (prefs.show_counts !== undefined) { this.prefs.show_counts = prefs.show_counts; }
@@ -1294,7 +1294,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             
             var j = 0;
             // Try to fit the feature to the first slot that doesn't overlap any other features in that slot
-            while (true) {
+            while (j <= MAX_FEATURE_DEPTH) {
                 var found = true;
                 if (this.s_e_by_tile[level][j] !== undefined) {
                     for (var k = 0, k_len = this.s_e_by_tile[level][j].length; k < k_len; k++) {
@@ -1318,22 +1318,57 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         return highest_slot;
         
     },
-    rect_or_text: function( ctx, w_scale, tile_low, tile_high, feature_start, name, x, x_len, y_center ) {
+    rect_or_text: function( ctx, w_scale, tile_low, tile_high, feature_start, orig_seq, cigar, y_center ) {
         ctx.textAlign = "center";
-        var gap = Math.round(w_scale / 2);
-        if ( (this.mode === "Pack" || this.mode === "Auto") && name !== undefined && w_scale > PX_PER_CHAR) {
-            ctx.fillStyle = this.prefs.block_color;
-            ctx.fillRect(x, y_center + 1, x_len, 9);
-            ctx.fillStyle = "#eee";
-            for (var c = 0, str_len = name.length; c < str_len; c++) {
-                if (feature_start + c >= tile_low && feature_start + c <= tile_high) {
-                    var c_start = Math.floor( Math.max(0, (feature_start + c - tile_low) * w_scale) );
-                    ctx.fillText(name[c], c_start + this.left_offset + gap, y_center + 9);
-                }
+        var cur_offset = 0,
+            gap = Math.round(w_scale / 2);
+        
+        for (cig_id in cigar) {
+            var cig = cigar[cig_id],
+                cig_op = "MIDNSHP"[cig[0]],
+                cig_len = cig[1];
+            
+            if (cig_op === "H" || cig_op === "S") {
+                // Go left if it clips
+                cur_offset -= cig_len;
             }
-        } else {
-            ctx.fillStyle = this.prefs.block_color;
-            ctx.fillRect(x, y_center + 4, x_len, 3);
+            var seq_start = feature_start + cur_offset,
+                s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
+                s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
+                
+            switch (cig_op) {
+                case "S": // Soft clipping
+                case "H": // Hard clipping
+                case "M": // Match
+                    var seq = orig_seq.slice(cur_offset, cig_len);
+                    if ( (this.mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > PX_PER_CHAR) {
+                        ctx.fillStyle = this.prefs.block_color;
+                        ctx.fillRect(s_start + this.left_offset, y_center + 1, s_end - s_start, 9);
+                        ctx.fillStyle = CONNECTOR_COLOR;
+                        for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                            if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
+                                var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
+                                ctx.fillText(seq[c], c_start + this.left_offset + gap, y_center + 9);
+                            }
+                        }
+                    } else {
+                        ctx.fillStyle = this.prefs.block_color;
+                        ctx.fillRect(s_start + this.left_offset, y_center + 4, s_end - s_start, 3);
+                    }
+                    break;
+                case "N": // Skipped bases
+                    ctx.fillStyle = CONNECTOR_COLOR;
+                    ctx.fillRect(s_start + this.left_offset, y_center + 5, s_end - s_start, 1);
+                    break;
+                case "D": // Deletion
+                    ctx.fillStyle = "red";
+                    ctx.fillRect(s_start + this.left_offset, y_center + 4, s_end - s_start, 3);
+                    break;
+                case "P": // TODO: No good way to draw insertions/padding right now, so ignore
+                case "I":
+                    break;
+            }
+            cur_offset += cig_len;
         }
     },
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
@@ -1465,6 +1500,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 feature_start = feature[1],
                 feature_end = feature[2],
                 feature_name = feature[3];
+            
+            if (slots[feature_uid] === undefined) {
+                continue;
+            }
                 
             // Apply filters to feature.
             var hide_feature = false;
@@ -1495,18 +1534,18 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[6][1] - tile_low) * w_scale)) );
                         
                         if (feature[5][1] >= tile_low && feature[5][0] <= tile_high) {
-                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], b1_start + left_offset, b1_end - b1_start, y_center);
+                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], cigar, y_center);
                         }
                         if (feature[6][1] >= tile_low && feature[6][0] <= tile_high) {
-                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[6][0], feature[6][2], b2_start + left_offset, b2_end - b2_start, y_center);
+                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[6][0], feature[6][2], cigar, y_center);
                         }
                         if (b2_start > b1_end) {
-                            ctx.fillStyle = "#999";
+                            ctx.fillStyle = CONNECTOR_COLOR;
                             ctx.fillRect(b1_end + left_offset, y_center + 5, b2_start - b1_end, 1);
                         }
                     } else {
                         ctx.fillStyle = block_color;
-                        this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature_start, feature_name, f_start + left_offset, f_end - f_start, y_center);
+                        this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature_start, feature_name, cigar, y_center);
                     }
                     if (mode !== "Dense" && !no_detail && feature_start > tile_low) {
                         // Draw label

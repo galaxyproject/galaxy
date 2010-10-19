@@ -159,9 +159,11 @@ class TracksController( BaseController, UsesVisualization ):
         vis = session.query( model.Visualization ).get( decoded_id )
         viz_config = self.get_visualization_config( trans, vis )
         
-        # Set config chrom.
-        viz_config[ 'chrom' ] = chrom
-        return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=kwargs.get("dataset_id", None) )
+        new_dataset = kwargs.get("dataset_id", None)
+        if new_dataset is not None:
+            if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
+                new_dataset = None # Already in browser, so don't add
+        return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
 
     @web.json
     def chroms(self, trans, vis_id=None, dbkey=None ):

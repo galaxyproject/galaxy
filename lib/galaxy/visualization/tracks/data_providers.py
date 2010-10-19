@@ -193,20 +193,17 @@ class BamDataProvider( TracksDataProvider ):
                 message = "Only the first %s pairs are being displayed." % MAX_VALS
                 break
             qname = read.qname
-            if no_detail:
-                seq = len(read.seq)
-            else:
-                seq = read.seq
+            seq = read.seq
+            read_len = sum( [cig[1] for cig in read.cigar] ) # Use cigar to determine length
             if read.is_proper_pair:
                 if qname in paired_pending: # one in dict is always first
                     pair = paired_pending[qname]
-                    results.append( [ qname, pair['start'], read.pos + read.rlen, seq, read.cigar, [pair['start'], pair['end'], pair['seq']], [read.pos, read.pos + read.rlen, seq] ] )
-                    # results.append( [read.qname, pair['start'], read.pos + read.rlen, qname, [pair['start'], pair['end']], [read.pos, read.pos + read.rlen] ] )
+                    results.append( [ qname, pair['start'], read.pos + read_len, seq, read.cigar, [pair['start'], pair['end'], pair['seq']], [read.pos, read.pos + read_len, seq] ] )
                     del paired_pending[qname]
                 else:
-                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read.rlen, 'seq': seq, 'mate_start': read.mpos, 'rlen': read.rlen, 'cigar': read.cigar }
+                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos, 'rlen': read_len, 'cigar': read.cigar }
             else:
-                results.append( [qname, read.pos, read.pos + read.rlen, seq, read.cigar] )
+                results.append( [qname, read.pos, read.pos + read_len, seq, read.cigar] )
         # take care of reads whose mates are out of range
         for qname, read in paired_pending.iteritems():
             if read['mate_start'] < read['start']:
