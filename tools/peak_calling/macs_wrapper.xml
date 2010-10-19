@@ -74,22 +74,22 @@
     <param name="futurefdr" label="Perform the new peak detection method (futurefdr)" type="boolean" truevalue="--futurefdr" falsevalue="" checked="False" help="The default method only consider the peak location, 1k, 5k, and 10k regions in the control data; whereas the new future method also consider the 5k, 10k regions in treatment data to calculate local bias."/>
   </inputs>
   <outputs>
-    <data name="output_bed_file" format="bed"/>
-    <data name="output_xls_to_interval_peaks_file" format="interval">
+    <data name="output_bed_file" format="bed" label="${tool.name} on ${on_string} (peaks: bed)"/>
+    <data name="output_xls_to_interval_peaks_file" format="interval" label="${tool.name} on ${on_string} (peaks: interval)">
       <filter>xls_to_interval is True</filter>
     </data>
-    <data name="output_xls_to_interval_negative_peaks_file" format="interval">
+    <data name="output_xls_to_interval_negative_peaks_file" format="interval" label="${tool.name} on ${on_string} (negative peaks: interval)">
       <filter>xls_to_interval is True</filter>
       <filter>input_type['input_control_file1'] is not None</filter>
     </data>
-    <data name="output_treatment_wig_file" format="wig">
+    <data name="output_treatment_wig_file" format="wig" label="${tool.name} on ${on_string} (treatment: wig)">
       <filter>wig_type['wig_type_selector']=='wig'</filter>
     </data>
-    <data name="output_control_wig_file" format="wig">
+    <data name="output_control_wig_file" format="wig" label="${tool.name} on ${on_string} (control: wig)">
       <filter>wig_type['wig_type_selector'] == 'wig'</filter>
       <filter>input_type['input_control_file1'] is not None</filter>
     </data>
-    <data name="output_extra_files" format="html"/>
+    <data name="output_extra_files" format="html" label="${tool.name} on ${on_string} (html report)"/>
   </outputs>
   <configfiles>
     <configfile name="options_file">&lt;%
