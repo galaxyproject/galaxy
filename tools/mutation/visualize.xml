@@ -37,16 +37,42 @@
   <outputs>
     <data format="svg" name="out_file1" />
   </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="mutation_data1.txt" ftype="tabular" />
+      <param name="position_col" value="2" />
+      <param name="ref_col" value="4" />
+      <param name="zoom_value" value="interactive" />
+      <param name="name" value="s1" />
+      <param name="a_col" value="5" />
+      <param name="totals_col" value="9" />
+      <output name="output" file="mutation_data1_interactive.svg" ftype="svg" />
+    </test>
+    <test>
+      <param name="input1" value="mutation_data1.txt" ftype="tabular" />
+      <param name="position_col" value="2" />
+      <param name="ref_col" value="4" />
+      <param name="zoom_value" value="3" />
+      <param name="name" value="s1" />
+      <param name="a_col" value="5" />
+      <param name="totals_col" value="9" />
+      <output name="output" file="mutation_data1_zoom3x.svg" ftype="svg" />
+    </test>
+  </tests>
   <help>
 
 **Example**
 
-    
+This tool allows you to visualize mutations described in a tabular input file. It generates an SVG image which can be viewed in any web browser.
+
 Given the input file::
   
                               gm blood                                    gm cheek
   chrM    72      73      G   26394   4       49  0   26447   26398   1   23389   3       45  0   23437   23392   1
   chrM    149     150     T   11      50422   2   96  50531   50435   1   4       45417   1   65  45487   45422   1
+  
+You will need to specify the position and reference columns in the input file. Then click on the 'Add new Sample' to add samples in the input file that you would like to visualize. For each sample you select, specify the column for base 'A' and the totals column.
+This tool assumes the columns specifying bases A, C, G, T are placed consecutively and in that order in an input file.
 
 Visualization:
 
@@ -54,7 +80,7 @@ Visualization:
    :width: 150
    
 Interactivity::
-  If interactive zoom/pan option is checked then the resultant image can be zoomed in or out: scroll mouse wheel; pan: drag using left mouse button. 
+  If interactive zoom option is selected, then the resultant image can be zoomed in or out using the scroll mouse wheel and can be panned by dragging the image using left mouse button. 
 
   </help>
 </tool>

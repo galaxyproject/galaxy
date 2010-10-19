@@ -367,7 +367,6 @@ if __name__ == '__main__':
     parser.add_option('-z', '--zoom', dest='zoom', action='store', default='1')
     parser.add_option('-p', '--position_col', dest='position_col', action='store', default='c0')
     parser.add_option('-r', '--ref_col', dest='ref_col', action='store', default='c1')
-    #parser.add_option('-n', '--interactive', dest='interactive', action='store_false', default='True')
     (opts, args) = parser.parse_args()
     mainsvg(opts, args)
     sys.exit(1)
