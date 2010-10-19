@@ -19,10 +19,13 @@ class TracksDataProvider( object ):
     """ Base class for tracks data providers. """
     
     """ 
-    Mapping from column name to index in data. This mapping is used to create
-    filters.
+    Mapping from column name to payload data; this mapping is used to create
+    filters. Key is column name, value is a dict with mandatory key 'index' and 
+    optional key 'name'. E.g. this defines column 4
+
+    col_name_data_attr_mapping = {4 : { index: 5, name: 'Score' } }
     """
-    col_name_data_index_mapping = {}
+    col_name_data_attr_mapping = {}
     
     def __init__( self, converted_dataset=None, original_dataset=None ):
         """ Create basic data provider. """
@@ -37,7 +40,7 @@ class TracksDataProvider( object ):
     def get_filters( self ):
         """ 
         Returns filters for provider's data. Return value is a list of 
-        filters; each filter is a dictionary with the keys 'name', 'index', 'value'.
+        filters; each filter is a dictionary with the keys 'name', 'index', 'type'.
         NOTE: This method uses the original dataset's datatype and metadata to 
         create the filters.
         """
@@ -58,17 +61,17 @@ class TracksDataProvider( object ):
             
         # Create and return filters.
         filters = []
-        if self.original_dataset.metadata.viz_filter_columns:
-            for viz_col_index in self.original_dataset.metadata.viz_filter_columns:
+        if self.original_dataset.metadata.viz_filter_cols:
+            for viz_col_index in self.original_dataset.metadata.viz_filter_cols:
                 col_name = column_names[ viz_col_index ]
                 # Make sure that column has a mapped index. If not, do not add filter.
                 try:
-                    index = self.col_name_data_index_mapping[ col_name ]
+                    attrs = self.col_name_data_attr_mapping[ col_name ]
                 except KeyError:
                     continue
                 filters.append(
-                    { 'name' : col_name, 'value' : column_types[viz_col_index], \
-                    'index' : index } )
+                    { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index], \
+                    'index' : attrs[ 'index' ] } )
         return filters
             
 class SummaryTreeDataProvider( TracksDataProvider ):
@@ -119,7 +122,7 @@ class VcfDataProvider( TracksDataProvider ):
     [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score]
     """
 
-    col_name_data_index_mapping = { 'Qual' : 6 }
+    col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
 
     def get_data( self, chrom, start, end, **kwargs ):
         """ Returns data in region defined by chrom, start, and end. """
@@ -153,7 +156,7 @@ class VcfDataProvider( TracksDataProvider ):
                         # alternative base(s)
                         feature[4], \
                         # phred quality score
-                        feature[5] ]
+                        int( feature[5] )]
             results.append(payload)
 
         return { 'data_type' : 'vcf', 'data': results, 'message': message }
@@ -306,6 +309,9 @@ class IntervalIndexDataProvider( TracksDataProvider ):
     
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
+    
+    col_name_data_attr_mapping = { 4 : { 'index': 8 , 'name' : 'Score' } }
+    
     def get_data( self, chrom, start, end, **kwargs ):
         start, end = int(start), int(end)
         source = open( self.original_dataset.file_name )
@@ -355,6 +361,9 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                         block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
                         blocks = zip(block_sizes, block_starts)
                         payload.append( [ (start + block[1], start + block[1] + block[0]) for block in blocks] )
+                        
+                    if length >= 5:
+                        payload.append( int(feature[4]) ) # score
 
             results.append(payload)
 
@@ -375,7 +384,7 @@ dataset_type_name_to_data_provider = {
 }
 
 dataset_type_to_data_provider = {
-    Vcf : VcfDataProvider
+    Vcf : VcfDataProvider,
 }
 
 def get_data_provider( name=None, original_dataset=None ):
@@ -395,11 +404,16 @@ def get_data_provider( name=None, original_dataset=None ):
         # Look for data provider in mapping.
         data_provider = dataset_type_to_data_provider.get( original_dataset.datatype.__class__, None )
         if not data_provider:
-            # If get_track_type is available, then dataset can be added to trackster 
-            # and hence has at least a generic data provider.
+            # Look up data provider from datatype's informaton.
             try:
-                original_dataset.datatype.get_track_type()
-                data_provider = TracksDataProvider
+                # Get data provider mapping and data provider for 'data'. If 
+                # provider available, use it; otherwise use generic provider.
+                _ , data_provider_mapping = original_dataset.datatype.get_track_type()
+                data_provider_name = data_provider_mapping[ 'data' ]
+                if data_provider_name:
+                    data_provider = get_data_provider( name=data_provider_name, original_dataset=original_dataset )
+                else: 
+                    data_provider = TracksDataProvider
             except:
                 pass
     return data_provider

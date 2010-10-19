@@ -10,6 +10,7 @@ var DENSITY = 200,
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
     DATA_LOADING = "Loading data...",
+    FILTERABLE_CLASS = "filterable",
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 30,
     CACHED_DATA = 5,
@@ -448,10 +449,100 @@ $.extend( View.prototype, {
     }
 });
 
-var Track = function (name, view, parent_element) {
+// Generic filter.
+var Filter = function( name, index, value ) {
     this.name = name;
+    this.index = index;
+    this.value = value;
+};
+
+// Number filter for a track.
+var NumberFilter = function( name, index ) {
+    this.name = name;
+    // Index into payload to filter.
+    this.index = index;
+    // Filter low/high. These values are used to filter elements.
+    this.low = Number.MIN_VALUE;
+    this.high = Number.MAX_VALUE;
+    // Slide min/max. These values are used to set/update slider.
+    this.slider_min = Number.MAX_VALUE;
+    this.slider_max = Number.MIN_VALUE;
+    // UI Slider element and label that is associated with filter.
+    this.slider = null;
+    this.slider_label = null;
+};
+$.extend( NumberFilter.prototype, {
+    // Returns true if filter can be applied to element.
+    applies_to: function( element ) {
+        if ( element.length > this.index )
+            return true;
+        return false;
+    },
+    // Returns true iff element is in [low, high]; range is inclusive.
+    keep: function( element ) {
+        if ( !this.applies_to( element ) )
+            // No element to filter on.
+            return true;
+        return ( element[this.index] >= this.low && element[this.index] <= this.high );
+    },
+    // Update filter's min and max values based on element's values.
+    update_attrs: function( element ) {
+        var updated = false;
+        if ( !this.applies_to( element ) ) {
+            return updated;
+        }
+        
+        // Update filter's min, max based on element values.
+        if ( element[this.index] < this.slider_min ) {
+            this.slider_min = element[this.index];
+            updated = true;
+        }
+        if ( element[this.index] > this.slider_max ) {
+            this.slider_max = element[this.index];
+            updated = false;
+        }
+        return updated;
+    },
+    // Update filter's slider.
+    update_ui_elt: function () {
+        var 
+            slider_min = this.slider.slider( "option", "min" ),
+            slider_max = this.slider.slider( "option", "max" );
+        if (this.slider_min < slider_min || this.slider_max > slider_max) {
+            // Need to update slider.        
+            this.slider.slider( "option", "min", this.slider_min );
+            this.slider.slider( "option", "max", this.slider_max );
+            // Refresh slider:
+            // TODO: do we want to keep current values or reset to min/max?
+            // Currently we reset values:
+            this.slider.slider( "option", "values", [ this.slider_min, this.slider_max ] );
+            // To use the current values.
+            //var values = this.slider.slider( "option", "values" );
+            //this.slider.slider( "option", "values", values );
+        }
+    }
+});
+
+// Parse filters dict and return filters.
+var get_filters = function( filters_dict ) {
+    var filters = []
+    for (var i = 0; i < filters_dict.length; i++) {
+        var filter_dict = filters_dict[i];
+        var name = filter_dict['name'], type = filter_dict['type'], index = filter_dict['index'];
+        if ( type == 'int' || type == 'float' ) {
+            filters[i] = new NumberFilter( name, index );
+        }
+        else
+            filters[i] = new Filter( name, index, type );
+    }
+    return filters;
+};
+
+var Track = function (name, view, parent_element, filters) {
+    this.name = name;
+    this.view = view;    
     this.parent_element = parent_element;
-    this.view = view;
+    this.filters = (filters !== undefined ? get_filters( filters ) : []);
     this.init_global();
 };
 $.extend( Track.prototype, {
@@ -462,7 +553,51 @@ $.extend( Track.prototype, {
             if (this.view.editor) { this.drag_div = $("<div class='draghandle' />").appendTo(this.header_div); }
             this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
             this.name_div.text(this.name);
+            this.name_div.attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         }
+        // Create track filtering div.
+        this.filtering_div = $("<div class='track-filters'>").appendTo(this.container_div);
+        this.filtering_div.hide();
+        // Dragging is disabled on div so that actions on slider do not impact viz.
+        this.filtering_div.bind( "drag", function(e) {
+            e.stopPropagation();
+        });
+        var filters_table = $("<table class='filters'>").appendTo(this.filtering_div);
+        var track = this;
+        for (var i = 0; i < this.filters.length; i++) {
+            var filter = this.filters[i];
+            var table_row = $("<tr>").appendTo(filters_table);
+            var filter_th = $("<th class='filter-info'>").appendTo(table_row);
+            var name_span = $("<span class='name'>").appendTo(filter_th);
+            name_span.text(filter.name + "  "); // Extra spacing to separate name and values
+            var values_span = $("<span class='values'>").appendTo(filter_th);
+            values_span.text("[0-2]");
+            // TODO: generate custom interaction elements based on filter type.
+            var table_data = $("<td>").appendTo(table_row);
+            filter.control_element = $("<div id='" + filter.name + "-filter-control' style='width: 200px; position: relative'>").appendTo(table_data);
+            filter.control_element.slider({
+                range: true,
+                min: 0,
+                max: 1,
+                values: [0, 1],
+                slide: function( event, ui ) {
+                    var values = ui.values;
+                    // Set new values in UI.
+                    values_span.text( "[" + values[0] + "-" + values[1] + "]" );
+                    // Set new values in filter.
+                    filter.low = values[0];
+                    filter.high = values[1];                    
+                    // Redraw track.
+                    track.draw( true );
+                },
+                change: function( event, ui ) {
+                    filter.control_element.slider( "option", "slide" ).call( filter.control_element, event, ui );
+                }
+            });
+            filter.slider = filter.control_element;
+            filter.slider_label = values_span;
+        }
+        
         this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
         this.parent_element.append(this.container_div);
     },
@@ -478,7 +613,7 @@ $.extend( Track.prototype, {
             track.content_div.text(DATA_LOADING);
         }
         track.container_div.removeClass("nodata error pending");
-
+        
         if (track.view.chrom) {
             $.getJSON( data_url, params, function (result) {
                 if (!result || result === "error" || result.kind === "error") {
@@ -577,14 +712,30 @@ var TiledTrack = function() {
             "OK": ok_fn
         });
     };
+    if (track.filters.length > 0) {
+        track_dropdown["Show filters"] = function() {
+            // Set option text and toggle filtering div.
+            var menu_option_text;
+            if (!track.filtering_div.is(":visible")) {
+                menu_option_text = "Hide filters";
+                track.filters_visible = true;
+            }
+            else {
+                menu_option_text = "Show filters";
+                track.filters_visible = false;
+            }
+            $("#" + track.name_div.attr("id") + "-menu").find("li").eq(2).text(menu_option_text);
+            track.filtering_div.toggle();
+        };
+    }
     track_dropdown["Remove"] = function() {
         view.remove_track(track);
         if (view.num_tracks === 0) {
             $("#no-tracks").show();
         }
     };
-    make_popupmenu(track.name_div, track_dropdown);
-    
+    track.popup_menu = make_popupmenu(track.name_div, track_dropdown);
+    show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters", false);
     /*
     if (track.overview_check_div === undefined) {
         track.overview_check_div = $("<div class='right-float' />").css("margin-top", "-3px").appendTo(track.header_div);
@@ -604,7 +755,7 @@ var TiledTrack = function() {
     */
 };
 $.extend( TiledTrack.prototype, Track.prototype, {
-    draw: function() {
+    draw: function( force ) {
         var low = this.view.low,
             high = this.view.high,
             range = high - low,
@@ -614,35 +765,54 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             w_scale = this.content_div.width() / range,
             tile_element;
 
-        this.content_div.children( ":first" ).remove();
         this.content_div.append( parent_element ),
         this.max_height = 0;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
+        // A list of setTimeout() ids used when drawing tiles.
+        var draw_tile_ids = new Object();
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
             var key = this.content_div.width() + '_' + w_scale + '_' + tile_index;
             var cached = this.tile_cache.get(key);
-            if ( cached ) {
-                // console.log("cached tile " + tile_index);
+            if ( !force && cached ) {
                 var tile_low = tile_index * DENSITY * resolution;
                 var left = ( tile_low - low ) * w_scale;
                 if (this.left_offset) {
                     left -= this.left_offset;
                 }
                 cached.css({ left: left });
-                // Our responsibility to move the element to the new parent
-                parent_element.append( cached );
-                this.max_height = Math.max( this.max_height, cached.height() );
-                this.content_div.css("height", this.max_height + "px");
+                this.show_tile( cached, parent_element );
             } else {
-                this.delayed_draw(this, key, low, high, tile_index, resolution, parent_element, w_scale);
+                this.delayed_draw(this, key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids);
             }
             tile_index += 1;
         }
-    }, delayed_draw: function(track, key, low, high, tile_index, resolution, parent_element, w_scale) {
+                
+        //
+        // Actions to take after new tiles have been loaded/drawn:
+        // (1) remove old tile(s);
+        // (2) update filtering UI elements.
+        //
+        var track = this;
+        var intervalId = setInterval(function() {
+            if ( draw_tile_ids.length != 0 ) {
+                // Add drawing has finished; if there is more than one child in the content div, 
+                // remove the first one, which is the oldest.
+                if ( track.content_div.children().length > 1 ) {
+                    track.content_div.children( ":first" ).remove();
+                }
+                    
+                // Update filtering UI.
+                for (var f = 0; f < track.filters.length; f++)
+                    track.filters[f].update_ui_elt();
+                // Method complete; do not call it again.
+                clearInterval(intervalId);
+            }
+        }, 50);
+    }, delayed_draw: function(track, key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids) {
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
-        setTimeout(function() {
+        var id = setTimeout(function() {
             if ( !(low > track.view.high || high < track.view.low) ) {
                 tile_element = track.draw_tile( resolution, tile_index, parent_element, w_scale );
                 if (tile_element) {
@@ -655,12 +825,36 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                         tgt_ctx.putImageData(data, 0, 0);
                         track.set_overview();
                     }
+                    // Add tile to cache and show tile.
                     track.tile_cache.set(key, tile_element);
-                    track.max_height = Math.max( track.max_height, tile_element.height() );
-                    track.content_div.css("height", track.max_height + "px");
+                    track.show_tile( tile_element, parent_element )
                 }
             }
+            // Remove setTimeout id.
+            delete draw_tile_ids.id;
         }, 50);
+        draw_tile_ids.id = true;
+    }, 
+    // Show track tile and perform associated actions.
+    show_tile: function( tile_element, parent_element ) {
+        // Readability.
+        var track = this;
+        
+        // Setup and show tile element.
+        parent_element.append( tile_element );
+        track.max_height = Math.max( track.max_height, tile_element.height() );
+        track.content_div.css("height", track.max_height + "px");
+
+        // Show/hide filters based on whether tile is filterable.
+        if ( tile_element.hasClass(FILTERABLE_CLASS) ) {
+            show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters");
+            if (track.filters_visible)
+                    track.filtering_div.show();
+        }
+        else {
+            show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters", false);
+            track.filtering_div.hide();
+        }
     }, set_overview: function() {
         var view = this.view;
         
@@ -986,10 +1180,10 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var FeatureTrack = function ( name, view, dataset_id, prefs ) {
+var FeatureTrack = function ( name, view, dataset_id, filters, prefs ) {
     this.track_type = "FeatureTrack";
     this.display_modes = ["Auto", "Dense", "Squish", "Pack"];
-    Track.call( this, name, view, view.viewport_container );
+    Track.call( this, name, view, view.viewport_container, filters );
     TiledTrack.call( this );
     
     this.height_px = 0;
@@ -1245,6 +1439,24 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             ctx.fillText(result.message, 100 + left_offset, y_scale);
         }
         
+        //
+        // We're now working at the level of individual data points.
+        //
+        
+        // See if tile is filterable. If so, add class.
+        var filterable = false;
+        if ( result.data.length != 0 ) {
+            filterable = true;
+            for (var f = 0; f < this.filters.length; f++)
+                if ( !this.filters[f].applies_to( result.data[0] ) ) {
+                    filterable = false;
+                }
+        }
+        if ( filterable ) {
+            new_canvas.addClass(FILTERABLE_CLASS);
+        }
+        
+        // Draw data points.
         var data = result.data;
         var j = 0;
         for (var i = 0, len = data.length; i < len; i++) {
@@ -1253,6 +1465,20 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 feature_start = feature[1],
                 feature_end = feature[2],
                 feature_name = feature[3];
+                
+            // Apply filters to feature.
+            var hide_feature = false;
+            var filter;
+            for (var f = 0; f < this.filters.length; f++) {
+                filter = this.filters[f];
+                filter.update_attrs( feature );
+                if ( !filter.keep( feature ) ) {
+                    hide_feature = true;
+                    break;
+                }
+            }
+            if ( hide_feature )
+                continue;
                 
             if (feature_start <= tile_high && feature_end >= tile_low) {
                 var f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
@@ -1374,6 +1600,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         }                        
                     }
                 } else if (result.dataset_type === 'vcf') {
+                    // VCF track.
                     if (no_detail) {
                         ctx.fillStyle = block_color;
                         ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
@@ -1414,7 +1641,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 j++;
             }
         }
-        parent_element.append(new_canvas);
         return new_canvas;
     }, gen_options: function(track_id) {
         var container = $("<div />").addClass("form-row");
@@ -1446,8 +1672,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var ReadTrack = function ( name, view, dataset_id, prefs ) {
-    FeatureTrack.call( this, name, view, dataset_id, prefs );
+var ReadTrack = function ( name, view, dataset_id, filters, prefs ) {
+    FeatureTrack.call( this, name, view, dataset_id, filters, prefs );
     this.track_type = "ReadTrack";
     this.vertical_detail_px = 10;
     this.vertical_nodetail_px = 5;

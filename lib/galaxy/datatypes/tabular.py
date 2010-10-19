@@ -469,7 +469,7 @@ class Vcf( Tabular ):
     
     MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
-    MetadataElement( name="viz_filter_columns", default=[5] )
+    MetadataElement( name="viz_filter_cols", default=[5], param=metadata.ColumnParameter, multiple=True )
     
     def sniff( self, filename ):
         try:

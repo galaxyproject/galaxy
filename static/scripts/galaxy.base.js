@@ -90,6 +90,20 @@ function make_popupmenu( button_element, options ) {
            .appendTo( "body" )
            .hide();
     attach_popupmenu( button_element, wrapper );
+    return menu_element;
+}
+
+// Toggle popup menu options using regular expression on option names.
+function show_hide_popupmenu_options( menu, option_name_re, show ) {
+    var show = (show === undefined ? true : show );
+    var re = new RegExp(option_name_re);
+    $(menu).find("li").each( function() {
+        if ( re.exec( $(this).text() ) )
+            if (show)
+                $(this).show();
+            else
+                $(this).hide();
+    });
 }
 
 function make_popup_menus() {

@@ -12,7 +12,7 @@
 <%def name="stylesheets()">
 ${parent.stylesheets()}
 
-${h.css( "history", "autocomplete_tagging", "trackster" )}
+${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom" )}
 
 <style type="text/css">
     #center {
@@ -33,6 +33,17 @@ ${h.css( "history", "autocomplete_tagging", "trackster" )}
         width: 100%;
         left: 0;
         bottom: 0;
+    }
+    # Styles for filters.
+    .filter-name {
+        float: left;
+    }
+    table.filters {
+        border-collapse: separate;
+        border-spacing: 7px 0px;
+    }
+    .values {
+        padding-right: 1em;
     }
 </style>
 </%def>
@@ -67,7 +78,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             view.editor = true;
             %for track in config.get('tracks'):
                 view.add_track(
-                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['prefs']} )
+                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['filters']}, ${track['prefs']} )
                 );
             %endfor
             init();
@@ -134,7 +145,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             var add_async_success = function(track_data) {
                 var td = track_data,
 					track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
-					new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs);
+					new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.filters, track_data.prefs);
 					
                 view.add_track(new_track);
                 view.has_changes = true;
