@@ -1,4 +1,4 @@
-<tool id="cufflinks" name="Cufflinks" version="0.8.3">
+<tool id="cufflinks" name="Cufflinks" version="0.9.1">
     <description>transcript assembly and FPKM (RPKM) estimates for RNA-Seq data</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>

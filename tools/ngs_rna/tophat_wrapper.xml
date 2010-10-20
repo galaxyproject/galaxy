@@ -1,4 +1,4 @@
-<tool id="tophat" name="Tophat" version="1.0.14">
+<tool id="tophat" name="Tophat" version="1.1.1">
     <description>Find splice junctions using RNA-seq data</description>
     <requirements>
         <requirement type="package">tophat</requirement>
