@@ -258,6 +258,9 @@ def add_file( dataset, registry, json_file, output_path ):
             # See if we have a zip archive
             is_zipped = check_zip( dataset.path )
             if is_zipped:
+                CHUNK_SIZE = 2**20 # 1Mb
+                uncompressed = None
+                uncompressed_name = None
                 unzipped = False
                 z = zipfile.ZipFile( dataset.path )
                 for name in z.namelist():
@@ -267,18 +270,28 @@ def add_file( dataset, registry, json_file, output_path ):
                         stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
                         break
                     fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_zip_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
-                    try:
-                        outfile = open( uncompressed, 'wb' )
-                        outfile.write( z.read( name ) )
-                        outfile.close()
-                        shutil.move( uncompressed, dataset.path )
-                        dataset.name = name
-                        unzipped = True
-                    except IOError:
-                        os.close( fd )
-                        os.remove( uncompressed )
-                        file_err( 'Problem decompressing zipped data', dataset, json_file )
-                        return
+                    zipped_file = z.open( name )
+                    while 1:
+                        try:
+                            chunk = zipped_file.read( CHUNK_SIZE )
+                        except IOError:
+                            os.close( fd )
+                            os.remove( uncompressed )
+                            file_err( 'Problem decompressing zipped data', dataset, json_file )
+                            return
+                        if not chunk:
+                            break
+                        os.write( fd, chunk )
+                    os.close( fd )
+                    zipped_file.close()
+                    uncompressed_name = name
+                    unzipped = True
+                z.close()
+                # Replace the zipped file with the decompressed file
+                if uncompressed is not None:
+                    shutil.move( uncompressed, dataset.path )
+                    dataset.name = uncompressed_name
+                data_type = 'zip'
         if not data_type:
             if check_binary( dataset.path ):
                 # We have a binary dataset, but it is not Bam, Sff or Pdf
