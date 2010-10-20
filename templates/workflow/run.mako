@@ -119,7 +119,7 @@ from galaxy.jobs.actions.post import ActionBox
     </div>
 </%def>
 
-<h2>Running workflow "${workflow.name}"</h2>
+<h2>Running workflow "${h.to_unicode( workflow.name )}"</h2>
 
 %if has_upgrade_messages:
 <div class="warningmessage">
@@ -130,7 +130,7 @@ from galaxy.jobs.actions.post import ActionBox
 %endif
 
 <form id="tool_form" name="tool_form" method="POST">
-## <input type="hidden" name="workflow_name" value="${workflow.name | h}" />
+## <input type="hidden" name="workflow_name" value="${h.to_unicode( workflow.name ) | h}" />
 %for i, step in enumerate( steps ):    
     %if step.type == 'tool' or step.type is None:
       <% tool = app.toolbox.tools_by_id[step.tool_id] %>
@@ -153,7 +153,7 @@ from galaxy.jobs.actions.post import ActionBox
 		% if step.annotations:
 			<hr/>
 			<div class='form-row'>
-			<label>Annotation:</label> ${step.annotations[0].annotation}
+			<label>Annotation:</label> ${h.to_unicode( step.annotations[0].annotation )}
 			</div>
 		% endif
           </div>
