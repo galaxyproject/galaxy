@@ -1,12 +1,15 @@
 '''
 2010, Kanwei Li
 Summary tree data structure for aggregation
+
+10/20/2010: Changed version to 2 as we no longer look at bottom level, for better performance
 '''
 
 import sys, os
 import cPickle
 
-VERSION = 1
+VERSION = 2
+MIN_LEVEL = 2
 
 class SummaryTree:
     def __init__(self, block_size, levels, draw_cutoff, detail_cutoff):
@@ -27,11 +30,11 @@ class SummaryTree:
         else:
             blocks = self.chrom_blocks[chrom] = {}
             self.chrom_stats[chrom] = {}
-            for level in range(1, self.levels+1):
+            for level in range(MIN_LEVEL, self.levels+1):
                 blocks[level] = {}
             
            
-        for level in range(1, self.levels+1):
+        for level in range(MIN_LEVEL, self.levels+1):
             block_level = blocks[level]
             starting_block = self.find_block(start, level)
             ending_block = self.find_block(end, level)
@@ -45,7 +48,7 @@ class SummaryTree:
         ''' Checks for cutoff and only stores levels above it '''
         for chrom, blocks in self.chrom_blocks.iteritems():
             cur_best = 999
-            for level in range(self.levels, 0, -1):
+            for level in range(self.levels, MIN_LEVEL-1, -1):
                 max_val = max(blocks[level].values())
                 if max_val < self.draw_cutoff:
                     if "draw_level" not in self.chrom_stats[chrom]:
