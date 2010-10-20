@@ -462,11 +462,11 @@ var NumberFilter = function( name, index ) {
     // Index into payload to filter.
     this.index = index;
     // Filter low/high. These values are used to filter elements.
-    this.low = Number.MIN_VALUE;
+    this.low = -Number.MAX_VALUE;
     this.high = Number.MAX_VALUE;
     // Slide min/max. These values are used to set/update slider.
     this.slider_min = Number.MAX_VALUE;
-    this.slider_max = Number.MIN_VALUE;
+    this.slider_max = -Number.MAX_VALUE;
     // UI Slider element and label that is associated with filter.
     this.slider = null;
     this.slider_label = null;
@@ -571,15 +571,14 @@ $.extend( Track.prototype, {
             var name_span = $("<span class='name'>").appendTo(filter_th);
             name_span.text(filter.name + "  "); // Extra spacing to separate name and values
             var values_span = $("<span class='values'>").appendTo(filter_th);
-            values_span.text("[0-2]");
             // TODO: generate custom interaction elements based on filter type.
             var table_data = $("<td>").appendTo(table_row);
             filter.control_element = $("<div id='" + filter.name + "-filter-control' style='width: 200px; position: relative'>").appendTo(table_data);
             filter.control_element.slider({
                 range: true,
-                min: 0,
-                max: 1,
-                values: [0, 1],
+                min: Number.MAX_VALUE,
+                max: -Number.MIN_VALUE,
+                values: [0, 0],
                 slide: function( event, ui ) {
                     var values = ui.values;
                     // Set new values in UI.
@@ -804,8 +803,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 }
                     
                 // Update filtering UI.
-                for (var f = 0; f < track.filters.length; f++)
+                for (var f = 0; f < track.filters.length; f++) {
                     track.filters[f].update_ui_elt();
+                }
                 // Method complete; do not call it again.
                 clearInterval(intervalId);
             }
