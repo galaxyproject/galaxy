@@ -263,8 +263,8 @@ def mainsvg(opts, args):
     # display legend
     for i, b in enumerate( bases ):
         bt = svg.SVG("tspan", b, style="font-family:Verdana;font-size:20%")
-        s.append(svg.SVG("text", bt, x=12+(i*10), y=4, stroke="none", fill="black"))
-        s.append(svg.SVG("rect", x=14+(i*10), y=1, width=4, height=3, 
+        s.append(svg.SVG("text", bt, x=12+(i*10), y=3, stroke="none", fill="black"))
+        s.append(svg.SVG("rect", x=14+(i*10), y=0, width=4, height=3, 
                          stroke="none", fill=colors[b], fill_opacity=0.5))
 
     reader = open(opts.input_file, 'U')
