@@ -1038,7 +1038,7 @@
                     <label>Annotation / Notes:</label>
                     <div id="workflow-annotation" class="tooltip editable-text" original-title="Click to edit annotation">
                     %if annotation:
-                        ${annotation | h}
+                        ${h.to_unicode( annotation ) | h}
                     %else:
                         <em>Describe or add notes to workflow</em>
                     %endif

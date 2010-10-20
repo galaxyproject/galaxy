@@ -378,7 +378,7 @@ div.form-row {
    	        <div id="history-annotation-container">
 		    <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
     		    %if annotation:
-                    ${annotation | h}
+                    ${h.to_unicode( annotation ) | h}
                 %else:
                     <em>Describe or add notes to history</em>
                 %endif
