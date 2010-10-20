@@ -97,7 +97,6 @@
             padding: 8px 5px 5px;
             min-width: 500px; 
             border: none;
-            border-collapse: separate;
         }
         .page-body caption { 
             text-align: left;
