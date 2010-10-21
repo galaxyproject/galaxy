@@ -212,7 +212,7 @@ class IntegerToolParameter( TextToolParameter ):
         if self.value:
             return int( self.value )
         else:
-            return 0
+            return None
             
 class FloatToolParameter( TextToolParameter ):
     """
@@ -254,7 +254,7 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( self.value )
         except:
-            return float( 0 )
+            return None
 
 class BooleanToolParameter( ToolParameter ):
     """
