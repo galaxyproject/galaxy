@@ -3,7 +3,7 @@
     <requirements>
         <requirement type="package">taxonomy</requirement>
     </requirements>
-    <command>taxonomy2tree $input 0 /dev/null $out_file1 0 &amp;&gt; /dev/null</command>
+    <command>taxonomy2tree $input 0 /dev/null $out_file1 0</command>
     <inputs>
         <param format="taxonomy" name="input" type="data" label="Summarize taxonomic representation for"/>
     </inputs>
