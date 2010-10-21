@@ -587,12 +587,14 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         rval = self.template_context[name] = FormData()
         rval.values.update( kwargs )
         return rval
-    def set_message( self, message ):
+    def set_message( self, message, type=None ):
         """
-        Convenience method for setting the 'message' element of the template
-        context.
+        Convenience method for setting the 'message' and 'message_type' 
+        element of the template context.
         """
         self.template_context['message'] = message
+        if type:
+            self.template_context['status'] = type
     def get_message( self ):
         """
         Convenience method for getting the 'message' element of the template

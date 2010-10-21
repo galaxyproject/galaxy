@@ -1077,13 +1077,16 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Create workflow.
         workflow = self._workflow_from_dict( trans, data, source="uploaded file" ).latest_workflow
         
-        # Provide user feedback.
+        # Provide user feedback and show workflow list.
         if workflow.has_errors:
-            return trans.show_warn_message( "Imported, but some steps in this workflow have validation errors" )
+            trans.set_message( "Imported, but some steps in this workflow have validation errors", 
+                                type="warning" )
         if workflow.has_cycles:
-            return trans.show_warn_message( "Imported, but this workflow contains cycles" )
+            trans.set_message( "Imported, but this workflow contains cycles",
+                                type="warning" )
         else:
-            return trans.show_message( "Workflow '%s' imported" % workflow.name )
+            trans.set_message( "Workflow '%s' imported" % workflow.name )
+        return self.list( trans )
         
     @web.json
     def get_datatypes( self, trans ):

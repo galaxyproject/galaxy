@@ -17,12 +17,12 @@
             %if message:
             <%
                 try:
-                    messagetype
+                    status
                 except:
-                    messagetype = "done"
+                    status = "done"
             %>
             <p />
-            <div class="${messagetype}message">
+            <div class="${status}message">
                 ${h.to_unicode( message )}
             </div>
             %endif
@@ -34,6 +34,12 @@
                     <a class="action-button" href="${h.url_for( action='create' )}">
                         <img src="${h.url_for('/static/images/silk/add.png')}" />
                         <span>Create new workflow</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="action-button" href="${h.url_for( action='import_workflow' )}">
+                        <img src="${h.url_for('/static/images/fugue/arrow-090.png')}" />
+                        <span>Upload or import workflow</span>
                     </a>
                 </li>
             </ul>
