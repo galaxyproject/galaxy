@@ -143,8 +143,10 @@ class UsesVisualization( SharableItemSecurity ):
     def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a Visualization from the database by id, verifying ownership. """
         # Load workflow from database
-        id = trans.security.decode_id( id )
-        visualization = trans.sa_session.query( trans.model.Visualization ).get( id )
+        try:
+            visualization = trans.sa_session.query( trans.model.Visualization ).get( trans.security.decode_id( id ) )
+        except TypeError:
+            visualization = None
         if not visualization:
             error( "Visualization not found" )
         else:
@@ -191,12 +193,14 @@ class UsesStoredWorkflow( SharableItemSecurity ):
     def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a StoredWorkflow from the database by id, verifying ownership. """
         # Load workflow from database
-        id = trans.security.decode_id( id )
-        stored = trans.sa_session.query( trans.model.StoredWorkflow ).get( id )
-        if not stored:
+        try:
+            workflow = trans.sa_session.query( trans.model.StoredWorkflow ).get( trans.security.decode_id( id ) )
+        except TypeError:
+            workflow = None
+        if not workflow:
             error( "Workflow not found" )
         else:
-            return self.security_check( trans.get_user(), stored, check_ownership, check_accessible )
+            return self.security_check( trans.get_user(), workflow, check_ownership, check_accessible )
     def get_stored_workflow_steps( self, trans, stored_workflow ):
         """ Restores states for a stored workflow's steps. """
         for step in stored_workflow.latest_workflow.steps:
@@ -224,10 +228,12 @@ class UsesHistory( SharableItemSecurity ):
     def get_history( self, trans, id, check_ownership=True, check_accessible=False ):
         """Get a History from the database by id, verifying ownership."""
         # Load history from database
-        id = trans.security.decode_id( id )
-        history = trans.sa_session.query( trans.model.History ).get( id )
+        try:
+            history = trans.sa_session.query( trans.model.History ).get( trans.security.decode_id( id ) )
+        except TypeError:
+            history = None
         if not history:
-            err+msg( "History not found" )
+            error( "History not found" )
         else:
             return self.security_check( trans.get_user(), history, check_ownership, check_accessible )
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False):
