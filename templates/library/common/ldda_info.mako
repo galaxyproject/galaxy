@@ -120,6 +120,8 @@
                     if isinstance( metadata_val, trans.model.MetadataFile ):
                         metadata_val = metadata_val.file_name
                     elif isinstance( metadata_val, list ):
+                        # Make sure list items are strings
+                        metadata_val = [ str( item ) for item in metadata_val ]
                         metadata_val = ', '.join( metadata_val )
                 %>
                 ${metadata_val}
