@@ -36,6 +36,8 @@ class ToolParameter( object ):
         self.html = "no html set"
         self.repeat = param.get("repeat", None)
         self.condition = param.get( "condition", None )
+        # Optional DataToolParameters are used in tools like GMAJ and LAJ
+        self.optional = string_as_bool( param.get( 'optional', False ) )
         self.validators = []
         for elem in param.findall("validator"):
             self.validators.append( validation.Validator.from_element( self, elem ) )
@@ -131,7 +133,11 @@ class ToolParameter( object ):
         return value
         
     def to_param_dict_string( self, value, other_values={} ):
-        value = str( value )
+        """Called via __str__ when used in the Cheetah template"""
+        if value is None:
+            value = ""
+        else:
+            value = str( value )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
                 value = self.sanitizer.sanitize_param( value )
@@ -140,6 +146,8 @@ class ToolParameter( object ):
         return value
         
     def validate( self, value, history=None ):
+        if value=="" and self.optional:
+            return
         for validator in self.validators:
             validator.validate( value, history )
 
@@ -226,9 +234,22 @@ class IntegerToolParameter( TextToolParameter ):
         try: 
             return int( value )
         except: 
+            if not value and self.optional:
+                return ""
             raise ValueError( "An integer is required" )
+    def to_string( self, value, app ):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            return ""
+        else:
+            return str( value )
     def to_python( self, value, app ):
-        return int( value )
+        try:
+            return int( value )
+        except Exception, err:
+            if not value and self.optional:
+                return None
+            raise err
     def get_initial_value( self, trans, context ):
         if self.value:
             return int( self.value )
@@ -281,10 +302,23 @@ class FloatToolParameter( TextToolParameter ):
     def from_html( self, value, trans=None, other_values={} ):
         try: 
             return float( value )
-        except: 
+        except:
+            if not value and self.optional:
+                return ""
             raise ValueError( "A real number is required" )
+    def to_string( self, value, app ):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            return ""
+        else:
+            return str( value )
     def to_python( self, value, app ):
-        return float( value )
+        try:
+            return float( value )
+        except Exception, err:
+            if not value and self.optional:
+                return None
+            raise err
     def get_initial_value( self, trans, context ):
         try:
             return float( self.value )
@@ -1259,8 +1293,6 @@ class DataToolParameter( ToolParameter ):
                 formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )
         self.multiple = string_as_bool( elem.get( 'multiple', False ) )
-        # Optional DataToolParameters are used in tools like GMAJ and LAJ
-        self.optional = string_as_bool( elem.get( 'optional', False ) )
         # TODO: Enhance dynamic options for DataToolParameters. Currently,
         #       only the special case key='build' of type='data_meta' is
         #       a valid filter
