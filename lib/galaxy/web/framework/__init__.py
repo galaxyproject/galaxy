@@ -631,8 +631,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         Convenience method for displaying a simple page with a single HTML
         form.
-        """    
-        return self.fill_template( template, form=form, header=header, use_panels=use_panels, active_view=active_view )
+        """
+        return self.fill_template( template, form=form, header=header, use_panels=( form.use_panels or use_panels ), 
+                                    active_view=active_view )
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
@@ -725,12 +726,13 @@ class FormBuilder( object ):
     """
     Simple class describing an HTML form
     """
-    def __init__( self, action="", title="", name="form", submit_text="submit" ):
+    def __init__( self, action="", title="", name="form", submit_text="submit", use_panels=False ):
         self.title = title
         self.name = name
         self.action = action
         self.submit_text = submit_text
         self.inputs = []
+        self.use_panels = use_panels
     def add_input( self, type, name, label, value=None, error=None, help=None, use_label=True  ):
         self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )
         return self
