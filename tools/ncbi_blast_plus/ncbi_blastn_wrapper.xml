@@ -27,6 +27,7 @@ $adv_opts.strand
 -word_size $adv_opts.word_size
 #end if
 $adv_opts.ungapped
+$adv_opts.parse_deflines
 ## End of advanced options:
 #end if
     </command>
@@ -99,6 +100,7 @@ $adv_opts.ungapped
                     <validator type="in_range" min="0" />
                 </param>
                 <param name="ungapped" type="boolean" label="Perform ungapped alignment only?" truevalue="-ungapped" falsevalue="" checked="false" />
+                <param name="parse_deflines" type="boolean" label="Should the query and subject defline(s) be parsed?" truevalue="-parse_deflines" falsevalue="" checked="false" help="This affects the formatting of the query/subject ID strings"/>
             </when>
         </conditional>
     </inputs>

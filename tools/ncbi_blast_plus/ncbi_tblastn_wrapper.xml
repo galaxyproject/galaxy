@@ -27,6 +27,7 @@ $adv_opts.matrix
 #end if
 ##Ungapped disabled for now - see comments below
 ##$adv_opts.ungapped
+$adv_opts.parse_deflines
 ## End of advanced options:
 #end if
     </command>
@@ -99,6 +100,7 @@ $adv_opts.matrix
                 Tried using '-ungapped -comp_based_stats F' and tblastn crashed with 'Attempt to access NULL pointer.'
                 <param name="ungapped" type="boolean" label="Perform ungapped alignment only?" truevalue="-ungapped -comp_based_stats F" falsevalue="" checked="false" />
                 -->
+                <param name="parse_deflines" type="boolean" label="Should the query and subject defline(s) be parsed?" truevalue="-parse_deflines" falsevalue="" checked="false" help="This affects the formatting of the query/subject ID strings"/>
             </when>
         </conditional>
     </inputs>
