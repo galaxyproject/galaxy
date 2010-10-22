@@ -1741,7 +1741,7 @@ class Tool:
                 # Move data from temp location to dataset location
                 shutil.move( filename, primary_data.file_name )
                 primary_data.set_size()
-                primary_data.name = outdata.name
+                primary_data.name = "%s (%s)" % ( outdata.name, designation )
                 primary_data.info = outdata.info
                 primary_data.init_meta( copy_from=outdata )
                 primary_data.dbkey = dbkey
