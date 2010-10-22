@@ -22,8 +22,8 @@
     
     ${parent.javascripts()}
     
-    <!--[if IE]>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"> </script>
+    <!--[if lt IE 9]>
+      <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
     <![endif]-->
 
     ${h.js( "jquery",

@@ -1,3 +1,15 @@
+// IE doesn't implement Array.indexOf
+if (!Array.indexOf) {
+    Array.prototype.indexOf = function(obj) {
+        for (var i = 0, len = this.length; i < len; i++) {
+            if (this[i] == obj) {
+                return i;
+            }
+        }
+        return -1;
+    }
+}
+
 // Returns the number of keys (elements) in an array/dictionary.
 function obj_length(obj) {
     if (obj.length !== undefined) {
