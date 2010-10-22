@@ -21,10 +21,11 @@
     <repeat name="sample_chooser" title="Sample">
       <param name="name" type="text" label="Label" help="Optional" />
       <param name="a_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Base A Column" help="" />
-      <param name="totals_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Totals Column" help="" />
+      <param name="totals_col" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Coverage Column" help="" />
     </repeat>
 
     <param name="zoom_value" type="select" label="Zoom">
+        <option value="interactive">Interactive</option>
         <option value="1">1x</option>
         <option value="2">2x</option>
         <option value="3">3x</option>
@@ -35,7 +36,6 @@
         <option value="8">8x</option>
         <option value="9">9x</option>
         <option value="10">10x</option>
-        <option value="interactive">Interactive</option>
     </param>
     
   </inputs>
