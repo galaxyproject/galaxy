@@ -12,6 +12,7 @@ from galaxy import eggs
 
 eggs.require( "nose" )
 eggs.require( "NoseHTML" )
+eggs.require( "NoseTestDiff" )
 eggs.require( "twill==0.9" )
 eggs.require( "Paste" )
 eggs.require( "PasteDeploy" )
