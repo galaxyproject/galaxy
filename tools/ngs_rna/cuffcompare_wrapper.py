@@ -42,13 +42,15 @@ def __main__():
         
     # Add input files.
         
-    # Need to symlink inputs so that output files are written to temp directory.
-    input1_file_name = tmp_output_dir + "/input1"
+    # Need to symlink inputs so that output files are written to temp directory. 
+    # Also need an extension for input file names so that cuffcompare produces
+    # output files properly.
+    input1_file_name = os.path.join( tmp_output_dir, "input1.gtf" )
     os.symlink( options.input1,  input1_file_name )
     cmd += " %s" % input1_file_name
     two_inputs = ( options.input2 != None)
     if two_inputs:
-        input2_file_name = tmp_output_dir + "/input2"
+        input2_file_name = os.path.join( tmp_output_dir, "input2.gtf" )
         os.symlink( options.input2, input2_file_name )
         cmd += " %s" % input2_file_name
     
@@ -78,7 +80,8 @@ def __main__():
             raise Exception, stderr
             
         # check that there are results in the output file
-        if len( open( tmp_output_dir + "/cc_output", 'rb' ).read().strip() ) == 0:
+        cc_output_fname = os.path.join( tmp_output_dir, "cc_output")
+        if len( open( cc_output_fname, 'rb' ).read().strip() ) == 0:
             raise Exception, 'The main output file is empty, there may be an error with your input file or settings.'
     except Exception, e:
         stop_err( 'Error running cuffcompare. ' + str( e ) )
@@ -86,14 +89,14 @@ def __main__():
     # Copy output files from tmp directory to specified files.
     try:
         try:
-            shutil.copyfile( tmp_output_dir + "/cc_output", options.transcripts_accuracy_output_file )
-            shutil.copyfile( tmp_output_dir + "/input1.tmap", options.input1_tmap_output_file )
-            shutil.copyfile( tmp_output_dir + "/input1.refmap", options.input1_refmap_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "cc_output" ), options.transcripts_accuracy_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "input1.tmap" ), options.input1_tmap_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "input1.refmap" ), options.input1_refmap_output_file )
             if two_inputs:
-                shutil.copyfile( tmp_output_dir + "/cc_output.combined.gtf", options.transcripts_combined_output_file )
-                shutil.copyfile( tmp_output_dir + "/cc_output.tracking", options.transcripts_tracking_output_file )
-                shutil.copyfile( tmp_output_dir + "/input2.tmap", options.input2_tmap_output_file )
-                shutil.copyfile( tmp_output_dir + "/input2.refmap", options.input2_refmap_output_file )
+                shutil.copyfile( os.path.join( tmp_output_dir, "cc_output.combined.gtf" ), options.transcripts_combined_output_file )
+                shutil.copyfile( os.path.join( tmp_output_dir, "cc_output.tracking" ), options.transcripts_tracking_output_file )
+                shutil.copyfile( os.path.join( tmp_output_dir, "input2.tmap" ), options.input2_tmap_output_file )
+                shutil.copyfile( os.path.join( tmp_output_dir, "input2.refmap" ), options.input2_refmap_output_file )
         except Exception, e:
             stop_err( 'Error in cuffcompare:\n' + str( e ) ) 
     finally:

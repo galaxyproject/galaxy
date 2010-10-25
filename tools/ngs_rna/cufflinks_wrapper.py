@@ -91,7 +91,7 @@ def __main__():
             raise Exception, stderr
             
         # check that there are results in the output file
-        if len( open( tmp_output_dir + "/transcripts.gtf", 'rb' ).read().strip() ) == 0:
+        if len( open( os.path.join( tmp_output_dir, "transcripts.gtf" ), 'rb' ).read().strip() ) == 0:
             raise Exception, 'The main output file is empty, there may be an error with your input file or settings.'
     except Exception, e:
         stop_err( 'Error running cufflinks. ' + str( e ) )
@@ -99,9 +99,9 @@ def __main__():
     # Copy output files from tmp directory to specified files.
     try:
         try:
-            shutil.copyfile( tmp_output_dir + "/transcripts.gtf", options.assembled_isoforms_output_file )
-            shutil.copyfile( tmp_output_dir + "/transcripts.expr", options.transcripts_expression_output_file )
-            shutil.copyfile( tmp_output_dir + "/genes.expr", options.genes_expression_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "transcripts.gtf" ), options.assembled_isoforms_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "transcripts.expr" ), options.transcripts_expression_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "genes.expr" ), options.genes_expression_output_file )
         except Exception, e:
             stop_err( 'Error in tophat:\n' + str( e ) ) 
     finally:

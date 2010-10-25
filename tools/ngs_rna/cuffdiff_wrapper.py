@@ -98,7 +98,7 @@ def __main__():
             raise Exception, stderr
             
         # check that there are results in the output file
-        if len( open( tmp_output_dir + "/isoforms.fpkm_tracking", 'rb' ).read().strip() ) == 0:
+        if len( open( os.path.join( tmp_output_dir, "isoforms.fpkm_tracking" ), 'rb' ).read().strip() ) == 0:
             raise Exception, 'The main output file is empty, there may be an error with your input file or settings.'
     except Exception, e:
         stop_err( 'Error running cuffdiff. ' + str( e ) )
@@ -107,17 +107,17 @@ def __main__():
     # Copy output files from tmp directory to specified files.
     try:
         try:
-            shutil.copyfile( tmp_output_dir + "/isoforms.fpkm_tracking", options.isoforms_fpkm_tracking_output )
-            shutil.copyfile( tmp_output_dir + "/genes.fpkm_tracking", options.genes_fpkm_tracking_output )
-            shutil.copyfile( tmp_output_dir + "/cds.fpkm_tracking", options.cds_fpkm_tracking_output )
-            shutil.copyfile( tmp_output_dir + "/tss_groups.fpkm_tracking", options.tss_groups_fpkm_tracking_output )
-            shutil.copyfile( tmp_output_dir + "/0_1_isoform_exp.diff", options.isoforms_exp_output )
-            shutil.copyfile( tmp_output_dir + "/0_1_gene_exp.diff", options.genes_exp_output )
-            shutil.copyfile( tmp_output_dir + "/0_1_tss_group_exp.diff", options.tss_groups_exp_output )
-            shutil.copyfile( tmp_output_dir + "/0_1_splicing.diff", options.splicing_diff_output )
-            shutil.copyfile( tmp_output_dir + "/0_1_cds.diff", options.cds_diff_output )
-            shutil.copyfile( tmp_output_dir + "/0_1_cds_exp.diff", options.cds_diff_output )
-            shutil.copyfile( tmp_output_dir + "/0_1_promoters.diff", options.promoters_diff_output )    
+            shutil.copyfile( os.path.join( tmp_output_dir, "isoforms.fpkm_tracking" ), options.isoforms_fpkm_tracking_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "genes.fpkm_tracking" ), options.genes_fpkm_tracking_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "cds.fpkm_tracking" ), options.cds_fpkm_tracking_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "tss_groups.fpkm_tracking" ), options.tss_groups_fpkm_tracking_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "0_1_isoform_exp.diff" ), options.isoforms_exp_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "0_1_gene_exp.diff" ), options.genes_exp_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "0_1_tss_group_exp.diff" ), options.tss_groups_exp_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "0_1_splicing.diff" ), options.splicing_diff_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "0_1_cds.diff" ), options.cds_diff_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "0_1_cds_exp.diff" ), options.cds_diff_output )
+            shutil.copyfile( os.path.join( tmp_output_dir, "0_1_promoters.diff" ), options.promoters_diff_output )    
         except Exception, e:
             stop_err( 'Error in cuffdiff:\n' + str( e ) ) 
     finally:
