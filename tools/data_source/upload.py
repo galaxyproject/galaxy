@@ -270,22 +270,36 @@ def add_file( dataset, registry, json_file, output_path ):
                         stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
                         break
                     fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_zip_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
-                    zipped_file = z.open( name )
-                    while 1:
+                    if sys.version_info[:2] >= ( 2, 6 ):
+                        zipped_file = z.open( name )
+                        while 1:
+                            try:
+                                chunk = zipped_file.read( CHUNK_SIZE )
+                            except IOError:
+                                os.close( fd )
+                                os.remove( uncompressed )
+                                file_err( 'Problem decompressing zipped data', dataset, json_file )
+                                return
+                            if not chunk:
+                                break
+                            os.write( fd, chunk )
+                        os.close( fd )
+                        zipped_file.close()
+                        uncompressed_name = name
+                        unzipped = True
+                    else:
+                        # python < 2.5 doesn't have a way to read members in chunks(!)
                         try:
-                            chunk = zipped_file.read( CHUNK_SIZE )
+                            outfile = open( uncompressed, 'wb' )
+                            outfile.write( z.read( name ) )
+                            outfile.close()
+                            uncompressed_name = name
+                            unzipped = True
                         except IOError:
                             os.close( fd )
                             os.remove( uncompressed )
                             file_err( 'Problem decompressing zipped data', dataset, json_file )
                             return
-                        if not chunk:
-                            break
-                        os.write( fd, chunk )
-                    os.close( fd )
-                    zipped_file.close()
-                    uncompressed_name = name
-                    unzipped = True
                 z.close()
                 # Replace the zipped file with the decompressed file
                 if uncompressed is not None:
