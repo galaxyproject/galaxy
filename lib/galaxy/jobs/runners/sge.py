@@ -312,8 +312,8 @@ class SGEJobRunner( object ):
         try:
             ofh = file(ofile, "r")
             efh = file(efile, "r")
-            stdout = ofh.read()
-            stderr = efh.read()
+            stdout = ofh.read( 32768 )
+            stderr = efh.read( 32768 )
         except:
             stdout = ''
             stderr = 'Job output not returned from cluster'

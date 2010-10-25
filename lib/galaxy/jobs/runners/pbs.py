@@ -496,8 +496,8 @@ class PBSJobRunner( object ):
         try:
             ofh = file(ofile, "r")
             efh = file(efile, "r")
-            stdout = ofh.read()
-            stderr = efh.read()
+            stdout = ofh.read( 32768 )
+            stderr = efh.read( 32768 )
         except:
             stdout = ''
             stderr = 'Job output not returned by PBS: the output datasets were deleted while the job was running, the job was manually dequeued or there was a cluster error.'

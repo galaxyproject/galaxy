@@ -95,8 +95,8 @@ class LocalJobRunner( object ):
                             if sleep_time < 8:
                                 # So we don't stat every second
                                 sleep_time *= 2
-                stdout = proc.stdout.read() 
-                stderr = proc.stderr.read()
+                stdout = proc.stdout.read( 32768 )
+                stderr = proc.stderr.read( 32768 )
                 proc.wait() # reap
                 log.debug('execution finished: %s' % command_line)
             except Exception, exc:
