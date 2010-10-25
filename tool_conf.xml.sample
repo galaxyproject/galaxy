@@ -269,7 +269,6 @@
    <tool file="ncbi_blast_plus/ncbi_tblastn_wrapper.xml" />
    <tool file="ncbi_blast_plus/ncbi_tblastx_wrapper.xml" />
    <tool file="ncbi_blast_plus/blastxml_to_tabular.xml" />
-   <tool file="ncbi_blast_plus/blast_filter_fasta.xml" />
   </section>
   <section name="NGS: Mapping" id="solexa_tools">
    <tool file="sr_mapping/lastz_wrapper.xml" />
