@@ -563,7 +563,7 @@
                 data.push( { name: '_', value: "true" } );
             }
         }).each( function() {
-            form = this;
+            var form = this;
             $(this).find( "select[refresh_on_change='true']").change( function() {
                 $(form).submit();
             });

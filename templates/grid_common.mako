@@ -64,7 +64,7 @@
                     <span class="search-box">
                         <% value = iff( column.filterable == "standard", column.label.lower(), "") %>
                         <input class="search-box-input" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="15"/>
-                        <button class="submit-image" type="submit" title='Search'/>
+                        <button class="submit-image" type="submit" title='Search'><span style="display: none;"></button>
                     </span>
                 </form>
             %else:

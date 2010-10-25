@@ -3,23 +3,12 @@
 <%def name="javascripts()">
     <% config = item_data %>
     ${parent.javascripts()}
-    ${h.js( "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "trackster" )}
     
-    <script type="text/javascript">
-        var view;
-        // To adjust the size of the viewport to fit the fixed-height footer
-        var refresh = function( e ) {
-            if (view !== undefined) {
-                view.viewport_container.height( $("#center").height() - $(".nav-container").height() - 40 );
-                view.nav_container.width( $("#center").width() );
-                view.redraw();
-            }
-        };
-        $(window).bind( "resize", function(e) { refresh(e); } );
-        $("#right-border").bind( "click dragend", function(e) { refresh(e); } );
-        $(window).trigger( "resize" );
-    </script>
+    <!--[if lt IE 9]>
+      <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
+    <![endif]-->
     
+    ${h.js( "jquery.event.drag", "jquery.autocomplete", "trackster" )}
 </%def>
 
 <%def name="stylesheets()">
@@ -55,16 +44,21 @@
         var data_url = "${h.url_for( controller='/tracks', action='data' )}",
             reference_url = "${h.url_for( controller='/tracks', action='reference' )}",
             chrom_url = "${h.url_for( controller='/tracks', action='chroms' )}",
-            view;
-
-        var container_element = $("#${visualization.id}");
-        view = new View( container_element, "${config.get('chrom')}", "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
+            view,
+            container_element = $("#${visualization.id}");
+            
+        if (container_element.parents(".item-content").length > 0) { // Embedded viz
+            container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
+        } else { // Viewing just one shared viz
+            container_element = $("#center");
+            $("#right-border").live("click", function() { view.resize_window(); });
+        }
+        view = new View( container_element, "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
         %for track in config.get('tracks'):
             view.add_track(
                 new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['prefs']} )
             );
         %endfor
-        container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
 
     </script>
 </%def>

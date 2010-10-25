@@ -62,6 +62,11 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
 
 <%def name="javascripts()">
 ${parent.javascripts()}
+
+<!--[if lt IE 9]>
+  <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
+<![endif]-->
+
 ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", "jquery.autocomplete", "trackster", "jquery.ui.sortable.slider" )}
 
 <script type="text/javascript">
@@ -103,22 +108,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 }
             });
         %endif
-		
-		$(document).bind( "redraw", function() {
-			view.redraw();
-        });
-
-        // To adjust the size of the viewport to fit the fixed-height footer
-        var refresh = function() {
-            if (view !== undefined) {
-                view.viewport_container.height( $("#center").height() - $(".nav-container").height() - 40 );
-                view.nav_container.width( $("#center").width() );
-                view.redraw();
-            }
-        };
-        $(window).bind( "resize", function() { refresh(); } );
-        $("#right-border").bind( "click dragend", function() { refresh(); } );
-        $(window).trigger( "resize" );
         
         // Execute initializer for EDITOR specific javascript
         function init() {
@@ -227,47 +216,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     error: function() { alert("Could not save visualization"); }
                 });
             });
-            
-            function sidebar_box(track) {
-                if (!track.hidden) {
-                    var track_id = track.track_id,
-                        label = $('<label for="track_' + track_id + 'title">' + track.name + '</label>'),
-                        title = $('<div class="historyItemTitle"></div>'),
-                        icon_div = $('<div class="historyItemButtons"></div>');
-                        del_icon = $('<a href="#" class="icon-button delete" />'),
-                        edit_icon = $('<a href="#" class="icon-button edit" />'),
-                        body = $('<div class="historyItemBody"></div>'),
-                        li = $('<li class="sortable"></li>').attr("id", "track_" + track_id + "_li"),
-                        div = $('<div class="historyItemContainer historyItem"></div>'),
-                        editable = $('<div style="display:none"></div>').attr("id", "track_" + track_id + "_editable");
-                    
-                    edit_icon.bind("click", function() {
-                        $("#track_" + track_id + "_editable").toggle();
-                    });
-                    del_icon.bind("click", function() {
-                        $("#track_" + track_id + "_li").fadeOut('slow', function() { $("#track_" + track_id + "_li").remove(); });
-                        view.remove_track(track);
-                        if (view.num_tracks === 0) {
-                            $("#no-tracks").show();
-                        }
-                    });
-                    icon_div.append(edit_icon).append(del_icon);
-                    title.append(label).prepend(icon_div);
-                    if (track.gen_options) {
-                        editable.append(track.gen_options(track_id)).appendTo(body);
-                    }
-                    div.append(title).append(body).appendTo(li);
-                    $("ul#sortable-ul").append(li);
-                }
-            };
-            
-            // Populate sort/move ul
-            for (var track_id in view.tracks) {
-                var track = view.tracks[track_id];
-                sidebar_box(track);
-            }
-            
-            $(window).trigger("resize");
         };
         
     });

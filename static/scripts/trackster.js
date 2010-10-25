@@ -15,9 +15,14 @@ var DENSITY = 200,
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 30,
     CACHED_DATA = 5,
-    CONTEXT = $("<canvas></canvas>").get(0).getContext("2d"),
-    PX_PER_CHAR = CONTEXT.measureText("A").width,
+    DUMMY_CANVAS = document.createElement("canvas"),
     RIGHT_STRAND, LEFT_STRAND;
+    
+if (window.G_vmlCanvasManager) {
+    G_vmlCanvasManager.initElement(DUMMY_CANVAS);
+}
+CONTEXT = DUMMY_CANVAS.getContext("2d");
+PX_PER_CHAR = CONTEXT.measureText("A").width;
     
 var right_img = new Image();
 right_img.src = image_path + "/visualization/strand_right.png";
@@ -255,6 +260,12 @@ $.extend( View.prototype, {
         
         this.add_label_track( new LabelTrack( this, this.top_labeltrack ) );
         this.add_label_track( new LabelTrack( this, this.nav_labeltrack ) );
+        
+        $(window).bind("resize", function() { view.resize_window(); });
+        $(document).bind("redraw", function() { view.redraw(); });
+        
+        this.reset();
+        $(window).trigger("resize");
     },
     update_location: function(low, high) {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
@@ -348,22 +359,7 @@ $.extend( View.prototype, {
         track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[this.tracks.indexOf(track)];
         this.num_tracks -= 1;
-    },/* No longer needed as config is done inline, one track at a time
-    update_options: function() {
-        this.has_changes = true;
-        var sorted = $("ul#sortable-ul").sortable('toArray');
-        for (var id_i in sorted) {
-            var id = sorted[id_i].split("_li")[0].split("track_")[1];
-            this.viewport_container.append( $("#track_" + id) );
-        }
-        
-        for (var track_id in view.tracks) {
-            var track = view.tracks[track_id];
-            if (track && track.update_options) {
-                track.update_options(track_id);
-            }
-        }
-    },*/
+    },
     reset: function() {
         this.low = this.max_low;
         this.high = this.max_high;
@@ -391,8 +387,8 @@ $.extend( View.prototype, {
         this.zoom_res = Math.pow( FEATURE_LEVELS, Math.max(0,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) )));
         
         // Overview
-        var left_px = this.low / (this.max_high - this.max_low) * this.overview_viewport.width();
-        var width_px = (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width();
+        var left_px = ( this.low / (this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
+        var width_px = ( (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
         var min_width_px = 13;
         
         this.overview_box.css({ left: left_px, width: Math.max(min_width_px, width_px) }).show();
@@ -438,6 +434,11 @@ $.extend( View.prototype, {
             new_half = (span * this.zoom_factor) / 2;
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
+        this.redraw();
+    },
+    resize_window: function() {
+        this.viewport_container.height( this.container.height() - this.nav_container.height() - 45 );
+        this.nav_container.width( this.container.width() );
         this.redraw();
     },
     reset_overview: function() {
@@ -816,8 +817,8 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             if ( !(low > track.view.high || high < track.view.low) ) {
                 tile_element = track.draw_tile( resolution, tile_index, parent_element, w_scale );
                 if (tile_element) {
-                    // Store initial canvas in we need to use it for overview
-                    if (!track.initial_canvas) {
+                    // Store initial canvas in case we need to use it for overview
+                    if (!track.initial_canvas && !window.G_vmlCanvasManager) {
                         track.initial_canvas = $(tile_element).clone();
                         var src_ctx = tile_element.get(0).getContext("2d");
                         var tgt_ctx = track.initial_canvas.get(0).getContext("2d");
@@ -905,7 +906,6 @@ var ReferenceTrack = function (view) {
     this.left_offset = 200;
     this.height_px = 12;
     this.container_div.addClass( "reference-track" );
-    this.dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d");
     this.data_queue = {};
     this.data_cache = new Cache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
@@ -934,9 +934,13 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         var tile_low = tile_index * DENSITY * resolution,
             tile_length = DENSITY * resolution,
-            canvas = $("<canvas class='tile'></canvas>"),
-            ctx = canvas.get(0).getContext("2d"),
             key = resolution + "_" + tile_index;
+        
+        var canvas = document.createElement("canvas");
+        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
+        canvas = $(canvas);
+        
+        var ctx = canvas.get(0).getContext("2d");
         
         if (w_scale > PX_PER_CHAR) {
             if (this.data_cache.get(key) === undefined) {
@@ -983,8 +987,6 @@ var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.data_cache = new Cache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.prefs = { 'color': 'black', 'min_value': undefined, 'max_value': undefined, 'mode': this.mode };
-    if (prefs.min_value !== undefined) { this.prefs.min_value = prefs.min_value; }
-    if (prefs.max_value !== undefined) { this.prefs.max_value = prefs.max_value; }
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -1056,8 +1058,11 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         
         var tile_low = tile_index * DENSITY * resolution,
             tile_length = DENSITY * resolution,
-            canvas = $("<canvas class='tile'></canvas>"),
             key = resolution + "_" + tile_index;
+        
+        var canvas = document.createElement("canvas");
+        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
+        canvas = $(canvas);
         
         if (this.data_cache.get(key) === undefined) {
             this.get_data( resolution, tile_index );
@@ -1204,9 +1209,6 @@ var FeatureTrack = function ( name, view, dataset_id, filters, prefs ) {
     this.left_offset = 200;
     
     this.prefs = { 'block_color': '#444', 'label_color': 'black', 'show_counts': true };
-    if (prefs.block_color !== undefined) { this.prefs.block_color = prefs.block_color; }
-    if (prefs.label_color !== undefined) { this.prefs.label_color = prefs.label_color; }
-    if (prefs.show_counts !== undefined) { this.prefs.show_counts = prefs.show_counts; }
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -1249,7 +1251,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         var w_scale = this.inc_slots[level].w_scale,
             undone = [],
             highest_slot = 0, // To measure how big to draw canvas
-            dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d"),
             max_low = this.view.max_low;
             
         var slotted = [];
@@ -1284,7 +1285,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 f_end = Math.ceil( (feature_end - max_low) * w_scale );
                         
             if (feature_name !== undefined && !no_detail) {
-                var text_len = dummy_canvas.measureText(feature_name).width;
+                var text_len = CONTEXT.measureText(feature_name).width;
                 if (f_start - text_len < 0) {
                     f_end += text_len;
                 } else {
@@ -1395,7 +1396,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         }
         
         var width = Math.ceil( tile_span * w_scale ),
-            new_canvas = $("<canvas class='tile'></canvas>"),
+            canvas = $("<canvas class='tile'></canvas>"),
             label_color = this.prefs.label_color,
             block_color = this.prefs.block_color,
             mode = this.mode,
@@ -1403,6 +1404,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             no_detail = (mode === "Squish") || (mode === "Dense") && (mode !== "Pack") || (mode === "Auto" && (result.extra_info === "no_detail")),
             left_offset = this.left_offset,
             slots, required_height, y_scale;
+        
+        var canvas = document.createElement("canvas");
+        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
+        canvas = $(canvas);
         
         if (result.dataset_type === "summary_tree") {
             required_height = this.summary_draw_height;
@@ -1417,16 +1422,16 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             slots = this.inc_slots[inc_scale];
         }
         
-        new_canvas.css({
+        canvas.css({
             position: "absolute",
             top: 0,
             left: ( tile_low - this.view.low ) * w_scale - left_offset
         });
-        new_canvas.get(0).width = width + left_offset;
-        new_canvas.get(0).height = required_height;
+        canvas.get(0).width = width + left_offset;
+        canvas.get(0).height = required_height;
         parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
-        var ctx = new_canvas.get(0).getContext("2d");
+        var ctx = canvas.get(0).getContext("2d");
         ctx.fillStyle = block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
@@ -1460,12 +1465,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 }
             }
             cur_mode = "Summary";
-            parent_element.append( new_canvas );
-            return new_canvas;
+            parent_element.append( canvas );
+            return canvas;
         }
         
         if (result.message) {
-            new_canvas.css({
+            canvas.css({
                 border: "solid red",
                 "border-width": "2px 2px 2px 0px"            
             });
@@ -1488,7 +1493,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 }
         }
         if ( filterable ) {
-            new_canvas.addClass(FILTERABLE_CLASS);
+            canvas.addClass(FILTERABLE_CLASS);
         }
         
         // Draw data points.
@@ -1680,7 +1685,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 j++;
             }
         }
-        return new_canvas;
+        return canvas;
     }, gen_options: function(track_id) {
         var container = $("<div />").addClass("form-row");
 
