@@ -41,8 +41,12 @@ def get_bed_line( chrom, name, strand, blocks ):
     # Bed format: chrom, chromStart, chromEnd, name, score, strand, \
     #               thickStart, thickEnd, itemRgb, blockCount, blockSizes, blockStarts
     #
+    # Render complete feature with thick blocks. There's no clear way to do this unless
+    # we analyze the block names, but making everything thick makes more sense than
+    # making everything thin.
+    #
     return "%s\t%i\t%i\t%s\t0\t%s\t%i\t%i\t0\t%i\t%s\t%s\n" % \
-            ( chrom, t_start, t_end, name, strand, t_start, t_start, len( block_starts ), 
+            ( chrom, t_start, t_end, name, strand, t_start, t_end, len( block_starts ), 
                 ",".join( block_sizes ), ",".join( block_starts ) )
 
 def __main__():
