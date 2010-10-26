@@ -54,6 +54,7 @@ def main():
         galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ   
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
+    tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
     if start_server:
         psu_production = False
         galaxy_test_proxy_port = None
@@ -75,6 +76,7 @@ def main():
             nginx_upload_store = os.environ.get( 'GALAXY_TEST_NGINX_UPLOAD_STORE', None )
             if not nginx_upload_store:
                 raise Exception( 'Please set GALAXY_TEST_NGINX_UPLOAD_STORE to the path where the nginx upload module places uploaded files' )
+            tool_config_file = 'tool_conf.xml.main'
             default_cluster_job_runner = os.environ.get( 'GALAXY_TEST_DEFAULT_CLUSTER_JOB_RUNNER', 'pbs:///' )
             file_path = tempfile.mkdtemp( dir=base_file_path )
             new_file_path = tempfile.mkdtemp( dir=base_new_file_path )
@@ -142,7 +144,7 @@ def main():
                                    file_path = file_path,
                                    new_file_path = new_file_path,
                                    tool_path = tool_path,
-                                   tool_config_file = "tool_conf.xml.sample",
+                                   tool_config_file = tool_config_file,
                                    datatype_converters_config_file = "datatype_converters_conf.xml.sample",
                                    tool_parse_help = False,
                                    test_conf = "test.conf",
