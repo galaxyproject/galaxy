@@ -139,7 +139,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 view.add_track(new_track);
                 view.has_changes = true;
                 $("#no-tracks").hide();
-                sidebar_box(new_track);
             };
             
             %if add_dataset is not None:
