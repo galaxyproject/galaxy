@@ -611,34 +611,27 @@
             });    
         }
         
-        function check_all_items()
-        {
+        function check_all_items() {
             var chk_all = document.getElementById('check_all');
             var checks = document.getElementsByTagName('input');
             //var boxLength = checks.length;
             var total = 0;
-            if ( chk_all.checked == true )
-            {
-                for ( i=0; i < checks.length; i++ )
-                {
-                    if ( checks[i].name.indexOf( 'id' ) != -1)
-                    {
+            if ( chk_all.checked == true ) {
+                for ( i=0; i < checks.length; i++ ) {
+                    if ( checks[i].name.indexOf( 'id' ) != -1) {
                        checks[i].checked = true;
                        total++;
                     }
                 }
             }
-            else
-            {
-                for ( i=0; i < checks.length; i++ )
-                {
-                    if ( checks[i].name.indexOf( 'id' ) != -1)
-                    {
+            else {
+                for ( i=0; i < checks.length; i++ ) {
+                    if ( checks[i].name.indexOf( 'id' ) != -1) {
                        checks[i].checked = false
                     }
                 }
             }
-            
+            init_grid_elements();
         }
     </script>
 </%def>
