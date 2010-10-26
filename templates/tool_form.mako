@@ -24,7 +24,7 @@ $(function() {
                 file.attr( { name: 'replaced_file_input_' + file_name, disabled: true } );
                 // create a new hidden field which stores the filename and has the original name of the file input
                 var new_file_input = $(document.createElement('input'));
-                new_file_input.attr( { "type", "hidden", "value": file_value, "name": file_name } );
+                new_file_input.attr( { "type": "hidden", "value": file_value, "name": file_name } );
                 file.after(new_file_input);
             }
         });
@@ -36,14 +36,10 @@ $(function() {
         location.replace( '${h.url_for( controller='root', action='index', tool_id=tool.id )}' );
     }
 %endif
-function checkUncheckAll( name, check )
-{
-    if ( check == 0 )
-    {
+function checkUncheckAll( name, check ) {
+    if (!check) {
         $("input[name=" + name + "][type='checkbox']").attr('checked', false);
-    }
-    else
-    {
+    } else {
         $("input[name=" + name + "][type='checkbox']").attr('checked', true );
     }
 }
@@ -260,7 +256,7 @@ function checkUncheckAll( name, check )
 ##inserts the Select All / Unselect All buttons for checkboxes
 $( function() {
     $("div.checkUncheckAllPlaceholder").each( function( i ) {
-        $( this )[0].innerHTML = '<a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', 1 );"><span>Select All</span></a> <a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', 0 );"><span>Unselect All</span></a>';
+        $( this )[0].innerHTML = '<a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', true );"><span>Select All</span></a> <a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', false );"><span>Unselect All</span></a>';
     });
 });
 

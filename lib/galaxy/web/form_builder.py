@@ -231,14 +231,14 @@ class SelectField(BaseField):
             rval.append ( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) ) #placeholder for the insertion of the Select All/Unselect All buttons
         for text, value, selected in self.options:
             style = ""
+            escaped_value = escape( str( value ), quote=True )
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
+            selected_text = ""
             if selected:
-                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked%s>%s</div>' % \
-                             ( style, prefix, self.name, escape( str( value ), quote=True ), self.get_disabled_str( disabled ), text ) )
-            else:
-                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s"%s>%s</div>' % \
-                             ( style, prefix, self.name, escape( str( value ), quote=True ), self.get_disabled_str( disabled ), text ) )
+                selected_text = "checked='checked'"
+            rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s" %s%s><label for="%s">%s</label></div>' % \
+                ( style, prefix, self.name, escaped_value, escaped_value, selected_text, self.get_disabled_str( disabled ), escaped_value, text ) )
             ctr += 1
         return "\n".join( rval )
     def get_html_radio( self, prefix="", disabled=False ):

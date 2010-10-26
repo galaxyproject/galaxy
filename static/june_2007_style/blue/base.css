@@ -41,6 +41,7 @@ div.form-row-error{background:#FFCCCC;}
 div.form-row label{font-weight:bold;display:block;margin-bottom:.2em;}
 div.form-row-input{float:left;width:300px;}
 div.form-row-input > input{max-width:300px;}
+div.form-row-input label{font-weight:normal;display:inline;}
 div.form-row-error-message{width:300px;float:left;color:red;font-weight:bold;padding:3px 0 0 1em;}
 select,input,textarea{font:inherit;font-size:115%;}
 select,textarea,input[type="text"],input[type="file"],input[type="password"]{-webkit-box-sizing:border-box;max-width:300px;}
