@@ -31,6 +31,7 @@ def __main__():
         infile_name = infile_score_name
     
     readlen = None
+    invalid_lines = 0
     j = 0
     for line in file( infile_name ):
         line = line.strip()
@@ -39,18 +40,17 @@ def __main__():
         elems = line.split()
         try:
             for item in elems:
-                assert int(item)
-            if not(readlen):
+                int(item)
+            if not readlen:
                 readlen = len(elems)
             if len(elems) != readlen:
                 print "Note: Reads in the input dataset are of variable lengths."
             j += 1
-        except:
+        except ValueError:
             invalid_lines += 1
         if j > 10:
             break
         
-    invalid_lines = 0
     position_dict = {}
     print >>fout, "column\tcount\tmin\tmax\tsum\tmean\tQ1\tmed\tQ3\tIQR\tlW\trW"
     for k,line in enumerate(file( infile_name )):
@@ -132,7 +132,7 @@ def __main__():
     if invalid_lines:
         print "Skipped %d reads as invalid." %invalid_lines
     if invalid_positions:
-        print "Skipped stats computation for %d read postions." %invalid_positions
+        print "Skipped stats computation for %d read positions." %invalid_positions
         
 if __name__=="__main__":
     __main__()
