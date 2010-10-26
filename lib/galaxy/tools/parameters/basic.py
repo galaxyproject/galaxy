@@ -474,14 +474,14 @@ class SelectToolParameter( ToolParameter ):
     blah
     >>> print p.get_html()
     <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
-    <div><input type="checkbox" name="blah" value="x">I am X</div>
-    <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
-    <div><input type="checkbox" name="blah" value="z" checked>I am Z</div>
+    <div><input type="checkbox" name="blah" value="x" id="blah|x"><label for="blah|x">I am X</label></div>
+    <div class="odd_row"><input type="checkbox" name="blah" value="y" id="blah|y" checked='checked'><label for="blah|y">I am Y</label></div>
+    <div><input type="checkbox" name="blah" value="z" id="blah|z" checked='checked'><label for="blah|z">I am Z</label></div>
     >>> print p.get_html( value=["x","y"])
     <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
-    <div><input type="checkbox" name="blah" value="x" checked>I am X</div>
-    <div class="odd_row"><input type="checkbox" name="blah" value="y" checked>I am Y</div>
-    <div><input type="checkbox" name="blah" value="z">I am Z</div>
+    <div><input type="checkbox" name="blah" value="x" id="blah|x" checked='checked'><label for="blah|x">I am X</label></div>
+    <div class="odd_row"><input type="checkbox" name="blah" value="y" id="blah|y" checked='checked'><label for="blah|y">I am Y</label></div>
+    <div><input type="checkbox" name="blah" value="z" id="blah|z"><label for="blah|z">I am Z</label></div>
     >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     """
