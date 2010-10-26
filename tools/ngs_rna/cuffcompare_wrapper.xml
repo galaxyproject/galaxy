@@ -81,16 +81,15 @@
             <param name="use_ref_annotation" value="Yes"/>
             <param name="reference_annotation" value="cuffcompare_in3.gtf" ftype="gtf"/>
             <param name="ignore_nonoverlapping_reference" value="Yes"/>
-            ## HACK: need to specify output name and it needs to work (right now it uses the final output file)
-            <output name="XXXX" file="cuffcompare_out6.tracking"/>
-            <!--
-            ## TODO: transcripts combined file as well.
+            <!-- Line diffs are the result of different locations for input files; this cannot be fixed as cuffcompare outputs
+                full input path for each input. -->
+            <output name="transcripts_accuracy" file="cuffcompare_out7.txt" lines_diff="6"/>
             <output name="input1_tmap" file="cuffcompare_out1.tmap"/>
             <output name="input1_refmap" file="cuffcompare_out2.refmap"/>
             <output name="input2_tmap" file="cuffcompare_out3.tmap"/>
             <output name="input2_refmap" file="cuffcompare_out4.refmap"/>
-            <output name="transcripts_accuracy" file="cuffcompare_out7.txt"/>
-            -->
+            <output name="transcripts_combined" file="cuffcompare_out5.gtf"/>
+            <output name="transcripts_tracking" file="cuffcompare_out6.tracking"/>
         </test>
     </tests>
 
