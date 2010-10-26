@@ -1767,6 +1767,7 @@ class RequestTypePermissions( object ):
 class Sample( object ):
     bulk_operations = Bunch( CHANGE_STATE = 'Change state', 
                              SELECT_LIBRARY = 'Select data library and folder' )
+    api_collection_visible_keys = ( 'id', 'name' )
     def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None):
         self.name = name
         self.desc = desc
@@ -1818,6 +1819,18 @@ class Sample( object ):
                                           pexpect.TIMEOUT:print_ticks}, 
                                           timeout=10)
         return output.replace(filepath, '').strip()
+    def get_api_value( self, view='collection' ):
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[key] = self.__getattribute__( key )
+            except AttributeError:
+                rval[key] = None
+        return rval
 
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):
