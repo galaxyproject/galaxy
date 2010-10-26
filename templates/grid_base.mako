@@ -610,6 +610,36 @@
                 }
             });    
         }
+        
+        function check_all_items()
+        {
+            var chk_all = document.getElementById('check_all');
+            var checks = document.getElementsByTagName('input');
+            //var boxLength = checks.length;
+            var total = 0;
+            if ( chk_all.checked == true )
+            {
+                for ( i=0; i < checks.length; i++ )
+                {
+                    if ( checks[i].name.indexOf( 'id' ) != -1)
+                    {
+                       checks[i].checked = true;
+                       total++;
+                    }
+                }
+            }
+            else
+            {
+                for ( i=0; i < checks.length; i++ )
+                {
+                    if ( checks[i].name.indexOf( 'id' ) != -1)
+                    {
+                       checks[i].checked = false
+                    }
+                }
+            }
+            
+        }
     </script>
 </%def>
 
@@ -761,7 +791,11 @@
             <thead id="grid-table-header">
                 <tr>
                     %if show_item_checkboxes:
-                        <th></th>
+                        <th>
+                            %if query.count() > 0:
+                                <input type="checkbox" id="check_all" name=select_all_checkbox value="true" onclick='check_all_items(1);'><input type="hidden" name=select_all_checkbox value="true">
+                            %endif
+                        </th>
                     %endif
                     %for column in grid.columns:
                         %if column.visible:
