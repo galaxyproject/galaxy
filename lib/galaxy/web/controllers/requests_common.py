@@ -275,7 +275,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             request_type = request.type
         name = util.restore_text( params.get( 'name', '' ) )
         desc = util.restore_text( params.get( 'desc', '' ) )
-        notification = dict( email=[ user.email ], sample_states=[ request_type.state.id ], body='', subject='' )
+        notification = dict( email=[ user.email ], sample_states=[ request_type.final_sample_state.id ], body='', subject='' )
         values = []
         for index, field in enumerate( request_type.request_form.fields ):
             field_type = field[ 'type' ]
@@ -416,11 +416,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         elif params.get( 'change_state_button', False ):
             sample_event_comment = util.restore_text( params.get( 'sample_event_comment', '' ) )
             new_state = trans.sa_session.query( trans.model.SampleState ).get( trans.security.decode_id( sample_state_id ) )
-            for sample_id in selected_samples:
-                sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
-                event = trans.model.SampleEvent( sample, new_state, sample_event_comment )
-                trans.sa_session.add( event )
-                trans.sa_session.flush()
+            self.update_sample_state(trans, cntrller, selected_samples, new_state, comment=sample_event_comment )
             return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                               cntrller=cntrller, 
                                                               action='update_request_state',
@@ -485,6 +481,22 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     managing_samples=managing_samples,
                                     status=status,
                                     message=message )
+    @web.expose
+    def update_sample_state(self, trans, cntrller, sample_ids, new_state, comment=None ):
+        for sample_id in sample_ids:
+            try:
+                sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
+            except:
+                if cntrller == 'api':
+                    trans.response.status = 400
+                    return "Malformed sample id ( %s ) specified, unable to decode." % str( sample_id )
+                else:
+                    return invalid_id_redirect( trans, cntrller, sample_id )
+            event = trans.model.SampleEvent( sample, new_state, comment )
+            trans.sa_session.add( event )
+            trans.sa_session.flush()
+        if cntrller == 'api':
+            return 200, 'Done'        
     @web.expose
     @web.require_login( "delete sequencing requests" )
     def delete_request( self, trans, cntrller, **kwd ):
@@ -640,6 +652,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 event = trans.model.RequestEvent( request, request.states.SUBMITTED, message )
                 trans.sa_session.add( event )
                 trans.sa_session.flush()
+                if cntrller == 'api':
+                    return 200, message
             return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                               action='manage_request',
                                                               cntrller=cntrller,
@@ -647,7 +661,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               status=status,
                                                               message=message ) )
         final_state = False
-        request_type_state = request.type.state
+        request_type_state = request.type.final_sample_state
         if common_state.id == request_type_state.id:
             # since all the samples are in the final state, change the request state to 'Complete'
             comments = "All samples of this request are in the last sample state (%s). " % request_type_state.name
@@ -656,7 +670,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         else:
             comments = "All samples are in %s state. " % common_state.name
             state = request.states.SUBMITTED
-        event = trans.model.RequestEvent(request, state, comments)
+        event = trans.model.RequestEvent( request, state, comments )
         trans.sa_session.add( event )
         trans.sa_session.flush()
         # check if an email notification is configured to be sent when the samples 
@@ -666,6 +680,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             message = comments + retval
         else:
             message = comments
+        if cntrller == 'api':
+            return 200, message
         return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                           action='manage_request',
                                                           cntrller=cntrller,

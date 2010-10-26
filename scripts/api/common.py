@@ -10,6 +10,11 @@ import pkg_resources
 pkg_resources.require( "simplejson" )
 import simplejson
 
+pkg_resources.require( "pycrypto" )
+from Crypto.Cipher import Blowfish
+from Crypto.Util.randpool import RandomPool
+from Crypto.Util import number
+
 def make_url( api_key, url, args=None ):
     # Adds the API Key to the URL if it's not already there.
     if args is None:
@@ -36,7 +41,15 @@ def post( api_key, url, data ):
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ) )
     return simplejson.loads( urllib2.urlopen( req ).read() )
 
-def display( api_key, url ):
+def put( api_key, url, data ):
+    # Do the actual PUT
+    url = make_url( api_key, url )
+    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ))
+    req.get_method = lambda: 'PUT'
+    return simplejson.loads( urllib2.urlopen( req ).read() )
+
+
+def display( api_key, url, return_formatted=True ):
     # Sends an API GET request and acts as a generic formatter for the JSON response.
     try:
         r = get( api_key, url )
@@ -47,6 +60,8 @@ def display( api_key, url ):
     if type( r ) == unicode:
         print 'error: %s' % r
         return None
+    if not return_formatted:
+        return r
     elif type( r ) == list:
         # Response is a collection as defined in the REST style.
         print 'Collection Members'
@@ -68,7 +83,7 @@ def display( api_key, url ):
     else:
         print 'response is unknown type: %s' % type( r )
 
-def submit( api_key, url, data ):
+def submit( api_key, url, data, return_formatted=True ):
     # Sends an API POST request and acts as a generic formatter for the JSON response.
     # 'data' will become the JSON payload read by Galaxy.
     try:
@@ -77,6 +92,8 @@ def submit( api_key, url, data ):
         print e
         print e.read( 1024 )
         sys.exit( 1 )
+    if not return_formatted:
+        return r
     print 'Response'
     print '--------'
     if type( r ) == list:
@@ -96,3 +113,45 @@ def submit( api_key, url, data ):
                 print i
     else:
         print r
+
+def update( api_key, url, data, return_formatted=True ):
+    # Sends an API PUT request and acts as a generic formatter for the JSON response.
+    # 'data' will become the JSON payload read by Galaxy.
+    try:
+        r = put( api_key, url, data )
+    except urllib2.HTTPError, e:
+        print e
+        print e.read( 1024 )
+        sys.exit( 1 )
+    if not return_formatted:
+        return r
+    print 'Response'
+    print '--------'
+    if type( r ) == list:
+        # Currently the only implemented responses are lists of dicts, because
+        # submission creates some number of collection elements.
+        for i in r:
+            if type( i ) == dict:
+                if 'url' in i:
+                    print i.pop( 'url' )
+                else:
+                    print '----'
+                if 'name' in i:
+                    print '  name: %s' % i.pop( 'name' )
+                for k, v in i.items():
+                    print '  %s: %s' % ( k, v )
+            else:
+                print i
+    else:
+        print r
+
+# utility method to encode ID's
+def encode_id( config_id_secret, obj_id ):
+    id_cipher = Blowfish.new( config_id_secret )
+    # Convert to string
+    s = str( obj_id )
+    # Pad to a multiple of 8 with leading "!" 
+    s = ( "!" * ( 8 - len(s) % 8 ) ) + s
+    # Encrypt
+    return id_cipher.encrypt( s ).encode( 'hex' )
+

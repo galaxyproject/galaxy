@@ -58,7 +58,7 @@
             <label>Transfer status:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
                 ${sample_dataset.status}
-                %if sample_dataset.status == sample.transfer_status.ERROR:
+                %if sample_dataset.status == trans.app.model.SampleDataset.transfer_status.ERROR:
                     <br/>
                     ${sample_dataset.error_msg}
                 %endif 

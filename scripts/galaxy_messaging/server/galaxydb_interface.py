@@ -28,7 +28,7 @@ class GalaxyDbInterface(object):
     def __init__(self, dbstr):
         self.dbstr = dbstr
         self.db_engine = create_engine(self.dbstr)    
-        self.db_engine.echo = True  
+        self.db_engine.echo = False  
         self.metadata = MetaData(self.db_engine)
         self.session = sessionmaker(bind=self.db_engine)
         self.event_table = Table('sample_event', self.metadata, autoload=True )

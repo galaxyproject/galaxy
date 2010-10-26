@@ -129,9 +129,9 @@ class DataTransferGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [
-        grids.GridOperation( "Start Transfer", allow_multiple=True, condition=( lambda item: item.status in [ model.Sample.transfer_status.NOT_STARTED ] ) ),
-        grids.GridOperation( "Rename", allow_multiple=True, allow_popup=False, condition=( lambda item: item.status in [ model.Sample.transfer_status.NOT_STARTED ] ) ),
-        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: item.status in [ model.Sample.transfer_status.NOT_STARTED ] )  ),
+        grids.GridOperation( "Start Transfer", allow_multiple=True, condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ) ),
+        grids.GridOperation( "Rename", allow_multiple=True, allow_popup=False, condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ) ),
+        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] )  ),
     ]
     def apply_query_filter( self, trans, query, **kwd ):
         sample_id = kwd.get( 'sample_id', None )
@@ -506,7 +506,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                     name = self.__dataset_name( sample, filepath.split( '/' )[-1] )
                     sample_dataset = trans.model.SampleDataset( sample=sample,
                                                                 file_path=filepath,
-                                                                status=sample.transfer_status.NOT_STARTED,
+                                                                status=trans.app.model.SampleDataset.transfer_status.NOT_STARTED,
                                                                 name=name,
                                                                 error_msg='',
                                                                 size=sample.dataset_size( filepath ) )
@@ -575,6 +575,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                     <data_host>%(DATA_HOST)s</data_host>
                     <data_user>%(DATA_USER)s</data_user>
                     <data_password>%(DATA_PASSWORD)s</data_password>
+                    <request_id>%(REQUEST_ID)s</request_id>
                     <sample_id>%(SAMPLE_ID)s</sample_id>
                     <library_id>%(LIBRARY_ID)s</library_id>
                     <folder_id>%(FOLDER_ID)s</folder_id>
@@ -588,16 +589,17 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                </dataset>'''
         datasets = ''
         for sample_dataset in selected_sample_datasets:
-            if sample_dataset.status == sample.transfer_status.NOT_STARTED:
+            if sample_dataset.status == trans.app.model.SampleDataset.transfer_status.NOT_STARTED:
                 datasets = datasets + dataset_xml % dict( ID=str( sample_dataset.id ),
                                                           NAME=sample_dataset.name,
                                                           FILE=sample_dataset.file_path )
-                sample_dataset.status = sample.transfer_status.IN_QUEUE
+                sample_dataset.status = trans.app.model.SampleDataset.transfer_status.IN_QUEUE
                 trans.sa_session.add( sample_dataset )
                 trans.sa_session.flush()
         data = xml % dict( DATA_HOST=datatx_info['host'],
                            DATA_USER=datatx_info['username'],
                            DATA_PASSWORD=datatx_info['password'],
+                           REQUEST_ID=str(sample.request.id),
                            SAMPLE_ID=str(sample.id),
                            LIBRARY_ID=str(sample.library.id),
                            FOLDER_ID=str(sample.folder.id),
@@ -644,6 +646,25 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                           sample_id=trans.security.encode_id( sample.id ),
                                                           status=status,
                                                           message=message) )
+    @web.expose
+    def update_sample_dataset_status(self, trans, cntrller, sample_dataset_ids, new_status, error_msg=None ):
+        # check if the new status is a valid transfer status
+        possible_status_list = [v[1] for v in trans.app.model.SampleDataset.transfer_status.items()] 
+        if new_status not in possible_status_list:
+            trans.response.status = 400
+            return "The requested transfer status ( %s ) is not a valid transfer status." % new_status
+        for id in util.listify( sample_dataset_ids ):
+            try:
+                sd_id = trans.security.decode_id( id )
+                sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( sd_id )
+            except:
+                trans.response.status = 400
+                return "Invalid sample dataset id ( %s ) specified." % str( id )
+            sample_dataset.status = new_status
+            sample_dataset.error_msg = error_msg
+            trans.sa_session.add( sample_dataset )
+            trans.sa_session.flush()
+        return 200, 'Done'
     # Request Type Stuff
     @web.expose
     @web.require_admin

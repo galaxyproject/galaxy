@@ -32,7 +32,7 @@ ${render_msg( 'A dataset can be renamed only if it is in <b>Not Started</b> stat
 	        <tbody>
 	            %for id in id_list:
 	               <% sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( id ) ) %>
-	               %if sample_dataset.status == trans.app.model.Sample.transfer_status.NOT_STARTED:
+	               %if sample_dataset.status == trans.app.model.SampleDataset.transfer_status.NOT_STARTED:
 		                <tr>
 		                    <td>
 		                        <% rename_datasets_for_sample_select_field = build_rename_datasets_for_sample_select_field( trans, sample_dataset ) %>

@@ -19,33 +19,6 @@ import urllib,urllib2, cookielib, shutil
 import logging, time, datetime
 import xml.dom.minidom
 
-sp = sys.path[0]
-
-from galaxydb_interface import GalaxyDbInterface
-
-assert sys.version_info[:2] >= ( 2, 4 )
-new_path = [ sp ]
-new_path.extend( sys.path ) 
-sys.path = new_path
-
-from galaxyweb_interface import GalaxyWebInterface
-
-assert sys.version_info[:2] >= ( 2, 4 )
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
-sys.path = new_path
-
-
-from galaxy.util.json import from_json_string, to_json_string
-from galaxy.model import Sample
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "pexpect" )
-import pexpect
-
-pkg_resources.require( "simplejson" )
-import simplejson
-
 log = logging.getLogger("datatx_"+str(os.getpid()))
 log.setLevel(logging.DEBUG)
 fh = logging.FileHandler("data_transfer.log")
@@ -54,20 +27,39 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
 fh.setFormatter(formatter)
 log.addHandler(fh)
 
+api_path = [ os.path.join( os.getcwd(), "scripts/api" ) ]
+sys.path.extend( api_path )
+import common as api
+
+assert sys.version_info[:2] >= ( 2, 4 )
+new_path = [ os.path.join( os.getcwd(), "lib" ) ]
+new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+sys.path = new_path
+
+from galaxy.util.json import from_json_string, to_json_string
+from galaxy.model import SampleDataset
+from galaxy.web.api.requests import RequestsController
+from galaxy import eggs
+import pkg_resources
+pkg_resources.require( "pexpect" )
+import pexpect
+
+pkg_resources.require( "simplejson" )
+import simplejson
 
 class DataTransfer(object):
     
-    def __init__(self, msg, config_id_secret):
+    def __init__(self, msg, config_file):
         log.info(msg)
         self.dom = xml.dom.minidom.parseString(msg)
-        self.host = self.get_value(self.dom, 'data_host')
-        self.username = self.get_value(self.dom, 'data_user')
-        self.password = self.get_value(self.dom, 'data_password')
+        self.sequencer_host = self.get_value(self.dom, 'data_host')
+        self.sequencer_username = self.get_value(self.dom, 'data_user')
+        self.sequencer_password = self.get_value(self.dom, 'data_password')
+        self.request_id = self.get_value(self.dom, 'request_id')
         self.sample_id = self.get_value(self.dom, 'sample_id')
         self.library_id = self.get_value(self.dom, 'library_id')
         self.folder_id = self.get_value(self.dom, 'folder_id')
         self.dataset_files = []
-        self.config_id_secret = config_id_secret
         count=0
         while True:
            dataset_id = self.get_value_index(self.dom, 'dataset_id', count)
@@ -82,21 +74,25 @@ class DataTransfer(object):
            count=count+1
         try:
             # Retrieve the upload user login information from the config file
+            transfer_datasets_config = ConfigParser.ConfigParser()
+            transfer_datasets_config.read('transfer_datasets.ini')
+            self.data_transfer_user_email = transfer_datasets_config.get("data_transfer_user_login_info", "email")
+            self.data_transfer_user_password = transfer_datasets_config.get("data_transfer_user_login_info", "password")
+            self.api_key = transfer_datasets_config.get("data_transfer_user_login_info", "api_key")
+            self.http_server_section = transfer_datasets_config.get("universe_wsgi_config", "http_server_section")
             config = ConfigParser.ConfigParser()
-            config.read('transfer_datasets.ini')
-            self.datatx_email = config.get("data_transfer_user_login_info", "email")
-            self.datatx_password = config.get("data_transfer_user_login_info", "password")
-            self.server_host = config.get("universe_wsgi_config", "host")
-            self.server_port = config.get("universe_wsgi_config", "port")
-            self.database_connection = config.get("universe_wsgi_config", "database_connection")
-            self.import_dir = config.get("universe_wsgi_config", "library_import_dir")
+            config.read( config_file )
+            self.server_host = config.get(self.http_server_section, "host")
+            self.server_port = config.get(self.http_server_section, "port")
+            self.database_connection = config.get("app:main", "database_connection")
+            self.import_dir = config.get("app:main", "library_import_dir")
+            self.config_id_secret = config.get("app:main", "id_secret")
+            
             # create the destination directory within the import directory
             self.server_dir = os.path.join( self.import_dir, 'datatx_'+str(os.getpid())+'_'+datetime.date.today().strftime("%d%b%Y") )
             os.mkdir(self.server_dir)
             if not os.path.exists(self.server_dir):
                 raise Exception
-            # connect to db
-            self.galaxydb = GalaxyDbInterface(self.database_connection)
         except:
             log.error(traceback.format_exc())
             log.error('FATAL ERROR')
@@ -114,7 +110,7 @@ class DataTransfer(object):
         # add the dataset to the given library
         self.add_to_library()
         # update the data transfer status in the db
-        self.update_status(Sample.transfer_status.COMPLETE)
+        self.update_status(SampleDataset.transfer_status.COMPLETE)
         # cleanup
         #self.cleanup()    
         sys.exit(0)
@@ -149,15 +145,15 @@ class DataTransfer(object):
         def print_ticks(d):
             pass
         for i, df in enumerate(self.dataset_files):
-            self.update_status(Sample.transfer_status.TRANSFERRING, df['dataset_id'])
+            self.update_status(SampleDataset.transfer_status.TRANSFERRING, df['dataset_id'])
             try:
-                cmd = "scp %s@%s:'%s' '%s/%s'" % ( self.username,
-                                            self.host,
-                                            df['file'].replace(' ', '\ '),
-                                            self.server_dir.replace(' ', '\ '),
-                                            df['name'].replace(' ', '\ '))
+                cmd = "scp %s@%s:'%s' '%s/%s'" % (  self.sequencer_username,
+                                                    self.sequencer_host,
+                                                    df['file'].replace(' ', '\ '),
+                                                    self.server_dir.replace(' ', '\ '),
+                                                    df['name'].replace(' ', '\ ')  )
                 log.debug(cmd)
-                output = pexpect.run(cmd, events={'.ssword:*': self.password+'\r\n', 
+                output = pexpect.run(cmd, events={'.ssword:*': self.sequencer_password+'\r\n', 
                                                   pexpect.TIMEOUT:print_ticks}, 
                                                   timeout=10)
                 log.debug(output)
@@ -176,17 +172,21 @@ class DataTransfer(object):
         This method adds the dataset file to the target data library & folder
         by opening the corresponding url in Galaxy server running.  
         '''
+        self.update_status(SampleDataset.transfer_status.ADD_TO_LIBRARY)
         try:
-            self.update_status(Sample.transfer_status.ADD_TO_LIBRARY)
-            log.debug("dir:%s, lib:%s, folder:%s" % (self.server_dir, str(self.library_id), str(self.folder_id)))
-            galaxyweb = GalaxyWebInterface(self.server_host, self.server_port, 
-                                           self.datatx_email, self.datatx_password,
-                                           self.config_id_secret)
-            retval = galaxyweb.add_to_library(self.server_dir, self.library_id, self.folder_id)
-            log.debug(str(retval))
-            galaxyweb.logout()
-        except Exception, e:
-            log.debug(e)
+            data = {}
+            data[ 'folder_id' ] = api.encode_id( self.config_id_secret, '%s.%s' % ( 'folder', self.folder_id ) )
+            data[ 'file_type' ] = 'auto'
+            data[ 'server_dir' ] = self.server_dir
+            data[ 'dbkey' ] = ''
+            data[ 'upload_option' ] = 'upload_directory'
+            data[ 'create_type' ] = 'file'
+            url = "http://%s:%s/api/libraries/%s/contents" % ( self.server_host, 
+                                                               self.server_port, 
+                                                               api.encode_id( self.config_id_secret, self.library_id ) )
+            log.debug(str((self.api_key, url, data)))
+            retval = api.submit( self.api_key, url, data, return_formatted=False )
+        except:
             self.error_and_exit(str(e))
             
     def update_status(self, status, dataset_id='All', msg=''):
@@ -195,12 +195,27 @@ class DataTransfer(object):
         '''
         try:
             log.debug('Setting status "%s" for dataset "%s" of sample "%s"' % ( status, str(dataset_id), str(self.sample_id) ) )
+            sample_dataset_ids = []
             if dataset_id == 'All':
                 for dataset in self.dataset_files:
-                    self.galaxydb.set_sample_dataset_status(dataset['dataset_id'], status, msg)
+                    sample_dataset_ids.append( api.encode_id( self.config_id_secret, dataset['dataset_id'] ) )
             else:
-                self.galaxydb.set_sample_dataset_status(dataset_id, status, msg)
+                sample_dataset_ids.append( api.encode_id( self.config_id_secret, dataset_id ) )
+            # update the transfer status
+            data = {}
+            data[ 'update_type' ] = RequestsController.update_types.SAMPLE_DATASET
+            data[ 'sample_dataset_ids' ] = sample_dataset_ids
+            data[ 'new_status' ] = status
+            data[ 'error_msg' ] = msg
+            url = "http://%s:%s/api/requests/%s" % ( self.server_host,
+                                                     self.server_port,
+                                                     api.encode_id( self.config_id_secret, self.request_id ) )
+            log.debug(str((self.api_key, url, data)))
+            retval = api.update( self.api_key, url, data, return_formatted=False )
             log.debug('done.')
+        except urllib2.URLError, e:
+            log.debug( 'ERROR(sample_dataset_transfer_status (%s)): %s' % ( url, str(e) ) )
+            log.error(traceback.format_exc())
         except:
             log.error(traceback.format_exc())
             log.error('FATAL ERROR')

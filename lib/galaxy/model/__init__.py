@@ -1584,6 +1584,7 @@ class Request( object ):
                     SUBMITTED = 'In Progress',
                     REJECTED = 'Rejected',
                     COMPLETE = 'Complete'   )
+    api_collection_visible_keys = ( 'id', 'name', 'state' )
     def __init__( self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None ):
         self.name = name
         self.desc = desc
@@ -1663,7 +1664,7 @@ class Request( object ):
         # Send email
         if trans.app.config.smtp_server is not None and self.notification and self.notification[ 'email' ]:
             host = trans.request.host.split( ':' )[0]
-            if host in [ 'localhost', '127.0.0.1' ]:
+            if host in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
                 host = socket.getfqdn()
             body = """
 Galaxy Sample Tracking Notification
@@ -1704,8 +1705,8 @@ All samples in state:     %(sample_state)s
                 s.sendmail( frm, to, message )
                 s.quit()
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
-            except:
-                comments = "Email notification failed."
+            except Exception,e:
+                comments = "Email notification failed. (%s)" % str(e)
             # update the request history with the email notification event
         elif not trans.app.config.smtp_server:
             comments = "Email notification failed as SMTP server not set in config file"
@@ -1714,6 +1715,18 @@ All samples in state:     %(sample_state)s
             trans.sa_session.add( event )
             trans.sa_session.flush()
         return comments
+    def get_api_value( self, view='collection' ):
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[key] = self.__getattribute__( key )
+            except AttributeError:
+                rval[key] = None
+        return rval
     
 class RequestEvent( object ):
     def __init__(self, request=None, request_state=None, comment=''):
@@ -1734,7 +1747,7 @@ class RequestType( object ):
         self.sample_form = sample_form
         self.datatx_info = datatx_info
     @property
-    def state( self ):
+    def final_sample_state( self ):
         # The states mapper for this object orders ascending
         return self.states[-1]
         
@@ -1747,12 +1760,6 @@ class RequestTypePermissions( object ):
 class Sample( object ):
     bulk_operations = Bunch( CHANGE_STATE = 'Change state', 
                              SELECT_LIBRARY = 'Select data library and folder' )
-    transfer_status = Bunch( NOT_STARTED = 'Not started',
-                             IN_QUEUE = 'In queue',
-                             TRANSFERRING = 'Transferring dataset',
-                             ADD_TO_LIBRARY = 'Adding to data library',
-                             COMPLETE = 'Complete',
-                             ERROR = 'Error' )
     def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None):
         self.name = name
         self.desc = desc
@@ -1776,21 +1783,21 @@ class Sample( object ):
     def untransferred_dataset_files( self ):
         untransferred_datasets = []
         for dataset in self.datasets:
-            if dataset.status == self.transfer_status.NOT_STARTED:
+            if dataset.status == SampleDataset.transfer_status.NOT_STARTED:
                 untransferred_datasets.append( dataset )
         return untransferred_datasets
     @property
     def inprogress_dataset_files( self ):
         inprogress_datasets = []
         for dataset in self.datasets:
-            if dataset.status not in [ self.transfer_status.NOT_STARTED, self.transfer_status.COMPLETE ]:
+            if dataset.status not in [ SampleDataset.transfer_status.NOT_STARTED, SampleDataset.transfer_status.COMPLETE ]:
                 inprogress_datasets.append( dataset )
         return inprogress_datasets
     @property
     def transferred_dataset_files( self ):
         transferred_datasets = []
         for dataset in self.datasets:
-            if dataset.status == self.transfer_status.COMPLETE:
+            if dataset.status == SampleDataset.transfer_status.COMPLETE:
                 transferred_datasets.append( dataset )
         return transferred_datasets
     def dataset_size( self, filepath ):
@@ -1818,6 +1825,12 @@ class SampleEvent( object ):
         self.comment = comment
         
 class SampleDataset( object ):
+    transfer_status = Bunch( NOT_STARTED = 'Not started',
+                             IN_QUEUE = 'In queue',
+                             TRANSFERRING = 'Transferring dataset',
+                             ADD_TO_LIBRARY = 'Adding to data library',
+                             COMPLETE = 'Complete',
+                             ERROR = 'Error' )
     def __init__(self, sample=None, name=None, file_path=None, 
                  status=None, error_msg=None, size=None):
         self.sample = sample
