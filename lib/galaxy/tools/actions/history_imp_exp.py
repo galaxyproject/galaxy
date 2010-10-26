@@ -1,9 +1,55 @@
+import tempfile
 from __init__ import ToolAction
 from galaxy.util.odict import odict
-from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper
+from galaxy.tools.imp_exp import *
 
 import logging
 log = logging.getLogger( __name__ )
+
+class ImportHistoryToolAction( ToolAction ):
+    """Tool action used for importing a history to an archive. """
+
+    def execute( self, tool, trans, incoming = {}, set_output_hid = False, overwrite = True ):    
+        #
+        # Create job.
+        #
+        job = trans.app.model.Job()
+        job.session_id = trans.get_galaxy_session().id
+        job.history_id = trans.history.id
+        job.tool_id = tool.id
+        job.user_id = trans.user.id
+        start_job_state = job.state #should be job.states.NEW
+        job.state = job.states.WAITING #we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
+        trans.sa_session.add( job )        
+        trans.sa_session.flush() #ensure job.id are available
+        
+        #
+        # Setup job and job wrapper.
+        #
+        
+        # Add association for keeping track of job, history relationship.
+        archive_dir = tempfile.mkdtemp()
+        jiha = trans.app.model.JobImportHistoryArchive( job=job, archive_dir=archive_dir )
+        trans.sa_session.add( jiha )
+        job_wrapper = JobImportHistoryArchiveWrapper( job )
+        
+        #
+        # Add parameters to job_parameter table.
+        #
+        
+        # Set additional parameters.
+        incoming[ '__DEST_DIR__' ] = jiha.archive_dir
+        for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
+            job.add_parameter( name, value )
+            
+        job.state = start_job_state #job inputs have been configured, restore initial job state
+        trans.sa_session.flush()
+
+        # Queue the job for execution
+        trans.app.job_queue.put( job.id, tool )
+        trans.log_event( "Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
+                
+        return job, odict()
 
 class ExportHistoryToolAction( ToolAction ):
     """Tool action used for exporting a history to an archive. """
@@ -30,6 +76,7 @@ class ExportHistoryToolAction( ToolAction ):
         job.session_id = trans.get_galaxy_session().id
         job.history_id = trans.history.id
         job.tool_id = tool.id
+        job.user_id = trans.user.id
         start_job_state = job.state #should be job.states.NEW
         job.state = job.states.WAITING #we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add( job )

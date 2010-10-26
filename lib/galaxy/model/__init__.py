@@ -227,7 +227,13 @@ class JobExportHistoryArchive( object ):
         self.history_attrs_filename = history_attrs_filename
         self.datasets_attrs_filename = datasets_attrs_filename
         self.jobs_attrs_filename = jobs_attrs_filename
-
+        
+class JobImportHistoryArchive( object ):
+    def __init__( self, job=None, history=None, archive_dir=None ):
+        self.job = job
+        self.history = history
+        self.archive_dir=archive_dir
+        
 class Group( object ):
     def __init__( self, name = None ):
         self.name = name
@@ -244,6 +250,7 @@ class History( object, UsesAnnotations ):
         self.name = name or "Unnamed history"
         self.deleted = False
         self.purged = False
+        self.importing = False
         self.genome_build = None
         self.published = False
         # Relationships

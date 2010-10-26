@@ -53,10 +53,10 @@
                     galaxy_main.location = "${h.url_for( controller='history', action='delete_current' )}";
                 }
             },
-            ##"Other Actions": null,
-            ##"Import from File": function() {
-            ##    galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
-            ##}
+            "Other Actions": null,
+            "Import from File": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
+            }
         });
         
         // Init tool options.

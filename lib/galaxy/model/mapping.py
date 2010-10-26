@@ -77,6 +77,7 @@ History.table = Table( "history", metadata,
     Column( "hid_counter", Integer, default=1 ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
+    Column( "importing", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ),
     Column( "importable", Boolean, default=False ),
     Column( "slug", TEXT, index=True ),
@@ -382,6 +383,13 @@ JobExportHistoryArchive.table = Table( "job_export_history_archive", metadata,
     Column( "history_attrs_filename", TEXT ),
     Column( "datasets_attrs_filename", TEXT ),
     Column( "jobs_attrs_filename", TEXT )
+    )
+    
+JobImportHistoryArchive.table = Table( "job_import_history_archive", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "archive_dir", TEXT )
     )
     
 PostJobAction.table = Table("post_job_action", metadata,
@@ -1220,6 +1228,9 @@ assign_mapper( context, JobExportHistoryArchive, JobExportHistoryArchive.table,
     properties=dict( job = relation( Job ),
                      history = relation( History ),
                      dataset = relation( Dataset ) ) )
+                     
+assign_mapper( context, JobImportHistoryArchive, JobImportHistoryArchive.table,
+    properties=dict( job = relation( Job ), history = relation( History ) ) )
 
 assign_mapper( context, PostJobAction, PostJobAction.table,
     properties=dict(workflow_step = relation( WorkflowStep, backref='post_job_actions', primaryjoin=(WorkflowStep.table.c.id == PostJobAction.table.c.workflow_step_id))))

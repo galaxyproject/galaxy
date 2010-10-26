@@ -2,7 +2,7 @@ import os, shutil, logging, tempfile, simplejson
 from galaxy import model
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.json import to_json_string
+from galaxy.util.json import *
 from galaxy.web.base.controller import UsesHistory
 
 log = logging.getLogger(__name__)
@@ -26,21 +26,252 @@ def load_history_imp_exp_tools( toolbox ):
           </outputs>
         </tool>
         """
+        
+    # Load export tool.
     tmp_name = tempfile.NamedTemporaryFile()
     tmp_name.write( tool_xml_text )
     tmp_name.flush()
     history_exp_tool = toolbox.load_tool( tmp_name.name )
     toolbox.tools_by_id[ history_exp_tool.id ] = history_exp_tool
     log.debug( "Loaded history export tool: %s", history_exp_tool.id )
+    
+    # Load import tool.
+    tool_xml = os.path.join( os.getcwd(), "lib/galaxy/tools/imp_exp/imp_history_from_archive.xml" )
+    history_imp_tool = toolbox.load_tool( tool_xml )
+    toolbox.tools_by_id[ history_imp_tool.id ] = history_imp_tool
+    log.debug( "Loaded history import tool: %s", history_imp_tool.id )
+    
+class JobImportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
+    """ 
+        Class provides support for performing jobs that import a history from
+        an archive.
+    """
+    def __init__( self, job_id ):
+        self.job_id = job_id
+        
+    def cleanup_after_job( self, db_session ):
+        """ Set history, datasets, and jobs' attributes and clean up archive directory. """
+        
+        #
+        # Helper methods.
+        #
+        
+        def file_in_dir( file_path, a_dir ):
+            """ Returns true if file is in directory. """
+            abs_file_path = os.path.abspath( file_path )
+            return os.path.split( abs_file_path )[0] == a_dir
+            
+        def read_file_contents( file_path ):
+            """ Read contents of a file. """
+            fp = open( file_path, 'rb' )
+            buffsize = 1048576
+            file_contents = ''
+            try:
+                while True:
+                    file_contents += fp.read( buffsize )
+                    if not file_contents or len( file_contents ) % buffsize != 0:
+                        break
+            except OverflowError:
+                pass
+            fp.close()
+            return file_contents
+            
+        def get_tag_str( tag, value ):
+            """ Builds a tag string for a tag, value pair. """
+            if not value:
+                return tag
+            else:
+                return tag + ":" + value
+        
+        #
+        # Import history.
+        #
+        
+        jiha = db_session.query( model.JobImportHistoryArchive ).filter_by( job_id=self.job_id ).first()
+        if jiha:
+            try:
+                archive_dir = jiha.archive_dir
+                user = jiha.job.user
+            
+                #
+                # Create history.
+                #
+                history_attr_file_name = os.path.join( archive_dir, 'history_attrs.txt')
+                history_attr_str = read_file_contents( history_attr_file_name )
+                history_attrs = from_json_string( history_attr_str )
+
+                # Create history.
+                new_history = model.History( name='imported from archive: %s' % history_attrs['name'].encode( 'utf-8' ), \
+                                             user=user )
+                new_history.importing = True
+                new_history.hid_counter = history_attrs['hid_counter']
+                new_history.genome_build = history_attrs['genome_build']
+                db_session.add( new_history )
+                jiha.history = new_history
+                db_session.flush()
+                    
+                # Add annotation, tags.
+                if user:
+                    self.add_item_annotation( db_session, user, new_history, history_attrs[ 'annotation' ] )
+                    """
+                    TODO: figure out to how add tags to item.
+                    for tag, value in history_attrs[ 'tags' ].items():
+                        trans.app.tag_handler.apply_item_tags( trans, trans.user, new_history, get_tag_str( tag, value ) )
+                    """
+
+                #
+                # Create datasets.
+                #
+                datasets_attrs_file_name = os.path.join( archive_dir, 'datasets_attrs.txt')
+                datasets_attr_str = read_file_contents( datasets_attrs_file_name )
+                datasets_attrs = from_json_string( datasets_attr_str )
+            
+                # Get counts of how often each dataset file is used; a file can
+                # be linked to multiple dataset objects (HDAs).
+                datasets_usage_counts = {}
+                for dataset_attrs in datasets_attrs:
+                    temp_dataset_file_name = \
+                        os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
+                    if ( temp_dataset_file_name not in datasets_usage_counts ):
+                        datasets_usage_counts[ temp_dataset_file_name ] = 0
+                    datasets_usage_counts[ temp_dataset_file_name ] += 1
+            
+                # Create datasets.
+                for dataset_attrs in datasets_attrs:
+                    metadata = dataset_attrs['metadata']
+    
+                    # Create dataset and HDA.
+                    hda = model.HistoryDatasetAssociation( name = dataset_attrs['name'].encode( 'utf-8' ),
+                                                           extension = dataset_attrs['extension'],
+                                                           info = dataset_attrs['info'].encode( 'utf-8' ),
+                                                           blurb = dataset_attrs['blurb'],
+                                                           peek = dataset_attrs['peek'],
+                                                           designation = dataset_attrs['designation'],
+                                                           visible = dataset_attrs['visible'],
+                                                           dbkey = metadata['dbkey'],
+                                                           metadata = metadata, 
+                                                           history = new_history,
+                                                           create_dataset = True,
+                                                           sa_session = db_session )
+                    hda.state = hda.states.OK
+                    db_session.add( hda )
+                    db_session.flush()
+                    new_history.add_dataset( hda, genome_build = None )
+                    hda.hid = dataset_attrs['hid'] # Overwrite default hid set when HDA added to history.
+                    # TODO: Is there a way to recover permissions? Is this needed?
+                    #permissions = trans.app.security_agent.history_get_default_permissions( new_history )
+                    #trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
+                    db_session.flush()
+    
+                    # Do security check and move/copy dataset data.
+                    temp_dataset_file_name = \
+                        os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
+                    if not file_in_dir( temp_dataset_file_name, os.path.join( archive_dir, "datasets" ) ):
+                        raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
+                    if datasets_usage_counts[ temp_dataset_file_name ] == 1:
+                        shutil.move( temp_dataset_file_name, hda.file_name )
+                    else:
+                        datasets_usage_counts[ temp_dataset_file_name ] -= 1
+                        shutil.copyfile( temp_dataset_file_name, hda.file_name )
+    
+                    # Set tags, annotations.
+                    if user:
+                        self.add_item_annotation( db_session, user, hda, dataset_attrs[ 'annotation' ] )
+                        # TODO: Set tags.
+                        """
+                        for tag, value in dataset_attrs[ 'tags' ].items():
+                            trans.app.tag_handler.apply_item_tags( trans, trans.user, hda, get_tag_str( tag, value ) )
+                            db_session.flush()
+                        """
+    
+                #
+                # Create jobs.
+                #
+    
+                # Read jobs attributes.
+                jobs_attr_file_name = os.path.join( archive_dir, 'jobs_attrs.txt')
+                jobs_attr_str = read_file_contents( jobs_attr_file_name )
+    
+                # Decode jobs attributes.
+                def as_hda( obj_dct ):
+                    """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by 
+                        the encoded object. This only works because HDAs are created above. """
+                    if obj_dct.get( '__HistoryDatasetAssociation__', False ):
+                            return db_session.query( model.HistoryDatasetAssociation ) \
+                                            .filter_by( history=new_history, hid=obj_dct['hid'] ).first()
+                    return obj_dct
+                jobs_attrs = from_json_string( jobs_attr_str, object_hook=as_hda )
+    
+                # Create each job.
+                for job_attrs in jobs_attrs:
+                    imported_job = model.Job()
+                    imported_job.user = user
+                    # TODO: set session?
+                    # imported_job.session = trans.get_galaxy_session().id
+                    imported_job.history = new_history
+                    imported_job.tool_id = job_attrs[ 'tool_id' ]
+                    imported_job.tool_version = job_attrs[ 'tool_version' ]
+                    imported_job.set_state( job_attrs[ 'state' ] )
+                    imported_job.imported = True
+                    db_session.add( imported_job )
+                    db_session.flush()
+        
+                    class HistoryDatasetAssociationIDEncoder( simplejson.JSONEncoder ):
+                        """ Custom JSONEncoder for a HistoryDatasetAssociation that encodes an HDA as its ID. """
+                        def default( self, obj ):
+                            """ Encode an HDA, default encoding for everything else. """
+                            if isinstance( obj, model.HistoryDatasetAssociation ):
+                                return obj.id
+                            return simplejson.JSONEncoder.default( self, obj )
+                            
+                    # Set parameters. May be useful to look at metadata.py for creating parameters.
+                    # TODO: there may be a better way to set parameters, e.g.:
+                    #   for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
+                    #       job.add_parameter( name, value )
+                    # to make this work, we'd need to flesh out the HDA objects. The code below is 
+                    # relatively similar.
+                    for name, value in job_attrs[ 'params' ].items():
+                        # Transform parameter values when necessary.
+                        if isinstance( value, model.HistoryDatasetAssociation ):
+                            # HDA input: use hid to find input.
+                            input_hda = db_session.query( model.HistoryDatasetAssociation ) \
+                                            .filter_by( history=new_history, hid=value.hid ).first()
+                            value = input_hda.id
+                        #print "added parameter %s-->%s to job %i" % ( name, value, imported_job.id )
+                        imported_job.add_parameter( name, to_json_string( value, cls=HistoryDatasetAssociationIDEncoder ) )
+            
+                    # TODO: Connect jobs to input datasets.
+        
+                    # Connect jobs to output datasets.
+                    for output_hid in job_attrs[ 'output_datasets' ]:
+                        #print "%s job has output dataset %i" % (imported_job.id, output_hid)
+                        output_hda = db_session.query( model.HistoryDatasetAssociation ) \
+                                        .filter_by( history=new_history, hid=output_hid ).first()
+                        if output_hda:
+                            imported_job.add_output_dataset( output_hda.name, output_hda )
+                        
+                    # Done importing.
+                    new_history.importing = False
+
+                    db_session.flush()
+                        
+                # Cleanup.
+                if os.path.exists( archive_dir ):
+                    shutil.rmtree( archive_dir )                    
+            except Exception, e:
+                jiha.job.stderr += "Error cleaning up history import job: %s" % e
+                db_session.flush()
 
 class JobExportHistoryArchiveWrapper( object, UsesHistory, UsesAnnotations ):
-    """ Class provides support for performing jobs that export a history to an archive. """
+    """ 
+        Class provides support for performing jobs that export a history to an
+        archive. 
+    """
     def __init__( self, job_id ):
         self.job_id = job_id
         
     # TODO: should use db_session rather than trans in this method.
     def setup_job( self, trans, jeha, include_hidden=False, include_deleted=False ):
-        # jeha = job_export_history_archive for the job.
         """ Perform setup for job to export a history into an archive. Method generates 
             attribute files for export, sets the corresponding attributes in the jeha
             object, and returns a command line for running the job. The command line

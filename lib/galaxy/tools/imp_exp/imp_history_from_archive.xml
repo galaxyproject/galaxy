@@ -1,0 +1,10 @@
+<tool id="__IMPORT_HISTORY__" name="Import History" version="0.1" tool_type="import_history">
+  <type class="ImportHistoryTool" module="galaxy.tools"/>
+  <action module="galaxy.tools.actions.history_imp_exp" class="ImportHistoryToolAction"/>
+  <command interpreter="python">unpack_tar_gz_archive.py $__ARCHIVE_SOURCE__ $__DEST_DIR__ --$__ARCHIVE_TYPE__</command>
+  <inputs>
+    <param name="__ARCHIVE_SOURCE__" type="text"/>
+    <param name="__ARCHIVE_TYPE__" type="text"/>
+    <param name="__DEST_DIR__" type="text"/>
+  </inputs>
+</tool>

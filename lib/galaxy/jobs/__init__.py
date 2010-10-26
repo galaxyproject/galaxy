@@ -608,6 +608,7 @@ class JobWrapper( object ):
             if self.app.config.set_metadata_externally:
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
+            galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
         

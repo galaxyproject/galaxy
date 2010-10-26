@@ -1904,6 +1904,9 @@ class SetMetadataTool( Tool ):
             
 class ExportHistoryTool( Tool ):
     tool_type = 'export_history'
+    
+class ImportHistoryTool( Tool ):
+    tool_type = 'import_history'
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
