@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #    FASTX-toolkit - FASTA/FASTQ preprocessing tools.
 #    Copyright (C) 2009  A. Gordon (gordon@cshl.edu)
