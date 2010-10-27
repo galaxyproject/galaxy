@@ -420,4 +420,4 @@ upload1 = local:///
 #queue = galaxy_queue
 #exchange = galaxy_exchange
 #routing_key = bar_code_scanner
-
+#rabbitmqctl_path = /path/to/rabbitmqctl 

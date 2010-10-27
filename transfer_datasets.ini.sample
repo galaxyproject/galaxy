@@ -3,13 +3,8 @@
 [data_transfer_user_login_info]
 #email = datatx@bx.psu.edu
 #password = datatx
-
-# The following section contains 4 config variables neede for the data transfer.
-# Please copy the exact values for each of these variables from the universe_wsgi.ini
-# configuration file for this installation
+#api_key = Generate it from the User menu in Galaxy 
 
 [universe_wsgi_config]
-#host = 127.0.0.1
-#port = 
-#database_connection = 
-#library_import_dir = 
+# The http server section name in the Galaxy config file (universe_wsgi.ini) 
+#http_server_section = server:main
