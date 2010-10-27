@@ -91,7 +91,10 @@ def submit( api_key, url, data, return_formatted=True ):
     except urllib2.HTTPError, e:
         print e
         print e.read( 1024 )
-        sys.exit( 1 )
+        if return_formatted:
+            sys.exit( 1 )
+        else:
+            return 'Error. '+ str( e )
     if not return_formatted:
         return r
     print 'Response'

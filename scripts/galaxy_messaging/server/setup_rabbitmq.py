@@ -11,13 +11,17 @@
 import os, sys, csv, ConfigParser
 
 def main( config_file ):
-    config = ConfigParser.ConfigParser()
-    config.read( config_file )
-    rabbitmqctl_path = config.get( 'galaxy_amqp', 'rabbitmqctl_path' )
-    username = config.get( 'galaxy_amqp', 'userid' )
-    password = config.get( 'galaxy_amqp', 'password' )
-    virtual_host = config.get( 'galaxy_amqp', 'virtual_host' )
-    
+    try:
+        config = ConfigParser.ConfigParser()
+        config.read( config_file )
+        rabbitmqctl_path = config.get( 'galaxy_amqp', 'rabbitmqctl_path' )
+        username = config.get( 'galaxy_amqp', 'userid' )
+        password = config.get( 'galaxy_amqp', 'password' )
+        virtual_host = config.get( 'galaxy_amqp', 'virtual_host' )
+    except Exception, e:
+        print 'Fatal error:', str(e)
+        sys.exit(1)
+        
     cmd_list = [
                 'add_user %s %s' % ( username, password ),
                 'add_vhost %s' % config.get( 'galaxy_amqp', 'virtual_host' ),

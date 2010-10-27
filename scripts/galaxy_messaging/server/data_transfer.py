@@ -184,10 +184,11 @@ class DataTransfer(object):
             url = "http://%s:%s/api/libraries/%s/contents" % ( self.server_host, 
                                                                self.server_port, 
                                                                api.encode_id( self.config_id_secret, self.library_id ) )
-            log.debug(str((self.api_key, url, data)))
+            log.debug( str( ( self.api_key, url, data ) ) )
             retval = api.submit( self.api_key, url, data, return_formatted=False )
-        except:
-            self.error_and_exit(str(e))
+            log.debug( str( retval ) )
+        except Exception, e:
+            self.error_and_exit( str( e ) )
             
     def update_status(self, status, dataset_id='All', msg=''):
         '''
@@ -212,7 +213,7 @@ class DataTransfer(object):
                                                      api.encode_id( self.config_id_secret, self.request_id ) )
             log.debug(str((self.api_key, url, data)))
             retval = api.update( self.api_key, url, data, return_formatted=False )
-            log.debug('done.')
+            log.debug( str( retval ) )
         except urllib2.URLError, e:
             log.debug( 'ERROR(sample_dataset_transfer_status (%s)): %s' % ( url, str(e) ) )
             log.error(traceback.format_exc())
