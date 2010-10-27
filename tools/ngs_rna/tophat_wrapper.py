@@ -52,8 +52,6 @@ def __main__():
     
     (options, args) = parser.parse_args()
     
-    #sys.stderr.write('*'*50+'\n'+str(options)+'\n'+'*'*50+'\n')
-    
     # Creat bowtie index if necessary.
     tmp_index_dir = tempfile.mkdtemp()
     if options.own_file != 'None':
@@ -121,6 +119,14 @@ def __main__():
                 opts += ' --microexon-search'
             if options.single_paired == 'paired':
                 opts += ' --mate-std-dev %s' % options.mate_std_dev
+            if options.seg_mismatches != None:
+                opts += ' --segment-mismatches %d' % int(options.seg_mismatches)
+            if options.seg_length != None:
+                opts += ' --segment-length %d' % int(options.seg_length)
+            if options.min_segment_intron != None:
+                opts += ' --min-segment-intron %d' % int(options.min_segment_intron)
+            if options.max_segment_intron != None:
+                opts += ' --max-segment-intron %d' % int(options.max_segment_intron)
             cmd = cmd % ( tmp_output_dir, opts, index_path, reads )
         except Exception, e:
             # Clean up temp dirs
@@ -166,12 +172,12 @@ def __main__():
     # Postprocessing: copy output files from tmp directory to specified files. Also need to remove header lines from SAM file.
     try:
         try:
-            shutil.copyfile( tmp_output_dir + "/coverage.wig", options.coverage_output_file )
-            shutil.copyfile( tmp_output_dir + "/junctions.bed", options.junctions_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "coverage.wig" ), options.coverage_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "junctions.bed" ), options.junctions_output_file )
             
             # Remove headers from SAM file in place.
             in_header = True # Headers always at start of file.
-            for line in fileinput.input( tmp_output_dir + "/accepted_hits.sam", inplace=1 ):
+            for line in fileinput.input( os.path.join( tmp_output_dir, "accepted_hits.sam" ), inplace=1 ):
                 if in_header and line.startswith("@"):
                     continue
                 else:
@@ -179,7 +185,7 @@ def __main__():
                     sys.stdout.write( line )
                     
             # Copy SAM File.
-            shutil.copyfile( tmp_output_dir + "/accepted_hits.sam", options.accepted_hits_output_file )
+            shutil.copyfile( os.path.join( tmp_output_dir, "accepted_hits.sam" ), options.accepted_hits_output_file )
         except Exception, e:
             stop_err( 'Error in tophat:\n' + str( e ) ) 
     finally:
