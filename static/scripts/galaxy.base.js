@@ -290,8 +290,8 @@ function replace_big_select_inputs(min_length, max_length) {
             var try_refresh_fn = function() {
                 // Get new value and see if it can be matched.
                 var new_value = select_mapping[text_input_elt.attr('value')];
-                if (new_value !== null && new_value !== undefined) {
-                    if ($.inArray(new_value, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
+                if (last_selected_value !== new_value && new_value !== null && new_value !== undefined) {
+                    if (ref_on_change_vals !== undefined && $.inArray(new_value, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
                         return;
                     }
                     text_input_elt.attr('value', new_value);
