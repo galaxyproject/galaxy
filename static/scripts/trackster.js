@@ -772,7 +772,8 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         this.max_height = 0;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
-        // A list of setTimeout() ids used when drawing tiles.
+        // A list of setTimeout() ids used when drawing tiles. Each ID indicates
+        // a tile has been requested to be drawn or is being drawn.
         var draw_tile_ids = {};
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
@@ -800,8 +801,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         //
         var track = this;
         var intervalId = setInterval(function() {
-            if ( draw_tile_ids.length !== 0 ) {
-                // Add drawing has finished; if there is more than one child in the content div, 
+            // Only do stuff if all tile drawing is complete:
+            if (obj_length(draw_tile_ids) === 0) {
+                // All drawing has finished; if there is more than one child in the content div, 
                 // remove the first one, which is the oldest.
                 if ( track.content_div.children().length > 1 ) {
                     track.content_div.children( ":first" ).remove();
