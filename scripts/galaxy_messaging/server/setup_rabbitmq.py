@@ -25,7 +25,7 @@ def main( config_file ):
     cmd_list = [
                 'add_user %s %s' % ( username, password ),
                 'add_vhost %s' % config.get( 'galaxy_amqp', 'virtual_host' ),
-                'set_permissions -p %s %s "%s.*" ".*" ".*"' % ( virtual_host, username, username )
+                'set_permissions -p %s %s ".*" ".*" ".*"' % ( virtual_host, username )
                ]
     
     for cmd in cmd_list:
