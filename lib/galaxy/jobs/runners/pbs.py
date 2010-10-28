@@ -563,7 +563,7 @@ class PBSJobRunner( object ):
         if c <= 0:
             log.debug("(%s/%s) Connection to PBS server for job delete failed" % ( job.id, job.job_runner_external_id ) )
             return
-        pbs.pbs_deljob( c, str( job.job_runner_external_id ), 'NULL' )
+        pbs.pbs_deljob( c, str( job.job_runner_external_id ), '' )
         pbs.pbs_disconnect( c )
         log.debug( "(%s/%s) Removed from PBS queue before job completion" % ( job.id, job.job_runner_external_id ) )
 
