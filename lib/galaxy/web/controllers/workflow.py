@@ -1299,6 +1299,11 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                             step_outputs = [s.output_name for s in step.workflow_outputs]
                             for output in tool.outputs.keys():
                                 if output not in step_outputs:
+                                    # Necessary, unfortunately, to clean up workflows that might have more than one at this point.
+                                    for pja in step.post_job_actions:
+                                        if pja.action_type == "HideDatasetAction" and pja.output_name == output:
+                                            step.post_job_actions.remove(pja)
+                                            trans.sa_session.delete(pja)
                                     # Create a PJA for hiding this output.
                                     n_pja = PostJobAction('HideDatasetAction', step, output, {})
                                 else:
