@@ -813,6 +813,8 @@ class JobStopQueue( object ):
         self.sa_session = app.model.context
         self.dispatcher = dispatcher
 
+        self.track_jobs_in_database = app.config.get_bool( 'track_jobs_in_database', False )
+
         # Keep track of the pid that started the job manager, only it
         # has valid threads
         self.parent_pid = os.getpid()
@@ -848,21 +850,29 @@ class JobStopQueue( object ):
         Called repeatedly by `monitor` to stop jobs.
         """
         # Pull all new jobs from the queue at once
-        jobs = []
-        try:
-            while 1:
-                ( job_id, error_msg ) = self.queue.get_nowait()
-                if job_id is self.STOP_SIGNAL:
-                    return
-                # Append to watch queue
-                jobs.append( ( job_id, error_msg ) )
-        except Empty:
-            pass  
-
-        for job_id, error_msg in jobs:
-            job = self.sa_session.query( model.Job ).get( job_id )
-            self.sa_session.refresh( job )
-            # if desired, error the job so we can inform the user.
+        jobs_to_check = []
+        if self.track_jobs_in_database:
+            # Clear the session so we get fresh states for job and all datasets
+            self.sa_session.expunge_all()
+            # Fetch all new jobs
+            newly_deleted_jobs = self.sa_session.query( model.Job ) \
+                                     .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+                                     .filter( model.Job.state == model.Job.states.DELETED_NEW ).all()
+            for job in newly_deleted_jobs:
+                jobs_to_check.append( ( job, None ) )
+        else:
+            try:
+                while 1:
+                    message = self.queue.get_nowait()
+                    if message is self.STOP_SIGNAL:
+                        return
+                    # Unpack the message
+                    job_id, error_msg = message
+                    # Get the job object and append to watch queue
+                    jobs_to_check.append( ( self.sa_session.query( model.Job ).get( job_id ), error_msg ) )
+            except Empty:
+                pass
+        for job, error_msg in jobs_to_check:
             if error_msg is not None:
                 job.state = job.states.ERROR
                 job.info = error_msg
@@ -870,9 +880,6 @@ class JobStopQueue( object ):
                 job.state = job.states.DELETED
             self.sa_session.add( job )
             self.sa_session.flush()
-            # if job is in JobQueue or FooJobRunner's put method,
-            # job_runner_name will be unset and the job will be dequeued due to
-            # state change above
             if job.job_runner_name is not None:
                 # tell the dispatcher to stop the job
                 self.dispatcher.stop( job )
@@ -888,7 +895,8 @@ class JobStopQueue( object ):
         else:
             log.info( "sending stop signal to worker thread" )
             self.running = False
-            self.queue.put( ( self.STOP_SIGNAL, None ) )
+            if not self.track_jobs_in_database:
+                self.queue.put( self.STOP_SIGNAL )
             self.sleeper.wake()
             log.info( "job stopper stopped" )
 
