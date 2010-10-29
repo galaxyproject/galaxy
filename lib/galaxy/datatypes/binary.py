@@ -213,8 +213,11 @@ class BigWig(Binary):
     def _unpack( self, pattern, handle ):
         return struct.unpack( pattern, handle.read( struct.calcsize( pattern ) ) )
     def sniff( self, filename ):
-        magic = self._unpack( "I", open( filename ) )
-        return magic[0] == self._magic
+        try:
+            magic = self._unpack( "I", open( filename ) )
+            return magic[0] == self._magic
+        except:
+            return False
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek  = "Binary UCSC %s file" % self._name
