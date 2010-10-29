@@ -241,6 +241,9 @@ class JobQueue( object ):
             elif idata.state == idata.states.ERROR:
                 JobWrapper( job, self ).fail( "input data %d is in error state" % ( idata.hid ) )
                 return JOB_INPUT_ERROR
+            elif idata.state == idata.states.FAILED_METADATA:
+                JobWrapper( job, self ).fail( "input data %d failed to properly set metadata" % ( idata.hid ) )
+                return JOB_INPUT_ERROR
             elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
                 # need to requeue
                 return JOB_WAIT
