@@ -475,6 +475,63 @@ $.extend( Workflow.prototype, {
             wf.remove_node( v );
         });
     },
+    rectify_workflow_outputs : function() {
+        console.log("RECTIFICATION!");
+        // Find out if we're using workflow_outputs or not.
+        var using_workflow_outputs = false;
+        $.each( this.nodes, function ( k, node ) {
+            if (node.workflow_outputs && node.workflow_outputs.length > 0){
+                using_workflow_outputs = true;
+            }
+        });
+        if (using_workflow_outputs == false){
+            //We're done, leave PJAs alone.
+            return true;
+        }
+        wf = this;
+        $.each(this.nodes, function (k, node ){
+            if (node.type == 'tool'){
+                var node_changed = false;
+                if (node.post_job_actions == null){
+                    console.log("CREATED FOR NEW NODE");
+                    node.post_job_actions = {};
+                }
+                var pjas_to_rem = [];
+                $.each(node.post_job_actions, function(pja_id, pja){
+                    if (pja.action_type == "HideDatasetAction"){
+                        pjas_to_rem.push(pja_id);
+                    }
+                });
+                if (pjas_to_rem.length > 0 && node == workflow.active_node)
+                $.each(pjas_to_rem, function(i, pja_name){
+                    node_changed = true;
+                    delete node.post_job_actions[pja_name];
+                })
+                $.each(node.output_terminals, function(ot_id, ot){
+                    var create_pja = true;
+                    $.each(node.workflow_outputs, function(i, wo_name){
+                        if (ot.name == wo_name){
+                            create_pja = false;
+                        }
+                    });
+                    if (create_pja == true){
+                        node_changed = true;
+                        var pja = {
+                            action_type : "HideDatasetAction", 
+                            output_name : ot.name, 
+                            action_arguments : {}
+                        }
+                        node.post_job_actions['HideDatasetAction'+ot.name] = null;
+                        node.post_job_actions['HideDatasetAction'+ot.name] = pja;                    
+                    }
+                });
+                // lastly, if this is the active node, and we made changes, reload the display at right.
+                 if (wf.active_node == node && node_changed == true) {
+                     wf.reload_active_node();
+                 }
+            }
+        });
+    },
     to_simple : function () {
         var nodes = {};
         $.each( this.nodes, function ( i, node ) {
@@ -491,7 +548,6 @@ $.extend( Workflow.prototype, {
             if (node.post_job_actions){
                 $.each( node.post_job_actions, function ( i, act ) {
                     var pja = {
-                        job_id : act.id,
                         action_type : act.action_type, 
                         output_name : act.output_name, 
                         action_arguments : act.action_arguments
@@ -558,6 +614,10 @@ $.extend( Workflow.prototype, {
             $("#right-content").find("form").submit();
             this.active_form_has_changes = false;
         }
+    },
+    reload_active_node : function() {
+        this.clear_active_node();
+        this.activate_node(node);  
     },
     clear_active_node : function() {
         if ( this.active_node ) {

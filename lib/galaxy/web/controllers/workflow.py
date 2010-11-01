@@ -1270,13 +1270,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 workflow_invocation = model.WorkflowInvocation()
                 workflow_invocation.workflow = workflow
                 outputs = odict()
-                # Find out if there are any workflow outputs defined, as that influences our actions.
-                use_workflow_outputs = False
-                for step in workflow.steps:
-                    if step.type == 'tool' or step.type is None:
-                        if step.workflow_outputs:
-                            use_workflow_outputs = True
-                            break
                 for i, step in enumerate( workflow.steps ):
                     # Execute module
                     job = None
@@ -1294,24 +1287,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                         job, out_data = tool.execute( trans, step.state.inputs )
                         outputs[ step.id ] = out_data
                         # Create new PJA associations with the created job, to be run on completion.
-                        if use_workflow_outputs:
-                            # We're using outputs.  Check the step for outputs to be displayed.  Create PJAs to hide the rest upon completion.
-                            step_outputs = [s.output_name for s in step.workflow_outputs]
-                            for output in tool.outputs.keys():
-                                if output not in step_outputs:
-                                    # Necessary, unfortunately, to clean up workflows that might have more than one at this point.
-                                    for pja in step.post_job_actions:
-                                        if pja.action_type == "HideDatasetAction" and pja.output_name == output:
-                                            step.post_job_actions.remove(pja)
-                                            trans.sa_session.delete(pja)
-                                    # Create a PJA for hiding this output.
-                                    n_pja = PostJobAction('HideDatasetAction', step, output, {})
-                                else:
-                                    # Remove any HideDatasetActions, step is flagged for output.
-                                    for pja in step.post_job_actions:
-                                        if pja.action_type == "HideDatasetAction" and pja.output_name == output:
-                                            step.post_job_actions.remove(pja)
-                                            trans.sa_session.delete(pja)
                         for pja in step.post_job_actions:
                             if pja.action_type in ActionBox.immediate_actions:
                                 ActionBox.execute(trans.app, trans.sa_session, pja, job)

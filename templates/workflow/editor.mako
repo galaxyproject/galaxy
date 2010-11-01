@@ -627,6 +627,7 @@
             }
             return;
         }
+		workflow.rectify_workflow_outputs();
         var savefn = function(callback) {
             $.ajax( {
                 url: "${h.url_for( action='save_workflow' )}",
