@@ -476,7 +476,6 @@ $.extend( Workflow.prototype, {
         });
     },
     rectify_workflow_outputs : function() {
-        console.log("RECTIFICATION!");
         // Find out if we're using workflow_outputs or not.
         var using_workflow_outputs = false;
         $.each( this.nodes, function ( k, node ) {
@@ -493,7 +492,6 @@ $.extend( Workflow.prototype, {
             if (node.type == 'tool'){
                 var node_changed = false;
                 if (node.post_job_actions == null){
-                    console.log("CREATED FOR NEW NODE");
                     node.post_job_actions = {};
                 }
                 var pjas_to_rem = [];
