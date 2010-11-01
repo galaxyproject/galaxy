@@ -123,16 +123,6 @@ class ToolRunner( BaseController ):
             params_objects = job.get_param_values( trans.app )
         except:
             raise Exception( "Failed to get paramemeters for dataset id %d " % data.id )
-        # Unpack unvalidated values to strings, they'll be validated when the
-        # form is submitted (this happens when re-running a job that was
-        # initially run by a workflow)
-        validated_params = {}
-        for name, value in params_objects.items():
-            if isinstance( value, UnvalidatedValue ):
-                validated_params [ str(name) ] = str(value)
-            else:
-                validated_params [ str(name) ] = value
-        params_objects = validated_params
         # Need to remap dataset parameters. Job parameters point to original 
         # dataset used; parameter should be the analygous dataset in the 
         # current history.
@@ -141,12 +131,22 @@ class ToolRunner( BaseController ):
         for hda in history.datasets:
             source_hda = hda.copied_from_history_dataset_association
             while source_hda:#should this check library datasets as well?
-                hda_source_dict[ source_hda ] = hda
+                #FIXME: could be multiple copies of a hda in a single history, this does a better job of matching on cloned histories, 
+                #but is still less than perfect when eg individual datasets are copied between histories
+                if source_hda not in hda_source_dict or source_hda.hid == hda.hid:
+                    hda_source_dict[ source_hda ] = hda
                 source_hda = source_hda.copied_from_history_dataset_association
-        for name, value in validated_params.items():
-            if isinstance( value, trans.app.model.HistoryDatasetAssociation ):
-                if value not in history.datasets:
-                    validated_params[ name ] = hda_source_dict[ value ]
+        # Unpack unvalidated values to strings, they'll be validated when the
+        # form is submitted (this happens when re-running a job that was
+        # initially run by a workflow)
+        #This needs to be done recursively through grouping parameters
+        def rerun_callback( input, value, prefixed_name, prefixed_label ):
+            if isinstance( value, UnvalidatedValue ):
+                return str( value )
+            if isinstance( input, DataToolParameter ):
+                if value not in history.datasets and value in hda_source_dict:
+                    return hda_source_dict[ value ]
+        visit_input_values( tool.inputs, params_objects, rerun_callback )
         # Create a fake tool_state for the tool, with the parameters values 
         state = tool.new_state( trans )
         state.inputs = params_objects
