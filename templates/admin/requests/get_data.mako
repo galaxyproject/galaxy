@@ -75,7 +75,7 @@
         <a class="action-button" href="${h.url_for( controller='requests_admin', action='view_request_type', id=trans.security.encode_id( request.type.id ) )}">Sequencer configuration "${request.type.name}"</a>
     </li>
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Browse this request</a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Browse this request</a>
     </li>
 </ul>
 

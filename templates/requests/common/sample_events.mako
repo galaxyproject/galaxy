@@ -5,10 +5,7 @@
 
 <h2>Events for Sample "${sample.name}"</h2>
 <ul class="manage-table-actions">
-    <li>
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">
-        <span>Browse this request</span></a>
-    </li>
+    <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Browse this request</a></li>
 </ul>
 <h3>Sequencing Request "${sample.request.name}"</h3>
 

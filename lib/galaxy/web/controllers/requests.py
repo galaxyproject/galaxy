@@ -10,11 +10,10 @@ log = logging.getLogger( __name__ )
 
 class UserRequestsGrid( RequestsGrid ):
     operations = [ operation for operation in RequestsGrid.operations ]
-    operations.append( grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted and item.is_unsubmitted ) ) )
-    operations.append( grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted and item.is_new ) ) )
+    operations.append( grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: item.is_unsubmitted and not item.deleted ) ) )
+    operations.append( grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: item.is_new and not item.deleted ) ) )
     operations.append( grids.GridOperation( "Undelete", allow_multiple=True, condition=( lambda item: item.deleted ) ) )
     def apply_query_filter( self, trans, query, **kwd ):
-        # gvk ( 9/28/10 ) TODO: is this method needed?
         return query.filter_by( user=trans.user )
 
 class Requests( BaseController ):
@@ -37,9 +36,9 @@ class Requests( BaseController ):
                                                                   action='edit_basic_request_info',
                                                                   cntrller='requests',
                                                                   **kwd ) )
-            if operation == "manage_request":
+            if operation == "view_request":
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                                  action='manage_request',
+                                                                  action='view_request',
                                                                   cntrller='requests',
                                                                   **kwd ) )
             if operation == "delete":
@@ -70,12 +69,12 @@ class Requests( BaseController ):
             message = "%d requests (highlighted in red) were rejected.  Click on the request name for details." % rejected
             kwd[ 'status' ] = status
             kwd[ 'message' ] = message
-        # show the create request button to the user, only when the user has permissions 
-        # to at least one request_type (sequencer configuration)
+        # Allow the user to create a new request only if they have permission to access a 
+        # (sequencer configuration) request type.
         if len( trans.user.accessible_request_types( trans ) ):
             self.request_grid.global_actions = [ grids.GridAction( "Create new request", dict( controller='requests_common',
-                                                                                              action='create_request',
-                                                                                              cntrller='requests' ) ) ]
+                                                                                               action='create_request',
+                                                                                               cntrller='requests' ) ) ]
         else:
             self.request_grid.global_actions = []
         # Render the list view

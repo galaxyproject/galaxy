@@ -86,7 +86,7 @@ class Forms( BaseController ):
                                                                   status='error',
                                                                   message="Invalid form ID") )
             if operation == "view":
-                return self.__view( trans, **kwd )
+                return self.view_form_definition( trans, **kwd )
             elif operation == "delete":
                 return self.__delete( trans, **kwd )
             elif operation == "undelete":
@@ -94,10 +94,12 @@ class Forms( BaseController ):
             elif operation == "edit":
                 return self.edit( trans, **kwd )
         return self.forms_grid( trans, **kwd )
-    def __view(self, trans, **kwd):
+    @web.expose
+    def view_form_definition( self, trans, **kwd ):
+        form_definition_current_id = kwd.get( 'id', None )
         try:
-            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent )\
-                                  .get( trans.security.decode_id(kwd['id']) )
+            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ) \
+                                  .get( trans.security.decode_id( form_definition_current_id ) )
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
                                                               action='manage',

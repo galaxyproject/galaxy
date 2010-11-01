@@ -158,9 +158,9 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                                   action='edit_basic_request_info',
                                                                   cntrller='requests_admin',
                                                                   **kwd ) )
-            if operation == "manage_request":
+            if operation == "view_request":
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                                  action='manage_request',
+                                                                  action='view_request',
                                                                   cntrller='requests_admin',
                                                                   **kwd ) )
             if operation == "request_events":
@@ -186,14 +186,14 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         return self.request_grid( trans, **kwd )
     @web.expose
     @web.require_admin
-    def reject( self, trans, **kwd ):
+    def reject_request( self, trans, **kwd ):
         params = util.Params( kwd )
         request_id = params.get( 'id', '' )
         status = params.get( 'status', 'done' )
         message = params.get( 'message', 'done' )
         if params.get( 'cancel_reject_button', False ):
             return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
+                                                              action='view_request',
                                                               cntrller='requests_admin',
                                                               id=request_id ) )
         try:
@@ -292,7 +292,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             return invalid_id_redirect( trans, 'requests_admin', sample_id )
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
-        self.datatx_grid.title = 'Datasets of sample "%s"' % sample.name
         self.datatx_grid.global_actions = [ grids.GridAction( "Refresh", 
                                                               dict( controller='requests_admin', 
                                                                     action='manage_datasets',
@@ -303,14 +302,14 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                                     request_id=request_id,
                                                                     folder_path=sample.request.type.datatx_info[ 'data_dir' ],
                                                                     sample_id=sample_id ) ),
-                                            grids.GridAction( 'Data library "%s"' % sample.library.name, 
-                                                              dict( controller='library_common', 
-                                                                    action='browse_library', 
-                                                                    cntrller='library_admin', 
-                                                                    id=library_id ) ),
+                                            #grids.GridAction( 'Data library "%s"' % sample.library.name, 
+                                            #                  dict( controller='library_common', 
+                                            #                        action='browse_library', 
+                                            #                        cntrller='library_admin', 
+                                            #                        id=library_id ) ),
                                             grids.GridAction( "Browse this request", 
                                                               dict( controller='requests_common', 
-                                                                    action='manage_request',
+                                                                    action='view_request',
                                                                     cntrller='requests_admin',
                                                                     id=request_id ) ) ]
         return self.datatx_grid( trans, **kwd )

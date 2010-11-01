@@ -1489,17 +1489,17 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def add_samples( self, cntrller, request_id, request_name, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/requests_common/manage_request?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
+        self.visit_url( "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=False" % ( self.url, cntrller, request_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         # Simulate clicking the add-sample_button on the form.  (gvk: 9/21/10 - TODO : There must be a bug in the mako template 
         # because twill cannot find any forms on the page, but I cannot find it although I've spent time cleaning up the
         # template code and looking for any problems. 
-        url = "%s/requests_common/manage_request?cntrller=%s&id=%s" % ( self.url, cntrller, request_id )
+        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=False" % ( self.url, cntrller, request_id )
         # This should work, but although twill does not thorw any exceptions, the button click never occurs
-        # There are multiple forms on this page, and we'll only be using the form named manage_request.
+        # There are multiple forms on this page, and we'll only be using the form named edit_samples.
         # for sample_index, sample_value_tuple in enumerate( sample_value_tuples ):
-        #     # Add the following form value to the already populated hidden field so that the manage_request
+        #     # Add the following form value to the already populated hidden field so that the edit_samples
         #     # form is the current form
         #     tc.fv( "1", "id", request_id )
         #     tc.submit( 'add_sample_button' )
@@ -1530,7 +1530,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def reject_request( self, request_id, request_name, comment, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/requests_admin/reject?id=%s" % ( self.url, request_id ) )
+        self.visit_url( "%s/requests_admin/reject_request?id=%s" % ( self.url, request_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( "1", "comment", comment )
@@ -1540,7 +1540,7 @@ class TwillTestCase( unittest.TestCase ):
     def add_bar_codes( self, request_id, request_name, bar_codes, samples, strings_displayed_after_submit=[] ):
         # We have to simulate the form submission here since twill barfs on the page
         # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
-        url = "%s/requests_common/manage_request?cntrller=requests_admin&id=%s&managing_samples=True" % ( self.url, request_id )
+        url = "%s/requests_common/edit_samples?cntrller=requests_admin&id=%s&editing_samples=True" % ( self.url, request_id )
         for index, field_value in enumerate( bar_codes ):
             sample_field_name = "sample_%i_name" % index
             sample_field_value = samples[ index ].name.replace( ' ', '+' )
@@ -1555,15 +1555,15 @@ class TwillTestCase( unittest.TestCase ):
                              strings_displayed=[], strings_displayed_after_submit=[] ):
         # We have to simulate the form submission here since twill barfs on the page
         # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
-        url = "%s/requests_common/manage_request?cntrller=requests_admin&id=%s" % ( self.url, request_id )
+        url = "%s/requests_common/edit_samples?cntrller=requests_admin&id=%s" % ( self.url, request_id )
         url += "&comment=%s&sample_state_id=%s" % ( comment, self.security.encode_id( new_sample_state_id ) )
         # select_sample_%i=true must be included twice for each sample to simulate a CheckboxField checked setting.
         for sample_id in sample_ids:
             url += "&select_sample_%i=true&select_sample_%i=true" % ( sample_id, sample_id )
         url += "&sample_operation=Change%20state&refresh=true"
-        url += "&change_state_button=Save"
+        url += "&save_changes_button=Save&editing_samples=True"
         self.visit_url( url )        
-        self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
+        self.check_page_for_string( 'Edit Current Samples of Request "%s"' % request_name )
         for sample_id, sample_name in zip( sample_ids, sample_names ):
             self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%s" % ( self.url, self.security.encode_id( sample_id ) ) )
             self.check_page_for_string( 'Events for Sample "%s"' % sample_name )

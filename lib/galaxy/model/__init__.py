@@ -1488,25 +1488,23 @@ class MetadataFile( object ):
         return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 
 class FormDefinition( object ):
-    types = Bunch(  REQUEST = 'Sequencing Request Form',
-                    SAMPLE = 'Sequencing Sample Form',
-                    LIBRARY_INFO_TEMPLATE = 'Library information template',
-                    USER_INFO = 'User Information'  )
-    def __init__(self, name=None, desc=None, fields=[], 
-                 form_definition_current=None, form_type=None, layout=None):
+    types = Bunch( REQUEST = 'Sequencing Request Form',
+                   SAMPLE = 'Sequencing Sample Form',
+                   LIBRARY_INFO_TEMPLATE = 'Library information template',
+                   USER_INFO = 'User Information'  )
+    def __init__( self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None ):
         self.name = name
         self.desc = desc
         self.fields = fields 
         self.form_definition_current = form_definition_current
         self.type = form_type
         self.layout = layout
-    def fields_of_grid(self, grid_index):
-        '''
-        This method returns the list of fields belonging to the given grid.
-        '''
+    def grid_fields( self, grid_index ):
+        # Returns a dictionary whose keys are integers corresponding to field positions
+        # on the grid and whose values are the field.
         gridfields = {}
-        for i, f in enumerate(self.fields):
-            if str(f['layout']) == str(grid_index):
+        for i, f in enumerate( self.fields ):
+            if str( f[ 'layout' ] ) == str( grid_index ):
                 gridfields[i] = f
         return gridfields
     def get_widgets( self, user, contents=[], **kwd ):

@@ -81,10 +81,10 @@
     <form name="library" action="${h.url_for( controller='forms', action='manage' )}" method="post" >
         %if form_definition.type == trans.app.model.FormDefinition.types.SAMPLE:
             %if not len(form_definition.layout):
-                ${render_grid( 0, '', form_definition.fields_of_grid( None ) )}
+                ${render_grid( 0, '', form_definition.grid_fields( None ) )}
             %else:
                 %for grid_index, grid_name in enumerate(form_definition.layout):
-                    ${render_grid( grid_index, grid_name, form_definition.fields_of_grid( grid_index ) )}
+                    ${render_grid( grid_index, grid_name, form_definition.grid_fields( grid_index ) )}
                 %endfor
             %endif
         %else:

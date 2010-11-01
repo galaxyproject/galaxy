@@ -24,13 +24,11 @@ class LibraryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    model_class=model.Library,
                     link=( lambda library: dict( operation="browse", id=library.id ) ),
                     attach_popup=False,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
                            key="description",
-                           model_class=model.Library,
                            attach_popup=False,
                            filterable="advanced" ),
     ]

@@ -70,14 +70,14 @@ class RequestsGrid( grids.Grid ):
     columns = [
         NameColumn( "Name", 
                     key="name", 
-                    link=( lambda item: iff( item.deleted, None, dict( operation="manage_request", id=item.id ) ) ),
+                    link=( lambda item: iff( item.deleted, None, dict( operation="view_request", id=item.id ) ) ),
                     attach_popup=True, 
                     filterable="advanced" ),
         DescriptionColumn( "Description",
                            key='desc',
                            filterable="advanced" ),
         SamplesColumn( "Samples", 
-                       link=( lambda item: iff( item.deleted, None, dict( operation="manage_request", id=item.id ) ) ) ),
+                       link=( lambda item: iff( item.deleted, None, dict( operation="edit_samples", id=item.id ) ) ) ),
         TypeColumn( "Sequencer",
                     link=( lambda item: iff( item.deleted, None, dict( operation="view_type", id=item.type.id ) ) ) ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
@@ -148,7 +148,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             except TypeError, e:
                 # We must have an email address rather than an encoded user id
                 # This is because the galaxy.base.js creates a search+select box 
-                # when there are more than 20 items in a selectfield
+                # when there are more than 20 items in a SelectField.
                 user = trans.sa_session.query( trans.model.User ) \
                                        .filter( trans.model.User.table.c.email==util.restore_text( user_id ) ) \
                                        .first()
@@ -178,7 +178,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                       message=message ,
                                                                       status='done' ) )
                 elif params.get( 'add_sample_button', False ):
-                    return self.__add_sample( trans, cntrller, request, **kwd )
+                    request_id = trans.security.encode_id( request.id )
+                    return self.add_sample( trans, cntrller, request_id, **kwd )
         request_type_select_field = self.__build_request_type_id_select_field( trans, selected_value=request_type_id )
         # Widgets to be rendered on the request form
         widgets = []
@@ -194,7 +195,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 widgets += request_type.request_form.get_widgets( user, **kwd )
         # In case there is an error on the form, make sure to populate widget fields with anything the user
         # may have already entered.
-        self.populate_widgets_from_kwd( trans, widgets, **kwd )
+        widgets = self.populate_widgets_from_kwd( trans, widgets, **kwd )
         if request_type is not None or status == 'error':
             # Either the user selected a request_type or an error exists on the form.
             if is_admin:
@@ -214,6 +215,29 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     message=message,
                                     status=status )
     @web.expose
+    @web.require_login( "view request" )
+    def view_request( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        request_id = params.get( 'id', None )
+        try:
+            request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
+        except:
+            return invalid_id_redirect( trans, cntrller, request_id )
+        sample_state_id = params.get( 'sample_state_id', None )
+        # Get the user entered sample information
+        current_samples = self.__get_sample_widgets( trans, request, request.samples, **kwd )
+        request_widgets = self.__get_request_widgets( trans, request.id )
+        return trans.fill_template( '/requests/common/view_request.mako',
+                                    cntrller=cntrller, 
+                                    request=request,
+                                    request_widgets=request_widgets,
+                                    current_samples=current_samples,
+                                    status=status,
+                                    message=message )
+    @web.expose
     @web.require_login( "edit sequencing requests" )
     def edit_basic_request_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -226,7 +250,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             return invalid_id_redirect( trans, cntrller, request_id )
         name = util.restore_text( params.get( 'name', '' ) )
         desc = util.restore_text( params.get( 'desc', ''  ) )
-        if params.get( 'edit_basic_request_info_button', False ) or params.get( 'edit_samples_button', False ):
+        if params.get( 'edit_basic_request_info_button', False ):
             if not name:
                 status = 'error'
                 message = 'Enter the name of the request'
@@ -244,7 +268,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         widgets = widgets + request.type.request_form.get_widgets( request.user, request.values.content, **kwd )
         # In case there is an error on the form, make sure to populate widget fields with anything the user
         # may have already entered.
-        self.populate_widgets_from_kwd( trans, widgets, **kwd )
+        widgets = self.populate_widgets_from_kwd( trans, widgets, **kwd )
         return trans.fill_template( 'requests/common/edit_basic_request_info.mako',
                                     cntrller=cntrller,
                                     request_type=request.type,
@@ -371,8 +395,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                           status=status,
                                                           message=message ) )
     @web.expose
-    @web.require_login( "sequencing request page" )
-    def manage_request( self, trans, cntrller, **kwd ):
+    @web.require_login( "manage samples" )
+    def edit_samples( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -382,80 +406,64 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, request_id )
-        sample_state_id = params.get( 'sample_state_id', None )
-        # Get the user entered sample information
-        current_samples, managing_samples, libraries = self.__get_sample_info( trans, request, **kwd )
-        selected_samples = self.__get_selected_samples( trans, request, **kwd )
-        selected_value = params.get( 'sample_operation', 'none' )
-        if selected_value != 'none' and not selected_samples:
-            message = 'Select at least one sample before selecting an operation.'
-            status = 'error'
+        # This method is called when the user is adding new samples as well as
+        # editing existing samples, so we use the editing_samples flag to keep
+        # track of what's occurring.
+        # TODO: CRITICAL: We need another round of code fixes to abstract out 
+        # adding samples vs editing samples.  We need to eliminate the need for
+        # this editing_samples flag since it is not maintainable.  Greg will do
+        # this work as soon as possible.
+        editing_samples = util.string_as_bool( params.get( 'editing_samples', False ) )
+        if params.get( 'cancel_changes_button', False ):
             return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
+                                                                          action='edit_samples',
+                                                                          cntrller=cntrller,
+                                                                          id=request_id,
+                                                                          editing_samples=editing_samples ) )
+        # Get all libraries for which the current user has permission to add items.
+        libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        # Get the user entered sample information
+        current_samples = self.__get_sample_widgets( trans, request, request.samples, **kwd )
+        encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
+        sample_operation = params.get( 'sample_operation', 'none' )
+        def handle_error( **kwd ):
+            kwd[ 'status' ] = 'error'
+            return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                              action='edit_samples',
                                                               cntrller=cntrller,
-                                                              id=request_id,
-                                                              status=status,
-                                                              message=message ) )
-        sample_operation_select_field = self.__build_sample_operation_select_field( trans, is_admin, request, selected_value )
-        sample_operation_selected_value = sample_operation_select_field.get_selected( return_value=True )
+                                                              **kwd ) )
+        if not encoded_selected_sample_ids and sample_operation != 'none':
+            # Probably occurred due to refresh_on_change...is there a better approach?
+            kwd[ 'sample_operation' ] = 'none'
+            message = 'Select at least one sample before selecting an operation.'
+            kwd[ 'message' ] = message
+            handle_error( **kwd )
         if params.get( 'import_samples_button', False ):
             # Import sample field values from a csv file
             return self.__import_samples( trans, cntrller, request, current_samples, libraries, **kwd )
         elif params.get( 'add_sample_button', False ):
-            return self.__add_sample( trans, cntrller, request, **kwd )
+            return self.add_sample( trans, cntrller, request_id, **kwd )
         elif params.get( 'save_samples_button', False ):
-            return self.__save_sample( trans, cntrller, request, current_samples, **kwd )
-        elif params.get( 'edit_samples_button', False ):
-            managing_samples = True
-        elif params.get( 'cancel_changes_button', False ):
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
-                                                              cntrller=cntrller,
-                                                              id=request_id ) )
-            pass
-        elif params.get( 'change_state_button', False ):
-            sample_event_comment = util.restore_text( params.get( 'sample_event_comment', '' ) )
-            new_state = trans.sa_session.query( trans.model.SampleState ).get( trans.security.decode_id( sample_state_id ) )
-            self.update_sample_state(trans, cntrller, selected_samples, new_state, comment=sample_event_comment )
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              cntrller=cntrller, 
-                                                              action='update_request_state',
-                                                              request_id=request_id ) )
-        elif params.get( 'cancel_change_state_button', False ):
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
-                                                              cntrller=cntrller,
-                                                              id=request_id ) )
-        elif params.get( 'change_lib_button', False ):
-            library_id = params.get( 'sample_0_library_id', None )
-            try:
-                library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( library_id ) )
-            except:
-                invalid_id_redirect( trans, cntrller, library_id )
-            folder_id = params.get( 'sample_0_folder_id', None )
-            try:
-                folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-            except:
-                invalid_id_redirect( trans, cntrller, folder_id )
-            for sample_id in selected_samples:
-                sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
-                sample.library = library
-                sample.folder = folder
-                trans.sa_session.add( sample )
-                trans.sa_session.flush()
-            trans.sa_session.refresh( request )
-            message = 'Changes made to the selected samples have been saved. '
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
-                                                              cntrller=cntrller,
-                                                              id=request_id,
-                                                              status=status,
-                                                              message=message ) )
-        elif params.get( 'cancel_change_lib_button', False ):
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
-                                                              cntrller=cntrller,
-                                                              id=trans.security.encode_id( request.id ) ) )
+            if encoded_selected_sample_ids:
+                # This gets tricky because we need the list of samples to include the same number
+                # of objects that that current_samples ( i.e., request.samples ) has.  We'll first
+                # get the set of samples corresponding to the checked sample ids.
+                samples = []
+                selected_samples = []
+                for encoded_sample_id in encoded_selected_sample_ids:
+                    sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( encoded_sample_id ) )
+                    selected_samples.append( sample )
+                # Now build the list of samples, inserting None for samples that have not been checked.
+                for sample in request.samples:
+                    if sample in selected_samples:
+                        samples.append( sample )
+                    else:
+                        samples.append( None )
+                # The __save_samples method requires samples widgets, not sample objects
+                samples = self.__get_sample_widgets( trans, request, samples, **kwd )
+            else:
+                samples = current_samples
+            return self.__save_samples( trans, cntrller, request, samples, **kwd )
         request_widgets = self.__get_request_widgets( trans, request.id )
         sample_copy = self.__build_copy_sample_select_field( trans, current_samples )
         libraries_select_field, folders_select_field = self.__build_library_and_folder_select_fields( trans,
@@ -464,12 +472,13 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                                                       libraries,
                                                                                                       None,
                                                                                                       **kwd )
-        # Build the sample_state_id_select_field SelectField
+        sample_operation_select_field = self.__build_sample_operation_select_field( trans, is_admin, request, sample_operation )
+        sample_state_id = params.get( 'sample_state_id', None )
         sample_state_id_select_field = self.__build_sample_state_id_select_field( trans, request, sample_state_id )
-        return trans.fill_template( '/requests/common/manage_request.mako',
+        return trans.fill_template( '/requests/common/edit_samples.mako',
                                     cntrller=cntrller, 
                                     request=request,
-                                    selected_samples=selected_samples,
+                                    encoded_selected_sample_ids=encoded_selected_sample_ids,
                                     request_widgets=request_widgets,
                                     current_samples=current_samples,
                                     sample_copy=sample_copy, 
@@ -478,7 +487,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     libraries_select_field=libraries_select_field,
                                     folders_select_field=folders_select_field,
                                     sample_state_id_select_field=sample_state_id_select_field,
-                                    managing_samples=managing_samples,
+                                    editing_samples=editing_samples,
                                     status=status,
                                     message=message )
     @web.expose
@@ -489,7 +498,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             except:
                 if cntrller == 'api':
                     trans.response.status = 400
-                    return "Malformed sample id ( %s ) specified, unable to decode." % str( sample_id )
+                    return "Invalid sample id ( %s ) specified, unable to decode." % str( sample_id )
                 else:
                     return invalid_id_redirect( trans, cntrller, sample_id )
             event = trans.model.SampleEvent( sample, new_state, comment )
@@ -516,7 +525,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             if ok_for_now:
                 request.deleted = True
                 trans.sa_session.add( request )
-                # delete all the samples belonging to this request
+                # Delete all the samples belonging to this request
                 for s in request.samples:
                     s.deleted = True
                     trans.sa_session.add( s )
@@ -546,7 +555,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             if ok_for_now:
                 request.deleted = False
                 trans.sa_session.add( request )
-                # undelete all the samples belonging to this request
+                # Undelete all the samples belonging to this request
                 for s in request.samples:
                     s.deleted = False
                     trans.sa_session.add( s )
@@ -655,9 +664,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 if cntrller == 'api':
                     return 200, message
             return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
+                                                              action='edit_samples',
                                                               cntrller=cntrller,
                                                               id=request_id,
+                                                              editing_samples=True,
                                                               status=status,
                                                               message=message ) )
         final_state = False
@@ -673,8 +683,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         event = trans.model.RequestEvent( request, state, comments )
         trans.sa_session.add( event )
         trans.sa_session.flush()
-        # check if an email notification is configured to be sent when the samples 
-        # are in this state
+        # See if an email notification is configured to be sent when the samples 
+        # are in this state.
         retval = request.send_email_notification( trans, common_state, final_state )
         if retval:
             message = comments + retval
@@ -683,113 +693,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         if cntrller == 'api':
             return 200, message
         return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                          action='manage_request',
+                                                          action='edit_samples',
                                                           cntrller=cntrller,
-                                                          id=trans.security.encode_id(request.id),
-                                                          status='done',
-                                                          message=message ) )
-    def __save_sample( self, trans, cntrller, request, current_samples, **kwd ):
-        # Save all the new/unsaved samples entered by the user
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        managing_samples = util.string_as_bool( params.get( 'managing_samples', False ) )
-        is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
-        selected_value = params.get( 'sample_operation', 'none' )
-        # Check for duplicate sample names
-        message = ''
-        for index in range( len( current_samples ) - len( request.samples ) ):
-            sample_index = index + len( request.samples )
-            current_sample = current_samples[ sample_index ]
-            sample_name = current_sample[ 'name' ]
-            if not sample_name.strip():
-                message = 'Enter the name of sample number %i' % sample_index
-                break
-            count = 0
-            for i in range( len( current_samples ) ):
-                if sample_name == current_samples[ i ][ 'name' ]:
-                    count += 1
-            if count > 1: 
-                message = "This request has %i samples with the name (%s).  Samples belonging to a request must have unique names." % ( count, sample_name )
-                break
-        if message:
-            selected_samples = self.__get_selected_samples( trans, request, **kwd )
-            request_widgets = self.__get_request_widgets( trans, request.id )
-            sample_copy = self.__build_copy_sample_select_field( trans, current_samples )
-            sample_operation_select_field = self.__build_sample_operation_select_field( trans, is_admin, request, selected_value )
-            status = 'error'
-            return trans.fill_template( '/requests/common/manage_request.mako',
-                                        cntrller=cntrller,
-                                        request=request,
-                                        selected_samples=selected_samples,
-                                        request_widgets=request_widgets,
-                                        current_samples=current_samples,
-                                        sample_copy=sample_copy, 
-                                        managing_samples=managing_samples,
-                                        sample_operation_select_field=sample_operation_select_field,
-                                        status=status,
-                                        message=message )
-        if not managing_samples:
-            for index in range( len( current_samples ) - len( request.samples ) ):
-                sample_index = len( request.samples )
-                current_sample = current_samples[ sample_index ]
-                form_values = trans.model.FormValues( request.type.sample_form, current_sample[ 'field_values' ] )
-                trans.sa_session.add( form_values )
-                trans.sa_session.flush()                    
-                s = trans.model.Sample( current_sample[ 'name' ],
-                                        '', 
-                                        request,
-                                        form_values, 
-                                        current_sample[ 'barcode' ],
-                                        current_sample[ 'library' ],
-                                        current_sample[ 'folder' ] )
-                trans.sa_session.add( s )
-                trans.sa_session.flush()
-        else:
-            message = 'Changes made to the samples are saved. '
-            for sample_index in range( len( current_samples ) ):
-                sample = request.samples[ sample_index ]
-                current_sample = current_samples[ sample_index ]
-                sample.name = current_sample[ 'name' ] 
-                sample.library = current_sample[ 'library' ]
-                sample.folder = current_sample[ 'folder' ]
-                if request.is_submitted:
-                    bc_message = self.__validate_barcode( trans, sample, current_sample[ 'barcode' ] )
-                    if bc_message:
-                        status = 'error'
-                        message += bc_message
-                    else:
-                        if not sample.bar_code:
-                            # If this is a 'new' (still in its first state) sample
-                            # change the state to the next
-                            if sample.state.id == request.type.states[0].id:
-                                event = trans.model.SampleEvent( sample, 
-                                                                 request.type.states[1], 
-                                                                 'Sample added to the system' )
-                                trans.sa_session.add( event )
-                                trans.sa_session.flush()
-                                # Now check if all the samples' barcode has been entered.
-                                # If yes then send notification email if configured
-                                common_state = request.samples_have_common_state
-                                if common_state:
-                                    if common_state.id == request.type.states[1].id:
-                                        event = trans.model.RequestEvent( request, 
-                                                                          request.states.SUBMITTED,
-                                                                          "All samples are in %s state." % common_state.name )
-                                        trans.sa_session.add( event )
-                                        trans.sa_session.flush()
-                                        request.send_email_notification( trans, request.type.states[1] )
-                        sample.bar_code = current_samples[sample_index]['barcode']
-                trans.sa_session.add( sample )
-                trans.sa_session.flush()
-                form_values = trans.sa_session.query( trans.model.FormValues ).get( sample.values.id )
-                form_values.content = current_sample[ 'field_values' ]
-                trans.sa_session.add( form_values )
-                trans.sa_session.flush()
-        return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                          action='manage_request',
-                                                          cntrller=cntrller,
-                                                          id=trans.security.encode_id( request.id ),
+                                                          id=request_id,
+                                                          editing_samples=True,
                                                           status=status,
                                                           message=message ) )
     @web.expose
@@ -876,25 +783,33 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     cntrller=cntrller,
                                     events_list=events_list,
                                     sample=sample )
-    def __add_sample( self, trans, cntrller, request, **kwd ):
+    @web.expose
+    @web.require_login( "add sample" )
+    def add_sample( self, trans, cntrller, request_id, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        managing_samples = util.string_as_bool( params.get( 'managing_samples', False ) )
+        try:
+            request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
+        except:
+            return invalid_id_redirect( trans, cntrller, request_id )
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         # Get the widgets for rendering the request form
         request_widgets = self.__get_request_widgets( trans, request.id )
-        current_samples, managing_samples, libraries = self.__get_sample_info( trans, request, **kwd )
+        current_samples = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         if not current_samples:
             # Form field names are zero-based.
             sample_index = 0
         else:
             sample_index = len( current_samples )
         if params.get( 'add_sample_button', False ):
+            # Get all libraries for which the current user has permission to add items
+            libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
             num_samples_to_add = int( params.get( 'num_sample_to_copy', 1 ) )
             # See if the user has selected a sample to copy.
             copy_sample_index = int( params.get( 'copy_sample_index', -1 ) )
             for index in range( num_samples_to_add ):
+                id_index = len( current_samples ) + 1
                 if copy_sample_index != -1:
                     # The user has selected a sample to copy.
                     library_id = current_samples[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
@@ -902,7 +817,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     name = current_samples[ copy_sample_index ][ 'name' ] + '_%i' % ( len( current_samples ) + 1 )
                     field_values = [ val for val in current_samples[ copy_sample_index ][ 'field_values' ] ]
                 else:
-                    # The user has not selected a sample to copy (may just be adding a sample).
+                    # The user has not selected a sample to copy, just adding a new generic sample.
                     library_id = None
                     folder_id = None
                     name = 'Sample_%i' % ( len( current_samples ) + 1 )
@@ -910,7 +825,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                            user=request.user, 
-                                                                                                           sample_index=len( current_samples ), 
+                                                                                                           sample_index=id_index, 
                                                                                                            libraries=libraries,
                                                                                                            sample=None, 
                                                                                                            library_id=library_id,
@@ -926,101 +841,21 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                               field_values=field_values,
                                               library_select_field=library_select_field,
                                               folder_select_field=folder_select_field ) )
-        selected_samples = self.__get_selected_samples( trans, request, **kwd )
-        selected_value = params.get( 'sample_operation', 'none' )
-        sample_operation_select_field = self.__build_sample_operation_select_field( trans, is_admin, request, selected_value )
+        encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
+        sample_operation = params.get( 'sample_operation', 'none' )
+        sample_operation_select_field = self.__build_sample_operation_select_field( trans, is_admin, request, sample_operation )
         sample_copy = self.__build_copy_sample_select_field( trans, current_samples )
-        return trans.fill_template( '/requests/common/manage_request.mako',
+        return trans.fill_template( '/requests/common/edit_samples.mako',
                                     cntrller=cntrller,
                                     request=request,
-                                    selected_samples=selected_samples,
+                                    encoded_selected_sample_ids=encoded_selected_sample_ids,
                                     request_widgets=request_widgets,
                                     current_samples=current_samples,
                                     sample_operation_select_field=sample_operation_select_field,
                                     sample_copy=sample_copy, 
-                                    managing_samples=managing_samples,
+                                    editing_samples=False,
                                     message=message,
                                     status=status )
-    def __get_sample_info( self, trans, request, **kwd ):
-        """
-        Retrieves all user entered sample information and returns a
-        list of all the samples and their field values.
-        """
-        params = util.Params( kwd )
-        managing_samples = util.string_as_bool( params.get( 'managing_samples', False ) )
-        # Bet all data libraries accessible to this user
-        libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
-        # Build the list of widgets which will be used to render each sample row on the request page
-        current_samples = []
-        for index, sample in enumerate( request.samples ):
-            library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
-                                                                                                       request.user,
-                                                                                                       index,
-                                                                                                       libraries,
-                                                                                                       sample,
-                                                                                                       **kwd )
-            current_samples.append( dict( name=sample.name,
-                                          barcode=sample.bar_code,
-                                          library=sample.library,
-                                          folder=sample.folder,
-                                          field_values=sample.values.content,
-                                          library_select_field=library_select_field,
-                                          folder_select_field=folder_select_field ) )
-        if not managing_samples:
-            sample_index = len( request.samples ) 
-        else:
-            sample_index = 0
-        while True:
-            library_id = params.get( 'sample_%i_library_id' % sample_index, None )
-            folder_id = params.get( 'sample_%i_folder_id' % sample_index, None )
-            if params.get( 'sample_%i_name' % sample_index, False  ):
-                # Data library
-                try:
-                    library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( library_id ) )
-                    #library_id = library.id
-                except:
-                    library = None
-                if library is not None:
-                    # Folder
-                    try:
-                        folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-                        #folder_id = folder.id
-                    except:
-                        if library:
-                            folder = library.root_folder
-                        else:
-                            folder = None
-                else:
-                    folder = None
-                sample_info = dict( name=util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) ),
-                                    barcode=util.restore_text( params.get( 'sample_%i_barcode' % sample_index, ''  ) ),
-                                    library=library,
-                                    folder=folder)
-                sample_info[ 'field_values' ] = []
-                for field_index in range( len( request.type.sample_form.fields ) ):
-                    sample_info[ 'field_values' ].append( util.restore_text( params.get( 'sample_%i_field_%i' % ( sample_index, field_index ), ''  ) ) )
-                if not managing_samples:
-                    sample_info[ 'library_select_field' ], sample_info[ 'folder_select_field' ] = self.__build_library_and_folder_select_fields( trans,
-                                                                                                                                                 request.user, 
-                                                                                                                                                 sample_index,
-                                                                                                                                                 libraries, 
-                                                                                                                                                 None,
-                                                                                                                                                 library_id,
-                                                                                                                                                 folder_id,
-                                                                                                                                                 **kwd )
-                    current_samples.append( sample_info )
-                else:
-                    sample_info[ 'library_select_field' ], sample_info[ 'folder_select_field' ] = self.__build_library_and_folder_select_fields( trans, 
-                                                                                                                                                 request.user, 
-                                                                                                                                                 sample_index, 
-                                                                                                                                                 libraries, 
-                                                                                                                                                 request.samples[ sample_index ], 
-                                                                                                                                                 **kwd )
-                    current_samples[ sample_index ] =  sample_info
-                sample_index += 1
-            else:
-                break
-        return current_samples, managing_samples, libraries
     @web.expose
     @web.require_login( "delete sample from sequencing request" )
     def delete_sample( self, trans, cntrller, **kwd ):
@@ -1032,7 +867,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, request_id )
-        current_samples, managing_samples, libraries = self.__get_sample_info( trans, request, **kwd )
+        current_samples = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         sample_index = int( params.get( 'sample_id', 0 ) )
         sample_name = current_samples[sample_index]['name']
         sample = request.has_sample( sample_name )
@@ -1042,9 +877,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             trans.sa_session.flush()
         message = 'Sample (%s) has been deleted.' % sample_name
         return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                          action='manage_request',
+                                                          action='edit_samples',
                                                           cntrller=cntrller,
                                                           id=trans.security.encode_id( request.id ),
+                                                          editing_samples=True,
                                                           status=status,
                                                           message=message ) )
     @web.expose
@@ -1059,12 +895,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, sample_id )
-        # check if a library and folder has been set for this sample yet.
+        # See if a library and folder have been set for this sample.
         if not sample.library or not sample.folder:
             status = 'error'
             message = "Set a data library and folder for sequencing request (%s) to transfer datasets." % sample.name
             return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
+                                                              action='edit_samples',
                                                               cntrller=cntrller,
                                                               id=trans.security.encode_id( sample.request.id ),
                                                               status=status,
@@ -1101,7 +937,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         SampleName,DataLibrary,DataLibraryFolder,Field1,Field2....
         """
         params = util.Params( kwd )
-        managing_samples = util.string_as_bool( params.get( 'managing_samples', False ) )
         file_obj = params.get( 'file_data', '' )
         try:
             reader = csv.reader( file_obj.file )
@@ -1137,23 +972,211 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                               folder_select_field=folder_select_field,
                                               field_values=row[3:] ) )
         except Exception, e:
-            status = 'error'
-            message = 'Error thrown when importing samples file: %s' % str( e )
+            if str( e ) == "'unicode' object has no attribute 'file'":
+                message = "Select a file"
+            else:
+                message = 'Error attempting to create samples from selected file: %s.' % str( e )
+                message += '  Make sure the selected csv file uses the format: SampleName,DataLibrary,DataLibraryFolder,FieldValue1,FieldValue2...'
             return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='manage_request',
+                                                              action='add_sample',
                                                               cntrller=cntrller,
-                                                              id=trans.security.encode_id( request.id ),
-                                                              status=status,
+                                                              request_id=trans.security.encode_id( request.id ),
+                                                              add_sample_button='Add sample',
+                                                              status='error',
                                                               message=message ) )
         request_widgets = self.__get_request_widgets( trans, request.id )
         sample_copy = self.__build_copy_sample_select_field( trans, current_samples )
-        return trans.fill_template( '/requests/common/manage_request.mako',
+        return trans.fill_template( '/requests/common/edit_samples.mako',
                                     cntrller=cntrller,
                                     request=request,
                                     request_widgets=request_widgets,
                                     current_samples=current_samples,
                                     sample_copy=sample_copy,
-                                    managing_samples=managing_samples )
+                                    editing_samples=False )
+    def __save_samples( self, trans, cntrller, request, samples, **kwd ):
+        # Here we handle saving all new samples added by the user as well as saving
+        # changes to any subset of the request's samples.
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        editing_samples = util.string_as_bool( params.get( 'editing_samples', False ) )
+        is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+        sample_operation = params.get( 'sample_operation', 'none' )
+        # Check for duplicate sample names within the request
+        self.__validate_sample_names( trans, cntrller, request, samples, **kwd )
+        if editing_samples:
+            library = None
+            folder = None
+            def handle_error( **kwd ):
+                kwd[ 'status' ] = 'error'
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  action='edit_samples',
+                                                                  cntrller=cntrller,
+                                                                  **kwd ) )
+            # Here we handle saving changes to single samples as well as saving changes to
+            # selected sets of samples.  If samples are selected, the sample_operation param
+            # will have a value other than 'none', and the samples param will be a list of
+            # encoded sample ids.  There are currently only 2 multi-select operations;
+            # 'Change state' and 'Select data library and folder'.  If sample_operation is
+            # 'none, then the samples param will be a list of sample objects.
+            if sample_operation == 'Change state':
+                sample_state_id = params.get( 'sample_state_id', None )
+                if sample_state_id in [ None, 'none' ]:
+                    message = "Select a new state from the <b>Change current state</b> list before clicking the <b>Save</b> button."
+                    kwd[ 'message' ] = message
+                    del kwd[ 'save_changes_button' ]
+                    handle_error( **kwd )
+                sample_event_comment = util.restore_text( params.get( 'sample_event_comment', '' ) )
+                new_state = trans.sa_session.query( trans.model.SampleState ).get( trans.security.decode_id( sample_state_id ) )
+                # Send the encoded sample_ids to update_sample_state.
+                # TODO: make changes necessary to just send the samples...
+                encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
+                # Make sure all samples have a unique barcode if the state is changing
+                for sample_index in range( len( samples ) ):
+                    current_sample = samples[ sample_index ]
+                    if current_sample is None:
+                        # We have a None value because the user did not select this sample 
+                        # on which to perform the action.
+                        continue
+                    request_sample = request.samples[ sample_index ]
+                    bc_message = self.__validate_barcode( trans, request_sample, current_sample[ 'barcode' ] )
+                    if bc_message:
+                        #status = 'error'
+                        message += bc_message
+                        kwd[ 'message' ] = message
+                        del kwd[ 'save_samples_button' ]
+                        handle_error( **kwd )
+                self.update_sample_state( trans, cntrller, encoded_selected_sample_ids, new_state, comment=sample_event_comment )
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  cntrller=cntrller, 
+                                                                  action='update_request_state',
+                                                                  request_id=trans.security.encode_id( request.id ) ) )
+            elif sample_operation == 'Select data library and folder':
+                library_id = params.get( 'sample_0_library_id', 'none' )
+                folder_id = params.get( 'sample_0_folder_id', 'none' )
+                library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
+            self.__update_samples( trans, request, samples, **kwd )
+            # See if all the samples' barcodes are in the same state,
+            # and if so send email if configured to.
+            common_state = request.samples_have_common_state
+            if common_state and common_state.id == request.type.states[1].id:
+                event = trans.model.RequestEvent( request, 
+                                                  request.states.SUBMITTED,
+                                                  "All samples are in %s state." % common_state.name )
+                trans.sa_session.add( event )
+                trans.sa_session.flush()
+                request.send_email_notification( trans, request.type.states[1] )
+            message = 'Changes made to the samples have been saved. '
+        else:
+            # Saving a newly created sample.
+            for index in range( len( samples ) - len( request.samples ) ):
+                sample_index = len( request.samples )
+                current_sample = samples[ sample_index ]
+                form_values = trans.model.FormValues( request.type.sample_form, current_sample[ 'field_values' ] )
+                trans.sa_session.add( form_values )
+                trans.sa_session.flush()                    
+                s = trans.model.Sample( current_sample[ 'name' ],
+                                        '', 
+                                        request,
+                                        form_values, 
+                                        current_sample[ 'barcode' ],
+                                        current_sample[ 'library' ],
+                                        current_sample[ 'folder' ] )
+                trans.sa_session.add( s )
+                trans.sa_session.flush()
+        return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                          action='edit_samples',
+                                                          cntrller=cntrller,
+                                                          id=trans.security.encode_id( request.id ),
+                                                          editing_samples=editing_samples,
+                                                          status=status,
+                                                          message=message ) )
+    def __update_samples( self, trans, request, sample_widgets, **kwd ):
+        # Determine if the values in kwd require updating the request's samples.  The list of
+        # sample_widgets must have the same number of objects as request.samples, but some of
+        # the objects can be None.  Those that are not None correspond to samples selected by
+        # the user for performing an action on multiple samples simultaneously.
+        def handle_error( **kwd ):
+            kwd[ 'status' ] = 'error'
+            return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                              action='edit_samples',
+                                                              cntrller=cntrller,
+                                                              **kwd ) )
+        params = util.Params( kwd )
+        sample_operation = params.get( 'sample_operation', 'none' )
+        if sample_operation != 'none':
+            # These values will be in kwd if the user checked 1 or more checkboxes for performing this action
+            # on a set of samples.
+            library_id = params.get( 'sample_0_library_id', 'none' )
+            folder_id = params.get( 'sample_0_folder_id', 'none' )
+        for index, obj in enumerate( sample_widgets ):
+            if obj is not None:
+                # obj will be None if the user checked sample check boxes and selected an action
+                # to perform on multiple samples, but did not select certain samples.
+                sample_updated = False
+                # If this sample has values in kwd, then kwd will include a
+                # key whose value is this sample's ( possibly changed ) name.  An
+                # example of this key is 'sample_0_name'.
+                for k, v in kwd.items():
+                    name_key = 'sample_%i_name' % index
+                    if k == name_key:
+                        sample_updated = True
+                        break
+                if sample_updated:
+                    id_index = index + 1
+                    if sample_operation == 'none':
+                        # We are handling changes to a single sample.
+                        library_id = params.get( 'sample_%i_library_id' % id_index, 'none' )
+                        folder_id = params.get( 'sample_%i_folder_id' % id_index, 'none' )
+                    # Update the corresponding sample's values as well as the sample_widget.
+                    sample = request.samples[ index ]
+                    sample.name = util.restore_text( params.get( 'sample_%i_name' % index, '' ) )
+                    # The bar_code field requires special handling because after a request is submitted, the
+                    # state of a sample cannot be changed without a bar_code assocaited with the sample.
+                    bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, '' ) )
+                    if not bar_code and not sample.bar_code:
+                        # If this is a 'new' (still in its first state) sample, create an event
+                        if sample.state.id == request.states[0].id:
+                            event = trans.model.SampleEvent( sample, 
+                                                             request.type.states[1], 
+                                                             'Sample added to the system' )
+                            trans.sa_session.add( event )
+                            trans.sa_session.flush()
+                    elif bar_code:
+                        bc_message = self.__validate_barcode( trans, sample, bar_code )
+                        if bc_message:
+                            kwd[ 'message' ] = bc_message
+                            del kwd[ 'save_samples_button' ]
+                            handle_error( **kwd )
+                    sample.bar_code = bar_code
+                    library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
+                    sample.library = library
+                    sample.folder = folder
+                    field_values = []
+                    for field_index in range( len( request.type.sample_form.fields ) ):
+                        field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
+                    form_values = trans.sa_session.query( trans.model.FormValues ).get( sample.values.id )
+                    form_values.content = field_values
+                    trans.sa_session.add_all( ( sample, form_values ) )
+                    trans.sa_session.flush()           
+    def __get_library_and_folder( self, trans, library_id, folder_id ):
+        try:
+            library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( library_id ) )
+        except:
+            library = None
+        if library and folder_id == 'none':
+            folder = library.root_folder
+        elif library and folder_id != 'none':
+            try:
+                folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            except:
+                if library:
+                    folder = library.root_folder
+                else:
+                    folder = None
+        else:
+            folder = None
+        return library, folder
     # ===== Methods for handling form definition widgets =====
     def __get_request_widgets( self, trans, id ):
         """Get the widgets for the request"""
@@ -1179,27 +1202,104 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                               value=request.values.content[ index ],
                                               helptext=field[ 'helptext' ] + ' (' + required_label + ')' ) )
         return request_widgets
-    def __get_samples_widgets( self, trans, request, libraries, **kwd ):
-        """Get the widgets for all of the samples currently associated with the request"""
-        # The current_samples_widgets list is a list of dictionaries
-        current_samples_widgets = []
-        for index, sample in enumerate( request.samples ):
-            # Build the library_select_field and folder_select_field for each existing sample
-            library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
+    def __get_sample_widgets( self, trans, request, samples, **kwd ):
+        """
+        Returns a list of dictionaries, each representing the widgets that define a sample on a form.
+        The widgets are populated from kwd based on the set of samples received.  The set of samples
+        corresponds to a reques.samples list, but if the user checked specific check boxes on the form,
+        those samples that were not check will have None objects in the list of samples.  In this case,
+        the corresponding sample_widget is populated from the db rather than kwd.
+        """
+        params = util.Params( kwd )
+        sample_operation = params.get( 'sample_operation', 'none' )
+        # This method is called when the user is adding new samples as well as
+        # editing existing samples, so we use the editing_samples flag to keep
+        # track of what's occurring.
+        editing_samples = util.string_as_bool( params.get( 'editing_samples', False ) )
+        sample_widgets = []
+        if sample_operation != 'none':
+            # The sample_operatin param has a value other than 'none', and a specified
+            # set of samples was received.
+            library_id = util.restore_text( params.get( 'sample_0_library_id', 'none' ) )
+            folder_id = util.restore_text( params.get( 'sample_0_folder_id', 'none' ) )
+        # Build the list of widgets which will be used to render each sample row on the request page
+        if not request:
+            return sample_widgets
+        # Get the list of libraries for which the current user has permission to add items.
+        libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        # Build the list if sample widgets, populating the values from kwd.
+        for index, sample in enumerate( samples ):
+            id_index = index + 1
+            if sample is None:
+                # Id sample is None, then we'll use the sample from the request object since it will
+                # not have updated =values from kwd.
+                sample = request.samples[ index ]
+                name = sample.name
+                bar_code = sample.bar_code
+                library = sample.library
+                folder = sample.folder
+                field_values = sample.values.content,
+            else:
+                # Update the sample attributes from kwd
+                name = util.restore_text( params.get( 'sample_%i_name' % index, sample.name ) )
+                bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, sample.bar_code ) )
+                library_id = util.restore_text( params.get( 'sample_%i_library_id' % id_index, '' ) )
+                if not library_id and sample.library:
+                    library_id = trans.security.encode_id( sample.library.id )
+                folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % id_index, '' ) )
+                if not folder_id and sample.folder:
+                    folder_id = trans.security.encode_id( sample.folder.id )
+                library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
+                field_values = []
+                for field_index in range( len( request.type.sample_form.fields ) ):
+                    field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
+            library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
                                                                                                        user=request.user,
-                                                                                                       sample_index=index,
+                                                                                                       sample_index=id_index,
                                                                                                        libraries=libraries,
                                                                                                        sample=sample,
+                                                                                                       library_id=library_id,
+                                                                                                       folder_id=folder_id,
                                                                                                        **kwd )
-            # Append the dictionary for the current sample to the current_samples_widgets list
-            current_samples_widgets.append( dict( name=sample.name,
-                                                  barcode=sample.bar_code,
-                                                  library=sample.library,
-                                                  folder=sample.folder,
-                                                  field_values=sample.values.content,
-                                                  library_select_field=library_select_field,
-                                                  folder_select_field=folder_select_field ) )
-        return current_samples_widgets
+            sample_widgets.append( dict( name=name,
+                                         barcode=bar_code,
+                                         library=library,
+                                         folder=folder,
+                                         field_values=field_values,
+                                         library_select_field=library_select_field,
+                                         folder_select_field=folder_select_field ) )
+        # There may be additional new samples on the form that have not yet been associated with the request.
+        # TODO: factor this code so it is not duplicating what's above.
+        index = len( samples )
+        while True:
+            name = util.restore_text( params.get( 'sample_%i_name' % index, '' ) )
+            if not name:
+                break
+            id_index = index + 1
+            bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, '' ) )
+            library_id = util.restore_text( params.get( 'sample_%i_library_id' % id_index, '' ) )
+            folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % id_index, '' ) )
+            library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
+            field_values = []
+            for field_index in range( len( request.type.sample_form.fields ) ):
+                field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
+            library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
+                                                                                                       user=request.user,
+                                                                                                       sample_index=id_index,
+                                                                                                       libraries=libraries,
+                                                                                                       sample=None,
+                                                                                                       library_id=library_id,
+                                                                                                       folder_id=folder_id,
+                                                                                                       **kwd )
+            sample_widgets.append( dict( name=name,
+                                         barcode=bar_code,
+                                         library=library,
+                                         folder=folder,
+                                         field_values=field_values,
+                                         library_select_field=library_select_field,
+                                         folder_select_field=folder_select_field ) )
+            index += 1
+        return sample_widgets   
     # ===== Methods for building SelectFields used on various request forms =====
     def __build_copy_sample_select_field( self, trans, current_samples ):
         copy_sample_index_select_field = SelectField( 'copy_sample_index' )
@@ -1240,26 +1340,30 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         # The libraries dictionary looks like: { library : '1,2' }, library : '3' }.  Its keys are the libraries that
         # should be displayed for the current user and its values are strings of comma-separated folder ids that should
         # NOT be displayed.
-        #
-        # TODO: all object ids received in the params must be encoded.
         params = util.Params( kwd )
         library_select_field_name= "sample_%i_library_id" % sample_index
         folder_select_field_name = "sample_%i_folder_id" % sample_index
         if not library_id:
-            library_id = params.get( library_select_field_name, 'none'  )
+            library_id = params.get( library_select_field_name, None )
+        if not folder_id:
+            folder_id = params.get( folder_select_field_name, None )
         selected_library = None
         selected_hidden_folder_ids = []
         showable_folders = []
-        if sample and sample.library and library_id == 'none':
-            library_id = str( sample.library.id )
+        if library_id not in [ None, 'none' ]:
+            # If we have a selected library, get the list of it's folders that are not accessible to the current user
+            for library, hidden_folder_ids in libraries.items():
+                encoded_id = trans.security.encode_id( library.id )
+                if encoded_id == str( library_id ):
+                    selected_library = library
+                    selected_hidden_folder_ids = hidden_folder_ids.split( ',' )
+                    break
+        elif sample and sample.library and library_id == 'none':
+            # The user previously selected a library but is now resetting the selection to 'none'
+            selected_library = None
+        elif sample and sample.library:
+            library_id = trans.security.encode_id( sample.library.id )
             selected_library = sample.library
-        # If we have a selected library, get the list of it's folders that are not accessible to the current user
-        for library, hidden_folder_ids in libraries.items():
-            encoded_id = trans.security.encode_id( library.id )
-            if encoded_id == str( library_id ):
-                selected_library = library
-                selected_hidden_folder_ids = hidden_folder_ids.split( ',' )
-                break
         # sample_%i_library_id SelectField with refresh on change enabled
         library_select_field = build_select_field( trans,
                                                    libraries.keys(),
@@ -1275,20 +1379,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                               selected_library, 
                                                                               [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ], 
                                                                               selected_hidden_folder_ids )
-        if sample:
-            # The user is editing the request, and may have previously selected a folder
-            if sample.folder:
-                selected_folder_id = sample.folder.id
-            else:
-                # If a library is selected but not a folder, use the library's root folder
-                if sample.library:
-                    selected_folder_id = sample.library.root_folder.id
-                else:
-                    # The user just selected a folder
-                    selected_folder_id = params.get( folder_select_field_name, 'none' )
-        elif folder_id:
-            # TODO: not sure when this would be passed
+            if folder_id:
                 selected_folder_id = folder_id
+            elif sample and sample.folder:
+                selected_folder_id = trans.security.encode_id( sample.folder.id )
+            else:
+                selected_folder_id = trans.security.encode_id( selected_library.root_folder.id )
         else:
             selected_folder_id = 'none'
         # TODO: Change the name of the library root folder to "Library root" to clarify to the
@@ -1328,9 +1424,35 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 message += '<b>' + ef + '</b> '
             return message
         return None
+    def __validate_sample_names( self, trans, cntrller, request, current_samples, **kwd ):
+        # Check for duplicate sample names for all samples of the request.
+        editing_samples = util.string_as_bool( kwd.get( 'editing_samples', False ) )
+        message = ''
+        for index in range( len( current_samples ) - len( request.samples ) ):
+            sample_index = index + len( request.samples )
+            current_sample = current_samples[ sample_index ]
+            sample_name = current_sample[ 'name' ]
+            if not sample_name.strip():
+                message = 'Enter the name of sample number %i' % sample_index
+                break
+            count = 0
+            for i in range( len( current_samples ) ):
+                if sample_name == current_samples[ i ][ 'name' ]:
+                    count += 1
+            if count > 1: 
+                message = "You tried to add %i samples with the name (%s).  Samples belonging to a request must have unique names." % ( count, sample_name )
+                break
+        if message:
+            del kwd[ 'save_samples_button' ]
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'error'
+            return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                              action='edit_samples',
+                                                              cntrller=cntrller,
+                                                              **kwd ) )
     def __validate_barcode( self, trans, sample, barcode ):
         """
-        Makes sure that the barcode about to be assigned to a sample is gobally unique.
+        Makes sure that the barcode about to be assigned to a sample is globally unique.
         That is, barcodes must be unique across requests in Galaxy sample tracking. 
         """
         message = ''
@@ -1338,13 +1460,18 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         for index in range( len( sample.request.samples ) ):
             # Check for empty bar code
             if not barcode.strip():
-                message = 'Fill in the barcode for sample (%s).' % sample.name
-                break
+                if sample.state.id == sample.request.type.states[0].id:
+                    # The user has not yet filled in the barcode value, but the sample is
+                    # 'new', so all is well.
+                    break
+                else:
+                    message = "Fill in the barcode for sample (%s) before changing it's state." % sample.name
+                    break
             # TODO: Add a unique constraint to sample.bar_code table column
             # Make sure bar code is unique
-            for sample_has_bar_code in trans.sa_session.query( trans.model.Sample ) \
-                                                        .filter( trans.model.Sample.table.c.bar_code == barcode ):
-                if sample_has_bar_code and sample_has_bar_code.id != sample.id:
+            for sample_with_barcode in trans.sa_session.query( trans.model.Sample ) \
+                                                       .filter( trans.model.Sample.table.c.bar_code == barcode ):
+                if sample_with_barcode and sample_with_barcode.id != sample.id:
                     message = '''The bar code (%s) associated with the sample (%s) belongs to another sample.  
                                  Bar codes must be unique across all samples, so use a different bar code 
                                  for this sample.''' % ( barcode, sample.name )
@@ -1360,15 +1487,15 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         elif len( email ) > 255:
             error = "(%s) exceeds maximum allowable length.  " % str( email )
         return error
-    # ===== Other miscellaneoud utility methods =====
-    def __get_selected_samples( self, trans, request, **kwd ):
-        selected_samples = []
+    # ===== Other miscellaneous utility methods =====
+    def __get_encoded_selected_sample_ids( self, trans, request, **kwd ):
+        encoded_selected_sample_ids = []
         for sample in request.samples:
             if CheckboxField.is_checked( kwd.get( 'select_sample_%i' % sample.id, '' ) ):
-                selected_samples.append( trans.security.encode_id( sample.id ) )
-        return selected_samples
+                encoded_selected_sample_ids.append( trans.security.encode_id( sample.id ) )
+        return encoded_selected_sample_ids
 
-# ===== Miscellaneoud utility methods outside of the RequestsCommon class =====
+# ===== Miscellaneous utility methods outside of the RequestsCommon class =====
 def invalid_id_redirect( trans, cntrller, obj_id, action='browse_requests' ):
     status = 'error'
     message = "Invalid request id (%s)" % str( obj_id )

@@ -10,7 +10,7 @@
         <a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Browse datasets</a>
     </li>
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='manage_request', cntrller='requests_admin', id=trans.security.encode_id( sample.request.id ) )}">Browse this request</a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller='requests_admin', id=trans.security.encode_id( sample.request.id ) )}">Browse this request</a>
     </li>
 </ul>
 

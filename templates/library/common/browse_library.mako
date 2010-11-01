@@ -346,7 +346,6 @@
             >
             <td style="padding-left: ${folder_pad}px;">
                 <input type="checkbox" class="folderCheckbox"/>
-                
                 %if folder.deleted:
                     <span class="libraryItem-error">
                 %endif
@@ -354,7 +353,6 @@
                 <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="folder_img-${folder.id}-popup">
                     <a href="javascript:void(0);">${folder.name}</a>
                 </div>
-                
                 %if folder.deleted:
                     </span>
                 %endif
