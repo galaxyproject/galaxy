@@ -614,8 +614,11 @@ $.extend( Workflow.prototype, {
         }
     },
     reload_active_node : function() {
-        this.clear_active_node();
-        this.activate_node(node);  
+        if (this.active_node){
+            var node = this.active_node;
+            this.clear_active_node();
+            this.activate_node(node);
+        }
     },
     clear_active_node : function() {
         if ( this.active_node ) {
