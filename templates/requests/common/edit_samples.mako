@@ -73,9 +73,10 @@
     is_complete = request.is_complete
     is_unsubmitted = request.is_unsubmitted
     can_add_samples = is_unsubmitted
-    can_edit_or_delete_samples = is_unsubmitted and request.samples
+    can_edit_or_delete_samples = request.samples and not is_complete
     can_edit_request = ( is_admin and not request.is_complete ) or request.is_unsubmitted
     can_reject_or_transfer = is_admin and request.is_submitted
+    can_submit = request.samples and is_unsubmitted
 %>
 
 <br/><br/>
@@ -87,7 +88,7 @@
     %if editing_samples and can_add_samples:
         <li><a class="action-button" href="${h.url_for( controller='requests_common', action='add_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), add_sample_button='Add sample' )}">Add sample</a></li>
     %endif
-    %if is_unsubmitted:
+    %if can_submit:
         <li><a class="action-button" confirm="More samples cannot be added to this request after it is submitted. Click OK to submit." href="${h.url_for( controller='requests_common', action='submit_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Submit request</a></li>
     %endif
     <li><a class="action-button" id="request-${request.id}-popup" class="menubutton">Request actions</a></li>
@@ -209,12 +210,12 @@
                 Click the <b>Save</b> button when you have finished editing the samples
             </div>
         %endif
-        %if request.samples and request.is_submitted:
-            <script type="text/javascript">
-                // Updater
-                updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
-            </script>
-        %endif
+        ##%if request.samples and request.is_submitted:
+        ##    <script type="text/javascript">
+        ##        // Updater
+        ##        updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
+        ##    </script>
+        ##%endif
     </form>
 </div>
 %if is_unsubmitted and not editing_samples:

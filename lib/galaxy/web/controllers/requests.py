@@ -36,6 +36,12 @@ class Requests( BaseController ):
                                                                   action='edit_basic_request_info',
                                                                   cntrller='requests',
                                                                   **kwd ) )
+            if operation == "edit_samples":
+                kwd[ 'editing_samples' ] = True
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  action='edit_samples',
+                                                                  cntrller='requests',
+                                                                  **kwd ) )
             if operation == "view_request":
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                                   action='view_request',

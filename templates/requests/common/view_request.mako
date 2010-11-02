@@ -18,15 +18,18 @@
     from galaxy.web.framework.helpers import time_ago
 
     is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+    is_complete = request.is_complete
     is_unsubmitted = request.is_unsubmitted
     can_edit_request = ( is_admin and not request.is_complete ) or request.is_unsubmitted
     can_add_samples = is_unsubmitted
+    can_edit_or_delete_samples = request.samples and not is_complete
+    can_submit = request.samples and is_unsubmitted
 %>
 
 <br/><br/>
 
 <ul class="manage-table-actions">
-    %if is_unsubmitted:
+    %if can_submit:
         <li><a class="action-button" confirm="More samples cannot be added to this request after it is submitted. Click OK to submit." href="${h.url_for( controller='requests_common', action='submit_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Submit request</a></li>
     %endif
     <li><a class="action-button" id="request-${request.id}-popup" class="menubutton">Request actions</a></li>
@@ -66,13 +69,12 @@
         </div>
         <div class="form-row">
             <label>User:</label>
-            %if is_admin:
-                ${request.user.email}
-            %elif request.user.username:
-                ${request.user.username}
-            %else:
-                Unknown
-            %endif
+            ${request.user.email}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Sequencer configuration:</label>
+            ${request.type.name}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -129,11 +131,6 @@
                     ${states}
                     <div style="clear: both"></div>
                 </div>
-                <div class="form-row">
-                    <label>Sequencer configuration:</label>
-                    ${request.type.name}
-                    <div style="clear: both"></div>
-                </div>
             </div>
         </div>
     </div>
@@ -141,7 +138,7 @@
 <p/>
 %if current_samples:
     <% grid_header = '<h3>Samples</h3>' %>
-    ${render_samples_grid( cntrller, request, current_samples=current_samples, action='view_request', editing_samples=False, encoded_selected_sample_ids=[], render_buttons=can_edit_request, grid_header=grid_header )}
+    ${render_samples_grid( cntrller, request, current_samples=current_samples, action='view_request', editing_samples=False, encoded_selected_sample_ids=[], render_buttons=can_edit_or_delete_samples, grid_header=grid_header )}
 %else:
     There are no samples.
     %if can_add_samples:

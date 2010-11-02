@@ -752,11 +752,18 @@
     
         %if grid.global_actions:
             <ul class="manage-table-actions">
-            %for action in grid.global_actions:
-                <li>
-                    <a class="action-button" href="${h.url_for( **action.url_args )}">${action.label}</a>
-                </li>
-            %endfor
+                %if len( grid.global_actions ) < 4:
+                    %for action in grid.global_actions:
+                        <li><a class="action-button" href="${h.url_for( **action.url_args )}">${action.label}</a></li>
+                    %endfor
+                %else:
+                    <li><a class="action-button" id="action-8675309-popup" class="menubutton">Actions</a></li>
+                    <div popupmenu="action-8675309-popup">
+                        %for action in grid.global_actions:
+                            <a class="action-button" href="${h.url_for( **action.url_args )}">${action.label}</a>
+                        %endfor
+                    </div>
+                %endif
             </ul>
         %endif
     

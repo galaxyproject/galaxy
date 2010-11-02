@@ -46,17 +46,6 @@ class RequestsGrid( grids.Grid ):
                             .filter( model.RequestEvent.table.c.id.in_( select( columns=[ func.max( model.RequestEvent.table.c.id ) ],
                                                                                 from_obj=model.RequestEvent.table,
                                                                                 group_by=model.RequestEvent.table.c.request_id ) ) )
-        def get_accepted_filters( self ):
-            """ Returns a list of accepted filters for this column. """
-            # TODO: is this method necessary?
-            accepted_filter_labels_and_vals = [ model.Request.states.get( state ) for state in model.Request.states ]
-            accepted_filter_labels_and_vals.append( "All" )
-            accepted_filters = []
-            for val in accepted_filter_labels_and_vals:
-                label = val.lower()
-                args = { self.key: val }
-                accepted_filters.append( grids.GridColumnFilter( label, args ) )
-            return accepted_filters
         
     # Grid definition
     title = "Sequencing Requests"
@@ -64,7 +53,6 @@ class RequestsGrid( grids.Grid ):
     model_class = model.Request
     default_sort_key = "-update_time"
     num_rows_per_page = 50
-    preserve_state = True
     use_paging = True
     default_filter = dict( state="All", deleted="False" )
     columns = [
@@ -379,14 +367,24 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             sample_event_comment = ""
         event = trans.model.RequestEvent( request, request.states.SUBMITTED, sample_event_comment )
         trans.sa_session.add( event )
-        # change the state of each of the samples of thus request
-        new_state = request.type.states[0]
+        # Change the state of each of the samples of this request
+        # request.type.states is the list of SampleState objects configured
+        # by the admin for this RequestType.
+        trans.sa_session.add( event )
+        trans.sa_session.flush()
+        # Samples will not have an associated SampleState until the request is submitted, at which
+        # time all samples of the request will be set to the first SampleState configured for the
+        # request's RequestType configured by the admin.
+        initial_sample_state_after_request_submitted = request.type.states[0]
         for sample in request.samples:
-            event = trans.model.SampleEvent( sample, new_state, 'Samples created.' )
+            event_comment = 'Request submitted and sample state set to %s.' % request.type.states[0].name
+            event = trans.model.SampleEvent( sample,
+                                             initial_sample_state_after_request_submitted,
+                                             event_comment )
             trans.sa_session.add( event )
         trans.sa_session.add( request )
         trans.sa_session.flush()
-        request.send_email_notification( trans, new_state )
+        request.send_email_notification( trans, initial_sample_state_after_request_submitted )
         message = 'The request has been submitted.'
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='browse_requests',
@@ -519,8 +517,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             try:
                 request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( id ) )
             except:
-                message += "Invalid request ID (%s).  " % str( id )
-                status = 'error'
                 ok_for_now = False
             if ok_for_now:
                 request.deleted = True
@@ -549,8 +545,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             try:
                 request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( id ) )
             except:
-                message += "Invalid request ID (%s).  " % str( id )
-                status = 'error'
                 ok_for_now = False
             if ok_for_now:
                 request.deleted = False
@@ -903,6 +897,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               action='edit_samples',
                                                               cntrller=cntrller,
                                                               id=trans.security.encode_id( sample.request.id ),
+                                                              editing_samples=True,
                                                               status=status,
                                                               message=message ) )
         if is_admin:
@@ -1024,7 +1019,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 if sample_state_id in [ None, 'none' ]:
                     message = "Select a new state from the <b>Change current state</b> list before clicking the <b>Save</b> button."
                     kwd[ 'message' ] = message
-                    del kwd[ 'save_changes_button' ]
+                    del kwd[ 'save_samples_button' ]
                     handle_error( **kwd )
                 sample_event_comment = util.restore_text( params.get( 'sample_event_comment', '' ) )
                 new_state = trans.sa_session.query( trans.model.SampleState ).get( trans.security.decode_id( sample_state_id ) )
@@ -1056,32 +1051,38 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 folder_id = params.get( 'sample_0_folder_id', 'none' )
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
             self.__update_samples( trans, request, samples, **kwd )
-            # See if all the samples' barcodes are in the same state,
-            # and if so send email if configured to.
-            common_state = request.samples_have_common_state
-            if common_state and common_state.id == request.type.states[1].id:
-                event = trans.model.RequestEvent( request, 
-                                                  request.states.SUBMITTED,
-                                                  "All samples are in %s state." % common_state.name )
-                trans.sa_session.add( event )
-                trans.sa_session.flush()
-                request.send_email_notification( trans, request.type.states[1] )
+            # Samples will not have an associated SampleState until the request is submitted, at which
+            # time all samples of the request will be set to the first SampleState configured for the
+            # request's RequestType defined by the admin.
+            if request.is_submitted:
+                # See if all the samples' barcodes are in the same state, and if so send email if configured to.
+                common_state = request.samples_have_common_state
+                if common_state and common_state.id == request.type.states[1].id:
+                    event = trans.model.RequestEvent( request, 
+                                                      request.states.SUBMITTED,
+                                                      "All samples are in %s state." % common_state.name )
+                    trans.sa_session.add( event )
+                    trans.sa_session.flush()
+                    request.send_email_notification( trans, request.type.states[1] )
             message = 'Changes made to the samples have been saved. '
         else:
-            # Saving a newly created sample.
+            # Saving a newly created sample.  The sample will not have an associated SampleState
+            # until the request is submitted, at which time all samples of the request will be 
+            # set to the first SampleState configured for the request's RequestType configured
+            # by the admin ( i.e., the sample's SampleState would be set to request.type.states[0] ).
             for index in range( len( samples ) - len( request.samples ) ):
                 sample_index = len( request.samples )
                 current_sample = samples[ sample_index ]
                 form_values = trans.model.FormValues( request.type.sample_form, current_sample[ 'field_values' ] )
                 trans.sa_session.add( form_values )
                 trans.sa_session.flush()                    
-                s = trans.model.Sample( current_sample[ 'name' ],
-                                        '', 
-                                        request,
-                                        form_values, 
-                                        current_sample[ 'barcode' ],
-                                        current_sample[ 'library' ],
-                                        current_sample[ 'folder' ] )
+                s = trans.model.Sample( name=current_sample[ 'name' ],
+                                        desc='', 
+                                        request=request,
+                                        form_values=form_values, 
+                                        bar_code='',
+                                        library=current_sample[ 'library' ],
+                                        folder=current_sample[ 'folder' ] )
                 trans.sa_session.add( s )
                 trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_common',
@@ -1113,49 +1114,55 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             if obj is not None:
                 # obj will be None if the user checked sample check boxes and selected an action
                 # to perform on multiple samples, but did not select certain samples.
-                sample_updated = False
-                # If this sample has values in kwd, then kwd will include a
-                # key whose value is this sample's ( possibly changed ) name.  An
-                # example of this key is 'sample_0_name'.
-                for k, v in kwd.items():
-                    name_key = 'sample_%i_name' % index
-                    if k == name_key:
-                        sample_updated = True
-                        break
-                if sample_updated:
-                    id_index = index + 1
-                    if sample_operation == 'none':
-                        # We are handling changes to a single sample.
-                        library_id = params.get( 'sample_%i_library_id' % id_index, 'none' )
-                        folder_id = params.get( 'sample_%i_folder_id' % id_index, 'none' )
-                    # Update the corresponding sample's values as well as the sample_widget.
-                    sample = request.samples[ index ]
-                    sample.name = util.restore_text( params.get( 'sample_%i_name' % index, '' ) )
-                    # The bar_code field requires special handling because after a request is submitted, the
-                    # state of a sample cannot be changed without a bar_code assocaited with the sample.
-                    bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, '' ) )
-                    if not bar_code and not sample.bar_code:
-                        # If this is a 'new' (still in its first state) sample, create an event
-                        if sample.state.id == request.states[0].id:
-                            event = trans.model.SampleEvent( sample, 
-                                                             request.type.states[1], 
-                                                             'Sample added to the system' )
+                sample = request.samples[ index ]
+                # See if any values in kwd are different from the values already associated with this sample.
+                id_index = index + 1
+                if sample_operation == 'none':
+                    # We are handling changes to a single sample.
+                    library_id = params.get( 'sample_%i_library_id' % id_index, 'none' )
+                    folder_id = params.get( 'sample_%i_folder_id' % id_index, 'none' )
+                # Update the corresponding sample's values as well as the sample_widget.
+                name = util.restore_text( params.get( 'sample_%i_name' % index, '' ) )
+                # The bar_code field requires special handling because after a request is submitted, the
+                # state of a sample cannot be changed without a bar_code associated with the sample.  Bar
+                # codes can only be added to a sample after the request is submitted.  Also, a samples will
+                # not have an associated SampleState until the request is submitted, at which time the sample
+                # is automatically associated with the first SamplesState configured by the admin for the
+                # request's RequestType.
+                bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, '' ) )
+                if bar_code:
+                    bc_message = self.__validate_barcode( trans, sample, bar_code )
+                    if bc_message:
+                        kwd[ 'message' ] = bc_message
+                        del kwd[ 'save_samples_button' ]
+                        handle_error( **kwd )
+                    if not sample.bar_code:
+                        # If the sample's associated SampleState is still the initial state
+                        # configured by the admin for the request's RequestType, this must be
+                        # the first time a bar code was added to the sample, so change it's state
+                        # to the next associated SampleState.
+                        if sample.state.id == request.type.states[0].id:
+                            event = trans.app.model.SampleEvent(sample, 
+                                                                request.type.states[1], 
+                                                                'Bar code associated with the sample' )
                             trans.sa_session.add( event )
                             trans.sa_session.flush()
-                    elif bar_code:
-                        bc_message = self.__validate_barcode( trans, sample, bar_code )
-                        if bc_message:
-                            kwd[ 'message' ] = bc_message
-                            del kwd[ 'save_samples_button' ]
-                            handle_error( **kwd )
+                library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
+                field_values = []
+                for field_index in range( len( request.type.sample_form.fields ) ):
+                    field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
+                form_values = trans.sa_session.query( trans.model.FormValues ).get( sample.values.id )
+                form_values.content = field_values
+                if sample.name != name or \
+                    sample.bar_code != bar_code or \
+                    sample.library != library or \
+                    sample.folder != folder or \
+                    form_values.content != field_values:
+                    # Information about this sample has been changed.
+                    sample.name = name
                     sample.bar_code = bar_code
-                    library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
                     sample.library = library
                     sample.folder = folder
-                    field_values = []
-                    for field_index in range( len( request.type.sample_form.fields ) ):
-                        field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
-                    form_values = trans.sa_session.query( trans.model.FormValues ).get( sample.values.id )
                     form_values.content = field_values
                     trans.sa_session.add_all( ( sample, form_values ) )
                     trans.sa_session.flush()           

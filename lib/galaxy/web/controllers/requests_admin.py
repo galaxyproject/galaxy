@@ -9,8 +9,6 @@ import logging, os, pexpect, ConfigParser
 
 log = logging.getLogger( __name__ )
 
-
-
 class AdminRequestsGrid( RequestsGrid ):
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, request ):
@@ -51,6 +49,7 @@ class RequestTypeGrid( grids.Grid ):
             return request_type.sample_form.name
 
     # Grid definition
+    webapp = "galaxy"
     title = "Sequencer Configurations"
     template = "admin/requests/grid.mako"
     model_class = model.RequestType
@@ -103,6 +102,7 @@ class DataTransferGrid( grids.Grid ):
         def get_value( self, trans, grid, sample_dataset ):
             return sample_dataset.status
     # Grid definition
+    webapp = "galaxy"
     title = "Sample Datasets"
     template = "admin/requests/grid.mako"
     model_class = model.SampleDataset
@@ -129,9 +129,19 @@ class DataTransferGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [
-        grids.GridOperation( "Start Transfer", allow_multiple=True, condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ) ),
-        grids.GridOperation( "Rename", allow_multiple=True, allow_popup=False, condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ) ),
-        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] )  ),
+        grids.GridOperation( "Transfer",
+                             allow_multiple=True,
+                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ),
+                             url_args=dict( webapp="galaxy" ) ),
+        grids.GridOperation( "Rename",
+                             allow_multiple=True,
+                             allow_popup=False,
+                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ),
+                             url_args=dict( webapp="galaxy" ) ),
+        grids.GridOperation( "Delete",
+                             allow_multiple=True,
+                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ),
+                             url_args=dict( webapp="galaxy" ) )
     ]
     def apply_query_filter( self, trans, query, **kwd ):
         sample_id = kwd.get( 'sample_id', None )
@@ -156,6 +166,12 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             if operation == "edit":
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                                   action='edit_basic_request_info',
+                                                                  cntrller='requests_admin',
+                                                                  **kwd ) )
+            if operation == "edit_samples":
+                kwd[ 'editing_samples' ] = True
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  action='edit_samples',
                                                                   cntrller='requests_admin',
                                                                   **kwd ) )
             if operation == "view_request":
@@ -273,7 +289,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                         break
                 if no_datasets_transferred:
                     status = 'error'
-                    message = 'A dataset can be renamed only if it is in the "Not Started" state.'
+                    message = 'A dataset can be renamed only if it has been transferred.'
                     return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='manage_datasets',
                                                                       sample_id=trans.security.encode_id( selected_sample_datasets[0].sample.id ),
@@ -282,7 +298,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 return trans.fill_template( '/admin/requests/rename_datasets.mako', 
                                             sample=selected_sample_datasets[0].sample,
                                             id_list=id_list )
-            elif operation == "start transfer":
+            elif operation == "transfer":
                 self.__start_datatx( trans, selected_sample_datasets[0].sample, selected_sample_datasets )
         # Render the grid view
         sample_id = params.get( 'sample_id', None )
@@ -292,7 +308,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             return invalid_id_redirect( trans, 'requests_admin', sample_id )
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
-        self.datatx_grid.global_actions = [ grids.GridAction( "Refresh", 
+        self.datatx_grid.global_actions = [ grids.GridAction( "Refresh page", 
                                                               dict( controller='requests_admin', 
                                                                     action='manage_datasets',
                                                                     sample_id=sample_id ) ),
@@ -302,11 +318,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                                     request_id=request_id,
                                                                     folder_path=sample.request.type.datatx_info[ 'data_dir' ],
                                                                     sample_id=sample_id ) ),
-                                            #grids.GridAction( 'Data library "%s"' % sample.library.name, 
-                                            #                  dict( controller='library_common', 
-                                            #                        action='browse_library', 
-                                            #                        cntrller='library_admin', 
-                                            #                        id=library_id ) ),
+                                            grids.GridAction( "Browse target data library", 
+                                                              dict( controller='library_common', 
+                                                                    action='browse_library', 
+                                                                    cntrller='library_admin', 
+                                                                    id=library_id ) ),
                                             grids.GridAction( "Browse this request", 
                                                               dict( controller='requests_common', 
                                                                     action='view_request',

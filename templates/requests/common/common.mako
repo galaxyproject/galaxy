@@ -88,26 +88,26 @@
     %if is_admin and is_submitted and editing_samples:
         <td><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true" ${checked_str}/><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"/></td>
     %endif
-    <td>
+    <td valign="top">
         <input type="text" name="sample_${current_sample_index}_name" value="${current_sample['name']}" size="10"/>
         <div class="toolParamHelp" style="clear: both;">
             <i>${' (required)' }</i>
         </div>
     </td>
     %if sample and is_submitted or is_complete:
-        <td><input type="text" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}" size="10"/></td>
+        <td valign="top"><input type="text" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}" size="10"/></td>
     %endif 
     %if sample:
         %if is_unsubmitted:
             <td>Unsubmitted</td>
         %else:
-            <td><a href="${h.url_for( controller='requests_common', action='sample_events', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${sample.state.name}</a></td>
+            <td valign="top"><a href="${h.url_for( controller='requests_common', action='sample_events', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${sample.state.name}</a></td>
         %endif    
     %else:
         <td></td>
     %endif
-    <td>${current_sample['library_select_field'].get_html()}</td>
-    <td>${current_sample['folder_select_field'].get_html()}</td>
+    <td valign="top">${current_sample['library_select_field'].get_html()}</td>
+    <td valign="top">${current_sample['folder_select_field'].get_html()}</td>
     %if is_submitted or is_complete: 
         <%
             if sample:
@@ -115,12 +115,12 @@
             else:
                 label = 'add'
         %>
-        <td><a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${label}</a></td>
-        <td><a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${label}</a></td>
+        <td valign="top"><a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${label}</a></td>
+        <td valign="top"><a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${label}</a></td>
     %endif
     %if sample and ( is_admin or is_unsubmitted ):
         ## Delete button
-        <td><a class="action-button" href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=current_sample_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
+        <td valign="top"><a class="action-button" href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=current_sample_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
     %endif
 </%def>
 
@@ -132,7 +132,7 @@
         is_submitted = request.is_submitted
         is_unsubmitted = request.is_unsubmitted
         can_add_samples = request.is_unsubmitted
-        can_edit_or_delete_samples = request.samples and ( is_admin or request.is_unsubmitted )
+        can_edit_or_delete_samples = request.samples and not is_complete
     %>
     ${grid_header}
     %if render_buttons and ( can_add_samples or can_edit_or_delete_samples ):
