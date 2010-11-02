@@ -153,6 +153,7 @@
                 <input type="text" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}" size="10"/>
             %else:
                 ${current_sample['barcode']}
+                <input type="hidden" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}"/>
             %endif
         </td>
     %endif 
@@ -261,7 +262,7 @@
                 %elif sample:
                     <tr>
                         <td>${current_sample_name}</td>
-                        %if is_submitted or is_complete:
+                        %if display_bar_code:
                             <td>${current_sample_barcode}</td>
                         %endif
                         %if is_unsubmitted:
