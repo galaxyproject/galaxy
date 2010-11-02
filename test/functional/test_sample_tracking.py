@@ -388,7 +388,6 @@ class TestFormsAndRequests( TwillTestCase ):
             % ( request_two.name, request_two.states.REJECTED )
     def test_055_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
-        """
         # Logged in as admin_user
         ##################
         # Delete request_type permissions
@@ -433,4 +432,3 @@ class TestFormsAndRequests( TwillTestCase ):
             # Manually delete the group from the database
             refresh( group )
             delete( group )
-        """

@@ -1047,10 +1047,15 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                   action='update_request_state',
                                                                   request_id=trans.security.encode_id( request.id ) ) )
             elif sample_operation == 'Select data library and folder':
+                # TODO: fix the code so that the sample_operation_select_field does not use
+                # sample_0_library_id as it's name.  it should use something like sample_operation_library_id
+                # and sample_operation-folder_id because the name sample_0_library_id should belong to the
+                # first sample since all other form field values are named like this.  The library and folder
+                # are skewed to be named +1 resulting in the forced use of id_index everywhere...
                 library_id = params.get( 'sample_0_library_id', 'none' )
                 folder_id = params.get( 'sample_0_folder_id', 'none' )
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
-            self.__update_samples( trans, request, samples, **kwd )
+            self.__update_samples( trans, cntrller, request, samples, **kwd )
             # Samples will not have an associated SampleState until the request is submitted, at which
             # time all samples of the request will be set to the first SampleState configured for the
             # request's RequestType defined by the admin.
@@ -1092,7 +1097,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                           editing_samples=editing_samples,
                                                           status=status,
                                                           message=message ) )
-    def __update_samples( self, trans, request, sample_widgets, **kwd ):
+    def __update_samples( self, trans, cntrller, request, sample_widgets, **kwd ):
         # Determine if the values in kwd require updating the request's samples.  The list of
         # sample_widgets must have the same number of objects as request.samples, but some of
         # the objects can be None.  Those that are not None correspond to samples selected by

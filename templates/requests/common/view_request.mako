@@ -22,7 +22,8 @@
     is_unsubmitted = request.is_unsubmitted
     can_edit_request = ( is_admin and not request.is_complete ) or request.is_unsubmitted
     can_add_samples = is_unsubmitted
-    can_edit_or_delete_samples = request.samples and not is_complete
+    can_delete_samples = request.samples and not is_complete
+    can_edit_samples = request.samples and ( is_admin or not is_complete )
     can_submit = request.samples and is_unsubmitted
 %>
 
@@ -131,14 +132,23 @@
                     ${states}
                     <div style="clear: both"></div>
                 </div>
+                %if request.samples and request.is_submitted:
+                    <script type="text/javascript">
+                        // Updater
+                        updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
+                    </script>
+                %endif
             </div>
         </div>
     </div>
 </div>
 <p/>
 %if current_samples:
-    <% grid_header = '<h3>Samples</h3>' %>
-    ${render_samples_grid( cntrller, request, current_samples=current_samples, action='view_request', editing_samples=False, encoded_selected_sample_ids=[], render_buttons=can_edit_or_delete_samples, grid_header=grid_header )}
+    <%
+        grid_header = '<h3>Samples</h3>'
+        render_buttons = can_edit_samples
+    %>
+    ${render_samples_grid( cntrller, request, current_samples=current_samples, action='view_request', editing_samples=False, encoded_selected_sample_ids=[], render_buttons=render_buttons, grid_header=grid_header )}
 %else:
     There are no samples.
     %if can_add_samples:

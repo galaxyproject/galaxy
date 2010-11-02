@@ -12,58 +12,6 @@
 <%def name="javascripts()">
    ${parent.javascripts()}
    ${common_javascripts()}
-   ${local_javascripts()}
-</%def>
-
-<%def name="local_javascripts()">
-    <script type="text/javascript">
-        // Looks for changes in sample states using an async request. Keeps
-        // calling itself (via setTimeout) until all samples are in a terminal
-        // state.
-        var updater = function ( sample_states ) {
-            // Check if there are any items left to track
-            var empty = true;
-            for ( i in sample_states ) {
-                empty = false;
-                break;
-            }
-            if ( ! empty ) {
-                setTimeout( function() { updater_callback( sample_states ) }, 1000 );
-            }
-        };
-
-        var updater_callback = function ( sample_states ) {
-            // Build request data
-            var ids = []
-            var states = []
-            $.each( sample_states, function ( id, state ) {
-                ids.push( id );
-                states.push( state );
-            });
-            // Make ajax call
-            $.ajax( {
-                type: "POST",
-                url: "${h.url_for( controller='requests_common', action='sample_state_updates' )}",
-                dataType: "json",
-                data: { ids: ids.join( "," ), states: states.join( "," ) },
-                success : function ( data ) {
-                    $.each( data, function( id, val ) {
-                        // Replace HTML
-                        var cell1 = $("#sampleState-" + id);
-                        cell1.html( val.html_state );
-                        var cell2 = $("#sampleDatasets-" + id);
-                        cell2.html( val.html_datasets );
-                        sample_states[ parseInt( id ) ] = val.state;
-                    });
-                    updater( sample_states ); 
-                },
-                error: function() {
-                    // Just retry, like the old method, should try to be smarter
-                    updater( sample_states );
-                }
-            });
-        };
-    </script>
 </%def>
 
 <%
@@ -73,7 +21,8 @@
     is_complete = request.is_complete
     is_unsubmitted = request.is_unsubmitted
     can_add_samples = is_unsubmitted
-    can_edit_or_delete_samples = request.samples and not is_complete
+    can_delete_samples = request.samples and not is_complete
+    can_edit_samples = request.samples and ( is_admin or not is_complete )
     can_edit_request = ( is_admin and not request.is_complete ) or request.is_unsubmitted
     can_reject_or_transfer = is_admin and request.is_submitted
     can_submit = request.samples and is_unsubmitted
@@ -82,7 +31,7 @@
 <br/><br/>
 
 <ul class="manage-table-actions">
-    %if not editing_samples and can_edit_or_delete_samples:
+    %if not editing_samples and can_edit_samples:
         <li><a class="action-button" href="${h.url_for( controller='requests_common', action='edit_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ), editing_samples='True' )}">Edit samples</a></li>
     %endif
     %if editing_samples and can_add_samples:
@@ -131,13 +80,13 @@
                     grid_header = '<h3>Add Samples to Request "%s"</h3>' % request.name
             %>
             ${render_samples_grid( cntrller, request, current_samples, action='edit_samples', editing_samples=editing_samples, encoded_selected_sample_ids=encoded_selected_sample_ids, render_buttons=False, grid_header=grid_header )}
-            %if editing_samples and len( sample_operation_select_field.options ) > 1 and not ( is_unsubmitted or is_complete ):
+            %if editing_samples and len( sample_operation_select_field.options ) > 1 and not is_unsubmitted:
                 <div class="form-row" style="background-color:#FAFAFA;">
                     For selected samples: 
                     ${sample_operation_select_field.get_html()}
                 </div>
                 <% sample_operation_selected_value = sample_operation_select_field.get_selected( return_value=True ) %>
-                %if sample_operation_selected_value != 'none' and encoded_selected_sample_ids:
+                %if ( is_admin or not is_complete ) and sample_operation_selected_value != 'none' and encoded_selected_sample_ids:
                     <div class="form-row" style="background-color:#FAFAFA;">
                         %if sample_operation_selected_value == trans.model.Sample.bulk_operations.CHANGE_STATE:
                             ## sample_operation_selected_value == 'Change state'
@@ -150,7 +99,7 @@
                                     Optional
                                 </div>
                             </div>
-                        %elif sample_operation_selected_value == trans.app.model.Sample.bulk_operations.SELECT_LIBRARY:
+                        %elif not is_complete and sample_operation_selected_value == trans.app.model.Sample.bulk_operations.SELECT_LIBRARY:
                         <% libraries_selected_value = libraries_select_field.get_selected( return_value=True ) %>
                             <div class="form-row">
     	                        <label>Select data library:</label>
@@ -210,12 +159,12 @@
                 Click the <b>Save</b> button when you have finished editing the samples
             </div>
         %endif
-        ##%if request.samples and request.is_submitted:
-        ##    <script type="text/javascript">
-        ##        // Updater
-        ##        updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
-        ##    </script>
-        ##%endif
+        %if request.samples and request.is_submitted:
+            <script type="text/javascript">
+                // Updater
+                updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
+            </script>
+        %endif
     </form>
 </div>
 %if is_unsubmitted and not editing_samples:

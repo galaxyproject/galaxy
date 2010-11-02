@@ -65,12 +65,60 @@
                 }
             }
         }
+
+        // Looks for changes in sample states using an async request. Keeps
+        // calling itself (via setTimeout) until all samples are in a terminal
+        // state.
+        var updater = function ( sample_states ) {
+            // Check if there are any items left to track
+            var empty = true;
+            for ( i in sample_states ) {
+                empty = false;
+                break;
+            }
+            if ( ! empty ) {
+                setTimeout( function() { updater_callback( sample_states ) }, 1000 );
+            }
+        };
+
+        var updater_callback = function ( sample_states ) {
+            // Build request data
+            var ids = []
+            var states = []
+            $.each( sample_states, function ( id, state ) {
+                ids.push( id );
+                states.push( state );
+            });
+            // Make ajax call
+            $.ajax( {
+                type: "POST",
+                url: "${h.url_for( controller='requests_common', action='sample_state_updates' )}",
+                dataType: "json",
+                data: { ids: ids.join( "," ), states: states.join( "," ) },
+                success : function ( data ) {
+                    $.each( data, function( id, val ) {
+                        // Replace HTML
+                        var cell1 = $("#sampleState-" + id);
+                        cell1.html( val.html_state );
+                        var cell2 = $("#sampleDatasets-" + id);
+                        cell2.html( val.html_datasets );
+                        sample_states[ parseInt( id ) ] = val.state;
+                    });
+                    updater( sample_states ); 
+                },
+                error: function() {
+                    // Just retry, like the old method, should try to be smarter
+                    updater( sample_states );
+                }
+            });
+        };
     </script>
 </%def>
 
 <%def name="render_editable_sample_row( is_admin, sample, current_sample_index, current_sample, encoded_selected_sample_ids )">
     <%
         if sample:
+            trans.sa_session.refresh( sample.request )
             is_complete = sample.request.is_complete
             is_submitted = sample.request.is_submitted
             is_unsubmitted = sample.request.is_unsubmitted
@@ -80,12 +128,12 @@
             is_unsubmitted = False
     %>
     <%
-        if is_admin and is_submitted and editing_samples and trans.security.encode_id( sample.id ) in encoded_selected_sample_ids:
+        if is_submitted and editing_samples and trans.security.encode_id( sample.id ) in encoded_selected_sample_ids:
             checked_str = "checked"
         else:
             checked_str = ""
     %>
-    %if is_admin and is_submitted and editing_samples:
+    %if is_submitted and editing_samples:
         <td><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true" ${checked_str}/><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"/></td>
     %endif
     <td valign="top">
@@ -95,7 +143,11 @@
         </div>
     </td>
     %if sample and is_submitted or is_complete:
-        <td valign="top"><input type="text" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}" size="10"/></td>
+        %if is_admin:
+            <td valign="top"><input type="text" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}" size="10"/></td>
+        %else:
+            ${current_sample['barcode']}
+        %endif
     %endif 
     %if sample:
         %if is_unsubmitted:
@@ -118,7 +170,7 @@
         <td valign="top"><a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${label}</a></td>
         <td valign="top"><a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${label}</a></td>
     %endif
-    %if sample and ( is_admin or is_unsubmitted ):
+    %if sample and ( is_admin or is_unsubmitted ) and not is_complete:
         ## Delete button
         <td valign="top"><a class="action-button" href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=current_sample_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
     %endif
@@ -127,20 +179,22 @@
 <%def name="render_samples_grid( cntrller, request, current_samples, action, editing_samples=False, encoded_selected_sample_ids=[], render_buttons=False, grid_header='<h3>Samples</h3>' )">
     ## Displays the "Samples" grid
     <%
+        trans.sa_session.refresh( request )
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         is_complete = request.is_complete
         is_submitted = request.is_submitted
         is_unsubmitted = request.is_unsubmitted
         can_add_samples = request.is_unsubmitted
-        can_edit_or_delete_samples = request.samples and not is_complete
+        can_delete_samples = request.samples and not is_complete
+        can_edit_samples = request.samples and ( is_admin or not is_complete )
     %>
     ${grid_header}
-    %if render_buttons and ( can_add_samples or can_edit_or_delete_samples ):
+    %if render_buttons and ( can_add_samples or can_edit_samples ):
         <ul class="manage-table-actions">
             %if can_add_samples:
                 <li><a class="action-button" href="${h.url_for( controller='requests_common', action='add_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), add_sample_button='Add sample' )}">Add sample</a></li>
             %endif
-            %if can_edit_or_delete_samples:
+            %if can_edit_samples:
                 <li><a class="action-button" href="${h.url_for( controller='requests_common', action='edit_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ), editing_samples='True' )}">Edit samples</a></li>
             %endif
         </ul>
@@ -148,7 +202,7 @@
     <table class="grid">
         <thead>
             <tr>
-                %if is_admin and is_submitted and editing_samples:
+                %if is_submitted and editing_samples:
                     <th><input type="checkbox" id="checkAll" name=select_all_samples_checkbox value="true" onclick='checkAllFields(1);'/><input type="hidden" name=select_all_samples_checkbox value="true"/></th>
                 %endif
                 <th>Name</th>
@@ -191,7 +245,7 @@
                     except:
                         sample = None 
                 %>
-                %if editing_samples:
+                %if not is_complete and editing_samples:
                     <tr>${render_editable_sample_row( is_admin, sample, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
                 %elif sample:
                     <tr>
@@ -220,6 +274,7 @@
                         %endif
                     </tr>
                 %else:
+                    ## The Add sample button was clicked for this sample_widget
                     <tr>${render_editable_sample_row( is_admin, None, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
                 %endif
             %endfor
@@ -231,9 +286,7 @@
     <tr>
         <td>${sample_name}</td>
         %for field_index, field in fields_dict.items():
-            <%
-                field_type = field[ 'type' ]
-            %>
+            <% field_type = field[ 'type' ] %>
             <td>
                 %if display_only:
                     %if sample_values[field_index]:
