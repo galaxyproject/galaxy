@@ -541,7 +541,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             return sample.request.name + '_' + sample.name + '_' + name
         if opt == options.EXPERIMENT_NAME:
             return sample.request.name + '_' + name
-    def __setup_datatx_user( self, trans, library, folder ):
+    def __setup_datatx_user( self, trans, sample ):
         """
         Sets up the datatx user:
         - Checks if the user exists, if not creates them.
@@ -550,9 +550,25 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         """
         # Retrieve the upload user login information from the config file
         config = ConfigParser.ConfigParser()
-        config.read( 'transfer_datasets.ini' )
-        email = config.get( "data_transfer_user_login_info", "email" )
-        password = config.get( "data_transfer_user_login_info", "password" )
+        ok = True
+        try:
+            config.read( 'transfer_datasets.ini' )
+        except Exception, e:
+            message = "Error attempting to read config file named 'transfer_datasets.ini'.  Make sure this file is correct."
+            ok = False
+        try:
+            email = config.get( "data_transfer_user_login_info", "email" )
+            password = config.get( "data_transfer_user_login_info", "password" )
+        except Exception, e:
+            message = "The 'data_transfer_user_login_info' section is missing from the 'transfer_datasets.ini'.  Make sure this file is correct."
+            ok = False
+        if not ok:
+            status = 'error'
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_datasets',
+                                                              sample_id=trans.security.encode_id( sample.id ),
+                                                              status=status,
+                                                              message=message ) )
         # check if the user already exists
         datatx_user = trans.sa_session.query( trans.model.User ) \
                                       .filter( trans.model.User.table.c.email==email ) \
@@ -570,14 +586,14 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         datatx_user_private_role = trans.app.security_agent.get_private_user_role( datatx_user )
         # Make sure this user has LIBRARY_ADD permissions on the target library and folder.
         # If not, give them permission.
-        if not trans.app.security_agent.can_add_library_item( datatx_user_roles, library ):
+        if not trans.app.security_agent.can_add_library_item( datatx_user_roles, sample.library ):
             lp = trans.model.LibraryPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
-                                                 library, 
+                                                 sample.library, 
                                                  datatx_user_private_role )
             trans.sa_session.add( lp )
-        if not trans.app.security_agent.can_add_library_item( datatx_user_roles, folder ):
+        if not trans.app.security_agent.can_add_library_item( datatx_user_roles, sample.folder ):
             lfp = trans.model.LibraryFolderPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
-                                                        folder, 
+                                                        sample.folder, 
                                                         datatx_user_private_role )
             trans.sa_session.add( lfp )
             trans.sa_session.flush()
@@ -646,7 +662,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                               message=message) )
 
     def __start_datatx( self, trans, sample, selected_sample_datasets ):
-        datatx_user = self.__setup_datatx_user( trans, sample.library, sample.folder )
+        datatx_user = self.__setup_datatx_user( trans, sample )
         # Validate sequencer information
         datatx_info = sample.request.type.datatx_info
         if not datatx_info['host'] or not datatx_info['username'] or not datatx_info['password']:
@@ -660,7 +676,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                           action='manage_datasets',
                                                           sample_id=trans.security.encode_id( sample.id ),
                                                           status=status,
-                                                          message=message) )
+                                                          message=message ) )
     @web.expose
     def update_sample_dataset_status(self, trans, cntrller, sample_dataset_ids, new_status, error_msg=None ):
         # check if the new status is a valid transfer status

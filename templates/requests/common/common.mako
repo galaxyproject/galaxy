@@ -120,20 +120,25 @@
         if sample:
             trans.sa_session.refresh( sample.request )
             is_complete = sample.request.is_complete
+            is_rejected = request.is_rejected
             is_submitted = sample.request.is_submitted
             is_unsubmitted = sample.request.is_unsubmitted
+            display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
+            display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
+            display_datasets = request.samples and ( is_complete or is_rejected or is_submitted )
         else:
             is_complete = False
             is_submitted = False
             is_unsubmitted = False
+            display_checkboxes = False
     %>
     <%
-        if is_submitted and editing_samples and trans.security.encode_id( sample.id ) in encoded_selected_sample_ids:
+        if display_checkboxes and trans.security.encode_id( sample.id ) in encoded_selected_sample_ids:
             checked_str = "checked"
         else:
             checked_str = ""
     %>
-    %if is_submitted and editing_samples:
+    %if display_checkboxes:
         <td><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true" ${checked_str}/><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"/></td>
     %endif
     <td valign="top">
@@ -142,12 +147,14 @@
             <i>${' (required)' }</i>
         </div>
     </td>
-    %if sample and is_submitted or is_complete:
-        %if is_admin:
-            <td valign="top"><input type="text" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}" size="10"/></td>
-        %else:
-            ${current_sample['barcode']}
-        %endif
+    %if display_bar_code:
+        <td valign="top">
+            %if is_admin:
+                <input type="text" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}" size="10"/>
+            %else:
+                ${current_sample['barcode']}
+            %endif
+        </td>
     %endif 
     %if sample:
         %if is_unsubmitted:
@@ -160,7 +167,7 @@
     %endif
     <td valign="top">${current_sample['library_select_field'].get_html()}</td>
     <td valign="top">${current_sample['folder_select_field'].get_html()}</td>
-    %if is_submitted or is_complete: 
+    %if display_datasets: 
         <%
             if sample:
                 label = str( len( sample.datasets ) )
@@ -182,11 +189,15 @@
         trans.sa_session.refresh( request )
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         is_complete = request.is_complete
+        is_rejected = request.is_rejected
         is_submitted = request.is_submitted
         is_unsubmitted = request.is_unsubmitted
         can_add_samples = request.is_unsubmitted
         can_delete_samples = request.samples and not is_complete
         can_edit_samples = request.samples and ( is_admin or not is_complete )
+        display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
+        display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
+        display_datasets = request.samples and ( is_complete or is_rejected or is_submitted )
     %>
     ${grid_header}
     %if render_buttons and ( can_add_samples or can_edit_samples ):
@@ -202,22 +213,22 @@
     <table class="grid">
         <thead>
             <tr>
-                %if is_submitted and editing_samples:
+                %if display_checkboxes:
                     <th><input type="checkbox" id="checkAll" name=select_all_samples_checkbox value="true" onclick='checkAllFields(1);'/><input type="hidden" name=select_all_samples_checkbox value="true"/></th>
                 %endif
                 <th>Name</th>
-                %if is_submitted or is_complete:
+                %if display_bar_code:
                     <th>Barcode</th>
                 %endif
                 <th>State</th>
                 <th>Data Library</th>
                 <th>Folder</th>
-                %if is_submitted or is_complete:
+                %if display_datasets:
                     <th>Datasets Selected</th>
                     <th>Datasets Transferred</th>
                 %endif
                 <th>
-                    %if editing_samples:
+                    %if can_delete_samples:
                         Delete
                     %endif
                 </th>
@@ -245,7 +256,7 @@
                     except:
                         sample = None 
                 %>
-                %if not is_complete and editing_samples:
+                %if editing_samples:
                     <tr>${render_editable_sample_row( is_admin, sample, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
                 %elif sample:
                     <tr>
