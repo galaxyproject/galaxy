@@ -1,0 +1,295 @@
+/******************************************************************************* 
+ * Tree container
+ */
+div.ui-dynatree-container
+{
+	font-family: tahoma, arial, helvetica;
+	font-size: 10pt; /* font size should not be too big */
+	white-space: nowrap; 
+	padding: 3px;
+	
+	background-color: white; 
+	border: none;
+}
+
+/* Style, when control is disabled */
+.ui-dynatree-disabled div.ui-dynatree-container
+{
+	opacity: 0.5;
+/*	filter: alpha(opacity=50); /* Yields a css warning */
+	background-color: silver; 
+}
+
+
+/******************************************************************************* 
+ * Vertical line image
+ */
+div.ui-dynatree-container img
+{
+	width: 16px;
+	height: 16px;
+	margin-left: 3px;
+	vertical-align: top;
+	border-style: none;
+}
+
+/******************************************************************************* 
+ * Common icon definitions
+ */
+span.ui-dynatree-empty,
+span.ui-dynatree-vline,
+span.ui-dynatree-connector,
+span.ui-dynatree-expander,
+span.ui-dynatree-icon,
+span.ui-dynatree-checkbox,
+span.ui-dynatree-radio
+{
+	width: 16px;
+	height: 16px;
+	display: -moz-inline-box; /* @ FF 1+2 */
+	display: inline-block; /* Required to make a span sizeable */
+	vertical-align: top;
+	background-repeat: no-repeat;
+	background-position: left;
+}
+
+/******************************************************************************* 
+ * Lines and connectors
+ */
+span.ui-dynatree-empty
+{
+}
+span.ui-dynatree-vline
+{
+	background-image: url("ltL_ns.gif");
+}
+span.ui-dynatree-connector
+{
+	background-image: url("ltL_nes.gif");
+}
+.ui-dynatree-lastsib span.ui-dynatree-connector
+{
+	background-image: url("ltL_ne.gif");
+}
+
+/******************************************************************************* 
+ * Expander icon
+ * Note: IE6 doesn't correctly evaluate multiples class names,
+ *		 so we create combined class names that can be used in the CSS.
+ *
+ * Prefix: ui-dynatree-exp-
+ * 1st character: 'e': expanded, 'c': collapsed
+ * 2nd character (optional): 'd': lazy (Delayed)
+ * 3rd character (optional): 'l': Last sibling       
+ */
+ 
+span.ui-dynatree-expander
+{
+	background-image: url("ltP_nes.gif");
+	cursor: pointer;
+}
+.ui-dynatree-exp-cl span.ui-dynatree-expander /* Collapsed, not delayed, last sibling */
+{
+	background-image: url("ltP_ne.gif");
+}
+.ui-dynatree-exp-cd span.ui-dynatree-expander /* Collapsed, delayed, not last sibling */
+{
+	background-image: url("ltD_nes.gif");
+}
+.ui-dynatree-exp-cdl span.ui-dynatree-expander /* Collapsed, delayed, last sibling */
+{
+	background-image: url("ltD_ne.gif");
+}
+.ui-dynatree-exp-e span.ui-dynatree-expander,  /* Expanded, not delayed, not last sibling */
+.ui-dynatree-exp-ed span.ui-dynatree-expander  /* Expanded, delayed, not last sibling */
+{
+	background-image: url("ltM_nes.gif");
+}
+.ui-dynatree-exp-el span.ui-dynatree-expander,  /* Expanded, not delayed, last sibling */
+.ui-dynatree-exp-edl span.ui-dynatree-expander  /* Expanded, delayed, last sibling */
+{
+	background-image: url("ltM_ne.gif");
+}
+
+
+/******************************************************************************* 
+ * Checkbox icon
+ */
+span.ui-dynatree-checkbox
+{
+	margin-left: 3px;
+	background-image: url("cbUnchecked.gif");
+}
+span.ui-dynatree-checkbox:hover
+{
+	background-image: url("cbUnchecked_hover.gif");
+}
+
+.ui-dynatree-partsel span.ui-dynatree-checkbox
+{
+	background-image: url("cbIntermediate.gif");
+}
+.ui-dynatree-partsel span.ui-dynatree-checkbox:hover
+{
+	background-image: url("cbIntermediate_hover.gif");
+}
+
+.ui-dynatree-selected span.ui-dynatree-checkbox
+{
+	background-image: url("cbChecked.gif");
+}
+.ui-dynatree-selected span.ui-dynatree-checkbox:hover
+{
+	background-image: url("cbChecked_hover.gif");
+}
+
+/******************************************************************************* 
+ * Radiobutton icon
+ * This is a customization, that may be activated by overriding the 'checkbox'
+ * class name as 'ui-dynatree-radio' in the tree options.
+ */
+span.ui-dynatree-radio
+{
+	margin-left: 3px;
+	background-image: url("rbUnchecked.gif");
+}
+span.ui-dynatree-radio:hover
+{
+	background-image: url("rbUnchecked_hover.gif");
+}
+
+.ui-dynatree-partsel span.ui-dynatree-radio
+{
+	background-image: url("rbIntermediate.gif");
+}
+.ui-dynatree-partsel span.ui-dynatree-radio:hover
+{
+	background-image: url("rbIntermediate_hover.gif");
+}
+
+.ui-dynatree-selected span.ui-dynatree-radio
+{
+	background-image: url("rbChecked.gif");
+}
+.ui-dynatree-selected span.ui-dynatree-radio:hover
+{
+	background-image: url("rbChecked_hover.gif");
+}
+
+/******************************************************************************* 
+ * Node type icon
+ * Note: IE6 doesn't correctly evaluate multiples class names,
+ *		 so we create combined class names that can be used in the CSS.
+ *
+ * Prefix: ui-dynatree-ico-
+ * 1st character: 'e': expanded, 'c': collapsed
+ * 2nd character (optional): 'f': folder
+ */
+ 
+span.ui-dynatree-icon /* Default icon */
+{
+	margin-left: 3px;
+	background-image: url("ltDoc.gif");
+}
+
+.ui-dynatree-ico-cf span.ui-dynatree-icon  /* Collapsed Folder */
+{
+	background-image: url("ltFld.gif");
+}
+
+.ui-dynatree-ico-ef span.ui-dynatree-icon  /* Expanded Folder */
+{
+	background-image: url("ltFld_o.gif");
+}
+
+/* Status node icons */
+
+.ui-dynatree-statusnode-wait span.ui-dynatree-icon
+{
+	background-image: url("ltWait.gif");
+}
+
+.ui-dynatree-statusnode-error span.ui-dynatree-icon
+{
+	background-image: url("ltError.gif");
+}
+
+/******************************************************************************* 
+ * Node titles
+ */
+
+ /* @Chrome: fix broken hit area of node titles (issue 133) */
+span.ui-dynatree-document,
+span.ui-dynatree-folder
+{
+	display: -moz-inline-box; /* @ FF 1+2 */
+	display: inline-block; /* Required to make a span sizeable */
+}
+
+/* Remove blue color and underline from title links */
+div.ui-dynatree-container a
+/*, div.ui-dynatree-container a:visited*/
+{
+	color: black; /* inherit doesn't work on IE */
+	text-decoration: none;
+	vertical-align: top;
+	margin: 0px;
+	margin-left: 3px;
+/*	outline: 0; /* @ Firefox, prevent dotted border after click */
+}
+
+div.ui-dynatree-container a:hover
+{
+	text-decoration: underline;
+}
+
+span.ui-dynatree-document a,
+span.ui-dynatree-folder a
+{
+	display: inline-block; /* Better alignment, when title contains <br> */  
+/*	vertical-align: top;*/
+	padding-left: 3px;
+	padding-right: 3px; /* Otherwise italic font will be outside bounds */
+	/*	line-height: 16px; /* should be the same as img height, in case 16 px */
+}
+span.ui-dynatree-folder a
+{
+	font-weight: normal;
+}
+
+div.ui-dynatree-container a:focus,
+span.ui-dynatree-focused a:link  /* @IE */
+{
+	background-color: #EFEBDE; /* gray */
+}
+
+
+span.ui-dynatree-has-children a
+{
+}
+
+span.ui-dynatree-expanded a
+{
+}
+
+span.ui-dynatree-selected a 
+{
+	color: black; 
+	font-style: italic;
+}
+
+span.ui-dynatree-active a
+{
+	background-color: #3169C6 !important;
+	color: white !important; /* @ IE6 */
+}
+
+/******************************************************************************* 
+ * Custom node classes (sample)
+ */
+
+span.custom1 a
+{
+	background-color: maroon;
+	color: yellow;
+}

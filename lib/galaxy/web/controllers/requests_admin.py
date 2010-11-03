@@ -316,7 +316,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                               dict( controller='requests_admin', 
                                                                     action='get_data',
                                                                     request_id=request_id,
-                                                                    folder_path=sample.request.type.datatx_info[ 'data_dir' ],
                                                                     sample_id=sample_id ) ),
                                             grids.GridAction( "Browse target data library", 
                                                               dict( controller='library_common', 
@@ -383,67 +382,61 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', request_id )
-        selected_files = util.listify( params.get( 'files_list', [] ) ) 
-        folder_path = util.restore_text( params.get( 'folder_path', request.type.datatx_info[ 'data_dir' ] ) )
+        selected_files = util.restore_text( params.get( 'selected_files', '' ) )
+        if len( selected_files ):
+            selected_files = selected_files.split(',')
+        else:
+            selected_files = []
         selected_sample_id = kwd.get( 'sample_id', 'none' )
         sample_id_select_field = self.__build_sample_id_select_field( trans, request, selected_sample_id )
         # The __get_files() method redirects here with a status of 'error' and a message if there
         # was a problem retrieving the files.
-        if folder_path and status != 'error':
-            folder_path = self.__check_path( folder_path )
-            if params.get( 'folder_up', False ):
-                if folder_path[-1] == os.sep:
-                    folder_path = os.path.dirname( folder_path[:-1] )
-                folder_path = self.__check_path( folder_path )
-            elif params.get( 'open_folder', False ):
-                if len(selected_files) == 1:
-                    folder_path = os.path.join(folder_path, selected_files[0])
-                folder_path = self.__check_path( folder_path )
-            elif params.get( 'select_show_datasets_button', False ) or params.get( 'select_more_button', False ):
-                # get the sample these datasets are associated with
-                try:
-                    sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( selected_sample_id ) )
-                except:
-                    return invalid_id_redirect( trans, 'requests_admin', selected_sample_id )
-                if sample in sample.request.samples_without_library_destinations:
-                    # Display an error if a sample has been selected that
-                    # has not yet been associated with a destination library.
-                    status = 'error'
-                    message = 'Select a sample with associated data library and folder before selecting the datasets.'
-                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                      action='get_data',
-                                                                      request_id=request_id,
-                                                                      folder_path=folder_path,
-                                                                      status=status,
-                                                                      message=message ) )
-                # Save the sample datasets 
-                sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_files, folder_path )
-                if sample_dataset_file_names:
-                    message = 'Datasets (%s) have been selected for sample (%s)' % \
-                        ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), sample.name )
-                if params.get( 'select_show_datasets_button', False ):
-                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                      action='manage_datasets',
-                                                                      request_id=request_id,
-                                                                      sample_id=selected_sample_id,
-                                                                      message=message,
-                                                                      status=status ) )
-                else: # 'select_more_button' was clicked
-                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                      action='get_data', 
-                                                                      request_id=request_id,
-                                                                      folder_path=folder_path,
-                                                                      sample_id=sample.id,
-                                                                      message=message,
-                                                                      status=status ) )
-            # Get the filenames from the remote host
-            files = self.__get_files( trans, request, folder_path )
+        if params.get( 'select_show_datasets_button', False ) or params.get( 'select_more_button', False ):
+            # get the sample these datasets are associated with
+            try:
+                sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( selected_sample_id ) )
+            except:
+                message = 'Select a sample before selecting its associated datasets.'
+                return trans.fill_template( '/admin/requests/get_data.mako',
+                                            cntrller='requests_admin',
+                                            request=request,
+                                            sample_id_select_field=sample_id_select_field,
+                                            status='error',
+                                            message=message )
+            if sample in sample.request.samples_without_library_destinations:
+                # Display an error if a sample has been selected that
+                # has not yet been associated with a destination library.
+                status = 'error'
+                message = 'Select a sample with associated data library and folder before selecting the datasets.'
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='get_data',
+                                                                  request_id=request_id,
+                                                                  sample_id=sample.id,
+                                                                  status=status,
+                                                                  message=message ) )
+            # Save the sample datasets 
+            sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_files )
+            if sample_dataset_file_names:
+                message = 'Datasets (%s) have been selected for sample (%s)' % \
+                    ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), sample.name )
+            if params.get( 'select_show_datasets_button', False ):
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='manage_datasets',
+                                                                  request_id=request_id,
+                                                                  sample_id=selected_sample_id,
+                                                                  message=message,
+                                                                  status=status ) )
+            else: # 'select_more_button' was clicked
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='get_data', 
+                                                                  request_id=request_id,
+                                                                  sample_id=sample.id,
+                                                                  message=message,
+                                                                  status=status ) )
         return trans.fill_template( '/admin/requests/get_data.mako',
                                     cntrller='requests_admin',
                                     request=request,
                                     sample_id_select_field=sample_id_select_field,
-                                    files=files, 
-                                    folder_path=folder_path,
                                     status=status,
                                     message=message )
     @web.json
@@ -464,15 +457,27 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                               timeout=10 )
         return unicode( output.replace( '\n', '<br/>' ) )
     @web.json
-    def open_folder( self, trans, id, folder_path ):
-        def print_ticks( d ):
-            # pexpect timeout method
-            pass
+    def open_folder( self, trans, id, key ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         request = trans.sa_session.query( trans.model.Request ).get( int( id ) )
-        return self.__get_files( trans, request, folder_path )
+        folder_path = key
+        files_list = self.__get_files( trans, request, folder_path )
+        folder_contents = []
+        for filename in files_list:
+            is_folder = False
+            if filename[-1] == os.sep:
+                is_folder = True
+            full_path = os.path.join(folder_path, filename)
+            node = {"title": filename,
+                    "isFolder": is_folder,
+                    "isLazy": is_folder,
+                    "tooltip": full_path,
+                    "key": full_path
+                    }
+            folder_contents.append(node)
+        return folder_contents
     def __get_files( self, trans, request, folder_path ):
         # Retrieves the filenames to be transferred from the remote host.
         ok = True
@@ -496,7 +501,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='get_data',
                                                           request_id=trans.security.encode_id( request.id ),
-                                                          folder_path=folder_path,
                                                           status=status,
                                                           message=message ) )
     def __check_path( self, a_path ):
@@ -504,20 +508,13 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         if a_path and not a_path.endswith( os.sep ):
             a_path += os.sep
         return a_path
-    def __save_sample_datasets( self, trans, sample, selected_files, folder_path ):
+    def __save_sample_datasets( self, trans, sample, selected_files ):
         sample_dataset_file_names = []
         if selected_files:
-            for f in selected_files:
-                filepath = os.path.join( folder_path, f )
-                if f[-1] == os.sep:
-                    # FIXME: The selected item is a folder so transfer all the folder contents
-                    request_id = trans.security.ecnode_id( sample.request.id )
-                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                      action='get_data', 
-                                                                      request_id=request_id,
-                                                                      folder_path=folder_path,
-                                                                      open_folder=True ) )
-                else:
+            for filepath in selected_files:
+                # FIXME: handle folder selection
+                # ignore folders for now
+                if filepath[-1] != os.sep:
                     name = self.__dataset_name( sample, filepath.split( '/' )[-1] )
                     sample_dataset = trans.model.SampleDataset( sample=sample,
                                                                 file_path=filepath,
