@@ -7,7 +7,7 @@ if (!Array.indexOf) {
             }
         }
         return -1;
-    }
+    };
 }
 
 // Returns the number of keys (elements) in an array/dictionary.
@@ -39,93 +39,89 @@ $.fn.makeAbsolute = function(rebase) {
     });
 };
 
-function ensure_popup_helper() {
-    // And the helper below the popup menus
-    if ( $( "#popup-helper" ).length === 0 ) {
-        $( "<div id='popup-helper'/>" ).css( {
-            background: 'white', opacity: 0, zIndex: 15000,
-            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' 
-        } ).appendTo( "body" ).hide();
-    }
-}
-
-function attach_popupmenu( button_element, wrapper ) {
-    var clean = function() {
-        wrapper.unbind().hide();
-        $("#popup-helper").unbind( "click.popupmenu" ).hide();
-        // $(document).unbind( "click.popupmenu" ); 
-    };
-    var click_handler = function( e ) {
-        // var o = $(button_element).offset();
-        $("#popup-helper").bind( "click.popupmenu", clean ).show();
-        // $(document).bind( "click.popupmenu", clean );
-        // Show off screen to get size right
-        wrapper.click( clean ).css( { left: 0, top: -1000 } ).show();
-        // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
-        var x = e.pageX - wrapper.width() / 2 ;
-        x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 20 );
-        x = Math.max( x, $(document).scrollLeft() + 20 );
-        // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
-        
-        
-        wrapper.css( {
-            top: e.pageY - 5,
-            left: x
-        } );
-        return false;
-    };
-    $(button_element).bind("click", click_handler);
+// Toggle popup menu options using regular expression on option names.
+function show_hide_popupmenu_options( menu, option_name_re, show ) {
+    show = (show === undefined ? true : show );
+    var re = new RegExp(option_name_re);
+    $(menu).find("li").each( function() {
+        if ( re.exec($(this).text()) ) {
+            if (show) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        }
+    });
 }
 
 function make_popupmenu( button_element, options ) {
-    ensure_popup_helper();
-    // var container_element = $(button_element);
-    // if ( container_element.parent().hasClass( "combo-button" ) ) {
-    //    container_element = container_element.parent();
-    // }
-    // container_element).css( "position", "relative" );
-    var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></ul>" );
-    if (obj_length(options) <= 0) {
-        $("<li/>").html("No options").appendTo(menu_element);
-    }
-    $.each( options, function( k, v ) {
-        if (v) {
-            $("<li/>").html(k).click(v).appendTo(menu_element);
-        } else {
-            $("<li class='head'/>").html(k).appendTo(menu_element);
-        }
-    });
-    var wrapper = $( "<div class='popmenu-wrapper'>" );
-    wrapper.append( menu_element )
-           .append( "<div class='overlay-border'>" )
-           .css( "position", "absolute" )
-           .appendTo( "body" )
-           .hide();
-    attach_popupmenu( button_element, wrapper );
-    return menu_element;
-}
+    button_element.bind("click.show_popup", function(e) {
+        // Close existing visible menus
+        $(".popmenu-wrapper").remove();
+        
+        
+        // Need setTimeouts so clicks don't interfere with each other        
+        setTimeout( function() {
+            // Dynamically generate the wrapper holding all the selectable options of the menu.
+            var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></ul>" );
+            if (obj_length(options) <= 0) {
+                $("<li>No Options.</li>").appendTo(menu_element);
+            }
+            $.each( options, function( k, v ) {
+                if (v) {
+                    $("<li/>").html(k).click(v).appendTo(menu_element);
+                } else {
+                    $("<li class='head'/>").html(k).appendTo(menu_element);
+                }
+            });
+            var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'>" );
+            wrapper.append( menu_element )
+                   .append( "<div class='overlay-border'>" )
+                   .appendTo( "body" );
+                   
+            var x = e.pageX - wrapper.width() / 2 ;
+            x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 20 );
+            x = Math.max( x, $(document).scrollLeft() + 20 );
 
-// Toggle popup menu options using regular expression on option names.
-function show_hide_popupmenu_options( menu, option_name_re, show ) {
-    var show = (show === undefined ? true : show );
-    var re = new RegExp(option_name_re);
-    $(menu).find("li").each( function() {
-        if ( re.exec( $(this).text() ) )
-            if (show)
-                $(this).show();
-            else
-                $(this).hide();
+            wrapper.css( {
+               top: e.pageY - 5,
+               left: x
+            } );
+        }, 10);
+        
+        setTimeout( function() {
+            // Bind click event to current window and all frames to remove any visible menus
+            // Bind to document object instead of window object for IE compat
+            var close_popup = function(el) {
+                $(el).bind("click.close_popup", function() {
+                    $(".popmenu-wrapper").remove();
+                    el.unbind("click.close_popup");
+                });
+            };
+            close_popup( $(window.document) ); // Current frame
+            close_popup( $(window.top.document) ); // Parent frame
+            for (var frame_id = window.top.frames.length; frame_id--;) { // Sibling frames
+                var frame = $(window.top.frames[frame_id].document);
+                close_popup(frame);
+            }
+        }, 50);
+        
+        return false;
     });
+    
 }
 
 function make_popup_menus() {
     jQuery( "div[popupmenu]" ).each( function() {
         var options = {};
-        $(this).find( "a" ).each( function() {
-            var confirmtext = $(this).attr( "confirm" ),
-                href = $(this).attr( "href" ),
-                target = $(this).attr( "target" );
-            options[ $(this).text() ] = function() {
+        var menu = $(this);
+        menu.find( "a" ).each( function() {
+            var link = $(this),
+                link_dom = link.get(0);
+            var confirmtext = link_dom.getAttribute( "confirm" ),
+                href = link_dom.getAttribute( "href" ),
+                target = link_dom.getAttribute( "target" );
+            options[ link.text() ] = function() {
                 if ( !confirmtext || confirm( confirmtext ) ) {
                     var f = window;
                     if ( target == "_parent" ) {
@@ -137,14 +133,18 @@ function make_popup_menus() {
                 }
             };
         });
-        var b = $( "#" + $(this).attr( 'popupmenu' ) );
-        b.find("a").bind("click", function(e) {
+        var box = $( "#" + menu.attr( 'popupmenu' ) );
+        
+        // For menus with clickable link text, make clicking on the link go through instead
+        // of activating the popup menu
+        box.find("a").bind("click", function(e) {
             e.stopPropagation(); // Stop bubbling so clicking on the link goes through
             return true;
         });
-        make_popupmenu( b, options );
-        $(this).remove();
-        b.addClass( "popup" ).show();
+        
+        make_popupmenu(box, options);
+        box.addClass("popup");
+        menu.remove();
     });
 }
 
@@ -160,15 +160,17 @@ function naturalSort(a, b) {
         xD = (new Date(x)).getTime(),
         yD = xD ? (new Date(y)).getTime() : null;
     // natural sorting of dates
-    if ( yD )
-        if ( xD < yD ) return -1;
-        else if ( xD > yD ) return 1;
+    if ( yD ) {
+        if ( xD < yD ) { return -1; }
+        else if ( xD > yD ) { return 1; }
+    }
     // natural sorting through split numeric strings and default strings
-    for( var cLoc = 0, numS = Math.max(xN.length, yN.length); cLoc < numS; cLoc++ ) {
+    var oFxNcL, oFyNcL;
+    for ( var cLoc = 0, numS = Math.max(xN.length, yN.length); cLoc < numS; cLoc++ ) {
         oFxNcL = parseFloat(xN[cLoc]) || xN[cLoc];
         oFyNcL = parseFloat(yN[cLoc]) || yN[cLoc];
-        if (oFxNcL < oFyNcL) return -1;
-        else if (oFxNcL > oFyNcL) return 1;
+        if (oFxNcL < oFyNcL) { return -1; }
+        else if (oFxNcL > oFyNcL) { return 1; }
     }
     return 0;
 }
@@ -176,14 +178,17 @@ function naturalSort(a, b) {
 // Replace select box with a text input box + autocomplete.
 function replace_big_select_inputs(min_length, max_length) {
     // To do replace, jQuery's autocomplete plugin must be loaded.
-    if (!jQuery().autocomplete)
+    if (!jQuery().autocomplete) {
         return;
+    }
     
     // Set default for min_length and max_length
-    if (min_length === undefined)
+    if (min_length === undefined) {
         min_length = 20;
-    if (max_length === undefined)
+    }
+    if (max_length === undefined) {
         max_length = 3000;
+    }
     
     $('select').each( function() {
         var select_elt = $(this);
@@ -194,7 +199,7 @@ function replace_big_select_inputs(min_length, max_length) {
         }
             
         // Skip multi-select because widget cannot handle multi-select.
-        if (select_elt.attr('multiple') == true) {
+        if (select_elt.attr('multiple') === true) {
             return;
         }
             
@@ -240,13 +245,14 @@ function replace_big_select_inputs(min_length, max_length) {
         });
         
         // Set initial text if it's empty.
-        if ( start_value == '' || start_value == '?') {
+        if ( start_value === '' || start_value === '?') {
             text_input_elt.attr('value', 'Click to Search or Select');
         }
         
         // Sort dbkey options list only.
-        if (select_elt.attr('name') == 'dbkey')
+        if (select_elt.attr('name') == 'dbkey') {
             select_options = select_options.sort(naturalSort);
+        }
         
         // Do autocomplete.
         var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: max_length, minChars : 0, hideForLessThanMinChars : false };
@@ -265,7 +271,7 @@ function replace_big_select_inputs(min_length, max_length) {
             } 
             else {
                 // If there is a non-empty start value, use that; otherwise unknown.
-                if (start_value != "") {
+                if (start_value !== "") {
                     text_input_elt.attr('value', start_value);
                 } else {
                     // This is needed to make the DB key work.
@@ -283,9 +289,9 @@ function replace_big_select_inputs(min_length, max_length) {
             // Get refresh vals.
             var ref_on_change_vals = select_elt.attr('refresh_on_change_values'),
                 last_selected_value = select_elt.attr("last_selected_value");
-            if (ref_on_change_vals !== undefined)
+            if (ref_on_change_vals !== undefined) {
                 ref_on_change_vals = ref_on_change_vals.split(',');
-            
+            }
             // Function that attempts to refresh based on the value in the text element.
             var try_refresh_fn = function() {
                 // Get new value and see if it can be matched.
@@ -371,10 +377,11 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
                     },
                     success: function(processed_text) {
                         // Set new text and call finish method.
-                        if (processed_text != "")
+                        if (processed_text !== "") {
                             text_elt.text(processed_text);
-                        else
+                        } else {
                             text_elt.html("<em>None</em>");
+                        }
                         if (on_finish) {
                             on_finish(t);
                         }
@@ -415,15 +422,16 @@ function init_history_items(historywrapper, noinit, nochanges) {
         // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
         if ( $.browser.mozilla ) {
             $( "div.historyItemBody" ).each( function() {
-                if ( ! $(this).is( ":visible" ) ) $(this).find( "pre.peek" ).css( "overflow", "hidden" );
-            })
+                if ( !$(this).is(":visible") ) { $(this).find( "pre.peek" ).css( "overflow", "hidden" ); }
+            });
         }
         
         historywrapper.each( function() {
-            var id = this.id;
-            var body = $(this).children( "div.historyItemBody" );
-            var peek = body.find( "pre.peek" )
+            var id = this.id,
+                body = $(this).children( "div.historyItemBody" ),
+                peek = body.find( "pre.peek" );
             $(this).find( ".historyItemTitleBar > .historyItemTitle" ).wrap( "<a href='javascript:void(0);'></a>" ).click( function() {
+                var prefs;
                 if ( body.is(":visible") ) {
                     // Hiding stuff here
                     if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ); }
@@ -431,7 +439,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
                     
                     if (!nochanges) { // Ignore embedded item actions
                         // Save setting
-                        var prefs = $.jStore.store("history_expand_state");
+                        prefs = $.jStore.store("history_expand_state");
                         if (prefs) {
                             delete prefs[id];
                             $.jStore.store("history_expand_state", prefs);
@@ -445,7 +453,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
                     
                     if (!nochanges) {
                         // Save setting
-                        var prefs = $.jStore.store("history_expand_state");
+                        prefs = $.jStore.store("history_expand_state");
                         if (prefs === undefined) { prefs = {}; }
                         prefs[id] = true;
                         $.jStore.store("history_expand_state", prefs);
@@ -470,7 +478,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
             });
             $.jStore.store("history_expand_state", prefs);
         }).show();
-    }
+    };
     
     if (noinit) {
         action();
@@ -497,7 +505,7 @@ function reset_tool_search( initValue ) {
     // Function may be called in top frame or in tool_menu_frame; 
     // in either case, get the tool menu frame.
     var tool_menu_frame = $("#galaxy_tools").contents();
-    if (tool_menu_frame.length == 0) {
+    if (tool_menu_frame.length === 0) {
         tool_menu_frame = $(document);
     }
         
@@ -532,7 +540,7 @@ function reset_tool_search( initValue ) {
 var GalaxyAsync = function(log_action) {
     this.url_dict = {};
     this.log_action = (log_action === undefined ? false : log_action);
-}
+};
 
 GalaxyAsync.prototype.set_func_url = function( func_name, url ) {
     this.url_dict[func_name] = url;
@@ -565,36 +573,6 @@ GalaxyAsync.prototype.log_user_action = function( action, context, params ) {
         success: function() { return true; }                                           
     });
 };
-
-// Add to trackster browser functionality
-$(".trackster-add").live("click", function() {
-    var dataset = this,
-        dataset_jquery = $(this);
-    $.ajax({
-        url: dataset_jquery.attr("data-url"),
-        dataType: "html",
-        error: function() { alert( "Could not add this dataset to browser." ); },
-        success: function(table_html) {
-            var parent = window.parent;
-            parent.show_modal("Add to Browser:", table_html, {
-                "Cancel": function() {
-                    parent.hide_modal();
-                },
-                "Insert into selected": function() {
-                    $(parent.document).find('input[name=id]:checked').each(function() {
-                        var vis_id = $(this).val();
-                        parent.location = dataset_jquery.attr("action-url") + "&id=" + vis_id;
-                    });
-                },
-                "Insert into new browser": function() {
-                    parent.location = dataset_jquery.attr("new-url");
-                }
-            });
-        }
-    });
-});
-
-
 
 $(document).ready( function() {
     $("select[refresh_on_change='true']").change( function() {

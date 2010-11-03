@@ -46,10 +46,8 @@
             "Export to File": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
             },
-            "Delete": function()
-            {
-                if ( confirm( "Really delete the current history?" ) )
-                {
+            "Delete": function() {
+                if ( confirm( "Really delete the current history?" ) ) {
                     galaxy_main.location = "${h.url_for( controller='history', action='delete_current' )}";
                 }
             },
@@ -59,98 +57,108 @@
             }
         });
         
-        // Init tool options.
-        make_popupmenu( $("#tools-options-button"), {
-            ## Search tools menu item.
-            %if trans.app.toolbox_search.enabled:
-                <% 
-                    show_tool_search = False
-                    if trans.user:
-                        show_tool_search = trans.user.preferences.get( "show_tool_search", "False" )
-                        
-                    if show_tool_search == "True":
-                        initial_text = "Hide Search"
-                    else:
-                        initial_text = "Search Tools"
-                %>
-                "${initial_text}": function() {
-                    // Show/hide menu and update vars, user preferences.
-                    var menu = $("#galaxy_tools").contents().find('#tool-search');
-                    if (menu.is(":visible"))
-                    {
-                        // Hide menu.
-                        pref_value = "False";
-                        menu_option_text = "Search Tools";
-                        menu.toggle();
-                        
-                        // Reset search.
-                        reset_tool_search(true);
+        var menu_options = {}; // Holds dictionary of { label: toggle_fn }
+        
+        SHOW_TOOL = "Show Tool Search";
+        HIDE_TOOL = "Hide Tool Search";
+        SHOW_RECENT = "Show Recently Used";
+        HIDE_RECENT = "Hide Recently Used";
+        
+        var toggle_tool_search_fn = function() {
+            // Show/hide menu and update vars, user preferences.
+            var menu = $("#galaxy_tools").contents().find('#tool-search'),
+                pref_value, menu_option_text, old_text;
+            if (menu.is(":visible")) {
+                // Hide menu.
+                pref_value = "False";
+                menu_option_text = SHOW_TOOL;
+                old_text = HIDE_TOOL;
+                
+                // Reset search.
+                reset_tool_search(true);
+            } else {
+                // Show menu.
+                pref_value = "True";
+                menu_option_text = HIDE_TOOL;
+                old_text = SHOW_TOOL;
+            }
+            menu.toggle();
+    
+            // Update menu option.
+            delete menu_options[old_text];
+            menu_options[menu_option_text] = toggle_tool_search_fn;
+            make_popupmenu( $("#tools-options-button"), menu_options );
+            galaxy_async.set_user_pref("show_tool_search", pref_value);
+        };
+        
+        var toggle_recently_used_fn = function() {
+            // Show/hide menu.
+            var ru_menu = $('#galaxy_tools').contents().find('#recently_used_wrapper'),
+                ru_menu_body = ru_menu.find(".toolSectionBody"),
+                pref_value, old_text, menu_option_text;
+            if (ru_menu.hasClass("user_pref_visible")) {
+                // Hide menu.
+                ru_menu_body.slideUp();
+                ru_menu.slideUp();
+                
+                // Set vars used below and in tool menu frame.
+                pref_value = "False";
+                old_text = HIDE_RECENT;
+                menu_option_text = SHOW_RECENT;
+            } else {
+                // "Show" menu.
+                if (!$('#galaxy_tools').contents().find('#tool-search-query').hasClass("search_active")) {
+                    // Default.
+                    ru_menu.slideDown();
+                } else {
+                    // Search active: tf there are matching tools in RU menu, show menu.
+                    if ( ru_menu.find(".toolTitle.search_match").length !== 0 ) {
+                        ru_menu.slideDown();
+                        ru_menu_body.slideDown();
                     }
-                    else
-                    {
-                        // Show menu.
-                        pref_value = "True";
-                        menu_option_text = "Hide Search";
-                        menu.toggle();
-                    }
-            
-                    // Update menu option.
-                    $("#tools-options-button-menu").find("li").eq(0).text(menu_option_text);
-            
-                    galaxy_async.set_user_pref("show_tool_search", pref_value);
-                },
-            %endif
-            ## Recently used tools menu.
-            %if trans.user:
-                <%
-                    if trans.user.preferences.get( 'show_recently_used_menu', 'False' ) == 'True':
-                        action = "Hide"
-                    else:
-                        action = "Show"
-                %>
-                "${action} Recently Used": function() {
-                    // Show/hide menu.
-                    var ru_menu = $('#galaxy_tools').contents().find('#recently_used_wrapper');
-                    var ru_menu_body = ru_menu.find(".toolSectionBody");
-                    var pref_value = null;
-                    var menu_option_text = null;
-                    if (ru_menu.hasClass("user_pref_visible"))
-                    {
-                        // Hide menu.
-                        ru_menu_body.slideUp();
-                        ru_menu.slideUp();
-                        
-                        // Set vars used below and in tool menu frame.
-                        pref_value = "False";
-                        menu_option_text = "Show Recently Used";
-                    }
-                    else
-                    {
-                        // "Show" menu.
-                        if (!$('#galaxy_tools').contents().find('#tool-search-query').hasClass("search_active"))
-                            // Default.
-                            ru_menu.slideDown();
-                        else
-                            // Search active: tf there are matching tools in RU menu, show menu.
-                            if ( ru_menu.find(".toolTitle.search_match").length != 0 )
-                            {
-                                ru_menu.slideDown();
-                                ru_menu_body.slideDown();
-                            }
-                        
-                        // Set vars used below and in tool menu frame.
-                        pref_value = "True";
-                        menu_option_text = "Hide Recently Used";
-                    }
-                 
-                    // Update menu class and option.
-                    ru_menu.toggleClass("user_pref_hidden user_pref_visible");
-                    $("#tools-options-button-menu").find("li").eq(1).text(menu_option_text);
-
-                    galaxy_async.set_user_pref("show_recently_used_menu", pref_value);
                 }
-            %endif
-        });
+                // Set vars used below and in tool menu frame.
+                pref_value = "True";
+                old_text = SHOW_RECENT;
+                menu_option_text = HIDE_RECENT;
+            }
+            
+            // Update menu class and option.
+            ru_menu.toggleClass("user_pref_hidden user_pref_visible");
+            delete menu_options[old_text];
+            menu_options[menu_option_text] = toggle_recently_used_fn;
+            make_popupmenu( $("#tools-options-button"), menu_options );
+            galaxy_async.set_user_pref("show_recently_used_menu", pref_value);
+        };
+        
+        // Init tool options.
+        ## Search tools menu item.
+        %if trans.app.toolbox_search.enabled:
+            <% 
+                show_tool_search = False
+                if trans.user:
+                    show_tool_search = trans.user.preferences.get( "show_tool_search", "False" )
+                    
+                if show_tool_search == "True":
+                    action = "HIDE_TOOL"
+                else:
+                    action = "SHOW_TOOL"
+            %>
+            menu_options[ ${action} ] = toggle_tool_search_fn;
+        %endif
+        ## Recently used tools menu.
+        %if trans.user:
+            <%
+                if trans.user.preferences.get( 'show_recently_used_menu', 'False' ) == 'True':
+                    action = "HIDE_RECENT"
+                else:
+                    action = "SHOW_RECENT"
+            %>
+            menu_options[ ${action} ] = toggle_recently_used_fn;
+        %endif
+        
+        
+        make_popupmenu( $("#tools-options-button"), menu_options );
     });
     </script>
 </%def>
