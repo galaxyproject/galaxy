@@ -165,10 +165,11 @@ class TextToolParameter( ToolParameter ):
         self.value = elem.get( 'value' )
         self.area = string_as_bool( elem.get( 'area', False ) )
     def get_html_field( self, trans=None, value=None, other_values={} ):
+        if value is None: value = self.value
         if self.area:
-            return form_builder.TextArea( self.name, self.size, value or self.value )
+            return form_builder.TextArea( self.name, self.size, value )
         else:
-            return form_builder.TextField( self.name, self.size, value or self.value )
+            return form_builder.TextField( self.name, self.size, value )
     def get_initial_value( self, trans, context ):
         return self.value
 
