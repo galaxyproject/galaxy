@@ -677,7 +677,7 @@ var TiledTrack = function() {
                 track.draw();
             };
             var mode_mapping = {};
-            for (var i, len = track.display_modes.length; i < len; i++) {
+            for (var i = 0, len = track.display_modes.length; i < len; i++) {
                 var mode = track.display_modes[i];
                 mode_mapping[mode] = function(mode) {
                     return function() { change_mode(mode); };

@@ -157,29 +157,33 @@ $(function() {
     
     // Trackster links
     function init_trackster_links() {
-        $("a.trackster").live( "click", function() {
-            var link = $(this),
-                hid = link.attr("id").split("_")[1]; // visualize_{id}
-
+        // Add to trackster browser functionality
+        $(".trackster-add").live("click", function() {
+            var dataset = this,
+                dataset_jquery = $(this);
             $.ajax({
-                url: "${h.url_for( controller='tracks', action='list_tracks' )}",
-                data: {'hid': hid},
-                error: function() { alert( "Visualization error" ); },
-                success: function(html) {
-                    show_modal("Add Track &mdash; Select Dataset(s)", html, {
-                        "New Browser": function() {
-                            hide_modal();
-                        },
-                        "Insert": function() {
-                            hide_modal();
-                        },
+                url: dataset_jquery.attr("data-url"),
+                dataType: "html",
+                error: function() { alert( "Could not add this dataset to browser." ); },
+                success: function(table_html) {
+                    var parent = window.parent;
+                    parent.show_modal("Add to Browser:", table_html, {
                         "Cancel": function() {
-                            hide_modal();
+                            parent.hide_modal();
+                        },
+                        "Insert into selected": function() {
+                            $(parent.document).find('input[name=id]:checked').each(function() {
+                                var vis_id = $(this).val();
+                                parent.location = dataset_jquery.attr("action-url") + "&id=" + vis_id;
+                            });
+                        },
+                        "Insert into new browser": function() {
+                            parent.location = dataset_jquery.attr("new-url");
                         }
                     });
                 }
             });
-        });    
+        });
     }
     
     init_trackster_links();
