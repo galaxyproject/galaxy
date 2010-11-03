@@ -1333,7 +1333,7 @@ class Tool:
         line. Each value is wrapped in a `InputValueWrapper`, which allows
         all the attributes of the value to be used in the template, *but* 
         when the __str__ method is called it actually calls the 
-        `to_param_dict_value` method of the associated input.
+        `to_param_dict_string` method of the associated input.
         """
         param_dict = dict()
         # All parameters go into the param_dict
