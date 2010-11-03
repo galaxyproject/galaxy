@@ -84,7 +84,7 @@ def require_login( verb="perform this action", use_panels=False, webapp='galaxy'
                 return func( self, trans, *args, **kwargs )
             else:
                 return trans.show_error_message(
-                    'You must be <a target="_top" href="%s">logged in</a> to %s</div>.'
+                    'You must be <a target="_top" href="%s">logged in</a> to %s.'
                     % ( url_for( controller='user', action='login', webapp=webapp ), verb ), use_panels=use_panels )      
         return decorator
     return argcatcher

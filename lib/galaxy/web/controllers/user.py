@@ -984,6 +984,7 @@ class User( BaseController, UsesFormDefinitionWidgets ):
                                     message=message,
                                     lines_skipped=lines_skipped )          
     @web.expose
+    @web.require_login()
     def api_keys( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
