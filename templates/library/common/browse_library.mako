@@ -68,7 +68,7 @@
                     }
                 }
             };
-                
+            
             var save_folder_state = function() {
                 var state = {};
                 $("tr.folderRow").each( function() {
@@ -79,12 +79,17 @@
             };
             
             $("#library-grid").each(function() {
-               // Recursively fill in children and descendents of each row
-               var process_row = function(q, parents) {
+
+                var child_of_parent_cache = {};
+                // Recursively fill in children and descendents of each row
+                var process_row = function(q, parents) {
                     // Find my index
-                    var index = q.parent().children().index(q);
+                    var parent = q.parent(),
+                        this_level = child_of_parent_cache[parent] || (child_of_parent_cache[parent] = parent.children());
+                        
+                    var index = this_level.index(q);
                     // Find my immediate children
-                    var children = q.siblings().filter("[parent='" + index + "']");
+                    var children = $(par_child_dict[index]);
                     // Recursively handle them
                     var descendents = children;
                     children.each( function() {
@@ -103,8 +108,7 @@
                         }
                         save_folder_state();
                     };
-                    $(q).find("span.expandLink").click(expand_fn);
-                    $(q).find("span.expandLink a").click(expand_fn);
+                    $("." + q.attr("id") + "-click").click(expand_fn);
                     // Check/uncheck boxes in subfolders.
                     q.children("td").children("input[type=checkbox]").click( function() {
                         if ( $(this).is(":checked") ) {
@@ -112,15 +116,32 @@
                         } else {
                             descendents.find("input[type=checkbox]").attr("checked", false);
                             // If you uncheck a lower level checkbox, uncheck the boxes above it
-                            // (since deselecting a child means the parent is not fully selected any
-                            // more).
+                            // (since deselecting a child means the parent is not fully selected any more).
                             parents.children("td").children("input[type=checkbox]").attr("checked", false);
                         }
                     });
                     // return descendents for use by parent
                     return descendents;
-               }
-               $(this).find("tbody tr").not("[parent]").each( function() {
+                }
+                
+                // Initialize dict[parent_id] = rows_which_have_that_parent_id_as_parent_attr
+                var par_child_dict = {},
+                    no_parent = [];
+                    
+                $(this).find("tbody tr").each( function() {
+                    if (this.hasAttribute("parent")) {
+                        var parent = this.getAttribute("parent");
+                        if (par_child_dict[parent] !== undefined) {
+                            par_child_dict[parent].push(this);
+                        } else {
+                            par_child_dict[parent] = [this];
+                        }
+                    } else {
+                        no_parent.push(this);
+                    }                        
+                });
+                
+                $(no_parent).each( function() {
                     descendents = process_row( $(this), $([]) );
                     descendents.hide();
                });
@@ -338,7 +359,8 @@
         info_association, inherited = folder.get_info_association( restrict=True )
     %>
     %if not root_folder and ( not folder.deleted or show_deleted ):
-        <tr id="folder-${trans.security.encode_id(folder.id)}" class="folderRow libraryOrFolderRow"
+        <% encoded_id = trans.security.encode_id(folder.id) %>
+        <tr id="folder-${encoded_id}" class="folderRow libraryOrFolderRow"
             %if parent is not None:
                 parent="${parent}"
                 style="display: none;"
@@ -349,9 +371,9 @@
                 %if folder.deleted:
                     <span class="libraryItem-error">
                 %endif
-                <span class="expandLink"><span class="rowIcon"></span>
+                <span class="expandLink folder-${encoded_id}-click"><span class="rowIcon"></span>
                 <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="folder_img-${folder.id}-popup">
-                    <a href="javascript:void(0);">${folder.name}</a>
+                    <a class="folder-${encoded_id}-click" href="javascript:void(0);">${folder.name}</a>
                 </div>
                 %if folder.deleted:
                     </span>
