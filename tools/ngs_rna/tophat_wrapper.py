@@ -29,6 +29,24 @@ def __main__():
                         help='The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read.' )
     parser.add_option( '-F', '--junction_filter', dest='junction_filter', help='Filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)' )
     parser.add_option( '-g', '--max_multihits', dest='max_multihits', help='Maximum number of alignments to be allowed' )
+    parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
+    parser.add_option( '', '--seg-length', dest='seg_length', help='Minimum length of read segments' )
+    
+    # Options for supplying own junctions
+    parser.add_option( '-G', '--GTF', dest='gene_model_annotations', help='Supply TopHat with a list of gene model annotations. \
+                                                                           TopHat will use the exon records in this file to build \
+                                                                           a set of known splice junctions for each gene, and will \
+                                                                           attempt to align reads to these junctions even if they \
+                                                                           would not normally be covered by the initial mapping.')
+    parser.add_option( '-j', '--raw-juncs', dest='raw_juncs', help='Supply TopHat with a list of raw junctions. Junctions are \
+                                                                    specified one per line, in a tab-delimited format. Records \
+                                                                    look like: <chrom> <left> <right> <+/-> left and right are \
+                                                                    zero-based coordinates, and specify the last character of the \
+                                                                    left sequenced to be spliced to the first character of the right \
+                                                                    sequence, inclusive.')
+    parser.add_option( '', '--no-novel-juncs', action="store_true", dest='no_novel_juncs', help="Only look for junctions indicated in the \
+                                                                                            supplied GFF file. (ignored without -G)")
+    # Types of search.
     parser.add_option( '', '--microexon-search', action="store_true", dest='microexon_search', help='With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.')
     parser.add_option( '', '--closure-search', action="store_true", dest='closure_search', help='Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (<= 50bp)')
     parser.add_option( '', '--no-closure-search', action="store_false", dest='closure_search' )
@@ -41,8 +59,6 @@ def __main__():
     parser.add_option( '', '--max-closure-intron', dest='max_closure_intron', help='Maximum intron length that may be found during closure search' )
     parser.add_option( '', '--min-coverage-intron', dest='min_coverage_intron', help='Minimum intron length that may be found during coverage search' )
     parser.add_option( '', '--max-coverage-intron', dest='max_coverage_intron', help='Maximum intron length that may be found during coverage search' )
-    parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
-    parser.add_option( '', '--seg-length', dest='seg_length', help='Minimum length of read segments' )
     
     # Wrapper options.
     parser.add_option( '-1', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format' )
@@ -107,6 +123,15 @@ def __main__():
             if float( options.junction_filter ) != 0.0:
                 opts += ' -F %s' % options.junction_filter
             opts += ' -g %s' % options.max_multihits
+            # Custom junctions options.
+            if options.gene_model_annotations:
+                opts += ' -G %s' % options.gene_model_annotations
+            if options.raw_juncs:
+                opts += ' -j %s' % options.raw_juncs
+            if options.no_novel_juncs:
+                opts += ' --no-novel-juncs'
+                
+            # Search type options.
             if options.coverage_search:
                 opts += ' --coverage-search --min-coverage-intron %s --max-coverage-intron %s' % ( options.min_coverage_intron, options.max_coverage_intron )
             else:
