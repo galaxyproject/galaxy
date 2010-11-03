@@ -1,0 +1,20 @@
+#This is a sample file distributed with Galaxy that enables the NGS simulation
+#tool to use some FASTA files. You will need to make sure that these FASTA files
+#are in place and then create the ngs_sim.loc file similar to this one (store it
+#in this directory) that points to the locations of those files. The ngs_sim.loc
+#file has this format (white space characters are TAB characters):
+#
+#<unique_build_id>   <dbkey>   <display_name>   <file_base_path>
+#
+#So, for example, if you had hg18chrM.fa in 
+#/data/path/hg18/seq/, 
+#then the ngs_sim.loc entry would look like this:
+#
+#hg18chrM   hg18   hg18chrM   /data/path/hg18/seq/hg18chrM.fa
+#
+#Your ngs_sim.loc file should include an entry per line for each FASTA file you
+#have stored.
+#
+#hg18chrM   hg18    hg18chrM   /data/path/hg18/seq/hg18chrM.fa
+#phiX174    phiX    phiX174    /data/path/genome/phiX/seq/phiX.fa
+#pUC18      pUC18   pUC18      /data/path/genome/pUC18/seq/pUC18.fa
