@@ -23,6 +23,13 @@
       <param name="cond" value="c1=='chr1' and c3-c2>=2000 and c6=='+'"/>
       <output name="out_file1" file="filter1_test2.bed"/>
     </test>
+    <!-- Test filtering of file with a variable number of columns. -->
+    <test>
+      <param name="input" value="filter1_in3.sam"/>
+      <param name="cond" value="c3=='chr1' and c5>5"/>
+      <output name="out_file1" file="filter1_test3.sam"/>
+    </test>
+    
   </tests>
   <help>
 

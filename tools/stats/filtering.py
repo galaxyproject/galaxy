@@ -60,10 +60,18 @@ for operand in operands:
     except:
         if operand in secured:
             stop_err( "Illegal value '%s' in condition '%s'" % ( operand, cond_text ) )
+            
+# Find the largest column used in the filter.
+largest_col_index = -1
+for match in re.finditer( 'c(\d)+', cond_text ):
+    col_index = int( match.group()[1:] )
+    if col_index > largest_col_index:
+        largest_col_index = col_index
 
-# Prepare the column variable names and wrappers for column data types
+# Prepare the column variable names and wrappers for column data types. Only 
+# prepare columns up to largest column in condition.
 cols, type_casts = [], []
-for col in range( 1, in_columns + 1 ):
+for col in range( 1, largest_col_index + 1 ):
     col_name = "c%d" % col
     cols.append( col_name )
     col_type = in_column_types[ col - 1 ]
@@ -72,7 +80,7 @@ for col in range( 1, in_columns + 1 ):
  
 col_str = ', '.join( cols )    # 'c1, c2, c3, c4'
 type_cast_str = ', '.join( type_casts )  # 'str(c1), int(c2), int(c3), str(c4)'
-assign = "%s = line.split( '\\t' )" % col_str
+assign = "%s, = line.split( '\\t' )[:%i]" % ( col_str, largest_col_index )
 wrap = "%s = %s" % ( col_str, type_cast_str )
 skipped_lines = 0
 first_invalid_line = 0
