@@ -123,6 +123,7 @@ class ToolRunner( BaseController ):
             params_objects = job.get_param_values( trans.app )
         except:
             raise Exception( "Failed to get paramemeters for dataset id %d " % data.id )
+        upgrade_messages = tool.check_and_update_param_values( params_objects, trans )
         # Need to remap dataset parameters. Job parameters point to original 
         # dataset used; parameter should be the analygous dataset in the 
         # current history.
@@ -152,7 +153,7 @@ class ToolRunner( BaseController ):
         state.inputs = params_objects
         tool_state_string = util.object_to_string(state.encode(tool, trans.app))
         # Setup context for template
-        vars = dict( tool_state=state, errors = {} )
+        vars = dict( tool_state=state, errors = upgrade_messages )
         # Is the "add frame" stuff neccesary here?
         add_frame = AddFrameData()
         add_frame.debug = trans.debug
