@@ -1,7 +1,7 @@
 <tool id="cshl_fastx_barcode_splitter" name="Barcode Splitter">
 	<description></description>
 	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
-	<command interpreter="sh">fastx_barcode_splitter_galaxy_wrapper.sh $BARCODE $input "$input.name" "$output.files_path" --mismatches $mismatches --partial $partial $EOL > $output </command>
+	<command interpreter="bash">fastx_barcode_splitter_galaxy_wrapper.sh $BARCODE $input "$input.name" "$output.files_path" --mismatches $mismatches --partial $partial $EOL > $output </command>
 
 	<inputs>
 		<param format="txt" name="BARCODE" type="data" label="Barcodes to use" />
