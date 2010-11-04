@@ -123,7 +123,7 @@ from galaxy.jobs.actions.post import ActionBox
 
 %if has_upgrade_messages:
 <div class="warningmessage">
-    Problems were encourered when loading this workflow, likely due to tool
+    Problems were encountered when loading this workflow, likely due to tool
     version changes. Missing parameter values have been replaced with default.
     Please review the parameter values below.
 </div>
