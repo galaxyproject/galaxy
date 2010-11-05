@@ -287,7 +287,7 @@ class UploadDataset( Group ):
                     rval.append( file_bunch )
             # look for files uploaded via FTP
             valid_files = []
-            if ftp_files:
+            if ftp_files is not None:
                 if trans.user is None:
                     log.warning( 'Anonymous user passed values in ftp_files: %s' % ftp_files )
                     ftp_files = []
@@ -299,6 +299,8 @@ class UploadDataset( Group ):
                             path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
                             if not os.path.islink( os.path.join( dirpath, filename ) ):
                                 valid_files.append( path )
+            else:
+                ftp_files = []
             for ftp_file in ftp_files:
                 if ftp_file not in valid_files:
                     log.warning( 'User passed an invalid file path in ftp_files: %s' % ftp_file )
