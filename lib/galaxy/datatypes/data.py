@@ -419,36 +419,16 @@ class Newick( Text ):
 
 # ------------- Utility methods --------------
 
+# nice_size used to be here, but to resolve cyclical dependencies it's been
+# moved to galaxy.util.  It belongs there anyway since it's used outside
+# datatypes.
+nice_size = util.nice_size
+
 def get_test_fname( fname ):
     """Returns test data filename"""
     path, name = os.path.split(__file__)
     full_path = os.path.join( path, 'test', fname )
     return full_path
-def nice_size(size):
-    """
-    Returns a readably formatted string with the size
-
-    >>> nice_size(100)
-    '100.0 bytes'
-    >>> nice_size(10000)
-    '9.8 Kb'
-    >>> nice_size(1000000)
-    '976.6 Kb'
-    >>> nice_size(100000000)
-    '95.4 Mb'
-    """
-    words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
-    try:
-        size = float( size )
-    except:
-        return '??? bytes'
-    for ind, word in enumerate(words):
-        step  = 1024 ** (ind + 1)
-        if step > size:
-            size = size / float(1024 ** ind)
-            out  = "%.1f %s" % (size, word)
-            return out
-    return '??? bytes'
 def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH

@@ -929,7 +929,11 @@ class Tool:
                     assert isinstance( out_data, odict )
                     return 'tool_executed.mako', dict( out_data=out_data )
                 except:
-                    return 'message.mako', dict( status='error', message='odict not returned from tool execution', refresh_frames=[] )
+                    if isinstance( out_data, str ):
+                        message = out_data
+                    else:
+                        message = 'Failure executing tool (odict not returned from tool execution)'
+                    return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
             # Otherwise move on to the next page
             else:
                 state.page += 1

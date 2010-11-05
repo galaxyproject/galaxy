@@ -40,6 +40,11 @@ class ToolParameter( object ):
         for elem in param.findall("validator"):
             self.validators.append( validation.Validator.from_element( self, elem ) )
 
+    @property
+    def visible( self ):
+        """Return true if the parameter should be rendered on the form"""
+        return True
+
     def get_label( self ):
         """Return user friendly name for the parameter"""
         if self.label: return self.label
@@ -359,6 +364,41 @@ class FileToolParameter( ToolParameter ):
             return value
         else:
             raise Exception( "FileToolParameter cannot be persisted" )
+    def get_initial_value( self, trans, context ):
+        return None
+        
+class FTPFileToolParameter( ToolParameter ):
+    """
+    Parameter that takes a file uploaded via FTP as a value.
+    """
+    def __init__( self, tool, elem ):
+        """
+        Example: C{<param name="bins" type="file" />}
+        """
+        ToolParameter.__init__( self, tool, elem )
+    @property
+    def visible( self ):
+        if self.tool.app.config.ftp_upload_dir is None or self.tool.app.config.ftp_upload_site is None:
+            return False
+        return True
+    def get_html_field( self, trans=None, value=None, other_values={}  ):
+        if trans is None or trans.user is None:
+            user_ftp_dir = None
+        else:
+            user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+        return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value = value )
+    def from_html( self, value, trans=None, other_values={} ):
+        return util.listify( value )
+    def to_string( self, value, app ):
+        if value in [ None, '' ]:
+            return None
+        elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
+            return value
+    def to_python( self, value, app ):
+        if value is None:
+            return None
+        elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
+            return value
     def get_initial_value( self, trans, context ):
         return None
         
@@ -1427,6 +1467,7 @@ parameter_types = dict( text        = TextToolParameter,
                         hidden      = HiddenToolParameter,
                         baseurl     = BaseURLToolParameter,
                         file        = FileToolParameter,
+                        ftpfile     = FTPFileToolParameter,
                         data        = DataToolParameter,
                         drill_down = DrillDownSelectToolParameter )
 

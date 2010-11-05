@@ -480,6 +480,32 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
                                                                                                           current_group,
                                                                                                           e ) )
 
+def nice_size(size):
+    """
+    Returns a readably formatted string with the size
+
+    >>> nice_size(100)
+    '100.0 bytes'
+    >>> nice_size(10000)
+    '9.8 Kb'
+    >>> nice_size(1000000)
+    '976.6 Kb'
+    >>> nice_size(100000000)
+    '95.4 Mb'
+    """
+    words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
+    try:
+        size = float( size )
+    except:
+        return '??? bytes'
+    for ind, word in enumerate(words):
+        step  = 1024 ** (ind + 1)
+        if step > size:
+            size = size / float(1024 ** ind)
+            out  = "%.1f %s" % (size, word)
+            return out
+    return '??? bytes'
+
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 # The dbnames list is used in edit attributes and the upload tool
 dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) )

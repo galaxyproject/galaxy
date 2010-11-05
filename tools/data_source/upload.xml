@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<tool name="Upload File" id="upload1" version="1.1.1">
+<tool name="Upload File" id="upload1" version="1.1.2">
   <description>
     from your computer  
   </description>
@@ -29,6 +29,7 @@
         <validator type="expression" message="You will need to reselect the file you specified (%s)." substitute_value_in_message="True">not ( ( isinstance( value, unicode ) or isinstance( value, str ) ) and value != "" )</validator> <!-- use validator to post message to user about needing to reselect the file, since most browsers won't accept the value attribute for file inputs -->
       </param>
       <param name="url_paste" type="text" area="true" size="5x35" label="URL/Text" help="Here you may specify a list of URLs (one per line) or paste the contents of a file."/> 
+      <param name="ftp_files" type="ftpfile" label="Files uploaded via FTP"/>
       <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand."> 
         <option value="Yes">Yes</option>
       </param>

@@ -99,6 +99,10 @@ class Configuration( object ):
         self.user_library_import_dir = kwargs.get( 'user_library_import_dir', None )
         if self.user_library_import_dir is not None and not os.path.exists( self.user_library_import_dir ):
             raise ConfigurationError( "user_library_import_dir specified in config (%s) does not exist" % self.user_library_import_dir )
+        self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
+        if self.ftp_upload_dir is not None and not os.path.exists( self.ftp_upload_dir ):
+            os.makedirs( self.ftp_upload_dir )
+        self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
         # Location for dependencies

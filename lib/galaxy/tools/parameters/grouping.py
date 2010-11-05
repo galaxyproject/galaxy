@@ -12,11 +12,14 @@ import StringIO, os, urllib
 from galaxy.datatypes import sniff
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
-from galaxy.util import json
+from galaxy.util import json, relpath
 
 class Group( object ):
     def __init__( self ):
         self.name = None
+    @property
+    def visible( self ):
+        return True
     def value_to_basic( self, value, app ):
         """
         Convert value to a (possibly nested) representation using only basic
@@ -267,6 +270,7 @@ class UploadDataset( Group ):
             rval = []
             data_file = context['file_data']
             url_paste = context['url_paste']
+            ftp_files = context['ftp_files']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             space_to_tab = False
@@ -278,6 +282,31 @@ class UploadDataset( Group ):
                 file_bunch.space_to_tab = space_to_tab
                 rval.append( file_bunch )
             for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
+                if file_bunch.path:
+                    file_bunch.space_to_tab = space_to_tab
+                    rval.append( file_bunch )
+            # look for files uploaded via FTP
+            valid_files = []
+            if ftp_files:
+                if trans.user is None:
+                    log.warning( 'Anonymous user passed values in ftp_files: %s' % ftp_files )
+                    ftp_files = []
+                    # TODO: warning to the user (could happen if session has become invalid)
+                else:
+                    user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+                    for ( dirpath, dirnames, filenames ) in os.walk( user_ftp_dir ):
+                        for filename in filenames:
+                            path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
+                            if not os.path.islink( os.path.join( dirpath, filename ) ):
+                                valid_files.append( path )
+            for ftp_file in ftp_files:
+                if ftp_file not in valid_files:
+                    log.warning( 'User passed an invalid file path in ftp_files: %s' % ftp_file )
+                    continue
+                    # TODO: warning to the user (could happen if file is already imported)
+                ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, ftp_file ) ),
+                                  'filename' : os.path.basename( ftp_file ) }
+                file_bunch = get_data_file_filename( ftp_data_file, override_name = name, override_info = info )
                 if file_bunch.path:
                     file_bunch.space_to_tab = space_to_tab
                     rval.append( file_bunch )

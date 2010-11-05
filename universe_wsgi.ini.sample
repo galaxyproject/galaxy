@@ -324,6 +324,18 @@ use_interactive = True
 # Enable the (experimental! beta!) Web API.  Documentation forthcoming.
 #enable_api = False
 
+# Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
+# configure an FTP server (we've used ProFTPd since it can use Galaxy's
+# database for authentication) and set the following two options.
+
+# This should point to a directory containing subdirectories matching users'
+# email addresses, where Galaxy will look for files.
+#ftp_upload_dir = None
+
+# This should be the hostname of your FTP server, which will be provided to
+# users in the help text.
+#ftp_upload_site = None
+
 # -- Job Execution
 
 # If running multiple Galaxy processes, one can be designated as the job

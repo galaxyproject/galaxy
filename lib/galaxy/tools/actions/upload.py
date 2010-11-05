@@ -21,7 +21,7 @@ class UploadToolAction( ToolAction ):
         upload_common.cleanup_unused_precreated_datasets( precreated_datasets )
         
         if not uploaded_datasets:
-            return 'No data was entered in the upload form, please go back and choose data to upload.'
+            return None, 'No data was entered in the upload form, please go back and choose data to upload.'
         
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]

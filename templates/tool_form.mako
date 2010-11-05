@@ -51,7 +51,9 @@ function checkUncheckAll( name, check ) {
     <%def name="do_inputs( inputs, tool_state, errors, prefix, other_values=None )">
       <% other_values = ExpressionContext( tool_state, other_values ) %>
         %for input_index, input in enumerate( inputs.itervalues() ):
-            %if input.type == "repeat":
+            %if not input.visible:
+                <% pass %>
+            %elif input.type == "repeat":
               <div class="repeat-group">
                   <div class="form-title-row"><b>${input.title_plural}</b></div>
                   <% repeat_state = tool_state[input.name] %>
