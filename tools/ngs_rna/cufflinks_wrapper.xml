@@ -17,7 +17,7 @@
             #if $reference_annotation.use_ref == "Yes":
                 -G $reference_annotation.reference_annotation_file
             #end if
-            #if $singlePaired.sPaired == "paired":
+            #if $singlePaired.sPaired == "Yes":
                 -m $singlePaired.mean_inner_distance
                 -s $singlePaired.inner_distance_std_dev
             #end if
@@ -39,12 +39,12 @@
             </when>
         </conditional>
         <conditional name="singlePaired">
-            <param name="sPaired" type="select" label="Is this library mate-paired?">
-                <option value="single">Single-end</option>
-                <option value="paired">Paired-end</option>
+            <param name="sPaired" type="select" label="Set Parameters for Paired-end Reads? (not recommended)">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
             </param>
-            <when value="single"></when>
-            <when value="paired">
+            <when value="No"></when>
+            <when value="Yes">
                 <param name="mean_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs"/>
                 <param name="inner_distance_std_dev" type="integer" value="20" label="Standard Deviation for Inner Distance between Mate Pairs"/>
             </when>
