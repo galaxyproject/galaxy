@@ -26,7 +26,7 @@ class BaseJobRunner( object ):
                             exec_dir = os.path.abspath( os.getcwd() ),
                             tmp_dir = self.app.config.new_file_path,
                             dataset_files_path = self.app.model.Dataset.file_path,
-                            output_fnames = output_fnames,
+                            output_fnames = job_wrapper.get_output_fnames(),
                             set_extension = False,
                             kwds = { 'overwrite' : False } ) 
         return commands
