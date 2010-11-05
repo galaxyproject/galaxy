@@ -94,14 +94,8 @@ class Configuration( object ):
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
-        if self.library_import_dir is not None and not os.path.exists( self.library_import_dir ):
-            raise ConfigurationError( "library_import_dir specified in config (%s) does not exist" % self.library_import_dir )
         self.user_library_import_dir = kwargs.get( 'user_library_import_dir', None )
-        if self.user_library_import_dir is not None and not os.path.exists( self.user_library_import_dir ):
-            raise ConfigurationError( "user_library_import_dir specified in config (%s) does not exist" % self.user_library_import_dir )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
-        if self.ftp_upload_dir is not None and not os.path.exists( self.ftp_upload_dir ):
-            os.makedirs( self.ftp_upload_dir )
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
@@ -159,9 +153,16 @@ class Configuration( object ):
             return default
     def check( self ):
         # Check that required directories exist
-        for path in self.root, self.file_path, self.tool_path, self.tool_data_path, self.template_path, self.job_working_directory, self.cluster_files_directory:
+        for path in self.root, self.tool_path, self.tool_data_path, self.template_path:
             if not os.path.isdir( path ):
                 raise ConfigurationError("Directory does not exist: %s" % path )
+        # Create the directories that it makes sense to create
+        for path in self.file_path, self.new_file_path, self.job_working_directory, self.cluster_files_directory, self.template_cache, self.ftp_upload_dir, self.library_import_dir, self.user_library_import_dir, self.nginx_upload_store, './static/genetrack/plots', os.path.join( self.tool_data_path, 'shared', 'jars' ):
+            if path not in [ None, False ] and not os.path.isdir( path ):
+                try:
+                    os.makedirs( path )
+                except Exception, e:
+                    raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Check that required files exist
         for path in self.tool_config, self.datatypes_config:
             if not os.path.isfile(path):
