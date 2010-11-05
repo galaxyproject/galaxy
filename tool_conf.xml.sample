@@ -319,7 +319,6 @@
   <label text="Data: Import and upload" id="rgimport" />
     <tool file="data_source/upload.xml"/>
     <tool file="data_source/access_libraries.xml" />
-    <tool file="data_source/hapmapmart.xml" />
   <label text="Data: Filter and Clean" id="rgfilter" />
     <tool file="rgenetics/rgClean.xml"/>
     <tool file="rgenetics/rgPedSub.xml"/>
