@@ -5,13 +5,14 @@ import threading
 
 from galaxy import model
 from galaxy.datatypes.data import nice_size
+from galaxy.jobs.runners import BaseJobRunner
 
 import os, errno
 from time import sleep
 
 log = logging.getLogger( __name__ )
 
-class LocalJobRunner( object ):
+class LocalJobRunner( BaseJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -53,9 +54,7 @@ class LocalJobRunner( object ):
         # Prepare the job to run
         try:
             job_wrapper.prepare()
-            command_line = job_wrapper.get_command_line()
-            if job_wrapper.dependency_shell_commands:
-                command_line = "; ".join( job_wrapper.dependency_shell_commands + [ command_line ] )
+            command_line = self.build_command_line( job_wrapper )
         except:
             job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)

@@ -51,7 +51,7 @@ class DependencyManager( object ):
             if os.path.exists( script ):
                 return script, path, version
         else:
-            return None, None
+            return None, None, None
 
     def _find_dep_default( self, name ):
         version = None
@@ -64,6 +64,6 @@ class DependencyManager( object ):
                 if os.path.exists( script ):
                     return script, real_path, real_version
         else:
-            return None, None
+            return None, None, None
 
 

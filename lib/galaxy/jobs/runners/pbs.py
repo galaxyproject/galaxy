@@ -5,6 +5,7 @@ from Queue import Queue, Empty
 from galaxy import model
 from galaxy.datatypes.data import nice_size
 from galaxy.util.bunch import Bunch
+from galaxy.jobs.runners import BaseJobRunner
 
 from paste.deploy.converters import asbool
 
@@ -80,7 +81,7 @@ class PBSJobState( object ):
         self.check_count = 0
         self.stop_job = False
 
-class PBSJobRunner( object ):
+class PBSJobRunner( BaseJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -183,7 +184,7 @@ class PBSJobRunner( object ):
 
         try:
             job_wrapper.prepare()
-            command_line = job_wrapper.get_command_line()
+            command_line = self.build_command_line( job_wrapper, include_metadata=not( self.app.config.pbs_stage_path ) )
         except:
             job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
@@ -253,14 +254,6 @@ class PBSJobRunner( object ):
             script = pbs_symlink_template % (job_wrapper.galaxy_lib_dir, " ".join(job_wrapper.get_input_fnames() + output_files), self.app.config.pbs_stage_path, exec_dir, command_line)
         else:
             script = pbs_template % ( job_wrapper.galaxy_lib_dir, exec_dir, command_line )
-            if self.app.config.set_metadata_externally:
-                script += "cd %s\n" % os.path.abspath( os.getcwd() )
-                script += "%s\n" % job_wrapper.setup_external_metadata( exec_dir = os.path.abspath( os.getcwd() ),
-                                                                        tmp_dir = self.app.config.new_file_path,
-                                                                        dataset_files_path = self.app.model.Dataset.file_path,
-                                                                        output_fnames = output_fnames,
-                                                                        set_extension = False,
-                                                                        kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)
