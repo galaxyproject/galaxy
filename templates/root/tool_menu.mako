@@ -32,7 +32,7 @@
         <div class="toolTitleNoSection">
     %endif
         <% encoded_id = key.lstrip( 'workflow_' ) %>
-        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id, check_user=False )}" target="_parent">${_(workflow.name)}</a>
+        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id )}" target="_parent">${_(workflow.name)}</a>
     </div>
 </%def>
 
