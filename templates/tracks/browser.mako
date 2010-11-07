@@ -15,8 +15,8 @@ ${parent.stylesheets()}
 ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom" )}
 
 <style type="text/css">
-    #center {
-        overflow: auto;
+    #center, #browser-container {
+        overflow: none;
     }
     ul#sortable-ul {
         list-style: none;
@@ -29,10 +29,7 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         background: #eee;
     }
     .nav-container {
-        position: fixed;
         width: 100%;
-        left: 0;
-        bottom: 0;
     }
     # Styles for filters.
     .filter-name {
@@ -57,6 +54,7 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         <a id="add-track" class="panel-header-button right-float" href="javascript:void(0);">Add Tracks</a>
     </div>
 </div>
+<div id="browser-container" class="unified-panel-body"></div>
 
 </%def>
 
@@ -79,7 +77,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
     $(function() {
         
         %if config:
-            view = new View( $("#center"), "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
+            view = new View( $("#browser-container"), "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
             view.editor = true;
             %for track in config.get('tracks'):
                 view.add_track(
@@ -214,6 +212,16 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     },
                     error: function() { alert("Could not save visualization"); }
                 });
+            });
+
+            $(document).keydown( function( e ) {
+                // 37 == left
+                if ( e.which == 39 ) {
+                   view.move_fraction( -0.25 ); 
+                // 39 == right
+                } else if ( e.which == 37 ) {
+                   view.move_fraction( 0.25 ); 
+                }
             });
         };
         

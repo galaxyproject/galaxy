@@ -103,15 +103,25 @@ $.extend( View.prototype, {
         // Create DOM elements
         var parent_element = this.container,
             view = this;
-        this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(parent_element);        
+        // Top container for things that are fixed at the top
+        this.top_container = $("<div/>").addClass("top-container").appendTo(parent_element);
+        // Content container, primary tracks are contained in here
         this.content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
+        // Bottom container for things that are fixed at the bottom
+        this.bottom_container = $("<div/>").addClass("bottom-container").appendTo(parent_element);
+        // Label track fixed at top 
+        this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.top_container);        
+        // Viewport for dragging tracks in center    
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
-        this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide(); // Future overlay
-        
-        this.nav_container = $("<div/>").addClass("nav-container").appendTo(parent_element);
-        this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.nav_container);
+        // Future overlay?
+        this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide(); 
+        // Another label track at bottom
+        this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
+        // Navigation at top
+        this.nav_container = $("<div/>").addClass("nav-container").prependTo(this.top_container);
         this.nav = $("<div/>").addClass("nav").appendTo(this.nav_container);
-        this.overview = $("<div/>").addClass("overview").appendTo(this.nav);
+        // Overview (scrollbar and overview plot) at bottom
+        this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
         this.overview_close = $("<a href='javascript:void(0);'>Close Overview</a>").addClass("overview-close").hide().appendTo(this.overview_viewport);
         this.overview_highlight = $("<div />").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
@@ -327,6 +337,11 @@ $.extend( View.prototype, {
         }
         view.change_chrom(chrom, new_low, new_high);
     },
+    move_fraction : function( fraction ) {
+        var view = this;
+        var span = view.high - view.low;
+        this.move_delta( fraction * span );
+    },
     move_delta: function(delta_chrom) {
         var view = this;
         var current_chrom_span = view.high - view.low;
@@ -439,7 +454,7 @@ $.extend( View.prototype, {
         this.redraw();
     },
     resize_window: function() {
-        this.viewport_container.height( this.container.height() - this.nav_container.height() - 45 );
+        this.viewport_container.height( this.container.height() - this.top_container.height() - this.bottom_container.height() );
         this.nav_container.width( this.container.width() );
         this.redraw();
     },
