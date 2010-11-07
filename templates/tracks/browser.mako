@@ -77,7 +77,11 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
     $(function() {
         
         %if config:
-            view = new View( $("#browser-container"), "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
+            var callback;
+            %if 'viewport' in config:
+                var callback = function() { view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} ); }
+            %endif
+            view = new View( $("#browser-container"), "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}", callback );
             view.editor = true;
             %for track in config.get('tracks'):
                 view.add_track(
@@ -180,21 +184,25 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             
             $("#save-button").bind("click", function(e) {
                 var sorted = $(".viewport-container").sortable('toArray'),
-                    payload = [];
+                    tracks = [];
+
+                // Show saving dialog box
+                show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
                     
                 for (var i in sorted) {
                     var track_id = parseInt(sorted[i].split("track_")[1]),
                         track = view.tracks[track_id];
                     
-                    payload.push( {
+                    tracks.push( {
                         "track_type": track.track_type,
                         "name": track.name,
                         "dataset_id": track.dataset_id,
                         "prefs": track.prefs
                     });
                 }
-                // Show saving dialog box
-                show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
+
+                var payload = { 'tracks': tracks, 'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high } }
+                console.log( payload );
                 
                 $.ajax({
                     url: "${h.url_for( action='save' )}",

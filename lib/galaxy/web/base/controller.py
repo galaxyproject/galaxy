@@ -185,6 +185,9 @@ class UsesVisualization( SharableItemSecurity ):
             
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 
                         "tracks": tracks, "chrom": "", "dbkey": visualization.dbkey }
+
+            if 'viewport' in latest_revision.config:
+                config['viewport'] = latest_revision.config['viewport']
             
         return config
         

@@ -1,12 +1,5 @@
 """
 Support for constructing and viewing custom "track" browsers within Galaxy.
-
-Track browsers are currently transient -- nothing is stored to the database
-when a browser is created. Building a browser consists of selecting a set
-of datasets associated with the same dbkey to display. Once selected, jobs
-are started to create any necessary indexes in the background, and the user
-is redirected to the browser interface, which loads the appropriate datasets.
-
 """
 
 import re, pkg_resources
@@ -317,7 +310,7 @@ class TracksController( BaseController, UsesVisualization ):
         if 'vis_id' in kwargs:
             vis_id = kwargs['vis_id'].strip('"')
         dbkey = kwargs['dbkey']
-        
+        # Lookup or create Visualization object 
         if vis_id == "undefined": # new vis
             vis = model.Visualization()
             vis.user = trans.user
@@ -328,20 +321,30 @@ class TracksController( BaseController, UsesVisualization ):
         else:
             decoded_id = trans.security.decode_id( vis_id )
             vis = session.query( model.Visualization ).get( decoded_id )
-        
+        # Decode the payload
         decoded_payload = simplejson.loads( kwargs['payload'] )
+        # Create new VisualizationRevision that will be attached to the viz
         vis_rev = model.VisualizationRevision()
         vis_rev.visualization = vis
         vis_rev.title = vis.title
         vis_rev.dbkey = dbkey
+        # Tracks from payload
         tracks = []
-        for track in decoded_payload:
+        for track in decoded_payload['tracks']:
             tracks.append( {    "dataset_id": str(track['dataset_id']),
                                 "name": track['name'],
                                 "track_type": track['track_type'],
                                 "prefs": track['prefs']
             } )
-        vis_rev.config = { "tracks": tracks }
+        # Viewport from payload
+        if 'viewport' in decoded_payload:
+            chrom = decoded_payload['viewport']['chrom']
+            start = decoded_payload['viewport']['start']
+            end = decoded_payload['viewport']['end']
+            vis_rev.config = { "tracks": tracks, "viewport": { 'chrom': chrom, 'start': start, 'end': end } }
+        else:
+            vis_rev.config = { "tracks": tracks }
+        print vis_rev.config
         vis.latest_revision = vis_rev
         session.add( vis_rev )
         session.flush()

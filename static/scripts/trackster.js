@@ -81,7 +81,7 @@ $.extend( Cache.prototype, {
     }
 });
 
-var View = function( container, title, vis_id, dbkey ) {
+var View = function( container, title, vis_id, dbkey, callback ) {
     this.container = container;
     this.vis_id = vis_id;
     this.dbkey = dbkey;
@@ -95,11 +95,11 @@ var View = function( container, title, vis_id, dbkey ) {
     this.zoom_factor = 3;
     this.min_separation = 30;
     this.has_changes = false;
-    this.init();
+    this.init( callback );
     this.reset();
 };
 $.extend( View.prototype, {
-    init: function() {
+    init: function( callback ) {
         // Create DOM elements
         var parent_element = this.container,
             view = this;
@@ -177,6 +177,9 @@ $.extend( View.prototype, {
                 view.chrom_select.bind("change", function() {
                     view.change_chrom(view.chrom_select.val());
                 });
+                if ( callback ) {
+                    callback();
+                }
             },
             error: function() {
                 alert( "Could not load chroms for this dbkey:", view.dbkey );
@@ -244,8 +247,8 @@ $.extend( View.prototype, {
             this.drag_origin_x = e.clientX;
             this.drag_origin_pos = e.clientX / view.viewport_container.width() * (view.high - view.low) + view.low;
             this.drag_div = $("<div />").css( { 
-                "height": view.content_div.height()+30, "top": "0px", "position": "absolute", 
-                "background-color": "#cfc", "border": "1px solid #6a6", "opacity": 0.5, "z-index": 1000
+                "height": view.content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height(), "top": "0px", "position": "absolute", 
+                "background-color": "#ccf", "opacity": 0.5, "z-index": 1000
             } ).appendTo( $(this) );
         }).bind( "drag", function(e) {
             var min = Math.min(e.clientX, this.drag_origin_x) - view.container.offset().left,
@@ -1216,7 +1219,7 @@ var FeatureTrack = function ( name, view, dataset_id, filters, prefs ) {
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.vertical_detail_px = 10;
-    this.vertical_nodetail_px = 2;
+    this.vertical_nodetail_px = 3;
     this.summary_draw_height = 30;
     this.default_font = "9px Monaco, Lucida Console, monospace";
     this.inc_slots = {};
