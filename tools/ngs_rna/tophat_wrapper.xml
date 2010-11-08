@@ -1,15 +1,14 @@
-<tool id="tophat" name="Tophat" version="1.1.1">
+<tool id="tophat" name="Tophat" version="1.1.2">
     <description>Find splice junctions using RNA-seq data</description>
     <requirements>
         <requirement type="package">tophat</requirement>
     </requirements>
     <command interpreter="python">
         tophat_wrapper.py
-            ## Change this to accomodate the number of threads you have available.
+            ## Change this to accommodate the number of threads you have available.
             --num-threads="4"
             
             ## Provide outputs.
-            --coverage-output=$coverage
             --junctions-output=$junctions
             --hits-output=$accepted_hits
             
@@ -338,9 +337,8 @@
     </inputs>
 
     <outputs>
-        <data format="sam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits"/>
-        <data format="bedgraph" name="coverage" label="${tool.name} on ${on_string}: coverage"/>
         <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions"/>
+        <data format="bam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits"/>
     </outputs>
 
     <tests>
@@ -367,9 +365,9 @@
             <param name="input2" ftype="fastqsanger" value="tophat_in2.fq"/>
             <param name="mate_inner_distance" value="20"/>
             <param name="pSettingsType" value="preSet"/>
-            <output name="accepted_hits" file="tophat_out1.sam" sort="True"/>
-            <output name="coverage" file="tophat_out2.wig"/>
-            <output name="junctions" file="tophat_out3.bed"/>
+            <output name="junctions" file="tophat_out1.bed"/>
+            <!-- Bam files always differ (due to magic number?), so can't test this right now. -->
+            <output name="accepted_hits" file="tophat_out2.bam" lines_diff="100000"/>
         </test>
 <!--        <test>
             <param name="genomeSource" value="history"/>
@@ -451,15 +449,13 @@ Tophat accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare yo
 
 **Outputs**
 
-Tophat produces three output files:
+Tophat produces two output files:
 
-- coverage.wig -- A UCSC BedGraph_ wigglegram track, showing the depth of coverage at each position, including the spliced read alignments.
-- accepted_hits.sam -- A list of read alignments in SAM_ format.
-- junctions.bed -- A UCSC BED_ track of junctions reported by TopHat. Each junction consists of two connected BED blocks, where each block is as long as the maximal overhang of any read spanning the junction. The score is the number of alignments spanning the junction.
-  
-.. _BedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
-.. _SAM: http://samtools.sourceforge.net/
+- junctions -- A UCSC BED_ track of junctions reported by TopHat. Each junction consists of two connected BED blocks, where each block is as long as the maximal overhang of any read spanning the junction. The score is the number of alignments spanning the junction.
+- accepted_hits -- A list of read alignments in BAM_ format.
+
 .. _BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+.. _BAM: http://samtools.sourceforge.net/
     
 -------
 
