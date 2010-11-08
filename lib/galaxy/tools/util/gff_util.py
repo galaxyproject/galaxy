@@ -42,13 +42,17 @@ def convert_gff_coords_to_bed( interval ):
     
 def parse_gff_attributes( attr_str ):
     """
-    Parses a GFF attribute string and returns a dictionary of name-value pairs. 
-    The general format for a GFF attribute string is name1 "value1" ; name2 "value2"
+    Parses a GFF/GTF attribute string and returns a dictionary of name-value pairs.
+    The general format for a GFF3 attributes string is name1=value1;name2=value2
+    The general format for a GTF attribute string is name1 "value1" ; name2 "value2"
     """
     attributes_list = attr_str.split(";")
     attributes = {}
     for name_value_pair in attributes_list:
+        # Try splitting by space and, if necessary, by '=' sign.
         pair = name_value_pair.strip().split(" ")
+        if len( pair ) == 1:
+            pair = name_value_pair.strip().split("=")
         if pair == '':
             continue
         name = pair[0].strip()
