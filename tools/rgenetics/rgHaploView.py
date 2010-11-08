@@ -394,7 +394,7 @@ def ld():
         p=subprocess.Popen(vcl,shell=True,cwd=outfpath,stderr=lf,stdout=lf)
         retval = p.wait()
         lf.write('## executing %s returned %d\n' % (vcl,retval))
-        vcl = '%s "*.pdf" --fitpaper true --outfile alljoin.pdf' % pdfjoin
+        vcl = '%s *.pdf --fitpaper true --outfile alljoin.pdf' % pdfjoin
         p=subprocess.Popen(vcl,shell=True,cwd=outfpath,stderr=lf,stdout=lf)
         retval = p.wait()
         lf.write('## executing %s returned %d\n' % (vcl,retval))

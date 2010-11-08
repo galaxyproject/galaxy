@@ -100,7 +100,6 @@ class GenomeGraphs( Tabular ):
                         s = ''.join(sl)
                         s = urllib.quote_plus(s)
                         redirect_url = s
-                        log.debug('## rg gg ucsc rdurl=%s; s = %s' % (redirect_url,s))
                         link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
                         ret_val.append( (site_name, link) )
         return ret_val
