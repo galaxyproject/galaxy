@@ -1,5 +1,4 @@
-<tool id="rgHaploView1" name="LD plots:">
-    <code file="rgHaploView_code.py"/>
+<tool id="rgHaploView1" name="LD plots:" version="0.2">
 
     <description>and comparisons with HapMap data</description>
 
@@ -16,7 +15,7 @@
         label="Current history lPed format data"
         size="80" help="Linkage Ped format data from your current history" />
 
-       <param name="ucsc_region" type="text" label="Optional subset region (blank=ALL)"
+       <param name="ucsc_region" type="text" label="Optional subset region (blank=ALL. WARNING: doing this will fail if >1 chromosome in input data!)"
         size="80" optional="true"
         help="Region eg: chr9:119,506,000-119,518,000 Leave blank for all or to extract the rs list supplied below."/>
 
@@ -53,7 +52,7 @@
 
     <param name="infoTrack" type="select" label="Add Hapmap information track to image"
     help="Refseq genes and snp density can be added to the plot if desired for orientation" >
-    <option value="info">Add Information track (DISABLED! Awaiting fix from Haploview authors)</option>
+    <option value="info">Add Information track (DISABLED! Awaiting bug fix from Haploview authors since reported in October 2009)</option>
     <option value="noinfo" selected="True">No Information track</option>
     </param>
 
@@ -75,8 +74,7 @@
    </inputs>
 
    <outputs>
-       <data format="html" name="out_file1" />
-
+       <data format="html" name="out_file1" label="${title}.html" />
    </outputs>
 
 <!-- python $TOOLPATH/$TOOL.py "" "rs2283802Xrs2267000Xrs16997606Xrs4820537Xrs3788347Xrs756632Xrs4820539Xrs2283804Xrs2267006Xrs4822363X" \
@@ -101,9 +99,9 @@
  <param name='infoTrack' value='noinfo' />
  <param name='hires' value='lo' />
  <param name='memsize' value='2048' />
- <output name='out_file1' file='rgtestouts/rgHaploView/rgHaploViewtest1.html' ftype='html' lines_diff="50">
-    <extra_files type="file" name='alljoin.pdf' value="rgtestouts/rgHaploView/alljoin.pdf" compare="sim_size" delta="3000"/>
-    <extra_files type="file" name='allnup.pdf' value="rgtestouts/rgHaploView/allnup.pdf" compare="sim_size" delta="3000" />
+ <output name='out_file1' file='rgtestouts/rgHaploView/rgHaploViewtest1.html' ftype='html' lines_diff="60">
+    <extra_files type="file" name='alljoin.pdf' value="rgtestouts/rgHaploView/alljoin.pdf" compare="sim_size" delta="50000"/>
+    <extra_files type="file" name='allnup.pdf' value="rgtestouts/rgHaploView/allnup.pdf" compare="sim_size" delta="50000" />
     <extra_files type="file" name='Log_rgHaploViewtest1.txt' value="rgtestouts/rgHaploView/Log_rgHaploViewtest1.txt" compare="diff" lines_diff="50"/>
     <extra_files type="file" name='rgHaploViewtest1.ped.TESTS' value="rgtestouts/rgHaploView/rgHaploViewtest1.ped.TESTS" compare="diff" 
             lines_diff="20"/>
