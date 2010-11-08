@@ -6,6 +6,7 @@ from rgutils import timenow, RRun, galhtmlprefix, galhtmlpostfix, galhtmlattr
 progname = os.path.split(sys.argv[0])[1]
 myversion = 'V000.1 March 2010'
 verbose = False
+debug = False
 
 rcode="""
 # license not stated so I'm assuming LGPL is ok for my derived work?
@@ -156,7 +157,7 @@ if (plen > 0) {
      mytitle = paste('p=',cname,', ',title,sep='')
      myfname = chartr(' ','_',cname)
      myqqplot = qq(rawd[,pvalscolumn],title=mytitle)
-     ggsave(filename=paste(myfname,"qqplot.png",sep='_'),myqqplot,width=11,height=8,dpi=100)
+     ggsave(filename=paste(myfname,"qqplot.png",sep='_'),myqqplot,width=6,height=4,dpi=100)
      print(paste('## qqplot on',cname,'done'))
      if ((chromcolumn > 0) & (offsetcolumn > 0)) {
          if (doreorder) {
@@ -168,7 +169,7 @@ if (plen > 0) {
          print(paste('## manhattan on',cname,'starting',chromcolumn,offsetcolumn,pvalscolumn))
          mymanplot= manhattan(chrom=rawd[,chromcolumn],offset=rawd[,offsetcolumn],pvals=rawd[,pvalscolumn],title=mytitle,grey=grey)
          print(paste('## manhattan plot on',cname,'done'))
-         ggsave(filename=paste(myfname,"manhattan.png",sep='_'),mymanplot,width=11,height=8,dpi=100)
+         ggsave(filename=paste(myfname,"manhattan.png",sep='_'),mymanplot,width=6,height=4,dpi=100)
          }
          else {
               print(paste('chrom column =',chromcolumn,'offset column = ',offsetcolumn,
@@ -196,6 +197,8 @@ def doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir,
     to make them do our bidding - and save the resulting code for posterity
     this can be called externally, I guess...for QC eg?
     """
+    if debug:
+	print 'doManQQ',input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir
     ffd,filtered_fname = tempfile.mkstemp(prefix='rgManQQtemp')
     f = open(filtered_fname,'w')
     inf = open(input_fname,'r')
@@ -232,6 +235,8 @@ def doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir,
     pvc = [x+3 for x in range(len(pval_cols))] # 2 for offset and chrom, 1 for r offset start
     pvc = 'c(%s)' % (','.join(map(str,pvc)))
     rcmd = '%s%s' % (rcode,rcode2 % (filtered_fname,'1','2',pvc,title,grey))
+    if debug:
+	print 'running\n%s\n' % rcmd
     rlog,flist = RRun(rcmd=rcmd,title=ctitle,outdir=outdir)
     rlog.append('## R script=')
     rlog.append(rcmd)
