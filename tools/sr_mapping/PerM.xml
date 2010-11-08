@@ -1,49 +1,55 @@
-<tool id="PerM" name="Map with PerM" version="1.0.0">
+<tool id="PerM" name="Map with PerM" version="1.1.0">
   <description>for SOLiD and Illumina</description>
   <!-- works with PerM version 0.2.6 -->
   <requirements>
       <requirement type="package">perm</requirement>
   </requirements>
   <command>
-PerM
-#if $s.sourceOfRef.refSource == "history":
-    $s.sourceOfRef.ref
-#else:
-    $s.sourceOfRef.index
-#end if
-#if $s.mate.singleOrPairs == "single":
-    $s.mate.reads
-#else:
-    -1 $s.mate.reads1 -2 $s.mate.reads2
-    -U $s.mate.upperbound
-    -L $s.mate.lowerbound
-    $s.mate.excludeAmbiguousPairs
-#end if
-#if $s.space == "color":
-    --readFormat "csfastq"
-#else:
-    --readFormat "fastq"
-#end if
-#if $int($str($valAlign)) &gt;= 0:
-    -v $valAlign
-#end if
-#if $align.options == "full":
-    --seed $align.seed
-    -$align.alignments
-    #if $str($align.delimiter) != "None":
-        --delimiter $align.delimiter
-    #end if
-    -T $align.sTrimL
-    $align.includeReadsWN
-    $align.statsOnly
-    $align.ignoreQS
-#end if
-#if $str($bUnmappedRead) == "true" and $s.space == "color":
-  -u $unmappedReadOutCS
-#elif $str($bUnmappedRead) == "true" and $s.space == "base":
-  -u $unmappedReadOut
-#end if
--o $output --outputFormat sam --noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+    PerM
+      #if $s.sourceOfRef.refSource == "history"
+        $s.sourceOfRef.ref
+      #else
+        #if $s.space == "color"
+          "${ filter( lambda x: str( x[0] ) == str( $s.sourceOfRef.index ), $__app__.tool_data_tables[ 'perm_color_indexes' ].get_fields() )[0][-1] }"
+        #elif $s.space == "base"
+          "${ filter( lambda x: str( x[0] ) == str( $s.sourceOfRef.index ), $__app__.tool_data_tables[ 'perm_base_indexes' ].get_fields() )[0][-1] }"
+        #end if
+      #end if
+      #if $s.mate.singleOrPairs == "single":
+        $s.mate.reads
+      #else:
+        -1 $s.mate.reads1 -2 $s.mate.reads2
+        -U $s.mate.upperbound
+        -L $s.mate.lowerbound
+        $s.mate.excludeAmbiguousPairs
+      #end if
+      #if $s.space == "color":
+        --readFormat "csfastq"
+      #else:
+        --readFormat "fastq"
+      #end if
+      #if $int($str($valAlign)) &gt;= 0
+        -v $valAlign
+      #end if
+      #if $align.options == "full":
+        --seed $align.seed
+        -$align.alignments
+        #if $str($align.delimiter) != "None"
+          --delimiter $align.delimiter
+        #end if
+        -T $align.sTrimL
+        $align.includeReadsWN
+        $align.statsOnly
+        $align.ignoreQS
+      #end if
+      #if $str($bUnmappedRead) == "true" and $s.space == "color"
+        -u $unmappedReadOutCS
+      #elif $str($bUnmappedRead) == "true" and $s.space == "base"
+        -u $unmappedReadOut
+      #end if
+      -o $output
+      --outputFormat sam
+      --noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
   </command>
   <inputs>
     <conditional name="s">
@@ -59,10 +65,7 @@ PerM
           </param>
           <when value="indexed">
             <param name="index" type="select" label="Select a reference genome (with seed and read length)" help="if your genome of interest is not listed - contact Galaxy team">
-              <options from_file="perm_color_index.loc">
-                <column name="value" index="1" />
-                <column name="name" index="0" />
-              </options>
+              <options from_data_table="perm_color_indexes"/>
             </param>
           </when>
           <when value="history">
@@ -94,10 +97,7 @@ PerM
           </param>
           <when value="indexed">
             <param name="index" type="select" label="Select a reference genome with seed and read length" help="if your genome of interest is not listed - contact Galaxy team">
-              <options from_file="perm_base_index.loc">
-                <column name="value" index="1" />
-                <column name="name" index="0" />
-              </options>
+              <options from_data_table="perm_base_indexes"/>
             </param>
           </when>
           <when value="history">
@@ -148,7 +148,7 @@ PerM
         </param>
         <param label="Use the first n bases of each read for alignment (-T)" name="sTrimL" type="integer" size="5" value="50" />
         <param name="includeReadsWN" type="boolean" checked="true" truevalue="--includeReadsWN" falsevalue="" label="Include reads with 'N' or '.' by encoding '.' as 3, 'N' as 'A' (--includeReadsWN)" /> 
-        <param name="statsOnly" type="boolean" checked="false" truevalue="--statsOnly" falsevalue="" label="output mapping stats only. Don't output alignments (--statsOnly)" />
+        <param name="statsOnly" type="boolean" checked="false" truevalue="--statsOnly" falsevalue="" label="Output mapping stats only. Don't output alignments (--statsOnly)" />
         <param name="ignoreQS" type="boolean" checked="false" truevalue="--ignoreQS" falsevalue="" label="Ignore quality scores (--ignoreQS)" />
       </when>
     </conditional> <!-- options -->
@@ -170,8 +170,7 @@ PerM
     <test>
       <!--
       PerM command:
-      PerM test-data/phiX.fasta 50 +seed F3 -m -s phiX_F3_50.index +readFormat .fastq
-      PerM phiX_F3_50.index -1 test-data/perm_in1.fastqsanger -2 test-data/perm_in2.fastqsanger -U 100000 -L 0 -e +readFormat .fastq -v 0 +seed F2 -A -T 50 +includeReadsWN -o perm_out1.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+      PerM /afs/bx.psu.edu/depot/data/genome/phiX/perm_index/phiX_base_F3_50.index -1 test-data/perm_in1.fastqsanger -2 test-data/perm_in2.fastqsanger -U 100000 -L 0 -e +readFormat fastq -v 0 +seed F3 -A -T 50 +includeReadsWN -o perm_out1.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
       You need to replace the + with 2 dashes.
       -->
       <param name="space" value="base" />
@@ -186,7 +185,7 @@ PerM
       <param name="valAlign" value="0" />
       <param name="options" value="full" />
       <param name="alignments" value="A" />
-      <param name="seed" value="F2" />
+      <param name="seed" value="F3" />
       <param name="delimiter" value="None" />
       <param name="sTrimL" value="50" />
       <param name="includeReadsWN" value="true" />
@@ -198,7 +197,7 @@ PerM
     <test>
       <!--
       PerM command:
-      PerM test-data/chr_m.fasta test-data/perm_in3.fastqsanger +readFormat .fastq -v 2 -u perm_out3.fastqsanger -o perm_out2.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+      PerM test-data/chr_m.fasta test-data/perm_in3.fastqsanger +readFormat fastq -v 2 -u perm_out3.fastqsanger -o perm_out2.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
       You need to replace the + with 2 dashes.
       -->
       <param name="space" value="base" />
@@ -215,7 +214,7 @@ PerM
     <test>
       <!--
       PerM command:
-      PerM test-data/phiX.fasta test-data/perm_in4.fastqcssanger +readFormat .csfastq -v 1 -o perm_out4.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+      PerM test-data/phiX.fasta test-data/perm_in4.fastqcssanger +readFormat csfastq -v 1 -o perm_out4.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
       You need to replace the + with 2 dashes.
       -->
       <param name="space" value="color" />
@@ -231,14 +230,12 @@ PerM
     <test>
       <!--
       PerM command:
-      PerM equCab2.fasta 50 +seed F4 -m -s equCab2_F3_50.index +readFormat .csfastq
-      PerM equCab2_F3_50.index -1 test-data/perm_in5.fastqcssanger -2 test-data/perm_in6.fastqcssanger -U 90000 -L 10000 +readFormat .csfastq -v 3 -o perm_out5.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+      PerM /afs/bx.psu.edu/depot/data/genome/equCab2/perm_index/equCab2_chrM_color_F2_50.index -1 test-data/perm_in5.fastqcssanger -2 test-data/perm_in6.fastqcssanger -U 90000 -L 10000 +readFormat csfastq -v 3 +seed F2-o perm_out5.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
       You need to replace the + with 2 dashes.
-      hg19.fasta needs to be supplied.
       -->
       <param name="space" value="color" />
       <param name="refSource" value="indexed" />
-      <param name="index" value="equCab2_chrM_F3_50" />
+      <param name="index" value="equCab2_chrM_F2_50" />
       <param name="singleOrPairs" value="paired" />
       <param name="reads1" value="perm_in5.fastqcssanger" ftype="fastqcssanger" />
       <param name="reads2" value="perm_in6.fastqcssanger" ftype="fastqcssanger" />

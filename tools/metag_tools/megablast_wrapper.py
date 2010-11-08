@@ -29,15 +29,12 @@ def stop_err( msg ):
 def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
-
-    db_build = options.db_build
     query_filename = options.input.strip()
     output_filename = options.output.strip()
     mega_word_size = options.word_size        # -W
     mega_iden_cutoff = options.identity_cutoff      # -p
     mega_evalue_cutoff = options.eval_cutoff      # -e
     mega_temp_output = tempfile.NamedTemporaryFile().name
-    mega_filter = options.filter_query           # -F
     GALAXY_DATA_INDEX_DIR = options.index_dir
     DB_LOC = "%s/blastdb.loc" % GALAXY_DATA_INDEX_DIR
 
@@ -47,30 +44,20 @@ def __main__():
     except:
         stop_err( 'Invalid value for word size' )
     try:
-        float(mega_iden_cutoff)
+        float( mega_iden_cutoff )
     except:
         stop_err( 'Invalid value for identity cut-off' )
     try:
-        float(mega_evalue_cutoff)
+        float( mega_evalue_cutoff )
     except:
         stop_err( 'Invalid value for Expectation value' )
 
-    # prepare the database
-    db = {}
-    for i, line in enumerate( file( DB_LOC ) ):
-        line = line.rstrip( '\r\n' )
-        if not line or line.startswith( '#' ):
-            continue
-        fields = line.split( '\t' )
-        db[ fields[0] ] = fields[1]
+    if not os.path.exists( os.path.split( options.db_build )[0] ):
+        stop_err( 'Cannot locate the target database directory. Please check your location file.' )
 
-    if not db.has_key( db_build ):
-        stop_err( 'Cannot locate the target database. Please check your location file.' )
-
-    # arguments for megablast    
-    chunk = db[ ( db_build ) ]
-    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s > /dev/null " \
-        % ( chunk, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, mega_filter ) 
+    # arguments for megablast
+    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s > /dev/null" \
+        % ( options.db_build, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, options.filter_query ) 
 
     print megablast_command
 

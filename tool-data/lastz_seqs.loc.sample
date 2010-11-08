@@ -1,17 +1,17 @@
 #This is a sample file distributed with Galaxy that enables tools
-#to use a directory of 2bit genome files for use with Lastz.  You will 
-#need to supply these files and then create a lastz_seqs.loc file 
-#similar to this one (store it in this directory) that points to 
-#the directories in which those files are stored. The lastz_seqs.loc 
+#to use a directory of 2bit genome files for use with Lastz. You will
+#need to supply these files and then create a lastz_seqs.loc file
+#similar to this one (store it in this directory) that points to
+#the directories in which those files are stored. The lastz_seqs.loc
 #file has this format (white space characters are TAB characters):
 #
-#<build>	<file_path>
+#<unique_build_id>   <display_name>   <file_path>
 #
 #So, for example, if your lastz_seqs.loc began like this:
 #
-#hg18	/depot/data2/galaxy/twobit/hg18.2bit
-#hg19	/depot/data2/galaxy/twobit/hg19.2bit
-#mm9	/depot/data2/galaxy/twobit/mm9.2bit
+#hg18   Human (Homo sapiens): hg18   /depot/data2/galaxy/twobit/hg18.2bit
+#hg19   Human (Homo sapiens): hg19   /depot/data2/galaxy/twobit/hg19.2bit
+#mm9    Mouse (Mus musculus): mm9    /depot/data2/galaxy/twobit/mm9.2bit
 #
 #then your /depot/data2/galaxy/twobit/ directory
 #would need to contain the following 2bit files:
@@ -22,4 +22,9 @@
 #
 #Your lastz_seqs.loc file should include an entry per line for 
 #each file you have stored that you want to be available. Note that 
-#your files should all have the extension '2bit'. 
+#your files should all have the extension '2bit'.
+#
+#Note that for backwards compatibility with workflows, the unique ID of
+#an entry must be the path that was in the original loc file, because that
+#is the value stored in the workflow for that parameter. 
+#

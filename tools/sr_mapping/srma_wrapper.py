@@ -28,6 +28,15 @@ def stop_err( msg ):
     sys.stderr.write( '%s\n' % msg )
     sys.exit()
 
+def parseRefLoc( refLoc, refUID ):
+    for line in open( refLoc ):
+        if not line.startswith( '#' ):
+            fields = line.strip().split( '\t' )
+            if len( fields ) >= 3:
+                if fields[0] == refUID:
+                    return fields[1]
+    return None
+
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
@@ -125,13 +134,10 @@ def __main__():
             stop_err( 'Problem handling SRMA index (dict file) for custom genome file: %s\n' % str( e ) )
     # using built-in dict/index files
     else:
-        for line in open( options.refLocations ):
-            if not line.startswith( '#' ):
-                fields = line.strip().split( '\t' )
-                if len( fields ) >= 2:
-                    if fields[0] == options.refUID:
-                        reference_filepath_name = fields[1]
-                        break
+        if options.ref:
+            reference_filepath_name = options.ref
+        else:
+            reference_filepath_name = parseRefLoc( options.refLocation, options.refUID )
     if reference_filepath_name is None:
         raise ValueError( 'A valid genome reference was not provided.' )
 

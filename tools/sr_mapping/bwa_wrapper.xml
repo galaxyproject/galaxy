@@ -1,30 +1,44 @@
-<tool id="bwa_wrapper" name="Map with BWA" version="1.0.3">
+<tool id="bwa_wrapper" name="Map with BWA" version="1.1.0">
   <description></description>
-  <command interpreter="python">bwa_wrapper.py 
---threads="4"
-#if $genomeSource.refGenomeSource == "history":
---ref=$genomeSource.ownFile
-#else:
---ref=$genomeSource.indices
-#end if
---fastq=$paired.input1
-#if $paired.sPaired == "paired":
---rfastq=$paired.input2 
-#else:
---rfastq="None"
-#end if
---output=$output --genAlignType=$paired.sPaired --params=$params.source_select --fileSource=$genomeSource.refGenomeSource
-#if $params.source_select == "pre_set":
---maxEditDist="None" --fracMissingAligns="None" --maxGapOpens="None" --maxGapExtens="None" --disallowLongDel="None" --disallowIndel="None" --seed="None" --maxEditDistSeed="None" --mismatchPenalty="None" --gapOpenPenalty="None" --gapExtensPenalty="None" --suboptAlign="None" --noIterSearch="None" --outputTopN="None" --maxInsertSize="None" --maxOccurPairing="None"
-#else:
---maxEditDist=$params.maxEditDist --fracMissingAligns=$params.fracMissingAligns --maxGapOpens=$params.maxGapOpens --maxGapExtens=$params.maxGapExtens --disallowLongDel=$params.disallowLongDel --disallowIndel=$params.disallowIndel --seed=$params.seed --maxEditDistSeed=$params.maxEditDistSeed --mismatchPenalty=$params.mismatchPenalty --gapOpenPenalty=$params.gapOpenPenalty --gapExtensPenalty=$params.gapExtensPenalty --suboptAlign=$params.suboptAlign --noIterSearch=$params.noIterSearch --outputTopN=$params.outputTopN --maxInsertSize=$params.maxInsertSize --maxOccurPairing=$params.maxOccurPairing
-#end if
-#if $genomeSource.refGenomeSource == "history":
---dbkey=$dbkey
-#else:
---dbkey="None"
-#end if
---suppressHeader=$suppressHeader
+  <command interpreter="python">
+    bwa_wrapper.py 
+      --threads="4"
+      #if $genomeSource.refGenomeSource == "history":
+        ##build index on the fly
+        --ref="${genomeSource.ownFile}"
+        --dbkey=$dbkey
+      #else:
+        ##use precomputed indexes
+        --ref="${ filter( lambda x: str( x[0] ) == str( $genomeSource.indices ), $__app__.tool_data_tables[ 'bwa_indexes' ].get_fields() )[0][-1] }"
+        --do_not_build_index=True
+      #end if
+      --fastq=$paired.input1
+      #if $paired.sPaired == "paired":
+        --rfastq=$paired.input2
+      #end if
+      --output=$output
+      --genAlignType=$paired.sPaired
+      --params=$params.source_select
+      --fileSource=$genomeSource.refGenomeSource
+      #if $params.source_select != "pre_set":
+        --maxEditDist=$params.maxEditDist
+        --fracMissingAligns=$params.fracMissingAligns
+        --maxGapOpens=$params.maxGapOpens
+        --maxGapExtens=$params.maxGapExtens
+        --disallowLongDel=$params.disallowLongDel
+        --disallowIndel=$params.disallowIndel
+        --seed=$params.seed
+        --maxEditDistSeed=$params.maxEditDistSeed
+        --mismatchPenalty=$params.mismatchPenalty
+        --gapOpenPenalty=$params.gapOpenPenalty
+        --gapExtensPenalty=$params.gapExtensPenalty
+        --suboptAlign=$params.suboptAlign
+        --noIterSearch=$params.noIterSearch
+        --outputTopN=$params.outputTopN
+        --maxInsertSize=$params.maxInsertSize
+        --maxOccurPairing=$params.maxOccurPairing
+      #end if
+      --suppressHeader=$suppressHeader
   </command>
   <requirements>
     <requirement type='package'>bwa</requirement>
@@ -38,12 +52,6 @@
       <when value="indexed">
         <param name="indices" type="select" label="Select a reference genome">
           <options from_data_table="bwa_indexes"/>
-          <!--
-          <options from_file="bwa_index.loc">
-            <column name="value" index="1" />
-            <column name="name" index="0" />
-          </options>
-          -->
         </param>
       </when>
       <when value="history">
@@ -62,7 +70,7 @@
         <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
       </when>
-    </conditional>	
+    </conditional>
     <conditional name="params">
       <param name="source_select" type="select" label="BWA settings to use" help="For most mapping needs use Commonly Used settings. If you want full control use Full Parameter List">
         <option value="pre_set">Commonly Used</option>
@@ -110,12 +118,13 @@
       <!--
       BWA commands:
       bwa aln -t 4 phiX test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out1.sai
-      bwa samse phiX bwa_wrapper_out1.sai test-data/bwa_wrapper_in1.fastq >> bwa_wrapper_out1.sam
+      bwa samse phiX bwa_wrapper_out1.sai test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out1.sam
       phiX.fa is the prefix for the reference files (phiX.fa.amb, phiX.fa.ann, phiX.fa.bwt, ...)
       remove the comment lines (beginning with '@') from the resulting sam file
       -->
       <param name="refGenomeSource" value="indexed" />
-      <param name="indices" value="phiX" />
+      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
+      <param name="indices" value="/galaxy/data/phiX/bwa_index/phiX.fa" />
       <param name="sPaired" value="single" />
       <param name="input1" value="bwa_wrapper_in1.fastq" ftype="fastqsanger" />
       <param name="source_select" value="pre_set" />
@@ -155,18 +164,19 @@
       <param name="maxOccurPairing" value="100000" />
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out2.sam" ftype="sam" sort="True" />
-    </test> 
+    </test>
     <test>
       <!--
       BWA commands:
       bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fa test-data/bwa_wrapper_in2.fastq > bwa_wrapper_out3a.sai
       bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fa test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3b.sai
-      bwa sampe -a 500 -o 100000 phiX.fasta bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastq test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3.sam
+      bwa sampe -a 500 -o 100000 phiX.fa bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastq test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3.sam
       phiX.fa is the prefix for the reference
       remove the comment lines (beginning with '@') from the resulting sam file
       -->
       <param name="refGenomeSource" value="indexed" />
-      <param name="indices" value="phiX" />
+      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
+      <param name="indices" value="/galaxy/data/phiX/bwa_index/phiX.fa" />
       <param name="sPaired" value="paired" />
       <param name="input1" value="bwa_wrapper_in2.fastq" ftype="fastqsanger" />
       <param name="input2" value="bwa_wrapper_in3.fastq" ftype="fastqsanger" />

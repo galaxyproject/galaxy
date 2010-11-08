@@ -156,7 +156,7 @@ def __main__():
         unmask = '[unmask]'
     else:
         unmask = ''
-    if options.ref_name != 'None':
+    if options.ref_name:
         ref_name = '[nickname=%s]' % options.ref_name
     else:
         ref_name = ''

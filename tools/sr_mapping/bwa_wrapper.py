@@ -30,8 +30,9 @@ usage: bwa_wrapper.py [options]
     -T, --outputTopN=T: Output top specified hits
     -S, --maxInsertSize=S: Maximum insert size for a read pair to be considered mapped good
     -P, --maxOccurPairing=P: Maximum occurrences of a read for pairings
-    -D, --dbkey=D: Dbkey for reference genome
     -H, --suppressHeader=h: Suppress header
+    -D, --dbkey=D: Dbkey for reference genome
+    -X, --do_not_build_index: Flag to specify that provided file is already indexed and to just use 'as is'
 """
 
 import optparse, os, shutil, subprocess, sys, tempfile
@@ -68,13 +69,14 @@ def __main__():
     parser.add_option( '-S', '--maxInsertSize', dest='maxInsertSize', help='Maximum insert size for a read pair to be considered mapped good' )
     parser.add_option( '-P', '--maxOccurPairing', dest='maxOccurPairing', help='Maximum occurrences of a read for pairings' )
     parser.add_option( '-D', '--dbkey', dest='dbkey', help='Dbkey for reference genome' )
+    parser.add_option( '-X', '--do_not_build_index', dest='do_not_build_index', help="Don't build index" )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
     (options, args) = parser.parse_args()
     # make temp directory for placement of indices
     tmp_index_dir = tempfile.mkdtemp()
     tmp_dir = tempfile.mkdtemp()
     # index if necessary
-    if options.fileSource == 'history':
+    if options.fileSource == 'history' and not options.do_not_build_index:
         ref_file = tempfile.NamedTemporaryFile( dir=tmp_index_dir )
         ref_file_name = ref_file.name
         ref_file.close()

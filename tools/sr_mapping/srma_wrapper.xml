@@ -1,17 +1,28 @@
-<tool id="srma_wrapper" name="Re-align with SRMA" version="0.1.5">
+<tool id="srma_wrapper" name="Re-align with SRMA" version="0.2.0">
   <description></description>
   <command interpreter="python">srma_wrapper.py 
     #if $refGenomeSource.refGenomeSource_type == "history":
-        --ref=$refGenomeSource.ownFile
+      --ref=$refGenomeSource.ownFile
     #else:
-        --refUID=$refGenomeSource.ref
-        --refLocations=${GALAXY_DATA_INDEX_DIR}/srma_index.loc
+      --ref="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.ref ), $__app__.tool_data_tables[ 'srma_indexes' ].get_fields() )[0][-1] }"
+      --refUID=$refGenomeSource.ref
+      --refLocations=${GALAXY_DATA_INDEX_DIR}/srma_index.loc
     #end if
-    --input=$input --inputIndex=${input.metadata.bam_index} --output=$output
-    --params=$params.source_select --fileSource=$refGenomeSource.refGenomeSource_type
+    --input=$input
+    --inputIndex=${input.metadata.bam_index}
+    --output=$output
+    --params=$params.source_select
+    --fileSource=$refGenomeSource.refGenomeSource_type
     --jarBin="${GALAXY_DATA_INDEX_DIR}/shared/jars"
     #if $params.source_select == "full":
-        --offset=$params.offset --minMappingQuality=$params.minMappingQuality --minAlleleProbability=$params.minAlleleProbability --minAlleleCoverage=$params.minAlleleCoverage --range=$params.range --correctBases=$params.correctBases --useSequenceQualities=$params.useSequenceQualities --maxHeapSize=$params.maxHeapSize
+      --offset=$params.offset
+      --minMappingQuality=$params.minMappingQuality
+      --minAlleleProbability=$params.minAlleleProbability
+      --minAlleleCoverage=$params.minAlleleCoverage
+      --range=$params.range
+      --correctBases=$params.correctBases
+      --useSequenceQualities=$params.useSequenceQualities
+      --maxHeapSize=$params.maxHeapSize
     #end if
     --jarFile="srma.jar"
   </command>
@@ -23,10 +34,7 @@
       </param>
       <when value="built-in">
         <param name="ref" type="select" label="Select a reference genome">
-          <options from_file="srma_index.loc">
-            <column name="value" index="0" />
-            <column name="name" index="0" />
-          </options>
+          <options from_data_table="srma_indexes" />
         </param>
       </when>
       <when value="history">
@@ -71,13 +79,13 @@
   <tests>
       <test>
           <!-- Commands to run to prepare test files (uses built-in index)
-            Prepare bam index file:
-            samtools index srma_in1.bam
-            Run SRMA:
-            java -jar "srma.jar" I=srma_in1.bam O=srma_out1.bam R=/afs/bx.psu.edu/depot/data/genome/hg18/srma_index/chr21.fa
-            To create the bam file first, start with a sam file (srma_in1.sam) generated with a run using the chr21 fasta file and which contains the header. Run before samtools index:
-            samtools view -bt /afs/bx.psu.edu/depot/data/genome/hg18/sam_index/chr21.fa -o srma_in1.u.bam srma_in1.sam
-            samtools sort srma_in1.u.bam srma_in1
+          Prepare bam index file:
+          samtools index srma_in1.bam
+          Run SRMA:
+          java -jar "srma.jar" I=srma_in1.bam O=srma_out1.bam R=/afs/bx.psu.edu/depot/data/genome/hg18/srma_index/chr21.fa
+          To create the bam file first, start with a sam file (srma_in1.sam) generated with a run using the chr21 fasta file and which contains the header. Run before samtools index:
+          samtools view -bt /afs/bx.psu.edu/depot/data/genome/hg18/sam_index/chr21.fa -o srma_in1.u.bam srma_in1.sam
+          samtools sort srma_in1.u.bam srma_in1
           -->
           <param name="refGenomeSource_type" value="built-in" />
           <param name="ref" value="hg18chr21" />
@@ -87,16 +95,16 @@
       </test>
       <test>
           <!-- Commands to run to prepare test files (uses custom genome):
-            Prepare custom dict/index files:
-            samtools faidx srma_in2.fa
-            java -cp "srma.jar" net.sf.picard.sam.CreateSequenceDictionary R=srma_in2.fa O=srma_in2.dict
-            Prepare bam index file:
-            samtools index srma_in3.bam
-            Run SRMA:
-            java -jar "srma.jar" I=srma_in3.bam O=srma_out2.bam R=srma_in2.fa OFFSET=20 MIN_MAPQ=0 MINIMUM_ALLELE_PROBABILITY=0.1 MINIMUM_ALLELE_COVERAGE=2 RANGES=null RANGE=null CORRECT_BASES=true USE_SEQUENCE_QUALITIES=true MAX_HEAP_SIZE=8192
-            To create the bam file first, the sam file needs to have been run with the same reference file (srma_in2.fa) and have the header present. Run these commands before samtools index:
-            samtools view -bt srma_in2.fa -o srma_in3.u.bam srma_in1.sam
-            samtools sort srma_in3.u.bam srma_in3
+          Prepare custom dict/index files:
+          samtools faidx srma_in2.fa
+          java -cp "srma.jar" net.sf.picard.sam.CreateSequenceDictionary R=srma_in2.fa O=srma_in2.dict
+          Prepare bam index file:
+          samtools index srma_in3.bam
+          Run SRMA:
+          java -jar "srma.jar" I=srma_in3.bam O=srma_out2.bam R=srma_in2.fa OFFSET=20 MIN_MAPQ=0 MINIMUM_ALLELE_PROBABILITY=0.1 MINIMUM_ALLELE_COVERAGE=2 RANGES=null RANGE=null CORRECT_BASES=true USE_SEQUENCE_QUALITIES=true MAX_HEAP_SIZE=8192
+          To create the bam file first, the sam file needs to have been run with the same reference file (srma_in2.fa) and have the header present. Run these commands before samtools index:
+          samtools view -bt srma_in2.fa -o srma_in3.u.bam srma_in1.sam
+          samtools sort srma_in3.u.bam srma_in3
           -->
           <param name="refGenomeSource_type" value="history" />
           <param name="ownFile" value="srma_in2.fa" />

@@ -137,51 +137,51 @@ def __main__():
             indexing_cmds = '%s' % colorspace
         else:
             try:
-                if options.iautoB != 'None' and options.iautoB == 'set':
+                if options.iautoB and options.iautoB == 'set':
                     iautoB = '--noauto'
                 else:
                     iautoB = ''
-                if options. ipacked != 'None' and options.ipacked == 'packed':
+                if options. ipacked and options.ipacked == 'packed':
                     ipacked = '--packed'
                 else:
                     ipacked = ''
-                if options.ibmax != 'None' and int( options.ibmax ) >= 1:
+                if options.ibmax and int( options.ibmax ) >= 1:
                     ibmax = '--bmax %s' % options.ibmax 
                 else:
                     ibmax = ''
-                if options.ibmaxdivn != 'None' and int( options.ibmaxdivn ) >= 0:
+                if options.ibmaxdivn and int( options.ibmaxdivn ) >= 0:
                     ibmaxdivn = '--bmaxdivn %s' % options.ibmaxdivn
                 else:
                     ibmaxdivn = ''
-                if options.idcv != 'None' and int( options.idcv ) > 0:
+                if options.idcv and int( options.idcv ) > 0:
                     idcv = '--dcv %s' % options.idcv
                 else:
                     idcv = ''
-                if options.inodc != 'None' and options.inodc == 'nodc':
+                if options.inodc and options.inodc == 'nodc':
                     inodc = '--nodc'
                 else:
                     inodc = ''
-                if options.inoref != 'None' and options.inoref == 'noref':
+                if options.inoref and options.inoref == 'noref':
                     inoref = '--noref'
                 else:
                     inoref = ''
-                if options.iftab != 'None' and int( options.iftab ) >= 0:
+                if options.iftab and int( options.iftab ) >= 0:
                     iftab = '--ftabchars %s' % options.iftab
                 else:
                     iftab = ''
-                if options.intoa != 'None' and options.intoa == 'yes':
+                if options.intoa and options.intoa == 'yes':
                     intoa = '--ntoa'
                 else:
                     intoa = ''
-                if options.iendian != 'None' and options.iendian == 'big':
+                if options.iendian and options.iendian == 'big':
                     iendian = '--big'
                 else:
                     iendian = '--little'
-                if options.iseed != 'None' and int( options.iseed ) > 0:
+                if options.iseed and int( options.iseed ) > 0:
                     iseed = '--seed %s' % options.iseed
                 else:
                     iseed = ''
-                if options.icutoff != 'None' and int( options.icutoff ) > 0:
+                if options.icutoff and int( options.icutoff ) > 0:
                     icutoff = '--cutoff %s' % options.icutoff
                 else:
                     icutoff = ''
@@ -233,11 +233,11 @@ def __main__():
         suppressHeader = '--sam-nohead'
     else:
         suppressHeader = ''
-    if options.maxInsert != 'None' and int( options.maxInsert ) > 0:
+    if options.maxInsert and int( options.maxInsert ) > 0:
         maxInsert = '-X %s' % options.maxInsert
     else:
         maxInsert = ''
-    if options.mateOrient != 'None':
+    if options.mateOrient:
         mateOrient = '--%s' % options.mateOrient
     else:
         mateOrient = ''
@@ -246,32 +246,32 @@ def __main__():
                 ( maxInsert, mateOrient, options.threads, suppressHeader, colorspace )
     else:
         try:
-            if options.skip != 'None' and int( options.skip ) > 0:
+            if options.skip and int( options.skip ) > 0:
                 skip = '-s %s' % options.skip
             else:
                 skip = ''
-            if options.alignLimit != 'None' and int( options.alignLimit ) >= 0:
+            if options.alignLimit and int( options.alignLimit ) >= 0:
                 alignLimit = '-u %s' % options.alignLimit
             else:
                 alignLimit = ''
-            if options.trimH != 'None' and int( options.trimH ) > 0:
+            if options.trimH and int( options.trimH ) > 0:
                 trimH = '-5 %s' % options.trimH
             else:
                 trimH = ''
-            if options.trimL != 'None' and int( options.trimL ) > 0:
+            if options.trimL and int( options.trimL ) > 0:
                 trimL = '-3 %s' % options.trimL
             else:
                 trimL = ''
-            if options.mismatchSeed != 'None' and (options.mismatchSeed == '0' or options.mismatchSeed == '1' \
+            if options.mismatchSeed and (options.mismatchSeed == '0' or options.mismatchSeed == '1' \
                         or options.mismatchSeed == '2' or options.mismatchSeed == '3'):
                 mismatchSeed = '-n %s' % options.mismatchSeed
             else:
                 mismatchSeed = ''
-            if options.mismatchQual != 'None' and int( options.mismatchQual ) >= 0:
+            if options.mismatchQual and int( options.mismatchQual ) >= 0:
                 mismatchQual = '-e %s' % options.mismatchQual
             else:
                 mismatchQual = ''
-            if options.seedLen != 'None' and int( options.seedLen ) >= 5:
+            if options.seedLen and int( options.seedLen ) >= 5:
                 seedLen = '-l %s' % options.seedLen
             else:
                 seedLen = ''
@@ -283,11 +283,11 @@ def __main__():
                 maqSoapAlign = '-v %s' % options.maqSoapAlign
             else:
                 maqSoapAlign = ''
-            if options.minInsert != 'None' and int( options.minInsert ) > 0:
+            if options.minInsert and int( options.minInsert ) > 0:
                 minInsert = '-I %s' % options.minInsert
             else:
                 minInsert = ''
-            if options.maxAlignAttempt != 'None' and int( options.maxAlignAttempt ) >= 0:
+            if options.maxAlignAttempt and int( options.maxAlignAttempt ) >= 0:
                 maxAlignAttempt = '--pairtries %s' % options.maxAlignAttempt
             else:
                 maxAlignAttempt = ''
@@ -299,7 +299,7 @@ def __main__():
                 reverseAlign = '--norc'
             else:
                 reverseAlign = ''
-            if options.maxBacktracks != 'None' and int( options.maxBacktracks ) > 0 and \
+            if options.maxBacktracks and int( options.maxBacktracks ) > 0 and \
                     ( options.mismatchSeed == '2' or options.mismatchSeed == '3' ):
                 maxBacktracks = '--maxbts %s' % options.maxBacktracks
             else:
@@ -308,7 +308,7 @@ def __main__():
                 tryHard = '-y'
             else:
                 tryHard = ''
-            if options.valAlign != 'None' and int( options.valAlign ) >= 0:
+            if options.valAlign and int( options.valAlign ) >= 0:
                 valAlign = '-k %s' % options.valAlign
             else:
                 valAlign = ''
@@ -316,7 +316,7 @@ def __main__():
                 allValAligns = '-a'
             else:
                 allValAligns = ''
-            if options.suppressAlign != 'None' and int( options.suppressAlign ) >= 0:
+            if options.suppressAlign and int( options.suppressAlign ) >= 0:
                 suppressAlign = '-m %s' % options.suppressAlign
             else:
                 suppressAlign = ''
@@ -328,23 +328,23 @@ def __main__():
                 strata = '--strata'
             else:
                 strata = ''
-            if options.offrate != 'None' and int( options.offrate ) >= 0:
+            if options.offrate and int( options.offrate ) >= 0:
                 offrate = '-o %s' % options.offrate
             else:
                 offrate = ''
-            if options.seed != 'None' and int( options.seed ) >= 0:
+            if options.seed and int( options.seed ) >= 0:
                 seed = '--seed %s' % options.seed
             else:
                 seed = ''
-            if options.snpphred != 'None' and int( options.snpphred ) >= 0:
+            if options.snpphred and int( options.snpphred ) >= 0:
                 snpphred = '--snpphred %s' % options.snpphred
             else:
                 snpphred = ''
-                if options.snpfrac != 'None' and float( options.snpfrac ) >= 0:
+                if options.snpfrac and float( options.snpfrac ) >= 0:
                     snpfrac = '--snpfrac %s' % options.snpfrac
                 else:
                     snpfrac = ''
-            if options.keepends != 'None' and options.keepends == 'doKeepends':
+            if options.keepends and options.keepends == 'doKeepends':
                 keepends = '--col-keepends'
             else:
                 keepends = ''

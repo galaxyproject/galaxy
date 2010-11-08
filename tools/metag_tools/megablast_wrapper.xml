@@ -1,31 +1,28 @@
-<tool id="megablast_wrapper" name="Megablast" version="1.0.5">
+<tool id="megablast_wrapper" name="Megablast" version="1.1.0">
     <description> compare short reads against htgs, nt, and wgs databases</description>
     <command interpreter="python">
-      megablast_wrapper.py 
-       --db_build="$source_select"
-       --input=$input_query
-       --word_size=$word_size
-       --identity_cutoff=$iden_cutoff
-       --eval_cutoff=$evalue_cutoff 
-       --filter_query=$filter_query
-       --index_dir=${GALAXY_DATA_INDEX_DIR}
-       --output=$output1
+      megablast_wrapper.py
+        --db_build="${ filter( lambda x: str( x[0] ) == str( $source_select ), $__app__.tool_data_tables[ 'blastdb' ].get_fields() )[0][-1] }"
+        --input=$input_query
+        --word_size=$word_size
+        --identity_cutoff=$iden_cutoff
+        --eval_cutoff=$evalue_cutoff 
+        --filter_query=$filter_query
+        --index_dir=${GALAXY_DATA_INDEX_DIR}
+        --output=$output1
     </command>
     <inputs>
         <param name="input_query" type="data" format="fasta" label="Compare these sequences"/> 
         <param name="source_select" type="select" display="radio" label="against target database">
-            <options from_file="blastdb.loc">
-              <column name="name" index="0"/>
-              <column name="value" index="0"/>
-            </options>
+            <options from_data_table="blastdb" />
         </param>
-        <param name="word_size" type="select" label="using word size" help="Size of best perfect match">
+        <param name="word_size" type="select" label="using word size" help="Size of best perfect match (-W)">
             <option value="28">28</option>
             <option value="16">16</option>
         </param>
-        <param name="iden_cutoff" type="float" size="15" value="90.0" label="report hits above this identity" help="no cutoff if 0" />
-        <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff" />
-        <param name="filter_query" type="select" label="Filter out low complexity regions?">
+        <param name="iden_cutoff" type="float" size="15" value="90.0" label="report hits above this identity (-p)" help="no cutoff if 0" />
+        <param name="evalue_cutoff" type="float" size="15" value="0.001" label="set expectation value cutoff (-e)" />
+        <param name="filter_query" type="select" label="Filter out low complexity regions? (-F)">
             <option value="T">Yes</option>
             <option value="F">No</option>
         </param>
@@ -40,7 +37,7 @@
         <test>
             <param name="input_query" value="megablast_wrapper_test1.fa" ftype="fasta"/>
             <!-- source_select needs to match the entry in the blastdb.loc file, which includes the last update date if appropriate --> 
-            <param name="source_select" value="phiX" />
+            <param name="source_select" value="/galaxy/data/blastdb/phiX/phiX" />
             <param name="word_size" value="28" />
             <param name="iden_cutoff" value="99.0" />
             <param name="evalue_cutoff" value="10.0" />

@@ -758,7 +758,7 @@ def __main__():
     parser.add_option( '', '--lastz_seqs_file_dir', dest='lastz_seqs_file_dir', help='Directory of local lastz_seqs.loc file' )
 
     ( options, args ) = parser.parse_args()
-    if options.ref_name != 'None':
+    if options.ref_name:
         ref_name = '[nickname=%s]' % options.ref_name
     else:
         ref_name = ''

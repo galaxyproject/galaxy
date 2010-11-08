@@ -1,4 +1,4 @@
-<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.1">
+<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.5">
     <description>Search nucleotide database with nucleotide query sequence(s)</description>
     <command>
 ## The command is a Cheetah template which allows some Python based syntax.
@@ -36,9 +36,10 @@ $adv_opts.ungapped
             </param>
             <when value="db">
                 <param name="database" type="select" label="Nucleotide BLAST database">
+                    <!-- <options from_data_table="blastdb" /> -->
                     <options from_file="blastdb.loc">
-                      <column name="name" index="0"/>
-                      <column name="value" index="1"/>
+                      <column name="name" index="2"/>
+                      <column name="value" index="0"/>
                     </options>
                 </param>
                 <param name="subject" type="hidden" value="" /> 

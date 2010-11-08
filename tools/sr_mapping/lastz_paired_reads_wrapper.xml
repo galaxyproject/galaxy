@@ -1,20 +1,21 @@
-<tool id="lastz_paired_reads_wrapper" name="Lastz paired reads" version="1.0.0">
+<tool id="lastz_paired_reads_wrapper" name="Lastz paired reads" version="1.1.0">
     <description> map short paired reads against reference sequence</description>
     <command interpreter="python">lastz_paired_reads_wrapper.py
-#if $seq_name.how_to_name=="yes":
---ref_name=$seq_name.ref_name 
-#else:
---ref_name="None" 
-#end if
---ref_source=$source.ref_source --input2=$input2 --input3=$input3 --input4=$input4
-#if $source.ref_source=="history":
---input1=$source.input1
---ref_sequences=$input1.metadata.sequences 
-#else:
---input1=$source.input1_2bit
---ref_sequences="None" 
-#end if
---output=$output1 --lastz_seqs_file_dir=${GALAXY_DATA_INDEX_DIR}
+      #if $seq_name.how_to_name=="yes":
+        --ref_name=$seq_name.ref_name 
+      #end if
+      --ref_source=$source.ref_source
+      --input2=$input2
+      --input3=$input3
+      --input4=$input4
+      #if $source.ref_source=="history":
+        --input1=$source.input1
+        --ref_sequences=$input1.metadata.sequences 
+      #else:
+        --input1="${ filter( lambda x: str( x[0] ) == str( $source.input1_2bit ), $__app__.tool_data_tables[ 'lastz_seqs' ].get_fields() )[0][-1] }"
+      #end if
+      --output=$output1
+      --lastz_seqs_file_dir=${GALAXY_DATA_INDEX_DIR}
     </command>
     <inputs>
         <param name="input2" format="fasta" type="data" label="Align sequencing reads in" />
@@ -25,10 +26,7 @@
             </param>
             <when value="cached">
                 <param name="input1_2bit" type="select" label="Using reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-                    <options from_file="lastz_seqs.loc">
-                        <column name="value" index="1" />
-                        <column name="name" index="0" />
-                    </options>
+                    <options from_data_table="lastz_seqs" />
                 </param>
             </when>
             <when value="history">
@@ -64,7 +62,7 @@
             -->
             <param name="input2" value="lastz_paired_input2.fasta" ftype="fasta" />
             <param name="ref_source" value="cached" />
-            <param name="input1_2bit" value="hg18Chr21" />
+            <param name="input1_2bit" value="/galaxy/data/hg18/seq/chr21.2bit" />
             <param name="input3" value="lastz_paired_input3.fasta" ftype="fasta" />
             <param name="input4" value="lastz_paired_input4.qual454" ftype="qual454" />
             <param name="how_to_name" value="no" />

@@ -1,4 +1,4 @@
-<tool id="bowtie_color_wrapper" name="Map with Bowtie for SOLiD" version="1.0.0">
+<tool id="bowtie_color_wrapper" name="Map with Bowtie for SOLiD" version="1.1.0">
   <requirements><requirement type='package'>bowtie</requirement></requirements>
   <description></description>
   <command interpreter="python">
@@ -9,191 +9,105 @@
     --suppressHeader=$suppressHeader 
     --genomeSource=$refGenomeSource.genomeSource
     #if $refGenomeSource.genomeSource == "history":
-       #if $refGenomeSource.ownFile.extension.startswith( 'bowtie_' ):
-       --ref="${refGenomeSource.ownFile.extra_files_path}/${refGenomeSource.ownFile.metadata.base_name}"
-       --do_not_build_index
-       #else:
-     --ref=$refGenomeSource.ownFile
-     --indexSettings=$refGenomeSource.indexParams.indexSettings
-     #if $refGenomeSource.indexParams.indexSettings == "indexFull":
-      --iautoB=$refGenomeSource.indexParams.autoBehavior.autoB
-      #if $refGenomeSource.indexParams.autoBehavior.autoB == "set":
-       --ipacked=$refGenomeSource.indexParams.autoBehavior.packed
-       --ibmax=$refGenomeSource.indexParams.autoBehavior.bmax
-       --ibmaxdivn=$refGenomeSource.indexParams.autoBehavior.bmaxdivn
-       --idcv=$refGenomeSource.indexParams.autoBehavior.dcv
+      ##index already exists
+      #if $refGenomeSource.ownFile.extension.startswith( 'bowtie_' ):
+        ##user previously built
+        --ref="${refGenomeSource.ownFile.extra_files_path}/${refGenomeSource.ownFile.metadata.base_name}"
+        --do_not_build_index
       #else:
-       --ipacked="None"
-       --ibmax="None"
-       --ibmaxdivn="None"
-       --idcv="None"
+        ##build index on the fly
+        --ref=$refGenomeSource.ownFile
+        --indexSettings=$refGenomeSource.indexParams.indexSettings
+        #if $refGenomeSource.indexParams.indexSettings == "indexFull":
+          --iautoB=$refGenomeSource.indexParams.autoBehavior.autoB
+          #if $refGenomeSource.indexParams.autoBehavior.autoB == "set":
+            --ipacked=$refGenomeSource.indexParams.autoBehavior.packed
+            --ibmax=$refGenomeSource.indexParams.autoBehavior.bmax
+            --ibmaxdivn=$refGenomeSource.indexParams.autoBehavior.bmaxdivn
+            --idcv=$refGenomeSource.indexParams.autoBehavior.dcv
+          #end if
+          --inodc=$refGenomeSource.indexParams.nodc
+          --inoref=$refGenomeSource.indexParams.noref
+          --ioffrate=$refGenomeSource.indexParams.offrate
+          --iftab=$refGenomeSource.indexParams.ftab
+          --intoa=$refGenomeSource.indexParams.ntoa
+          --iendian=$refGenomeSource.indexParams.endian
+          --iseed=$refGenomeSource.indexParams.seed
+          --icutoff=$refGenomeSource.indexParams.cutoff
+        #end if
       #end if
-      --inodc=$refGenomeSource.indexParams.nodc
-      --inoref=$refGenomeSource.indexParams.noref
-      --ioffrate=$refGenomeSource.indexParams.offrate
-      --iftab=$refGenomeSource.indexParams.ftab
-      --intoa=$refGenomeSource.indexParams.ntoa
-      --iendian=$refGenomeSource.indexParams.endian
-      --iseed=$refGenomeSource.indexParams.seed
-      --icutoff=$refGenomeSource.indexParams.cutoff
-     #else:
-      --iautoB="None"
-      --ipacked="None"
-      --ibmax="None"
-      --ibmaxdivn="None"
-      --idcv="None"
-      --inodc="None"
-      --inoref="None"
-      --ioffrate="None"
-      --iftab="None"
-      --intoa="None"
-      --iendian="None"
-      --iseed="None"
-      --icutoff="None"
-     #end if
-     #end if
-    #else:
-     --ref=$refGenomeSource.index
-     --indexSettings="None"
-     --iautoB="None"
-     --ipacked="None"
-     --ibmax="None"
-     --ibmaxdivn="None"
-     --idcv="None"
-     --inodc="None"
-     --inoref="None"
-     --ioffrate="None"
-     --iftab="None"
-     --intoa="None"
-     --iendian="None"
-     --iseed="None"
-     --icutoff="None"
+    #else
+      ##use pre-built index
+      --ref="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'bowtie_indexes_color' ].get_fields() )[0][-1] }"
     #end if
     --paired=$singlePaired.sPaired
     #if $singlePaired.sPaired == "single":
-     --input1=$singlePaired.sInput1
-     --input2="None"
-     --params=$singlePaired.sParams.sSettingsType
-     #if $singlePaired.sParams.sSettingsType == "full":
-      --skip=$singlePaired.sParams.sSkip
-      --alignLimit=$singlePaired.sParams.sAlignLimit
-      --trimH=$singlePaired.sParams.sTrimH
-      --trimL=$singlePaired.sParams.sTrimL
-      --mismatchSeed=$singlePaired.sParams.sMismatchSeed
-      --mismatchQual=$singlePaired.sParams.sMismatchQual
-      --seedLen=$singlePaired.sParams.sSeedLen
-      --rounding=$singlePaired.sParams.sRounding
-      --maqSoapAlign=$singlePaired.sParams.sMaqSoapAlign
-      --tryHard=$singlePaired.sParams.sTryHard
-      --valAlign=$singlePaired.sParams.sValAlign
-      --allValAligns=$singlePaired.sParams.sAllValAligns
-      --suppressAlign=$singlePaired.sParams.sSuppressAlign
-      --best=$singlePaired.sParams.sBestOption.sBest
-      #if $singlePaired.sParams.sBestOption.sBest == "doBest":
-       --maxBacktracks=$singlePaired.sParams.sBestOption.sdMaxBacktracks
-       --strata=$singlePaired.sParams.sBestOption.sdStrata
-      #else:
-       --maxBacktracks=$singlePaired.sParams.sBestOption.snMaxBacktracks
-       --strata="None"
+      --input1=$singlePaired.sInput1
+      --params=$singlePaired.sParams.sSettingsType
+      #if $singlePaired.sParams.sSettingsType == "full":
+        --skip=$singlePaired.sParams.sSkip
+        --alignLimit=$singlePaired.sParams.sAlignLimit
+        --trimH=$singlePaired.sParams.sTrimH
+        --trimL=$singlePaired.sParams.sTrimL
+        --mismatchSeed=$singlePaired.sParams.sMismatchSeed
+        --mismatchQual=$singlePaired.sParams.sMismatchQual
+        --seedLen=$singlePaired.sParams.sSeedLen
+        --rounding=$singlePaired.sParams.sRounding
+        --maqSoapAlign=$singlePaired.sParams.sMaqSoapAlign
+        --tryHard=$singlePaired.sParams.sTryHard
+        --valAlign=$singlePaired.sParams.sValAlign
+        --allValAligns=$singlePaired.sParams.sAllValAligns
+        --suppressAlign=$singlePaired.sParams.sSuppressAlign
+        --best=$singlePaired.sParams.sBestOption.sBest
+        #if $singlePaired.sParams.sBestOption.sBest == "doBest":
+          --maxBacktracks=$singlePaired.sParams.sBestOption.sdMaxBacktracks
+          --strata=$singlePaired.sParams.sBestOption.sdStrata
+        #else:
+          --maxBacktracks=$singlePaired.sParams.sBestOption.snMaxBacktracks
+        #end if
+        --offrate=$singlePaired.sParams.sOffrate
+        --seed=$singlePaired.sParams.sSeed
+        --snpphred=$singlePaired.sParams.sSnpphred
+        --snpfrac=$singlePaired.sParams.sSnpfrac
+        --keepends=$singlePaired.sParams.sKeepends
       #end if
-      --offrate=$singlePaired.sParams.sOffrate
-      --seed=$singlePaired.sParams.sSeed
-      --snpphred=$singlePaired.sParams.sSnpphred
-      --snpfrac=$singlePaired.sParams.sSnpfrac
-      --keepends=$singlePaired.sParams.sKeepends
-     #else:
-      --skip="None"
-      --alignLimit="None"
-      --trimH="None"
-      --trimL="None"
-      --mismatchSeed="None"
-      --mismatchQual="None"
-      --seedLen="None"
-      --rounding="None"
-      --maqSoapAlign="None"
-      --tryHard="None"
-      --valAlign="None"
-      --allValAligns="None"
-      --suppressAlign="None"
-      --best="None"
-      --maxBacktracks="None"
-      --strata="None"
-      --offrate="None"
-      --seed="None"
-      --snpphred="None"
-      --snpfrac="None"
-      --keepends="None"
-     #end if
-     --minInsert="None"
-     --maxInsert="None"
-     --mateOrient="None"
-     --maxAlignAttempt="None"
-     --forwardAlign="None"
-     --reverseAlign="None"
     #else:
-     --input1=$singlePaired.pInput1
-     --input2=$singlePaired.pInput2
-     --maxInsert=$singlePaired.pMaxInsert
-     --mateOrient=$singlePaired.pMateOrient
-     --params=$singlePaired.pParams.pSettingsType
-     #if $singlePaired.pParams.pSettingsType == "full":
-      --skip=$singlePaired.pParams.pSkip
-      --alignLimit=$singlePaired.pParams.pAlignLimit
-      --trimH=$singlePaired.pParams.pTrimH
-      --trimL=$singlePaired.pParams.pTrimL
-      --mismatchSeed=$singlePaired.pParams.pMismatchSeed
-      --mismatchQual=$singlePaired.pParams.pMismatchQual
-      --seedLen=$singlePaired.pParams.pSeedLen
-      --rounding=$singlePaired.pParams.pRounding
-      --maqSoapAlign=$singlePaired.pParams.pMaqSoapAlign
-      --minInsert=$singlePaired.pParams.pMinInsert
-      --maxAlignAttempt=$singlePaired.pParams.pMaxAlignAttempt
-      --forwardAlign=$singlePaired.pParams.pForwardAlign
-      --reverseAlign=$singlePaired.pParams.pReverseAlign
-      --tryHard=$singlePaired.pParams.pTryHard
-      --valAlign=$singlePaired.pParams.pValAlign
-      --allValAligns=$singlePaired.pParams.pAllValAligns
-      --suppressAlign=$singlePaired.pParams.pSuppressAlign
-      --best=$singlePaired.pParams.pBestOption.pBest
-      #if $singlePaired.pParams.pBestOption.pBest == "doBest":
-       --maxBacktracks=$singlePaired.pParams.pBestOption.pdMaxBacktracks
-       --strata=$singlePaired.pParams.pBestOption.pdStrata
-      #else:
-       --maxBacktracks=$singlePaired.pParams.pBestOption.pnMaxBacktracks
-       --strata="None"
+      --input1=$singlePaired.pInput1
+      --input2=$singlePaired.pInput2
+      --maxInsert=$singlePaired.pMaxInsert
+      --mateOrient=$singlePaired.pMateOrient
+      --params=$singlePaired.pParams.pSettingsType
+      #if $singlePaired.pParams.pSettingsType == "full":
+        --skip=$singlePaired.pParams.pSkip
+        --alignLimit=$singlePaired.pParams.pAlignLimit
+        --trimH=$singlePaired.pParams.pTrimH
+        --trimL=$singlePaired.pParams.pTrimL
+        --mismatchSeed=$singlePaired.pParams.pMismatchSeed
+        --mismatchQual=$singlePaired.pParams.pMismatchQual
+        --seedLen=$singlePaired.pParams.pSeedLen
+        --rounding=$singlePaired.pParams.pRounding
+        --maqSoapAlign=$singlePaired.pParams.pMaqSoapAlign
+        --minInsert=$singlePaired.pParams.pMinInsert
+        --maxAlignAttempt=$singlePaired.pParams.pMaxAlignAttempt
+        --forwardAlign=$singlePaired.pParams.pForwardAlign
+        --reverseAlign=$singlePaired.pParams.pReverseAlign
+        --tryHard=$singlePaired.pParams.pTryHard
+        --valAlign=$singlePaired.pParams.pValAlign
+        --allValAligns=$singlePaired.pParams.pAllValAligns
+        --suppressAlign=$singlePaired.pParams.pSuppressAlign
+        --best=$singlePaired.pParams.pBestOption.pBest
+        #if $singlePaired.pParams.pBestOption.pBest == "doBest":
+          --maxBacktracks=$singlePaired.pParams.pBestOption.pdMaxBacktracks
+          --strata=$singlePaired.pParams.pBestOption.pdStrata
+        #else:
+          --maxBacktracks=$singlePaired.pParams.pBestOption.pnMaxBacktracks
+        #end if
+        --offrate=$singlePaired.pParams.pOffrate
+        --seed=$singlePaired.pParams.pSeed
+        --snpphred=$singlePaired.pParams.pSnpphred
+        --snpfrac=$singlePaired.pParams.pSnpfrac
+        --keepends=$singlePaired.pParams.pKeepends
       #end if
-      --offrate=$singlePaired.pParams.pOffrate
-      --seed=$singlePaired.pParams.pSeed
-      --snpphred=$singlePaired.pParams.pSnpphred
-      --snpfrac=$singlePaired.pParams.pSnpfrac
-      --keepends=$singlePaired.pParams.pKeepends
-     #else:
-      --skip="None"
-      --alignLimit="None"
-      --trimH="None"
-      --trimL="None"
-      --mismatchSeed="None"
-      --mismatchQual="None"
-      --seedLen="None"
-      --rounding="None"
-      --maqSoapAlign="None"
-      --minInsert="None"
-      --maxAlignAttempt="None"
-      --forwardAlign="None"
-      --reverseAlign="None"
-      --tryHard="None"
-      --valAlign="None"
-      --allValAligns="None"
-      --suppressAlign="None"
-      --best="None"
-      --maxBacktracks="None"
-      --strata="None"
-      --offrate="None"
-      --seed="None"
-      --snpphred="None"
-      --snpfrac="None"
-      --keepends="None"
-     #end if
     #end if
   </command>
   <inputs>
@@ -204,10 +118,7 @@
       </param>
       <when value="indexed">
         <param name="index" type="select" label="Select the reference genome" help="if your genome of interest is not listed - contact Galaxy team">
-          <options from_file="bowtie_indices_color.loc">
-            <column name="value" index="1" />
-            <column name="name" index="0" />
-          </options>
+          <options from_data_table="bowtie_indexes_color"/>
         </param>
       </when>
       <when value="history">
@@ -433,7 +344,8 @@
       chrM_color needs to be the base location/name of the index files.
       -->
       <param name="genomeSource" value="indexed" />
-      <param name="index" value="equCab2chrM" />
+      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
+      <param name="index" value="/galaxy/data/equCab2_chrM/bowtie_index/cs/chrM" />
       <param name="sPaired" value="single" />
       <param name="sInput1" ftype="fastqcssanger" value="bowtie_in1.fastqcssanger" />
       <param name="sSettingsType" value="preSet" />
@@ -492,7 +404,8 @@
       chrM_base is the index files' location/base name. 
       -->
       <param name="genomeSource" value="indexed" />
-      <param name="index" value="equCab2chrM" />
+      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
+      <param name="index" value="/galaxy/data/equCab2_chrM/bowtie_index/cs/chrM" />
       <param name="sPaired" value="single" />
       <param name="sInput1" ftype="fastqcssanger" value="bowtie_in1.fastqcssanger" />
       <param name="sSettingsType" value="full" />

@@ -1,25 +1,42 @@
-<tool id="lastz_wrapper_2" name="Lastz" version="1.1.1">
+<tool id="lastz_wrapper_2" name="Lastz" version="1.2.0">
     <description> map short reads against reference sequence</description>
     <command interpreter="python">lastz_wrapper.py
-#if $seq_name.how_to_name=="yes":
---ref_name=$seq_name.ref_name 
-#else:
---ref_name="None" 
-#end if
---ref_source=$source.ref_source --source_select=$params.source_select --out_format=$out_format --input2=$input2 
-#if $source.ref_source=="history":
---input1=$source.input1
---ref_sequences=$input1.metadata.sequences 
-#else:
---input1=$source.input1_2bit
---ref_sequences="None" 
-#end if
-#if $params.source_select=="pre_set":
---pre_set_options=${params.pre_set_options} --strand="None" --seed="None" --gfextend="None" --chain="None" --transition="None" --O="None" --E="None" --X="None" --Y="None" --K="None" --L="None" --entropy="None" 
-#else:
---pre_set_options="None" --strand=$params.strand --seed=$params.seed --gfextend=$params.gfextend --chain=$params.chain --transition="$params.transition" --O=$params.O --E=$params.E --X=$params.X --Y=$params.Y --K=$params.K --L=$params.L --entropy=$params.entropy 
-#end if
---identity_min=$min_ident --identity_max=$max_ident --coverage=$min_cvrg --output=$output1 --unmask=$unmask --lastzSeqsFileDir=${GALAXY_DATA_INDEX_DIR}
+      #if $seq_name.how_to_name=="yes":
+        --ref_name=$seq_name.ref_name 
+      #end if
+      --ref_source=$source.ref_source
+      --source_select=$params.source_select
+      --out_format=$out_format
+      --input2=$input2 
+      #if $source.ref_source=="history":
+        --input1=$source.input1
+        --ref_sequences=$input1.metadata.sequences 
+      #else:
+        --input1="${ filter( lambda x: str( x[0] ) == str( $source.input1_2bit ), $__app__.tool_data_tables[ 'lastz_seqs' ].get_fields() )[0][-1] }"
+        --ref_sequences="None" 
+      #end if
+      #if $params.source_select=="pre_set":
+        --pre_set_options=${params.pre_set_options}
+      #else:
+        --strand=$params.strand
+        --seed=$params.seed
+        --gfextend=$params.gfextend
+        --chain=$params.chain
+        --transition="$params.transition"
+        --O=$params.O
+        --E=$params.E
+        --X=$params.X
+        --Y=$params.Y
+        --K=$params.K
+        --L=$params.L
+        --entropy=$params.entropy 
+      #end if
+      --identity_min=$min_ident
+      --identity_max=$max_ident
+      --coverage=$min_cvrg
+      --output=$output1
+      --unmask=$unmask
+      --lastzSeqsFileDir=${GALAXY_DATA_INDEX_DIR}
     </command>
     <inputs>
         <param name="input2" format="fasta" type="data" label="Align sequencing reads in" />
@@ -30,10 +47,7 @@
             </param>
             <when value="cached">
                 <param name="input1_2bit" type="select" label="Using reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-                    <options from_file="lastz_seqs.loc">
-                        <column name="value" index="1" />
-                        <column name="name" index="0" />
-                    </options>
+                    <options from_data_table="lastz_seqs" />
                 </param>
             </when>
             <when value="history">
@@ -127,14 +141,15 @@
     <tests>
         <test>
             <!--
-                Lastz command:
-                lastz phiX.2bit/PHIX174[nickname=Ref] test-data/b1.fasta +nogfextend +nochain +gapped +strand=both +seed=12of19 +transition O=400 E=30 X=910 Y=9370 K=3000 L=3000 +noentropy +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=sam- > lastz_wrapper_out2.sam 
-                You need to point to phiX.2bit somewhere on your system. b1.fasta is located in galaxy's test-data.  You will have to replace all the pluses before the
-                commands with 2 dashes, as double-dash can't appear in an XML comment.
+            Lastz command:
+            lastz phiX.2bit/phiX174[nickname=Ref] test-data/b1.fasta +nogfextend +nochain +gapped +strand=both +seed=12of19 +transition O=400 E=30 X=910 Y=9370 K=3000 L=3000 +noentropy +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=sam- > lastz_wrapper_out2.sam 
+            You need to point to phiX.2bit somewhere on your system. b1.fasta is located in galaxy's test-data.  You will have to replace all the pluses before the
+            commands with 2 dashes, as double-dash can't appear in an XML comment.
             -->
-            <param name="input2" value="b1.fasta" ftype="fasta" />
+            <param name="input2" value="b1.fasta" ftype="fasta" dbkey="phiX" />
             <param name="ref_source" value="cached" />
-            <param name="input1_2bit" value="phiX" />
+            <!-- this is the backwards-compatible "unique value" for this file, not an actual path -->
+            <param name="input1_2bit" value="/galaxy/data/phiX/seq/phiX.2bit" />
             <param name="out_format" value="sam" />
             <param name="source_select" value="full" />
             <param name="strand" value="both" />
@@ -150,8 +165,8 @@
             <param name="L" value="3000" />
             <param name="entropy" value="noentropy" />
             <!--
-                 how_to_name is not the default. It is changed to modify 
-                input1_2bit by adding the ref_name as a nickname
+            how_to_name is not the default. It is changed to modify 
+            input1_2bit by adding the ref_name as a nickname
             -->
             <param name="how_to_name" value="yes" />
             <param name="ref_name" value="Ref" />
@@ -163,10 +178,10 @@
         </test>
         <test>
             <!--
-                Lastz command:
-                lastz test-data/phiX.fasta test-data/b1.fasta[fullnames] +yasra95short +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=diffs > lastz_wrapper_out3.tabular 
-                phiX.fasta and b1.fasta are located in galaxy's test-data.  You will have to replace all the pluses before the commands with 2 dashes, 
-                as double-dash can't appear in an XML comment.
+            Lastz command:
+            lastz test-data/phiX.fasta test-data/b1.fasta[fullnames] +yasra95short +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=diffs > lastz_wrapper_out3.tabular 
+            phiX.fasta and b1.fasta are located in galaxy's test-data.  You will have to replace all the pluses before the commands with 2 dashes, 
+            as double-dash can't appear in an XML comment.
             -->
             <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="history" />
@@ -183,17 +198,17 @@
         </test>
         <test>
             <!--
-                Lastz command: first you will need to split the file phiX_split.fasta into two files, 
-                phiX1.fasta and phiX2.fasta, each with 1 sequence (phiX1 and phiX2, respectively). Then:
-                lastz phiX1.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general-:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle > lastz_wrapper_out4.tabular 
-                lastz phiX2.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general-:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle >> lastz_wrapper_out4.tabular 
-                You need to point to phiX1.fasta and phiX2.fasta somewhere on your system. 
-                phiX_split.fasta and b1.fasta are located in galaxy's test-data 
-                You will have to replace all the asterisks before the commands with 2 dashes, 
-                as double-dash can't appear in an XML comment 
-                
-                NOTE: since the input file include more than 1 sequence, the output must be sorted in 
-                order for functional test to pass.  This is done using the sort="True" attribute on the output.
+            Lastz command: first you will need to split the file phiX_split.fasta into two files, 
+            phiX1.fasta and phiX2.fasta, each with 1 sequence (phiX1 and phiX2, respectively). Then:
+            lastz phiX1.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general-:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle > lastz_wrapper_out4.tabular 
+            lastz phiX2.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general-:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle >> lastz_wrapper_out4.tabular 
+            You need to point to phiX1.fasta and phiX2.fasta somewhere on your system. 
+            phiX_split.fasta and b1.fasta are located in galaxy's test-data 
+            You will have to replace all the asterisks before the commands with 2 dashes, 
+            as double-dash can't appear in an XML comment 
+
+            NOTE: since the input file include more than 1 sequence, the output must be sorted in 
+            order for functional test to pass.  This is done using the sort="True" attribute on the output.
             -->
             <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="history" />
