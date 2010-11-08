@@ -664,6 +664,8 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         if not err_msg:
             message = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to monitor the transfer status." % len( selected_sample_datasets )
             status = "done"
+        else:
+            status = 'error'
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_datasets',
                                                           sample_id=trans.security.encode_id( sample.id ),
