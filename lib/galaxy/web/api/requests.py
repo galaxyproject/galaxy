@@ -88,7 +88,7 @@ class RequestsController( BaseController ):
             request_id = trans.security.decode_id( id )
         except TypeError:
             trans.response.status = 400
-            return "Malformed  %s id ( %s ) specified, unable to decode." % ( update_type, str( id ) )
+            return "Malformed  request id ( %s ) specified, unable to decode." % str( id )
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( request_id )
         except:

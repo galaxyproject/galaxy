@@ -14,6 +14,7 @@
 #queue = galaxy_queue
 #exchange = galaxy_exchange
 #routing_key = bar_code_scanner
+#api_key = 
 
 # The following section(s) 'scanner#' is for specifying the state of the 
 # sample this scanner represents. This state name should be one of the 

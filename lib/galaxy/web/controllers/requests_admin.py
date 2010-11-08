@@ -109,7 +109,7 @@ class DataTransferGrid( grids.Grid ):
     default_sort_key = "-create_time"
     num_rows_per_page = 50
     preserve_state = True
-    use_paging = True
+    use_paging = False
     columns = [
         NameColumn( "Name", 
                     link=( lambda item: dict( operation="view", id=item.id ) ),
@@ -299,7 +299,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                             sample=selected_sample_datasets[0].sample,
                                             id_list=id_list )
             elif operation == "transfer":
-                self.__start_datatx( trans, selected_sample_datasets[0].sample, selected_sample_datasets )
+                self.initiate_data_transfer( trans, selected_sample_datasets[0].sample, selected_sample_datasets )
         # Render the grid view
         sample_id = params.get( 'sample_id', None )
         try:
@@ -538,68 +538,36 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             return sample.request.name + '_' + sample.name + '_' + name
         if opt == options.EXPERIMENT_NAME:
             return sample.request.name + '_' + name
-    def __setup_datatx_user( self, trans, sample ):
+    def __check_library_add_permission( self, trans, target_library, target_folder ):
         """
-        Sets up the datatx user:
-        - Checks if the user exists, if not creates them.
-        - Checks if the user had ADD_LIBRARY permission on the target library
-          and the target folder, if not sets up the permissions.
+        Checks if the current admin user had ADD_LIBRARY permission on the target library
+        and the target folder, if not provide the permissions.
         """
-        # Retrieve the upload user login information from the config file
-        config = ConfigParser.ConfigParser()
-        ok = True
-        try:
-            config.read( 'transfer_datasets.ini' )
-        except Exception, e:
-            message = "Error attempting to read config file named 'transfer_datasets.ini'.  Make sure this file is correct."
-            ok = False
-        try:
-            email = config.get( "data_transfer_user_login_info", "email" )
-            password = config.get( "data_transfer_user_login_info", "password" )
-        except Exception, e:
-            message = "The 'data_transfer_user_login_info' section is missing from the 'transfer_datasets.ini'.  Make sure this file is correct."
-            ok = False
-        if not ok:
-            status = 'error'
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='manage_datasets',
-                                                              sample_id=trans.security.encode_id( sample.id ),
-                                                              status=status,
-                                                              message=message ) )
-        # check if the user already exists
-        datatx_user = trans.sa_session.query( trans.model.User ) \
-                                      .filter( trans.model.User.table.c.email==email ) \
-                                      .first()
-        if not datatx_user:
-            # if not create the user
-            datatx_user = trans.model.User( email=email, password=passsword )
-            if trans.app.config.use_remote_user:
-                datatx_user.external = True
-            trans.sa_session.add( datatx_user )
-            trans.sa_session.flush()
-            trans.app.security_agent.create_private_user_role( datatx_user )
-            trans.app.security_agent.user_set_default_permissions( datatx_user, history=False, dataset=False )
-        datatx_user_roles = datatx_user.all_roles()
-        datatx_user_private_role = trans.app.security_agent.get_private_user_role( datatx_user )
+        current_user_roles = trans.user.all_roles()
+        current_user_private_role = trans.app.security_agent.get_private_user_role( trans.user )
         # Make sure this user has LIBRARY_ADD permissions on the target library and folder.
         # If not, give them permission.
-        if not trans.app.security_agent.can_add_library_item( datatx_user_roles, sample.library ):
+        if not trans.app.security_agent.can_add_library_item( current_user_roles, target_library ):
             lp = trans.model.LibraryPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
-                                                 sample.library, 
-                                                 datatx_user_private_role )
+                                                 target_library, 
+                                                 current_user_private_role )
             trans.sa_session.add( lp )
-        if not trans.app.security_agent.can_add_library_item( datatx_user_roles, sample.folder ):
+        if not trans.app.security_agent.can_add_library_item( current_user_roles, target_folder ):
             lfp = trans.model.LibraryFolderPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
-                                                        sample.folder, 
-                                                        datatx_user_private_role )
+                                                        target_folder, 
+                                                        current_user_private_role )
             trans.sa_session.add( lfp )
             trans.sa_session.flush()
-        return datatx_user
-    def __send_message( self, trans, datatx_info, sample, selected_sample_datasets ):
-        """Ceates an xml message and sends it to the rabbitmq server"""
+    def __create_data_transfer_message( self, trans, sample, selected_sample_datasets ):
+        """
+        Creates an xml message to send to the rabbitmq server
+        """
+        datatx_info = sample.request.type.datatx_info
         # Create the xml message based on the following template
         xml = \
             ''' <data_transfer>
+                    <galaxy_host>%(GALAXY_HOST)s</galaxy_host>
+                    <api_key>%(API_KEY)s</api_key>
                     <data_host>%(DATA_HOST)s</data_host>
                     <data_user>%(DATA_USER)s</data_user>
                     <data_password>%(DATA_PASSWORD)s</data_password>
@@ -624,50 +592,77 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 sample_dataset.status = trans.app.model.SampleDataset.transfer_status.IN_QUEUE
                 trans.sa_session.add( sample_dataset )
                 trans.sa_session.flush()
-        data = xml % dict( DATA_HOST=datatx_info['host'],
-                           DATA_USER=datatx_info['username'],
-                           DATA_PASSWORD=datatx_info['password'],
-                           REQUEST_ID=str(sample.request.id),
-                           SAMPLE_ID=str(sample.id),
-                           LIBRARY_ID=str(sample.library.id),
-                           FOLDER_ID=str(sample.folder.id),
-                           DATASETS=datasets )
-        # Send the message 
-        try:
-            conn = amqp.Connection( host=trans.app.config.amqp['host'] + ":" + trans.app.config.amqp['port'], 
-                                    userid=trans.app.config.amqp['userid'], 
-                                    password=trans.app.config.amqp['password'], 
-                                    virtual_host=trans.app.config.amqp['virtual_host'], 
-                                    insist=False )    
-            chan = conn.channel()
-            msg = amqp.Message( data.replace( '\n', '' ).replace( '\r', '' ), 
-                                content_type='text/plain', 
-                                application_headers={'msg_type': 'data_transfer'} )
-            msg.properties["delivery_mode"] = 2
-            chan.basic_publish( msg,
-                                exchange=trans.app.config.amqp['exchange'],
-                                routing_key=trans.app.config.amqp['routing_key'] )
-            chan.close()
-            conn.close()
-        except Exception, e:
-            message = "Error in sending the data transfer message to the Galaxy AMQP message queue:<br/>%s" % str(e)
-            status = "error"
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='manage_datasets',
-                                                              sample_id=trans.security.encode_id( sample.id ),
-                                                              status=status,
-                                                              message=message) )
-
-    def __start_datatx( self, trans, sample, selected_sample_datasets ):
-        datatx_user = self.__setup_datatx_user( trans, sample )
-        # Validate sequencer information
+        message = xml % dict(  GALAXY_HOST=trans.request.host,
+                               API_KEY=trans.user.api_keys[0].key,
+                               DATA_HOST=datatx_info[ 'host' ],
+                               DATA_USER=datatx_info[ 'username' ],
+                               DATA_PASSWORD=datatx_info[ 'password' ],
+                               REQUEST_ID=str( sample.request.id ),
+                               SAMPLE_ID=str( sample.id ),
+                               LIBRARY_ID=str( sample.library.id ),
+                               FOLDER_ID=str( sample.folder.id ),
+                               DATASETS=datasets )
+        return message
+    def __validate_data_transfer_settings( self, trans, sample ):
+        err_msg = ''
+        # check the sequencer login info
         datatx_info = sample.request.type.datatx_info
-        if not datatx_info['host'] or not datatx_info['username'] or not datatx_info['password']:
-            message = "Error in sequencer login information."
-            status = "error"
-        else:
-            self.__send_message( trans, datatx_info, sample, selected_sample_datasets )
-            message = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to see the latest transfer status." % len( selected_sample_datasets )
+        if not datatx_info[ 'host' ] \
+            or not datatx_info[ 'username' ] \
+            or not datatx_info[ 'password' ]:
+            err_msg = "Error in sequencer login information."
+        # check if web API is enabled and API key exists
+        if not trans.user.api_keys or not trans.app.config.enable_api:
+            err_msg = "Could not start data transfer as Galaxy Web API is not enabled. Enable Galaxy Web API in the Galaxy config file and create an API key."
+        # check if library_import_dir is set
+        if not trans.app.config.library_import_dir:
+            err_msg = "'library_import_dir' config variable is not set in the Galaxy config file."
+        # check the RabbitMQ server settings in the config file
+        for k, v in trans.app.config.amqp.items():
+            if not v:
+                err_msg = 'Set RabbitMQ server settings in the "galaxy_amqp" section of the Galaxy config file. %s is not set.' % k
+                break
+        return err_msg
+    def initiate_data_transfer( self, trans, sample, selected_sample_datasets ):
+        '''
+        This method initiates the transfer of the datasets from the sequencer. It 
+        happens in the following steps:
+        - The current admin user needs to have ADD_LIBRARY_ITEM permission for the
+          target library and folder
+        - Create an XML message encapsulating all the data transfer info and send it
+          to the message queue (RabbitMQ broker)
+        '''
+        # check data transfer settings
+        err_msg = self.__validate_data_transfer_settings( trans, sample )
+        if not err_msg:
+            # check if the current user has add_library_item permission to the sample 
+            # target library & folder
+            self.__check_library_add_permission( trans, sample.library, sample.folder )
+            # create the message
+            message = self.__create_data_transfer_message( trans, 
+                                                           sample, 
+                                                           selected_sample_datasets )
+            # Send the message 
+            try:
+                conn = amqp.Connection( host=trans.app.config.amqp[ 'host' ] + ":" + trans.app.config.amqp[ 'port' ], 
+                                        userid=trans.app.config.amqp[ 'userid' ], 
+                                        password=trans.app.config.amqp[ 'password' ], 
+                                        virtual_host=trans.app.config.amqp[ 'virtual_host' ], 
+                                        insist=False )    
+                chan = conn.channel()
+                msg = amqp.Message( message.replace( '\n', '' ).replace( '\r', '' ), 
+                                    content_type='text/plain', 
+                                    application_headers={ 'msg_type': 'data_transfer' } )
+                msg.properties[ "delivery_mode" ] = 2
+                chan.basic_publish( msg,
+                                    exchange=trans.app.config.amqp[ 'exchange' ],
+                                    routing_key=trans.app.config.amqp[ 'routing_key' ] )
+                chan.close()
+                conn.close()
+            except Exception, e:
+                err_msg = "Error in sending the data transfer message to the Galaxy AMQP message queue:<br/>%s" % str(e)
+        if not err_msg:
+            message = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to monitor the transfer status." % len( selected_sample_datasets )
             status = "done"
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_datasets',

@@ -19,13 +19,15 @@ xml = \
 ''' <sample>
         <barcode>%(BARCODE)s</barcode>
         <state>%(STATE)s</state>
+        <api_key>%(API_KEY)s</api_key>
     </sample>'''
 
 
 def handle_scan(states, amqp_config, barcode):
     if states.get(barcode[:2], None):
         values = dict( BARCODE=barcode[2:],
-                       STATE=states.get(barcode[:2]) )
+                       STATE=states.get(barcode[:2]),
+                       API_KEY=amqp_config['api_key'] )
         print values
         data = xml % values
         print data
@@ -68,6 +70,10 @@ def main():
     states = {}
     for option in config.options("galaxy:amqp"):
         amqp_config[option] = config.get("galaxy:amqp", option)
+    # abort if api_key is not set in the config file
+    if not amqp_config['api_key']:
+        print 'Error: Set the api_key config variable in the config file before starting the amqp_publisher script.'
+        sys.exit( 1 )
     count = 1
     while True:
         section = 'scanner%i' % count

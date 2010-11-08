@@ -655,8 +655,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 event = trans.model.RequestEvent( request, request.states.SUBMITTED, message )
                 trans.sa_session.add( event )
                 trans.sa_session.flush()
-                if cntrller == 'api':
-                    return 200, message
+            if cntrller == 'api':
+                return 200, message
             return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                               action='edit_samples',
                                                               cntrller=cntrller,
