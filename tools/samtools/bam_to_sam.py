@@ -24,12 +24,51 @@ def __main__():
     ( options, args ) = parser.parse_args()
 
     tmp_dir = tempfile.mkdtemp()
+
     try:
         # exit if input file empty
         if os.path.getsize( options.input1 ) == 0:
             raise Exception, 'Initial BAM file empty'
+        # Sort alignments by leftmost coordinates. File <out.prefix>.bam will be created. This command
+        # may also create temporary files <out.prefix>.%d.bam when the whole alignment cannot be fitted
+        # into memory ( controlled by option -m ).
+        tmp_sorted_aligns_file = tempfile.NamedTemporaryFile( dir=tmp_dir )
+        tmp_sorted_aligns_file_base = tmp_sorted_aligns_file.name
+        tmp_sorted_aligns_file_name = '%s.bam' % tmp_sorted_aligns_file.name
+        tmp_sorted_aligns_file.close()
+        command = 'samtools sort %s %s' % ( options.input1, tmp_sorted_aligns_file_base )
+        tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
+        tmp_stderr = open( tmp, 'wb' )
+        proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )
+        returncode = proc.wait()
+        tmp_stderr.close()
+        # get stderr, allowing for case where it's very large
+        tmp_stderr = open( tmp, 'rb' )
+        stderr = ''
+        buffsize = 1048576
+        try:
+            while True:
+                stderr += tmp_stderr.read( buffsize )
+                if not stderr or len( stderr ) % buffsize != 0:
+                    break
+        except OverflowError:
+            pass
+        tmp_stderr.close()
+        if returncode != 0:
+            raise Exception, stderr
+        # exit if sorted BAM file empty
+        if os.path.getsize( tmp_sorted_aligns_file_name) == 0:
+            raise Exception, 'Intermediate sorted BAM file empty'
+    except Exception, e:
+        #clean up temp files
+        if os.path.exists( tmp_dir ):
+            shutil.rmtree( tmp_dir )
+        stop_err( 'Error sorting alignments from (%s), %s' % ( options.input1, str( e ) ) )
+
+
+    try:
         # Extract all alignments from the input BAM file to SAM format ( since no region is specified, all the alignments will be extracted ).
-        command = 'samtools view -o %s %s' % ( options.output1, options.input1 )
+        command = 'samtools view -o %s %s' % ( options.output1, tmp_sorted_aligns_file_name )
         tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
         tmp_stderr = open( tmp, 'wb' )
         proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )

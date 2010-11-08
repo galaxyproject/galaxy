@@ -5,32 +5,32 @@
   </requirements>
   <command interpreter="python">
     sam_pileup.py
-        --input1=$input1
-        --output=$output1
-        --ref=$refOrHistory.reference
-        #if $refOrHistory.reference == "history":
-         --ownFile=$refOrHistory.ownFile
-        #else:
-         --ownFile="None"
-        #end if
-        --dbkey=${input1.metadata.dbkey}
-        --indexDir=${GALAXY_DATA_INDEX_DIR}
-        --bamIndex=${input1.metadata.bam_index}
-        --lastCol=$lastCol
-        --indels=$indels
-        --mapCap=$mapCap
-        --consensus=$c.consensus
-        #if $c.consensus == "yes":
-         --theta=$c.theta
-         --hapNum=$c.hapNum
-         --fraction=$c.fraction
-         --phredProb=$c.phredProb
-        #else:
-         --theta="None"
-         --hapNum="None"
-         --fraction="None"
-         --phredProb="None"
-        #end if
+      --input1=$input1
+      --output=$output1
+      --ref=$refOrHistory.reference
+      #if $refOrHistory.reference == "history":
+        --ownFile=$refOrHistory.ownFile
+      #else:
+        --ownFile="None"
+      #end if
+       --dbkey=${input1.metadata.dbkey}
+       --indexDir=${GALAXY_DATA_INDEX_DIR}
+       --bamIndex=${input1.metadata.bam_index}
+       --lastCol=$lastCol
+       --indels=$indels
+       --mapCap=$mapCap
+       --consensus=$c.consensus
+      #if $c.consensus == "yes":
+        --theta=$c.theta
+        --hapNum=$c.hapNum
+        --fraction=$c.fraction
+        --phredProb=$c.phredProb
+       #else:
+        --theta="None"
+        --hapNum="None"
+        --fraction="None"
+        --phredProb="None"
+      #end if
   </command>
   <inputs>
     <conditional name="refOrHistory">
@@ -80,7 +80,7 @@
       <!--
       Bam to pileup command:
       samtools faidx chr_m.fasta
-      samtools pileup -M 60 -f chr_m.fasta test-data/sam_pileup_in1.bam > test-data/sam_pileup_out1.pileup
+      samtools pileup -M 60 -f chr_m.fasta test-data/sam_pileup_in1.bam > sam_pileup_out1.pileup
       chr_m.fasta is the prefix of the index
       -->
       <param name="reference" value="history" />
@@ -95,7 +95,7 @@
     <test>
       <!--
       Bam to pileup command:
-      samtools pileup -M 60 -c -T 0.85 -N 2 -r 0.001 -I 40 -f chr_m.fasta test-data/sam_pileup_in1.bam > test-data/sam_pileup_out2.pileup
+      samtools pileup -M 60 -c -T 0.85 -N 2 -r 0.001 -I 40 -f chr_m.fasta test-data/sam_pileup_in1.bam > sam_pileup_out2.pileup
       chr_m.fasta is the prefix of the index
       -->
       <param name="reference" value="indexed" />

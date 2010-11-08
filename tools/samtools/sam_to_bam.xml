@@ -4,13 +4,16 @@
     <requirement type="package">samtools</requirement>
   </requirements>
   <command interpreter="python">
-sam_to_bam.py --input1=$source.input1 --dbkey=${input1.metadata.dbkey} 
-#if $source.index_source == "history":
---ref_file=$source.ref_file
-#else
---ref_file="None"
-#end if
---output1=$output1 --index_dir=${GALAXY_DATA_INDEX_DIR}
+    sam_to_bam.py
+      --input1=$source.input1
+      --dbkey=${input1.metadata.dbkey} 
+      #if $source.index_source == "history":
+        --ref_file=$source.ref_file
+      #else
+        --ref_file="None"
+      #end if
+      --output1=$output1
+      --index_dir=${GALAXY_DATA_INDEX_DIR}
   </command>
   <inputs>
     <conditional name="source">

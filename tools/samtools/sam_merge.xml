@@ -4,7 +4,7 @@
     <requirement type="package">samtools</requirement>
   </requirements>
   <command interpreter="python">
-   sam_merge.py 
+    sam_merge.py 
       $input1
       $output1
       $input2
@@ -40,7 +40,7 @@
     <test>
       <!--
       Bam merge command:
-      samtools merge test-data/sam_merge_out2.bam test-data/sam_merge_in1.bam test-data/sam_merge_in2.bam test-data/sam_merge_in3.bam 
+      samtools merge sam_merge_out2.bam test-data/sam_merge_in1.bam test-data/sam_merge_in2.bam test-data/sam_merge_in3.bam
       -->
       <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
       <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
