@@ -53,7 +53,6 @@ def parse_gff_attributes( attr_str ):
         pair = name_value_pair.strip().split(" ")
         if len( pair ) == 1:
             pair = name_value_pair.strip().split("=")
-        print pair
         if pair == '':
             continue
         name = pair[0].strip()
