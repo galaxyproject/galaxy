@@ -10,9 +10,8 @@ def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--num-threads', dest='num_threads', help='Use this many threads to align reads. The default is 1.' )
-    parser.add_option( '-C', '--coverage-output', dest='coverage_output_file', help='Coverage output file; formate is WIG.' )
     parser.add_option( '-J', '--junctions-output', dest='junctions_output_file', help='Junctions output file; formate is BED.' )
-    parser.add_option( '-H', '--hits-output', dest='accepted_hits_output_file', help='Accepted hits output file; formate is SAM.' )
+    parser.add_option( '-H', '--hits-output', dest='accepted_hits_output_file', help='Accepted hits output file; formate is BAM.' )
     parser.add_option( '', '--own-file', dest='own_file', help='' )
     parser.add_option( '-D', '--indexes-path', dest='index_path', help='Indexes directory; location of .ebwt and .fa files.' )
     parser.add_option( '-r', '--mate-inner-dist', dest='mate_inner_dist', help='This is the expected (mean) inner distance between mate pairs. \
@@ -186,33 +185,14 @@ def __main__():
         tmp_stderr.close()
         if returncode != 0:
             raise Exception, stderr
+        
+        # TODO: look for errors in program output.
+        
+        # Copy output files from tmp directory to specified files. 
+        shutil.copyfile( os.path.join( tmp_output_dir, "junctions.bed" ), options.junctions_output_file )
+        shutil.copyfile( os.path.join( tmp_output_dir, "accepted_hits.bam" ), options.accepted_hits_output_file )
     except Exception, e:
-        # Clean up temp dirs
-        if os.path.exists( tmp_output_dir ):
-            shutil.rmtree( tmp_output_dir )
-        stop_err( 'Error in tophat:\n' + str( e ) )
-        
-    # TODO: look for errors in program output.
-        
-    # Postprocessing: copy output files from tmp directory to specified files. Also need to remove header lines from SAM file.
-    try:
-        try:
-            shutil.copyfile( os.path.join( tmp_output_dir, "coverage.wig" ), options.coverage_output_file )
-            shutil.copyfile( os.path.join( tmp_output_dir, "junctions.bed" ), options.junctions_output_file )
-            
-            # Remove headers from SAM file in place.
-            in_header = True # Headers always at start of file.
-            for line in fileinput.input( os.path.join( tmp_output_dir, "accepted_hits.sam" ), inplace=1 ):
-                if in_header and line.startswith("@"):
-                    continue
-                else:
-                    in_header = False
-                    sys.stdout.write( line )
-                    
-            # Copy SAM File.
-            shutil.copyfile( os.path.join( tmp_output_dir, "accepted_hits.sam" ), options.accepted_hits_output_file )
-        except Exception, e:
-            stop_err( 'Error in tophat:\n' + str( e ) ) 
+        stop_err( 'Error in tophat:\n' + str( e ) ) 
     finally:
         # Clean up temp dirs
         if os.path.exists( tmp_index_dir ):

@@ -23,7 +23,7 @@
             #end if
     </command>
     <inputs>
-        <param format="sam" name="input" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
+        <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
         <param name="max_intron_len" type="integer" value="300000" label="Max Intron Length" help=""/>
         <param name="min_isoform_fraction" type="float" value="0.05" label="Min Isoform Fraction" help=""/>
         <param name="pre_mrna_fraction" type="float" value="0.05" label="Pre MRNA Fraction" help=""/>

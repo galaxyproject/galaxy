@@ -33,8 +33,8 @@
     </command>
     <inputs>
         <param format="gtf" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source."/>
-        <param format="sam" name="aligned_reads1" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
-        <param format="sam" name="aligned_reads2" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
+        <param format="sam,bam" name="aligned_reads1" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
+        <param format="sam,bam" name="aligned_reads2" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
         <param name="fdr" type="float" value="0.05" label="False Discovery Rate" help="The allowed false discovery rate."/>
         <param name="min_mapqual" type="integer" value="0" label="Min SAM Mapping Quality" help="Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number."/>
         <param name="min_alignment_count" type="integer" value="0" label="Min Alignment Count" help="The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples."/>
