@@ -662,7 +662,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             except Exception, e:
                 err_msg = "Error in sending the data transfer message to the Galaxy AMQP message queue:<br/>%s" % str(e)
         if not err_msg:
-            message = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to monitor the transfer status." % len( selected_sample_datasets )
+            err_msg = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to monitor the transfer status." % len( selected_sample_datasets )
             status = "done"
         else:
             status = 'error'
@@ -670,7 +670,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                           action='manage_datasets',
                                                           sample_id=trans.security.encode_id( sample.id ),
                                                           status=status,
-                                                          message=message ) )
+                                                          message=err_msg ) )
     @web.expose
     def update_sample_dataset_status(self, trans, cntrller, sample_dataset_ids, new_status, error_msg=None ):
         # check if the new status is a valid transfer status

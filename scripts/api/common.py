@@ -48,6 +48,13 @@ def put( api_key, url, data ):
     req.get_method = lambda: 'PUT'
     return simplejson.loads( urllib2.urlopen( req ).read() )
 
+def __del( api_key, url, data ):
+    # Do the actual DELETE
+    url = make_url( api_key, url )
+    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ))
+    req.get_method = lambda: 'DELETE'
+    return simplejson.loads( urllib2.urlopen( req ).read() )
+
 
 def display( api_key, url, return_formatted=True ):
     # Sends an API GET request and acts as a generic formatter for the JSON response.
@@ -89,12 +96,12 @@ def submit( api_key, url, data, return_formatted=True ):
     try:
         r = post( api_key, url, data )
     except urllib2.HTTPError, e:
-        print e
-        print e.read( 1024 )
         if return_formatted:
+            print e
+            print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e )
+            return 'Error. '+ str( e.read( 1024 ) )
     if not return_formatted:
         return r
     print 'Response'
@@ -123,30 +130,35 @@ def update( api_key, url, data, return_formatted=True ):
     try:
         r = put( api_key, url, data )
     except urllib2.HTTPError, e:
-        print e
-        print e.read( 1024 )
-        sys.exit( 1 )
+        if return_formatted:
+            print e
+            print e.read( 1024 )
+            sys.exit( 1 )
+        else:
+            return 'Error. '+ str( e.read( 1024 ) )
     if not return_formatted:
         return r
     print 'Response'
     print '--------'
-    if type( r ) == list:
-        # Currently the only implemented responses are lists of dicts, because
-        # submission creates some number of collection elements.
-        for i in r:
-            if type( i ) == dict:
-                if 'url' in i:
-                    print i.pop( 'url' )
-                else:
-                    print '----'
-                if 'name' in i:
-                    print '  name: %s' % i.pop( 'name' )
-                for k, v in i.items():
-                    print '  %s: %s' % ( k, v )
-            else:
-                print i
-    else:
-        print r
+    print r
+        
+def delete( api_key, url, data, return_formatted=True ):
+    # Sends an API DELETE request and acts as a generic formatter for the JSON response.
+    # 'data' will become the JSON payload read by Galaxy.
+    try:
+        r = __del( api_key, url, data )
+    except urllib2.HTTPError, e:
+        if return_formatted:
+            print e
+            print e.read( 1024 )
+            sys.exit( 1 )
+        else:
+            return 'Error. '+ str( e.read( 1024 ) )
+    if not return_formatted:
+        return r
+    print 'Response'
+    print '--------'
+    print r
 
 # utility method to encode ID's
 def encode_id( config_id_secret, obj_id ):

@@ -95,7 +95,7 @@ def update_request( api_key, request_id ):
     try:
         retval = api.update( api_key, url, data, return_formatted=False )
         log.debug( str( retval ) )
-    except urllib2.URLError, e:
+    except Exception, e:
         log.debug( 'ERROR(update_request (%s)): %s' % ( str((self.api_key, url, data)), str(e) ) )
 
 def recv_callback( message ):
