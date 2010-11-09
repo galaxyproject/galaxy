@@ -1,4 +1,4 @@
-<tool id="rgHaploView1" name="LD plots:" version="0.2">
+<tool id="rgHaploView1" name="LD plots:" version="0.3">
 
     <description>and comparisons with HapMap data</description>
 

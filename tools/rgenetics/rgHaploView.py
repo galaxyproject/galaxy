@@ -47,7 +47,7 @@ class ldPlot:
         self.args=argv
         self.parseArgs(argv=self.args)
         self.setupRegions()
-        
+                
     def parseArgs(self,argv=[]):
         """
         """
@@ -405,10 +405,10 @@ class ldPlot:
             p=subprocess.Popen(vcl,shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
             retval = p.wait()
             self.lf.write('## executing %s returned %d\n' % (vcl,retval))
-            #vcl = ['convert', 'allnup.pdf', 'allnup.png'] # this fails - bad pdf?
-            #p=subprocess.Popen(' '.join(vcl),shell=True,cwd=outfpath)
-            #retval = p.wait()
-            #lf.write('## executing %s returned %d\n' % (vcl,retval))
+            vcl = '%s -resize x300 allnup.pdf allnup.png' % (self.convert)
+            p=subprocess.Popen(vcl,shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
+            retval = p.wait()
+            self.lf.write('## executing %s returned %d\n' % (vcl,retval))
         ste.close() # temp file used to catch haploview blather
         hblather = open(blog,'r').readlines() # to catch the blather    
         os.unlink(blog)
@@ -425,20 +425,16 @@ class ldPlot:
         outf.write(galhtmlprefix % progname)
         s = '<h4>rgenetics for Galaxy %s, wrapping HaploView</h4>' % (progname)
         outf.write(s)
-        """
-        as at ashg 2009, convert fails on allnup.pdf - probably too complex...
         mainthumb = 'allnup.png'
         mainpdf = 'allnup.pdf'
-        if os.path.exists(mainpdf):
-            if not os.path.exists(mainthumb):
+        if os.path.exists(os.path.join(self.outfpath,mainpdf)):
+            if not os.path.exists(os.path.join(self.outfpath,mainthumb)):
                 outf.write('<table><tr><td colspan="3"><a href="%s">Main combined LD plot</a></td></tr></table>\n' % (mainpdf))
             else:
-                outf.write('<table><tr><td><a href="%s"><img src="%s" alt="Main combined LD image" hspace="10" align="middle">')
-                outf.write('</td><td>Click this thumbnail to display the main combined LD image</td></tr></table>\n' % (mainpdf,mainthumb))
+                outf.write('<table><tr><td><a href="%s"><img src="%s" alt="Main combined LD image" hspace="10" align="middle">' % (mainpdf,mainthumb))
+                outf.write('</td><td>Click the thumbnail at left to download the main combined LD image <a href=%s>%s</a></td></tr></table>\n' % (mainpdf,mainpdf))
         else:
             outf.write('(No main image was generated - this usually means a Haploview error connecting to Hapmap site - please try later)<br/>\n')
-        outf.write('## Called as %s' % sys.argv)
-        """
         outf.write('<br><div><hr><ul>\n')
         for i, data in enumerate( flist ):
             dn = os.path.split(data)[-1]
@@ -513,5 +509,6 @@ if __name__ == "__main__":
         sys.exit(1)
     ld = ldPlot(argv = sys.argv)
     ld.doPlots()
+
 
 
