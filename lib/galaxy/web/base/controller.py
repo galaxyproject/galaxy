@@ -207,9 +207,12 @@ class UsesStoredWorkflow( SharableItemSecurity ):
     def get_stored_workflow_steps( self, trans, stored_workflow ):
         """ Restores states for a stored workflow's steps. """
         for step in stored_workflow.latest_workflow.steps:
+            step.upgrade_messages = {}
             if step.type == 'tool' or step.type is None:
                 # Restore the tool state for the step
                 module = module_factory.from_workflow_step( trans, step )
+                #Check if tool was upgraded
+                step.upgrade_messages = module.check_and_update_state()
                 # Any connected input needs to have value DummyDataset (these
                 # are not persisted so we need to do it every time)
                 module.add_dummy_datasets( connections=step.input_connections )                  

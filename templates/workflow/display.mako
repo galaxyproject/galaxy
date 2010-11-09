@@ -1,4 +1,5 @@
 <%inherit file="/display_base.mako"/>
+<%namespace file="/display_common.mako" import="render_message" />
 
 <%! 
     from galaxy.tools.parameters import DataToolParameter, RuntimeValue 
@@ -54,6 +55,9 @@
                 ${param.value_to_display_text( value, app )}
             %endif
         </div>
+        %if hasattr( step, 'upgrade_messages' ) and step.upgrade_messages and param.name in step.upgrade_messages:
+            ${render_message( step.upgrade_messages[param.name], "info" )}
+        %endif
     </div>
 </%def>
 
