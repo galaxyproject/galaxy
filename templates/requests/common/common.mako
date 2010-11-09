@@ -131,6 +131,8 @@
             is_submitted = False
             is_unsubmitted = False
             display_checkboxes = False
+            display_bar_code = False
+            display_datasets = False
     %>
     <%
         if display_checkboxes and trans.security.encode_id( sample.id ) in encoded_selected_sample_ids:
