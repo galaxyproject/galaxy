@@ -155,6 +155,26 @@ def sanitize_param(value):
         print value
         raise Exception, 'Unknown parameter type (%s)' % ( type( value ) )
 
+valid_filename_chars = set( string.ascii_letters + string.digits + '_.' )
+invalid_filenames = [ '', '.', '..' ]
+def sanitize_for_filename( text, default=None ):
+    """
+    Restricts the characters that are allowed in a filename portion; Returns default value or a unique id string if result is not a valid name.
+    Method is overly aggressive to minimize possible complications, but a maximum length is not considered.
+    """
+    out = []
+    for c in text:
+        if c in valid_filename_chars:
+            out.append( c )
+        else:
+            out.append( '_' )
+    out = ''.join( out )
+    if out in invalid_filenames:
+        if default is None:
+            return sanitize_for_filename( str( unique_id() ) )
+        return default
+    return out
+
 class Params:
     """
     Stores and 'sanitizes' parameters. Alphanumeric characters and the  

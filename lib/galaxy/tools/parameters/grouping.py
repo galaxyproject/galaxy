@@ -12,7 +12,7 @@ import StringIO, os, urllib
 from galaxy.datatypes import sniff
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
-from galaxy.util import json, relpath
+from galaxy.util import json, relpath, sanitize_for_filename
 
 class Group( object ):
     def __init__( self ):
@@ -335,10 +335,14 @@ class UploadDataset( Group ):
             dataset.composite_files = {}
             #load metadata
             files_metadata = context.get( self.metadata_ref, {} )
+            metadata_name_substition_default_dict = dict( [ ( composite_file.substitute_name_with_metadata, d_type.metadata_spec[ composite_file.substitute_name_with_metadata ].default ) for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata ] )
             for meta_name, meta_spec in d_type.metadata_spec.iteritems():
                 if meta_spec.set_in_upload:
                     if meta_name in files_metadata:
-                        dataset.metadata[ meta_name ] = files_metadata[ meta_name ]
+                        meta_value = files_metadata[ meta_name ]
+                        if meta_name in metadata_name_substition_default_dict:
+                            meta_value = sanitize_for_filename( meta_value, default = metadata_name_substition_default_dict[ meta_name ] )
+                        dataset.metadata[ meta_name ] = meta_value
             dataset.precreated_name = dataset.name = self.get_composite_dataset_name( context )
             if dataset.datatype.composite_type == 'auto_primary_file':
                 #replace sniff here with just creating an empty file
