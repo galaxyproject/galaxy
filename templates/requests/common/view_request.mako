@@ -19,11 +19,13 @@
 
     is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
     is_complete = request.is_complete
+    is_submitted = request.is_submitted
     is_unsubmitted = request.is_unsubmitted
-    can_edit_request = ( is_admin and not request.is_complete ) or request.is_unsubmitted
     can_add_samples = is_unsubmitted
+    can_edit_request = ( is_admin and not request.is_complete ) or request.is_unsubmitted
     can_delete_samples = request.samples and not is_complete
     can_edit_samples = request.samples and ( is_admin or not is_complete )
+    can_reject = is_admin and is_submitted
     can_submit = request.samples and is_unsubmitted
 %>
 
@@ -35,13 +37,15 @@
     %endif
     <li><a class="action-button" id="request-${request.id}-popup" class="menubutton">Request actions</a></li>
     <div popupmenu="request-${request.id}-popup">
+        %if request.deleted:
+            <a class="action-button" href="${h.url_for( controller='requests_common', action='undelete_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Undelete</a>
+        %endif
         %if can_edit_request:
             <a class="action-button" href="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit</a>
         %endif
         <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">View history</a>
-        %if is_admin and request.is_submitted:
+        %if can_reject:
             <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject</a>
-            <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
         %endif
     </div>
 </ul>

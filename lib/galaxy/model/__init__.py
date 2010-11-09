@@ -1595,7 +1595,7 @@ class Request( object ):
     states = Bunch( NEW = 'New',
                     SUBMITTED = 'In Progress',
                     REJECTED = 'Rejected',
-                    COMPLETE = 'Complete'   )
+                    COMPLETE = 'Complete' )
     api_collection_visible_keys = ( 'id', 'name', 'state' )
     def __init__( self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None ):
         self.name = name
@@ -1813,17 +1813,21 @@ class Sample( object ):
             if dataset.status == SampleDataset.transfer_status.COMPLETE:
                 transferred_datasets.append( dataset )
         return transferred_datasets
-    def dataset_size( self, filepath ):
-        def print_ticks(d):
+    def get_untransferred_dataset_size( self, filepath ):
+        # TODO: RC: If rsh keys are not set, this method will return something like the following:
+        # greg@scofield.bx.psu.edu's password: 46M    /afs/bx.psu.edu/home/greg/chr22/chr21.fa
+        # This method should return the number of bytes in the file.  I believe du
+        # displays the file system block usage which may not be the number of bytes in the file.
+        # Would ls -l be better?
+        def print_ticks( d ):
             pass
         datatx_info = self.request.type.datatx_info
-        cmd  = 'ssh %s@%s "du -sh \'%s\'"' % ( datatx_info['username'],
-                                          datatx_info['host'],
-                                          filepath)
-        output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
-                                          pexpect.TIMEOUT:print_ticks}, 
-                                          timeout=10)
-        return output.replace(filepath, '').strip()
+        cmd  = 'ssh %s@%s "du -sh \'%s\'"' % ( datatx_info['username'], datatx_info['host'], filepath )
+        output = pexpect.run( cmd,
+                              events={ '.ssword:*': datatx_info['password']+'\r\n', 
+                                       pexpect.TIMEOUT:print_ticks}, 
+                              timeout=10 )
+        return output.replace( filepath, '' ).strip()
     def get_api_value( self, view='collection' ):
         rval = {}
         try:
@@ -1856,8 +1860,7 @@ class SampleDataset( object ):
                              ADD_TO_LIBRARY = 'Adding to data library',
                              COMPLETE = 'Complete',
                              ERROR = 'Error' )
-    def __init__(self, sample=None, name=None, file_path=None, 
-                 status=None, error_msg=None, size=None):
+    def __init__( self, sample=None, name=None, file_path=None, status=None, error_msg=None, size=None):
         self.sample = sample
         self.name = name
         self.file_path = file_path
@@ -1866,9 +1869,9 @@ class SampleDataset( object ):
         self.size = size
         
 class UserAddress( object ):
-    def __init__(self, user=None, desc=None, name=None, institution=None, 
-                 address=None, city=None, state=None, postal_code=None, 
-                 country=None, phone=None):
+    def __init__( self, user=None, desc=None, name=None, institution=None, 
+                  address=None, city=None, state=None, postal_code=None, 
+                  country=None, phone=None ):
         self.user = user
         self.desc = desc
         self.name = name

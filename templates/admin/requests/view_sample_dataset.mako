@@ -7,17 +7,21 @@
 
 <br/><br/>
 
-<% sample = sample_dataset.sample %>
+<%
+    sample = sample_dataset.sample
+    is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+    can_manage_datasets = is_admin and sample.untransferred_dataset_files
+%>
 
 <ul class="manage-table-actions">
-    <li>
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller='requests_admin', sample_id=trans.security.encode_id( sample.id ) )}">
-        <span>Browse datasets</span></a>
-    </li>
+    %if can_manage_datasets:
+        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Manage sample datasets</a></li>
+    %endif
+    <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Browse this request</a></li>
 </ul>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Dataset Information</div>
+    <div class="toolFormTitle">"${sample.name}" Dataset</div>
     <div class="toolFormBody">
         <div class="form-row">
             <label>Name:</label>
@@ -27,9 +31,12 @@
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <label>File on the Sequencer:</label>
+            <label>File path:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
                 ${sample_dataset.file_path}
+            </div>
+            <div class="toolParamHelp" style="clear: both;">
+                This file is contained in a sub-directory of the data directory configured for the sequencer.
             </div>
             <div style="clear: both"></div>
         </div>
@@ -41,16 +48,9 @@
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <label>Created on:</label>
+            <label>Date this dataset was selected for this sample:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
                 ${sample_dataset.create_time}
-            </div>
-            <div style="clear: both"></div>
-        </div>
-        <div class="form-row">
-            <label>Updated on:</label>
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                ${sample_dataset.update_time}
             </div>
             <div style="clear: both"></div>
         </div>
@@ -58,12 +58,15 @@
             <label>Transfer status:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
                 ${sample_dataset.status}
-                %if sample_dataset.status == trans.app.model.SampleDataset.transfer_status.ERROR:
-                    <br/>
-                    ${sample_dataset.error_msg}
-                %endif 
             </div>
             <div style="clear: both"></div>
         </div>
+        %if sample_dataset.status == trans.app.model.SampleDataset.transfer_status.ERROR:
+            <div class="form-row">
+                 <label>Transfer error:</label>
+                ${sample_dataset.error_msg}
+            </div>
+            <div style="clear: both"></div>
+        %endif
     </div>
 </div>

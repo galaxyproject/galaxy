@@ -20,7 +20,7 @@
         %endif
         %if is_admin and request.is_submitted:
             <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject</a>
-            <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
+            <a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
         %endif
     </div>
 </ul>

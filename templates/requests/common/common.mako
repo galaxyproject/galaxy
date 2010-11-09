@@ -168,15 +168,25 @@
     %endif
     <td valign="top">${current_sample['library_select_field'].get_html()}</td>
     <td valign="top">${current_sample['folder_select_field'].get_html()}</td>
-    %if display_datasets: 
-        <%
-            if sample:
-                label = str( len( sample.datasets ) )
-            else:
-                label = 'add'
-        %>
-        <td valign="top"><a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${label}</a></td>
-        <td valign="top"><a href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${label}</a></td>
+    %if display_datasets:
+        <td valign="top">
+            ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
+            %if is_admin:
+                <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+            %elif sample.datasets:
+                ## Only display a link if there is at least 1 selected dataset for the sample
+                <a href="${h.url_for( controller='requests_common', action='view_selected_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a></td>
+            %else:
+                ${len( sample.datasets )}
+            %endif
+        </td>
+        <td valign="top">
+            %if is_admin and sample.untransferred_dataset_files:
+                <a href="${h.url_for( controller='requests_common', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
+            %else:
+                ${len( sample.transferred_dataset_files )}
+            %endif
+        </td>
     %endif
     %if sample and ( is_admin or is_unsubmitted ) and not is_complete:
         ## Delete button
@@ -196,6 +206,7 @@
         can_add_samples = request.is_unsubmitted
         can_delete_samples = request.samples and not is_complete
         can_edit_samples = request.samples and ( is_admin or not is_complete )
+        can_select_datasets = is_admin and current_samples and ( is_submitted or is_complete )
         display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
         display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
         display_datasets = request.samples and ( is_complete or is_rejected or is_submitted )
@@ -280,9 +291,31 @@
                         %else:
                             <td></td>
                         %endif
-                        %if is_submitted or is_complete: 
-                            <td><a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a></td>
-                            <td><a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_dataset_transfer', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a></td>
+                        %if is_submitted or is_complete:
+                            <td>
+                                ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
+                                %if is_admin:
+                                    %if not sample.datasets:
+                                        ## If there are no selected datasets, display a page alowing the admin to select some.
+                                        <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id= trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                                    %else:
+                                        ## If there are selected datasets, display them
+                                        <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_selected_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                                    %endif
+                                %elif sample.datasets:
+                                    ## Only display a link if there is at least 1 selected dataset for the sample
+                                    <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_selected_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                                %else:
+                                    ${len( sample.datasets )}
+                                %endif
+                            </td>
+                            <td>
+                                %if is_admin and sample.untransferred_dataset_files:
+                                    <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
+                                %else:
+                                    ${len( sample.transferred_dataset_files )}
+                                %endif
+                            </td>
                         %endif
                     </tr>
                 %else:
@@ -394,4 +427,53 @@
             </tbody>
         </table>
     </div>
+</%def>
+
+<%def name="render_sample_datasets( cntrller, sample, sample_datasets, title )">
+    %if sample_datasets:
+        <%
+            is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+            is_complete = sample.request.is_complete
+            is_submitted = sample.request.is_submitted
+            can_select_datasets = is_admin and ( is_complete or is_submitted )
+            can_transfer_datasets = is_admin and sample.untransferred_dataset_files
+        %>
+        <h3>${title}</h3>
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Size</th>
+                    <th>Status</th>
+                </tr>
+            <thead>
+            <tbody>
+                %for dataset in sample_datasets:
+                    <tr>
+                        <td>
+                            %if is_admin:
+                                <% encoded_id = trans.security.encode_id(dataset.id) %>
+                                <span class="expandLink dataset-${dataset}-click"><span class="rowIcon"></span>
+                                    <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="dataset-${dataset.id}-popup">
+                                        <a class="dataset-${encoded_id}-click" href="${h.url_for( controller='requests_admin', action='manage_datasets', operation='view', id=trans.security.encode_id( dataset.id ) )}">${dataset.name}</a>
+                                    </div>
+                                </span>
+                                <div popupmenu="dataset-${dataset.id}-popup">
+                                    %if can_transfer_datasets and dataset in sample.untransferred_dataset_files:
+                                        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='initiate_data_transfer', sample_id=trans.security.encode_id( sample.id ), sample_dataset_id=trans.security.encode_id( dataset.id ) )}">Transfer</a></li>
+                                    %endif
+                                </div>
+                            %else:
+                                ${dataset.name}
+                            %endif
+                        </td>
+                        <td>${dataset.size}</td>
+                        <td>${dataset.status}</td>
+                    </tr>
+                %endfor
+            </tbody>
+        </table>
+    %else:
+        No datasets for this sample.
+    %endif
 </%def>

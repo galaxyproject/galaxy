@@ -23,10 +23,6 @@ class AdminRequestsGrid( RequestsGrid ):
     operations.append( grids.GridOperation( "Reject", allow_multiple=False, condition=( lambda item: not item.deleted and item.is_submitted ) ) )
     operations.append( grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted ) ) )
     operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ) )
-    operations.append( grids.GridOperation( "Purge",
-                                            allow_multiple=False,
-                                            confirm="This will permanently delete this sequencing request. Click OK to proceed.",
-                                            condition=( lambda item: item.deleted ) ) )
     global_actions = [
         grids.GridAction( "Create new request", dict( controller='requests_common',
                                                       action='create_request', 
@@ -227,7 +223,8 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                         status=status,
                                         message=message )
         # Create an event with state 'Rejected' for this request
-        event = trans.model.RequestEvent( request, request.states.REJECTED, comment )
+        event_comment = "Request marked rejected by %s. Reason: %s " % ( trans.user.email, comment )
+        event = trans.model.RequestEvent( request, request.states.REJECTED, event_comment )
         trans.sa_session.add( event )
         trans.sa_session.flush()
         message='Request (%s) has been rejected.' % request.name
@@ -240,6 +237,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
     @web.expose
     @web.require_admin
     def manage_datasets( self, trans, **kwd ):
+        def handle_error( **kwd ):
+            kwd[ 'status' ] = 'error'
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_datasets',
+                                                              **kwd ) )
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -247,23 +249,28 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             operation = kwd[ 'operation' ].lower()
             sample_dataset_id = params.get( 'id', None )
             if not sample_dataset_id:
-                return invalid_id_redirect( trans, 'requests_admin', sample_dataset_id )
+                message = 'Select at least 1 dataset to %s.' % operation
+                kwd[ 'message' ] = message
+                del kwd[ 'operation' ]
+                handle_error( **kwd )
             id_list = util.listify( sample_dataset_id )
             selected_sample_datasets = []
             for sample_dataset_id in id_list:
-                try: 
-                    selected_sample_datasets.append( trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) ) )
+                try:
+                    sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
                 except:
                     return invalid_id_redirect( trans, 'requests_admin', sample_dataset_id )
+                selected_sample_datasets.append( sample_dataset )
             if operation == "view":
-                return trans.fill_template( '/admin/requests/dataset.mako',
+                return trans.fill_template( '/admin/requests/view_sample_dataset.mako',
+                                            cntrller='requests_admin',
                                             sample_dataset=selected_sample_datasets[0] )
             elif operation == "delete":
                 not_deleted = []
                 for sample_dataset in selected_sample_datasets:
                     # Make sure the dataset has been transferred before deleting it.
                     if sample_dataset in sample_dataset.sample.untransferred_dataset_files:
-                        # save the sample to which these datasets belong to
+                        # Save the sample dataset
                         sample = sample_dataset.sample
                         trans.sa_session.delete( sample_dataset )
                         trans.sa_session.flush()
@@ -299,7 +306,9 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                             sample=selected_sample_datasets[0].sample,
                                             id_list=id_list )
             elif operation == "transfer":
-                self.initiate_data_transfer( trans, selected_sample_datasets[0].sample, selected_sample_datasets )
+                self.initiate_data_transfer( trans,
+                                             trans.security.encode_id( selected_sample_datasets[0].sample.id ),
+                                             sample_datasets=selected_sample_datasets )
         # Render the grid view
         sample_id = params.get( 'sample_id', None )
         try:
@@ -308,13 +317,10 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             return invalid_id_redirect( trans, 'requests_admin', sample_id )
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
-        self.datatx_grid.global_actions = [ grids.GridAction( "Refresh page", 
+        self.datatx_grid.title = 'Manage "%s" datasets'  % sample.name
+        self.datatx_grid.global_actions = [ grids.GridAction( "Select more datasets", 
                                                               dict( controller='requests_admin', 
-                                                                    action='manage_datasets',
-                                                                    sample_id=sample_id ) ),
-                                            grids.GridAction( "Select datasets", 
-                                                              dict( controller='requests_admin', 
-                                                                    action='get_data',
+                                                                    action='select_datasets_to_transfer',
                                                                     request_id=request_id,
                                                                     sample_id=sample_id ) ),
                                             grids.GridAction( "Browse target data library", 
@@ -326,7 +332,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                               dict( controller='requests_common', 
                                                                     action='view_request',
                                                                     cntrller='requests_admin',
-                                                                    id=request_id ) ) ]
+                                                                    id=request_id ) ),
+                                            grids.GridAction( "Refresh page", 
+                                                              dict( controller='requests_admin', 
+                                                                    action='manage_datasets',
+                                                                    sample_id=sample_id ) ) ]
         return self.datatx_grid( trans, **kwd )
     @web.expose
     @web.require_admin
@@ -372,70 +382,68 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                           sample_id=sample_id ) )
     @web.expose
     @web.require_admin
-    def get_data( self, trans, **kwd ):
+    def select_datasets_to_transfer( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
         request_id = kwd.get( 'request_id', None )
         files = []
+        def handle_error( **kwd ):
+            kwd[ 'status' ] = 'error'
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='select_datasets_to_transfer',
+                                                              **kwd ) )
         try:
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', request_id )
-        selected_files = util.restore_text( params.get( 'selected_files', '' ) )
-        if len( selected_files ):
-            selected_files = selected_files.split(',')
+        selected_datasets_to_transfer = util.restore_text( params.get( 'selected_datasets_to_transfer', '' ) )
+        if selected_datasets_to_transfer:
+            selected_datasets_to_transfer = selected_datasets_to_transfer.split(',')
         else:
-            selected_files = []
-        selected_sample_id = kwd.get( 'sample_id', 'none' )
-        sample_id_select_field = self.__build_sample_id_select_field( trans, request, selected_sample_id )
+            selected_datasets_to_transfer = []
+        sample_id = kwd.get( 'sample_id', 'none' )
+        sample_id_select_field = self.__build_sample_id_select_field( trans, request, sample_id )
+        if sample_id != 'none':
+            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
+        else:
+            sample = None
         # The __get_files() method redirects here with a status of 'error' and a message if there
         # was a problem retrieving the files.
-        if params.get( 'select_show_datasets_button', False ) or params.get( 'select_more_button', False ):
-            # get the sample these datasets are associated with
-            try:
-                sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( selected_sample_id ) )
-            except:
-                message = 'Select a sample before selecting its associated datasets.'
-                return trans.fill_template( '/admin/requests/get_data.mako',
-                                            cntrller='requests_admin',
-                                            request=request,
-                                            sample_id_select_field=sample_id_select_field,
-                                            status='error',
-                                            message=message )
+        if params.get( 'select_datasets_to_transfer_button', False ):
+            # Get the sample that was sequenced to produce these datasets.
+            if sample_id == 'none':
+                message = 'Select the sample that was sequenced to produce the datasets you want to transfer.'
+                kwd[ 'message' ] = message
+                del kwd[ 'select_datasets_to_transfer_button' ]
+                handle_error( **kwd )
             if sample in sample.request.samples_without_library_destinations:
                 # Display an error if a sample has been selected that
                 # has not yet been associated with a destination library.
+                message = 'Select a target data library and folder for the sample before selecting the datasets.'
                 status = 'error'
-                message = 'Select a sample with associated data library and folder before selecting the datasets.'
-                return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                  action='get_data',
-                                                                  request_id=request_id,
-                                                                  sample_id=sample.id,
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  action='edit_samples',
+                                                                  cntrller='requests_admin',
+                                                                  id=trans.security.encode_id( request.id ),
+                                                                  editing_samples=True,
                                                                   status=status,
                                                                   message=message ) )
             # Save the sample datasets 
-            sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_files )
+            sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_datasets_to_transfer )
             if sample_dataset_file_names:
                 message = 'Datasets (%s) have been selected for sample (%s)' % \
                     ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), sample.name )
-            if params.get( 'select_show_datasets_button', False ):
-                return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                  action='manage_datasets',
-                                                                  request_id=request_id,
-                                                                  sample_id=selected_sample_id,
-                                                                  message=message,
-                                                                  status=status ) )
-            else: # 'select_more_button' was clicked
-                return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                  action='get_data', 
-                                                                  request_id=request_id,
-                                                                  sample_id=sample.id,
-                                                                  message=message,
-                                                                  status=status ) )
-        return trans.fill_template( '/admin/requests/get_data.mako',
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_datasets',
+                                                              request_id=request_id,
+                                                              sample_id=sample_id,
+                                                              message=message,
+                                                              status=status ) )
+        return trans.fill_template( '/admin/requests/select_datasets_to_transfer.mako',
                                     cntrller='requests_admin',
                                     request=request,
+                                    sample=sample,
                                     sample_id_select_field=sample_id_select_field,
                                     status=status,
                                     message=message )
@@ -499,7 +507,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         if ok:
             return output.splitlines()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='get_data',
+                                                          action='select_datasets_to_transfer',
                                                           request_id=trans.security.encode_id( request.id ),
                                                           status=status,
                                                           message=message ) )
@@ -508,24 +516,36 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         if a_path and not a_path.endswith( os.sep ):
             a_path += os.sep
         return a_path
-    def __save_sample_datasets( self, trans, sample, selected_files ):
+    def __save_sample_datasets( self, trans, sample, selected_datasets_to_transfer ):
         sample_dataset_file_names = []
-        if selected_files:
-            for filepath in selected_files:
+        if selected_datasets_to_transfer:
+            for filepath in selected_datasets_to_transfer:
                 # FIXME: handle folder selection
                 # ignore folders for now
                 if filepath[-1] != os.sep:
                     name = self.__dataset_name( sample, filepath.split( '/' )[-1] )
+                    status = trans.app.model.SampleDataset.transfer_status.NOT_STARTED
+                    size = sample.get_untransferred_dataset_size( filepath )
                     sample_dataset = trans.model.SampleDataset( sample=sample,
                                                                 file_path=filepath,
-                                                                status=trans.app.model.SampleDataset.transfer_status.NOT_STARTED,
+                                                                status=status,
                                                                 name=name,
                                                                 error_msg='',
-                                                                size=sample.dataset_size( filepath ) )
+                                                                size=size )
                     trans.sa_session.add( sample_dataset )
                     trans.sa_session.flush()
                     sample_dataset_file_names.append( str( sample_dataset.name ) )
         return sample_dataset_file_names
+    def dataset_file_size( self, sample, filepath ):
+        def print_ticks(d):
+            pass
+        datatx_info = sample.request.type.datatx_info
+        cmd  = 'ssh %s@%s "du -sh \'%s\'"' % ( datatx_info['username'], datatx_info['host'], filepath )
+        output = pexpect.run( cmd,
+                              events={ '.ssword:*': datatx_info['password']+'\r\n', 
+                                       pexpect.TIMEOUT:print_ticks}, 
+                              timeout=10 )
+        return output.replace( filepath, '' ).strip()
     def __dataset_name( self, sample, filepath ):
         name = filepath.split( '/' )[-1]
         options = sample.request.type.rename_dataset_options
@@ -610,38 +630,54 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         if not datatx_info[ 'host' ] \
             or not datatx_info[ 'username' ] \
             or not datatx_info[ 'password' ]:
-            err_msg = "Error in sequencer login information."
-        # check if web API is enabled and API key exists
-        if not trans.user.api_keys or not trans.app.config.enable_api:
-            err_msg = "Could not start data transfer as Galaxy Web API is not enabled. Enable Galaxy Web API in the Galaxy config file and create an API key."
+            err_msg += "Error in sequencer login information.  "
+        # Make sure web API is enabled and API key exists
+        if not trans.app.config.enable_api:
+            err_msg += "The 'enable_api = True' setting is not correctly set in the Galaxy config file.  "
+        if not trans.user.api_keys:
+            err_msg += "Set your API Key in your User Preferences to transfer datasets."
         # check if library_import_dir is set
         if not trans.app.config.library_import_dir:
-            err_msg = "'library_import_dir' config variable is not set in the Galaxy config file."
+            err_msg = "'The library_import_dir' setting is not set in the Galaxy config file."
         # check the RabbitMQ server settings in the config file
         for k, v in trans.app.config.amqp.items():
             if not v:
-                err_msg = 'Set RabbitMQ server settings in the "galaxy_amqp" section of the Galaxy config file. %s is not set.' % k
+                err_msg += 'Set RabbitMQ server settings in the "galaxy_amqp" section of the Galaxy config file. %s is not set.' % k
                 break
         return err_msg
-    def initiate_data_transfer( self, trans, sample, selected_sample_datasets ):
+    @web.expose
+    @web.require_admin
+    def initiate_data_transfer( self, trans, sample_id, sample_datasets=[], sample_dataset_id='' ):
         '''
         This method initiates the transfer of the datasets from the sequencer. It 
         happens in the following steps:
-        - The current admin user needs to have ADD_LIBRARY_ITEM permission for the
+        - The current admin user needs to have LIBRARY_ADD permission for the
           target library and folder
         - Create an XML message encapsulating all the data transfer info and send it
           to the message queue (RabbitMQ broker)
         '''
-        # check data transfer settings
+        try:
+            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', sample_id )
+        # Check data transfer settings
         err_msg = self.__validate_data_transfer_settings( trans, sample )
         if not err_msg:
-            # check if the current user has add_library_item permission to the sample 
-            # target library & folder
+            # Make sure the current user has LIBRARY_ADD
+            # permission on the target library and folder.
             self.__check_library_add_permission( trans, sample.library, sample.folder )
-            # create the message
+            if sample_dataset_id and not sample_datasets:
+                # Either a list of SampleDataset objects or a comma-separated string of
+                # encoded SampleDataset ids can be received.  If the latter, parse the
+                # sample_dataset_id to build the list of sample_datasets.
+                id_list = util.listify( sample_dataset_id )
+                for sample_dataset_id in id_list:
+                    sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
+                sample_datasets.append( sample_dataset )
+            # Create the message
             message = self.__create_data_transfer_message( trans, 
                                                            sample, 
-                                                           selected_sample_datasets )
+                                                           sample_datasets )
             # Send the message 
             try:
                 conn = amqp.Connection( host=trans.app.config.amqp[ 'host' ] + ":" + trans.app.config.amqp[ 'port' ], 
@@ -660,9 +696,9 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 chan.close()
                 conn.close()
             except Exception, e:
-                err_msg = "Error in sending the data transfer message to the Galaxy AMQP message queue:<br/>%s" % str(e)
+                err_msg = "Error sending the data transfer message to the Galaxy AMQP message queue:<br/>%s" % str(e)
         if not err_msg:
-            err_msg = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to monitor the transfer status." % len( selected_sample_datasets )
+            err_msg = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to monitor the transfer status." % len( sample_datasets )
             status = "done"
         else:
             status = 'error'

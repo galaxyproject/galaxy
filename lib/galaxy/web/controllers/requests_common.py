@@ -58,7 +58,7 @@ class RequestsGrid( grids.Grid ):
     columns = [
         NameColumn( "Name", 
                     key="name", 
-                    link=( lambda item: iff( item.deleted, None, dict( operation="view_request", id=item.id ) ) ),
+                    link=( lambda item: dict( operation="view_request", id=item.id ) ),
                     attach_popup=True, 
                     filterable="advanced" ),
         DescriptionColumn( "Description",
@@ -318,11 +318,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             trans.sa_session.flush()
             trans.sa_session.refresh( request )
             # Create an event with state 'New' for this new request
+            comment = "Request created by %s" % trans.user.email
             if request.user != trans.user:
-                sample_event_comment = "Request created by user %s for user %s." % ( trans.user.email, request.user.email )
-            else:
-                sample_event_comment = "Request created."
-            event = trans.model.RequestEvent( request, request.states.NEW, sample_event_comment )
+                comment += " on behalf of %s." % request.user.email
+            event = trans.model.RequestEvent( request, request.states.NEW, comment )
             trans.sa_session.add( event )
             trans.sa_session.flush()
         else:
@@ -361,11 +360,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               status='error',
                                                               message=message ) )
         # Change the request state to 'Submitted'
-        if request.user.email is not trans.user:
-            sample_event_comment = "Request submitted by %s on behalf of %s." % ( trans.user.email, request.user.email )
-        else:
-            sample_event_comment = ""
-        event = trans.model.RequestEvent( request, request.states.SUBMITTED, sample_event_comment )
+        comment = "Request submitted by %s" % trans.user.email
+        if request.user != trans.user:
+            comment += " on behalf of %s." % request.user.email
+        event = trans.model.RequestEvent( request, request.states.SUBMITTED, comment )
         trans.sa_session.add( event )
         # Change the state of each of the samples of this request
         # request.type.states is the list of SampleState objects configured
@@ -511,23 +509,39 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         id_list = util.listify( kwd.get( 'id', '' ) )
         message = util.restore_text( params.get( 'message', '' ) )
         status = util.restore_text( params.get( 'status', 'done' ) )
+        is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         num_deleted = 0
+        not_deleted = []
         for id in id_list:
             ok_for_now = True
             try:
+                # This block will handle bots that do not send valid request ids.
                 request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( id ) )
             except:
                 ok_for_now = False
             if ok_for_now:
-                request.deleted = True
-                trans.sa_session.add( request )
-                # Delete all the samples belonging to this request
-                for s in request.samples:
-                    s.deleted = True
-                    trans.sa_session.add( s )
-                trans.sa_session.flush()
-                num_deleted += 1
+                # We will only allow the request to be deleted by a non-admin user if not request.submitted
+                if is_admin or not request.is_submitted:
+                    request.deleted = True
+                    trans.sa_session.add( request )
+                    # Delete all the samples belonging to this request
+                    for s in request.samples:
+                        s.deleted = True
+                        trans.sa_session.add( s )
+                    comment = "Request marked deleted by %s." % trans.user.email
+                    # There is no DELETED state for a request, so keep the current request state
+                    event = trans.model.RequestEvent( request, request.state, comment )
+                    trans.sa_session.add( event )
+                    trans.sa_session.flush()
+                    num_deleted += 1
+                else:
+                    not_deleted.append( request )
         message += '%i requests have been deleted.' % num_deleted
+        if not_deleted:
+            message += '  Contact the administrator to delete the following submitted requests: '
+            for request in not_deleted:
+                message += '%s, ' % request.name
+            message = message.rstrip( ', ' )
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='browse_requests',
                                                           status=status,
@@ -543,6 +557,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         for id in id_list:
             ok_for_now = True
             try:
+                # This block will handle bots that do not send valid request ids.
                 request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( id ) )
             except:
                 ok_for_now = False
@@ -553,6 +568,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 for s in request.samples:
                     s.deleted = False
                     trans.sa_session.add( s )
+                comment = "Request marked undeleted by %s." % trans.user.email
+                event = trans.model.RequestEvent( request, request.state, comment )
+                trans.sa_session.add( event )
                 trans.sa_session.flush()
                 num_undeleted += 1
         message += '%i requests have been undeleted.' % num_undeleted
@@ -651,7 +669,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             # If the current request state is complete and one of its samples moved from
             # the final sample state, then move the request state to In-progress
             if request.is_complete:
-                message = "At least 1 sample state moved from the final sample state, so now the request is in the '%s' state" % request.states.SUBMITTED
+                message = "At least 1 sample state moved from the final sample state, so now the request's state is (%s)" % request.states.SUBMITTED
                 event = trans.model.RequestEvent( request, request.states.SUBMITTED, message )
                 trans.sa_session.add( event )
                 trans.sa_session.flush()
@@ -668,13 +686,13 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         request_type_state = request.type.final_sample_state
         if common_state.id == request_type_state.id:
             # since all the samples are in the final state, change the request state to 'Complete'
-            comments = "All samples of this request are in the last sample state (%s). " % request_type_state.name
+            comment = "All samples of this request are in the final sample state (%s). " % request_type_state.name
             state = request.states.COMPLETE
             final_state = True
         else:
-            comments = "All samples are in %s state. " % common_state.name
+            comment = "All samples of this request are in the (%s) sample state. " % common_state.name
             state = request.states.SUBMITTED
-        event = trans.model.RequestEvent( request, state, comments )
+        event = trans.model.RequestEvent( request, state, comment )
         trans.sa_session.add( event )
         trans.sa_session.flush()
         # See if an email notification is configured to be sent when the samples 
@@ -879,7 +897,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                           message=message ) )
     @web.expose
     @web.require_login( "view data transfer page" )
-    def view_dataset_transfer( self, trans, cntrller, **kwd ):
+    def view_selected_datasets( self, trans, cntrller, **kwd ):
+        # The link on the number of selected datasets will only appear if there is at least 1 selected dataset.
+        # If there are 0 selected datasets, there is no link, so this method will only be reached from the requests
+        # controller if there are selected datasets.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -890,9 +911,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         except:
             return invalid_id_redirect( trans, cntrller, sample_id )
         # See if a library and folder have been set for this sample.
-        if not sample.library or not sample.folder:
+        if is_admin and not sample.library or not sample.folder:
             status = 'error'
-            message = "Set a data library and folder for sequencing request (%s) to transfer datasets." % sample.name
+            message = "Select a target data library and folder for the sample before selecting the datasets."
             return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                               action='edit_samples',
                                                               cntrller=cntrller,
@@ -900,11 +921,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               editing_samples=True,
                                                               status=status,
                                                               message=message ) )
-        if is_admin:
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='manage_datasets',
-                                                              sample_id=sample_id ) )
-            
         folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
         if not folder_path:
             if len( sample.datasets ):
@@ -917,11 +933,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             or not sample.request.type.datatx_info['username'] \
             or not sample.request.type.datatx_info['password']:
             status = 'error'
-            message = 'The sequencer login information is incomplete. Click on sequencer information to add login details.'
-        return trans.fill_template( '/requests/common/dataset_transfer.mako', 
+            message = 'The sequencer login information is incomplete. Click sequencer information to add login details.'
+        return trans.fill_template( '/requests/common/view_selected_datasets.mako', 
                                     cntrller=cntrller,
-                                    sample=sample, 
-                                    dataset_files=sample.datasets,
+                                    sample=sample,
                                     message=message,
                                     status=status,
                                     files=[],
@@ -1063,9 +1078,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 # See if all the samples' barcodes are in the same state, and if so send email if configured to.
                 common_state = request.samples_have_common_state
                 if common_state and common_state.id == request.type.states[1].id:
-                    event = trans.model.RequestEvent( request, 
-                                                      request.states.SUBMITTED,
-                                                      "All samples are in %s state." % common_state.name )
+                    comment = "All samples of this request are in the (%s) sample state. " % common_state.name
+                    event = trans.model.RequestEvent( request, request.states.SUBMITTED, comment )
                     trans.sa_session.add( event )
                     trans.sa_session.flush()
                     request.send_email_notification( trans, request.type.states[1] )
