@@ -220,9 +220,10 @@ class TracksController( BaseController, UsesVisualization ):
         if not os.path.exists( len_file ):
             return None
         for line in open( len_file ):
-            if line.startswith("#"): continue
-            line = line.rstrip("\r\n")
-            fields = line.split("\t")
+            if line.startswith("#"): 
+                continue
+            # LEN files are just whitespace separated
+            fields = line.split()
             manifest[fields[0]] = int(fields[1])
         return manifest
         
