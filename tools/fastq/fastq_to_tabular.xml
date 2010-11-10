@@ -1,8 +1,11 @@
-<tool id="fastq_to_tabular" name="FASTQ to Tabular" version="1.0.0">
+<tool id="fastq_to_tabular" name="FASTQ to Tabular" version="1.1.0">
   <description>converter</description>
-  <command interpreter="python">fastq_to_tabular.py '$input_file' '$output_file' '${input_file.extension[len( 'fastq' ):]}'</command>
+  <command interpreter="python">fastq_to_tabular.py '$input_file' '$output_file' $descr_columns '${input_file.extension[len( 'fastq' ):]}'</command>
   <inputs>
     <param name="input_file" type="data" format="fastqsanger,fastqcssanger,fastqillumina,fastqsolexa" label="FASTQ file to convert" />
+    <param name="descr_columns" type="integer" size="2" value="1" label="How many columns to divide title string into?" help="Typically 2 to take the ID (first word) and decription (rest) as two columns, or 1 to give a single column">
+      <validator type="in_range" min="1" />
+    </param>
   </inputs>
   <outputs>
     <data name="output_file" format="tabular" />
@@ -11,20 +14,75 @@
     <!-- basic test -->
     <test>
       <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="descr_columns" value="1"/>
       <output name="output_file" file="fastq_to_tabular_out_1.tabular" />
     </test>
     <!-- color space test -->
     <test>
       <param name="input_file" value="sanger_full_range_as_cssanger.fastqcssanger" ftype="fastqcssanger" />
+      <param name="descr_columns" value="1"/>
       <output name="output_file" file="fastq_to_tabular_out_2.tabular" />
     </test>
   </tests>
   <help>
+
 **What it does**
 
 This tool converts FASTQ sequencing reads to a Tabular file.
 
-Tab characters, if present in the source FASTQ file, will be converted to spaces.
+It is conventional to take the first word of the FASTQ "@" title line as the identifier, and any remaing text to be a free form description.
+It is therefore often useful to split this text into two columns in Galaxy (identifier and any description) by setting **How many columns to divide title string into?** to **2**.
+In some cases the description can be usefully broken up into more columns -- see the examples .
+
+Tab characters, if present in the source FASTQ title, will be converted to spaces.
+
+-----	
+
+**Example**
+
+Consider the following two 454 reads in Sanger FASTQ format (using line wrapping for display, but do note not all tools will accept line wrapped FASTQ files)::
+
+ @FSRRS4401BE7HA [length=395] [gc=36.46] [flows=800] [phred_min=0] [phred_max=40] [trimmed_length=95]
+ tcagTTAAGATGGGATAATATCCTCAGATTGCGTGATGAACTTTGTTCTGGTGGAGGAGAAGGAAGTGCATTCGACGTAT
+ GCCCGTTTGTCGATATTTGtatttaaagtaatccgtcacaaatcagtgacataaatattatttagatttcgggagcaact
+ ttatttattccacaagcaggtttaaattttaaatttaaattattgcagaagactttaaattaacctcgttgtcggagtca
+ tttgttcggttattggtcgaaagtaaccncgggaagtgccgaaaactaacaaacaaaagaagatagtgaaattttaatta
+ aaanaaatagccaaacgtaactaactaaaacggacccgtcgaggaactgccaacggacgacacagggagtagnnn
+ +FSRRS4401BE7HA [length=395] [gc=36.46] [flows=800] [phred_min=0] [phred_max=40] [trimmed_length=95]
+ FFFDDDDDDDA666?688FFHGGIIIIIIIIIIIIIIIIIIHHHIIIIIIIIIGHGFFFFF====DFFFFFFFFFFFFFF
+ D???:3104/76=:5...4.3,,,366////4&lt;ABBAAA=CCFDDDDDDDD:666CDFFFF=&lt;ABA=;:333111&lt;===9
+ 9;B889FFFFFFDDBDBDDD=8844231..,,,-,,,,,,,,1133..---17111,,,,,22555131121.--.,333
+ 11,.,,3--,,.,,--,3511123..--!,,,,--,----9,,,,8=,,-,,,-,,,,---26:9:5-..1,,,,11//,
+ ,,,!,,1917--,,,,-3.,--,,17,,,,---+11113.030000,,,044400036;96662.//;7&gt;&lt;;!!!
+ @FSRRS4401BRRTC [length=145] [gc=38.62] [flows=800] [phred_min=0] [phred_max=38] [trimmed_length=74]
+ tcagCCAGCAATTCCGACTTAATTGTTCTTCTTCCATCATTCATCTCGACTAACAGTTCTACGATTAATGAGTTTGGCtt
+ taatttgttgttcattattgtcacaattacactactgagactgccaaggcacncagggataggnn
+ +FSRRS4401BRRTC [length=145] [gc=38.62] [flows=800] [phred_min=0] [phred_max=38] [trimmed_length=74]
+ FFFFFFFFFDDDDFFFFGFDDDDBAAAAA=&lt;4444@@B=555:BBBBB@@?8:8&lt;?&lt;89898&lt;84442;==3,,,514,,
+ ,11,,,.,,21777555513,..--1115758.//34488&gt;&lt;&lt;;;;;9944/!/4,,,57855!!
+
+By default this is converted into a 3 column tabular file, with the full FASTQ title used as column 1:
+
+=================================================================================================== ============== ==============
+FSRRS4401BE7HA [length=395] [gc=36.46] [flows=800] [phred_min=0] [phred_max=40] [trimmed_length=95] tcagTTAA...nnn FFFDDDDD...!!!
+FSRRS4401BRRTC [length=145] [gc=38.62] [flows=800] [phred_min=0] [phred_max=38] [trimmed_length=74] tcagCCAG...gnn FFFFFFFF...5!!
+=================================================================================================== ============== ==============
+
+If you specified the title should be turned into 2 columns, you'd get 4 columns in total:
+
+============== ==================================================================================== ============== ==============
+FSRRS4401BE7HA [length=395] [gc=36.46] [flows=800] [phred_min=0] [phred_max=40] [trimmed_length=95] tcagTTAA...nnn FFFDDDDD...!!!
+FSRRS4401BRRTC [length=145] [gc=38.62] [flows=800] [phred_min=0] [phred_max=38] [trimmed_length=74] tcagCCAG...gnn FFFFFFFF...5!!
+============== ==================================================================================== ============== ==============
+
+Similarly, for this example treating the title string as 7 columns makes sense:
+
+============== ============ ========== =========== ============= ============== =================== ============== ==============
+FSRRS4401BE7HA [length=395] [gc=36.46] [flows=800] [phred_min=0] [phred_max=40] [trimmed_length=95] tcagTTAA...nnn FFFDDDDD...!!!
+FSRRS4401BRRTC [length=145] [gc=38.62] [flows=800] [phred_min=0] [phred_max=38] [trimmed_length=74] tcagCCAG...gnn FFFFFFFF...5!!
+============== ============ ========== =========== ============= ============== =================== ============== ==============
+
+Note the sequences and quality strings have been truncated for display purposes in the above tables.
 
   </help>
 </tool>
