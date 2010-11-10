@@ -23,6 +23,12 @@
       <param name="descr_columns" value="1"/>
       <output name="output_file" file="fastq_to_tabular_out_2.tabular" />
     </test>
+    <!-- split title into columns -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="descr_columns" value="2"/>
+      <output name="output_file" file="fastq_to_tabular_out_3.tabular" />
+    </test>
   </tests>
   <help>
 
