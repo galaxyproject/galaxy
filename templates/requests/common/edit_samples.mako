@@ -136,8 +136,10 @@
             %endif
             <p/>
             <div class="form-row">
+                ## hidden element to make twill work.
+                <input type="hidden" name="hidden_input" value=""/>
                 %if ( request.samples or current_samples ) and ( editing_samples or len( current_samples ) > len( request.samples ) ):
-                    <input type="submit" name="add_sample_button" value="Add sample"/>
+                    <input type="submit" name="add_sample_button" value="Add sample" />
                     <input type="submit" name="save_samples_button" value="Save"/>
                     <input type="submit" name="cancel_changes_button" value="Cancel"/>
                     <div class="toolParamHelp" style="clear: both;">

@@ -870,6 +870,14 @@ class TwillTestCase( unittest.TestCase ):
                 fname = self.write_temp_file( page )
                 errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
                 raise AssertionError( errmsg )
+
+    def check_string_not_in_page( self, patt ):
+        """Checks to make sure 'patt' is NOT in the page."""        
+        page = self.last_page()
+        if page.find( patt ) != -1:
+            fname = self.write_temp_file( page )
+            errmsg = "string (%s) incorrectly displayed in page.\npage content written to '%s'" % ( patt, fname )
+            raise AssertionError( errmsg )
     
     def write_temp_file( self, content, suffix='.html' ):
         fd, fname = tempfile.mkstemp( suffix=suffix, prefix='twilltestcase-' )
@@ -1330,6 +1338,9 @@ class TwillTestCase( unittest.TestCase ):
         if form_type == "Sequencing Sample Form":
             tc.submit( "add_layout_grid" )
             tc.fv( "1", "grid_layout0", form_layout_name )
+        # if not adding any fields at this time, remove the default empty field
+        if num_fields == 0:
+            tc.submit( "remove_button" )
         # Add fields to the new form definition
         for index1 in range( num_fields ):
             field_name = 'field_name_%i' % index1
@@ -1357,9 +1368,8 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 tc.fv( "1", "field_type_0", field_type )
             tc.fv( "1", field_default, field_default_contents )
+        # All done... now save
         tc.submit( "save_changes_button" )
-        if num_fields == 0:
-            self.visit_url( "%s/forms/manage" % self.url )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
@@ -1392,13 +1402,29 @@ class TwillTestCase( unittest.TestCase ):
                 # SelectFields require a refresh_on_change
                 self.refresh_form( field_type, field_type_value )
                 for option_index, option in enumerate( field_dict[ 'selectlist' ] ):
-                    tc.submit( "addoption_0" )
+                    tc.submit( "addoption_%i" % index )
                     tc.fv( "1", "field_%i_option_%i" % ( index, option_index ), option )
             else:
                 tc.fv( "1", field_type, field_type_value )
         tc.submit( "save_changes_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
+        self.home()
+    def view_form( self, id, form_type='', form_name='', form_desc='', form_layout_name='', field_dicts=[] ):
+        '''View form details'''
+        self.home()
+        self.visit_url( "%s/forms/manage?operation=view&id=%s" % ( self.url, id ) )
+        self.check_page_for_string( form_type )
+        self.check_page_for_string( form_name )
+        self.check_page_for_string( form_desc )
+        self.check_page_for_string( form_layout_name )
+        for i, field_dict in enumerate( field_dicts ):
+            self.check_page_for_string( field_dict[ 'name' ] )
+            self.check_page_for_string( field_dict[ 'desc' ] )
+            self.check_page_for_string( field_dict[ 'type' ] )
+            if field_dict[ 'type' ].lower() == 'selectfield':
+                for option_index, option in enumerate( field_dict[ 'selectlist' ] ):
+                    self.check_page_for_string( option )
         self.home()
     def mark_form_deleted( self, form_id ):
         """Mark a form_definition as deleted"""
@@ -1445,6 +1471,17 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Permissions updated for sequencer configuration '%s'" % request_type_name
         self.check_page_for_string( check_str )
         self.home()
+    def view_request_type( self, request_type_id, request_type_name, sample_states, strings_displayed=[] ):
+        '''View request_type details'''
+        self.home()
+        self.visit_url( "%s/requests_admin/browse_request_types?operation=view&id=%s" % ( self.url, request_type_id ) )
+        self.check_page_for_string( 'Sequencer configuration information' )
+        self.check_page_for_string( request_type_name )
+        for name, desc in sample_states:
+            self.check_page_for_string( name )
+            self.check_page_for_string( desc )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
     def create_request( self, cntrller, request_type_id, name, desc, field_value_tuples, other_users_id='',
                         strings_displayed=[], strings_displayed_after_submit=[] ):
         self.visit_url( "%s/requests_common/create_request?cntrller=%s" % ( self.url, cntrller ) )
@@ -1473,6 +1510,18 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
+    def view_request( self, cntrller, request_id, strings_displayed=[], strings_not_displayed=[] ):
+        self.visit_url( "%s/%s/browse_requests?operation=view_request&id=%s" % ( self.url, cntrller, request_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
+            self.check_string_not_in_page( check_str )
+    def view_request_history( self, cntrller, request_id, strings_displayed=[], strings_not_displayed=[] ):
+        self.visit_url( "%s/requests_common/request_events?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
+            self.check_string_not_in_page( check_str )
     def edit_basic_request_info( self, cntrller, request_id, name, new_name='', new_desc='', new_fields=[],
                                  strings_displayed=[], strings_displayed_after_submit=[] ):
         self.visit_url( "%s/requests_common/edit_basic_request_info?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
@@ -1489,40 +1538,22 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def add_samples( self, cntrller, request_id, request_name, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=False" % ( self.url, cntrller, request_id ) )
+        url = "%s/requests_common/add_sample?cntrller=%s&request_id=%s&add_sample_button=Add+sample" % ( self.url, cntrller, request_id )
+        self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        # Simulate clicking the add-sample_button on the form.  (gvk: 9/21/10 - TODO : There must be a bug in the mako template 
-        # because twill cannot find any forms on the page, but I cannot find it although I've spent time cleaning up the
-        # template code and looking for any problems. 
-        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=False" % ( self.url, cntrller, request_id )
-        # This should work, but although twill does not thorw any exceptions, the button click never occurs
-        # There are multiple forms on this page, and we'll only be using the form named edit_samples.
-        # for sample_index, sample_value_tuple in enumerate( sample_value_tuples ):
-        #     # Add the following form value to the already populated hidden field so that the edit_samples
-        #     # form is the current form
-        #     tc.fv( "1", "id", request_id )
-        #     tc.submit( 'add_sample_button' )
-        for sample_index, sample_value_tuple in enumerate( sample_value_tuples ):
-            sample_name, field_values = sample_value_tuple
-            sample_name = sample_name.replace( ' ', '+' )
-            field_name = "sample_%i_name" % sample_index
-            # The following form_value setting should work but since twill barfed on submitting the add_sample_button
-            # above, we have to simulate it by appending to the url.
-            # tc.fv( "1", field_name, sample_name )
-            url += "&%s=%s" % ( field_name, sample_name )
-            for field_index, field_value in enumerate( field_values ):
-                field_name = "sample_%i_field_%i" % ( sample_index, field_index )
-                field_value = field_value.replace( ' ', '+' )
-                # The following form_value setting should work but since twill barfed on submitting the add_sample_button
-                # above, we have to simulate it by appending to the url.
-                # tc.fv( "1", field_name, field_value )
-                url += "&%s=%s" % ( field_name , field_value )
-        # The following button submit should work but since twill barfed on submitting the add_sample_button
-        # above, we have to simulate it by appending to the url.
-        # tc.submit( "save_samples_button" )
-        url += "&save_samples_button=Save"
-        self.visit_url( url )
+        for sample_index, sample_info in enumerate( sample_value_tuples ):
+            sample_name = sample_info[0]
+            sample_field_values = sample_info[1]
+            tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
+            for field_index, field_value in enumerate( sample_field_values ):
+                tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
+            # Do not click on Add sample button when all the sample have been added 
+            if sample_index < len( sample_value_tuples ) - 1:
+                tc.submit( "add_sample_button" )
+        # select the correct form before submitting it
+        tc.fv( "1", "copy_sample_index", "-1" )
+        tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def submit_request( self, cntrller, request_id, request_name, strings_displayed_after_submit=[] ):
