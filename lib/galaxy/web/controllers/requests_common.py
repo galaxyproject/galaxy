@@ -109,10 +109,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                    "datasets": len( sample.datasets ),
                                    "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
                                                                                sample=sample),
-                                                                               'utf-8' ),
-                                   "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
-                                                                                  sample=sample ),
-                                                                                  'utf-8' ) }
+                                                                               'utf-8' ) }
         return rval
     @web.expose
     @web.require_login( "create sequencing requests" )
@@ -455,7 +452,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                         samples.append( sample )
                     else:
                         samples.append( None )
-                # The __save_samples method requires samples widgets, not sample objects
+                # The __save_samples method requires sample_widgets, not sample objects
                 samples = self.__get_sample_widgets( trans, request, samples, **kwd )
             else:
                 samples = current_samples
@@ -699,9 +696,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         # are in this state.
         retval = request.send_email_notification( trans, common_state, final_state )
         if retval:
-            message = comments + retval
+            message = comment + retval
         else:
-            message = comments
+            message = comment
         if cntrller == 'api':
             return 200, message
         return trans.response.send_redirect( web.url_for( controller='requests_common',
@@ -897,7 +894,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                           message=message ) )
     @web.expose
     @web.require_login( "view data transfer page" )
-    def view_selected_datasets( self, trans, cntrller, **kwd ):
+    def view_sample_datasets( self, trans, cntrller, **kwd ):
         # The link on the number of selected datasets will only appear if there is at least 1 selected dataset.
         # If there are 0 selected datasets, there is no link, so this method will only be reached from the requests
         # controller if there are selected datasets.
@@ -930,13 +927,34 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         if folder_path and folder_path[-1] != os.sep:
             folder_path += os.sep
         if not sample.request.type.datatx_info['host'] \
-            or not sample.request.type.datatx_info['username'] \
-            or not sample.request.type.datatx_info['password']:
+            or not sample.request.type.datatx_info[ 'username' ] \
+            or not sample.request.type.datatx_info[ 'password' ]:
             status = 'error'
             message = 'The sequencer login information is incomplete. Click sequencer information to add login details.'
-        return trans.fill_template( '/requests/common/view_selected_datasets.mako', 
+        transfer_status = params.get( 'transfer_status', None )
+        if transfer_status in [ None, 'None' ]:
+            title = 'All selected datasets for "%s"' % sample.name
+            sample_datasets = sample.datasets
+        elif transfer_status == trans.model.SampleDataset.transfer_status.IN_QUEUE:
+            title = 'Datasets of "%s" that are in the transfer queue' % sample.name
+            sample_datasets = sample.queued_dataset_files
+        elif transfer_status == trans.model.SampleDataset.transfer_status.TRANSFERRING:
+            title = 'Datasets of "%s" that are being transferred' % sample.name
+            sample_datasets = sample.transferring_dataset_files
+        elif transfer_status == trans.model.SampleDataset.transfer_status.ADD_TO_LIBRARY:
+            title = 'Datasets of "%s" that are being added to the target data library' % sample.name
+            sample_datasets = sample.adding_to_library_dataset_files
+        elif transfer_status == trans.model.SampleDataset.transfer_status.COMPLETE:
+            title = 'Datasets of "%s" that are available in the target data library' % sample.name
+            sample_datasets = sample.transferred_dataset_files
+        elif transfer_status == trans.model.SampleDataset.transfer_status.ERROR:
+            title = 'Datasets of "%s" that resulted in a transfer error' % sample.name
+            sample_datasets = sample.transfer_error_dataset_files
+        return trans.fill_template( '/requests/common/view_sample_datasets.mako', 
                                     cntrller=cntrller,
                                     sample=sample,
+                                    sample_datasets=sample_datasets,
+                                    transfer_status=transferr_status,
                                     message=message,
                                     status=status,
                                     files=[],
@@ -1129,60 +1147,48 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             # on a set of samples.
             library_id = params.get( 'sample_0_library_id', 'none' )
             folder_id = params.get( 'sample_0_folder_id', 'none' )
-        for index, obj in enumerate( sample_widgets ):
-            if obj is not None:
-                # obj will be None if the user checked sample check boxes and selected an action
+        for index, sample_widget in enumerate( sample_widgets ):
+            if sample_widget is not None:
+                # sample_widget will be None if the user checked sample check boxes and selected an action
                 # to perform on multiple samples, but did not select certain samples.
                 sample = request.samples[ index ]
-                # See if any values in kwd are different from the values already associated with this sample.
-                id_index = index + 1
-                if sample_operation == 'none':
-                    # We are handling changes to a single sample.
-                    library_id = params.get( 'sample_%i_library_id' % id_index, 'none' )
-                    folder_id = params.get( 'sample_%i_folder_id' % id_index, 'none' )
-                # Update the corresponding sample's values as well as the sample_widget.
-                name = util.restore_text( params.get( 'sample_%i_name' % index, '' ) )
-                # The bar_code field requires special handling because after a request is submitted, the
-                # state of a sample cannot be changed without a bar_code associated with the sample.  Bar
-                # codes can only be added to a sample after the request is submitted.  Also, a samples will
-                # not have an associated SampleState until the request is submitted, at which time the sample
-                # is automatically associated with the first SamplesState configured by the admin for the
-                # request's RequestType.
-                bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, '' ) )
-                if bar_code:
-                    bc_message = self.__validate_barcode( trans, sample, bar_code )
-                    if bc_message:
-                        kwd[ 'message' ] = bc_message
-                        del kwd[ 'save_samples_button' ]
-                        handle_error( **kwd )
-                    if not sample.bar_code:
-                        # If the sample's associated SampleState is still the initial state
-                        # configured by the admin for the request's RequestType, this must be
-                        # the first time a bar code was added to the sample, so change it's state
-                        # to the next associated SampleState.
-                        if sample.state.id == request.type.states[0].id:
-                            event = trans.app.model.SampleEvent(sample, 
-                                                                request.type.states[1], 
-                                                                'Bar code associated with the sample' )
-                            trans.sa_session.add( event )
-                            trans.sa_session.flush()
-                library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
-                field_values = []
-                for field_index in range( len( request.type.sample_form.fields ) ):
-                    field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
+                # Get the sample's form values to see if they have changed.
                 form_values = trans.sa_session.query( trans.model.FormValues ).get( sample.values.id )
-                form_values.content = field_values
-                if sample.name != name or \
-                    sample.bar_code != bar_code or \
-                    sample.library != library or \
-                    sample.folder != folder or \
-                    form_values.content != field_values:
+                if sample.name != sample_widget[ 'name' ] or \
+                    sample.bar_code != sample_widget[ 'barcode' ] or \
+                    sample.library != sample_widget[ 'library' ] or \
+                    sample.folder != sample_widget[ 'folder' ] or \
+                    form_values.content != sample_widget[ 'field_values' ]:
                     # Information about this sample has been changed.
-                    sample.name = name
-                    sample.bar_code = bar_code
-                    sample.library = library
-                    sample.folder = folder
-                    form_values.content = field_values
+                    sample.name = sample_widget[ 'name' ]
+                    barcode = sample_widget[ 'barcode' ]
+                    # The bar_code field requires special handling because after a request is submitted, the
+                    # state of a sample cannot be changed without a bar_code associated with the sample.  Bar
+                    # codes can only be added to a sample after the request is submitted.  Also, a samples will
+                    # not have an associated SampleState until the request is submitted, at which time the sample
+                    # is automatically associated with the first SamplesState configured by the admin for the
+                    # request's RequestType.
+                    if barcode:
+                        bc_message = self.__validate_barcode( trans, sample, bar_code )
+                        if bc_message:
+                            kwd[ 'message' ] = bc_message
+                            del kwd[ 'save_samples_button' ]
+                            handle_error( **kwd )
+                        if not sample.bar_code:
+                            # If the sample's associated SampleState is still the initial state
+                            # configured by the admin for the request's RequestType, this must be
+                            # the first time a bar code was added to the sample, so change it's state
+                            # to the next associated SampleState.
+                            if sample.state.id == request.type.states[0].id:
+                                event = trans.app.model.SampleEvent(sample, 
+                                                                    request.type.states[1], 
+                                                                    'Bar code associated with the sample' )
+                                trans.sa_session.add( event )
+                                trans.sa_session.flush()
+                    sample.bar_code = barcode
+                    sample.library = sample_widget[ 'library' ]
+                    sample.folder = sample_widget[ 'folder' ]
+                    form_values.content = sample_widget[ 'field_values' ]
                     trans.sa_session.add_all( ( sample, form_values ) )
                     trans.sa_session.flush()           
     def __get_library_and_folder( self, trans, library_id, folder_id ):
@@ -1232,8 +1238,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         """
         Returns a list of dictionaries, each representing the widgets that define a sample on a form.
         The widgets are populated from kwd based on the set of samples received.  The set of samples
-        corresponds to a reques.samples list, but if the user checked specific check boxes on the form,
-        those samples that were not check will have None objects in the list of samples.  In this case,
+        corresponds to a request.samples list, but if the user checked specific check boxes on the form,
+        those samples that were not checked will have None objects in the list of samples.  In this case,
         the corresponding sample_widget is populated from the db rather than kwd.
         """
         params = util.Params( kwd )
@@ -1264,7 +1270,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 bar_code = sample.bar_code
                 library = sample.library
                 folder = sample.folder
-                field_values = sample.values.content,
+                field_values = sample.values.content
             else:
                 # Update the sample attributes from kwd
                 name = util.restore_text( params.get( 'sample_%i_name' % index, sample.name ) )
@@ -1278,7 +1284,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
                 field_values = []
                 for field_index in range( len( request.type.sample_form.fields ) ):
-                    field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
+                    field_value = util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), sample.values.content[ field_index ] ) )
+                    field_values.append( field_value )
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
                                                                                                        user=request.user,
                                                                                                        sample_index=id_index,

@@ -16,7 +16,7 @@
     %if can_transfer_datasets:
         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Transfer datasets</a></li>
     %endif
-    <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_selected_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Refresh page</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=transfer_status )}">Refresh page</a></li>
     <li><a class="action-button" id="sample-${sample.id}-popup" class="menubutton">Dataset Actions</a></li>
     <div popupmenu="sample-${sample.id}-popup">
         %if can_select_datasets:
@@ -31,7 +31,13 @@
     ${render_msg( message, status )}
 %endif
 
-%if sample and sample.datasets:
-    <% title = 'Datasets currently selected for "sample.name"' %>
-    ${render_sample_datasets( cntrller, sample, sample.datasets, title )}
+%if sample and sample_datasets:
+    ## The list of sample_datasets may not be the same as sample.datasets because it may be
+    ## filtered by a transfer_status value.  The value of title changes based on this filter.
+    ${render_sample_datasets( cntrller, sample, sample_datasets, title )}
+%else:
+    %if transfer_status:
+        No datasets with status ${transfer_status}" belong to this sample
+    %else:
+        No datasets have been selected for this sample.
 %endif

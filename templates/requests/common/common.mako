@@ -100,8 +100,6 @@
                         // Replace HTML
                         var cell1 = $("#sampleState-" + id);
                         cell1.html( val.html_state );
-                        var cell2 = $("#sampleDatasets-" + id);
-                        cell2.html( val.html_datasets );
                         sample_states[ parseInt( id ) ] = val.state;
                     });
                     updater( sample_states ); 
@@ -115,14 +113,16 @@
     </script>
 </%def>
 
-<%def name="render_editable_sample_row( is_admin, sample, current_sample_index, current_sample, encoded_selected_sample_ids )">
+<%def name="render_editable_sample_row( cntrller, sample, current_sample_index, current_sample, encoded_selected_sample_ids )">
     <%
+        is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         if sample:
             trans.sa_session.refresh( sample.request )
             is_complete = sample.request.is_complete
             is_rejected = request.is_rejected
             is_submitted = sample.request.is_submitted
             is_unsubmitted = sample.request.is_unsubmitted
+            can_delete_samples = not is_complete
             display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
             display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
             display_datasets = request.samples and ( is_complete or is_rejected or is_submitted )
@@ -130,6 +130,7 @@
             is_complete = False
             is_submitted = False
             is_unsubmitted = False
+            can_delete_samples = False
             display_checkboxes = False
             display_bar_code = False
             display_datasets = False
@@ -177,20 +178,36 @@
                 <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
             %elif sample.datasets:
                 ## Only display a link if there is at least 1 selected dataset for the sample
-                <a href="${h.url_for( controller='requests_common', action='view_selected_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a></td>
+                <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a></td>
             %else:
                 ${len( sample.datasets )}
             %endif
         </td>
         <td valign="top">
-            %if is_admin and sample.untransferred_dataset_files:
-                <a href="${h.url_for( controller='requests_common', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
+            %if is_admin:
+                %if sample.untransferred_dataset_files:
+                    ## At least 1 selected dataset is not yet transferred, so this link
+                    ## will direct the admin to a page allowing them to transfer datasets.
+                    <a href="${h.url_for( controller='requests_common', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
+                %else:
+                    ## All selected datasets have successfully transferred, so this link
+                    ## will direct the admin to a page displaying all transferred datasets.
+                    <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">${len( sample.transferred_dataset_files )}</a>
+                %endif
             %else:
-                ${len( sample.transferred_dataset_files )}
+                %if sample.transferred_dataset_files:
+                    ## The cuurent user is not an admin, so this link will direct the
+                    ## user to the target data library containing those datasets that
+                    ## were successfully transferred.
+                    <a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( sample.library.id ) )}">${len( sample.transferred_dataset_files )}</a>
+                %else:
+                    ## Display a 0 with no link.
+                    ${len( sample.transferred_dataset_files )}
+                %endif
             %endif
         </td>
     %endif
-    %if sample and ( is_admin or is_unsubmitted ) and not is_complete:
+    %if can_delete_samples:
         ## Delete button
         <td valign="top"><a class="action-button" href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=current_sample_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
     %endif
@@ -206,7 +223,7 @@
         is_submitted = request.is_submitted
         is_unsubmitted = request.is_unsubmitted
         can_add_samples = request.is_unsubmitted
-        can_delete_samples = request.samples and not is_complete
+        can_delete_samples = editing_samples and request.samples and not is_complete
         can_edit_samples = request.samples and ( is_admin or not is_complete )
         can_select_datasets = is_admin and current_samples and ( is_submitted or is_complete )
         display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
@@ -271,7 +288,7 @@
                         sample = None 
                 %>
                 %if editing_samples:
-                    <tr>${render_editable_sample_row( is_admin, sample, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
+                    <tr>${render_editable_sample_row( cntrller, sample, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
                 %elif sample:
                     <tr>
                         <td>${current_sample_name}</td>
@@ -302,11 +319,11 @@
                                         <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id= trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
                                     %else:
                                         ## If there are selected datasets, display them
-                                        <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_selected_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                                        <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
                                     %endif
                                 %elif sample.datasets:
                                     ## Only display a link if there is at least 1 selected dataset for the sample
-                                    <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_selected_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                                    <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
                                 %else:
                                     ${len( sample.datasets )}
                                 %endif
@@ -322,7 +339,7 @@
                     </tr>
                 %else:
                     ## The Add sample button was clicked for this sample_widget
-                    <tr>${render_editable_sample_row( is_admin, None, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
+                    <tr>${render_editable_sample_row( cntrller, None, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
                 %endif
             %endfor
         </tbody>
@@ -390,7 +407,7 @@
     </tr> 
 </%def>
 
-<%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, editing_samples )">
+<%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, current_samples, editing_samples )">
     <%
         if not grid_name:
             grid_name = "Sample form layout " + grid_index
@@ -432,6 +449,8 @@
 </%def>
 
 <%def name="render_sample_datasets( cntrller, sample, sample_datasets, title )">
+    ## The list of sample_datasets may not be the same as sample.datasets because it may be
+    ## filtered by a transfer_status value.  The value of title changes based on this filter.
     %if sample_datasets:
         <%
             is_admin = cntrller == 'requests_admin' and trans.user_is_admin()

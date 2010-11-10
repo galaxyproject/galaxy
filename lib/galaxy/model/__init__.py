@@ -1831,12 +1831,12 @@ class Sample( object ):
             return self.events[0]
         return None
     @property
-    def untransferred_dataset_files( self ):
-        untransferred_datasets = []
+    def adding_to_library_dataset_files( self ):
+        adding_to_library_datasets = []
         for dataset in self.datasets:
-            if dataset.status == SampleDataset.transfer_status.NOT_STARTED:
-                untransferred_datasets.append( dataset )
-        return untransferred_datasets
+            if dataset.status == SampleDataset.transfer_status.ADD_TO_LIBRARY:
+                adding_to_library_datasets.append( dataset )
+        return adding_to_library_datasets
     @property
     def inprogress_dataset_files( self ):
         inprogress_datasets = []
@@ -1845,12 +1845,40 @@ class Sample( object ):
                 inprogress_datasets.append( dataset )
         return inprogress_datasets
     @property
+    def queued_dataset_files( self ):
+        queued_datasets = []
+        for dataset in self.datasets:
+            if dataset.status == SampleDataset.transfer_status.IN_QUEUE:
+                queued_datasets.append( dataset )
+        return queued_datasets
+    @property
+    def transfer_error_dataset_files( self ):
+        transfer_error_datasets = []
+        for dataset in self.datasets:
+            if dataset.status == SampleDataset.transfer_status.ERROR:
+                transfer_error_datasets.append( dataset )
+        return transfer_error_datasets
+    @property
     def transferred_dataset_files( self ):
         transferred_datasets = []
         for dataset in self.datasets:
             if dataset.status == SampleDataset.transfer_status.COMPLETE:
                 transferred_datasets.append( dataset )
         return transferred_datasets
+    @property
+    def transferring_dataset_files( self ):
+        transferring_datasets = []
+        for dataset in self.datasets:
+            if dataset.status == SampleDataset.transfer_status.TRANSFERRING:
+                transferring_datasets.append( dataset )
+        return transferring_datasets
+    @property
+    def untransferred_dataset_files( self ):
+        untransferred_datasets = []
+        for dataset in self.datasets:
+            if dataset.status != SampleDataset.transfer_status.COMPLETE:
+                untransferred_datasets.append( dataset )
+        return untransferred_datasets
     def get_untransferred_dataset_size( self, filepath ):
         # TODO: RC: If rsh keys are not set, this method will return something like the following:
         # greg@scofield.bx.psu.edu's password: 46M    /afs/bx.psu.edu/home/greg/chr22/chr21.fa

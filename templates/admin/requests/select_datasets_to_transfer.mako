@@ -127,7 +127,7 @@ ${h.js( "ui.core", "jquery.cookie", "jquery.dynatree" )}
 </div>
 
 %if sample and sample.datasets:
-    <% title = 'Datasets currently selected for "sample.name"' %>
+    <% title = 'Datasets currently selected for "%s"' % sample.name %>
     <p/>
     ${render_sample_datasets( 'requests_admin', sample, sample.datasets, title )}
 %endif

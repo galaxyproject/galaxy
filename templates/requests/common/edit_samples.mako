@@ -41,15 +41,15 @@
     %if can_submit:
         <li><a class="action-button" confirm="More samples cannot be added to this request after it is submitted. Click OK to submit." href="${h.url_for( controller='requests_common', action='submit_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Submit request</a></li>
     %endif
-    <li><a class="action-button" id="request-${request.id}-popup" class="menubutton">Request actions</a></li>
+    <li><a class="action-button" id="request-${request.id}-popup" class="menubutton">Request Actions</a></li>
     <div popupmenu="request-${request.id}-popup">
         <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Browse this request</a>
         %if can_edit_request:
-            <a class="action-button" href="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit</a>
+            <a class="action-button" href="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit this request</a>
         %endif
         <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">View history</a>
         %if can_reject:
-            <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject</a>
+            <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject this request</a>
         %endif
     </div>
 </ul>
@@ -118,7 +118,7 @@
             ## Render the other grids
             <% trans.sa_session.refresh( request.type.sample_form ) %>
             %for grid_index, grid_name in enumerate( request.type.sample_form.layout ):
-                ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), editing_samples=editing_samples )}
+                ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), current_samples=current_samples, editing_samples=editing_samples )}
             %endfor
         %else:
             <label>There are no samples.</label>
