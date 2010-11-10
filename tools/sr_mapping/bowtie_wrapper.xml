@@ -1,6 +1,7 @@
 <tool id="bowtie_wrapper" name="Map with Bowtie for Illumina" version="1.1.0">
   <requirements><requirement type='package'>bowtie</requirement></requirements>
   <description></description>
+  <parallelism method="basic"></parallelism>
   <command interpreter="python">
     bowtie_wrapper.py 
     --threads="4"

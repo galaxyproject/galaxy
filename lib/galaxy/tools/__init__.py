@@ -367,7 +367,12 @@ class Tool:
             self.redirect_url_params = ''
         # Short description of the tool
         self.description = util.xml_text(root, "description")
-        # Job runner
+        # Parallelism for tasks, read from tool config.
+        parallelism = root.find("parallelism")
+        if parallelism is not None and parallelism.get("method"):
+            self.parallelism = parallelism.get("method")
+        else:
+            self.parallelism = None
         if self.app.config.start_job_runners is None:
             # Jobs are always local regardless of tool config if no additional
             # runners are started

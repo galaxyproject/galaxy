@@ -1,5 +1,6 @@
 <tool id="bwa_wrapper" name="Map with BWA" version="1.1.0">
   <description></description>
+  <parallelism method="basic"></parallelism>
   <command interpreter="python">
     bwa_wrapper.py 
       --threads="4"

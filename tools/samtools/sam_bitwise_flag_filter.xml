@@ -1,5 +1,6 @@
 <tool id="sam_bw_filter" name="Filter SAM" version="1.0.0">
   <description>on bitwise flag values</description>
+  <parallelism method="basic"></parallelism>
   <command interpreter="python">
     sam_bitwise_flag_filter.py  
       --input_sam_file=$input1

@@ -176,6 +176,44 @@ class Job( object ):
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
 
+class Task( object ):
+    """
+    A task represents a single component of a job.
+    """
+    states = Bunch( NEW = 'new',
+                    WAITING = 'waiting',
+                    QUEUED = 'queued',
+                    RUNNING = 'running',
+                    OK = 'ok',
+                    ERROR = 'error',
+                    DELETED = 'deleted' )
+
+    def __init__( self, job, part_file = None ):
+        self.command_line = None
+        self.parameters = []
+        self.state = Task.states.NEW
+        self.info = None
+        self.part_file = part_file
+        self.task_runner_name = None
+        self.task_runner_external_id = None
+        self.job = job
+        self.stdout = None
+        self.stderr = None
+
+    def set_state( self, state ):
+        self.state = state
+
+    def get_param_values( self, app ):
+        """
+        Read encoded parameter values from the database and turn back into a
+        dict of tool parameter values.
+        """
+        param_dict = dict( [ ( p.name, p.value ) for p in self.parent_job.parameters ] )
+        tool = app.toolbox.tools_by_id[self.tool_id]
+        param_dict = tool.params_from_strings( param_dict, app )
+        return param_dict
+
+
 class JobParameter( object ):
     def __init__( self, name, value ):
         self.name = name

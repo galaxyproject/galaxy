@@ -347,6 +347,11 @@ use_interactive = True
 # Necessary if you're running the load balanced setup.
 #track_jobs_in_database = False
 
+# This enables splitting of jobs into tasks, if specified by the particular tool config.
+# This is a new feature and not recommended for production servers yet.
+#use_tasked_jobs = True
+#local_task_queue_workers = 2
+
 # Enable job recovery (if Galaxy is restarted while cluster jobs are running,
 # it can "recover" them when it starts).  This is not safe to use if you are
 # running more than one Galaxy server using the same database.

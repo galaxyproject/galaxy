@@ -4,7 +4,6 @@ Universe configuration builder.
 
 import sys, os
 import logging, logging.config
-from optparse import OptionParser
 import ConfigParser
 from galaxy.util import string_as_bool
 
@@ -76,6 +75,9 @@ class Configuration( object ):
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
+        # Tasked job runner.
+        self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
+        self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         self.default_cluster_job_runner = kwargs.get( 'default_cluster_job_runner', 'local:///' )
         self.pbs_application_server = kwargs.get('pbs_application_server', "" )
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )

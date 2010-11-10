@@ -1,10 +1,11 @@
-import logging, threading, sys, os, time, subprocess, string, tempfile, re, traceback, shutil
+import logging, threading, sys, os, time, traceback, shutil
 
 import galaxy
 from galaxy import util, model
 from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
+# tabular/interval imports appear to be unused.  Clean up?
 from galaxy.datatypes import metadata
 from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
@@ -12,8 +13,6 @@ from galaxy.jobs.actions.post import ActionBox
 
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
-
-from paste.deploy.converters import asbool
 
 from Queue import Queue, Empty
 
@@ -83,11 +82,9 @@ class JobQueue( object ):
         self.parent_pid = os.getpid()
         # Contains new jobs. Note this is not used if track_jobs_in_database is True
         self.queue = Queue()
-        
         # Contains jobs that are waiting (only use from monitor thread)
         ## This and jobs_to_check[] are closest to a "Job Queue"
         self.waiting_jobs = []
-                
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
@@ -104,7 +101,7 @@ class JobQueue( object ):
         the database and requeues or cleans up as necessary.  Only run as the
         job manager starts.
         """
-        model = self.app.model
+        model = self.app.model # DBTODO Why?
         for job in self.sa_session.query( model.Job ).filter( model.Job.state == model.Job.states.NEW ):
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "Tool '%s' removed from tool config, unable to recover job: %s" % ( job.tool_id, job.id ) )
@@ -294,7 +291,10 @@ class JobWrapper( object ):
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )        
-        
+    
+    def get_job( self ):
+        return self.sa_session.query( model.Job ).get( self.job_id )
+    
     def get_param_dict( self ):
         """
         Restore the dictionary of parameters from the database.
@@ -479,9 +479,9 @@ class JobWrapper( object ):
             self.fail( job.info )
             return
         if stderr:
-            job.state = "error"
+            job.state = job.states.ERROR
         else:
-            job.state = 'ok'
+            job.state = job.states.OK
         if self.app.config.outputs_to_working_directory:
             for dataset_path in self.get_output_fnames():
                 try:
@@ -761,6 +761,215 @@ class JobWrapper( object ):
         else:
             return 'anonymous@unknown'
 
+class TaskWrapper(JobWrapper):
+    """
+    Extension of JobWrapper intended for running tasks.
+    Should be refactored into a generalized executable unit wrapper parent, then jobs and tasks.
+    """
+    # Abstract this to be more useful for running tasks that *don't* necessarily compose a job.
+    
+    def __init__(self, task, queue):
+        super(TaskWrapper, self).__init__(task.job, queue)
+        self.task_id = task.id
+        self.parallelism = None
+        if task.part_file:
+            #do this better
+            self.working_directory = os.path.dirname(task.part_file)
+        else:
+            self.working_directory = None
+        self.status = task.states.NEW
+
+    def get_job( self ):
+        if self.job_id:
+            return self.sa_session.query( model.Job ).get( self.job_id )
+        else:
+            return None
+
+    def get_task( self ):
+        return self.sa_session.query(model.Task).get(self.task_id)
+
+    def get_param_dict( self ):
+        """
+        Restore the dictionary of parameters from the database.
+        """
+        job = self.sa_session.query( model.Job ).get( self.job_id )
+        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        param_dict = self.tool.params_from_strings( param_dict, self.app )
+        return param_dict
+
+    def prepare( self ):
+        """
+        Prepare the job to run by creating the working directory and the
+        config files.
+        """
+        # Restore parameters from the database
+        job = self.get_job()
+        task = self.get_task()
+        if job.user is None and job.galaxy_session is None:
+            raise Exception( 'Job %s has no user and no session.' % job.id )
+        incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        incoming = self.tool.params_from_strings( incoming, self.app )
+        # Do any validation that could not be done at job creation
+        self.tool.handle_unvalidated_param_values( incoming, self.app )
+        # Restore input / output data lists
+        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
+        # DBTODO New method for generating command line for a task?
+        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+        # These can be passed on the command line if wanted as $userId $userEmail
+        if job.history and job.history.user: # check for anonymous user!
+            userId = '%d' % job.history.user.id
+            userEmail = str(job.history.user.email)
+        else:
+            userId = 'Anonymous'
+            userEmail = 'Anonymous'
+        incoming['userId'] = userId
+        incoming['userEmail'] = userEmail
+        # Build params, done before hook so hook can use
+        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
+        fnames = {}
+        for v in self.get_input_fnames():
+            fnames[v] = os.path.join(self.working_directory, os.path.basename(v))
+        for dp in [x.real_path for x in self.get_output_fnames()]:
+            fnames[dp] = os.path.join(self.working_directory, os.path.basename(dp))
+        # Certain tools require tasks to be completed prior to job execution
+        # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
+        self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
+        # Run the before queue ("exec_before_job") hook
+        self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data, 
+                             out_data=out_data, tool=self.tool, param_dict=incoming)
+        self.sa_session.flush()
+        # Build any required config files
+        config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
+        # FIXME: Build the param file (might return None, DEPRECATED)
+        param_filename = self.tool.build_param_file( param_dict, self.working_directory )
+        # Build the job's command line
+        self.command_line = self.tool.build_command_line( param_dict )
+        # HACK, Fix this when refactored.
+        for k, v in fnames.iteritems():
+            self.command_line = self.command_line.replace(k, v)
+        # FIXME: for now, tools get Galaxy's lib dir in their path
+        if self.command_line and self.command_line.startswith( 'python' ):
+            self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
+        # Shell fragment to inject dependencies
+        if self.app.config.use_tool_dependencies:
+            self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
+        else:
+            self.dependency_shell_commands = None
+        # We need command_line persisted to the db in order for Galaxy to re-queue the job
+        # if the server was stopped and restarted before the job finished
+        task.command_line = self.command_line
+        self.sa_session.add( task )
+        self.sa_session.flush()
+        # # Return list of all extra files
+        extra_filenames = config_filenames
+        if param_filename is not None:
+            extra_filenames.append( param_filename )
+        self.param_dict = param_dict
+        self.extra_filenames = extra_filenames
+        self.status = 'prepared'
+        return extra_filenames
+
+    def fail( self, message, exception=False ):
+        log.error("TaskWrapper Failure %s" % message)
+        self.status = 'error'
+        # How do we want to handle task failure?  Fail the job and let it clean up?
+
+    def change_state( self, state, info = False ):
+        task = self.get_task()
+        self.sa_session.refresh( task )
+        if info:
+            task.info = info
+        task.state = state
+        self.sa_session.add( task )
+        self.sa_session.flush()
+            
+    def get_state( self ):
+        task = self.get_task()
+        self.sa_session.refresh( task )
+        return task.state
+        
+    def set_runner( self, runner_url, external_id ):
+        task = self.get_task()
+        self.sa_session.refresh( task )
+        task.task_runner_name = runner_url
+        task.task_runner_external_id = external_id
+        # DBTODO Check task job_runner_stuff
+        self.sa_session.add( task )
+        self.sa_session.flush()
+        
+    def finish( self, stdout, stderr ):
+        # DBTODO integrate previous finish logic.
+        # Simple finish for tasks.  Just set the flag OK.
+        log.debug( 'task %s for job %d ended' % (self.task_id, self.job_id) )
+        """
+        Called to indicate that the associated command has been run. Updates 
+        the output datasets based on stderr and stdout from the command, and
+        the contents of the output files. 
+        """
+        # default post job setup_external_metadata
+        self.sa_session.expunge_all()
+        task = self.get_task()
+        # if the job was deleted, don't finish it
+        if task.state == task.states.DELETED:
+            self.cleanup()
+            return
+        elif task.state == task.states.ERROR:
+            # Job was deleted by an administrator
+            self.fail( task.info )
+            return
+        if stderr:
+            task.state = task.states.ERROR
+        else:
+            task.state = task.states.OK
+        # Save stdout and stderr    
+        if len( stdout ) > 32768:
+            log.error( "stdout for task %d is greater than 32K, only first part will be logged to database" % task.id )
+        task.stdout = stdout[:32768]
+        if len( stderr ) > 32768:
+            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % task.id )
+        task.stderr = stderr[:32768]
+        task.command_line = self.command_line
+        self.sa_session.flush()
+        log.debug( 'task %d ended' % self.task_id )
+
+    def cleanup( self ):
+        # There is no task cleanup.  The job cleans up for all tasks.
+        pass
+        
+    def get_command_line( self ):
+        return self.command_line
+
+    def get_session_id( self ):
+        return self.session_id
+
+    def get_output_file_id( self, file ):
+        # There is no permanent output file for tasks.
+        return None
+        
+    def get_tool_provided_job_metadata( self ):
+        # DBTODO Handle this as applicable for tasks.
+        return None
+
+    def get_dataset_finish_context( self, job_context, dataset ):
+        # Handled at the parent job level.  Do nothing here.
+        pass
+
+    def check_output_sizes( self ):
+        sizes = []
+        output_paths = self.get_output_fnames()
+        for outfile in [ str( o ) for o in output_paths ]:
+            sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+        return sizes
+
+    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
+        # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
+        pass
+        
+    @property
+    def user( self ):
+        pass
+
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app
@@ -768,10 +977,15 @@ class DefaultJobDispatcher( object ):
         start_job_runners = ["local"]
         if app.config.start_job_runners is not None:
             start_job_runners.extend( app.config.start_job_runners.split(",") )
+        if app.config.use_tasked_jobs:
+            start_job_runners.append("tasks")
         for runner_name in start_job_runners:
             if runner_name == "local":
                 import runners.local
                 self.job_runners[runner_name] = runners.local.LocalJobRunner( app )
+            elif runner_name == "tasks":
+                import runners.tasks
+                self.job_runners[runner_name] = runners.tasks.TaskedJobRunner( app )
             elif runner_name == "pbs":
                 import runners.pbs
                 self.job_runners[runner_name] = runners.pbs.PBSJobRunner( app )
@@ -782,12 +996,17 @@ class DefaultJobDispatcher( object ):
                 import runners.drmaa
                 self.job_runners[runner_name] = runners.drmaa.DRMAAJobRunner( app )
             else:
-                log.error( "Unable to start unknown job runner: %s" %runner_name )
+                log.error( "Unable to start unknown job runner: '%s'" %runner_name )
             
     def put( self, job_wrapper ):
-        runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
-        log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
-        self.job_runners[runner_name].put( job_wrapper )
+        if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
+            runner_name = "tasks"
+            log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
+            self.job_runners[runner_name].put( job_wrapper )
+        else:
+            runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
+            log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
+            self.job_runners[runner_name].put( job_wrapper )
 
     def stop( self, job ):
         runner_name = ( job.job_runner_name.split(":", 1) )[0]

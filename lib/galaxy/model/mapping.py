@@ -391,7 +391,24 @@ JobImportHistoryArchive.table = Table( "job_import_history_archive", metadata,
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "archive_dir", TEXT )
     )
-    
+
+Task.table = Table( "task", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "execution_time", DateTime ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "state", String( 64 ), index=True ),
+    Column( "command_line", TEXT ), 
+    Column( "param_filename", String( 1024 ) ),
+    Column( "runner_name", String( 255 ) ),
+    Column( "stdout", TEXT ),
+    Column( "stderr", TEXT ),
+    Column( "traceback", TEXT ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True, nullable=False ),
+    Column( "part_file", String(1024)),
+    Column( "task_runner_name", String( 255 ) ),
+    Column( "task_runner_external_id", String( 255 ) ) )
+
 PostJobAction.table = Table("post_job_action", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False),
@@ -1250,6 +1267,10 @@ assign_mapper( context, Job, Job.table,
                      post_job_actions=relation( PostJobActionAssociation, lazy=False ),
                      output_library_datasets=relation( JobToOutputLibraryDatasetAssociation, lazy=False ),
                      external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
+
+assign_mapper( context, Task, Task.table,
+    properties=dict( job = relation( Job )))
+                     
 
 assign_mapper( context, Event, Event.table,
     properties=dict( history=relation( History ),
