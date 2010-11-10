@@ -34,12 +34,13 @@ def __main__():
         if not line or line.startswith( '#' ):
             continue
         if line.startswith( '>' ):
+            #Don't want any existing tabs to trigger extra columns:
+            line = line.replace('\t', ' ')
             if i > 0:
                 out.write('\n')
             if descr_split == 1:
                 out.write(line[1:keep_first])
             else:
-                #Truningn columns
                 words = line[1:].split(None, descr_split-1)
                 #apply any truncation to first word (the id)
                 words[0] = words[0][0:keep_first]
