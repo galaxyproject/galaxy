@@ -952,9 +952,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             sample_datasets = sample.transfer_error_dataset_files
         return trans.fill_template( '/requests/common/view_sample_datasets.mako', 
                                     cntrller=cntrller,
+                                    title=title,
                                     sample=sample,
                                     sample_datasets=sample_datasets,
-                                    transfer_status=transferr_status,
+                                    transfer_status=transfer_status,
                                     message=message,
                                     status=status,
                                     files=[],

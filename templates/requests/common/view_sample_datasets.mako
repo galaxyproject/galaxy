@@ -40,4 +40,5 @@
         No datasets with status ${transfer_status}" belong to this sample
     %else:
         No datasets have been selected for this sample.
+    %endif
 %endif

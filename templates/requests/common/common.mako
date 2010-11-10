@@ -329,10 +329,26 @@
                                 %endif
                             </td>
                             <td>
-                                %if is_admin and sample.untransferred_dataset_files:
-                                    <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
+                                %if is_admin:
+                                    %if sample.untransferred_dataset_files:
+                                        ## At least 1 selected dataset is not yet transferred, so this link
+                                        ## will direct the admin to a page allowing them to transfer datasets.
+                                        <a href="${h.url_for( controller='requests_common', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
+                                    %else:
+                                        ## All selected datasets have successfully transferred, so this link
+                                        ## will direct the admin to a page displaying all transferred datasets.
+                                        <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">${len( sample.transferred_dataset_files )}</a>
+                                    %endif
                                 %else:
-                                    ${len( sample.transferred_dataset_files )}
+                                    %if sample.transferred_dataset_files:
+                                        ## The cuurent user is not an admin, so this link will direct the
+                                        ## user to the target data library containing those datasets that
+                                        ## were successfully transferred.
+                                        <a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( sample.library.id ) )}">${len( sample.transferred_dataset_files )}</a>
+                                    %else:
+                                        ## Display a 0 with no link.
+                                        ${len( sample.transferred_dataset_files )}
+                                    %endif
                                 %endif
                             </td>
                         %endif
