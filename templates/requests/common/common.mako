@@ -322,7 +322,7 @@
                                     %if can_select_datasets:
                                         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', request_id=trans.security.encode_id( request.id ), sample_id=trans.security.encode_id( sample.id ) )}">Select datasets to transfer</a></li>
                                     %endif
-                                    %if sample.datasets and len( sample.datasets ) > len( transferred_dataset_files ):
+                                    %if sample.datasets and len( sample.datasets ) > len( transferred_dataset_files ) and sample.library and sample.folder:
                                         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Manage selected datasets</a></li>
                                     %elif sample.datasets and len(sample.datasets ) == len( transferred_dataset_files ):
                                         <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">View transferred datasets</a></li>

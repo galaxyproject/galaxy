@@ -7,14 +7,14 @@
     is_complete = sample.request.is_complete
     is_submitted = sample.request.is_submitted
     can_select_datasets = is_admin and ( is_complete or is_submitted )
-    can_transfer_datasets = is_admin and sample.untransferred_dataset_files
+    can_transfer_datasets = is_admin and sample.untransferred_dataset_files and sample.library and sample.folder
 %>
 
 <br/><br/>
 
 <ul class="manage-table-actions">
     %if can_transfer_datasets:
-        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Transfer datasets</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Manage selected datasets</a></li>
     %endif
     <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=transfer_status )}">Refresh page</a></li>
     <li><a class="action-button" id="sample-${sample.id}-popup" class="menubutton">Dataset Actions</a></li>

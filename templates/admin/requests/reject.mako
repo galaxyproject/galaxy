@@ -8,7 +8,7 @@
 <h2>Reject Sequencing Request "${request.name}"</h2>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id(request.id) )}">View history</a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request_history', cntrller=cntrller, id=trans.security.encode_id(request.id) )}">View history</a>
     </li>
     <li>
         <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id(request.id) )}">Browse this request</a>

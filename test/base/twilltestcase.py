@@ -1517,7 +1517,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             self.check_string_not_in_page( check_str )
     def view_request_history( self, cntrller, request_id, strings_displayed=[], strings_not_displayed=[] ):
-        self.visit_url( "%s/requests_common/request_events?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
+        self.visit_url( "%s/requests_common/view_request_history?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         for check_str in strings_not_displayed:

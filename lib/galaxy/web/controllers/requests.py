@@ -57,9 +57,9 @@ class Requests( BaseController ):
                                                                   action='undelete_request',
                                                                   cntrller='requests',
                                                                   **kwd ) )
-            if operation == "request_events":
+            if operation == "view_request_history":
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                                  action='request_events',
+                                                                  action='view_request_history',
                                                                   cntrller='requests',
                                                                   **kwd ) )
 

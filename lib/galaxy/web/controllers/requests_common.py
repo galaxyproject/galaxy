@@ -76,7 +76,7 @@ class RequestsGrid( grids.Grid ):
         StateColumn( "State", 
                      key='state',
                      filterable="advanced",
-                     link=( lambda item: iff( item.deleted, None, dict( operation="request_events", id=item.id ) ) )
+                     link=( lambda item: iff( item.deleted, None, dict( operation="view_request_history", id=item.id ) ) )
                    )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
@@ -579,8 +579,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                           status=status,
                                                           message=message ) )
     @web.expose
-    @web.require_login( "sequencing request events" )
-    def request_events( self, trans, cntrller, **kwd ):
+    @web.require_login( "sequencing request history" )
+    def view_request_history( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         request_id = params.get( 'id', None )
         try:
@@ -590,7 +590,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         events_list = []
         for event in request.events:         
             events_list.append( ( event.state, time_ago( event.update_time ), event.comment ) )
-        return trans.fill_template( '/requests/common/events.mako', 
+        return trans.fill_template( '/requests/common/view_request_history.mako', 
                                     cntrller=cntrller,
                                     events_list=events_list,
                                     request=request )
