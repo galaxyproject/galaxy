@@ -113,7 +113,7 @@
     </script>
 </%def>
 
-<%def name="render_editable_sample_row( cntrller, sample, current_sample_index, current_sample, encoded_selected_sample_ids )">
+<%def name="render_editable_sample_row( cntrller, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )">
     <%
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         if sample:
@@ -145,7 +145,7 @@
         <td><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true" ${checked_str}/><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"/></td>
     %endif
     <td valign="top">
-        <input type="text" name="sample_${current_sample_index}_name" value="${current_sample['name']}" size="10"/>
+        <input type="text" name="sample_${sample_widget_index}_name" value="${sample_widget['name']}" size="10"/>
         <div class="toolParamHelp" style="clear: both;">
             <i>${' (required)' }</i>
         </div>
@@ -153,10 +153,10 @@
     %if display_bar_code:
         <td valign="top">
             %if is_admin:
-                <input type="text" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}" size="10"/>
+                <input type="text" name="sample_${sample_widget_index}_barcode" value="${sample_widget['barcode']}" size="10"/>
             %else:
-                ${current_sample['barcode']}
-                <input type="hidden" name="sample_${current_sample_index}_barcode" value="${current_sample['barcode']}"/>
+                ${sample_widget['barcode']}
+                <input type="hidden" name="sample_${sample_widget_index}_barcode" value="${sample_widget['barcode']}"/>
             %endif
         </td>
     %endif 
@@ -169,8 +169,8 @@
     %else:
         <td></td>
     %endif
-    <td valign="top">${current_sample['library_select_field'].get_html()}</td>
-    <td valign="top">${current_sample['folder_select_field'].get_html()}</td>
+    <td valign="top">${sample_widget['library_select_field'].get_html()}</td>
+    <td valign="top">${sample_widget['folder_select_field'].get_html()}</td>
     %if display_datasets:
         <td valign="top">
             ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
@@ -220,11 +220,11 @@
     %endif
     %if can_delete_samples:
         ## Delete button
-        <td valign="top"><a class="action-button" href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=current_sample_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
+        <td valign="top"><a class="action-button" href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=sample_widget_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
     %endif
 </%def>
 
-<%def name="render_samples_grid( cntrller, request, current_samples, action, editing_samples=False, encoded_selected_sample_ids=[], render_buttons=False, grid_header='<h3>Samples</h3>' )">
+<%def name="render_samples_grid( cntrller, request, displayable_sample_widgets, action, editing_samples=False, encoded_selected_sample_ids=[], render_buttons=False, grid_header='<h3>Samples</h3>' )">
     ## Displays the "Samples" grid
     <%
         trans.sa_session.refresh( request )
@@ -236,7 +236,8 @@
         can_add_samples = request.is_unsubmitted
         can_delete_samples = editing_samples and request.samples and not is_complete
         can_edit_samples = request.samples and ( is_admin or not is_complete )
-        can_select_datasets = is_admin and current_samples and ( is_submitted or is_complete )
+        can_select_datasets = is_admin and displayable_sample_widgets and ( is_submitted or is_complete )
+        can_transfer_datasets = is_admin and request.samples and not request.is_rejected
         display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
         display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
         display_datasets = request.samples and ( is_complete or is_submitted )
@@ -278,46 +279,67 @@
         <thead>
         <tbody>
             <% trans.sa_session.refresh( request ) %>
-            ## current_samples is a dictionary whose keys are:
-            ## name, barcode, library, folder, field_values, library_select_field, folder_select_field
-            %for current_sample_index, current_sample in enumerate( current_samples ):
+            ## displayable_sample_widgets is a dictionary whose keys are:
+            ## id, name, barcode, library, folder, field_values, library_select_field, folder_select_field
+            ## A displayable_sample_widget will have an id == None if the widget's associated sample has not
+            ## yet been saved (i.e., the use clicked the "Add sample" button but has not yet clicked the
+            ## "Save" button.
+            %for sample_widget_index, sample_widget in enumerate( displayable_sample_widgets ):
                 <%
-                    current_sample_name = current_sample[ 'name' ]
-                    current_sample_barcode = current_sample[ 'barcode' ]
-                    current_sample_library = current_sample[ 'library' ]
-                    if current_sample_library:
+                    sample_widget_name = sample_widget[ 'name' ]
+                    sample_widget_barcode = sample_widget[ 'barcode' ]
+                    sample_widget_library = sample_widget[ 'library' ]
+                    if sample_widget_library:
                         if cntrller == 'requests':
                             library_cntrller = 'library'
                         elif is_admin:
                             library_cntrller = 'library_admin'
                         else:
                             library_cntrller = None
-                    current_sample_folder = current_sample[ 'folder' ]
+                    sample_widget_folder = sample_widget[ 'folder' ]
                     try:
-                        sample = request.samples[ current_sample_index ]
+                        sample = request.samples[ sample_widget_index ]
                     except:
                         sample = None 
                 %>
                 %if editing_samples:
-                    <tr>${render_editable_sample_row( cntrller, sample, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
+                    <tr>${render_editable_sample_row( cntrller, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )}</tr>
                 %elif sample:
                     <tr>
-                        <td>${current_sample_name}</td>
+                        <td>
+                            %if sample.state and ( can_select_datasets or can_transfer_datasets ):
+                                ## A sample will have a state only after the request has been submitted.
+                                <% encoded_id = trans.security.encode_id( sample.id ) %>
+                                <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="sample-${sample.id}-popup">
+                                    ${sample.name}
+                                </div>
+                                <div popupmenu="sample-${sample.id}-popup">
+                                    %if can_select_datasets:
+                                        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', request_id=trans.security.encode_id( request.id ), sample_id=trans.security.encode_id( sample.id ) )}">Select datasets to transfer</a></li>
+                                    %endif
+                                    %if sample.untransferred_dataset_files:
+                                        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Transfer datasets</a></li>
+                                    %endif
+                                </div>
+                            %else:
+                                ${sample_widget_name}
+                            %endif
+                        </td>
                         %if display_bar_code:
-                            <td>${current_sample_barcode}</td>
+                            <td>${sample_widget_barcode}</td>
                         %endif
                         %if is_unsubmitted:
                             <td>Unsubmitted</td>
                         %else:
                             <td><a id="sampleState-${sample.id}" href="${h.url_for( controller='requests_common', action='sample_events', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${render_sample_state( sample )}</a></td>
                         %endif
-                        %if current_sample_library and library_cntrller is not None:
-                            <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller=library_cntrller, id=trans.security.encode_id( current_sample_library.id ) )}">${current_sample_library.name}</a></td>                                  
+                        %if sample_widget_library and library_cntrller is not None:
+                            <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller=library_cntrller, id=trans.security.encode_id( sample_widget_library.id ) )}">${sample_widget_library.name}</a></td>                                  
                         %else:
                             <td></td>
                         %endif
-                        %if current_sample_folder:
-                            <td>${current_sample_folder.name}</td>
+                        %if sample_widget_folder:
+                            <td>${sample_widget_folder.name}</td>
                         %else:
                             <td></td>
                         %endif
@@ -371,7 +393,7 @@
                     </tr>
                 %else:
                     ## The Add sample button was clicked for this sample_widget
-                    <tr>${render_editable_sample_row( cntrller, None, current_sample_index, current_sample, encoded_selected_sample_ids )}</tr>
+                    <tr>${render_editable_sample_row( cntrller, None, sample_widget_index, sample_widget, encoded_selected_sample_ids )}</tr>
                 %endif
             %endfor
         </tbody>
@@ -439,7 +461,7 @@
     </tr> 
 </%def>
 
-<%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, current_samples, editing_samples )">
+<%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, displayable_sample_widgets, editing_samples )">
     <%
         if not grid_name:
             grid_name = "Sample form layout " + grid_index
@@ -466,7 +488,7 @@
             <thead>
             <tbody>
                 <% trans.sa_session.refresh( request ) %>
-                %for sample_index, sample in enumerate( current_samples ):
+                %for sample_index, sample in enumerate( displayable_sample_widgets ):
                     <%
                         if editing_samples or sample_index >= len( request.samples ):
                             display_only = False
@@ -505,7 +527,7 @@
                     <tr>
                         <td>
                             %if is_admin:
-                                <% encoded_id = trans.security.encode_id(dataset.id) %>
+                                <% encoded_id = trans.security.encode_id( dataset.id ) %>
                                 <span class="expandLink dataset-${dataset}-click"><span class="rowIcon"></span>
                                     <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="dataset-${dataset.id}-popup">
                                         <a class="dataset-${encoded_id}-click" href="${h.url_for( controller='requests_admin', action='manage_datasets', operation='view', id=trans.security.encode_id( dataset.id ) )}">${dataset.name}</a>
