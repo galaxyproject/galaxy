@@ -208,6 +208,10 @@ class Registry( object ):
                 'txt'         : 'text/plain',
                 'wig'         : 'text/plain'
             }
+        # super supertype fix for input steps in workflows.
+        if 'data' not in self.datatypes_by_extension:
+            self.datatypes_by_extension['data'] = data.Data()
+            self.mimetypes_by_extension['data'] = 'application/octet-stream'
         # Default values - the order in which we attempt to determine data types is critical
         # because some formats are much more flexibly defined than others.
         if len(self.sniff_order) < 1:
