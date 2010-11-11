@@ -5,7 +5,7 @@
     ngs_simulation.py
       #if $in_type.input_type == "built-in"
         --input="${ filter( lambda x: str( x[0] ) == str( $in_type.genome ), $__app__.tool_data_tables[ 'ngs_sim_fasta' ].get_fields() )[0][-1] }"
-        --genome=$genome
+        --genome=$in_type.genome
       #else
         --input=$in_type.input1
       #end if
