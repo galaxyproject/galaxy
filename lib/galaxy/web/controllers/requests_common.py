@@ -725,7 +725,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             search_type = params.get( 'search_type', ''  )
             request_states = util.listify( params.get( 'request_states', '' ) )
             samples = []
-            if search_type == 'barcode':
+            if search_type == 'bar_code':
                 samples = trans.sa_session.query( trans.model.Sample ) \
                                           .filter( and_( trans.model.Sample.table.c.deleted==False,
                                                          func.lower( trans.model.Sample.table.c.bar_code ).like( "%" + search_string.lower() + "%" ) ) ) \
@@ -763,7 +763,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                              display='checkboxes' )
         # Build the search_type SelectField
         selected_value = kwd.get( 'search_type', 'sample name' )
-        types = [ 'sample name', 'barcode', 'dataset' ]
+        types = [ 'sample name', 'bar_code', 'dataset' ]
         search_type = build_select_field( trans, types, 'self', 'search_type', selected_value=selected_value, refresh_on_change=False )
         # Build the search_box TextField
         search_box = TextField( 'search_box', 50, kwd.get('search_box', '' ) )
@@ -846,7 +846,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 # Append the new sample to the current list of samples for the request
                 displayable_sample_widgets.append( dict( id=None,
                                                          name=name,
-                                                         barcode='',
+                                                         bar_code='',
                                                          library=None,
                                                          library_id=library_id,
                                                          folder=None,
@@ -999,7 +999,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                                                            **kwd )
                 displayable_sample_widgets.append( dict( id=None,
                                                          name=row[0], 
-                                                         barcode='',
+                                                         bar_code='',
                                                          library=None,
                                                          folder=None,
                                                          library_select_field=library_select_field,
@@ -1029,7 +1029,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     editing_samples=False )
     def __save_samples( self, trans, cntrller, request, samples, **kwd ):
         # Here we handle saving all new samples added by the user as well as saving
-        # changes to any subset of the request's samples.
+        # changes to any subset of the request's samples.  A sample will not have an
+        # associated SampleState until the request is submitted, at which time the
+        # sample is automatically associated with the first SampleState configured by
+        # the admin for the request's RequestType.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -1065,7 +1068,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 # Send the encoded sample_ids to update_sample_state.
                 # TODO: make changes necessary to just send the samples...
                 encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
-                # Make sure all samples have a unique barcode if the state is changing
+                # Make sure all samples have a unique bar_code if the state is changing
                 for sample_index in range( len( samples ) ):
                     current_sample = samples[ sample_index ]
                     if current_sample is None:
@@ -1073,13 +1076,15 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                         # on which to perform the action.
                         continue
                     request_sample = request.samples[ sample_index ]
-                    bc_message = self.__validate_barcode( trans, request_sample, current_sample[ 'barcode' ] )
-                    if bc_message:
-                        #status = 'error'
-                        message += bc_message
-                        kwd[ 'message' ] = message
-                        del kwd[ 'save_samples_button' ]
-                        handle_error( **kwd )
+                    bar_code = current_sample[ 'bar_code' ]
+                    if bar_code:
+                        # If the sample has a new bar_code, make sure it is unique.
+                        bc_message = self.__validate_bar_code( trans, request_sample, bar_code )
+                        if bc_message:
+                            message += bc_message
+                            kwd[ 'message' ] = message
+                            del kwd[ 'save_samples_button' ]
+                            handle_error( **kwd )
                 self.update_sample_state( trans, cntrller, encoded_selected_sample_ids, new_state, comment=sample_event_comment )
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                                   cntrller=cntrller, 
@@ -1088,18 +1093,22 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             elif sample_operation == 'Select data library and folder':
                 # TODO: fix the code so that the sample_operation_select_field does not use
                 # sample_0_library_id as it's name.  it should use something like sample_operation_library_id
-                # and sample_operation-folder_id because the name sample_0_library_id should belong to the
+                # and sample_operation_folder_id because the name sample_0_library_id should belong to the
                 # first sample since all other form field values are named like this.  The library and folder
                 # are skewed to be named +1 resulting in the forced use of id_index everywhere...
                 library_id = params.get( 'sample_0_library_id', 'none' )
                 folder_id = params.get( 'sample_0_folder_id', 'none' )
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
+                for sample_index in range( len( samples ) ):
+                    current_sample = samples[ sample_index ]
+                    current_sample[ 'library' ] = library
+                    current_sample[ 'folder' ] = folder
             self.__update_samples( trans, cntrller, request, samples, **kwd )
             # Samples will not have an associated SampleState until the request is submitted, at which
             # time all samples of the request will be set to the first SampleState configured for the
             # request's RequestType defined by the admin.
             if request.is_submitted:
-                # See if all the samples' barcodes are in the same state, and if so send email if configured to.
+                # See if all the samples' bar_codes are in the same state, and if so send email if configured to.
                 common_state = request.samples_have_common_state
                 if common_state and common_state.id == request.type.states[1].id:
                     comment = "All samples of this request are in the (%s) sample state. " % common_state.name
@@ -1136,10 +1145,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                           status=status,
                                                           message=message ) )
     def __update_samples( self, trans, cntrller, request, sample_widgets, **kwd ):
-        # Determine if the values in kwd require updating the request's samples.  The list of
-        # sample_widgets must have the same number of objects as request.samples, but some of
-        # the objects can be None.  Those that are not None correspond to samples selected by
-        # the user for performing an action on multiple samples simultaneously.
+        # The list of sample_widgets must have the same number of objects as request.samples,
+        # but some of the objects can be None.  Those that are not None correspond to samples
+        # selected by the user for performing an action on multiple samples simultaneously.
+        # The items in the sample_widgets list have already been populated with any changed
+        # param values (changed implies the value in kwd is different from the attribute value
+        # in the database) in kwd before this method is reached.
         def handle_error( **kwd ):
             kwd[ 'status' ] = 'error'
             return trans.response.send_redirect( web.url_for( controller='requests_common',
@@ -1147,12 +1158,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               cntrller=cntrller,
                                                               **kwd ) )
         params = util.Params( kwd )
-        sample_operation = params.get( 'sample_operation', 'none' )
-        if sample_operation != 'none':
-            # These values will be in kwd if the user checked 1 or more checkboxes for performing this action
-            # on a set of samples.
-            library_id = params.get( 'sample_0_library_id', 'none' )
-            folder_id = params.get( 'sample_0_folder_id', 'none' )
         for index, sample_widget in enumerate( sample_widgets ):
             if sample_widget is not None:
                 # sample_widget will be None if the user checked sample check boxes and selected an action
@@ -1161,21 +1166,16 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 # Get the sample's form values to see if they have changed.
                 form_values = trans.sa_session.query( trans.model.FormValues ).get( sample.values.id )
                 if sample.name != sample_widget[ 'name' ] or \
-                    sample.bar_code != sample_widget[ 'barcode' ] or \
+                    sample.bar_code != sample_widget[ 'bar_code' ] or \
                     sample.library != sample_widget[ 'library' ] or \
                     sample.folder != sample_widget[ 'folder' ] or \
                     form_values.content != sample_widget[ 'field_values' ]:
                     # Information about this sample has been changed.
                     sample.name = sample_widget[ 'name' ]
-                    barcode = sample_widget[ 'barcode' ]
-                    # The bar_code field requires special handling because after a request is submitted, the
-                    # state of a sample cannot be changed without a bar_code associated with the sample.  Bar
-                    # codes can only be added to a sample after the request is submitted.  Also, a samples will
-                    # not have an associated SampleState until the request is submitted, at which time the sample
-                    # is automatically associated with the first SamplesState configured by the admin for the
-                    # request's RequestType.
-                    if barcode:
-                        bc_message = self.__validate_barcode( trans, sample, bar_code )
+                    bar_code = sample_widget[ 'bar_code' ]
+                    # If the sample has a new bar_code, make sure it is unique.
+                    if bar_code:
+                        bc_message = self.__validate_bar_code( trans, sample, bar_code )
                         if bc_message:
                             kwd[ 'message' ] = bc_message
                             del kwd[ 'save_samples_button' ]
@@ -1191,7 +1191,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                     'Bar code associated with the sample' )
                                 trans.sa_session.add( event )
                                 trans.sa_session.flush()
-                    sample.bar_code = barcode
+                    sample.bar_code = bar_code
                     sample.library = sample_widget[ 'library' ]
                     sample.folder = sample_widget[ 'folder' ]
                     form_values.content = sample_widget[ 'field_values' ]
@@ -1281,7 +1281,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 # Update the sample attributes from kwd
                 sample_id = None
                 name = util.restore_text( params.get( 'sample_%i_name' % index, sample.name ) )
-                bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, sample.bar_code ) )
+                bar_code = util.restore_text( params.get( 'sample_%i_bar_code' % index, sample.bar_code ) )
                 library_id = util.restore_text( params.get( 'sample_%i_library_id' % id_index, '' ) )
                 if not library_id and sample.library:
                     library_id = trans.security.encode_id( sample.library.id )
@@ -1303,7 +1303,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                                                        **kwd )
             sample_widgets.append( dict( id=sample_id,
                                          name=name,
-                                         barcode=bar_code,
+                                         bar_code=bar_code,
                                          library=library,
                                          folder=folder,
                                          field_values=field_values,
@@ -1317,7 +1317,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             if not name:
                 break
             id_index = index + 1
-            bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, '' ) )
+            bar_code = util.restore_text( params.get( 'sample_%i_bar_code' % index, '' ) )
             library_id = util.restore_text( params.get( 'sample_%i_library_id' % id_index, '' ) )
             folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % id_index, '' ) )
             library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
@@ -1334,7 +1334,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                                                        **kwd )
             sample_widgets.append( dict( id=None,
                                          name=name,
-                                         barcode=bar_code,
+                                         bar_code=bar_code,
                                          library=library,
                                          folder=folder,
                                          field_values=field_values,
@@ -1492,31 +1492,24 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               action='edit_samples',
                                                               cntrller=cntrller,
                                                               **kwd ) )
-    def __validate_barcode( self, trans, sample, barcode ):
+    def __validate_bar_code( self, trans, sample, bar_code ):
         """
-        Makes sure that the barcode about to be assigned to a sample is globally unique.
-        That is, barcodes must be unique across requests in Galaxy sample tracking. 
+        Make sure that the bar_code about to be assigned to a sample is globally unique.
+        That is, bar_codes must be unique across requests in Galaxy sample tracking.
+        Bar codes are not required, but if used, they can only be added to a sample after
+        the request is submitted.
         """
         message = ''
         unique = True
         for index in range( len( sample.request.samples ) ):
-            # Check for empty bar code
-            if not barcode.strip():
-                if sample.state.id == sample.request.type.states[0].id:
-                    # The user has not yet filled in the barcode value, but the sample is
-                    # 'new', so all is well.
-                    break
-                else:
-                    message = "Fill in the barcode for sample (%s) before changing it's state." % sample.name
-                    break
             # TODO: Add a unique constraint to sample.bar_code table column
             # Make sure bar code is unique
-            for sample_with_barcode in trans.sa_session.query( trans.model.Sample ) \
-                                                       .filter( trans.model.Sample.table.c.bar_code == barcode ):
-                if sample_with_barcode and sample_with_barcode.id != sample.id:
+            for sample_with_bar_code in trans.sa_session.query( trans.model.Sample ) \
+                                                       .filter( trans.model.Sample.table.c.bar_code == bar_code ):
+                if sample_with_bar_code and sample_with_bar_code.id != sample.id:
                     message = '''The bar code (%s) associated with the sample (%s) belongs to another sample.  
                                  Bar codes must be unique across all samples, so use a different bar code 
-                                 for this sample.''' % ( barcode, sample.name )
+                                 for this sample.''' % ( bar_code, sample.name )
                     unique = False
                     break
             if not unique:

@@ -1575,7 +1575,7 @@ class TwillTestCase( unittest.TestCase ):
         for index, field_value in enumerate( bar_codes ):
             sample_field_name = "sample_%i_name" % index
             sample_field_value = samples[ index ].name.replace( ' ', '+' )
-            field_name = "sample_%i_barcode" % index
+            field_name = "sample_%i_bar_code" % index
             url += "&%s=%s" % ( field_name, field_value )
             url += "&%s=%s" % ( sample_field_name, sample_field_value )
         url += "&save_samples_button=Save"
