@@ -212,14 +212,14 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         except:
             return invalid_id_redirect( trans, cntrller, request_id )
         sample_state_id = params.get( 'sample_state_id', None )
-        # Get the user entered sample information
-        current_samples = self.__get_sample_widgets( trans, request, request.samples, **kwd )
+        # Build a list of sample widgets (based on the attributes of each sample) for display.
+        displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         request_widgets = self.__get_request_widgets( trans, request.id )
         return trans.fill_template( '/requests/common/view_request.mako',
                                     cntrller=cntrller, 
                                     request=request,
                                     request_widgets=request_widgets,
-                                    current_samples=current_samples,
+                                    displayable_sample_widgets=displayable_sample_widgets,
                                     status=status,
                                     message=message )
     @web.expose
@@ -415,8 +415,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                           editing_samples=editing_samples ) )
         # Get all libraries for which the current user has permission to add items.
         libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
-        # Get the user entered sample information
-        current_samples = self.__get_sample_widgets( trans, request, request.samples, **kwd )
+        # Build a list of sample widgets (based on the attributes of each sample) for display.
+        displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
         sample_operation = params.get( 'sample_operation', 'none' )
         def handle_error( **kwd ):
@@ -433,14 +433,17 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             handle_error( **kwd )
         if params.get( 'import_samples_button', False ):
             # Import sample field values from a csv file
-            return self.__import_samples( trans, cntrller, request, current_samples, libraries, **kwd )
+            return self.__import_samples( trans, cntrller, request, displayable_sample_widgets, libraries, **kwd )
         elif params.get( 'add_sample_button', False ):
             return self.add_sample( trans, cntrller, request_id, **kwd )
         elif params.get( 'save_samples_button', False ):
             if encoded_selected_sample_ids:
-                # This gets tricky because we need the list of samples to include the same number
-                # of objects that that current_samples ( i.e., request.samples ) has.  We'll first
-                # get the set of samples corresponding to the checked sample ids.
+                # We need the list of displayable_sample_widgets to include the same number
+                # of objects that that request.samples has so that we can enumerate over each
+                # list without problems.  We have to be careful here since the user may have
+                # used the multi-select check boxes when editing sample widgets, but didn't
+                # select all of them.  We'll first get the set of samples corresponding to the
+                # checked sample ids.
                 samples = []
                 selected_samples = []
                 for encoded_sample_id in encoded_selected_sample_ids:
@@ -453,12 +456,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     else:
                         samples.append( None )
                 # The __save_samples method requires sample_widgets, not sample objects
-                samples = self.__get_sample_widgets( trans, request, samples, **kwd )
+                sample_widgets = self.__get_sample_widgets( trans, request, samples, **kwd )
             else:
-                samples = current_samples
-            return self.__save_samples( trans, cntrller, request, samples, **kwd )
+                sample_widgets = displayable_sample_widgets
+            return self.__save_samples( trans, cntrller, request, sample_widgets, **kwd )
         request_widgets = self.__get_request_widgets( trans, request.id )
-        sample_copy = self.__build_copy_sample_select_field( trans, current_samples )
+        sample_copy = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
         libraries_select_field, folders_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                       request.user,
                                                                                                       0,
@@ -473,7 +476,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     request=request,
                                     encoded_selected_sample_ids=encoded_selected_sample_ids,
                                     request_widgets=request_widgets,
-                                    current_samples=current_samples,
+                                    displayable_sample_widgets=displayable_sample_widgets,
                                     sample_copy=sample_copy, 
                                     libraries=libraries,
                                     sample_operation_select_field=sample_operation_select_field,
@@ -805,12 +808,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         # Get the widgets for rendering the request form
         request_widgets = self.__get_request_widgets( trans, request.id )
-        current_samples = self.__get_sample_widgets( trans, request, request.samples, **kwd )
-        if not current_samples:
+        displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
+        if not displayable_sample_widgets:
             # Form field names are zero-based.
             sample_index = 0
         else:
-            sample_index = len( current_samples )
+            sample_index = len( displayable_sample_widgets )
         if params.get( 'add_sample_button', False ):
             # Get all libraries for which the current user has permission to add items
             libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
@@ -818,18 +821,18 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             # See if the user has selected a sample to copy.
             copy_sample_index = int( params.get( 'copy_sample_index', -1 ) )
             for index in range( num_samples_to_add ):
-                id_index = len( current_samples ) + 1
+                id_index = len( displayable_sample_widgets ) + 1
                 if copy_sample_index != -1:
                     # The user has selected a sample to copy.
-                    library_id = current_samples[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
-                    folder_id = current_samples[ copy_sample_index ][ 'folder_select_field' ].get_selected( return_value=True )
-                    name = current_samples[ copy_sample_index ][ 'name' ] + '_%i' % ( len( current_samples ) + 1 )
-                    field_values = [ val for val in current_samples[ copy_sample_index ][ 'field_values' ] ]
+                    library_id = displayable_sample_widgets[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
+                    folder_id = displayable_sample_widgets[ copy_sample_index ][ 'folder_select_field' ].get_selected( return_value=True )
+                    name = displayable_sample_widgets[ copy_sample_index ][ 'name' ] + '_%i' % ( len( displayable_sample_widgets ) + 1 )
+                    field_values = [ val for val in displayable_sample_widgets[ copy_sample_index ][ 'field_values' ] ]
                 else:
                     # The user has not selected a sample to copy, just adding a new generic sample.
                     library_id = None
                     folder_id = None
-                    name = 'Sample_%i' % ( len( current_samples ) + 1 )
+                    name = 'Sample_%i' % ( len( displayable_sample_widgets ) + 1 )
                     field_values = [ '' for field in request.type.sample_form.fields ]
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
@@ -841,25 +844,26 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                                                            folder_id=folder_id,
                                                                                                            **kwd )
                 # Append the new sample to the current list of samples for the request
-                current_samples.append( dict( name=name,
-                                              barcode='',
-                                              library=None,
-                                              library_id=library_id,
-                                              folder=None,
-                                              folder_id=folder_id,
-                                              field_values=field_values,
-                                              library_select_field=library_select_field,
-                                              folder_select_field=folder_select_field ) )
+                displayable_sample_widgets.append( dict( id=None,
+                                                         name=name,
+                                                         barcode='',
+                                                         library=None,
+                                                         library_id=library_id,
+                                                         folder=None,
+                                                         folder_id=folder_id,
+                                                         field_values=field_values,
+                                                         library_select_field=library_select_field,
+                                                         folder_select_field=folder_select_field ) )
         encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
         sample_operation = params.get( 'sample_operation', 'none' )
         sample_operation_select_field = self.__build_sample_operation_select_field( trans, is_admin, request, sample_operation )
-        sample_copy = self.__build_copy_sample_select_field( trans, current_samples )
+        sample_copy = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
         return trans.fill_template( '/requests/common/edit_samples.mako',
                                     cntrller=cntrller,
                                     request=request,
                                     encoded_selected_sample_ids=encoded_selected_sample_ids,
                                     request_widgets=request_widgets,
-                                    current_samples=current_samples,
+                                    displayable_sample_widgets=displayable_sample_widgets,
                                     sample_operation_select_field=sample_operation_select_field,
                                     sample_copy=sample_copy, 
                                     editing_samples=False,
@@ -876,9 +880,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, request_id )
-        current_samples = self.__get_sample_widgets( trans, request, request.samples, **kwd )
+        displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         sample_index = int( params.get( 'sample_id', 0 ) )
-        sample_name = current_samples[sample_index]['name']
+        sample_name = displayable_sample_widgets[sample_index]['name']
         sample = request.has_sample( sample_name )
         if sample:
             trans.sa_session.delete( sample.values )
@@ -960,7 +964,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     status=status,
                                     files=[],
                                     folder_path=folder_path )
-    def __import_samples( self, trans, cntrller, request, current_samples, libraries, **kwd ):
+    def __import_samples( self, trans, cntrller, request, displayable_sample_widgets, libraries, **kwd ):
         """
         Reads the samples csv file and imports all the samples.  The format of the csv file is:
         SampleName,DataLibrary,DataLibraryFolder,Field1,Field2....
@@ -987,19 +991,20 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                         folder_id = folder.id
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                            request.user,
-                                                                                                           len( current_samples ), 
+                                                                                                           len( displayable_sample_widgets ), 
                                                                                                            libraries,
                                                                                                            None,
                                                                                                            library_id,
                                                                                                            folder_id,
                                                                                                            **kwd )
-                current_samples.append( dict( name=row[0], 
-                                              barcode='',
-                                              library=None,
-                                              folder=None,
-                                              library_select_field=library_select_field,
-                                              folder_select_field=folder_select_field,
-                                              field_values=row[3:] ) )
+                displayable_sample_widgets.append( dict( id=None,
+                                                         name=row[0], 
+                                                         barcode='',
+                                                         library=None,
+                                                         folder=None,
+                                                         library_select_field=library_select_field,
+                                                         folder_select_field=folder_select_field,
+                                                         field_values=row[3:] ) )
         except Exception, e:
             if str( e ) == "'unicode' object has no attribute 'file'":
                 message = "Select a file"
@@ -1014,12 +1019,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               status='error',
                                                               message=message ) )
         request_widgets = self.__get_request_widgets( trans, request.id )
-        sample_copy = self.__build_copy_sample_select_field( trans, current_samples )
+        sample_copy = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
         return trans.fill_template( '/requests/common/edit_samples.mako',
                                     cntrller=cntrller,
                                     request=request,
                                     request_widgets=request_widgets,
-                                    current_samples=current_samples,
+                                    displayable_sample_widgets=displayable_sample_widgets,
                                     sample_copy=sample_copy,
                                     editing_samples=False )
     def __save_samples( self, trans, cntrller, request, samples, **kwd ):
@@ -1110,17 +1115,17 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             # by the admin ( i.e., the sample's SampleState would be set to request.type.states[0] ).
             for index in range( len( samples ) - len( request.samples ) ):
                 sample_index = len( request.samples )
-                current_sample = samples[ sample_index ]
-                form_values = trans.model.FormValues( request.type.sample_form, current_sample[ 'field_values' ] )
+                sample_widget = samples[ sample_index ]
+                form_values = trans.model.FormValues( request.type.sample_form, sample_widget[ 'field_values' ] )
                 trans.sa_session.add( form_values )
                 trans.sa_session.flush()                    
-                s = trans.model.Sample( name=current_sample[ 'name' ],
+                s = trans.model.Sample( name=sample_widget[ 'name' ],
                                         desc='', 
                                         request=request,
                                         form_values=form_values, 
                                         bar_code='',
-                                        library=current_sample[ 'library' ],
-                                        folder=current_sample[ 'folder' ] )
+                                        library=sample_widget[ 'library' ],
+                                        folder=sample_widget[ 'folder' ] )
                 trans.sa_session.add( s )
                 trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_common',
@@ -1264,9 +1269,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         for index, sample in enumerate( samples ):
             id_index = index + 1
             if sample is None:
-                # Id sample is None, then we'll use the sample from the request object since it will
-                # not have updated =values from kwd.
+                # Use the sample from the request object since it will not have updated values from kwd.
                 sample = request.samples[ index ]
+                sample_id = sample.id
                 name = sample.name
                 bar_code = sample.bar_code
                 library = sample.library
@@ -1274,6 +1279,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 field_values = sample.values.content
             else:
                 # Update the sample attributes from kwd
+                sample_id = None
                 name = util.restore_text( params.get( 'sample_%i_name' % index, sample.name ) )
                 bar_code = util.restore_text( params.get( 'sample_%i_barcode' % index, sample.bar_code ) )
                 library_id = util.restore_text( params.get( 'sample_%i_library_id' % id_index, '' ) )
@@ -1295,7 +1301,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                                                        library_id=library_id,
                                                                                                        folder_id=folder_id,
                                                                                                        **kwd )
-            sample_widgets.append( dict( name=name,
+            sample_widgets.append( dict( id=sample_id,
+                                         name=name,
                                          barcode=bar_code,
                                          library=library,
                                          folder=folder,
@@ -1325,7 +1332,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                                                        library_id=library_id,
                                                                                                        folder_id=folder_id,
                                                                                                        **kwd )
-            sample_widgets.append( dict( name=name,
+            sample_widgets.append( dict( id=None,
+                                         name=name,
                                          barcode=bar_code,
                                          library=library,
                                          folder=folder,
@@ -1335,10 +1343,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             index += 1
         return sample_widgets   
     # ===== Methods for building SelectFields used on various request forms =====
-    def __build_copy_sample_select_field( self, trans, current_samples ):
+    def __build_copy_sample_select_field( self, trans, displayable_sample_widgets ):
         copy_sample_index_select_field = SelectField( 'copy_sample_index' )
         copy_sample_index_select_field.add_option( 'None', -1, selected=True )  
-        for index, sample_dict in enumerate( current_samples ):
+        for index, sample_dict in enumerate( displayable_sample_widgets ):
             copy_sample_index_select_field.add_option( sample_dict[ 'name' ], index )
         return copy_sample_index_select_field  
     def __build_request_type_id_select_field( self, trans, selected_value='none' ):
@@ -1458,20 +1466,20 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 message += '<b>' + ef + '</b> '
             return message
         return None
-    def __validate_sample_names( self, trans, cntrller, request, current_samples, **kwd ):
+    def __validate_sample_names( self, trans, cntrller, request, displayable_sample_widgets, **kwd ):
         # Check for duplicate sample names for all samples of the request.
         editing_samples = util.string_as_bool( kwd.get( 'editing_samples', False ) )
         message = ''
-        for index in range( len( current_samples ) - len( request.samples ) ):
+        for index in range( len( displayable_sample_widgets ) - len( request.samples ) ):
             sample_index = index + len( request.samples )
-            current_sample = current_samples[ sample_index ]
-            sample_name = current_sample[ 'name' ]
+            sample_widget = displayable_sample_widgets[ sample_index ]
+            sample_name = sample_widget[ 'name' ]
             if not sample_name.strip():
                 message = 'Enter the name of sample number %i' % sample_index
                 break
             count = 0
-            for i in range( len( current_samples ) ):
-                if sample_name == current_samples[ i ][ 'name' ]:
+            for i in range( len( displayable_sample_widgets ) ):
+                if sample_name == displayable_sample_widgets[ i ][ 'name' ]:
                     count += 1
             if count > 1: 
                 message = "You tried to add %i samples with the name (%s).  Samples belonging to a request must have unique names." % ( count, sample_name )

@@ -72,14 +72,14 @@
 
 <div class="toolFormBody">
     <form id="edit_samples" name="edit_samples" action="${h.url_for( controller='requests_common', action='edit_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ), editing_samples=editing_samples )}" method="post">
-        %if current_samples:
+        %if displayable_sample_widgets:
             <%
                 if editing_samples:
                     grid_header = '<h3>Edit Current Samples of Request "%s"</h3>' % request.name
                 else:
                     grid_header = '<h3>Add Samples to Request "%s"</h3>' % request.name
             %>
-            ${render_samples_grid( cntrller, request, current_samples, action='edit_samples', editing_samples=editing_samples, encoded_selected_sample_ids=encoded_selected_sample_ids, render_buttons=False, grid_header=grid_header )}
+            ${render_samples_grid( cntrller, request, displayable_sample_widgets, action='edit_samples', editing_samples=editing_samples, encoded_selected_sample_ids=encoded_selected_sample_ids, render_buttons=False, grid_header=grid_header )}
             %if editing_samples and len( sample_operation_select_field.options ) > 1 and not is_unsubmitted:
                 <div class="form-row" style="background-color:#FAFAFA;">
                     For selected samples: 
@@ -118,14 +118,14 @@
             ## Render the other grids
             <% trans.sa_session.refresh( request.type.sample_form ) %>
             %for grid_index, grid_name in enumerate( request.type.sample_form.layout ):
-                ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), current_samples=current_samples, editing_samples=editing_samples )}
+                ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), displayable_sample_widgets=displayable_sample_widgets, editing_samples=editing_samples )}
             %endfor
         %else:
             <label>There are no samples.</label>
         %endif  
         %if not editing_samples and is_unsubmitted:
             ## The user is adding a new sample
-            %if current_samples:
+            %if displayable_sample_widgets:
                 <p/>
                 <div class="form-row">
                     <label> Copy <input type="text" name="num_sample_to_copy" value="1" size="3"/> samples from sample ${sample_copy.get_html()}</label>
@@ -138,7 +138,7 @@
             <div class="form-row">
                 ## hidden element to make twill work.
                 <input type="hidden" name="hidden_input" value=""/>
-                %if ( request.samples or current_samples ) and ( editing_samples or len( current_samples ) > len( request.samples ) ):
+                %if ( request.samples or displayable_sample_widgets ) and ( editing_samples or len( displayable_sample_widgets ) > len( request.samples ) ):
                     <input type="submit" name="add_sample_button" value="Add sample" />
                     <input type="submit" name="save_samples_button" value="Save"/>
                     <input type="submit" name="cancel_changes_button" value="Cancel"/>

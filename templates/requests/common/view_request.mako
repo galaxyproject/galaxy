@@ -148,12 +148,12 @@
     </div>
 </div>
 <p/>
-%if current_samples:
+%if displayable_sample_widgets:
     <%
         grid_header = '<h3>Samples</h3>'
         render_buttons = can_edit_samples
     %>
-    ${render_samples_grid( cntrller, request, current_samples=current_samples, action='view_request', editing_samples=False, encoded_selected_sample_ids=[], render_buttons=render_buttons, grid_header=grid_header )}
+    ${render_samples_grid( cntrller, request, displayable_sample_widgets=displayable_sample_widgets, action='view_request', editing_samples=False, encoded_selected_sample_ids=[], render_buttons=render_buttons, grid_header=grid_header )}
 %else:
     There are no samples.
     %if can_add_samples:
@@ -165,5 +165,5 @@
 ## Render the other grids
 <% trans.sa_session.refresh( request.type.sample_form ) %>
 %for grid_index, grid_name in enumerate( request.type.sample_form.layout ):
-    ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), current_samples=current_samples, editing_samples=False )}
+    ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), displayable_sample_widgets=displayable_sample_widgets, editing_samples=False )}
 %endfor
