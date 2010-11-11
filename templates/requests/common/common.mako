@@ -125,7 +125,7 @@
             can_delete_samples = not is_complete
             display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
             display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
-            display_datasets = request.samples and ( is_complete or is_rejected or is_submitted )
+            display_datasets = request.samples and ( is_complete or is_submitted )
         else:
             is_complete = False
             is_submitted = False
@@ -175,33 +175,44 @@
         <td valign="top">
             ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
             %if is_admin:
-                <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                ## This link will direct the admin to a page allowing them to select datasets.
+                <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id= trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
             %elif sample.datasets:
-                ## Only display a link if there is at least 1 selected dataset for the sample
-                <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a></td>
+                ## Since this is a regular user, only display a link if there is at least 1
+                ## selected dataset for the sample.
+                <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
             %else:
+                ## Since this is a regular user, do not display a link if there are no datasets.
                 ${len( sample.datasets )}
             %endif
         </td>
         <td valign="top">
             %if is_admin:
-                %if sample.untransferred_dataset_files:
+                <% 
+                    if sample.transferred_dataset_files:
+                        transferred_dataset_files = sample.transferred_dataset_files
+                    else:
+                        transferred_dataset_files = []
+                %>
+                %if not sample.datasets:
+                    ## No datasets have been selected for this sample, so don't include a link
+                    ${len( sample.transferred_dataset_files )}
+                %elif len( sample.datasets ) > len( transferred_dataset_files ):
                     ## At least 1 selected dataset is not yet transferred, so this link
                     ## will direct the admin to a page allowing them to transfer datasets.
-                    <a href="${h.url_for( controller='requests_common', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
-                %else:
+                    <a href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
+                %elif len( sample.datasets ) == len( transferred_dataset_files ):
                     ## All selected datasets have successfully transferred, so this link
                     ## will direct the admin to a page displaying all transferred datasets.
                     <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">${len( sample.transferred_dataset_files )}</a>
                 %endif
             %else:
                 %if sample.transferred_dataset_files:
-                    ## The cuurent user is not an admin, so this link will direct the
-                    ## user to the target data library containing those datasets that
-                    ## were successfully transferred.
+                    ## Since this is a regular user, this link will direct them to the target
+                    ## data library containing those datasets that were successfully transferred.
                     <a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( sample.library.id ) )}">${len( sample.transferred_dataset_files )}</a>
                 %else:
-                    ## Display a 0 with no link.
+                    ## Since this is a regular user, do not display a link.
                     ${len( sample.transferred_dataset_files )}
                 %endif
             %endif
@@ -228,7 +239,7 @@
         can_select_datasets = is_admin and current_samples and ( is_submitted or is_complete )
         display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
         display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
-        display_datasets = request.samples and ( is_complete or is_rejected or is_submitted )
+        display_datasets = request.samples and ( is_complete or is_submitted )
     %>
     ${grid_header}
     %if render_buttons and ( can_add_samples or can_edit_samples ):
@@ -314,39 +325,44 @@
                             <td>
                                 ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
                                 %if is_admin:
-                                    %if not sample.datasets:
-                                        ## If there are no selected datasets, display a page alowing the admin to select some.
-                                        <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id= trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
-                                    %else:
-                                        ## If there are selected datasets, display them
-                                        <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
-                                    %endif
+                                    ## This link will direct the admin to a page allowing them to select datasets.
+                                    <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id= trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
                                 %elif sample.datasets:
-                                    ## Only display a link if there is at least 1 selected dataset for the sample
+                                    ## Since this is a regular user, only display a link if there is at least 1
+                                    ## selected dataset for the sample.
                                     <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
                                 %else:
+                                    ## Since this is a regular user, do not display a link if there are no datasets.
                                     ${len( sample.datasets )}
                                 %endif
                             </td>
                             <td>
                                 %if is_admin:
-                                    %if sample.untransferred_dataset_files:
+                                    <% 
+                                        if sample.transferred_dataset_files:
+                                            transferred_dataset_files = sample.transferred_dataset_files
+                                        else:
+                                            transferred_dataset_files = []
+                                    %>
+                                    %if not sample.datasets:
+                                        ## No datasets have been selected for this sample, so don't include a link
+                                        ${len( sample.transferred_dataset_files )}
+                                    %elif len( sample.datasets ) > len( transferred_dataset_files ):
                                         ## At least 1 selected dataset is not yet transferred, so this link
                                         ## will direct the admin to a page allowing them to transfer datasets.
-                                        <a href="${h.url_for( controller='requests_common', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
-                                    %else:
+                                        <a href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.transferred_dataset_files )}</a>
+                                    %elif len( sample.datasets ) == len( transferred_dataset_files ):
                                         ## All selected datasets have successfully transferred, so this link
                                         ## will direct the admin to a page displaying all transferred datasets.
                                         <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">${len( sample.transferred_dataset_files )}</a>
                                     %endif
                                 %else:
                                     %if sample.transferred_dataset_files:
-                                        ## The cuurent user is not an admin, so this link will direct the
-                                        ## user to the target data library containing those datasets that
-                                        ## were successfully transferred.
+                                        ## Since this is a regular user, this link will direct them to the target
+                                        ## data library containing those datasets that were successfully transferred.
                                         <a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( sample.library.id ) )}">${len( sample.transferred_dataset_files )}</a>
                                     %else:
-                                        ## Display a 0 with no link.
+                                        ## Since this is a regular user, do not display a link.
                                         ${len( sample.transferred_dataset_files )}
                                     %endif
                                 %endif

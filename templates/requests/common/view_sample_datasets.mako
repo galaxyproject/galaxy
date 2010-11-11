@@ -37,7 +37,7 @@
     ${render_sample_datasets( cntrller, sample, sample_datasets, title )}
 %else:
     %if transfer_status:
-        No datasets with status ${transfer_status}" belong to this sample
+        No datasets with status "${transfer_status}" belong to this sample
     %else:
         No datasets have been selected for this sample.
     %endif
