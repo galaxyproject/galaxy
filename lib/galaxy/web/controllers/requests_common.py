@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from galaxy import model, util
+from galaxy.util.odict import odict
 from galaxy.web.form_builder import *
 import logging, os, csv
 
@@ -413,8 +414,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                           cntrller=cntrller,
                                                                           id=request_id,
                                                                           editing_samples=editing_samples ) )
-        # Get all libraries for which the current user has permission to add items.
-        libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        libraries = self.__get_accessible_libraries( trans, request.user )
         # Build a list of sample widgets (based on the attributes of each sample) for display.
         displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
@@ -815,8 +815,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         else:
             sample_index = len( displayable_sample_widgets )
         if params.get( 'add_sample_button', False ):
-            # Get all libraries for which the current user has permission to add items
-            libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+            libraries = self.__get_accessible_libraries( trans, request.user )
             num_samples_to_add = int( params.get( 'num_sample_to_copy', 1 ) )
             # See if the user has selected a sample to copy.
             copy_sample_index = int( params.get( 'copy_sample_index', -1 ) )
@@ -1186,9 +1185,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                             # the first time a bar code was added to the sample, so change it's state
                             # to the next associated SampleState.
                             if sample.state.id == request.type.states[0].id:
-                                event = trans.app.model.SampleEvent(sample, 
-                                                                    request.type.states[1], 
-                                                                    'Bar code associated with the sample' )
+                                event = trans.model.SampleEvent( sample, 
+                                                                request.type.states[1], 
+                                                                'Bar code associated with the sample' )
                                 trans.sa_session.add( event )
                                 trans.sa_session.flush()
                     sample.bar_code = bar_code
@@ -1216,6 +1215,19 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             folder = None
         return library, folder
     # ===== Methods for handling form definition widgets =====
+    def __get_accessible_libraries( self, trans, user ):
+        # Return a dictionary whose keys are libraries that user can
+        # access and whose values are empty string ''.  This is because
+        # methods expect the dictionary instead of a simple list because
+        # this method replaces the deprecated model.User.accessible_libraries()
+        # method.  TODO: fix methods that call this method to expect the list
+        # returne dby trans.app.securoty_agent.get_accessible_libraries() and
+        # then eliminate this method.
+        accessible_libraries = trans.app.security_agent.get_accessible_libraries( trans, user ) 
+        accessible_libraries_dict = odict()
+        for library in accessible_libraries:
+            accessible_libraries_dict[ library ] = ''
+        return accessible_libraries_dict
     def __get_request_widgets( self, trans, id ):
         """Get the widgets for the request"""
         request = trans.sa_session.query( trans.model.Request ).get( id )
@@ -1263,8 +1275,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         # Build the list of widgets which will be used to render each sample row on the request page
         if not request:
             return sample_widgets
-        # Get the list of libraries for which the current user has permission to add items.
-        libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        libraries = self.__get_accessible_libraries( trans, request.user )
         # Build the list if sample widgets, populating the values from kwd.
         for index, sample in enumerate( samples ):
             id_index = index + 1
