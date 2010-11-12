@@ -155,6 +155,8 @@
         %elif editing_samples:
             <p/>
             <div class="form-row">
+                ## hidden element to make twill work.
+                <input type="hidden" name="hidden_input" value=""/>
                 <input type="submit" name="save_samples_button" value="Save"/>
                 <input type="submit" name="cancel_changes_button" value="Cancel"/>
                 <div class="toolParamHelp" style="clear: both;">

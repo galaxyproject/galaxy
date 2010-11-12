@@ -861,16 +861,26 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
     
     # Functions associated with browsers, cookies, HTML forms and page visits
-    
+
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""        
         page = self.last_page()
-        for subpatt in patt.split():
-            if page.find( patt ) == -1:
-                fname = self.write_temp_file( page )
-                errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
-                raise AssertionError( errmsg )
-
+        if page.find( patt ) == -1:
+            fname = self.write_temp_file( page )
+            errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
+            raise AssertionError( errmsg )
+        
+    def check_string_count_in_page( self, patt, min_count ):
+        """Checks the number of 'patt' occurrences in the current browser page"""        
+        page = self.last_page()
+        patt_count = page.count( patt )
+        # The number of occurrences of patt in the page should be at least min_count
+        # so show error if patt_count is less than min_count
+        if patt_count < min_count:
+            fname = self.write_temp_file( page )
+            errmsg = "%i occurrences of '%s' found instead of %i.\npage content written to '%s' " % ( min_count, patt, patt_count, fname )
+            raise AssertionError( errmsg )
+            
     def check_string_not_in_page( self, patt ):
         """Checks to make sure 'patt' is NOT in the page."""        
         page = self.last_page()
@@ -878,6 +888,16 @@ class TwillTestCase( unittest.TestCase ):
             fname = self.write_temp_file( page )
             errmsg = "string (%s) incorrectly displayed in page.\npage content written to '%s'" % ( patt, fname )
             raise AssertionError( errmsg )
+        
+    def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
+        """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
+        for check_str in strings_displayed:
+            self.check_page_for_string(check_str)
+        for check_str, count in strings_displayed_count:
+            self.check_string_count_in_page(check_str, count)
+        for check_str in strings_not_displayed:
+            self.check_string_not_in_page(check_str)
+
     
     def write_temp_file( self, content, suffix='.html' ):
         fd, fname = tempfile.mkstemp( suffix=suffix, prefix='twilltestcase-' )
@@ -1435,7 +1455,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
 
-    # Requests stuff
+    # Sample tracking stuff
     def check_request_grid( self, cntrller, state, deleted=False, strings_displayed=[] ):
         self.visit_url( '%s/%s/browse_requests?sort=create_time&f-state=%s&f-deleted=%s' % \
                         ( self.url, cntrller, state.replace( ' ', '+' ), str( deleted ) ) )
@@ -1510,24 +1530,20 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
-    def view_request( self, cntrller, request_id, strings_displayed=[], strings_not_displayed=[] ):
+    def view_request( self, cntrller, request_id, strings_displayed=[], strings_displayed_count=[], strings_not_displayed=[] ):
         self.visit_url( "%s/%s/browse_requests?operation=view_request&id=%s" % ( self.url, cntrller, request_id ) )
-        for check_str in strings_displayed:
-            self.check_page_for_string( check_str )
-        for check_str in strings_not_displayed:
-            self.check_string_not_in_page( check_str )
-    def view_request_history( self, cntrller, request_id, strings_displayed=[], strings_not_displayed=[] ):
+        self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
+    def view_request_history( self, cntrller, request_id, strings_displayed=[], strings_displayed_count=[], strings_not_displayed=[] ):
         self.visit_url( "%s/requests_common/view_request_history?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
-        for check_str in strings_displayed:
-            self.check_page_for_string( check_str )
-        for check_str in strings_not_displayed:
-            self.check_string_not_in_page( check_str )
+        self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
+    def view_sample_history( self, cntrller, sample_id, strings_displayed=[], strings_displayed_count=[], strings_not_displayed=[] ):
+        self.visit_url( "%s/requests_common/sample_events?cntrller=%s&sample_id=%s" % ( self.url, cntrller, sample_id ) )
+        self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
     def edit_basic_request_info( self, cntrller, request_id, name, new_name='', new_desc='', new_fields=[],
                                  strings_displayed=[], strings_displayed_after_submit=[] ):
         self.visit_url( "%s/requests_common/edit_basic_request_info?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.check_page_for_string( 'Edit sequencing request "%s"' % name )
         if new_name:
             tc.fv( "1", "name", new_name )
         if new_desc:
@@ -1537,15 +1553,29 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "edit_basic_request_info_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-    def add_samples( self, cntrller, request_id, request_name, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
+    def edit_request_email_settings( self, cntrller, request_id, check_request_owner=True, additional_emails='', 
+                                     check_sample_states=[], strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( "%s/requests_common/edit_basic_request_info?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        tc.fv( "2", "email_address", check_request_owner )
+        tc.fv( "2", "additional_email_addresses", additional_emails )
+        for state_name, state_id, is_checked in check_sample_states:
+            tc.fv( "2", "sample_state_%i" % state_id, is_checked )
+        tc.submit( "edit_email_settings_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def add_samples( self, cntrller, request_id, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
         url = "%s/requests_common/add_sample?cntrller=%s&request_id=%s&add_sample_button=Add+sample" % ( self.url, cntrller, request_id )
         self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        for sample_index, sample_info in enumerate( sample_value_tuples ):
-            sample_name = sample_info[0]
-            sample_field_values = sample_info[1]
+        for sample_index, ( sample_name, target_library_info, sample_field_values ) in enumerate( sample_value_tuples ):
             tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
+            lib_widget_index = sample_index + 1
+            tc.fv( "1", "sample_%i_library_id" % lib_widget_index, target_library_info[ 'library' ] )
+            self.refresh_form( "sample_%i_library_id" % lib_widget_index, target_library_info[ 'library' ] )
+            tc.fv( "1", "sample_%i_folder_id" % lib_widget_index, target_library_info[ 'folder' ] )
             for field_index, field_value in enumerate( sample_field_values ):
                 tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
             # Do not click on Add sample button when all the sample have been added 
@@ -1553,6 +1583,32 @@ class TwillTestCase( unittest.TestCase ):
                 tc.submit( "add_sample_button" )
         # select the correct form before submitting it
         tc.fv( "1", "copy_sample_index", "-1" )
+        tc.submit( "save_samples_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def edit_samples( self, cntrller, request_id, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
+        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=True" % ( self.url, cntrller, request_id )
+        self.visit_url( url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for sample_index, ( sample_name, target_library_info, sample_field_values ) in enumerate( sample_value_tuples ):
+            tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
+            lib_widget_index = sample_index + 1
+            tc.fv( "1", "sample_%i_library_id" % lib_widget_index, target_library_info[ 'library' ] )
+            self.refresh_form( "sample_%i_library_id" % lib_widget_index, target_library_info[ 'library' ] )
+            tc.fv( "1", "sample_%i_folder_id" % lib_widget_index, target_library_info[ 'folder' ] )
+            for field_index, field_value in enumerate( sample_field_values ):
+                tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
+        tc.submit( "save_samples_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def add_bar_codes( self, cntrller, request_id, bar_codes, strings_displayed=[], strings_displayed_after_submit=[] ):
+        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=True" % ( self.url, cntrller, request_id )
+        self.visit_url( url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for sample_index, bar_code in enumerate( bar_codes ):
+            tc.fv( "1", "sample_%i_bar_code" % sample_index, bar_code )
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
@@ -1566,20 +1622,6 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
         tc.fv( "1", "comment", comment )
         tc.submit( "reject_button" )
-        for check_str in strings_displayed_after_submit:
-            self.check_page_for_string( check_str )
-    def add_bar_codes( self, request_id, request_name, bar_codes, samples, strings_displayed_after_submit=[] ):
-        # We have to simulate the form submission here since twill barfs on the page
-        # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
-        url = "%s/requests_common/edit_samples?cntrller=requests_admin&id=%s&editing_samples=True" % ( self.url, request_id )
-        for index, field_value in enumerate( bar_codes ):
-            sample_field_name = "sample_%i_name" % index
-            sample_field_value = samples[ index ].name.replace( ' ', '+' )
-            field_name = "sample_%i_bar_code" % index
-            url += "&%s=%s" % ( field_name, field_value )
-            url += "&%s=%s" % ( sample_field_name, sample_field_value )
-        url += "&save_samples_button=Save"
-        self.visit_url( url )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def change_sample_state( self, request_id, request_name, sample_names, sample_ids, new_sample_state_id, new_state_name, comment='',

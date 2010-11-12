@@ -4,7 +4,9 @@ from base.twilltestcase import *
 from base.test_db_util import *
 
 sample_states = [  ( 'New', 'Sample entered into the system' ), 
-                   ( 'Received', 'Sample tube received' ), 
+                   ( 'Received', 'Sample tube received' ),
+                   ( 'Library Started', 'Sample library preparation' ), 
+                   ( 'Run Started', 'Sequence run in progress' ), 
                    ( 'Done', 'Sequence run complete' ) ]
 address_dict = dict( short_desc="Office",
                      name="James Bond",
@@ -93,6 +95,49 @@ class TestFormsAndRequests( TwillTestCase ):
         global role2
         role2 = get_role_by_name( name )
         assert role2 is not None, 'Problem retrieving role named "Role2" from the database'
+    def test_006_create_library_and_folder( self ):
+        """Testing creating the target data library and folder"""
+        # Logged in as admin_user
+        for index in range( 0, 2 ):
+            name = 'library%s' % str( index + 1 )
+            description = '%s description' % name
+            synopsis = '%s synopsis' % name
+            self.create_library( name=name, description=description, synopsis=synopsis )
+        # Get the libraries for later use
+        global library1
+        library1 = get_library( 'library1', 'library1 description', 'library1 synopsis' )
+        assert library1 is not None, 'Problem retrieving library (library1) from the database'
+        global library2
+        library2 = get_library( 'library2', 'library2 description', 'library2 synopsis' )
+        assert library2 is not None, 'Problem retrieving library (library2) from the database'
+        # setup add_library_item permission to regular_user1
+        # Set permissions on the library, sort for later testing.
+        permissions_in = [ 'LIBRARY_ACCESS' ]
+        permissions_out = []
+        # Role1 members are: admin_user, regular_user1, regular_user3.  
+        # Each of these users will be permitted for LIBRARY_ACCESS, LIBRARY_ADD on 
+        # library1 and library2.
+        for library in [ library1, library2 ]:
+            self.library_permissions( self.security.encode_id( library.id ),
+                                      library.name,
+                                      str( role1.id ),
+                                      permissions_in,
+                                      permissions_out )
+        # adding a folder
+        for library in [ library1, library2 ]:
+            name = "%s_folder1" % library.name
+            description = "%s description" % name
+            self.add_folder( 'library_admin',
+                             self.security.encode_id( library.id ),
+                             self.security.encode_id( library.root_folder.id ),
+                             name=name,
+                             description=description )
+        global library1_folder1
+        library1_folder1 = get_folder( library1.root_folder.id, 'library1_folder1', 'library1_folder1 description' )
+        assert library1_folder1 is not None, 'Problem retrieving library folder named "library1_folder1" from the database'
+        global library2_folder1
+        library2_folder1 = get_folder( library2.root_folder.id, 'library2_folder1', 'library2_folder1 description' )
+        assert library2_folder1 is not None, 'Problem retrieving library folder named "library2_folder1" from the database'
     #
     # ====== Form definition test methods ================================================ 
     #
@@ -283,25 +328,25 @@ class TestFormsAndRequests( TwillTestCase ):
         self.view_request( cntrller='requests',
                            request_id=self.security.encode_id( request1.id ),
                            strings_displayed=[ 'Sequencing request "%s"' % request1.name,
-                                               'There are no samples.',
-                                               sample_form_layout_grid_name ],
+                                               'There are no samples.' ],
                            strings_not_displayed=[ request1.states.SUBMITTED,
                                                    request1.states.COMPLETE,
-                                                   request1.states.REJECTED ] )
+                                                   request1.states.REJECTED,
+                                                   'Submit request' ] ) # this button should NOT show up as there are no samples yet
         # check if the request is showing in the 'new' filter
         self.check_request_grid( cntrller='requests',
                                  state=request1.states.NEW,
                                  strings_displayed=[ request1.name ] )
         self.view_request_history( cntrller='requests',
                                    request_id=self.security.encode_id( request1.id ),
-                                   strings_displayed=[ 'History of Sequencing Request "%s"' % request1.name,
+                                   strings_displayed=[ 'History of sequencing request "%s"' % request1.name,
                                                        request1.states.NEW,
                                                        'Request created' ],
                                    strings_not_displayed=[ request1.states.SUBMITTED,
                                                            request1.states.COMPLETE,
                                                            request1.states.REJECTED ] )
     def test_030_edit_basic_request_info( self ):
-        """Testing editing the basic information of a sequencing request"""
+        """Testing editing the basic information and email settings of a sequencing request"""
         # logged in as regular_user1
         fields = [ 'option2', str( user_address1.id ), 'field3 value (edited)' ]
         new_name=request1.name + ' (Renamed)'
@@ -315,43 +360,186 @@ class TestFormsAndRequests( TwillTestCase ):
                                       strings_displayed=[ 'Edit sequencing request "%s"' % request1.name ],
                                       strings_displayed_after_submit=[ new_name, new_desc ] )
         refresh( request1 )
+        # now check email notification settings
+        check_sample_states = [ ( request1.type.states[0].name, request1.type.states[0].id, True ),
+                                ( request1.type.states[2].name, request1.type.states[2].id, True ),
+                                ( request1.type.states[4].name, request1.type.states[4].id, True ) ]#[ ( state.id, True ) for state in request1.type.states ]
+        strings_displayed = [ 'Edit sequencing request "%s"' % request1.name,
+                              'Email notification settings' ]
+        additional_emails = [ 'test@.bx.psu.edu', 'test2@.bx.psu.edu' ]
+        strings_displayed_after_submit = [ "The changes made to the email notification settings have been saved",
+                                           '\r\n'.join( additional_emails ) ]
+        self.edit_request_email_settings( cntrller='requests', 
+                                          request_id=self.security.encode_id( request1.id ), 
+                                          check_request_owner=True, 
+                                          additional_emails='\r\n'.join( additional_emails ), 
+                                          check_sample_states=check_sample_states, 
+                                          strings_displayed=strings_displayed, 
+                                          strings_displayed_after_submit=strings_displayed_after_submit )
+        # lastly check the details in the request page
+        strings_displayed = [ 'Sequencing request "%s"' % new_name,
+                              new_desc ]
+        for field in fields:
+            strings_displayed.append( field )        
+        for state_name, id, is_checked in check_sample_states:
+            strings_displayed.append( state_name )
+        for email in additional_emails:
+            strings_displayed.append( email )
+        self.view_request( cntrller='requests',
+                           request_id=self.security.encode_id( request1.id ),
+                           strings_displayed=strings_displayed,
+                           strings_not_displayed=[] )
     def test_035_add_samples_to_request( self ):
         """Testing adding samples to request"""
         # logged in as regular_user1
         # Sample fields - the tuple represents a sample name and a list of sample form field values
-        sample_value_tuples = [ ( 'Sample1', [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
-                                ( 'Sample2', [ 'option2', 'sample2 field2 value', 'sample2 field3 value' ] ),
-                                ( 'Sample3', [ 'option1', 'sample3 field2 value', 'sample3 field3 value' ] ) ]
+        target_library_info = dict(library=self.security.encode_id(library2.id), 
+                                   folder=self.security.encode_id(library2_folder1.id) )
+        sample_value_tuples = \
+        [ ( 'Sample1', target_library_info, [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
+          ( 'Sample2', target_library_info, [ 'option2', 'sample2 field2 value', 'sample2 field3 value' ] ),
+          ( 'Sample3', target_library_info, [ 'option1', 'sample3 field2 value', 'sample3 field3 value' ] ) ]
         strings_displayed_after_submit = [ 'Unsubmitted' ]
-        for sample_name, field_values in sample_value_tuples:
+        for sample_name, lib_info, field_values in sample_value_tuples:
             strings_displayed_after_submit.append( sample_name )
+            # add the sample values too
+            for values in field_values:
+                strings_displayed_after_submit.append( values )
         # Add samples to the request
         self.add_samples( cntrller='requests',
                           request_id=self.security.encode_id( request1.id ),
-                          request_name=request1.name,
                           sample_value_tuples=sample_value_tuples,
                           strings_displayed=[ 'Add Samples to Request "%s"' % request1.name,
                                               '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
-#    def test_040_edit_samples_of_new_request( self ):
-#        """Testing editing the sample information of new request1"""
-#        # logged in as regular_user1
-#        pass
-#    def test_035_submit_request( self ):
-#        """Testing editing a sequence run request"""
-#        # logged in as regular_user1
-#        self.submit_request( cntrller='requests',
-#                             request_id=self.security.encode_id( request1.id ),
-#                             request_name=request1.name,
-#                             strings_displayed_after_submit=[ 'The request has been submitted.' ] )
-#        refresh( request1 )
-#        # Make sure the request is showing in the 'submitted' filter
-#        self.check_request_grid( cntrller='requests',
-#                                 state=request1.states.SUBMITTED,
-#                                 strings_displayed=[ request1.name ] )
-#        # Make sure the request's state is now set to 'submitted'
-#        assert request1.state is not request1.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
-#            % ( request1.name, request1.states.SUBMITTED )
+        # check the new sample field values on the request page
+        strings_displayed = [ 'Sequencing request "%s"' % request1.name,
+                              'Submit request' ] # this button should appear now
+        strings_displayed.extend( strings_displayed_after_submit )
+        strings_displayed_count = []
+        strings_displayed_count.append( ( library2.name, len( sample_value_tuples ) ) )
+        strings_displayed_count.append( ( library2_folder1.name, len( sample_value_tuples ) ) )
+        self.view_request( cntrller='requests',
+                           request_id=self.security.encode_id( request1.id ),
+                           strings_displayed=strings_displayed,
+                           strings_displayed_count=strings_displayed_count )
+    def test_040_edit_samples_of_new_request( self ):
+        """Testing editing the sample information of new request1"""
+        # logged in as regular_user1
+        # target data library - change it to library1
+        target_library_info = dict(library=self.security.encode_id(library1.id), 
+                                   folder=self.security.encode_id(library1_folder1.id) )
+        new_sample_value_tuples = \
+        [ ( 'Sample1_renamed', target_library_info, [ 'option2', 'sample1 field2 value edited', 'sample1 field3 value edited' ] ),
+          ( 'Sample2_renamed', target_library_info, [ 'option1', 'sample2 field2 value edited', 'sample2 field3 value edited' ] ),
+          ( 'Sample3_renamed', target_library_info, [ 'option2', 'sample3 field2 value edited', 'sample3 field3 value edited' ] ) ]
+        strings_displayed_after_submit = [ 'Unsubmitted' ]
+        for sample_name, lib_info, field_values in new_sample_value_tuples:
+            strings_displayed_after_submit.append( sample_name )
+            # add the sample values too
+            for values in field_values:
+                strings_displayed_after_submit.append( values )
+        # Add samples to the request
+        self.edit_samples( cntrller='requests',
+                           request_id=self.security.encode_id( request1.id ),
+                           sample_value_tuples=new_sample_value_tuples,
+                           strings_displayed=[ 'Edit Current Samples of Request "%s"' % request1.name,
+                                               '<input type="text" name="sample_0_name" value="Sample1" size="10"/>' ], # sample name input field
+                           strings_displayed_after_submit=strings_displayed_after_submit )
+        # check the changed sample field values on the request page
+        strings_displayed = [ 'Sequencing request "%s"' % request1.name ]
+        strings_displayed.extend( strings_displayed_after_submit )
+        strings_displayed_count = []
+        strings_displayed_count.append( ( library1.name, len( new_sample_value_tuples ) ) )
+        strings_displayed_count.append( ( library1_folder1.name, len( new_sample_value_tuples ) ) )
+        self.view_request( cntrller='requests',
+                           request_id=self.security.encode_id( request1.id ),
+                           strings_displayed=strings_displayed,
+                           strings_displayed_count=strings_displayed_count )
+    def test_045_submit_request( self ):
+        """Testing submitting a sequencing request"""
+        # logged in as regular_user1
+        self.submit_request( cntrller='requests',
+                             request_id=self.security.encode_id( request1.id ),
+                             request_name=request1.name,
+                             strings_displayed_after_submit=[ 'The request has been submitted.' ] )
+        refresh( request1 )
+        # Make sure the request is showing in the 'submitted' filter
+        self.check_request_grid( cntrller='requests',
+                                 state=request1.states.SUBMITTED,
+                                 strings_displayed=[ request1.name ] )
+        # Make sure the request's state is now set to 'submitted'
+        assert request1.state is not request1.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
+            % ( request1.name, request1.states.SUBMITTED )
+        # the sample state should appear once for each sample
+        strings_displayed_count = [ ( request1.type.states[0].name, len( request1.samples ) ) ]
+        # after submission, these buttons should not appear 
+        strings_not_displayed = [ 'Add sample', 'Submit request' ]
+        # check the request page
+        self.view_request( cntrller='requests',
+                           request_id=self.security.encode_id( request1.id ),
+                           strings_displayed=[ request1.states.SUBMITTED ],
+                           strings_displayed_count=strings_displayed_count,
+                           strings_not_displayed=strings_not_displayed )
+        strings_displayed=[ 'History of sequencing request "%s"' % request1.name,
+                            'Request submitted by %s' % regular_user1.email,
+                            'Request created' ]
+        strings_displayed_count = [ ( request1.states.SUBMITTED, 1 ) ]
+        self.view_request_history( cntrller='requests',
+                                   request_id=self.security.encode_id( request1.id ),
+                                   strings_displayed=strings_displayed,
+                                   strings_displayed_count=strings_displayed_count,
+                                   strings_not_displayed=[ request1.states.COMPLETE,
+                                                           request1.states.REJECTED ] )
+    #
+    # ====== Sequencing request test methods - Admin perspective ================ 
+    #
+    def test_050_receive_request_as_admin( self ):
+        """Testing receiving a sequencing request and assigning it barcodes"""
+        self.logout()
+        self.login( email=admin_user.email )
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request1.states.SUBMITTED,
+                                 strings_displayed=[ request1.name ] )
+        strings_displayed = [ request1.states.SUBMITTED,
+                              'Reject this request' ]
+        strings_not_displayed = [ 'Add sample' ]
+        self.view_request( cntrller='requests_admin',
+                           request_id=self.security.encode_id( request1.id ),
+                           strings_not_displayed=strings_not_displayed )
+        # Set bar codes for the samples
+        bar_codes = [ '10001', '10002', '10003' ]
+        strings_displayed_after_submit = [ 'Changes made to the samples have been saved.' ]
+        strings_displayed_after_submit.extend( bar_codes )
+        self.add_bar_codes( cntrller='requests_admin',
+                            request_id=self.security.encode_id( request1.id ),
+                            bar_codes=bar_codes,
+                            strings_displayed=[ 'Edit Current Samples of Request "%s"' % request1.name ],
+                            strings_displayed_after_submit=strings_displayed_after_submit )
+        # the second sample state should appear once for each sample
+        strings_displayed_count = [ ( request1.type.states[1].name, len( request1.samples ) ),
+                                    ( request1.type.states[0].name, 0 ) ]        
+        # check the request page
+        self.view_request( cntrller='requests_admin',
+                           request_id=self.security.encode_id( request1.id ),
+                           strings_displayed=bar_codes,
+                           strings_displayed_count=strings_displayed_count )
+        # the sample state descriptions of the future states should not appear
+        # here the state names are not checked as all of them appear at the top of
+        # the page like: state1 > state2 > state3
+        strings_not_displayed=[ request1.type.states[2].desc,
+                                request1.type.states[3].desc,
+                                request1.type.states[4].desc ]
+        # check history of each sample
+        for sample in request1.samples:
+            strings_displayed = [ 'Events for Sample "%s"' % sample.name,
+                                  'Request submitted and sample state set to %s' % request1.type.states[0].name,
+                                   request1.type.states[0].name,
+                                   request1.type.states[1].name ]
+            self.view_sample_history( cntrller='requests_admin',
+                                      sample_id=self.security.encode_id( sample.id ),
+                                      strings_displayed=strings_displayed,
+                                      strings_not_displayed=strings_not_displayed )
 #    def test_040_request_lifecycle( self ):
 #        """Testing request life-cycle as it goes through all the states"""
 #        # logged in as regular_user1
@@ -477,6 +665,17 @@ class TestFormsAndRequests( TwillTestCase ):
         # Logged in as admin_user
         self.logout()
         self.login( email=admin_user.email )
+        ##################
+        # Purge all libraries
+        ##################
+        for library in [ library1, library2 ]:
+            self.delete_library_item( 'library_admin',
+                                      self.security.encode_id( library.id ),
+                                      self.security.encode_id( library.id ),
+                                      library.name,
+                                      item_type='library' )
+            self.purge_library( self.security.encode_id( library.id ), library.name )
+
         ##################
         # Delete request_type permissions
         ##################
