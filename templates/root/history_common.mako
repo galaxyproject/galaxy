@@ -1,8 +1,10 @@
 <% _=n_ %>
 ## Render the dataset `data` as history item, using `hid` as the displayed id
 <%def name="render_dataset( data, hid, show_deleted_on_refresh = False, for_editing = True )">
-    <a name="${trans.security.encode_id( data.id )}"></a>
     <%
+        dataset_id = trans.security.encode_id( data.id )
+        from galaxy.datatypes.metadata import FileParameter
+
         if data.state in ['no state','',None]:
             data_state = "queued"
         else:
@@ -41,7 +43,6 @@
                 %endif
             %else:
                 <% 
-                    dataset_id = trans.security.encode_id( data.id )
                     if for_editing:
                         display_url = h.url_for( controller='dataset', action='display', dataset_id=dataset_id, preview=True, filename='' )
                     else:
@@ -117,10 +118,25 @@
                 %endif
             </div>
             <div class="info">${_('Info: ')}${data.display_info()}</div>
-            <div> 
-                <% dataset_id=trans.security.encode_id( data.id ) %>
+            <div>
                 %if data.has_data():
+                    
+                    ## Check for downloadable metadata files
+                    <% meta_files = [ k for k in data.metadata.spec.keys() if isinstance( data.metadata.spec[k].param, FileParameter ) ] %>
+                    %if meta_files:
+                        <div popupmenu="dataset-${dataset_id}-popup">
+                        %for file_type in meta_files:
+                            <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', hda_id=dataset_id, metadata_type=file_type )}">
+                                Download ${file_type}</a>
+                        %endfor
+                        </div>
+                        <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
+                    %endif
                     <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Save" class="icon-button disk tooltip"></a>
+                    %if meta_files:
+                        </div>
+                    %endif
+                    
                     %if for_editing:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
                         %if app.config.get_bool( 'enable_tracks', False ) and data.ext in app.datatypes_registry.get_available_tracks():
