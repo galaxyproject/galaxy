@@ -295,6 +295,10 @@ class JobWrapper( object ):
     def get_job( self ):
         return self.sa_session.query( model.Job ).get( self.job_id )
     
+    def get_id_tag(self):
+        # For compatability with drmaa, which uses job_id right now, and TaskWrapper
+        return str(self.job_id)
+    
     def get_param_dict( self ):
         """
         Restore the dictionary of parameters from the database.
@@ -788,6 +792,10 @@ class TaskWrapper(JobWrapper):
     def get_task( self ):
         return self.sa_session.query(model.Task).get(self.task_id)
 
+    def get_id_tag(self):
+        # For compatibility with drmaa job runner and TaskWrapper, instead of using job_id directly
+        return "%s_%s" % (self.job_id, self.task_id)
+
     def get_param_dict( self ):
         """
         Restore the dictionary of parameters from the database.
@@ -964,7 +972,7 @@ class TaskWrapper(JobWrapper):
 
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
-        pass
+        return ""
         
     @property
     def user( self ):

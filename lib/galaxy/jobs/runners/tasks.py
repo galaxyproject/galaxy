@@ -117,8 +117,12 @@ class TaskedJobRunner( object ):
                 basic.merge(working_directory, output_filename)
                 log.debug('execution finished: %s' % command_line)
                 for tw in task_wrappers:
-                    stdout += tw.get_task().stdout
-                    stderr += tw.get_task().stderr
+                    # Prevent repetitive output, e.g. "Sequence File Aligned"x20
+                    # Eventually do a reduce for jobs that output "N reads mapped", combining all N for tasks.
+                    if stdout.strip() != tw.get_task().stdout.strip():
+                        stdout += tw.get_task().stdout
+                    if stderr.strip() != tw.get_task().stderr.strip():                        
+                        stderr += tw.get_task().stderr
             except Exception:
                 job_wrapper.fail( "failure running job", exception=True )
                 log.exception("failure running job %d" % job_wrapper.job_id)

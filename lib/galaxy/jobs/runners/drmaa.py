@@ -125,7 +125,7 @@ class DRMAAJobRunner( BaseJobRunner ):
             command_line = self.build_command_line( job_wrapper, include_metadata=True )
         except:
             job_wrapper.fail( "failure preparing job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+            log.exception("failure running job %d" % job_wrapper.get_id_tag())
             return
 
         runner_url = job_wrapper.tool.job_runner
@@ -137,7 +137,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         
         # Check for deletion before we change state
         if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug( "Job %s deleted by user before it entered the queue" % job_wrapper.job_id )
+            log.debug( "Job %s deleted by user before it entered the queue" % job_wrapper.get_id_tag() )
             job_wrapper.cleanup()
             return
 
@@ -145,10 +145,10 @@ class DRMAAJobRunner( BaseJobRunner ):
         job_wrapper.change_state( model.Job.states.QUEUED )
 
         # define job attributes
-        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_wrapper.job_id)
-        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_wrapper.job_id)
+        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_wrapper.get_id_tag())
+        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_wrapper.get_id_tag())
         jt = self.ds.createJobTemplate()
-        jt.remoteCommand = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job_wrapper.job_id)
+        jt.remoteCommand = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job_wrapper.get_id_tag())
         jt.outputPath = ":%s" % ofile
         jt.errorPath = ":%s" % efile
         native_spec = self.get_native_spec( runner_url )
@@ -163,14 +163,16 @@ class DRMAAJobRunner( BaseJobRunner ):
 
         # job was deleted while we were preparing it
         if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug( "Job %s deleted by user before it entered the queue" % job_wrapper.job_id )
+            log.debug( "Job %s deleted by user before it entered the queue" % job_wrapper.get_id_tag() )
             self.cleanup( ( ofile, efile, jt.remoteCommand ) )
             job_wrapper.cleanup()
             return
 
-        galaxy_job_id = job_wrapper.job_id
-        log.debug("(%s) submitting file %s" % ( galaxy_job_id, jt.remoteCommand ) )
-        log.debug("(%s) command is: %s" % ( galaxy_job_id, command_line ) )
+        # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
+        galaxy_id_tag = job_wrapper.get_id_tag()
+        
+        log.debug("(%s) submitting file %s" % ( galaxy_id_tag, jt.remoteCommand ) )
+        log.debug("(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
         # runJob will raise if there's a submit problem
         job_id = self.ds.runJob(jt)
         log.info("(%s) queued as %s" % ( galaxy_job_id, job_id ) )
