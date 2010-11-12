@@ -44,7 +44,7 @@
         %if can_edit_request:
             <a class="action-button" href="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit this request</a>
         %endif
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">View history</a>
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request_history', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">View history</a>
         %if can_reject:
             <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject this request</a>
         %endif
@@ -52,8 +52,15 @@
 </ul>
 
 %if request.is_rejected:
+    <br/>
     <font color="red"><b><i>Reason for rejection: </i></b></font><b>${request.last_comment}</b>
-    <br/><br/>
+    <br/>
+%endif
+
+%if request.samples_without_library_destinations:
+    <br/>
+    <font color="red"><b><i>Select a target data library and folder for all samples before starting the sequence run</i></b></font>
+    <br/>
 %endif
 
 %if message:
@@ -94,7 +101,7 @@
                     <div class="form-row">
                         <label>${field_label}:</label>                   
                         %if field_label == 'State':
-                            <a href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">${field_value}</a>
+                            <a href="${h.url_for( controller='requests_common', action='view_request_history', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">${field_value}</a>
                         %else:
                             ${field_value}     
                         %endif
@@ -154,6 +161,11 @@
         render_buttons = can_edit_samples
     %>
     ${render_samples_grid( cntrller, request, displayable_sample_widgets=displayable_sample_widgets, action='view_request', editing_samples=False, encoded_selected_sample_ids=[], render_buttons=render_buttons, grid_header=grid_header )}
+    ## Render the other grids
+    <% trans.sa_session.refresh( request.type.sample_form ) %>
+    %for grid_index, grid_name in enumerate( request.type.sample_form.layout ):
+        ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), displayable_sample_widgets=displayable_sample_widgets, editing_samples=False )}
+    %endfor
 %else:
     There are no samples.
     %if can_add_samples:
@@ -162,8 +174,3 @@
         </ul>
     %endif
 %endif
-## Render the other grids
-<% trans.sa_session.refresh( request.type.sample_form ) %>
-%for grid_index, grid_name in enumerate( request.type.sample_form.layout ):
-    ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), displayable_sample_widgets=displayable_sample_widgets, editing_samples=False )}
-%endfor

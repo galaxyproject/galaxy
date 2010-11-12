@@ -74,6 +74,8 @@ class RBACAgent:
         raise "Unimplemented Method"
     def make_library_public( self, library ):
         raise "Unimplemented Method"
+    def get_accessible_libraries( self, trans, user ):
+        raise "Unimplemented Method"
     def folder_is_public( self, library ):
         raise "Unimplemented Method"
     def make_folder_public( self, folder, count=0 ):
@@ -244,6 +246,26 @@ class GalaxyRBACAgent( RBACAgent ):
         return self.allow_action( roles, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset )
     def can_access_library( self, roles, library ):
         return self.library_is_public( library ) or self.allow_action( roles, self.permitted_actions.LIBRARY_ACCESS, library )
+    def get_accessible_libraries( self, trans, user ):
+        """Return all data libraries that user can access"""
+        accessible_libraries = []
+        current_user_role_ids = [ role.id for role in user.all_roles() ]
+        library_access_action = self.permitted_actions.LIBRARY_ACCESS.action
+        restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
+                                                                           .filter( trans.model.LibraryPermissions.table.c.action == library_access_action ) \
+                                                                           .distinct() ]
+        accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
+                                                                                      .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
+                                                                                                     trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
+        # Filter to get libraries accessible by the current user.  Get both 
+        # public libraries and restricted libraries accessible by the current user.
+        for library in trans.sa_session.query( trans.model.Library ) \
+                                       .filter( and_( trans.model.Library.table.c.deleted == False,
+                                                      ( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
+                                                             trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) ) ) ) \
+                                       .order_by( trans.app.model.Library.name ):
+            accessible_libraries.append( library )
+        return accessible_libraries
     def can_access_library_item( self, roles, item, user ):
         if type( item ) == self.model.Library:
             return self.can_access_library( roles, item )

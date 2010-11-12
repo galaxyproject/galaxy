@@ -305,7 +305,18 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         return trans.show_error_message( msg )
 
 
-    
+    @web.expose
+    def get_metadata_file(self, trans, hda_id, metadata_type):
+        """ Allows the downloading of metadata files associated with datasets (eg. bai index for bam files) """
+        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
+        if not data or not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
+            return trans.show_error_message( "You are not allowed to access this dataset" )
+        
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, metadata_type)
+        return open(data.metadata.get(metadata_type).file_name)
+        
     @web.expose
     def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
@@ -323,8 +334,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                 data = None
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
-        current_user_roles = trans.get_current_user_roles()
-        if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+        if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
         
         if data.state == trans.model.Dataset.states.UPLOAD:
@@ -358,8 +368,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                 if not to_ext:
                     to_ext = data.extension
                 valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = data.name
-                fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
+                fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
                 trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, to_ext)
                 return open( data.file_name )
         if not os.path.exists( data.file_name ):

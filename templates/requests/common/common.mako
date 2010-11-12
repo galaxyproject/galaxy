@@ -122,7 +122,7 @@
             is_rejected = request.is_rejected
             is_submitted = sample.request.is_submitted
             is_unsubmitted = sample.request.is_unsubmitted
-            can_delete_samples = not is_complete
+            can_delete_samples = editing_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
             display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
             display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
             display_datasets = request.samples and ( is_complete or is_submitted )
@@ -153,10 +153,10 @@
     %if display_bar_code:
         <td valign="top">
             %if is_admin:
-                <input type="text" name="sample_${sample_widget_index}_barcode" value="${sample_widget['barcode']}" size="10"/>
+                <input type="text" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code']}" size="10"/>
             %else:
-                ${sample_widget['barcode']}
-                <input type="hidden" name="sample_${sample_widget_index}_barcode" value="${sample_widget['barcode']}"/>
+                ${sample_widget['bar_code']}
+                <input type="hidden" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code']}"/>
             %endif
         </td>
     %endif 
@@ -234,7 +234,7 @@
         is_submitted = request.is_submitted
         is_unsubmitted = request.is_unsubmitted
         can_add_samples = request.is_unsubmitted
-        can_delete_samples = editing_samples and request.samples and not is_complete
+        can_delete_samples = editing_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
         can_edit_samples = request.samples and ( is_admin or not is_complete )
         can_select_datasets = is_admin and displayable_sample_widgets and ( is_submitted or is_complete )
         can_transfer_datasets = is_admin and request.samples and not request.is_rejected
@@ -280,14 +280,14 @@
         <tbody>
             <% trans.sa_session.refresh( request ) %>
             ## displayable_sample_widgets is a dictionary whose keys are:
-            ## id, name, barcode, library, folder, field_values, library_select_field, folder_select_field
+            ## id, name, bar_code, library, folder, field_values, library_select_field, folder_select_field
             ## A displayable_sample_widget will have an id == None if the widget's associated sample has not
             ## yet been saved (i.e., the use clicked the "Add sample" button but has not yet clicked the
             ## "Save" button.
             %for sample_widget_index, sample_widget in enumerate( displayable_sample_widgets ):
                 <%
                     sample_widget_name = sample_widget[ 'name' ]
-                    sample_widget_barcode = sample_widget[ 'barcode' ]
+                    sample_widget_bar_code = sample_widget[ 'bar_code' ]
                     sample_widget_library = sample_widget[ 'library' ]
                     if sample_widget_library:
                         if cntrller == 'requests':
@@ -309,7 +309,12 @@
                         <td>
                             %if sample.state and ( can_select_datasets or can_transfer_datasets ):
                                 ## A sample will have a state only after the request has been submitted.
-                                <% encoded_id = trans.security.encode_id( sample.id ) %>
+                                <%
+                                    encoded_id = trans.security.encode_id( sample.id )
+                                    transferred_dataset_files = sample.transferred_dataset_files
+                                    if not transferred_dataset_files:
+                                        transferred_dataset_files = []
+                                %>
                                 <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="sample-${sample.id}-popup">
                                     ${sample.name}
                                 </div>
@@ -317,8 +322,10 @@
                                     %if can_select_datasets:
                                         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', request_id=trans.security.encode_id( request.id ), sample_id=trans.security.encode_id( sample.id ) )}">Select datasets to transfer</a></li>
                                     %endif
-                                    %if sample.untransferred_dataset_files:
-                                        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Transfer datasets</a></li>
+                                    %if sample.datasets and len( sample.datasets ) > len( transferred_dataset_files ) and sample.library and sample.folder:
+                                        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Manage selected datasets</a></li>
+                                    %elif sample.datasets and len(sample.datasets ) == len( transferred_dataset_files ):
+                                        <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">View transferred datasets</a></li>
                                     %endif
                                 </div>
                             %else:
@@ -326,7 +333,7 @@
                             %endif
                         </td>
                         %if display_bar_code:
-                            <td>${sample_widget_barcode}</td>
+                            <td>${sample_widget_bar_code}</td>
                         %endif
                         %if is_unsubmitted:
                             <td>Unsubmitted</td>
@@ -361,9 +368,8 @@
                             <td>
                                 %if is_admin:
                                     <% 
-                                        if sample.transferred_dataset_files:
-                                            transferred_dataset_files = sample.transferred_dataset_files
-                                        else:
+                                        transferred_dataset_files = sample.transferred_dataset_files
+                                        if not transferred_dataset_files:
                                             transferred_dataset_files = []
                                     %>
                                     %if not sample.datasets:

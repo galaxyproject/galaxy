@@ -277,6 +277,7 @@ var updater_callback = function ( tracked_datasets ) {
                 // Keep going (if there are still any items to track)
                 updater( tracked_datasets ); 
             }
+            make_popup_menus();
         },
         error: function() {
             // Just retry, like the old method, should try to be smarter

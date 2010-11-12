@@ -1517,7 +1517,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             self.check_string_not_in_page( check_str )
     def view_request_history( self, cntrller, request_id, strings_displayed=[], strings_not_displayed=[] ):
-        self.visit_url( "%s/requests_common/request_events?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
+        self.visit_url( "%s/requests_common/view_request_history?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         for check_str in strings_not_displayed:
@@ -1575,7 +1575,7 @@ class TwillTestCase( unittest.TestCase ):
         for index, field_value in enumerate( bar_codes ):
             sample_field_name = "sample_%i_name" % index
             sample_field_value = samples[ index ].name.replace( ' ', '+' )
-            field_name = "sample_%i_barcode" % index
+            field_name = "sample_%i_bar_code" % index
             url += "&%s=%s" % ( field_name, field_value )
             url += "&%s=%s" % ( sample_field_name, sample_field_value )
         url += "&save_samples_button=Save"

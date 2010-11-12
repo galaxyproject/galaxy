@@ -3,7 +3,13 @@
 
 <%
     is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
-    can_add_samples = request.is_unsubmitted
+    is_complete = request.is_complete
+    is_submitted = request.is_submitted
+    is_unsubmitted = request.is_unsubmitted
+    can_add_samples = is_unsubmitted
+    can_reject = is_admin and is_submitted
+    can_select_datasets = is_admin and ( is_complete or is_submitted )
+    can_submit_request = request.samples and is_unsubmitted
 %>
 
 <br/><br/>
@@ -11,12 +17,14 @@
     <li><a class="action-button" id="request-${request.id}-popup" class="menubutton">Request Actions</a></li>
     <div popupmenu="request-${request.id}-popup">
         <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Browse this request</a>
-        %if can_add_samples:
+        %if can_submit_request:
             <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests_common', action='submit_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Submit this request</a>
         %endif
-        <a class="action-button" href="${h.url_for( controller='requests_common', action='request_events', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">View history</a>
-        %if is_admin and request.is_submitted:
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request_history', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">View history</a>
+        %if can_reject:
             <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject this request</a>
+        %endif
+        %if can_select_datasets:
             <a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
         %endif
     </div>

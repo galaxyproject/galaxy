@@ -43,4 +43,4 @@ run_functional_tests.html
 *.orig
 .DS_Store
 *.rej
-
+*~

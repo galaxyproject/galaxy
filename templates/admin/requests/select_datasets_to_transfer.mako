@@ -72,7 +72,7 @@ ${h.js( "ui.core", "jquery.cookie", "jquery.dynatree" )}
 
 <%
     is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
-    can_transfer_datasets = is_admin and sample.untransferred_dataset_files
+    can_transfer_datasets = is_admin and sample.untransferred_dataset_files and sample.library and sample.folder
 %>
 
 <br/><br/>
@@ -85,8 +85,15 @@ ${h.js( "ui.core", "jquery.cookie", "jquery.dynatree" )}
 </ul>
 
 %if not sample:
+    <br/>
     <font color="red"><b><i>Select a sample before selecting datasets to transfer</i></b></font>
-    <br/><br/>
+    <br/>
+%endif
+
+%if request.samples_without_library_destinations:
+    <br/>
+    <font color="red"><b><i>Select a target data library and folder for all samples before starting the sequence run</i></b></font>
+    <br/>
 %endif
 
 %if message:

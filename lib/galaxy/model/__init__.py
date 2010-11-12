@@ -53,6 +53,8 @@ class User( object ):
                     roles.append( role )
         return roles
     def accessible_libraries( self, trans, actions ):
+        # TODO: eliminate this method - instead use 
+        # trans.app.security_agent.get_accessible_libraries().
         # Get all permitted libraries for this user
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted == False ) \
