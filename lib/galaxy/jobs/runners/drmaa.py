@@ -175,7 +175,7 @@ class DRMAAJobRunner( BaseJobRunner ):
         log.debug("(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
         # runJob will raise if there's a submit problem
         job_id = self.ds.runJob(jt)
-        log.info("(%s) queued as %s" % ( galaxy_job_id, job_id ) )
+        log.info("(%s) queued as %s" % ( galaxy_id_tag, job_id ) )
 
         # store runner information for tracking if Galaxy restarts
         job_wrapper.set_runner( runner_url, job_id )
