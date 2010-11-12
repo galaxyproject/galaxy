@@ -60,14 +60,12 @@ class DefaultJobAction(object):
 class EmailAction(DefaultJobAction):
     name = "EmailAction"
     verbose_name = "Email Notification"
-
     
     @classmethod
     def execute(cls, app, sa_session, action, job):
         smtp_server = app.config.smtp_server
-        if action.action_arguments:
-            if action.action_arguments.has_key('host'):
-                host = action.action_arguments['host']
+        if action.action_arguments and action.action_arguments.has_key('host'):
+            host = action.action_arguments['host']
         else:
             host = 'usegalaxy.org'
         if smtp_server is None:
@@ -107,9 +105,8 @@ class EmailAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        if pja.action_arguments:
-            if pja.action_arguments.has_key('host'):
-                return "Email the current user from server %s when this job is complete." % pja.action_arguments['host']
+        if pja.action_arguments and pja.action_arguments.has_key('host'):
+            return "Email the current user from server %s when this job is complete." % pja.action_arguments['host']
         else:
             return "Email the current user when this job is complete."
 
@@ -153,9 +150,11 @@ class RenameDatasetAction(DefaultJobAction):
 
     @classmethod
     def execute(cls, app, sa_session, action, job):
-        for dataset_assoc in job.output_datasets:
-            if action.output_name == '' or dataset_assoc.name == action.output_name:
-                dataset_assoc.dataset.name = action.action_arguments['newname']
+        # Prevent renaming a dataset to the empty string.
+        if action.action_arguments and action.action_arguments.has_key('newname') and action.action_arguments['newname'] != '':
+            for dataset_assoc in job.output_datasets:
+                if action.output_name == '' or dataset_assoc.name == action.output_name:
+                    dataset_assoc.dataset.name = action.action_arguments['newname']
 
     @classmethod
     def get_config_form(cls, trans):
@@ -173,7 +172,11 @@ class RenameDatasetAction(DefaultJobAction):
     
     @classmethod
     def get_short_str(cls, pja):
-        return "Rename output '%s' to '%s'." % (pja.output_name, pja.action_arguments['newname'])
+        # Prevent renaming a dataset to the empty string.
+        if pja.action_arguments and pja.action_arguments.has_key('newname') and pja.action_arguments['newname'] != '':
+            return "Rename output '%s' to '%s'." % (pja.output_name, pja.action_arguments['newname'])
+        else:
+            return "Rename action used without a new name specified.  Output name will be unchanged."
 
 
 class HideDatasetAction(DefaultJobAction):
