@@ -14,7 +14,7 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from galaxy.visualization.tracks.summary import *
 from bx.intervals.io import *
 from bx.cookbook import doc_optparse
-from galaxy.tools.util.gff_util import GFFReaderWrapper
+from galaxy.tools.util.gff_util import *
 
 def main():
     # Read options, args.
@@ -40,9 +40,12 @@ def main():
                                             strand_col=strand_col,
                                             fix_strand=True )
     st = SummaryTree(block_size=25, levels=6, draw_cutoff=150, detail_cutoff=30)
-    for line in list( reader_wrapper ):
-        if type( line ) is GenomicInterval:
-            st.insert_range( line.chrom, long( line.start ), long( line.end ) )
+    for feature in list( reader_wrapper ):
+        if isinstance( feature, GenomicInterval ):
+            # Tree expects BED coordinates.
+            if type( feature ) is GFFFeature:
+                convert_gff_coords_to_bed( feature )
+            st.insert_range( feature.chrom, long( feature.start ), long( feature.end ) )
     
     st.write(out_fname)
 

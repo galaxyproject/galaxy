@@ -153,11 +153,11 @@ def main():
         
     # Set readers to handle either GFF or default format.
     if in1_gff_format:
-        in1_reader_wrapper = GFFReaderWrapper
+        in1_reader_wrapper = GFFIntervalToBEDReaderWrapper
     else:
         in1_reader_wrapper = NiceReaderWrapper
     if in2_gff_format:
-        in2_reader_wrapper = GFFReaderWrapper
+        in2_reader_wrapper = GFFIntervalToBEDReaderWrapper
     else:
         in2_reader_wrapper = NiceReaderWrapper
 

@@ -44,11 +44,11 @@ def main():
         
     # Set readers to handle either GFF or default format.
     if in1_gff_format:
-        in1_reader_wrapper = GFFReaderWrapper
+        in1_reader_wrapper = GFFIntervalToBEDReaderWrapper
     else:
         in1_reader_wrapper = NiceReaderWrapper
     if in2_gff_format:
-        in2_reader_wrapper = GFFReaderWrapper
+        in2_reader_wrapper = GFFIntervalToBEDReaderWrapper
     else:
         in2_reader_wrapper = NiceReaderWrapper
         
@@ -66,10 +66,10 @@ def main():
                             fix_strand=True )
 
     out_file = open( out_fname, "w" )
-
+    
     try:
         for line in intersect( [g1,g2], pieces=pieces, mincols=mincols ):
-            if type( line ) == GenomicInterval:
+            if isinstance( line, GenomicInterval ):
                 if in1_gff_format:
                     line = convert_bed_coords_to_gff( line )
                 out_file.write( "%s\n" % "\t".join( line.fields ) )
