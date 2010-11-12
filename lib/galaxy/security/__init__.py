@@ -60,6 +60,8 @@ class RBACAgent:
         raise "Unimplemented Method"
     def get_private_user_role( self, user ):
         raise "Unimplemented Method"
+    def get_accessible_request_types( self, trans, user ):
+        raise "Unimplemented Method"
     def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False ):
         raise "Unimplemented Method"
     def history_set_default_permissions( self, history, permissions=None, dataset=False, bypass_manage_permission=False ):
@@ -75,6 +77,8 @@ class RBACAgent:
     def make_library_public( self, library ):
         raise "Unimplemented Method"
     def get_accessible_libraries( self, trans, user ):
+        raise "Unimplemented Method"
+    def get_permitted_libraries( self, trans, user, actions ):
         raise "Unimplemented Method"
     def folder_is_public( self, library ):
         raise "Unimplemented Method"
@@ -247,7 +251,7 @@ class GalaxyRBACAgent( RBACAgent ):
     def can_access_library( self, roles, library ):
         return self.library_is_public( library ) or self.allow_action( roles, self.permitted_actions.LIBRARY_ACCESS, library )
     def get_accessible_libraries( self, trans, user ):
-        """Return all data libraries that user can access"""
+        """Return all data libraries that the received user can access"""
         accessible_libraries = []
         current_user_role_ids = [ role.id for role in user.all_roles() ]
         library_access_action = self.permitted_actions.LIBRARY_ACCESS.action
@@ -499,6 +503,20 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 permissions[ action ] = [ item_permission.role ]
         return permissions
+    def get_accessible_request_types( self, trans, user ):
+        """Return all ReqquestTypes that the received user has permission to access."""
+        active_request_types = trans.sa_session.query( trans.app.model.RequestType ) \
+                                               .filter( trans.app.model.RequestType.table.c.deleted == False ) \
+                                               .order_by( trans.app.model.RequestType.name )
+        # Filter active_request_types to those that can be accessed by the received user
+        role_ids = [ r.id for r in user.all_roles() ]
+        accessible_request_types = set()
+        for request_type in active_request_types:
+            for permission in request_type.actions:
+                if permission.role.id in role_ids:
+                   accessible_request_types.add( request_type )
+        accessible_request_types = [ request_type for request_type in accessible_request_types ]
+        return accessible_request_types
     def copy_dataset_permissions( self, src, dst ):
         if not isinstance( src, self.model.Dataset ):
             src = src.dataset
@@ -731,6 +749,34 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 raise 'Invalid class (%s) specified for target_library_item (%s)' % \
                     ( target_library_item.__class__, target_library_item.__class__.__name__ )
+    def get_permitted_libraries( self, trans, user, actions ):
+        """
+        This method is historical (it is not currently used), but may be useful again at some 
+        point.  It returns a dictionary whose keys are library objects and whose values are a
+        comma-separated string of folder ids.  This method works with the show_library_item()
+        method below, and it returns libraries for which the received user has permission to
+        perform the received actions.  Here is an example call to this method to return all
+        libraries for which the received user has LIBRARY_ADD permission:
+        libraries = trans.app.security_agent.get_permitted_libraries( trans, user,
+            [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        """
+        all_libraries = trans.sa_session.query( trans.app.model.Library ) \
+                                        .filter( trans.app.model.Library.table.c.deleted == False ) \
+                                        .order_by( trans.app.model.Library.name )
+        roles = user.all_roles()
+        actions_to_check = actions
+        # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
+        # Its keys are the libraries that should be displayed for the current user and whose values are a
+        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
+        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
+        # to the calling method to keep from re-checking the same folders when the library / folder
+        # select lists are rendered.
+        libraries = {}
+        for library in all_libraries:
+            can_show, hidden_folder_ids = self.show_library_item( self, roles, library, actions_to_check )
+            if can_show:
+                libraries[ library ] = hidden_folder_ids
+        return libraries
     def show_library_item( self, user, roles, library_item, actions_to_check, hidden_folder_ids='' ):
         """
         This method must be sent an instance of Library() or LibraryFolder().  Recursive execution produces a

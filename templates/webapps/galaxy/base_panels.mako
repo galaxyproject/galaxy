@@ -84,7 +84,7 @@
                          [ 'Find Samples', h.url_for( controller='/requests', action='find_samples_index' ) ],
                          [ 'Help', app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" ), "galaxy_main" ]
                        ]
-        tab( "lab", "Lab", None, menu_options=menu_options, visible=( trans.user and ( trans.user.requests or trans.user.accessible_request_types( trans ) ) ) )
+        tab( "lab", "Lab", None, menu_options=menu_options, visible=( trans.user and ( trans.user.requests or trans.app.security_agent.get_accessible_request_types( trans, trans.user ) ) ) )
     %>
 
     ## Visualization menu.

@@ -52,40 +52,6 @@ class User( object ):
                 if role not in roles:
                     roles.append( role )
         return roles
-    def accessible_libraries( self, trans, actions ):
-        # TODO: eliminate this method - instead use 
-        # trans.app.security_agent.get_accessible_libraries().
-        # Get all permitted libraries for this user
-        all_libraries = trans.sa_session.query( trans.app.model.Library ) \
-                                        .filter( trans.app.model.Library.table.c.deleted == False ) \
-                                        .order_by( trans.app.model.Library.name )
-        roles = self.all_roles()
-        actions_to_check = actions
-        # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
-        # Its keys are the libraries that should be displayed for the current user and whose values are a
-        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
-        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
-        # to the calling method to keep from re-checking the same folders when the library / folder
-        # select lists are rendered.
-        libraries = {}
-        for library in all_libraries:
-            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( self, roles, library, actions_to_check )
-            if can_show:
-                libraries[ library ] = hidden_folder_ids
-        return libraries
-    def accessible_request_types( self, trans ):
-        active_request_types = trans.sa_session.query( trans.app.model.RequestType ) \
-                                               .filter( trans.app.model.RequestType.table.c.deleted == False ) \
-                                               .order_by( trans.app.model.RequestType.name )
-        # Filter active_request_types to those that can be accessed by this user
-        role_ids = [ r.id for r in self.all_roles() ]
-        accessible_request_types = set()
-        for request_type in active_request_types:
-            for permission in request_type.actions:
-                if permission.role.id in role_ids:
-                   accessible_request_types.add( request_type )
-        accessible_request_types = [ request_type for request_type in accessible_request_types ]
-        return accessible_request_types
     
 class Job( object ):
     """

@@ -414,7 +414,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                           cntrller=cntrller,
                                                                           id=request_id,
                                                                           editing_samples=editing_samples ) )
-        libraries = self.__get_accessible_libraries( trans, request.user )
+        libraries = trans.app.security_agent.get_accessible_libraries( trans, request.user )
         # Build a list of sample widgets (based on the attributes of each sample) for display.
         displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
@@ -815,7 +815,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         else:
             sample_index = len( displayable_sample_widgets )
         if params.get( 'add_sample_button', False ):
-            libraries = self.__get_accessible_libraries( trans, request.user )
+            libraries = trans.app.security_agent.get_accessible_libraries( trans, request.user )
             num_samples_to_add = int( params.get( 'num_sample_to_copy', 1 ) )
             # See if the user has selected a sample to copy.
             copy_sample_index = int( params.get( 'copy_sample_index', -1 ) )
@@ -1214,20 +1214,14 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         else:
             folder = None
         return library, folder
+    def __get_active_folders( self, library ):
+        """Return all of the active folders for the received library"""
+        root_folder = library.root_folder
+        active_folders = [ root_folder ]
+        for folder in root_folder.active_folders:
+            active_folders.append( folder )
+        return active_folders
     # ===== Methods for handling form definition widgets =====
-    def __get_accessible_libraries( self, trans, user ):
-        # Return a dictionary whose keys are libraries that user can
-        # access and whose values are empty string ''.  This is because
-        # methods expect the dictionary instead of a simple list because
-        # this method replaces the deprecated model.User.accessible_libraries()
-        # method.  TODO: fix methods that call this method to expect the list
-        # returne dby trans.app.securoty_agent.get_accessible_libraries() and
-        # then eliminate this method.
-        accessible_libraries = trans.app.security_agent.get_accessible_libraries( trans, user ) 
-        accessible_libraries_dict = odict()
-        for library in accessible_libraries:
-            accessible_libraries_dict[ library ] = ''
-        return accessible_libraries_dict
     def __get_request_widgets( self, trans, id ):
         """Get the widgets for the request"""
         request = trans.sa_session.query( trans.model.Request ).get( id )
@@ -1275,7 +1269,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         # Build the list of widgets which will be used to render each sample row on the request page
         if not request:
             return sample_widgets
-        libraries = self.__get_accessible_libraries( trans, request.user )
+        libraries = trans.app.security_agent.get_accessible_libraries( trans, request.user )
         # Build the list if sample widgets, populating the values from kwd.
         for index, sample in enumerate( samples ):
             id_index = index + 1
@@ -1361,7 +1355,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             copy_sample_index_select_field.add_option( sample_dict[ 'name' ], index )
         return copy_sample_index_select_field  
     def __build_request_type_id_select_field( self, trans, selected_value='none' ):
-        accessible_request_types = trans.user.accessible_request_types( trans )
+        accessible_request_types = trans.app.security_agent.get_accessible_request_types( trans, trans.user )
         return build_select_field( trans, accessible_request_types, 'name', 'request_type_id', selected_value=selected_value, refresh_on_change=True )
     def __build_user_id_select_field( self, trans, selected_value='none' ):
         active_users = trans.sa_session.query( trans.model.User ) \
@@ -1388,11 +1382,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
     def __build_library_and_folder_select_fields( self, trans, user, sample_index, libraries, sample=None, library_id=None, folder_id=None, **kwd ):
         # Create the library_id SelectField for a specific sample. The received libraries param is a list of all the libraries
         # accessible to the current user, and we add them as options to the library_select_field.  If the user has selected an
-        # existing library then display all the accessible folders of the selected library in the folder_select_field.
-        #
-        # The libraries dictionary looks like: { library : '1,2' }, library : '3' }.  Its keys are the libraries that
-        # should be displayed for the current user and its values are strings of comma-separated folder ids that should
-        # NOT be displayed.
+        # existing library then display all the folders of the selected library in the folder_select_field.  Library folders do
+        # not have ACCESS permissions associated with them (only LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE), so all folders will
+        # be present in the folder_select_field for each library selected.
         params = util.Params( kwd )
         library_select_field_name= "sample_%i_library_id" % sample_index
         folder_select_field_name = "sample_%i_folder_id" % sample_index
@@ -1401,15 +1393,11 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         if not folder_id:
             folder_id = params.get( folder_select_field_name, None )
         selected_library = None
-        selected_hidden_folder_ids = []
-        showable_folders = []
         if library_id not in [ None, 'none' ]:
-            # If we have a selected library, get the list of it's folders that are not accessible to the current user
-            for library, hidden_folder_ids in libraries.items():
+            for library in libraries:
                 encoded_id = trans.security.encode_id( library.id )
                 if encoded_id == str( library_id ):
                     selected_library = library
-                    selected_hidden_folder_ids = hidden_folder_ids.split( ',' )
                     break
         elif sample and sample.library and library_id == 'none':
             # The user previously selected a library but is now resetting the selection to 'none'
@@ -1417,21 +1405,17 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         elif sample and sample.library:
             library_id = trans.security.encode_id( sample.library.id )
             selected_library = sample.library
-        # sample_%i_library_id SelectField with refresh on change enabled
+        # Build the sample_%i_library_id SelectField with refresh on change enabled
         library_select_field = build_select_field( trans,
-                                                   libraries.keys(),
+                                                   libraries,
                                                    'name', 
                                                    library_select_field_name,
                                                    initial_value='none',
                                                    selected_value=str( library_id ).lower(),
                                                    refresh_on_change=True )
-        # Get all accessible folders for the selected library, if one is indeed selected
+        # Get all folders for the selected library, if one is indeed selected
         if selected_library:
-            showable_folders = trans.app.security_agent.get_showable_folders( user,
-                                                                              user.all_roles(), 
-                                                                              selected_library, 
-                                                                              [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ], 
-                                                                              selected_hidden_folder_ids )
+            folders = self.__get_active_folders( selected_library )
             if folder_id:
                 selected_folder_id = folder_id
             elif sample and sample.folder:
@@ -1440,11 +1424,12 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 selected_folder_id = trans.security.encode_id( selected_library.root_folder.id )
         else:
             selected_folder_id = 'none'
+            folders = []
         # TODO: Change the name of the library root folder to "Library root" to clarify to the
         # user that it is the root folder.  We probably should just change this in the Library code,
         # and update the data in the db.
         folder_select_field = build_select_field( trans,
-                                                  showable_folders,
+                                                  folders,
                                                   'name', 
                                                   folder_select_field_name,
                                                   initial_value='none',
