@@ -13,7 +13,6 @@
         ensure_dd_helper();
         make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
         make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
-        ensure_popup_helper();
         ## handle_minwidth_hint = rp.handle_minwidth_hint;
     </script>
 </%def>
@@ -82,8 +81,7 @@
             "${initial_text}": function() {
                 // Show/hide menu and update vars, user preferences.
                 var menu = $('#tool-search');
-                if (menu.is(":visible"))
-                {
+                if (menu.is(":visible")) {
                     // Hide menu.
                     pref_value = "False";
                     menu_option_text = "Search Tools";
@@ -91,9 +89,7 @@
                     
                     // Reset search.
                     reset_tool_search(true);
-                }
-                else
-                {
+                } else {
                     // Show menu.
                     pref_value = "True";
                     menu_option_text = "Hide Search";
@@ -158,18 +154,17 @@
                                var next = this_label.next();
                                var no_visible_tools = true;
                                // Look through tools following label and, if none are visible, hide label.
-                               while (next.length != 0 && next.hasClass("toolTitle"))
-                               {
-                                   if (next.is(":visible"))
-                                   {
+                               while (next.length !== 0 && next.hasClass("toolTitle")) {
+                                   if (next.is(":visible")) {
                                        no_visible_tools = false;
                                        break;
-                                   }
-                                   else
+                                   } else {
                                        next = next.next();
+                                   }
                                 }
-                                if (no_visible_tools)
+                                if (no_visible_tools) {
                                     this_label.hide();
+                                }
                             });
                         } else {
                             $("#search-no-results").show();
@@ -211,9 +206,9 @@
                          scroll_to_nodes();
                          canvas_manager.draw_overview();
                          // Determine if any parameters were 'upgraded' and provide message
-                         upgrade_message = ""
-                         $.each( data['upgrade_messages'], function( k, v ) {
-                            upgrade_message += ( "<li>Step " + ( parseInt(k) + 1 ) + ": " + workflow.nodes[k].name + "<ul>");
+                         upgrade_message = "";
+                         $.each( data.upgrade_messages, function( k, v ) {
+                            upgrade_message += ( "<li>Step " + ( parseInt(k, 10) + 1 ) + ": " + workflow.nodes[k].name + "<ul>");
                             $.each( v, function( i, vv ) {
                                 upgrade_message += "<li>" + vv +"</li>";
                             });
@@ -256,7 +251,7 @@
              "Layout": layout_editor,
              "Save" : save_current_workflow,
              ##"Load a Workflow" : load_workflow,
-             "Close": close_editor,
+             "Close": close_editor
         });
         
 		function edit_workflow_outputs(){
@@ -297,21 +292,21 @@
 				workflow.has_changes = true;
 			});
             $('#workflow-output-area').show();
-		};
+		}
 
         function layout_editor() {
             workflow.layout();
             workflow.fit_canvas_to_nodes();
             scroll_to_nodes();
             canvas_manager.draw_overview();
-        };
+        }
         
         function edit_workflow_attributes() {
             workflow.clear_active_node();
             $('.right-content').hide();
             $('#edit-attributes').show();
 
-        };
+        }
         
         $.jStore.engineReady(function() {
             // On load, set the size to the pref stored in local storage if it exists
@@ -354,7 +349,11 @@
         
         // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
         $("#close-viewport").click( function() {
-            $("#overview-border").css("right") == "0px" ? hide_overview() : show_overview();
+            if ( $("#overview-border").css("right") === "0px" ) {
+                hide_overview();
+            } else {
+                show_overview();
+            }
         });
         
         // Unload handler
@@ -405,7 +404,7 @@
         
     function scroll_to_nodes() {
         var cv = $("#canvas-viewport");
-        var cc = $("#canvas-container")
+        var cc = $("#canvas-container");
         var top, left;
         if ( cc.width() < cv.width() ) {
             left = ( cv.width() - cc.width() ) / 2;
@@ -436,14 +435,14 @@
                 node.init_field_data( data );
             },
             error: function( x, e ) {
-                var m = "error loading field data"
-                if ( x.status == 0 ) {
-                    m += ", server unavailable"
+                var m = "error loading field data";
+                if ( x.status === 0 ) {
+                    m += ", server unavailable";
                 }
                 node.error( m );
             }
         });
-    };
+    }
     
     function add_node_for_module( type, title ) {
         node = prebuild_node( type, title );
@@ -466,7 +465,7 @@
                 node.error( m );
             }
         });
-    };
+    }
 
 <%
     from galaxy.jobs.actions.post import ActionBox
@@ -500,12 +499,12 @@
 	}
 	
 	function new_pja(action_type, target, node){
-		if (node.post_job_actions == undefined){
+		if (node.post_job_actions === undefined){
 			//New tool node, set up dict.
 			node.post_job_actions = {};
 		}
-		if (node.post_job_actions[action_type+target] == undefined){
-			var new_pja = new Object();
+		if (node.post_job_actions[action_type+target] === undefined){
+			var new_pja = {};
 			new_pja.action_type = action_type;
 			new_pja.output_name = target;
 			node.post_job_actions[action_type+target] = null;
@@ -513,7 +512,7 @@
 			display_pja(new_pja, node);
 			workflow.active_form_has_changes = true;
 			return true;
-		}else{
+		} else {
 			return false;
 		}
 	}
@@ -576,7 +575,7 @@
                     var value = $(this).attr( 'value' );
                     options[ $(this).text() ] = function() {
                         $(form).append( "<input type='hidden' name='"+name+"' value='"+value+"' />" ).submit();
-                    }
+                    };
                 });
                 b.insertAfter( this );
                 $(this).remove();
@@ -613,9 +612,9 @@
                             "Don't Save": do_close
                         } );
         } else {
-            window.document.location = "${next_url}"
+            window.document.location = "${next_url}";
         }
-    }
+    };
     
     var save_current_workflow = function ( eventObj, success_callback ) {
         show_modal( "Saving workflow", "progress" );
@@ -634,14 +633,14 @@
                 type: "POST",
                 data: {
                     id: "${trans.security.encode_id( stored.id )}",
-                    workflow_data: function() { return JSON.stringify( workflow.to_simple() ) },
+                    workflow_data: function() { return JSON.stringify( workflow.to_simple() ); },
                     "_": "true"
                 },
                 dataType: 'json',
                 success: function( data ) { 
                     var body = $("<div></div>").text( data.message );
                     if ( data.errors ) {
-                        body.addClass( "warningmark" )
+                        body.addClass( "warningmark" );
                         var errlist = $( "<ul/>" );
                         $.each( data.errors, function( i, v ) {
                             $("<li></li>").text( v ).appendTo( errlist );
@@ -663,7 +662,7 @@
                     }
                 }
             });
-        }
+        };
         
         // We bind to ajaxStop because of auto-saving, since the form submission ajax
         // call needs to be completed so that the new data is saved
@@ -677,7 +676,7 @@
         } else {
             savefn(success_callback);
         }
-    }
+    };
     
     </script>
 </%def>
