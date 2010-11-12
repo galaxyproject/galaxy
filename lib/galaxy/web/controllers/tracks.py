@@ -7,7 +7,7 @@ pkg_resources.require( "bx-python" )
 
 from bx.seq.twobit import TwoBitFile
 from galaxy import model
-from galaxy.util.json import to_json_string, from_json_string
+from galaxy.util.json import from_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import grids
@@ -249,29 +249,21 @@ class TracksController( BaseController, UsesVisualization ):
         """
         Called by the browser to request a block of data
         """
-        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
-        if not dataset or not chrom:
+    
+        # Parameter check.
+        if not chrom:
             return messages.NO_DATA
-        if dataset.state == trans.app.model.Job.states.ERROR:
-            return messages.ERROR
-        if dataset.state != trans.app.model.Job.states.OK:
-            return messages.PENDING
         
-        track_type, data_sources = dataset.datatype.get_track_type()
-        for source_type, data_source in data_sources.iteritems():
-            try:
-                converted_dataset = dataset.get_converted_dataset(trans, data_source)
-            except ValueError:
-                return messages.NO_CONVERTER
-
-            # Need to check states again for the converted version
-            if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
-                job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ).filter_by( dataset_id=converted_dataset.id ).first().job_id
-                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-                return { 'kind': messages.ERROR, 'message': job.stderr }
-                
-            if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
-                return messages.PENDING
+        # Dataset check.
+        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+        msg = self._check_dataset_state( trans, dataset )
+        if msg:
+            return msg
+            
+        # Get converted datasets.
+        data_sources, message = self._get_converted_datasets( trans, dataset )
+        if not data_sources:
+            return message
             
         extra_info = None
         if 'index' in data_sources:
@@ -365,4 +357,43 @@ class TracksController( BaseController, UsesVisualization ):
     @web.expose
     def list_tracks( self, trans, **kwargs ):
         return self.tracks_grid( trans, **kwargs )
-            
+        
+        
+    #
+    # Helper methods.
+    #
+        
+    def _check_dataset_state( self, trans, dataset ):
+        """
+        Returns a message if dataset is not ready to be used in visualization.
+        """
+        if not dataset:
+            return messages.NO_DATA
+        if dataset.state == trans.app.model.Job.states.ERROR:
+            return messages.ERROR
+        if dataset.state != trans.app.model.Job.states.OK:
+            return messages.PENDING
+        return None
+        
+    def _get_converted_datasets( self, trans, dataset ):
+        """
+        Returns (a) converted datasets for a dataset and (b) dictionary of
+        any messages based on or derived from the conversion.
+        """
+        track_type, data_sources = dataset.datatype.get_track_type()
+        for source_type, data_source in data_sources.iteritems():
+            try:
+                converted_dataset = dataset.get_converted_dataset(trans, data_source)
+            except ValueError:
+                return None, messages.NO_CONVERTER
+
+            # Need to check states again for the converted version
+            if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
+                job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ).filter_by( dataset_id=converted_dataset.id ).first().job_id
+                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+                return None, { 'kind': messages.ERROR, 'message': job.stderr }
+                
+            if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
+                return None, messages.PENDING
+                
+        return data_sources, None
