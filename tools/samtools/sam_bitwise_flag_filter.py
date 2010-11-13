@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Refactored on 11/13/2010 by Kanwei Li
 
 import sys
 import optparse
@@ -104,74 +105,45 @@ options (listed below) default to 'None' if omitted
         default = '2',
         help='Column containing SAM bitwise flag. 1-based')
 
-    parser.add_option(
-        '-d','--debug',
-        dest='debug',
-        action='store_true',
-        default = False,
-        help='Print debugging info')
-
     options, args = parser.parse_args()
 
     if options.input_sam:
 		infile = open ( options.input_sam, 'r')
     else:
     	infile = sys.stdin
-
-    option_values = { '0': False, '1': True, None: None } 
-
-    states = [];
-    states.append( option_values[ options.is_paired ] )
-    states.append( option_values[ options.is_proper_pair ] )
-    states.append( option_values[ options.is_unmapped ] )
-    states.append( option_values[ options.mate_is_unmapped ] )
-    states.append( option_values[ options.query_strand ] )
-    states.append( option_values[ options.mate_strand ] )
-    states.append( option_values[ options.is_first ] )
-    states.append( option_values[ options.is_second ] )
-    states.append( option_values[ options.is_not_primary ] )
-    states.append( option_values[ options.is_bad_quality ] )
-    states.append( option_values[ options.is_duplicate ] )
-
+        
+    opt_ary = [
+        options.is_paired,
+        options.is_proper_pair,
+        options.is_unmapped,
+        options.mate_is_unmapped,
+        options.query_strand,
+        options.mate_strand,
+        options.is_first,
+        options.is_second,
+        options.is_not_primary,
+        options.is_bad_quality,
+        options.is_duplicate
+    ]
+    
+    opt_map = { '0': False, '1': True }
+    used_indices = [(index, opt_map[opt]) for index, opt in enumerate(opt_ary) if opt is not None]
+    flag_col = int( options.flag_col ) - 1
+    
     for line in infile:
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ) and not line.startswith( '@' ) :
             fields = line.split( '\t' )
-            sam_states = []
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0001 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0002 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0004 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0008 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0010 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0020 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0040 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0080 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0100 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0200 ) )
-            sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0400 ) )
-            
-            joined_states =  zip(states,sam_states)
-            searchable_fields = []
-            
-            for i in range( len( joined_states ) ):
-                if joined_states[i][0] != None: 
-                    searchable_fields.append( joined_states[ i ] )
+            flags = int( fields[flag_col] )
             
             valid_line = True
-            
-            for i in range( len( searchable_fields ) ):
-                if searchable_fields[i][0] != searchable_fields[i][1]:
+            for index, opt_bool in used_indices:
+                if bool(flags & 0x0001 << index) != opt_bool:
                     valid_line = False
+                    break
                     
             if valid_line:
                 print line
-                if options.debug:
-                    for i in range( len( joined_states ) ):
-                        print i, joined_states[i][0], joined_states[i][1]
-            
-#    if skipped_lines > 0:
-#        print 'Skipped %d invalid lines' % skipped_lines
-
 
 if __name__ == "__main__": main()
 
