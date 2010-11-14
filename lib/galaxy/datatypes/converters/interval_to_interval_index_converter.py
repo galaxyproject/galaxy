@@ -14,7 +14,7 @@ from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from galaxy.visualization.tracks.summary import *
 from bx.cookbook import doc_optparse
-from galaxy.tools.util.gff_util import convert_gff_coords_to_bed
+from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed
 from bx.interval_index_file import Indexes
 
 def main():

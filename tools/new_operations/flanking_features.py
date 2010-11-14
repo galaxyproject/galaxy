@@ -18,7 +18,7 @@ from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *
 from bx.intervals.io import *
 from bx.intervals.operations import quicksect
-from galaxy.tools.util.gff_util import *
+from galaxy.datatypes.util.gff_util import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 

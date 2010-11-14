@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 from galaxy import eggs
-from galaxy.tools.util.gff_util import parse_gff_attributes
+from galaxy.datatypes.util.gff_util import parse_gff_attributes
 
 assert sys.version_info[:2] >= ( 2, 4 )
 

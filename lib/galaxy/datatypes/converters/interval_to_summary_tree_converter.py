@@ -14,7 +14,7 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from galaxy.visualization.tracks.summary import *
 from bx.intervals.io import *
 from bx.cookbook import doc_optparse
-from galaxy.tools.util.gff_util import *
+from galaxy.datatypes.util.gff_util import *
 
 def main():
     # Read options, args.
