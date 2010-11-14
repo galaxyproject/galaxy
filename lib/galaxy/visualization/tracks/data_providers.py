@@ -5,6 +5,7 @@ Data providers for tracks visualizations.
 from math import floor, ceil, log, pow
 import pkg_resources
 pkg_resources.require( "bx-python" ); pkg_resources.require( "pysam" ); pkg_resources.require( "numpy" )
+from galaxy.datatypes.util.gff_util import *
 from bx.interval_index_file import Indexes
 from bx.arrays.array_tree import FileArrayTreeDict
 from galaxy.util.lrucache import LRUCache
@@ -330,25 +331,43 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                 break
             count += 1
             source.seek(offset)
-            feature = source.readline().split()
             payload = [ offset, start, end ]
             # TODO: can we use column metadata to fill out payload?
             # TODO: use function to set payload data
             if "no_detail" not in kwargs:
-                length = len(feature)
                 if isinstance( self.original_dataset.datatype, Gff ):
                     # GFF dataset.
-                    if length >= 3:
-                        payload.append( feature[2] ) # name
-                    if length >= 7:
-                        payload.append( feature[6] ) # strand
+                    reader = GFFReaderWrapper( source )
+                    feature = reader.next()
+                    
+                    payload.append( feature.name() )
+                    # Strand:
+                    payload.append( feature.strand )
+                    
+                    # No notion of thick start, end in GFF, so make everything
+                    # thick.
+                    payload.append( start )
+                    payload.append( end )
+                    
+                    # Add blocks.
+                    feature = convert_gff_coords_to_bed( feature )
+                    block_sizes = [ (interval.end - interval.start ) for interval in feature.intervals ]
+                    block_starts = [ ( interval.start - feature.start ) for interval in feature.intervals ]
+                    blocks = zip( block_sizes, block_starts )
+                    payload.append( [ ( start + block[1], start + block[1] + block[0] ) for block in blocks ] )
+                    
+                    # Score.
+                    payload.append( feature.score )
                 elif isinstance( self.original_dataset.datatype, Bed ):
                     # BED dataset.
+                    feature = source.readline().split()
+                    length = len(feature)
                     if length >= 4:
                         payload.append(feature[3]) # name
                     if length >= 6: # strand
                         payload.append(feature[5])
 
+                    # Thick start, end.
                     if length >= 8:
                         payload.append(int(feature[6]))
                         payload.append(int(feature[7]))
@@ -356,8 +375,8 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                     if length >= 12:
                         block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
                         block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
-                        blocks = zip(block_sizes, block_starts)
-                        payload.append( [ (start + block[1], start + block[1] + block[0]) for block in blocks] )
+                        blocks = zip( block_sizes, block_starts )
+                        payload.append( [ ( start + block[1], start + block[1] + block[0] ) for block in blocks ] )
                         
                     if length >= 5:
                         payload.append( int(feature[4]) ) # score

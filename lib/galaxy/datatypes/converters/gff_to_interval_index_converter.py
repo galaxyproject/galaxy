@@ -20,15 +20,9 @@ def main():
     input_fname, out_fname = sys.argv[1:]
         
     # Do conversion.
-    chr_col, start_col, end_col, strand_col = ( 0, 3, 4, 6 )
     index = Indexes()
     offset = 0
-    reader_wrapper = GFFReaderWrapper( fileinput.FileInput( input_fname ),
-                                        chrom_col=chr_col,
-                                        start_col=start_col,
-                                        end_col=end_col,
-                                        strand_col=strand_col,
-                                        fix_strand=True )
+    reader_wrapper = GFFReaderWrapper( fileinput.FileInput( input_fname ), fix_strand=True )
     for feature in list( reader_wrapper ):
         # TODO: need to address comments:
         # if comment:
@@ -49,7 +43,7 @@ def main():
         offset += feature_len
             
     index.write( open(out_fname, "w") )
-
+    
 if __name__ == "__main__": 
     main()
     

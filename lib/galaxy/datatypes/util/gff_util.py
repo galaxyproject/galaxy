@@ -9,21 +9,28 @@ class GFFInterval( GenomicInterval ):
     A GFF interval, including attributes. If file is strictly a GFF file,
     only attribute is 'group.'
     """
-    def __init__( self, reader, fields, chrom_col, start_col, end_col, strand_col, default_strand, \
-                  fix_strand=False, raw_line='' ):
+    def __init__( self, reader, fields, chrom_col, start_col, end_col, strand_col, \
+                  score_col, default_strand, fix_strand=False, raw_line='' ):
         GenomicInterval.__init__( self, reader, fields, chrom_col, start_col, end_col, strand_col, \
                                   default_strand, fix_strand=fix_strand )
+        # Handle score column.
+        self.score_col = score_col
+        if self.score_col >= self.nfields:
+          raise MissingFieldError( "No field for score_col (%d)" % score_col )
+        self.score = self.fields[ self.score_col ]
+        
+        # Attributes specific to GFF.
         self.raw_line = raw_line
         self.attributes = parse_gff_attributes( fields[8] )
                 
-class GFFFeature( GenomicInterval ):
+class GFFFeature( GFFInterval ):
     """
     A GFF feature, which can include multiple intervals.
     """
-    def __init__( self, reader, chrom_col, start_col, end_col, strand_col, default_strand, \
+    def __init__( self, reader, chrom_col, start_col, end_col, strand_col, score_col, default_strand, \
                   fix_strand=False, intervals=[] ):
-        GenomicInterval.__init__( self, reader, intervals[0].fields, chrom_col, start_col, end_col, \
-                                  strand_col, default_strand, fix_strand=fix_strand )
+        GFFInterval.__init__( self, reader, intervals[0].fields, chrom_col, start_col, end_col, \
+                                strand_col, score_col, default_strand, fix_strand=fix_strand )
         self.intervals = intervals
         # Use intervals to set feature attributes.
         for interval in self.intervals:
@@ -39,6 +46,15 @@ class GFFFeature( GenomicInterval ):
                 self.start = interval.start
             if interval.end > self.end:
                 self.end = interval.end
+                
+    def name( self ):
+        """ Returns feature's name. """
+        name = self.attributes.get( 'transcript_id', None )
+        if not name:
+            name = self.attributes.get( 'id', None )
+        if not name:
+            name = self.attributes.get( 'group', None )
+        return name
                 
 class GFFIntervalToBEDReaderWrapper( NiceReaderWrapper ):
     """ 
@@ -60,7 +76,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
     Reader wrapper for GFF files.
     
     Wrapper has two major functions:
-    (1) group entries for GFF file (via group column), GFF3 (via id attribute ), 
+    (1) group entries for GFF file (via group column), GFF3 (via id attribute), 
         or GTF (via gene_id/transcript id);
     (2) convert coordinates from GFF format--starting and ending coordinates 
         are 1-based, closed--to the 'traditional'/BED interval format--0 based, 
@@ -68,24 +84,29 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         expect traditional interval format.
     """
     
-    def __init__( self, reader, **kwargs ):
+    def __init__( self, reader, chrom_col=0, start_col=3, end_col=4, strand_col=6, score_col=5, **kwargs ):
         """
         Create wrapper. Defaults are group_entries=False and 
         convert_coords_to_bed=True to support backward compatibility.
         """
+        
+        # Add columns to kwargs here so that defaults can be used rather than 
+        # requiring them to be passed in.
+        kwargs[ 'chrom_col' ] = chrom_col
+        kwargs[ 'start_col' ] = start_col
+        kwargs[ 'end_col' ] = end_col
+        kwargs[ 'strand_col' ] = strand_col
         NiceReaderWrapper.__init__( self, reader, **kwargs )
-        self.group_entries = kwargs.get( 'group_entries', False )
-        self.convert_coords_to_bed = kwargs.get( 'convert_coords_to_bed', True )
+        # HACK: NiceReaderWrapper (bx-python) does not handle score_col yet, so store ourselves.
+        self.score_col = score_col
         self.last_line = None
         self.cur_offset = 0
         self.seed_interval = None
     
     def parse_row( self, line ):
         interval = GFFInterval( self, line.split( "\t" ), self.chrom_col, self.start_col, \
-                                self.end_col, self.strand_col, self.default_strand, \
+                                self.end_col, self.strand_col, self.score_col, self.default_strand, \
                                 fix_strand=self.fix_strand, raw_line=line )
-        if self.convert_coords_to_bed:
-            interval = convert_gff_coords_to_bed( interval )
         return interval
         
     def next( self ):
@@ -104,6 +125,9 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             # no reason to stuff an entire bad file into memmory
             if self.skipped < 10:
                self.skipped_lines.append( ( self.linenum, self.current_line, str( e ) ) )
+               
+            # For debugging, uncomment this to propogate parsing exceptions up.
+            # raise e
                
         #
         # Get next GFFFeature
@@ -159,7 +183,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
     
         # Return GFF feature with all intervals.    
         return GFFFeature( self, self.chrom_col, self.start_col, self.end_col, self.strand_col, \
-                           self.default_strand, fix_strand=self.fix_strand, \
+                           self.score_col, self.default_strand, fix_strand=self.fix_strand, \
                            intervals=feature_intervals )
         
 
@@ -179,12 +203,15 @@ def convert_bed_coords_to_gff( interval ):
 def convert_gff_coords_to_bed( interval ):
     """
     Converts an interval object's coordinates from GFF format to BED format. 
-    Accepted object types include GenomicInterval and list (where the first
-    element in the list is the interval's start, and the second element is 
-    the interval's end).
+    Accepted object types include GFFFeature, GenomicInterval, and list (where
+    the first element in the list is the interval's start, and the second 
+    element is the interval's end).
     """
-    if type( interval ) is GenomicInterval:
+    if isinstance( interval, GenomicInterval ):
         interval.start -= 1
+        if isinstance( interval, GFFFeature ):
+            for subinterval in interval:
+                convert_gff_coords_to_bed( subinterval )
     elif type ( interval ) is list:
         interval[ 0 ] -= 1
     return interval
