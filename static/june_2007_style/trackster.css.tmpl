@@ -4,12 +4,12 @@
 }
 .nav {
     padding: 0 0;
-    color:#333;font-weight:bold;
+    color:#333;
+    font-weight:bold;
     background:#cccccc;
     background-image:url(panel_header_bg.png);
-    background-position: bottom center;
+    background-position: middle center;
     background-repeat:repeat-x;
-    height: 2.5em;
     border-bottom: solid #333 1px;
 }
 .content {
@@ -17,14 +17,23 @@
 }
 .nav-controls {
     text-align: center;
-    position: relative;
-    padding: 2px 0;
+    padding: 1px 0;
 }
 .nav-controls input {
     margin: 0 5px;
 }
-.nav-controls a {
-    padding: 0 0.4em;
+#zoom-in, #zoom-out {
+    display:inline-block;
+    height: 16px;
+    width: 16px;
+    margin-bottom: -3px;
+}
+#zoom-out {
+    background: transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat;
+}
+#zoom-in {
+    margin-left: 10px;
+    background: transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat;
 }
 .nav-input {
     font-size: 12px;
@@ -34,9 +43,10 @@
 .location {
     display: inline-block;
     width: 15em;
-    margin: 0px 10px;
+    margin: 0 10px;
 }
 .draghandle {
+    margin-top: 2px;
     cursor: move;
     float: left;
     background: transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;
@@ -120,8 +130,7 @@
     /* border-top: solid #DDDDDD 1px; */
     /* border-bottom: solid #DDDDDD 1px; */
     background: white;
-    margin-bottom: 1px;
-    padding-bottom: 4px;
+    margin-bottom: 2px;
     border-bottom: #eee solid 1px;
 }
 
@@ -132,7 +141,7 @@
 }
 
 .track-header .menubutton {
-    margin-left: 3px;
+    margin-left: 0px;
 }
 
 .track-content {
@@ -142,9 +151,11 @@
 
 .track.error .track-content {
     background-color: #ECB4AF;
+    padding: 2px 0;
 }
 .track.nodata .track-content {
     background-color: #ddd;
+    padding: 2px 0;
 }
 
 .loading {
@@ -164,6 +175,11 @@
     padding: 1px;
     padding-bottom: 2px;
     display: inline-block;
+}
+.reference-track {
+    border: none;
+    margin: 0;
+    padding: 0;
 }
 .right-float {
     float: right;

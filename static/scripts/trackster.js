@@ -155,8 +155,8 @@ $.extend( View.prototype, {
         if (this.vis_id !== undefined) {
             this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.chrom_form);
         }
-        this.zo_link = $("<a/>").click(function() { view.zoom_out(); view.redraw(); }).html('<img src="'+image_path+'/fugue/magnifier-zoom-out.png" />').appendTo(this.chrom_form);
-        this.zi_link = $("<a/>").click(function() { view.zoom_in(); view.redraw(); }).html('<img src="'+image_path+'/fugue/magnifier-zoom.png" />').appendTo(this.chrom_form);        
+        this.zo_link = $("<a id='zoom-out' />").click(function() { view.zoom_out(); view.redraw(); }).appendTo(this.chrom_form);
+        this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.redraw(); }).appendTo(this.chrom_form);        
         
         $.ajax({
             url: chrom_url, 
@@ -1039,10 +1039,10 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(round_1000(track.prefs.min_value));
             var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(round_1000(track.prefs.max_value));
             
-            max_label.css({ position: "absolute", top: "22px", left: "10px" });
+            max_label.css({ position: "absolute", top: "24px", left: "10px" });
             max_label.prependTo(track.container_div);
     
-            min_label.css({ position: "absolute", top: track.height_px + 11 + "px", left: "10px" });
+            min_label.css({ position: "absolute", top: track.height_px + 12 + "px", left: "10px" });
             min_label.prependTo(track.container_div);
         });
     },
