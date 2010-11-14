@@ -270,7 +270,7 @@ class BooleanToolParameter( ToolParameter ):
     >>> print p.name
     blah
     >>> print p.get_html()
-    <input type="checkbox" name="blah" value="true" checked><input type="hidden" name="blah" value="true">
+    <input type="checkbox" id="blah" name="blah" value="true" checked="checked"><input type="hidden" name="blah" value="true">
     >>> print p.from_html( ["true","true"] )
     True
     >>> print p.to_param_dict_string( True )

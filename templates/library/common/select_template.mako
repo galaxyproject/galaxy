@@ -28,18 +28,18 @@
             </div>
             % if item_type in [ 'library', 'folder' ]:
                 <div class="form-row">
-                    <label>Inherit template to contained folders and datasets?</label>
                     %if inheritable_checked:
                         <% inheritable_check_box.checked = True %>
                     %endif
                     ${inheritable_check_box.get_html()}
+                    <label for="inheritable" style="display:inline;">Inherit template to contained folders and datasets?</label>
                     <div class="toolParamHelp" style="clear: both;">
                         Check if you want this template to be used by other folders and datasets contained within this ${item_desc}
                     </div>
                 </div>
             %endif
             <div class="form-row">
-                <input type="submit" name="add_template_button" value="Add template to ${item_desc}"/>
+                <input type="submit" name="add_template_button" value="Use this template"/>
             </div>
         </form>
     </div>

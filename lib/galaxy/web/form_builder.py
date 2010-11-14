@@ -90,25 +90,26 @@ class CheckboxField(BaseField):
     A checkbox (boolean input)
     
     >>> print CheckboxField( "foo" ).get_html()
-    <input type="checkbox" name="foo" value="true" ><input type="hidden" name="foo" value="true">
+    <input type="checkbox" id="foo" name="foo" value="true"><input type="hidden" name="foo" value="true">
     >>> print CheckboxField( "bar", checked="yes" ).get_html()
-    <input type="checkbox" name="bar" value="true" checked><input type="hidden" name="bar" value="true">
+    <input type="checkbox" id="bar" name="bar" value="true" checked="checked"><input type="hidden" name="bar" value="true">
     """
     def __init__( self, name, checked=None ):
         self.name = name
         self.checked = ( checked == True ) or ( isinstance( checked, basestring ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
     def get_html( self, prefix="", disabled=False ):
         if self.checked:
-            checked_text = "checked"
+            checked_text = ' checked="checked"'
         else:
             checked_text = ""
+        id_name = prefix + self.name
         # The hidden field is necessary because if the check box is not checked on the form, it will
         # not be included in the request params.  The hidden field ensure that this will happen.  When
         # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
-        return '<input type="checkbox" name="%s%s" value="true" %s%s><input type="hidden" name="%s%s" value="true"%s>' \
-            % ( prefix, self.name, checked_text, self.get_disabled_str( disabled ), prefix, self.name, self.get_disabled_str( disabled ) )
+        return '<input type="checkbox" id="%s" name="%s" value="true"%s%s><input type="hidden" name="%s%s" value="true"%s>' \
+            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), prefix, self.name, self.get_disabled_str( disabled ) )
     @staticmethod
     def is_checked( value ):
         if value == True:

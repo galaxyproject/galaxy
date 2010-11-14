@@ -1781,7 +1781,8 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
         if not forms:
             message = "There are no forms on which to base the template, so create a form and then add the template."
             return trans.response.send_redirect( web.url_for( controller='forms',
-                                                              action='create_request',
+                                                              action='create_form',
+                                                              cntrller='library',
                                                               message=message,
                                                               status='done',
                                                               form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE ) )

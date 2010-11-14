@@ -92,7 +92,7 @@
                         <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Select a different template</a>
                     %elif info_association and not inherited and can_modify:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Edit template</a>
-                        <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Delete template</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Unuse template</a>
                         %if item_type not in [ 'ldda', 'library_dataset' ]:
                             %if info_association.inheritable:
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='manage_template_inheritance', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Dis-inherit template</a>
@@ -110,7 +110,7 @@
                             <b>
                                 This is an inherited template and is not required to be used with this ${item_type}.  You can 
                                 <a href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}"><font color="red">select a different template</font></a>
-                                or fill in the desired fields and save this one.  This template will not be assocaiated with this ${item_type} until you click the Save button.
+                                or fill in the desired fields and save this one.  This template will not be associated with this ${item_type} until you click the Save button.
                             </b>
                         </font>
                     </div>
