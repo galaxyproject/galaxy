@@ -1864,20 +1864,21 @@ class Sample( object ):
                 untransferred_datasets.append( dataset )
         return untransferred_datasets
     def get_untransferred_dataset_size( self, filepath ):
-        # TODO: RC: If rsh keys are not set, this method will return something like the following:
-        # greg@scofield.bx.psu.edu's password: 46M    /afs/bx.psu.edu/home/greg/chr22/chr21.fa
-        # This method should return the number of bytes in the file.  I believe du
-        # displays the file system block usage which may not be the number of bytes in the file.
-        # Would ls -l be better?
         def print_ticks( d ):
             pass
         datatx_info = self.request.type.datatx_info
-        cmd  = 'ssh %s@%s "du -sh \'%s\'"' % ( datatx_info['username'], datatx_info['host'], filepath )
+        login_str = '%s@%s' % ( datatx_info['username'], datatx_info['host'] )
+        cmd  = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
         output = pexpect.run( cmd,
                               events={ '.ssword:*': datatx_info['password']+'\r\n', 
                                        pexpect.TIMEOUT:print_ticks}, 
                               timeout=10 )
-        return output.replace( filepath, '' ).strip()
+        # cleanup the output to get just the file size
+        return  output.replace( filepath, '' )\
+                      .replace( 'Password:', '' )\
+                      .replace( "'s password:", '' )\
+                      .replace( login_str, '' )\
+                      .strip()
     def get_api_value( self, view='collection' ):
         rval = {}
         try:
