@@ -14,6 +14,18 @@
    ${common_javascripts()}
 </%def>
 
+<script type="text/javascript">
+    // This function stops the form from getting submitted when return key is pressed
+    // This is needed in this form as the barcode scanner (when in keyboard emulation mode)
+    // may send a return key appended to the scanned barcode string.  
+    function stopRKey(evt) {
+      var evt = (evt) ? evt : ((event) ? event : null);
+      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+      if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
+    }
+    document.onkeypress = stopRKey
+</script>
+
 <%
     from galaxy.web.framework.helpers import time_ago
 

@@ -68,7 +68,7 @@ def update_sample_state( message ):
     api_key = get_value(dom, 'api_key')
     log.debug('Barcode: ' + barcode)
     log.debug('State: ' + state)
-    log.debug('api_key: ' + api_key)
+    log.debug('API Key: ' + api_key)
     # validate 
     if not barcode or not state or not api_key:
         log.debug( 'Incomplete sample_state_update message received. Sample barcode, desired state and user API key is required.' )
