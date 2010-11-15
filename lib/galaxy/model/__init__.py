@@ -1494,6 +1494,9 @@ class MetadataFile( object ):
         return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 
 class FormDefinition( object ):
+    # The following form_builder classes are supported by the FormDefinition class.
+    # AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
+    supported_field_types = [ AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
                    SAMPLE = 'Sequencing Sample Form',
                    LIBRARY_INFO_TEMPLATE = 'Library information template',
@@ -1587,6 +1590,19 @@ class FormDefinition( object ):
                                   widget=field_widget,
                                   helptext=helptext ) )
         return widgets
+    def field_as_html( self, field ):
+        """Generates disabled html for a field"""
+        type = field[ 'type' ]
+        form_field = None
+        for field_type in self.supported_field_types:
+            if type == field_type.__name__:
+                # Name it AddressField, CheckboxField, etc.
+                form_field = field_type( type )
+                break
+        if form_field:
+            return form_field.get_html( disabled=True )
+        # Return None if unsupported field type
+        return None
         
 class FormDefinitionCurrent( object ):
     def __init__(self, form_definition=None):

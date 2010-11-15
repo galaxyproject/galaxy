@@ -101,11 +101,11 @@
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                  <span>Forms</span>
+                  <span>Form Definitions</span>
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
-                    <div class="toolTitle"><a href="${h.url_for( controller='forms', action='manage' )}" target="galaxy_main">Manage forms</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( controller='forms', action='manage' )}" target="galaxy_main">Manage form definitions</a></div>
                   </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -114,7 +114,7 @@
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
-                    <div class="toolTitle"><a href="${h.url_for( controller='requests_admin', action='browse_request_types' )}" target="galaxy_main">Sequencer configurations</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( controller='requests_admin', action='browse_request_types' )}" target="galaxy_main">Manage sequencers</a></div>
                     <div class="toolTitle"><a href="${h.url_for( controller='requests_admin', action='browse_requests' )}" target="galaxy_main">Sequencing requests</a></div>
                     <div class="toolTitle"><a href="${h.url_for( controller='requests_common', action='find_samples', cntrller='requests_admin' )}" target="galaxy_main">Find samples</a></div>
                   </div>

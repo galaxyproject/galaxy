@@ -69,12 +69,11 @@
                 <input type="text" name="data_dir" value="" size="40"/>
             </div>
             <div class="form-row">
-                <label>Add experiment name and the sample name to the dataset name?</label>
+                <label>Prepend the experiment name and sample name to the dataset name?</label>
                 ${rename_dataset_select_field.get_html()}
                 <div class="toolParamHelp" style="clear: both;">
-                    The datasets are renamed by prepending the experiment name and the sample name to the dataset name. <br/>This
-                    makes sure that dataset names remain unique in Galaxy even when they have the
-                    same name in the sequencer.
+                    Galaxy datasets are renamed by prepending the experiment name and sample name to the dataset name, ensuring<br/>
+                    dataset names remain unique in Galaxy even when multiple datasets have the same name on the sequencer.
                 </div>
             </div>
             <div class="form-row">

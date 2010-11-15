@@ -1,10 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-%if message:
-    ${render_msg( message, status )}
-%endif
-
 <script type="text/javascript">
 $(document).ready(function(){
     //hide the all of the element with class msg_body
@@ -81,17 +77,23 @@ $(document).ready(function(){
    </div>
 </%def>
 
+<br/><br/>
+<ul class="manage-table-actions">
+    <li><a class="action-button" href="${h.url_for( controller='forms', action='manage', operation='View', id=trans.security.encode_id( form_definition.current.id ) )}">View</a></li>
+</ul>
+
+%if message:
+    ${render_msg( message, status )}
+%endif
+
 <div class="toolForm">
-    <div class="toolFormTitle">Edit form definition "${form.name}"</div>
-    <form id="edit_form" name="edit_form" action="${h.url_for( controller='forms', action='edit', id=trans.security.encode_id(form.current.id)  )}" method="post" >
+    <div class="toolFormTitle">Edit form definition "${form_definition.name}"</div>
+    <form id="edit_form_definition" name="edit_form_definition" action="${h.url_for( controller='forms', action='edit', id=trans.security.encode_id( form_definition.current.id ) )}" method="post" >
         %if response_redirect:
             <input type="hidden" name="response_redirect" value="${response_redirect}" size="40" />
         %endif
         %for label, input in form_details:
             <div class="form-row">
-                ## TODO: RC, this will keep the form type select list label
-                ## from being displayed here.  At this point, the select list is a hidden field.
-                ## Make sure this is the best solution to this problem.
                 %if label != 'Type':
                     <label>${label}</label>
                 %endif
@@ -106,16 +108,16 @@ $(document).ready(function(){
             <div class="form-row">
                 <label>Layout grid names</label>
             </div>
-            %for index, lg in enumerate(layout_grids):
+            %for index, lg in enumerate( layout_grids ):
                 ${render_layout( index, lg )}
             %endfor
             <div class="form-row">
                 <input type="submit" name="add_layout_grid" value="Add layout grid"/>
             </div>
         %endif
-        <div class="toolFormTitle">Fields (${len(form.fields)})</div>
+        <div class="toolFormTitle">Form fields</div>
         %for ctr, field in enumerate(field_details):
-            %if ctr < len(form.fields):
+            %if ctr < len( form_definition.fields ):
                 ${render_field( ctr, field, True )}
             %else:
                 ${render_field( ctr, field, False )}
@@ -125,6 +127,7 @@ $(document).ready(function(){
             <input type="submit" name="add_field_button" value="Add field"/>
         </div>
         <div class="form-row">
+            ## TODO: Eliminate the need for this hidden refresh param
             <div style="float: left; width: 250px; margin-right: 10px;">
                 <input type="hidden" name="refresh" value="true" size="40"/>
             </div>

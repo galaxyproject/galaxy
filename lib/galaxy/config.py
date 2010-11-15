@@ -42,6 +42,8 @@ class Configuration( object ):
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # web API
         self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
+        # Communication with a sequencer
+        self.enable_sequencer_communication = string_as_bool( kwargs.get( 'enable_sequencer_communication', False ) )
         # dataset Track files
         self.track_store_path = kwargs.get( "track_store_path", "${extra_files_path}/tracks")
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )

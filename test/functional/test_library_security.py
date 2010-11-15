@@ -393,8 +393,8 @@ class TestLibrarySecurity( TwillTestCase ):
         # admin_user is associated with role1, so should have all permissions on imported datasets
         check_edit_page( latest_3_lddas,
                          strings_displayed=[ 'Manage dataset permissions on',
-                                           'Role members can manage the roles associated with permissions on this dataset',
-                                           'Role members can import this dataset into their history for analysis' ] )
+                                           'can manage the roles associated with permissions on this dataset',
+                                           'can import this dataset into their history for analysis' ] )
         self.logout()
         # regular_user1 is associated with role1, so should have all permissions on imported datasets
         self.login( email=regular_user1.email )
@@ -423,8 +423,8 @@ class TestLibrarySecurity( TwillTestCase ):
         check_edit_page( latest_3_lddas,
                          strings_displayed=[ 'View Permissions' ],
                          strings_not_displayed=[ 'Manage dataset permissions on',
-                                                 'Role members can manage roles associated with permissions on this library item',
-                                                 'Role members can import this dataset into their history for analysis' ] )
+                                                 'can manage roles associated with permissions on this library item',
+                                                 'can import this dataset into their history for analysis' ] )
     def test_060_restrict_access_to_library2( self ):
         """Testing restricting access to library2"""
         # Logged in as admin_user

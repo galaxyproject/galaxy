@@ -105,7 +105,7 @@ class Forms( BaseController ):
                                                               action='manage',
                                                               message='Invalid form',
                                                               status='error' ) )
-        return trans.fill_template( '/admin/forms/show_form_read_only.mako',
+        return trans.fill_template( '/admin/forms/view_form_definition.mako',
                                     form_definition=fdc.latest_form )
     def __form_types_widget(self, trans, selected='none'):
         form_type_selectbox = SelectField( 'form_type_selectbox' )
@@ -223,8 +223,13 @@ class Forms( BaseController ):
             # unsaved form, with the error message
             if not fd_new:
                 current_form = self.__get_form( trans, **kwd )
-                return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                    message=message, status='error', response_redirect=response_redirect, **kwd )
+                return self.__show( trans=trans,
+                                    form_definition=fd,
+                                    current_form=current_form, 
+                                    message=message,
+                                    status='error',
+                                    response_redirect=response_redirect,
+                                    **kwd )
             # everything went fine. form saved successfully. Show the saved form or redirect
             # to response_redirect if appropriate.
             if response_redirect:
@@ -232,8 +237,13 @@ class Forms( BaseController ):
             fd = fd_new
             current_form = self.__get_saved_form( fd )
             message = "The form '%s' has been updated with the changes." % fd.name
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                message=message, status=status, response_redirect=response_redirect, **kwd )
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
+                                message=message,
+                                status=status,
+                                response_redirect=response_redirect,
+                                **kwd )
         #
         # Add a layout grid
         #
@@ -241,8 +251,13 @@ class Forms( BaseController ):
             current_form = self.__get_form( trans, **kwd )
             current_form['layout'].append('')
             # show the form again
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                message=message, status=status, response_redirect=response_redirect, **kwd )
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
+                                message=message,
+                                status=status,
+                                response_redirect=response_redirect,
+                                **kwd )
         #
         # Delete a layout grid
         #
@@ -250,8 +265,13 @@ class Forms( BaseController ):
             current_form = self.__get_form( trans, **kwd )
             index = int( kwd[ 'remove_layout_grid_button' ].split( ' ' )[2] ) - 1
             del current_form['layout'][index]
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                message=message, status=status, response_redirect=response_redirect, **kwd )
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
+                                message=message,
+                                status=status,
+                                response_redirect=response_redirect,
+                                **kwd )
         #
         # Add a field
         #
@@ -259,8 +279,13 @@ class Forms( BaseController ):
             current_form = self.__get_form( trans, **kwd )
             current_form['fields'].append( self.empty_field )
             # show the form again with one empty field
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                message=message, status=status, response_redirect=response_redirect, **kwd )
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
+                                message=message,
+                                status=status,
+                                response_redirect=response_redirect,
+                                **kwd )
         #
         # Delete a field
         #
@@ -269,8 +294,13 @@ class Forms( BaseController ):
             # find the index of the field to be removed from the remove button label
             index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
             del current_form['fields'][index]
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                message=message, status=status, response_redirect=response_redirect, **kwd )
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
+                                message=message,
+                                status=status,
+                                response_redirect=response_redirect,
+                                **kwd )
         #
         # Add SelectField option
         #
@@ -286,15 +316,25 @@ class Forms( BaseController ):
         #
         elif params.get( 'refresh', False ):
             current_form = self.__get_form( trans, **kwd )
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                message=message, status=status, response_redirect=response_redirect, **kwd )
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
+                                message=message,
+                                status=status,
+                                response_redirect=response_redirect,
+                                **kwd )
         #
         # Show the form for editing
         #
         else:
             current_form = self.__get_saved_form( fd )
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                message=message, status=status, response_redirect=response_redirect, **kwd )
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
+                                message=message,
+                                status=status,
+                                response_redirect=response_redirect,
+                                **kwd )
             
     def __add_selectbox_option( self, trans, fd, message, status, response_redirect=None, **kwd ):
         '''
@@ -311,13 +351,22 @@ class Forms( BaseController ):
                 break
         if index == -1:
             # something wrong happened
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
                                 message='Error in adding selectfield option', 
-                                status='error', response_redirect=response_redirect, **kwd )
+                                status='error',
+                                response_redirect=response_redirect,
+                                **kwd )
         # add an empty option
         current_form[ 'fields' ][ index ][ 'selectlist' ].append( '' )
-        return self.__show( trans=trans, form=fd, current_form=current_form, 
-                            message=message, status=status, response_redirect=response_redirect, **kwd )
+        return self.__show( trans=trans,
+                            form_definition=fd,
+                            current_form=current_form, 
+                            message=message,
+                            status=status,
+                            response_redirect=response_redirect,
+                            **kwd )
     def __remove_selectbox_option( self, trans, fd, message, status, response_redirect=None, **kwd ):
         '''
         This method removes a selectbox option. The kwd dict searched for
@@ -334,13 +383,22 @@ class Forms( BaseController ):
                 break
         if option == -1:
             # something wrong happened
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
+            return self.__show( trans=trans,
+                                form_definition=fd,
+                                current_form=current_form, 
                                 message='Error in removing selectfield option', 
-                                status='error', response_redirect=response_redirect, **kwd )
+                                status='error',
+                                response_redirect=response_redirect,
+                                **kwd )
         # remove the option
         del current_form[ 'fields' ][ index ][ 'selectlist' ][ option ]
-        return self.__show( trans=trans, form=fd, current_form=current_form, 
-                            message=message, status=status, response_redirect=response_redirect, **kwd )
+        return self.__show( trans=trans,
+                            form_definition=fd,
+                            current_form=current_form, 
+                            message=message,
+                            status=status,
+                            response_redirect=response_redirect,
+                            **kwd )
 
     
     def __get_field(self, index, **kwd):
@@ -356,22 +414,22 @@ class Forms( BaseController ):
         layout = params.get( 'field_layout_%i' % index, '' )
         default = params.get( 'field_default_%i' % index, '' )
         if field_type == 'SelectField':
-            selectlist = self.__get_selectbox_options(index, **kwd)
-            return {'label': name, 
-                    'helptext': helptext, 
-                    'visible': True,
-                    'required': required,
-                    'type': field_type,
-                    'selectlist': selectlist,
-                    'layout': layout,
-                    'default': default }
-        return {'label': name, 
-                'helptext': helptext, 
-                'visible': True,
-                'required': required,
-                'type': field_type,
-                'layout': layout,
-                'default': default}
+            options = self.__get_selectbox_options(index, **kwd)
+            return { 'label': name, 
+                     'helptext': helptext, 
+                     'visible': True,
+                     'required': required,
+                     'type': field_type,
+                     'selectlist': selectlist,
+                     'layout': layout,
+                     'default': default }
+        return { 'label': name, 
+                 'helptext': helptext, 
+                 'visible': True,
+                 'required': required,
+                 'type': field_type,
+                 'layout': layout,
+                 'default': default }
     def __get_selectbox_options(self, index, **kwd):
         '''
         This method gets all the options entered by the user for field when
@@ -452,23 +510,23 @@ class Forms( BaseController ):
 		    continue
                 options = row[5].split(',')
                 if len(row) >= 8:
-                    fields.append({'label': row[0], 
-                                   'helptext': row[1], 
-                                   'visible': row[2],
-                                   'required': row[3],
-                                   'type': row[4],
-                                   'selectlist': options,
-                                   'layout':row[6],
-                                   'default': row[7]})
+                    fields.append( { 'label': row[0], 
+                                     'helptext': row[1], 
+                                     'visible': row[2],
+                                     'required': row[3],
+                                     'type': row[4],
+                                     'selectlist': options,
+                                     'layout':row[6],
+                                     'default': row[7] } )
                     layouts.add(row[6])             
                 else:
-                    fields.append({'label': row[0], 
-                                   'helptext': row[1], 
-                                   'visible': row[2],
-                                   'required': row[3],
-                                   'type': row[4],
-                                   'selectlist': options,
-                                   'default': row[6]})
+                    fields.append( { 'label': row[0], 
+                                     'helptext': row[1], 
+                                     'visible': row[2],
+                                     'required': row[3],
+                                     'type': row[4],
+                                     'selectlist': options,
+                                     'default': row[6] } )
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
                                                               action='create_form',
@@ -570,8 +628,8 @@ class Forms( BaseController ):
                                          refresh_on_change_values=['SelectField'])
             if field_type:
                 field['type'] = unicode(field_type)
-            if field_type == 'SelectField' and not field['selectlist']:
-                field['selectlist'] = ['', '']
+            if field_type == 'SelectField' and not field[ 'selectlist' ]:
+                field[ 'selectlist' ] = ['', '']
             # if the form is for defining samples, then use the sample field types
             # which does not include TextArea & AddressField
             if form_type == trans.app.model.FormDefinition.types.SAMPLE:
@@ -605,8 +663,8 @@ class Forms( BaseController ):
                         self.layout_selectbox.add_option("%i. %s" %(i+1, grid_name), i)
         def selectbox_ui(self, field):
             self.selectbox_options = []
-            if field['selectlist']:
-                for ctr, option in enumerate(field['selectlist']):
+            if field[ 'selectlist' ]:
+                for ctr, option in enumerate(field[ 'selectlist' ]):
                     self.selectbox_options.append(('Option '+str(ctr+1),
                                                    TextField('field_'+str(self.index)+'_option_'+str(ctr), 
                                                             40, option)))
@@ -628,17 +686,14 @@ class Forms( BaseController ):
         def label(self):
             return str(self.index)+'.'+self.label 
         
-    def __show( self, trans, form, current_form, message='', status='done', response_redirect=None, **kwd ):
-        '''
-        This method displays the form and any of the changes made to it,
-        The empty_form param allows for this method to simulate clicking
-        the "add_field_button" on the edit_form.mako page so that the page
-        is displayed with the first field to be added, saving a mouse click.
-        '''
+    def __show( self, trans, form_definition, current_form, message='', status='done', response_redirect=None, **kwd ):
+        """
+        Displays the form and any of the changes made to it, The empty_form param allows for this method to
+        simulate clicking the "add_field_button" on the edit_form_definition.mako page so that the page is
+        displayed with the first field to be added, saving a mouse click.
+        """
         params = util.Params( kwd )
         # name & description
-        # TODO: RC, I've changed Type to be a hidden field since it should not be displayed on the edit_form.mako
-        # template.  Make sure this is the optimal solution for this problem.  See my additional TODO in edit_form.mako.
         form_details = [ ( 'Name', TextField( 'name', 40, current_form[ 'name' ] ) ),
                          ( 'Description', TextField( 'description', 40, current_form[ 'desc' ] ) ),
                          ( 'Type', HiddenField( 'form_type_selectbox', current_form['type']) ) ]
@@ -654,10 +709,10 @@ class Forms( BaseController ):
             else:
                 field_ui = self.FieldUI( trans, None, index, field, form_type=current_form['type'] )
             field_details.append( field_ui.get() )
-        return trans.fill_template( '/admin/forms/edit_form.mako',
+        return trans.fill_template( '/admin/forms/edit_form_definition.mako',
                                     form_details=form_details,
                                     field_details=field_details,
-                                    form=form,
+                                    form_definition=form_definition,
                                     field_types=BaseField.form_field_types(),
                                     message=message,
                                     status=status,

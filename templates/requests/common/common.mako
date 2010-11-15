@@ -430,7 +430,7 @@
                         <input type="text" name="sample_${index}_field_${field_index}" value="${sample_values[field_index]}" size="7"/>
                     %elif field_type == 'SelectField':
                         <select name="sample_${index}_field_${field_index}" last_selected_value="2">
-                            %for option_index, option in enumerate(field['selectlist']):
+                            %for option_index, option in enumerate(field[ 'selectlist' ]):
                                 %if option == sample_values[field_index]:
                                     <option value="${option}" selected>${option}</option>
                                 %else:

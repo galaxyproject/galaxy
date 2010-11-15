@@ -19,14 +19,14 @@ class Action( object ):
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
-        DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Role members can manage the roles associated with permissions on this dataset", "grant" ),
-        DATASET_ACCESS = Action( "access", "Role members can import this dataset into their history for analysis", "restrict" ),
-        LIBRARY_ACCESS = Action( "access library", "Restrict access to this library to only role members", "restrict" ),
-        LIBRARY_ADD = Action( "add library item", "Role members can add library items to this library item", "grant" ),
-        LIBRARY_MODIFY = Action( "modify library item", "Role members can modify this library item", "grant" ),
-        LIBRARY_MANAGE = Action( "manage library permissions", "Role members can manage roles associated with permissions on this library item", "grant" ),
+        DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset", "grant" ),
+        DATASET_ACCESS = Action( "access", "Users having associated role can import this dataset into their history for analysis", "restrict" ),
+        LIBRARY_ACCESS = Action( "access library", "Restrict access to this library to only users having assocaited role", "restrict" ),
+        LIBRARY_ADD = Action( "add library item", "Users having associated role can add library items to this library item", "grant" ),
+        LIBRARY_MODIFY = Action( "modify library item", "Users having associated role can modify this library item", "grant" ),
+        LIBRARY_MANAGE = Action( "manage library permissions", "Users having associated role can manage roles associated with permissions on this library item", "grant" ),
         # Request type permissions
-        REQUEST_TYPE_ACCESS = Action( "access request_type", "Restrict access to this request_type to only role members", "restrict" )
+        REQUEST_TYPE_ACCESS = Action( "access request_type", "Restrict access to only users having associated role", "restrict" )
         
     )
     def get_action( self, name, default=None ):
@@ -912,9 +912,6 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 hidden_folder_ids = '%d' % sub_folder.id
         return False, hidden_folder_ids
-    #
-    # RequestType Permissions
-    #
     def can_access_request_type( self, roles, request_type ):
         action = self.permitted_actions.REQUEST_TYPE_ACCESS
         request_type_actions = []

@@ -51,9 +51,9 @@
                 be granted to users (a library item is one of: a data library, a library folder, a library dataset).
                 <p/>
                 <ul>
-                    <li><strong>add library item</strong> - Role members can add library items to this data library or folder</li>
-                    <li><strong>modify library item</strong> - Role members can modify this library item</li>
-                    <li><strong>manage library permissions</strong> - Role members can manage permissions applied to this library item</li>
+                    <li><strong>add library item</strong> - Users that have the role can add library items to this data library or folder</li>
+                    <li><strong>modify library item</strong> - Users that have the role can modify this library item</li>
+                    <li><strong>manage library permissions</strong> - Users that have the role can manage permissions applied to this library item</li>
                 </ul>
                 <p/>
                 The default behavior is for no permissions to be applied to a data library item, but applied permissions are inherited downward (with the exception

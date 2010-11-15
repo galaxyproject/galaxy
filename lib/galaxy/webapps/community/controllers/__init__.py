@@ -1,1 +1,1 @@
-"""Galaxy community space controllers."""
+"""Galaxy tool shed controllers."""

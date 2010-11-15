@@ -1,11 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
-%if message:
-    ${render_msg( message, status )}
-%endif
-
 <script type="text/javascript">
     $( document ).ready( function () {
         $( '.role_add_button' ).click( function() {
@@ -28,19 +23,23 @@
     });
 </script>
 
+<br/><br/>
+<ul class="manage-table-actions">
+    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}"><span>Browse this configuration</span></a></li>
+</ul>
+
+%if message:
+    ${render_msg( message, status )}
+%endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Manage permissions on "${request_type.name}"</div>
+    <div class="toolFormTitle">Manage access permissions on sequencer interface "${request_type.name}"</div>
     <div class="toolFormBody">
         <form name="request_type_permissions" id="request_type_permissions" action="${h.url_for( controller='requests_admin', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}" method="post">
             <div class="form-row">
                 <%
-                    obj_name = request_type.name
                     current_actions = request_type.actions
-                    permitted_actions = trans.app.model.RequestType.permitted_actions.items()
-                    action = trans.app.model.RequestType.permitted_actions.REQUEST_TYPE_ACCESS
-                    obj_str = 'request_type %s' % obj_name
-                    obj_type = 'request_type'
+                    action = trans.app.security_agent.permitted_actions.REQUEST_TYPE_ACCESS
                     all_roles = roles
                     action_key = 'REQUEST_TYPE_ACCESS'
                     
@@ -51,9 +50,7 @@
                             in_roles.add( a.role )
                     out_roles = filter( lambda x: x not in in_roles, all_roles )
                 %>
-                <p>
-                    <b>access sequencer configuration:</b> Restrict access to this sequencer configuration to only role members
-                </p>
+                ${action.description}<br/><br/>
                 <div style="width: 100%; white-space: nowrap;">
                     <div style="float: left; width: 50%;">
                         Roles associated:<br/>
@@ -74,7 +71,6 @@
                         <input type="submit" id="${action_key}_add_button" class="role_add_button" value="<<"/>
                     </div>
                 </div>
-##            </%def>
             </div>
             <div class="form-row">
                 <input type="submit" name="update_roles_button" value="Save"/>

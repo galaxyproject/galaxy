@@ -312,6 +312,9 @@ use_interactive = True
 
 # -- Beta features
 
+# Enable Galaxy to communicate directly with a sequencer
+#enable_sequencer_communication = False
+
 # Enable Galaxy's built-in visualization module, Trackster.
 #enable_tracks = False
 

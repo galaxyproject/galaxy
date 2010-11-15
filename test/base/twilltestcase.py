@@ -1494,7 +1494,7 @@ class TwillTestCase( unittest.TestCase ):
     def view_request_type( self, request_type_id, request_type_name, sample_states, strings_displayed=[] ):
         '''View request_type details'''
         self.home()
-        self.visit_url( "%s/requests_admin/browse_request_types?operation=view&id=%s" % ( self.url, request_type_id ) )
+        self.visit_url( "%s/requests_admin/view_request_type?id=%s" % ( self.url, request_type_id ) )
         self.check_page_for_string( 'Sequencer configuration information' )
         self.check_page_for_string( request_type_name )
         for name, desc in sample_states:

@@ -57,7 +57,7 @@ class RequestTypeGrid( grids.Grid ):
     columns = [
         NameColumn( "Name", 
                     key="name",
-                    link=( lambda item: iff( item.deleted, None, dict( operation="view", id=item.id ) ) ),
+                    link=( lambda item: iff( item.deleted, None, dict( operation="view_request_type", id=item.id ) ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
@@ -78,12 +78,12 @@ class RequestTypeGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [
-        grids.GridOperation( "Permissions", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
+        grids.GridOperation( "Edit permissions", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
         grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted  )  ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
     global_actions = [
-        grids.GridAction( "Create new sequencer configuration", dict( controller='requests_admin', action='create_request_type' ) )
+        grids.GridAction( "Create new configuration", dict( controller='requests_admin', action='create_request_type' ) )
     ]
 
 class DataTransferGrid( grids.Grid ):
@@ -638,23 +638,21 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             err_msg += "Set your API Key in your User Preferences to transfer datasets."
         # check if library_import_dir is set
         if not trans.app.config.library_import_dir:
-            err_msg = "'The library_import_dir' setting is not set in the Galaxy config file."
+            err_msg = "'The library_import_dir' setting is not correctly set in the Galaxy config file."
         # check the RabbitMQ server settings in the config file
         for k, v in trans.app.config.amqp.items():
             if not v:
-                err_msg += 'Set RabbitMQ server settings in the "galaxy_amqp" section of the Galaxy config file. %s is not set.' % k
+                err_msg += 'Set RabbitMQ server settings in the "galaxy_amqp" section of the Galaxy config file, specifically "%s" is not set.' % k
                 break
         return err_msg
     @web.expose
     @web.require_admin
     def initiate_data_transfer( self, trans, sample_id, sample_datasets=[], sample_dataset_id='' ):
         '''
-        This method initiates the transfer of the datasets from the sequencer. It 
-        happens in the following steps:
-        - The current admin user needs to have LIBRARY_ADD permission for the
-          target library and folder
-        - Create an XML message encapsulating all the data transfer info and send it
-          to the message queue (RabbitMQ broker)
+        Initiate the transfer of the datasets from the sequencer to the target Galaxy data library:
+        - The admin user must have LIBRARY_ADD permission for the target library and folder
+        - Create an XML message encapsulating all the data transfer information and send it
+          to the message queue (RabbitMQ broker).
         '''
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
@@ -735,13 +733,13 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             obj_id = kwd.get( 'id', None )
             if operation == "view_form_definition":
                 return self.view_form_definition( trans, **kwd )
-            elif operation == "view":
+            elif operation == "view_request_type":
                 return self.view_request_type( trans, **kwd )
             elif operation == "delete":
                 return self.delete_request_type( trans, **kwd )
             elif operation == "undelete":
                 return self.undelete_request_type( trans, **kwd )
-            elif operation == "permissions":
+            elif operation == "edit permissions":
                 return self.request_type_permissions( trans, **kwd )
         # Render the grid view
         return self.requesttype_grid( trans, **kwd )
@@ -888,11 +886,9 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='browse_request_types' )
-        forms = self.get_all_forms( trans )
         rename_dataset_select_field = self.__build_rename_dataset_select_field( trans, request_type )
         return trans.fill_template( '/admin/requests/view_request_type.mako', 
                                     request_type=request_type,
-                                    forms=forms,
                                     rename_dataset_select_field=rename_dataset_select_field )
     @web.expose
     @web.require_admin
@@ -902,7 +898,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             form_definition = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( form_definition_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', form_definition_id, action='browse_request_types' )
-        return trans.fill_template( '/admin/forms/show_form_read_only.mako',
+        return trans.fill_template( '/admin/forms/view_form_definition.mako',
                                     form_definition=form_definition )
     @web.expose
     @web.require_admin
