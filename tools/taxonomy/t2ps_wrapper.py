@@ -59,7 +59,7 @@ except OSError, e:
 # Convert PS to PDF
 
 try:
-    ps2pdf_cmd = 'ps2pdf %s %s' % ( ps_file.name, pdf_file )
+    ps2pdf_cmd = 'pstopdf %s -o %s' % ( ps_file.name, pdf_file )
     retcode = subprocess.call( ps2pdf_cmd, shell=True )
     if retcode < 0:
         print >>sys.stderr, "Execution of ps2pdf terminated by signal", -retcode

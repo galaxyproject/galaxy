@@ -11,7 +11,7 @@ echo "Sorting gi2tax files..."
 sort -n -k 1 gi_taxid_all.dmp > gi_taxid_sorted.txt
 rm gi_taxid_nucl.dmp gi_taxid_prot.dmp gi_taxid_all.dmp
 echo "Removing parenthesis from names.dmp"
-cat names.dmp | sed s/\(/_/g | sed s/\)/_/g > names.temporary
+cat names.dmp | sed s/[\(\)\'\"]/_/g > names.temporary
 mv names.dmp names.dmp.orig
 mv names.temporary names.dmp 
 
