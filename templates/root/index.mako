@@ -40,7 +40,7 @@
             "Show Hidden Datasets": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_hidden=True)}";
             },
-            "Show structure": function() {
+            "Show Structure": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
             },
             "Export to File": function() {

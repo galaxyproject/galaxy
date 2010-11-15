@@ -427,14 +427,11 @@
                         <input type="hidden" name="upload_option" value="import_from_history"/>
                         <input type="hidden" name="ldda_message" value="${ldda_message}"/>
                         <%
+                            role_ids_selected = ''
                             if roles_select_list:
-                                role_ids_selected = roles_select_list.get_selected( return_value=True, multi=True )
-                                if role_ids_selected:
-                                    role_ids_selected = ','.join( role_ids_selected )
-                                else:
-                                    role_ids_selected = ''
-                            else:
-                                role_ids_selected = ''
+                                selected = roles_select_list.get_selected( return_value=True, multi=True )
+                                if selected:
+                                    role_ids_selected = ','.join( selected )
                         %>
                         <input type="hidden" name="roles" value="${role_ids_selected}"/>
                         %if replace_dataset not in [ None, 'None' ]:
@@ -450,9 +447,11 @@
                                 ${render_template_field( field, render_as_hidden=True )}
                             %endfor 
                         %endif
-                        %for hda in history.active_datasets:
+                        %for hda in history.visible_datasets:
+                            <% encoded_id = trans.security.encode_id( hda.id ) %>
                             <div class="form-row">
-                                <input name="hda_ids" value="${trans.security.encode_id( hda.id )}" type="checkbox"/>${hda.hid}: ${hda.name}
+                                <input name="hda_ids" id="hist_${encoded_id}" value="${encoded_id}" type="checkbox"/>
+                                <label for="hist_${encoded_id}" style="display: inline;font-weight:normal;">${hda.hid}: ${hda.name}</label>
                             </div>
                         %endfor
                         <div class="form-row">
@@ -460,9 +459,7 @@
                         </div>
                     </form>
                 %else:
-                    <p/>
-                    Your current history is empty
-                    <p/>
+                    <p>Your current history is empty</p>
                 %endif
             </div>
         </div>

@@ -1033,7 +1033,9 @@ assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvert
 assign_mapper( context, History, History.table,
     properties=dict( galaxy_sessions=relation( GalaxySessionToHistoryAssociation ),
                      datasets=relation( HistoryDatasetAssociation, backref="history", order_by=asc(HistoryDatasetAssociation.table.c.hid) ),
-                     active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
+                     active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & not_( HistoryDatasetAssociation.table.c.deleted ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
+                     visible_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & not_( HistoryDatasetAssociation.table.c.deleted ) & HistoryDatasetAssociation.table.c.visible ),
+                     order_by=asc( HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
                      tags=relation( HistoryTagAssociation, order_by=HistoryTagAssociation.table.c.id, backref="histories" ),
                      annotations=relation( HistoryAnnotationAssociation, order_by=HistoryAnnotationAssociation.table.c.id, backref="histories" ),
                      ratings=relation( HistoryRatingAssociation, order_by=HistoryRatingAssociation.table.c.id, backref="histories" ) )  

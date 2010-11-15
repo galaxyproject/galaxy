@@ -773,7 +773,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                 trans.sa_session.refresh( history )
         elif create_new_history:
             target_history_ids.append( "create_new_history" )
-        source_datasets = history.active_datasets
+        source_datasets = history.visible_datasets
         target_histories = [history]
         if user:
            target_histories = user.active_histories 
