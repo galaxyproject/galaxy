@@ -1434,9 +1434,9 @@ class TwillTestCase( unittest.TestCase ):
         '''View form details'''
         self.home()
         self.visit_url( "%s/forms/manage?operation=view&id=%s" % ( self.url, id ) )
-        self.check_page_for_string( form_type )
+        #self.check_page_for_string( form_type )
         self.check_page_for_string( form_name )
-        self.check_page_for_string( form_desc )
+        #self.check_page_for_string( form_desc )
         self.check_page_for_string( form_layout_name )
         for i, field_dict in enumerate( field_dicts ):
             self.check_page_for_string( field_dict[ 'name' ] )
@@ -1495,8 +1495,7 @@ class TwillTestCase( unittest.TestCase ):
         '''View request_type details'''
         self.home()
         self.visit_url( "%s/requests_admin/view_request_type?id=%s" % ( self.url, request_type_id ) )
-        self.check_page_for_string( 'Sequencer configuration information' )
-        self.check_page_for_string( request_type_name )
+        self.check_page_for_string( '"%s" sequencer configuration' % request_type_name )
         for name, desc in sample_states:
             self.check_page_for_string( name )
             self.check_page_for_string( desc )
@@ -1624,23 +1623,21 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "reject_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-    def change_sample_state( self, request_id, request_name, sample_names, sample_ids, new_sample_state_id, new_state_name, comment='',
-                             strings_displayed=[], strings_displayed_after_submit=[] ):
-        # We have to simulate the form submission here since twill barfs on the page
-        # gvk - 9/22/10 - TODO: make sure the mako template produces valid html
-        url = "%s/requests_common/edit_samples?cntrller=requests_admin&id=%s" % ( self.url, request_id )
-        url += "&comment=%s&sample_state_id=%s" % ( comment, self.security.encode_id( new_sample_state_id ) )
-        # select_sample_%i=true must be included twice for each sample to simulate a CheckboxField checked setting.
+    def change_sample_state( self, request_id, sample_ids, new_sample_state_id, comment='', strings_displayed=[], strings_displayed_after_submit=[] ):
+        url = "%s/requests_common/edit_samples?cntrller=requests_admin&id=%s&editing_samples=True" % ( self.url, request_id )
+        self.visit_url( url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         for sample_id in sample_ids:
-            url += "&select_sample_%i=true&select_sample_%i=true" % ( sample_id, sample_id )
-        url += "&sample_operation=Change%20state&refresh=true"
-        url += "&save_changes_button=Save&editing_samples=True"
-        self.visit_url( url )        
-        self.check_page_for_string( 'Edit Current Samples of Request "%s"' % request_name )
-        for sample_id, sample_name in zip( sample_ids, sample_names ):
-            self.visit_url( "%s/requests_common/sample_events?cntrller=requests_admin&sample_id=%s" % ( self.url, self.security.encode_id( sample_id ) ) )
-            self.check_page_for_string( 'Events for Sample "%s"' % sample_name )
-            self.check_page_for_string( new_state_name )
+            tc.fv( "1", "select_sample_%i" % sample_id, True )
+        tc.fv( "1", "sample_operation", 'Change state' )
+        self.refresh_form( "sample_operation", 'Change state' )
+        self.check_page_for_string( "Change current state" )
+        tc.fv( "1", "sample_state_id", new_sample_state_id )
+        tc.fv( "1", "sample_event_comment", comment )
+        tc.submit( "save_samples_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
     def add_user_address( self, user_id, address_dict ):
         self.home()
         self.visit_url( "%s/user/new_address?admin_view=False&user_id=%i" % ( self.url, user_id ) )

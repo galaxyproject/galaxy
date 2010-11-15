@@ -360,10 +360,13 @@ class TestFormsAndRequests( TwillTestCase ):
                                       strings_displayed=[ 'Edit sequencing request "%s"' % request1.name ],
                                       strings_displayed_after_submit=[ new_name, new_desc ] )
         refresh( request1 )
-        # now check email notification settings
-        check_sample_states = [ ( request1.type.states[0].name, request1.type.states[0].id, True ),
-                                ( request1.type.states[2].name, request1.type.states[2].id, True ),
-                                ( request1.type.states[4].name, request1.type.states[4].id, True ) ]#[ ( state.id, True ) for state in request1.type.states ]
+        # define the sample states when we want an email notification
+        global email_notification_sample_states
+        email_notification_sample_states = [ request1.type.states[2], request1.type.states[4] ] 
+        # check email notification settings
+        check_sample_states = []
+        for state in email_notification_sample_states:
+            check_sample_states.append( ( state.name, state.id, True ) )
         strings_displayed = [ 'Edit sequencing request "%s"' % request1.name,
                               'Email notification settings' ]
         additional_emails = [ 'test@.bx.psu.edu', 'test2@.bx.psu.edu' ]
@@ -496,7 +499,9 @@ class TestFormsAndRequests( TwillTestCase ):
     #
     def test_050_receive_request_as_admin( self ):
         """Testing receiving a sequencing request and assigning it barcodes"""
+        # logged in as regular_user1
         self.logout()
+        # login as a admin_user to assign bar codes to samples
         self.login( email=admin_user.email )
         self.check_request_grid( cntrller='requests_admin',
                                  state=request1.states.SUBMITTED,
@@ -540,49 +545,48 @@ class TestFormsAndRequests( TwillTestCase ):
                                       sample_id=self.security.encode_id( sample.id ),
                                       strings_displayed=strings_displayed,
                                       strings_not_displayed=strings_not_displayed )
-#    def test_040_request_lifecycle( self ):
-#        """Testing request life-cycle as it goes through all the states"""
-#        # logged in as regular_user1
-#        self.logout()
-#        self.login( email=admin_user.email )
-#        self.check_request_grid( cntrller='requests_admin',
-#                                 state=request1.states.SUBMITTED,
-#                                 strings_displayed=[ request1.name ] )
-#        self.visit_url( "%s/requests_common/view_request?cntrller=requests&id=%s" % ( self.url, self.security.encode_id( request1.id ) ) )
-#        # TODO: add some string for checking on the page above...
-#        # Set bar codes for the samples
-#        bar_codes = [ '1234567890', '0987654321' ]
-#        strings_displayed_after_submit=[ 'Changes made to the samples have been saved.' ]
-#        for bar_code in bar_codes:
-#            strings_displayed_after_submit.append( bar_code )
-#        self.add_bar_codes( request_id=self.security.encode_id( request1.id ),
-#                            request_name=request1.name,
-#                            bar_codes=bar_codes,
-#                            samples=request1.samples,
-#                            strings_displayed_after_submit=strings_displayed_after_submit )
-#        # Change the states of all the samples of this request to ultimately be COMPLETE
-#        self.change_sample_state( request_id=self.security.encode_id( request1.id ),
-#                                  request_name=request1.name,
-#                                  sample_names=[ sample.name for sample in request1.samples ],
-#                                  sample_ids=[ sample.id for sample in request1.samples ],
-#                                  new_sample_state_id=request_type1.states[1].id,
-#                                  new_state_name=request_type1.states[1].name )
-#        self.change_sample_state( request_id=self.security.encode_id( request1.id ),
-#                                  request_name=request1.name,
-#                                  sample_names=[ sample.name for sample in request1.samples ],
-#                                  sample_ids=[ sample.id for sample in request1.samples ],
-#                                  new_sample_state_id=request_type1.states[2].id,
-#                                  new_state_name=request_type1.states[2].name )
-#        refresh( request1 )
-#        self.logout()
-#        self.login( email=regular_user1.email )
-#        # check if the request's state is now set to 'complete'
-#        self.check_request_grid( cntrller='requests',
-#                                 state='Complete',
-#                                 strings_displayed=[ request1.name ] )
-#        assert request1.state is not request1.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
-#            % ( request1.name, request1.states.COMPLETE )
-#        
+    def test_055_request_lifecycle( self ):
+        """Testing request life-cycle as it goes through all the states"""
+        # logged in as admin_user
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request1.states.SUBMITTED,
+                                 strings_displayed=[ request1.name ] )
+        strings_displayed=[ 'History of sequencing request "%s"' % request1.name ]
+        # Change the states of all the samples of this request to ultimately be COMPLETE
+        for index, state in enumerate( request_type1.states ):
+            # start from the second state onwards
+            if index > 1:
+                # status message
+                if index == len( request_type1.states ) - 1:
+                    status_msg = 'All samples of this request are in the final sample state (%s).' % state.name
+                else:
+                    status_msg = 'All samples of this request are in the (%s) sample state. ' % state.name 
+                # check email notification message
+                email_msg = ''
+                if state.id in [ email_state.id for email_state in email_notification_sample_states ]:
+                    email_msg = 'Email notification failed as SMTP server not set in config file'
+                self.change_sample_state( request_id=self.security.encode_id( request1.id ),
+                                          sample_ids=[ sample.id for sample in request1.samples ],
+                                          new_sample_state_id=self.security.encode_id( state.id ),
+                                          strings_displayed=[ 'Edit Current Samples of Request "%s"' % request1.name ],
+                                          strings_displayed_after_submit = [ status_msg, email_msg ] )
+                # check request history page
+                if index == len( request_type1.states ) - 1:
+                    strings_displayed.append( status_msg )
+                else:
+                    strings_displayed.append( status_msg )
+                self.view_request_history( cntrller='requests_admin',
+                                           request_id=self.security.encode_id( request1.id ),
+                                           strings_displayed=strings_displayed,
+                                           strings_not_displayed=[ request1.states.REJECTED ] )
+        refresh( request1 )
+        # check if the request's state is now set to 'complete'
+        self.check_request_grid( cntrller='requests_admin',
+                                 state='Complete',
+                                 strings_displayed=[ request1.name ] )
+        assert request1.state is not request1.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
+            % ( request1.name, request1.states.COMPLETE )
+
 #    def test_045_admin_create_request_on_behalf_of_regular_user( self ):
 #        """Testing creating and submitting a request as an admin on behalf of a regular user"""
 #        # Logged in as regular_user1
@@ -660,7 +664,7 @@ class TestFormsAndRequests( TwillTestCase ):
 #        # Make sure the request's state is now set to REJECTED
 #        assert request2.state is not request2.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
 #            % ( request2.name, request2.states.REJECTED )
-    def test_055_reset_data_for_later_test_runs( self ):
+    def __test_055_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
         self.logout()

@@ -137,7 +137,8 @@
             <p/>
             <div class="form-row">
                 ## hidden element to make twill work.
-                <input type="hidden" name="hidden_input" value=""/>
+                ## Greg will fix this
+                <input type="hidden" name="twill" value=""/>
                 %if ( request.samples or displayable_sample_widgets ) and ( editing_samples or len( displayable_sample_widgets ) > len( request.samples ) ):
                     <input type="submit" name="add_sample_button" value="Add sample" />
                     <input type="submit" name="save_samples_button" value="Save"/>
@@ -156,7 +157,8 @@
             <p/>
             <div class="form-row">
                 ## hidden element to make twill work.
-                <input type="hidden" name="hidden_input" value=""/>
+                ## Greg will fix this
+                <input type="hidden" name="twill" value=""/>
                 <input type="submit" name="save_samples_button" value="Save"/>
                 <input type="submit" name="cancel_changes_button" value="Cancel"/>
                 <div class="toolParamHelp" style="clear: both;">

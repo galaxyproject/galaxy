@@ -420,7 +420,7 @@ class Forms( BaseController ):
                      'visible': True,
                      'required': required,
                      'type': field_type,
-                     'selectlist': selectlist,
+                     'selectlist': options,
                      'layout': layout,
                      'default': default }
         return { 'label': name, 
