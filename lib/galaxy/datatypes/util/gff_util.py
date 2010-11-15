@@ -1,7 +1,7 @@
 """
 Provides utilities for working with GFF files.
 """
-
+import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.intervals.io import *
 
 class GFFInterval( GenomicInterval ):
