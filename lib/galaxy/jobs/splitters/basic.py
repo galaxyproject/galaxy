@@ -3,17 +3,19 @@ log = logging.getLogger( __name__ )
 
 def _file_len(fname):
     i = 0
-    with open(fname) as f:
-        for i, l in enumerate(f):
-            pass
+    f = open(fname)
+    for i, l in enumerate(f):
+        pass
+    f.close()
     return i + 1
 
 def _fq_seq_count(fname):
     count = 0
-    with open(fname) as f:
-        for i, l in enumerate(f):
-            if l.startswith('@'):
-                count += 1
+    f = open(fname)
+    for i, l in enumerate(f):
+        if l.startswith('@'):
+            count += 1
+    f.close()
     return count
 
 def split_fq(input_file, working_directory, parts):
@@ -25,25 +27,27 @@ def split_fq(input_file, working_directory, parts):
     if length < parts:
         parts = length
     len_each, remainder = divmod(length, parts)
-    with open(input_file, 'rt') as f:
-        for p in range(0, parts):
-            part_dir = os.path.join( os.path.abspath(working_directory), 'task_%s' % p)
-            if not os.path.exists( part_dir ):
-                os.mkdir( part_dir )
-            part_path = os.path.join(part_dir, os.path.basename(input_file))
-            with open(part_path, 'w') as part_file:
-                for l in range(0, len_each):
-                    part_file.write(f.readline())
-                    part_file.write(f.readline())
-                    part_file.write(f.readline())
-                    part_file.write(f.readline())
-                if remainder > 0:
-                    part_file.write(f.readline())
-                    part_file.write(f.readline())
-                    part_file.write(f.readline())
-                    part_file.write(f.readline())
-                    remainder -= 1
-                outputs.append(part_path)
+    f = open(input_file, 'rt')
+    for p in range(0, parts):
+        part_dir = os.path.join( os.path.abspath(working_directory), 'task_%s' % p)
+        if not os.path.exists( part_dir ):
+            os.mkdir( part_dir )
+        part_path = os.path.join(part_dir, os.path.basename(input_file))
+        part_file = open(part_path, 'w')
+        for l in range(0, len_each):
+            part_file.write(f.readline())
+            part_file.write(f.readline())
+            part_file.write(f.readline())
+            part_file.write(f.readline())
+        if remainder > 0:
+            part_file.write(f.readline())
+            part_file.write(f.readline())
+            part_file.write(f.readline())
+            part_file.write(f.readline())
+            remainder -= 1
+        outputs.append(part_path)
+        part_file.close()
+    f.close()
     return outputs
 
 def split_txt(input_file, working_directory, parts):
@@ -52,19 +56,21 @@ def split_txt(input_file, working_directory, parts):
     if length < parts:
         parts = length
     len_each, remainder = divmod(length, parts)
-    with open(input_file, 'rt') as f:
-        for p in range(0, parts):
-            part_dir = os.path.join( os.path.abspath(working_directory), 'task_%s' % p)
-            if not os.path.exists( part_dir ):
-                os.mkdir( part_dir )
-            part_path = os.path.join(part_dir, os.path.basename(input_file))
-            with open(part_path, 'w') as part_file:
-                for l in range(0, len_each):
-                    part_file.write(f.readline())
-                if remainder > 0:
-                    part_file.write(f.readline())
-                    remainder -= 1
-                outputs.append(part_path)
+    f = open(input_file, 'rt')
+    for p in range(0, parts):
+        part_dir = os.path.join( os.path.abspath(working_directory), 'task_%s' % p)
+        if not os.path.exists( part_dir ):
+            os.mkdir( part_dir )
+        part_path = os.path.join(part_dir, os.path.basename(input_file))
+        part_file = open(part_path, 'w')
+        for l in range(0, len_each):
+            part_file.write(f.readline())
+        if remainder > 0:
+            part_file.write(f.readline())
+            remainder -= 1
+        outputs.append(part_path)
+        part_file.close()
+    f.close()
     return outputs
     
 def split( input_file, working_directory, parts, file_type = None):
