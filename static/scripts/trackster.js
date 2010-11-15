@@ -83,6 +83,7 @@ $.extend( Cache.prototype, {
 
 var View = function( container, title, vis_id, dbkey, callback ) {
     this.container = container;
+    this.chrom = null;
     this.vis_id = vis_id;
     this.dbkey = dbkey;
     this.title = title;

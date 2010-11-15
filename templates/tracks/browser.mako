@@ -201,8 +201,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     });
                 }
 
-                var payload = { 'tracks': tracks, 'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high } }
-                console.log( payload );
+                var payload = { 'tracks': tracks, 'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high } };
                 
                 $.ajax({
                     url: "${h.url_for( action='save' )}",
