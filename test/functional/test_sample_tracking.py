@@ -664,7 +664,7 @@ class TestFormsAndRequests( TwillTestCase ):
 #        # Make sure the request's state is now set to REJECTED
 #        assert request2.state is not request2.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
 #            % ( request2.name, request2.states.REJECTED )
-    def __test_055_reset_data_for_later_test_runs( self ):
+    def test_055_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
         self.logout()
