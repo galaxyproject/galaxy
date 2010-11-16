@@ -40,10 +40,13 @@ $adv_opts.parse_deflines
             </param>
             <when value="db">
                 <param name="database" type="select" label="Protein BLAST database">
-                    <!-- <options from_data_table="blastdb_p" /> -->
+                    <!-- The BLAST loc file has three columns:
+                         column 0 is an identifier (not used),
+                         column 1 is the caption (show this to the user),
+                         column 2 is the database path (given to BLAST+) -->
                     <options from_file="blastdb_p.loc">
-                      <column name="name" index="2"/>
-                      <column name="value" index="0"/>
+                      <column name="name" index="1"/>
+                      <column name="value" index="2"/>
                     </options>
                 </param>
                 <param name="subject" type="hidden" value="" /> 
