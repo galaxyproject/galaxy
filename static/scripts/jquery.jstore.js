@@ -15,7 +15,7 @@
  *      http://creativecommons.org/licenses/by/3.0/us
  */
 
-"use strict";
+//"use strict";
 
 /*global Class, window, jQuery, ActiveXObject, google */
 

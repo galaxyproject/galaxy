@@ -5,7 +5,7 @@
  *  Inspired by base2 and Prototype
  */
 
-"use strict";
+//"use strict";
 
 (function () {
 
