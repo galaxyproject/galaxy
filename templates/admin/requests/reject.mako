@@ -5,7 +5,6 @@
     ${render_msg( message, status )}
 %endif
 <br/><br/>
-##<h2>Reject Sequencing Request "${request.name}"</h2>
 <ul class="manage-table-actions">
     <li>
         <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request_history', cntrller=cntrller, id=trans.security.encode_id(request.id) )}">View history</a>

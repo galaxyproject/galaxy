@@ -69,16 +69,16 @@
     </div>
 </ul>
 
-%if request.samples_without_library_destinations:
+%if request.is_rejected:
     <p>
-    <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer</i></b></font>
+        <font color="red"><b>${request.last_comment}</b></font>
     </p>
 %endif
 
-%if request.is_rejected:
-    <br/>
-    <font color="red"><b><i>Reason for rejection: </i></b></font><b>${request.last_comment}</b>
-    <br/>
+%if request.samples_without_library_destinations:
+    <p>
+        <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer</i></b></font>
+    </p>
 %endif
 
 %if message:
@@ -90,9 +90,9 @@
         %if displayable_sample_widgets:
             <%
                 if editing_samples:
-                    grid_header = '<h3>Edit Current Samples of Request "%s"</h3>' % request.name
+                    grid_header = '<h3>Edit Current Samples of Sequencing Request "%s"</h3>' % request.name
                 else:
-                    grid_header = '<h3>Add Samples to Request "%s"</h3>' % request.name
+                    grid_header = '<h3>Add Samples to Sequencing Request "%s"</h3>' % request.name
             %>
             ${render_samples_grid( cntrller, request, displayable_sample_widgets, action='edit_samples', editing_samples=editing_samples, encoded_selected_sample_ids=encoded_selected_sample_ids, render_buttons=False, grid_header=grid_header )}
             %if editing_samples and len( sample_operation_select_field.options ) > 1 and not is_unsubmitted:

@@ -159,6 +159,8 @@
                 <input type="hidden" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code']}"/>
             %endif
         </td>
+    %else:
+        <td></td>
     %endif 
     %if sample:
         %if is_unsubmitted:

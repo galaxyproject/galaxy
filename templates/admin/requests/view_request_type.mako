@@ -38,7 +38,7 @@
         <div style="clear: both"></div>
     </div>
     <div class="form-row">
-        <label>Request form definition</label>
+        <label>Sequencing Request form definition</label>
         ${request_type.request_form.name}
     </div>       
     <div class="form-row">

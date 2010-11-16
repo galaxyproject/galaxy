@@ -52,14 +52,14 @@
 </ul>
 
 %if request.is_rejected:
-    <br/>
-    <font color="red"><b><i>Reason for rejection: </i></b></font><b>${request.last_comment}</b>
-    <br/>
+    <p>
+        <font color="red"><b>${request.last_comment}</b></font>
+    </p>
 %endif
 
 %if request.samples_without_library_destinations:
     <p>
-    <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer</i></b></font>
+        <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer</i></b></font>
     </p>
 %endif
 

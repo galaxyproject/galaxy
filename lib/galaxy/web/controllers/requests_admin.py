@@ -223,11 +223,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                         status=status,
                                         message=message )
         # Create an event with state 'Rejected' for this request
-        event_comment = "Request marked rejected by %s. Reason: %s " % ( trans.user.email, comment )
+        event_comment = "Sequencing request marked rejected by %s. Reason: %s " % ( trans.user.email, comment )
         event = trans.model.RequestEvent( request, request.states.REJECTED, event_comment )
         trans.sa_session.add( event )
         trans.sa_session.flush()
-        message='Request (%s) has been rejected.' % request.name
+        message='Sequencing request (%s) has been rejected.' % request.name
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='browse_requests',
                                                           status=status,

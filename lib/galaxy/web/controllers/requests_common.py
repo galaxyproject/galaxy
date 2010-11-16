@@ -157,7 +157,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 status = 'error'
             else:
                 request = self.__save_request( trans, cntrller, **kwd )
-                message = 'The request has been created.'
+                message = 'The sequencing request has been created.'
                 if params.get( 'create_request_button', False ):
                     return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                                       action='browse_requests',
@@ -316,7 +316,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             trans.sa_session.flush()
             trans.sa_session.refresh( request )
             # Create an event with state 'New' for this new request
-            comment = "Request created by %s" % trans.user.email
+            comment = "Sequencing request created by %s" % trans.user.email
             if request.user != trans.user:
                 comment += " on behalf of %s." % request.user.email
             event = trans.model.RequestEvent( request, request.states.NEW, comment )
@@ -358,7 +358,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                               status='error',
                                                               message=message ) )
         # Change the request state to 'Submitted'
-        comment = "Request submitted by %s" % trans.user.email
+        comment = "Sequencing request submitted by %s" % trans.user.email
         if request.user != trans.user:
             comment += " on behalf of %s." % request.user.email
         event = trans.model.RequestEvent( request, request.states.SUBMITTED, comment )
@@ -373,7 +373,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         # request's RequestType configured by the admin.
         initial_sample_state_after_request_submitted = request.type.states[0]
         for sample in request.samples:
-            event_comment = 'Request submitted and sample state set to %s.' % request.type.states[0].name
+            event_comment = 'Sequencing request submitted and sample state set to %s.' % request.type.states[0].name
             event = trans.model.SampleEvent( sample,
                                              initial_sample_state_after_request_submitted,
                                              event_comment )
@@ -381,9 +381,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         trans.sa_session.add( request )
         trans.sa_session.flush()
         request.send_email_notification( trans, initial_sample_state_after_request_submitted )
-        message = 'The request has been submitted.'
-        return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                          action='browse_requests',
+        message = 'The sequencing request has been submitted.'
+        # show the request page after submitting the request 
+        return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                          action='view_request',
                                                           cntrller=cntrller,
                                                           id=request_id,
                                                           status=status,
@@ -528,7 +529,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     for s in request.samples:
                         s.deleted = True
                         trans.sa_session.add( s )
-                    comment = "Request marked deleted by %s." % trans.user.email
+                    comment = "Sequencing request marked deleted by %s." % trans.user.email
                     # There is no DELETED state for a request, so keep the current request state
                     event = trans.model.RequestEvent( request, request.state, comment )
                     trans.sa_session.add( event )
@@ -568,7 +569,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 for s in request.samples:
                     s.deleted = False
                     trans.sa_session.add( s )
-                comment = "Request marked undeleted by %s." % trans.user.email
+                comment = "Sequencing request marked undeleted by %s." % trans.user.email
                 event = trans.model.RequestEvent( request, request.state, comment )
                 trans.sa_session.add( event )
                 trans.sa_session.flush()
@@ -686,11 +687,11 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         request_type_state = request.type.final_sample_state
         if common_state.id == request_type_state.id:
             # since all the samples are in the final state, change the request state to 'Complete'
-            comment = "All samples of this request are in the final sample state (%s). " % request_type_state.name
+            comment = "All samples of this sequencing request are in the final sample state (%s). " % request_type_state.name
             state = request.states.COMPLETE
             final_state = True
         else:
-            comment = "All samples of this request are in the (%s) sample state. " % common_state.name
+            comment = "All samples of this sequencing request are in the (%s) sample state. " % common_state.name
             state = request.states.SUBMITTED
         event = trans.model.RequestEvent( request, state, comment )
         trans.sa_session.add( event )
