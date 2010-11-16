@@ -67,9 +67,9 @@
 </ul>
 
 %if request.samples_without_library_destinations:
-    <br/>
-    <font color="red"><b><i>Select a target data library and folder for all samples before starting the sequence run</i></b></font>
-    <br/>
+    <p>
+    <font color="red"><b><i>Select a target data library and folder for a sample before selecting its datasets to transfer from the sequencer</i></b></font>
+    </p>
 %endif
 
 %if request.is_rejected:

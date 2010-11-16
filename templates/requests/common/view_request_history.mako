@@ -34,7 +34,7 @@
     ${render_msg( message, status )}
 %endif
 
-<h2>History of sequencing request "${request.name}"</h2>
+<h3>History of sequencing request "${request.name}"</h3>
 
 <div class="toolForm">
     <table class="grid">
