@@ -12,19 +12,22 @@
 <%def name="javascripts()">
    ${parent.javascripts()}
    ${common_javascripts()}
+   ${local_javascripts()}
 </%def>
 
-<script type="text/javascript">
-    // This function stops the form from getting submitted when return key is pressed
-    // This is needed in this form as the barcode scanner (when in keyboard emulation mode)
-    // may send a return key appended to the scanned barcode string.  
-    function stopRKey(evt) {
-      var evt = (evt) ? evt : ((event) ? event : null);
-      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
-      if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
-    }
-    document.onkeypress = stopRKey
-</script>
+<%def name="local_javascripts()">
+    <script type="text/javascript">
+	    // This function stops the form from getting submitted when return key is pressed
+	    // This is needed in this form as the barcode scanner (when in keyboard emulation mode)
+	    // may send a return key appended to the scanned barcode string.  
+	    function stopRKey(evt) {
+	      var evt = (evt) ? evt : ((event) ? event : null);
+	      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+	      if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
+	    }
+	    document.onkeypress = stopRKey
+    </script>
+</%def>
 
 <%
     from galaxy.web.framework.helpers import time_ago
@@ -68,7 +71,7 @@
 
 %if request.samples_without_library_destinations:
     <p>
-    <font color="red"><b><i>Select a target data library and folder for a sample before selecting its datasets to transfer from the sequencer</i></b></font>
+    <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer</i></b></font>
     </p>
 %endif
 

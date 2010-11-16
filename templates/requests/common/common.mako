@@ -220,7 +220,7 @@
     %endif
     %if can_delete_samples:
         ## Delete button
-        <td valign="top"><a class="action-button" href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=sample_widget_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
+        <td valign="top"><a class="action-button" confirm="This sample is not recoverable after deletion. Click Ok to delete." href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=sample_widget_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
     %endif
 </%def>
 
