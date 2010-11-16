@@ -1333,6 +1333,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 # Connections by input name
                 step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
         # Render the form
+        stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
         return trans.fill_template(
                     "workflow/run.mako", 
                     steps=workflow.steps,

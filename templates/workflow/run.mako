@@ -20,6 +20,14 @@
         margin-top: 10px;
         margin-bottom: 10px;
     }
+    .step-annotation {
+        margin-top: 0.25em;
+        font-weight: normal;
+        font-size: 97%;
+    }
+    .workflow-annotation {
+        margin-bottom: 1em;
+    }
     </style>
 </%def>
 
@@ -129,6 +137,11 @@ from galaxy.jobs.actions.post import ActionBox
 </div>
 %endif
 
+%if workflow.annotation:
+    <div class="workflow-annotation">Annotation: ${workflow.annotation}</div>
+    <hr/>
+%endif
+
 <form id="tool_form" name="tool_form" method="POST">
 ## <input type="hidden" name="workflow_name" value="${h.to_unicode( workflow.name ) | h}" />
 %for i, step in enumerate( steps ):    
@@ -136,7 +149,12 @@ from galaxy.jobs.actions.post import ActionBox
       <% tool = app.toolbox.tools_by_id[step.tool_id] %>
       <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
       <div class="toolForm">
-          <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
+          <div class="toolFormTitle">
+              Step ${int(step.order_index)+1}: ${tool.name}
+              % if step.annotations:
+      			<div class="step-annotation">Annotation: ${h.to_unicode( step.annotations[0].annotation )}</div>
+      		  % endif
+          </div>
           <div class="toolFormBody">
               ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
 			% if step.post_job_actions:
@@ -150,27 +168,21 @@ from galaxy.jobs.actions.post import ActionBox
 				${'<br/>'.join([ActionBox.get_short_str(pja) for pja in step.post_job_actions])}
 				</div>
 			% endif
-		% if step.annotations:
-			<hr/>
-			<div class='form-row'>
-			<label>Annotation:</label> ${h.to_unicode( step.annotations[0].annotation )}
-			</div>
-		% endif
           </div>
       </div>
     %else:
     <% module = step.module %>
       <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
       <div class="toolForm">
-          <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name}</div>
+          <div class="toolFormTitle">
+              Step ${int(step.order_index)+1}: ${module.name}
+              % if step.annotations:
+  				<div class="step-annotation">Annotation: ${step.annotations[0].annotation}</div>
+              % endif
+  			
+          </div>
           <div class="toolFormBody">
               ${do_inputs( module.get_runtime_inputs(), step.state.inputs, errors.get( step.id, dict() ), "", step )}
-			% if step.annotations:
-				<hr/>
-				<div class='form-row'>
-				<label>Annotation:</label> ${step.annotations[0].annotation}
-				</div>
-			% endif
           </div>
       </div>
     %endif
