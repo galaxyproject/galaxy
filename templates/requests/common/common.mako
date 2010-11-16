@@ -113,27 +113,23 @@
     </script>
 </%def>
 
-<%def name="render_editable_sample_row( cntrller, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )">
+<%def name="render_editable_sample_row( cntrller, request, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )">
     <%
+        trans.sa_session.refresh( request )
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+        is_rejected = request.is_rejected
+        is_complete = request.is_complete
+        is_submitted = request.is_submitted
+        is_unsubmitted = request.is_unsubmitted
         if sample:
-            trans.sa_session.refresh( sample.request )
-            is_complete = sample.request.is_complete
-            is_rejected = request.is_rejected
-            is_submitted = sample.request.is_submitted
-            is_unsubmitted = sample.request.is_unsubmitted
             can_delete_samples = editing_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
             display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
-            display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
             display_datasets = request.samples and ( is_complete or is_submitted )
         else:
-            is_complete = False
-            is_submitted = False
-            is_unsubmitted = False
             can_delete_samples = False
             display_checkboxes = False
-            display_bar_code = False
             display_datasets = False
+        display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
     %>
     <%
         if display_checkboxes and trans.security.encode_id( sample.id ) in encoded_selected_sample_ids:
@@ -152,15 +148,13 @@
     </td>
     %if display_bar_code:
         <td valign="top">
-            %if is_admin:
+            %if is_admin and is_submitted:
                 <input type="text" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code']}" size="10"/>
             %else:
                 ${sample_widget['bar_code']}
                 <input type="hidden" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code']}"/>
             %endif
         </td>
-    %else:
-        <td></td>
     %endif 
     %if sample:
         %if is_unsubmitted:
@@ -305,7 +299,7 @@
                         sample = None 
                 %>
                 %if editing_samples:
-                    <tr>${render_editable_sample_row( cntrller, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )}</tr>
+                    <tr>${render_editable_sample_row( cntrller, request, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )}</tr>
                 %elif sample:
                     <tr>
                         <td>
@@ -401,7 +395,7 @@
                     </tr>
                 %else:
                     ## The Add sample button was clicked for this sample_widget
-                    <tr>${render_editable_sample_row( cntrller, None, sample_widget_index, sample_widget, encoded_selected_sample_ids )}</tr>
+                    <tr>${render_editable_sample_row( cntrller, request, None, sample_widget_index, sample_widget, encoded_selected_sample_ids )}</tr>
                 %endif
             %endfor
         </tbody>

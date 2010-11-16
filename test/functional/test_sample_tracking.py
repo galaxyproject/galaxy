@@ -341,7 +341,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                    request_id=self.security.encode_id( request1.id ),
                                    strings_displayed=[ 'History of sequencing request "%s"' % request1.name,
                                                        request1.states.NEW,
-                                                       'Request created' ],
+                                                       'Sequencing request created' ],
                                    strings_not_displayed=[ request1.states.SUBMITTED,
                                                            request1.states.COMPLETE,
                                                            request1.states.REJECTED ] )
@@ -412,7 +412,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.add_samples( cntrller='requests',
                           request_id=self.security.encode_id( request1.id ),
                           sample_value_tuples=sample_value_tuples,
-                          strings_displayed=[ 'Add Samples to Request "%s"' % request1.name,
+                          strings_displayed=[ 'Add Samples to Sequencing Request "%s"' % request1.name,
                                               '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
         # check the new sample field values on the request page
@@ -446,7 +446,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.edit_samples( cntrller='requests',
                            request_id=self.security.encode_id( request1.id ),
                            sample_value_tuples=new_sample_value_tuples,
-                           strings_displayed=[ 'Edit Current Samples of Request "%s"' % request1.name,
+                           strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request1.name,
                                                '<input type="text" name="sample_0_name" value="Sample1" size="10"/>' ], # sample name input field
                            strings_displayed_after_submit=strings_displayed_after_submit )
         # check the changed sample field values on the request page
@@ -465,14 +465,14 @@ class TestFormsAndRequests( TwillTestCase ):
         self.submit_request( cntrller='requests',
                              request_id=self.security.encode_id( request1.id ),
                              request_name=request1.name,
-                             strings_displayed_after_submit=[ 'The request has been submitted.' ] )
+                             strings_displayed_after_submit=[ 'The sequencing request has been submitted.' ] )
         refresh( request1 )
         # Make sure the request is showing in the 'submitted' filter
         self.check_request_grid( cntrller='requests',
                                  state=request1.states.SUBMITTED,
                                  strings_displayed=[ request1.name ] )
         # Make sure the request's state is now set to 'submitted'
-        assert request1.state is not request1.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
+        assert request1.state is not request1.states.SUBMITTED, "The state of the sequencing request '%s' should be set to '%s'" \
             % ( request1.name, request1.states.SUBMITTED )
         # the sample state should appear once for each sample
         strings_displayed_count = [ ( request1.type.states[0].name, len( request1.samples ) ) ]
@@ -485,8 +485,8 @@ class TestFormsAndRequests( TwillTestCase ):
                            strings_displayed_count=strings_displayed_count,
                            strings_not_displayed=strings_not_displayed )
         strings_displayed=[ 'History of sequencing request "%s"' % request1.name,
-                            'Request submitted by %s' % regular_user1.email,
-                            'Request created' ]
+                            'Sequencing request submitted by %s' % regular_user1.email,
+                            'Sequencing request created' ]
         strings_displayed_count = [ ( request1.states.SUBMITTED, 1 ) ]
         self.view_request_history( cntrller='requests',
                                    request_id=self.security.encode_id( request1.id ),
@@ -519,7 +519,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.add_bar_codes( cntrller='requests_admin',
                             request_id=self.security.encode_id( request1.id ),
                             bar_codes=bar_codes,
-                            strings_displayed=[ 'Edit Current Samples of Request "%s"' % request1.name ],
+                            strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request1.name ],
                             strings_displayed_after_submit=strings_displayed_after_submit )
         # the second sample state should appear once for each sample
         strings_displayed_count = [ ( request1.type.states[1].name, len( request1.samples ) ),
@@ -538,7 +538,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # check history of each sample
         for sample in request1.samples:
             strings_displayed = [ 'Events for Sample "%s"' % sample.name,
-                                  'Request submitted and sample state set to %s' % request1.type.states[0].name,
+                                  'Sequencing request submitted and sample state set to %s' % request1.type.states[0].name,
                                    request1.type.states[0].name,
                                    request1.type.states[1].name ]
             self.view_sample_history( cntrller='requests_admin',
@@ -558,9 +558,9 @@ class TestFormsAndRequests( TwillTestCase ):
             if index > 1:
                 # status message
                 if index == len( request_type1.states ) - 1:
-                    status_msg = 'All samples of this request are in the final sample state (%s).' % state.name
+                    status_msg = 'All samples of this sequencing request are in the final sample state (%s).' % state.name
                 else:
-                    status_msg = 'All samples of this request are in the (%s) sample state. ' % state.name 
+                    status_msg = 'All samples of this sequencing request are in the (%s) sample state. ' % state.name 
                 # check email notification message
                 email_msg = ''
                 if state.id in [ email_state.id for email_state in email_notification_sample_states ]:
@@ -568,7 +568,7 @@ class TestFormsAndRequests( TwillTestCase ):
                 self.change_sample_state( request_id=self.security.encode_id( request1.id ),
                                           sample_ids=[ sample.id for sample in request1.samples ],
                                           new_sample_state_id=self.security.encode_id( state.id ),
-                                          strings_displayed=[ 'Edit Current Samples of Request "%s"' % request1.name ],
+                                          strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request1.name ],
                                           strings_displayed_after_submit = [ status_msg, email_msg ] )
                 # check request history page
                 if index == len( request_type1.states ) - 1:
@@ -584,7 +584,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_request_grid( cntrller='requests_admin',
                                  state='Complete',
                                  strings_displayed=[ request1.name ] )
-        assert request1.state is not request1.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
+        assert request1.state is not request1.states.COMPLETE, "The state of the sequencing request '%s' should be set to '%s'" \
             % ( request1.name, request1.states.COMPLETE )
 
 #    def test_045_admin_create_request_on_behalf_of_regular_user( self ):
