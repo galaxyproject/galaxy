@@ -248,16 +248,16 @@ class SelectField(BaseField):
     >>> t.add_option( "tuti", 1 )
     >>> t.add_option( "fruity", "x" )
     >>> print t.get_html()
-    <div><input type="radio" name="foo" value="1" id="foo|1"><label for="foo|1">tuti</label></div>
-    <div><input type="radio" name="foo" value="x" id="foo|x"><label for="foo|x">fruity</label></div>
+    <div><input type="radio" name="foo" value="1" id="foo|1"><label class="inline" for="foo|1">tuti</label></div>
+    <div><input type="radio" name="foo" value="x" id="foo|x"><label class="inline" for="foo|x">fruity</label></div>
 
     >>> t = SelectField( "bar", multiple=True, display="checkboxes" )
     >>> t.add_option( "automatic", 3 )
     >>> t.add_option( "bazooty", 4, selected=True )
     >>> print t.get_html()
     <div class="checkUncheckAllPlaceholder" checkbox_name="bar"></div>
-    <div><input type="checkbox" name="bar" value="3" id="bar|3"><label for="bar|3">automatic</label></div>
-    <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label for="bar|4">bazooty</label></div>
+    <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
+    <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
     def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=[], size=None ):
         self.name = name
@@ -302,7 +302,7 @@ class SelectField(BaseField):
             selected_text = ""
             if selected:
                 selected_text = " checked='checked'"
-            rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label for="%s">%s</label></div>' % \
+            rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
                 ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, text ) )
             ctr += 1
         return "\n".join( rval )
@@ -318,7 +318,7 @@ class SelectField(BaseField):
             selected_text = ""
             if selected:
                 selected_text = " checked='checked'"
-            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s" id="%s"%s%s><label for="%s">%s</label></div>' % \
+            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
                          ( style,
                            prefix,
                            self.name,

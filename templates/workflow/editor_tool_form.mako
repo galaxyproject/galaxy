@@ -7,8 +7,8 @@ from galaxy.util.expressions import ExpressionContext
   <% ctx = ExpressionContext( values, ctx ) %>
   %for input_index, input in enumerate( inputs.itervalues() ):
     %if input.type == "repeat":
-      <div class="repeat-group">
-          <div class="form-title-row"><b>${input.title_plural}</b></div>
+      <div class="repeat-group form-row">
+          <label>${input.title_plural}:</label>
           <% repeat_values = values[input.name] %>
           %for i in range( len( repeat_values ) ):
             <%
@@ -19,7 +19,7 @@ from galaxy.util.expressions import ExpressionContext
             index = repeat_values[i]['__index__']
             %>
             <div class="repeat-group-item">
-            <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
+            <div class="form-title-row"><label>${input.title} ${i + 1}</label></div>
             ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(index) + "|", ctx )}
             <div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
             </div>
@@ -63,7 +63,7 @@ from galaxy.util.expressions import ExpressionContext
         %else:
             %if isinstance( value, RuntimeValue ):    
                 <label>
-                    ${param.get_label()}
+                    ${param.get_label()}:
                     <span class="popupmenu">
                         <button type="submit" name="make_buildtime" value="${prefix}${param.name}">Set in advance</button>
                     </span>
@@ -73,7 +73,7 @@ from galaxy.util.expressions import ExpressionContext
                 </div>
             %else:
                 <label>
-                    ${param.get_label()}
+                    ${param.get_label()}:
                     %if allow_runtime:
                         <span class="popupmenu">
                             <button type="submit" name="make_runtime" value="${prefix}${param.name}">Set at runtime</button>
