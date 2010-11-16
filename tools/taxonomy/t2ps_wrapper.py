@@ -38,7 +38,7 @@ ps_file = tempfile.NamedTemporaryFile('w')
 # Execute taxonomy2tree
     
 try:
-    t2t_cmd = 'taxonomy2tree %s %s %s /dev/null 1 &> /dev/null' % ( tree_file, max_tree_level, newick_file.name )
+    t2t_cmd = 'taxonomy2tree %s %s %s /dev/null 1 > /dev/null 2>&1' % ( tree_file, max_tree_level, newick_file.name )
     retcode = subprocess.call( t2t_cmd, shell=True )
     if retcode < 0:
         print >>sys.stderr, "Execution of taxonomy2tree terminated by signal", -retcode
