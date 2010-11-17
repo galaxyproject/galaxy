@@ -1,9 +1,10 @@
 """
 Contains the user interface in the Universe class
 """
+from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
-from galaxy import util
+from galaxy import util, model
 import logging, os, string, re, smtplib, socket
 from random import choice
 from email.MIMEText import MIMEText
@@ -26,48 +27,337 @@ require_login_creation_template = require_login_template % "  If you don't alrea
 
 VALID_USERNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 
+OPENID_PROVIDERS = { 'Google' : 'https://www.google.com/accounts/o8/id',
+                     'Yahoo!' : 'http://yahoo.com',
+                     'AOL/AIM' : 'http://openid.aol.com',
+                     'Flickr' : 'http://flickr.com',
+                     'Launchpad' : 'http://login.launchpad.net',
+                   }
+
+class UserOpenIDGrid( grids.Grid ):
+    use_panels = False
+    title = "OpenIDs linked to your account"
+    model_class = model.UserOpenID
+    template = '/user/openid_manage.mako'
+    default_filter = { "openid" : "All" }
+    default_sort_key = "-create_time"
+    columns = [
+        grids.TextColumn( "OpenID URL", key="openid" ),
+        grids.GridColumn( "Created", key="create_time", format=time_ago ),
+    ]
+    operations = [
+        grids.GridOperation( "Delete", async_compatible=True ),
+    ]
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( self.model_class ).filter( self.model_class.user_id == trans.user.id )
+
 class User( BaseController, UsesFormDefinitionWidgets ):
+    user_openid_grid = UserOpenIDGrid()
     @web.expose
     def index( self, trans, webapp='galaxy', **kwd ):
         return trans.fill_template( '/user/index.mako', webapp=webapp )
     @web.expose
+    def openid_auth( self, trans, webapp='galaxy', **kwd ):
+        if not trans.app.config.enable_openid:
+            return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
+        message = 'Unspecified failure authenticating via OpenID'
+        status = kwd.get( 'status', 'done' )
+        openid_url = kwd.get( 'openid_url', '' )
+        openid_provider = kwd.get( 'openid_provider', '' )
+        referer = kwd.get( 'referer', trans.request.referer )
+        auto_associate = util.string_as_bool( kwd.get( 'auto_associate', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        action = 'login'
+        if auto_associate:
+            action = 'openid_manage'
+        if not referer:
+            referer = url_for( '/' )
+        consumer = trans.app.openid_manager.get_consumer( trans )
+        process_url = trans.request.base.rstrip( '/' ) + url_for( controller='user', action='openid_process', referer=referer, auto_associate=auto_associate )
+        if not openid_url and openid_provider and openid_provider in OPENID_PROVIDERS:
+            openid_url = OPENID_PROVIDERS[openid_provider]
+        if openid_url:
+            request = None
+            try:
+                request = consumer.begin( openid_url )
+                if request is None:
+                    message = 'No OpenID services are available at %s' % openid_url
+            except Exception, e:
+                message = 'Failed to begin OpenID authentication: %s' % str( e )
+            if request is not None:
+                trans.app.openid_manager.add_sreg( trans, request, optional=[ 'nickname', 'email' ] )
+                if request.shouldSendRedirect():
+                    redirect_url = request.redirectURL(
+                        trans.request.base, process_url )
+                    trans.app.openid_manager.persist_session( trans, consumer )
+                    trans.response.send_redirect( redirect_url )
+                    return
+                else:
+                    form = request.htmlMarkup( trans.request.base, process_url, form_tag_attrs={'id':'openid_message','target':'_top'} )
+                    trans.app.openid_manager.persist_session( trans, consumer )
+                    return form
+        return trans.response.send_redirect( url_for( controller='user',
+                                                      action=action,
+                                                      use_panels=use_panels,
+                                                      message=message,
+                                                      status='error' ) )
+    @web.expose
+    def openid_process( self, trans, webapp='galaxy', **kwd ):
+        if not trans.app.config.enable_openid:
+            return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
+        auto_associate = util.string_as_bool( kwd.get( 'auto_associate', False ) )
+        action = 'login'
+        if auto_associate:
+            action = 'openid_manage'
+        if trans.app.config.bugs_email is not None:
+            contact = '<a href="mailto:%s">contact support</a>' % trans.app.config.bugs_email
+        else:
+            contact = 'contact support'
+        message = 'Verification failed for an unknown reason.  Please contact support for assistance.'
+        status = 'error'
+        consumer = trans.app.openid_manager.get_consumer( trans )
+        info = consumer.complete( kwd, trans.request.url )
+        display_identifier = info.getDisplayIdentifier()
+        redirect_url = kwd.get( 'referer', url_for( '/' ) )
+        if info.status == trans.app.openid_manager.FAILURE and display_identifier:
+            message = "Login via OpenID failed.  The technical reason for this follows, please include this message in your email if you need to %s to resolve this problem: %s" % ( contact, info.message )
+            return trans.response.send_redirect( url_for( controller='user',
+                                                          action=action,
+                                                          use_panels=True,
+                                                          message=message,
+                                                          status='error' ) )
+        elif info.status == trans.app.openid_manager.SUCCESS:
+            if info.endpoint.canonicalID:
+                display_identifier = info.endpoint.canonicalID
+            user_openid = trans.sa_session.query( trans.app.model.UserOpenID ).filter( trans.app.model.UserOpenID.table.c.openid == display_identifier ).first()
+            if not user_openid:
+                user_openid = trans.app.model.UserOpenID( session=trans.galaxy_session, openid=display_identifier )
+            elif not user_openid.user and user_openid.session.id != trans.galaxy_session.id:
+                user_openid.session = trans.galaxy_session
+            elif user_openid.user and not auto_associate:
+                trans.handle_user_login( user_openid.user, webapp )
+                trans.log_event( "User logged in via OpenID: %s" % display_identifier )
+                trans.response.send_redirect( redirect_url )
+                return
+            if auto_associate and trans.user:
+                # The user is already logged in and requested association from
+                # the user prefs as opposed to using the OpenID form on the
+                # login page.
+                if user_openid.user and user_openid.user.id != trans.user.id:
+                    message = "The OpenID <strong>%s</strong> is already associated with another Galaxy account, <strong>%s</strong>.  Please disassociate it from that account before attempting to associate it with a new account." % ( display_identifier, user_openid.user.email )
+                    status = "error"
+                elif user_openid.user and user_openid.user.id == trans.user.id:
+                    message = "The OpenID <strong>%s</strong> is already associated with your Galaxy account, <strong>%s</strong>." % ( display_identifier, trans.user.email )
+                    status = "warning"
+                else:
+                    user_openid.user_id = trans.user.id
+                    trans.sa_session.add( user_openid )
+                    trans.sa_session.flush()
+                    trans.log_event( "User associated OpenID: %s" % display_identifier )
+                    message = "The OpenID <strong>%s</strong> has been associated with your Galaxy account, <strong>%s</strong>." % ( display_identifier, trans.user.email )
+                    status = "done"
+                trans.response.send_redirect( url_for( controller='user',
+                                                       action='openid_manage',
+                                                       use_panels=True,
+                                                       message=message,
+                                                       status=status ) )
+                return
+            trans.sa_session.add( user_openid )
+            trans.sa_session.flush()
+            message = "OpenID authentication was successful, but you need to associate your OpenID with a Galaxy account."
+            sreg_resp = trans.app.openid_manager.get_sreg( info )
+            try:
+                username = sreg_resp.get( 'nickname', '' )
+            except AttributeError:
+                username = ''
+            try:
+                email = sreg_resp.get( 'email', '' )
+            except AttributeError:
+                email = ''
+            trans.response.send_redirect( url_for( controller='user',
+                                                   action='openid_associate',
+                                                   use_panels=True,
+                                                   username=username,
+                                                   email=email,
+                                                   message=message,
+                                                   status='warning' ) )
+        elif info.status == trans.app.openid_manager.CANCEL:
+            message = "Login via OpenID was cancelled by an action at the OpenID provider's site."
+            status = "warning"
+        elif info.status == trans.app.openid_manager.SETUP_NEEDED:
+            if info.setup_url:
+                return trans.response.send_redirect( info.setup_url )
+            else:
+                message = "Unable to log in via OpenID.  Setup at the provider is required before this OpenID can be used.  Please visit your provider's site to complete this step."
+        return trans.response.send_redirect( url_for( controller='user',
+                                                      action=action,
+                                                      use_panels=True,
+                                                      message=message,
+                                                      status=status ) )
+    @web.expose
+    def openid_associate( self, trans, webapp='galaxy', **kwd ):
+        if not trans.app.config.enable_openid:
+            return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        message = kwd.get( 'message', '' )
+        status = kwd.get( 'status', 'done' )
+        email = kwd.get( 'email', '' )
+        username = kwd.get( 'username', '' )
+        referer = kwd.get( 'referer', trans.request.referer )
+        params = util.Params( kwd )
+        admin_view = util.string_as_bool( params.get( 'admin_view', False ) )
+        openids = trans.galaxy_session.openids
+        if not openids:
+            return trans.show_error_message( 'You have not successfully completed an OpenID authentication in this session.  You can do so on the <a href="%s">login</a> page.' % url_for( controller='user', action='login', use_panels=use_panels ) )
+        elif admin_view:
+            return trans.show_error_message( 'Associating OpenIDs with accounts cannot be done by administrators.' )
+        if kwd.get( 'login_button', False ):
+            message, status, user, success = self.__validate_login( trans, webapp, **kwd )
+            if success:
+                for openid in openids:
+                    openid.user = user
+                    trans.sa_session.add( openid )
+                trans.sa_session.flush()
+                for openid in openids:
+                    trans.log_event( "User associated OpenID: %s" % openid.openid )
+                redirect_url = referer
+                if not redirect_url:
+                    redirect_url = url_for( '/' )
+                trans.response.send_redirect( redirect_url )
+                return
+        if kwd.get( 'create_user_button', False ):
+            password = kwd.get( 'password', '' )
+            confirm = kwd.get( 'confirm', '' )
+            subscribe = params.get( 'subscribe', '' )
+            subscribe_checked = CheckboxField.is_checked( subscribe )
+            error = ''
+            if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+                error = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
+            else:
+                # Check email and password validity
+                error = self.__validate( trans, params, email, password, confirm, username, webapp )
+                if not error:
+                    # all the values are valid
+                    message, status, user, success = self.__register( trans, webapp, email, password, username, subscribe_checked, kwd )
+                    if success:
+                        trans.handle_user_login( user, webapp )
+                        trans.log_event( "User created a new account" )
+                        trans.log_event( "User logged in" )
+                        for openid in openids:
+                            openid.user = user
+                            trans.sa_session.add( openid )
+                        trans.sa_session.flush()
+                        for openid in openids:
+                            trans.log_event( "User associated OpenID: %s" % openid.openid )
+                        redirect_url = referer
+                        if not redirect_url:
+                            redirect_url = url_for( '/' )
+                        trans.response.send_redirect( redirect_url )
+                else:
+                    message = error
+                    status = 'error'
+        if webapp == 'galaxy':
+            user_info_select, user_info_form, widgets = self.__user_info_ui( trans, **kwd )
+        else:
+            user_info_select = []
+            user_info_form = []
+            widgets = []
+        return trans.fill_template( '/user/openid_associate.mako',
+                            webapp=webapp,
+                            email=email,
+                            password='',
+                            confirm='',
+                            username=username,
+                            header='',
+                            use_panels=use_panels,
+                            redirect_url='',
+                            referer='',
+                            refresh_frames=[],
+                            message=message,
+                            status=status,
+                            active_view="user",
+                            subscribe_checked=False,
+                            admin_view=False,
+                            user_info_select=user_info_select,
+                            user_info_form=user_info_form,
+                            widgets=widgets,
+                            openids=openids )
+    @web.expose
+    @web.require_login( 'manage OpenIDs' )
+    def openid_disassociate( self, trans, webapp='galaxy', **kwd ):
+        if not trans.app.config.enable_openid:
+            return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
+        params = util.Params( kwd )
+        ids = params.get( 'id', None )
+        message = params.get( 'message', None )
+        status = params.get( 'status', None )
+        use_panels = params.get( 'use_panels', False )
+        user_openids = []
+        if not ids:
+            message = 'You must select at least one OpenID to disassociate from your Galaxy account.'
+            status = 'error'
+        else:
+            ids = util.listify( params.id )
+            for id in ids:
+                id = trans.security.decode_id( id )
+                user_openid = trans.sa_session.query( trans.app.model.UserOpenID ).get( int( id ) )
+                if not user_openid or ( trans.user.id != user_openid.user_id ):
+                    message = 'The selected OpenID(s) are not associated with your Galaxy account.'
+                    status = 'error'
+                    user_openids = []
+                    break
+                user_openids.append( user_openid )
+            if user_openids:
+                deleted_urls = []
+                for user_openid in user_openids:
+                    trans.sa_session.delete( user_openid )
+                    deleted_urls.append( user_openid.openid )
+                trans.sa_session.flush()
+                for deleted_url in deleted_urls:
+                    trans.log_event( "User disassociated OpenID: %s" % deleted_url )
+                message = '%s OpenIDs were disassociated from your Galaxy account.' % len( ids )
+                status = 'done'
+        trans.response.send_redirect( url_for( controller='user',
+                                               action='openid_manage',
+                                               use_panels=use_panels,
+                                               message=message,
+                                               status=status ) )
+    @web.expose
+    @web.require_login( 'manage OpenIDs' )
+    def openid_manage( self, trans, webapp='galaxy', **kwd ):
+        if not trans.app.config.enable_openid:
+            return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
+        use_panels = kwd.get( 'use_panels', False )
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "delete":
+                trans.response.send_redirect( url_for( controller='user',
+                                                       action='openid_disassociate',
+                                                       use_panels=use_panels,
+                                                       id=kwd['id'] ) )
+        kwd['referer'] = url_for( controller='user', action='openid_manage', use_panels=True )
+        kwd['openid_providers'] = OPENID_PROVIDERS
+        return self.user_openid_grid( trans, **kwd )
+    @web.expose
     def login( self, trans, webapp='galaxy', redirect_url='', refresh_frames=[], **kwd ):
         referer = kwd.get( 'referer', trans.request.referer )
-        use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         header = ''
         user = None
         email = kwd.get( 'email', '' )
         if kwd.get( 'login_button', False ):
-            password = kwd.get( 'password', '' )
-            referer = kwd.get( 'referer', '' )
             if webapp == 'galaxy' and not refresh_frames:
                 if trans.app.config.require_login:
                     refresh_frames = [ 'masthead', 'history', 'tools' ]
                 else:
                     refresh_frames = [ 'masthead', 'history' ]
-            user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
-            if not user:
-                message = "No such user"
-                status = 'error'
-            elif user.deleted:
-                message = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
-                status = 'error'
-            elif user.external:
-                message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-                status = 'error'
-            elif not user.check_password( password ):
-                message = "Invalid password"
-                status = 'error'
-            else:
-                trans.handle_user_login( user, webapp )
-                trans.log_event( "User logged in" )
-                message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                    ( user.email, referer, url_for( '/' ) )
-                if trans.app.config.require_login:
-                    message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
+            message, status, user, success = self.__validate_login( trans, webapp, **kwd )
+            if success and referer:
                 redirect_url = referer
+            elif success:
+                redirect_url = url_for( '/' )
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
                 header = require_login_creation_template % web.url_for( action='create' )
@@ -83,7 +373,37 @@ class User( BaseController, UsesFormDefinitionWidgets ):
                                     refresh_frames=refresh_frames,
                                     message=message,
                                     status=status,
+                                    openid_providers=OPENID_PROVIDERS,
                                     active_view="user" )
+    def __validate_login( self, trans, webapp='galaxy', **kwd ):
+        message = kwd.get( 'message', '' )
+        status = kwd.get( 'status', 'done' )
+        email = kwd.get( 'email', '' )
+        password = kwd.get( 'password', '' )
+        referer = kwd.get( 'referer', trans.request.referer )
+        success = False
+        user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
+        if not user:
+            message = "No such user"
+            status = 'error'
+        elif user.deleted:
+            message = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
+            status = 'error'
+        elif user.external:
+            message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
+            status = 'error'
+        elif not user.check_password( password ):
+            message = "Invalid password"
+            status = 'error'
+        else:
+            trans.handle_user_login( user, webapp )
+            trans.log_event( "User logged in" )
+            message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                ( user.email, referer, url_for( '/' ) )
+            if trans.app.config.require_login:
+                message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
+            success = True
+        return ( message, status, user, success )
     @web.expose
     def logout( self, trans, webapp='galaxy' ):
         if webapp == 'galaxy':
@@ -138,54 +458,25 @@ class User( BaseController, UsesFormDefinitionWidgets ):
             error = self.__validate( trans, params, email, password, confirm, username, webapp )
             if not error:
                 # all the values are valid
-                user = trans.app.model.User( email=email )
-                user.set_password_cleartext( password )
-                user.username = username
-                trans.sa_session.add( user )
-                trans.sa_session.flush()
-                trans.app.security_agent.create_private_user_role( user )
-                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
-                if webapp == 'galaxy':
-                    # We set default user permissions, before we log in and set the default history permissions
-                    trans.app.security_agent.user_set_default_permissions( user,
-                                                                           default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
-                    # save user info
-                    self.__save_user_info( trans, user, action='create', new_user=True, **kwd )
-                    if subscribe_checked:
-                        # subscribe user to email list
-                        if trans.app.config.smtp_server is None:
-                            error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance."
-                        else:
-                            msg = MIMEText( 'Join Mailing list.\n' )
-                            to = msg[ 'To' ] = trans.app.config.mailing_join_addr
-                            frm = msg[ 'From' ] = email
-                            msg[ 'Subject' ] = 'Join Mailing List'
-                            try:
-                                s = smtplib.SMTP()
-                                s.connect( trans.app.config.smtp_server )
-                                s.sendmail( frm, [ to ], msg.as_string() )
-                                s.close()
-                            except:
-                                error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
-                    if not error and not admin_view:
-                        # The handle_user_login() method has a call to the history_set_default_permissions() method
-                        # (needed when logging in with a history), user needs to have default permissions set before logging in
-                        trans.handle_user_login( user, webapp )
-                        trans.log_event( "User created a new account" )
-                        trans.log_event( "User logged in" )
-                    elif not error:
-                        trans.response.send_redirect( web.url_for( controller='admin',
-                                                                   action='users',
-                                                                   message='Created new user account (%s)' % user.email,
-                                                                   status='done' ) )
-                elif not admin_view:
+                message, status, user, success = self.__register( trans, webapp, email, password, username, subscribe_checked, kwd )
+                if success and not admin_view and webapp != 'galaxy':
                     # Must be logging into the community space webapp
                     trans.handle_user_login( user, webapp )
-            if not error:
-                redirect_url = referer
-        if error:
-            message=error
-            status='error'
+                    redirect_url = referer
+                if success and not admin_view:
+                    # The handle_user_login() method has a call to the history_set_default_permissions() method
+                    # (needed when logging in with a history), user needs to have default permissions set before logging in
+                    trans.handle_user_login( user, webapp )
+                    trans.log_event( "User created a new account" )
+                    trans.log_event( "User logged in" )
+                elif success:
+                    trans.response.send_redirect( web.url_for( controller='admin',
+                                                               action='users',
+                                                               message='Created new user account (%s)' % user.email,
+                                                               status='done' ) )
+            else:
+                message = error
+                status = 'error'
         if webapp == 'galaxy':
             user_info_select, user_info_form, widgets = self.__user_info_ui( trans, **kwd )
         else:
@@ -209,6 +500,57 @@ class User( BaseController, UsesFormDefinitionWidgets ):
                                     refresh_frames=refresh_frames,
                                     message=message,
                                     status=status )
+    def __register( self, trans, webapp, email, password, username, subscribe_checked, kwd ):
+        status = kwd.get( 'status', 'done' )
+        admin_view = util.string_as_bool( kwd.get( 'admin_view', False ) )
+        user = trans.app.model.User( email=email )
+        user.set_password_cleartext( password )
+        user.username = username
+        trans.sa_session.add( user )
+        trans.sa_session.flush()
+        trans.app.security_agent.create_private_user_role( user )
+        error = ''
+        if webapp == 'galaxy':
+            # We set default user permissions, before we log in and set the default history permissions
+            trans.app.security_agent.user_set_default_permissions( user,
+                                                                   default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
+            # save user info
+            self.__save_user_info( trans, user, action='create', new_user=True, **kwd )
+            if subscribe_checked:
+                # subscribe user to email list
+                if trans.app.config.smtp_server is None:
+                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance."
+                else:
+                    msg = MIMEText( 'Join Mailing list.\n' )
+                    to = msg[ 'To' ] = trans.app.config.mailing_join_addr
+                    frm = msg[ 'From' ] = email
+                    msg[ 'Subject' ] = 'Join Mailing List'
+                    try:
+                        s = smtplib.SMTP()
+                        s.connect( trans.app.config.smtp_server )
+                        s.sendmail( frm, [ to ], msg.as_string() )
+                        s.close()
+                    except:
+                        error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+            if not error and not admin_view:
+                # The handle_user_login() method has a call to the history_set_default_permissions() method
+                # (needed when logging in with a history), user needs to have default permissions set before logging in
+                trans.handle_user_login( user, webapp )
+                trans.log_event( "User created a new account" )
+                trans.log_event( "User logged in" )
+            elif not error:
+                trans.response.send_redirect( web.url_for( controller='admin',
+                                                           action='users',
+                                                           message='Created new user account (%s)' % user.email,
+                                                           status='done' ) )
+        if error:
+            message = error
+            status = 'error'
+            success = False
+        else:
+            message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+            success = True
+        return ( message, status, user, success )
     def __save_user_info(self, trans, user, action, new_user=True, **kwd):
         '''
         This method saves the user information for new users as well as editing user

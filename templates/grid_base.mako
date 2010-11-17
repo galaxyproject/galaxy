@@ -29,12 +29,19 @@
 ##
 
 <%def name="center_panel()">
-    ${make_grid( grid )}
+    ${self.grid_body( grid )}
 </%def>
 
 ## Render the grid's basic elements. Each of these elements can be subclassed.
 <%def name="body()">
-    ${make_grid( grid )}
+    ${self.grid_body( grid )}
+</%def>
+
+## Because body() is special and always exists even if not explicitly defined,
+## it's not possible to override body() in the topmost template in the chain.
+## Because of this, override grid_body() instead.
+<%def name="grid_body( grid )">
+    ${self.make_grid( grid )}
 </%def>
 
 <%def name="title()">${grid.title}</%def>

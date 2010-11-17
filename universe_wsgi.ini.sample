@@ -324,6 +324,10 @@ use_interactive = True
 # WYSIWYG editor that is very similar to a word processor.
 #enable_pages = False
 
+# Enable authentication via OpenID.  Allows users to log in to their Galaxy
+# account by authenticating with an OpenID provider.
+#enable_openid = False
+
 # Enable the (experimental! beta!) Web API.  Documentation forthcoming.
 #enable_api = False
 

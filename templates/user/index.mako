@@ -15,6 +15,9 @@
             %if trans.app.config.enable_api:
                 <li><a href="${h.url_for( controller='user', action='api_keys' )}">${_('Manage your API Keys')}</a> for new histories</li>
             %endif
+            %if trans.app.config.enable_openid:
+                <li><a href="${h.url_for( controller='user', action='openid_manage' )}">${ ('Manage OpenIDs')}</a> linked to your account</li>
+            %endif
         %else:
             <li><a href="${h.url_for( controller='user', action='show_info', webapp='community' )}">${_('Manage your information')}</a></li>
         %endif

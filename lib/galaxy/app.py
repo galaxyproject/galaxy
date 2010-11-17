@@ -60,6 +60,10 @@ class UniverseApplication( object ):
         self.heartbeat = None
         self.memdump = None
         self.memory_usage = None
+        # Container for OpenID authentication routines
+        if self.config.enable_openid:
+            from galaxy.web.framework import openid_manager
+            self.openid_manager = openid_manager.OpenIDManager( self.config.openid_consumer_cache_path )
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
             from galaxy.util import heartbeat

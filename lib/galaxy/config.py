@@ -39,9 +39,11 @@ class Configuration( object ):
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
+        self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # web API
         self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
+        self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         # Communication with a sequencer
         self.enable_sequencer_communication = string_as_bool( kwargs.get( 'enable_sequencer_communication', False ) )
         # dataset Track files
@@ -161,7 +163,17 @@ class Configuration( object ):
             if not os.path.isdir( path ):
                 raise ConfigurationError("Directory does not exist: %s" % path )
         # Create the directories that it makes sense to create
-        for path in self.file_path, self.new_file_path, self.job_working_directory, self.cluster_files_directory, self.template_cache, self.ftp_upload_dir, self.library_import_dir, self.user_library_import_dir, self.nginx_upload_store, './static/genetrack/plots', os.path.join( self.tool_data_path, 'shared', 'jars' ):
+        for path in self.file_path, \
+                    self.new_file_path, \
+                    self.job_working_directory, \
+                    self.cluster_files_directory, \
+                    self.template_cache, \
+                    self.ftp_upload_dir, \
+                    self.library_import_dir, \
+                    self.user_library_import_dir, \
+                    self.nginx_upload_store, \
+                    './static/genetrack/plots', \
+                    os.path.join( self.tool_data_path, 'shared', 'jars' ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
                     os.makedirs( path )

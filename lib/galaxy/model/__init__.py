@@ -1953,6 +1953,12 @@ class UserAddress( object ):
             html = html + '<br/>' + 'Phone: ' + self.phone
         return html
 
+class UserOpenID( object ):
+    def __init__( self, user=None, session=None, openid=None ):
+        self.user = user
+        self.session = session
+        self.openid = openid
+
 class Page( object ):
     def __init__( self ):
         self.id = None

@@ -68,6 +68,15 @@ UserAddress.table = Table( "user_address", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
+UserOpenID.table = Table( "galaxy_user_openid", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "openid", TEXT, index=True, unique=True ),
+    )
+
 History.table = Table( "history", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -967,6 +976,17 @@ assign_mapper( context, UserAddress, UserAddress.table,
                                    backref='addresses',
                                    order_by=desc(UserAddress.table.c.update_time)), 
                 ) )
+
+assign_mapper( context, UserOpenID, UserOpenID.table,
+    properties=dict( 
+        session=relation( GalaxySession,
+                          primaryjoin=( UserOpenID.table.c.session_id == GalaxySession.table.c.id ),
+                          backref='openids',
+                          order_by=desc( UserOpenID.table.c.update_time ) ),
+        user=relation( User,
+                       primaryjoin=( UserOpenID.table.c.user_id == User.table.c.id ),
+                       backref='openids',
+                       order_by=desc( UserOpenID.table.c.update_time ) ) ) )
 
 
 assign_mapper( context, ValidationError, ValidationError.table )

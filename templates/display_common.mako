@@ -85,6 +85,8 @@
         class_plural = "Forms"
     elif a_class == model.RequestType:
         class_plural = "sequencer configurations"
+    elif a_class == model.UserOpenID:
+        class_plural = "OpenIDs"
     else:
         class_plural = a_class.__name__ + "s"
     return class_plural

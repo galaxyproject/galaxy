@@ -22,8 +22,18 @@
 ## An admin user may be creating a new user account, in which case we want to display the registration form.
 ## But if the current user is not an admin user, then don't display the registration form.
 %if trans.user_is_admin() or not trans.user:
+    ${render_registration_form()}
+%endif
+
+<%def name="render_registration_form( form_action=None )">
+
+    <%
+        if form_action is None:
+            form_action = h.url_for( controller='user', action='create', admin_view=admin_view )
+    %>
+
     <div class="toolForm">
-        <form name="registration" id="registration" action="${h.url_for( controller='user', action='create', admin_view=admin_view )}" method="post" >
+        <form name="registration" id="registration" action="${form_action}" method="post" >
             <div class="toolFormTitle">Create account</div>
             <div class="form-row">
                 <label>Email address:</label>
@@ -83,4 +93,5 @@
             </div>
         </form>
     </div>
-%endif
+
+</%def>

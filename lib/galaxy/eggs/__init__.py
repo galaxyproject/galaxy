@@ -321,6 +321,7 @@ class GalaxyConfig( object ):
                          "pbs_python":      lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "threadframe":     lambda: self.config.get( "app:main", "use_heartbeat" ),
                          "guppy":           lambda: self.config.get( "app:main", "use_memdump" ),
+                         "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
                          "GeneTrack":       lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "pysam":           check_pysam()
                        }.get( egg_name, lambda: True )()
