@@ -965,7 +965,9 @@ class Gtf( Gff ):
                     if len( attributes ) >= 2:
                         try:
                             # Imprecise: should check for a single space per the spec.
-                            attr_name, attr_value = attributes[0].split(" ")
+                            # strip() needed b/c Ensembl GTF files include an (illegal)
+                            # space before attributes string.
+                            attr_name, attr_value = attributes[0].strip().split(" ")
                             if attr_name != 'gene_id':
                                 return False
                         except:
