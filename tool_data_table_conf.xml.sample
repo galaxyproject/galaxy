@@ -1,3 +1,4 @@
+<!-- Use the file tool_data_table_conf.xml.oldlocstyle if you don't want to update your loc files as changed in revision 4550:535d276c92bc-->
 <tables>
     <!-- Locations of all fasta files under genome directory -->
     <table name="all_fasta" comment_char="#">
@@ -34,7 +35,7 @@
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bwa_index.loc" />
     </table>
-    <!-- Locations of MAF files that have been indexed with bx-python -->    
+    <!-- Locations of MAF files that have been indexed with bx-python -->
     <table name="indexed_maf_files">
         <columns>name, value, dbkey, species</columns>
         <file path="tool-data/maf_index.loc" />
@@ -65,9 +66,8 @@
         <file path="tool-data/srma_index.loc" />
     </table>
     <!-- Locations of indexes in the Bowtie mapper format for TopHat to use -->
-<!--    <table name="tophat_indexes" comment_char="#">
+    <table name="tophat_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/bowtie_indices.loc" />
     </table>
--->
 </tables>

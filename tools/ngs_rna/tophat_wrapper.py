@@ -30,7 +30,7 @@ def __main__():
     parser.add_option( '-g', '--max_multihits', dest='max_multihits', help='Maximum number of alignments to be allowed' )
     parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
     parser.add_option( '', '--seg-length', dest='seg_length', help='Minimum length of read segments' )
-    
+
     # Options for supplying own junctions
     parser.add_option( '-G', '--GTF', dest='gene_model_annotations', help='Supply TopHat with a list of gene model annotations. \
                                                                            TopHat will use the exon records in this file to build \
@@ -58,18 +58,18 @@ def __main__():
     parser.add_option( '', '--max-closure-intron', dest='max_closure_intron', help='Maximum intron length that may be found during closure search' )
     parser.add_option( '', '--min-coverage-intron', dest='min_coverage_intron', help='Minimum intron length that may be found during coverage search' )
     parser.add_option( '', '--max-coverage-intron', dest='max_coverage_intron', help='Maximum intron length that may be found during coverage search' )
-    
+
     # Wrapper options.
     parser.add_option( '-1', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format' )
     parser.add_option( '-2', '--input2', dest='input2', help='The reverse reads file in Sanger FASTQ format' )
     parser.add_option( '', '--single-paired', dest='single_paired', help='' )
     parser.add_option( '', '--settings', dest='settings', help='' )
-    
+
     (options, args) = parser.parse_args()
-    
+
     # Creat bowtie index if necessary.
     tmp_index_dir = tempfile.mkdtemp()
-    if options.own_file != 'None':
+    if options.own_file:
         index_path = os.path.join( tmp_index_dir, os.path.split( options.own_file )[1] )
         cmd_index = 'bowtie-build -f %s %s' % ( options.own_file, index_path )
         try:
@@ -98,12 +98,12 @@ def __main__():
             stop_err( 'Error indexing reference sequence\n' + str( e ) )
     else:
         index_path = options.index_path
-    
+
     # Build tophat command.
     tmp_output_dir = tempfile.mkdtemp()
     cmd = 'tophat -o %s %s %s %s'
     reads = options.input1
-    if options.input2 != 'None':
+    if options.input2:
         reads += ' ' + options.input2
     opts = '-p %s' % options.num_threads
     if options.single_paired == 'paired':
@@ -129,7 +129,7 @@ def __main__():
                 opts += ' -j %s' % options.raw_juncs
             if options.no_novel_juncs:
                 opts += ' --no-novel-juncs'
-                
+
             # Search type options.
             if options.coverage_search:
                 opts += ' --coverage-search --min-coverage-intron %s --max-coverage-intron %s' % ( options.min_coverage_intron, options.max_coverage_intron )
@@ -143,13 +143,13 @@ def __main__():
                 opts += ' --microexon-search'
             if options.single_paired == 'paired':
                 opts += ' --mate-std-dev %s' % options.mate_std_dev
-            if options.seg_mismatches != None:
+            if options.seg_mismatches:
                 opts += ' --segment-mismatches %d' % int(options.seg_mismatches)
-            if options.seg_length != None:
+            if options.seg_length:
                 opts += ' --segment-length %d' % int(options.seg_length)
-            if options.min_segment_intron != None:
+            if options.min_segment_intron:
                 opts += ' --min-segment-intron %d' % int(options.min_segment_intron)
-            if options.max_segment_intron != None:
+            if options.max_segment_intron:
                 opts += ' --max-segment-intron %d' % int(options.max_segment_intron)
             cmd = cmd % ( tmp_output_dir, opts, index_path, reads )
         except Exception, e:
@@ -160,7 +160,7 @@ def __main__():
                 shutil.rmtree( tmp_output_dir )
             stop_err( 'Something is wrong with the alignment parameters and the alignment could not be run\n' + str( e ) )
     print cmd
-            
+
     # Run
     try:
         tmp_out = tempfile.NamedTemporaryFile( dir=tmp_output_dir ).name
@@ -185,10 +185,10 @@ def __main__():
         tmp_stderr.close()
         if returncode != 0:
             raise Exception, stderr
-        
+
         # TODO: look for errors in program output.
-        
-        # Copy output files from tmp directory to specified files. 
+
+        # Copy output files from tmp directory to specified files.
         shutil.copyfile( os.path.join( tmp_output_dir, "junctions.bed" ), options.junctions_output_file )
         shutil.copyfile( os.path.join( tmp_output_dir, "accepted_hits.bam" ), options.accepted_hits_output_file )
     except Exception, e:

@@ -1,4 +1,4 @@
-<tool id="tophat" name="Tophat" version="1.1.2">
+<tool id="tophat" name="Tophat" version="1.2.0">
     <description>Find splice junctions using RNA-seq data</description>
     <requirements>
         <requirement type="package">tophat</requirement>
@@ -7,46 +7,41 @@
         tophat_wrapper.py
             ## Change this to accommodate the number of threads you have available.
             --num-threads="4"
-            
+
             ## Provide outputs.
             --junctions-output=$junctions
             --hits-output=$accepted_hits
-            
+
             ## Handle reference file.
             #if $refGenomeSource.genomeSource == "history":
                 --own-file=$refGenomeSource.ownFile
-                --indexes-path="None"
             #else:
-                --own-file="None"
-                --indexes-path=$refGenomeSource.index
+                --indexes-path="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'tophat_indexes' ].get_fields() )[0][-1] }"
             #end if
-            
+
             ## Are reads single-end or paired?
             --single-paired=$singlePaired.sPaired
-            
+
             ## First input file always required.
             --input1=$singlePaired.input1
-            
+
             ## Set parms based on whether reads are single-end or paired.
             #if $singlePaired.sPaired == "single":
-                --input2="None"
-                 -r "None"
-                 --settings=$singlePaired.sParams.sSettingsType
-                 #if $singlePaired.sParams.sSettingsType == "full":
-                   --mate-std-dev="None"
-                   -a $singlePaired.sParams.anchor_length
-                   -m $singlePaired.sParams.splice_mismatches
-                   -i $singlePaired.sParams.min_intron_length
-                   -I $singlePaired.sParams.max_intron_length
-                   -F $singlePaired.sParams.junction_filter
-                   -g $singlePaired.sParams.max_multihits
-                   --min-segment-intron $singlePaired.sParams.min_segment_intron
-                   --max-segment-intron $singlePaired.sParams.max_segment_intron
-                   --seg-mismatches=$singlePaired.sParams.seg_mismatches
-                   --seg-length=$singlePaired.sParams.seg_length
-                   
-                   ## Supplying junctions parameters.
-                   #if $singlePaired.sParams.own_junctions.use_junctions == "Yes":
+                --settings=$singlePaired.sParams.sSettingsType
+                #if $singlePaired.sParams.sSettingsType == "full":
+                    -a $singlePaired.sParams.anchor_length
+                    -m $singlePaired.sParams.splice_mismatches
+                    -i $singlePaired.sParams.min_intron_length
+                    -I $singlePaired.sParams.max_intron_length
+                    -F $singlePaired.sParams.junction_filter
+                    -g $singlePaired.sParams.max_multihits
+                    --min-segment-intron $singlePaired.sParams.min_segment_intron
+                    --max-segment-intron $singlePaired.sParams.max_segment_intron
+                    --seg-mismatches=$singlePaired.sParams.seg_mismatches
+                    --seg-length=$singlePaired.sParams.seg_length
+
+                    ## Supplying junctions parameters.
+                    #if $singlePaired.sParams.own_junctions.use_junctions == "Yes":
                         #if $singlePaired.sParams.own_junctions.gene_model_ann.use_annotations == "Yes":
                             -G $singlePaired.sParams.own_junctions.gene_model_ann.gene_annotation_model
                         #end if
@@ -57,47 +52,47 @@
                         #if str($singlePaired.sParams.own_junctions.no_novel_juncs) == "Yes":
                             --no-novel-juncs
                         #end if
-                   #end if
-                   
-                   #if $singlePaired.sParams.closure_search.use_search == "Yes":
+                    #end if
+
+                    #if $singlePaired.sParams.closure_search.use_search == "Yes":
                         --closure-search
                         --min-closure-exon $singlePaired.sParams.closure_search.min_closure_exon
                         --min-closure-intron $singlePaired.sParams.closure_search.min_closure_intron
                         --max-closure-intron $singlePaired.sParams.closure_search.max_closure_intron
-                   #else:
+                    #else:
                         --no-closure-search
-                   #end if
-                   #if $singlePaired.sParams.coverage_search.use_search == "Yes":
+                    #end if
+                    #if $singlePaired.sParams.coverage_search.use_search == "Yes":
                         --coverage-search
                         --min-coverage-intron $singlePaired.sParams.coverage_search.min_coverage_intron
                         --max-coverage-intron $singlePaired.sParams.coverage_search.max_coverage_intron
-                   #else:
+                    #else:
                         --no-coverage-search
-                   #end if
-                   ## TODO: No idea why the type conversion is necessary, but it seems to be.
-                   #if str($singlePaired.sParams.microexon_search) == "Yes":
+                    #end if
+                    ## TODO: No idea why the type conversion is necessary, but it seems to be.
+                    #if str($singlePaired.sParams.microexon_search) == "Yes":
                         --microexon-search
-                   #end if
-                 #end if
-             #else:
-                 --input2=$singlePaired.input2
-                 -r $singlePaired.mate_inner_distance
-                 --settings=$singlePaired.pParams.pSettingsType
-                 #if $singlePaired.pParams.pSettingsType == "full":
-                   --mate-std-dev=$singlePaired.pParams.mate_std_dev
-                   -a $singlePaired.pParams.anchor_length
-                   -m $singlePaired.pParams.splice_mismatches
-                   -i $singlePaired.pParams.min_intron_length
-                   -I $singlePaired.pParams.max_intron_length
-                   -F $singlePaired.pParams.junction_filter
-                   -g $singlePaired.pParams.max_multihits
-                   --min-segment-intron $singlePaired.pParams.min_segment_intron
-                   --max-segment-intron $singlePaired.pParams.max_segment_intron
-                   --seg-mismatches=$singlePaired.pParams.seg_mismatches
-                   --seg-length=$singlePaired.pParams.seg_length
-                   
-                   ## Supplying junctions parameters.
-                   #if $singlePaired.pParams.own_junctions.use_junctions == "Yes":
+                    #end if
+                #end if
+            #else:
+                --input2=$singlePaired.input2
+                -r $singlePaired.mate_inner_distance
+                --settings=$singlePaired.pParams.pSettingsType
+                #if $singlePaired.pParams.pSettingsType == "full":
+                    --mate-std-dev=$singlePaired.pParams.mate_std_dev
+                    -a $singlePaired.pParams.anchor_length
+                    -m $singlePaired.pParams.splice_mismatches
+                    -i $singlePaired.pParams.min_intron_length
+                    -I $singlePaired.pParams.max_intron_length
+                    -F $singlePaired.pParams.junction_filter
+                    -g $singlePaired.pParams.max_multihits
+                    --min-segment-intron $singlePaired.pParams.min_segment_intron
+                    --max-segment-intron $singlePaired.pParams.max_segment_intron
+                    --seg-mismatches=$singlePaired.pParams.seg_mismatches
+                    --seg-length=$singlePaired.pParams.seg_length
+
+                    ## Supplying junctions parameters.
+                    #if $singlePaired.pParams.own_junctions.use_junctions == "Yes":
                         #if $singlePaired.pParams.own_junctions.gene_model_ann.use_annotations == "Yes":
                             -G $singlePaired.pParams.own_junctions.gene_model_ann.gene_annotation_model
                         #end if
@@ -108,29 +103,29 @@
                         #if str($singlePaired.pParams.own_junctions.no_novel_juncs) == "Yes":
                             --no-novel-juncs
                         #end if
-                   #end if
-                   
-                   #if $singlePaired.pParams.closure_search.use_search == "Yes":
+                    #end if
+
+                    #if $singlePaired.pParams.closure_search.use_search == "Yes":
                         --closure-search
                         --min-closure-exon $singlePaired.pParams.closure_search.min_closure_exon
                         --min-closure-intron $singlePaired.pParams.closure_search.min_closure_intron
                         --max-closure-intron $singlePaired.pParams.closure_search.max_closure_intron
-                   #else:
+                    #else:
                         --no-closure-search
-                   #end if
-                   #if $singlePaired.pParams.coverage_search.use_search == "Yes":
+                    #end if
+                    #if $singlePaired.pParams.coverage_search.use_search == "Yes":
                         --coverage-search
                         --min-coverage-intron $singlePaired.pParams.coverage_search.min_coverage_intron
                         --max-coverage-intron $singlePaired.pParams.coverage_search.max_coverage_intron
-                   #else:
+                    #else:
                         --no-coverage-search
-                   #end if
-                   ## TODO: No idea why the type conversion is necessary, but it seems to be.
-                   #if str ($singlePaired.pParams.microexon_search) == "Yes":
+                    #end if
+                    ## TODO: No idea why the type conversion is necessary, but it seems to be.
+                    #if str ($singlePaired.pParams.microexon_search) == "Yes":
                         --microexon-search
                    #end if
-                 #end if
-             #end if
+                #end if
+            #end if
     </command>
     <inputs>
         <conditional name="refGenomeSource">
@@ -140,10 +135,7 @@
           </param>
           <when value="indexed">
             <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-              <options from_file="bowtie_indices.loc">
-                <column name="value" index="1" />
-                <column name="name" index="0" />
-              </options>
+              <options from_data_table="tophat_indexes" />
             </param>
           </when>
           <when value="history">
@@ -186,7 +178,7 @@
                           <conditional name="gene_model_ann">
                              <param name="use_annotations" type="select" label="Use Gene Annotation Model">
                                 <option value="No">No</option>
-                                <option value="Yes">Yes</option>                               
+                                <option value="Yes">Yes</option>
                              </param>
                              <when value="No" />
                              <when value="Yes">
@@ -196,7 +188,7 @@
                           <conditional name="raw_juncs">
                              <param name="use_juncs" type="select" label="Use Raw Junctions">
                                 <option value="No">No</option>
-                                <option value="Yes">Yes</option>                               
+                                <option value="Yes">Yes</option>
                              </param>
                              <when value="No" />
                              <when value="Yes">
@@ -242,7 +234,7 @@
                   </param>
                 </when>  <!-- full -->
               </conditional>  <!-- sParams -->
-            </when>
+            </when>  <!--  single -->
             <when value="paired">
               <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
               <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
@@ -276,7 +268,7 @@
                           <conditional name="gene_model_ann">
                              <param name="use_annotations" type="select" label="Use Gene Annotation Model">
                                 <option value="No">No</option>
-                                <option value="Yes">Yes</option>                               
+                                <option value="Yes">Yes</option>
                              </param>
                              <when value="No" />
                              <when value="Yes">
@@ -286,7 +278,7 @@
                           <conditional name="raw_juncs">
                              <param name="use_juncs" type="select" label="Use Raw Junctions">
                                 <option value="No">No</option>
-                                <option value="Yes">Yes</option>                               
+                                <option value="Yes">Yes</option>
                              </param>
                              <when value="No" />
                              <when value="Yes">
@@ -325,14 +317,14 @@
                         <param name="max_coverage_intron" type="integer" value="20000" label="Maximum intron length that may be found during coverage search" />
                     </when>
                     <when value="No" />
-                  </conditional>     
+                  </conditional>
                   <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
                   </param>
                 </when>  <!-- full -->
               </conditional>  <!-- pParams -->
-            </when>
+            </when>  <!-- paired -->
         </conditional>
     </inputs>
 
@@ -342,38 +334,46 @@
     </outputs>
 
     <tests>
-<!--        <test>
-            <param name="genomeSource" value="indexed"/>
-            <param name="index" value="equCab2chrM"/>
-            <param name="sPaired" value="single"/>
-            <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
-            <param name="sSettingsType" value="preSet"/>
--->            <!-- 
-            Can't test this right now because first lines of file are run-specific.
-            <output name="accepted_hits" file="tophat_out1.sam"/>
+        <!-- Test single-end reads with pre-built index and preset parameters -->
+        <test>
+            <!-- TopHat commands:
+            tophat -o tmp_dir -p 1 /afs/bx.psu.edu/depot/data/genome/test/tophat/tophat_in1 test-data/tophat_in2.fastqsanger
             -->
-<!--            <output name="coverage" file="tophat_out2.wig"/>
-            <output name="junctions" file="tophat_out3.bed"/>
+            <param name="genomeSource" value="indexed" />
+            <param name="index" value="tophat_test" />
+            <param name="sPaired" value="single" />
+            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
+            <param name="sSettingsType" value="preSet" />
+            <output name="junctions" file="tophat_out1j.bed" ftype="bed" />
+            <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" ftype="bam" />
         </test>
--->     
         <!-- Test using test data: paired-end reads, index from history. -->
         <test>
-            <param name="genomeSource" value="history"/>
-            <param name="ownFile" ftype="fasta" value="tophat_in3.fa"/>
-            <param name="sPaired" value="paired"/>
-            <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
-            <param name="input2" ftype="fastqsanger" value="tophat_in2.fq"/>
-            <param name="mate_inner_distance" value="20"/>
-            <param name="pSettingsType" value="preSet"/>
-            <output name="junctions" file="tophat_out1.bed"/>
-            <!-- Bam files always differ (due to magic number?), so can't test this right now. -->
-            <output name="accepted_hits" file="tophat_out2.bam" lines_diff="100000"/>
+            <!-- TopHat commands:
+            bowtie-build -f test-data/tophat_in4.fasta tophat_in4
+            tophat -o tmp_dir -p 1 -r 20 tophat_in4 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            -->
+            <param name="genomeSource" value="history" />
+            <param name="ownFile" ftype="fasta" value="tophat_in1.fasta" />
+            <param name="sPaired" value="paired" />
+            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
+            <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger" />
+            <param name="mate_inner_distance" value="20" />
+            <param name="pSettingsType" value="preSet" />
+            <output name="junctions" file="tophat_out2j.bed" ftype="bed" />
+            <output name="accepted_hits" file="tophat_out2h.bam" compare="sim_size" ftype="bam" />
         </test>
-<!--        <test>
+        <!-- Test single-end reads with user-supplied reference fasta and full parameters -->
+        <test>
+            <!-- Tophat commands:
+            bowtie-build -f test-data/tophat_in1.fasta tophat_in1
+            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            Replace the + with double-dash
+            -->
             <param name="genomeSource" value="history"/>
-            <param name="ownFile" value="phiX.fasta"/>
+            <param name="ownFile" value="tophat_in1.fasta"/>
             <param name="sPaired" value="single"/>
-            <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
+            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
             <param name="sSettingsType" value="full"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
@@ -386,19 +386,32 @@
             <param name="max_segment_intron" value="500000" />
             <param name="seg_mismatches" value="2"/>
             <param name="seg_length" value="25"/>
--->            <!-- 
-            Can't test this right now because first lines of file are run-specific.
-            <output name="accepted_hits" file="tophat_out1.sam"/>
-            -->
-<!--            <output name="coverage" file="tophat_out2.wig"/>
-            <output name="junctions" file="tophat_out3.bed"/>
+            <param name="use_junctions" value="Yes" />
+            <param name="use_annotations" value="No" />
+            <param name="use_juncs" value="No" />
+            <param name="no_novel_juncs" value="No" />
+            <param name="use_search" value="Yes" />
+            <param name="min_closure_exon" value="50" />
+            <param name="min_closure_intron" value="50" />
+            <param name="max_closure_intron" value="5000" />
+            <param name="use_search" value="Yes" />
+            <param name="min_coverage_intron" value="50" />
+            <param name="max_coverage_intron" value="20000" />
+            <param name="microexon_search" value="Yes" />
+            <output name="junctions" file="tophat_out3j.bed" ftype="bed" />
+            <output name="accepted_hits" file="tophat_out3h.bam" compare="sim_size" ftype="bam" />
         </test>
+        <!-- Test paired-end reads with user-supplied reference fasta and full parameters -->
         <test>
+            <!-- TopHat commands:
+            tophat -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intron 5000 +microexon-search /afs/bx.psu.edu/depot/data/genome/test/tophat/tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            Replace the + with double-dash
+            -->
             <param name="genomeSource" value="indexed"/>
-            <param name="index" value="equCab2chrM"/>
+            <param name="index" value="tophat_test"/>
             <param name="sPaired" value="paired"/>
-            <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
-            <param name="input2" ftype="fastqsanger" value="tophat_in2.fq"/>
+            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
+            <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger"/>
             <param name="mate_inner_distance" value="20"/>
             <param name="pSettingsType" value="full"/>
             <param name="mate_std_dev" value="20"/>
@@ -409,18 +422,26 @@
             <param name="quals_scale" value="default"/>
             <param name="junction_filter" value="0.15"/>
             <param name="max_multihits" value="40"/>
-            <param name="min_coverage_intron" value="50" />
-            <param name="max_coverage_intron" value="20000" />
+            <param name="min_segment_intron" value="50" />
+            <param name="max_segment_intron" value="500000" />
             <param name="seg_mismatches" value="2"/>
             <param name="seg_length" value="25"/>
--->            <!-- 
-            Can't test this right now because first lines of file are run-specific.
-            <output name="accepted_hits" file="tophat_out1.sam"/>
-            -->
-<!--            <output name="coverage" file="tophat_out2.wig"/>
-            <output name="junctions" file="tophat_out3.bed"/>
+            <param name="use_junctions" value="Yes" />
+            <param name="use_annotations" value="No" />
+            <param name="use_juncs" value="No" />
+            <param name="no_novel_juncs" value="No" />
+            <param name="use_search" value="Yes" />
+            <param name="min_closure_exon" value="50" />
+            <param name="min_closure_intron" value="50" />
+            <param name="max_closure_intron" value="5000" />
+            <param name="use_search" value="Yes" />
+            <param name="min_coverage_intron" value="50" />
+            <param name="max_coverage_intron" value="20000" />
+            <param name="microexon_search" value="Yes" />
+            <output name="junctions" file="tophat_out4j.bed" ftype="bed" />
+            <output name="accepted_hits" file="tophat_out4h.bam" compare="sim_size" ftype="bam" />
         </test>
--->    </tests>
+    </tests>
 
     <help>
 **Tophat Overview**
