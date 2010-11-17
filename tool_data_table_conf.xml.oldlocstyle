@@ -1,0 +1,73 @@
+<!-- Use this file if you don't want to update your loc files as changed in revision 4550:535d276c92bc-->
+<tables>
+    <!-- Locations of all fasta files under genome directory -->
+    <table name="all_fasta" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/all_fasta.loc" />
+    </table>
+    <!-- Locations of indexes in the BFAST mapper format -->
+    <table name="bfast_indexes" comment_char="#">
+        <columns>value, dbkey, formats, name, path</columns>
+        <file path="tool-data/bfast_indexes.loc" />
+    </table>
+    <!-- Locations of nucleotide (mega)blast databases -->
+    <table name="blastdb" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/blastdb.loc" />
+    </table>
+    <!-- Locations of protein (mega)blast databases -->
+    <table name="blastdb_p" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/blastdb_p.loc" />
+    </table>
+    <!-- Locations of indexes in the Bowtie mapper format -->
+    <table name="bowtie_indexes" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/bowtie_indices.loc" />
+    </table>
+    <!-- Locations of indexes in the Bowtie color mapper format -->
+    <table name="bowtie_indexes_color" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/bowtie_indices_color.loc" />
+    </table>
+    <!-- Locations of indexes in the BWA mapper format -->
+    <table name="bwa_indexes" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/bwa_index.loc" />
+    </table>
+    <!-- Locations of MAF files that have been indexed with bx-python -->
+    <table name="indexed_maf_files">
+        <columns>name, value, dbkey, species</columns>
+        <file path="tool-data/maf_index.loc" />
+    </table>
+    <!-- Locations of fasta files appropriate for NGS simulation -->
+    <table name="ngs_sim_fasta" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/ngs_sim_fasta.loc" />
+    </table>
+    <!-- Locations of 2bit sequence files for use in Lastz -->
+    <table name="lastz_seqs" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/lastz_seqs.loc" />
+    </table>
+    <!-- Locations of PerM base index files -->
+    <table name="perm_base_indexes" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/perm_base_index.loc" />
+    </table>
+    <!-- Locations of PerM color index files -->
+    <table name="perm_color_indexes" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/perm_color_index.loc" />
+    </table>
+    <!-- Location of SRMA dict file and other files -->
+    <table name="srma_indexes" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/srma_index.loc" />
+    </table>
+    <!-- Locations of indexes in the Bowtie mapper format for TopHat to use -->
+    <table name="tophat_indexes" comment_char="#">
+        <columns>name, value</columns>
+        <file path="tool-data/bowtie_indices.loc" />
+    </table>
+</tables>
