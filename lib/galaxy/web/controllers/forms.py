@@ -602,7 +602,7 @@ class Forms( BaseController ):
                     self.fieldtype.add_option( ft.__name__, ft.__name__ )
             else:
                 for ft in trans.model.FormDefinition.supported_field_types:
-                    self.fieldtype.add_option( ft.__name__, ft__name__ )
+                    self.fieldtype.add_option( ft.__name__, ft.__name__ )
             self.required = SelectField('field_required_'+str(index), display='radio')
             self.required.add_option('Required', 'required')
             self.required.add_option('Optional', 'optional', selected=True)
@@ -713,7 +713,7 @@ class Forms( BaseController ):
                                     form_details=form_details,
                                     field_details=field_details,
                                     form_definition=form_definition,
-                                    field_types=BaseField.form_field_types(),
+                                    field_types=trans.model.FormDefinition.supported_field_types,
                                     message=message,
                                     status=status,
                                     current_form_type=current_form[ 'type' ],
