@@ -16,6 +16,7 @@
 
 <div class="toolForm">
 	<form name="rename_datasets" id="rename_datasets" action="${h.url_for( controller='requests_admin', action='rename_datasets', id_list=id_list, sample_id=trans.security.encode_id( sample.id ) )}" method="post" >
+
 	    <table class="grid">
 	        <thead>
 	            <tr>
@@ -43,9 +44,16 @@
 	        </tbody>
 	    </table>
 	    <br/>
+        <div class="form-row">
+	        <div class="toolParamHelp" style="clear: both;">
+	            A dataset name should only contain the alphanumeric characters or underscore(_).
+	            If a dataset name contains any other character, it would be replaced by an underscore(_).
+	        </div>
+        </div>
 	    <div class="form-row">
 		    <input type="submit" name="rename_datasets_button" value="Save"/>
 		    <input type="submit" name="cancel_rename_datasets_button" value="Close"/>
 	    </div>
 	</form>
+
 </div>

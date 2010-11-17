@@ -1079,7 +1079,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                   cntrller=cntrller, 
                                                                   action='update_request_state',
                                                                   request_id=trans.security.encode_id( request.id ) ) )
-            elif sample_operation == trans.model.sample.bulk_operations.SELECT_LIBRARY:
+            elif sample_operation == trans.model.Sample.bulk_operations.SELECT_LIBRARY:
                 # TODO: fix the code so that the sample_operation_select_field does not use
                 # sample_0_library_id as it's name.  it should use something like sample_operation_library_id
                 # and sample_operation_folder_id because the name sample_0_library_id should belong to the

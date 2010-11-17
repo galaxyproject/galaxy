@@ -430,8 +430,8 @@ class TestFormsAndRequests( TwillTestCase ):
         """Testing editing the sample information of new request1"""
         # logged in as regular_user1
         # target data library - change it to library1
-        target_library_info = dict(library=self.security.encode_id(library1.id), 
-                                   folder=self.security.encode_id(library1_folder1.id) )
+        target_library_info = dict(library=self.security.encode_id( library1.id ), 
+                                   folder=self.security.encode_id( library1_folder1.id ) )
         new_sample_value_tuples = \
         [ ( 'Sample1_renamed', target_library_info, [ 'option2', 'sample1 field2 value edited', 'sample1 field3 value edited' ] ),
           ( 'Sample2_renamed', target_library_info, [ 'option1', 'sample2 field2 value edited', 'sample2 field3 value edited' ] ),
@@ -494,6 +494,23 @@ class TestFormsAndRequests( TwillTestCase ):
                                    strings_displayed_count=strings_displayed_count,
                                    strings_not_displayed=[ request1.states.COMPLETE,
                                                            request1.states.REJECTED ] )
+        # change the target data library back to library2 using sample operation user interface
+        self.change_sample_target_data_library( cntrller='requests',
+                                                request_id=self.security.encode_id( request1.id ),
+                                                sample_ids=[ sample.id for sample in request1.samples ],
+                                                new_library_id=self.security.encode_id( library2.id ), 
+                                                new_folder_id=self.security.encode_id( library2_folder1.id ),
+                                                strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request1.name ],
+                                                strings_displayed_after_submit=[ 'Changes made to the samples have been saved.' ] )
+        # check the changed target data library & folder on the request page
+        strings_displayed_count = []
+        strings_displayed_count.append( ( library2.name, len( request1.samples ) ) )
+        strings_displayed_count.append( ( library2_folder1.name, len( request1.samples ) ) )
+        self.view_request( cntrller='requests',
+                           request_id=self.security.encode_id( request1.id ),
+                           strings_displayed=[],
+                           strings_displayed_count=strings_displayed_count )
+
     #
     # ====== Sequencing request test methods - Admin perspective ================ 
     #
@@ -537,7 +554,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                 request1.type.states[4].desc ]
         # check history of each sample
         for sample in request1.samples:
-            strings_displayed = [ 'Events for Sample "%s"' % sample.name,
+            strings_displayed = [ 'History of sample "%s"' % sample.name,
                                   'Sequencing request submitted and sample state set to %s' % request1.type.states[0].name,
                                    request1.type.states[0].name,
                                    request1.type.states[1].name ]

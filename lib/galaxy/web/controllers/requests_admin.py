@@ -361,17 +361,29 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
             sample_datasets.append( sample_dataset )
         if params.get( 'rename_datasets_button', False ):
+            incorrect_dataset_names = []
             for sample_dataset in sample_datasets:
                 encoded_id = trans.security.encode_id( sample_dataset.id )
                 selected_option = util.restore_text( params.get( 'rename_datasets_for_sample_%s' % encoded_id, '' ) )
                 new_name = util.restore_text( params.get( 'new_name_%s' % encoded_id, '' ) )
+                if not new_name:
+                    incorrect_dataset_names.append( sample_dataset.name )
+                    continue
+                new_name = util.sanitize_for_filename( new_name )
                 if selected_option == 'none':
                     sample_dataset.name = new_name
                 else: 
                     sample_dataset.name = '%s_%s' % ( selected_option, new_name )
                 trans.sa_session.add( sample_dataset )
                 trans.sa_session.flush()
-            message = 'Changes saved successfully.'
+            if len( sample_datasets ) == len( incorrect_dataset_names ):
+                status = 'error'
+                message = 'All datasets renamed incorrectly.'
+            elif len( incorrect_dataset_names ):
+                status = 'done'
+                message = 'Changes saved successfully. The following datasets were renamed incorrectly: %s.' % str( incorrect_dataset_names )
+            else:
+                message = 'Changes saved successfully.'
             return trans.fill_template( '/admin/requests/rename_datasets.mako', 
                                         sample=sample,
                                         id_list=id_list,

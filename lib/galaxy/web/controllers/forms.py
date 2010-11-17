@@ -635,8 +635,8 @@ class Forms( BaseController ):
             if form_type == trans.model.FormDefinition.types.SAMPLE:
                 for ft in trans.model.Sample.supported_field_types:
                     if ft.__name__ == field[ 'type' ]:
-                        self.fieldtype.add_option( ft.__name__, ft__name__, selected=True )
-                        if ft == 'SelectField':
+                        self.fieldtype.add_option( ft.__name__, ft.__name__, selected=True )
+                        if ft.__name__ == 'SelectField':
                             self.selectbox_ui( field )
                     else:
                         self.fieldtype.add_option( ft.__name__, ft.__name__ )
@@ -644,7 +644,7 @@ class Forms( BaseController ):
                 for ft in trans.model.FormDefinition.supported_field_types:
                     if ft.__name__ == field[ 'type' ]:
                         self.fieldtype.add_option( ft.__name__, ft.__name__, selected=True )
-                        if ft == 'SelectField':
+                        if ft.__name__ == 'SelectField':
                             self.selectbox_ui( field )
                     else:
                         self.fieldtype.add_option( ft.__name__, ft.__name__ )

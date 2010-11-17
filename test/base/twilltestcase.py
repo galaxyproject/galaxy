@@ -1638,6 +1638,23 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
+    def change_sample_target_data_library( self, cntrller, request_id, sample_ids, new_library_id, new_folder_id, comment='', strings_displayed=[], strings_displayed_after_submit=[] ):
+        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=True" % ( self.url, cntrller, request_id )
+        self.visit_url( url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for sample_id in sample_ids:
+            tc.fv( "1", "select_sample_%i" % sample_id, True )
+        tc.fv( "1", "sample_operation", 'Select data library and folder' )
+        self.refresh_form( "sample_operation", 'Select data library and folder' )
+        self.check_page_for_string( "Select data library:" )
+        tc.fv( "1", "sample_0_library_id", new_library_id )
+        self.refresh_form( "sample_0_library_id", new_library_id )
+        self.check_page_for_string( "Select folder:" )
+        tc.fv( "1", "sample_0_folder_id", new_folder_id )
+        tc.submit( "save_samples_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
     def add_user_address( self, user_id, address_dict ):
         self.home()
         self.visit_url( "%s/user/new_address?admin_view=False&user_id=%i" % ( self.url, user_id ) )
