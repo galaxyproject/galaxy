@@ -1584,7 +1584,7 @@ class FormDefinition( object ):
             if field[ 'helptext' ]:
                 helptext='%s (%s)' % ( field[ 'helptext' ], req )
             else:
-                helptext = ''
+                helptext = '(%s)' % req
             widgets.append( dict( label=field[ 'label' ],
                                   widget=field_widget,
                                   helptext=helptext ) )

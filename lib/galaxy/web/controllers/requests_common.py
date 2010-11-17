@@ -185,7 +185,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         if request_type is not None or status == 'error':
             # Either the user selected a request_type or an error exists on the form.
             if is_admin:
-                if not user_id_encoded:
+                if not user_id_encoded and user:
                     selected_user_id = trans.security.encode_id( user.id )
                 else:
                     selected_user_id = user_id
@@ -465,7 +465,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         sample_copy = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
         libraries_select_field, folders_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                       request.user,
-                                                                                                      0,
+                                                                                                      'sample_operation',
                                                                                                       libraries,
                                                                                                       None,
                                                                                                       **kwd )
@@ -810,7 +810,6 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             # See if the user has selected a sample to copy.
             copy_sample_index = int( params.get( 'copy_sample_index', -1 ) )
             for index in range( num_samples_to_add ):
-                id_index = len( displayable_sample_widgets ) + 1
                 if copy_sample_index != -1:
                     # The user has selected a sample to copy.
                     library_id = displayable_sample_widgets[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
@@ -826,7 +825,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                            user=request.user, 
-                                                                                                           sample_index=id_index, 
+                                                                                                           sample_index=len( displayable_sample_widgets ), 
                                                                                                            libraries=libraries,
                                                                                                            sample=None, 
                                                                                                            library_id=library_id,
@@ -1080,13 +1079,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                   action='update_request_state',
                                                                   request_id=trans.security.encode_id( request.id ) ) )
             elif sample_operation == trans.model.Sample.bulk_operations.SELECT_LIBRARY:
-                # TODO: fix the code so that the sample_operation_select_field does not use
-                # sample_0_library_id as it's name.  it should use something like sample_operation_library_id
-                # and sample_operation_folder_id because the name sample_0_library_id should belong to the
-                # first sample since all other form field values are named like this.  The library and folder
-                # are skewed to be named +1 resulting in the forced use of id_index everywhere...
-                library_id = params.get( 'sample_0_library_id', 'none' )
-                folder_id = params.get( 'sample_0_folder_id', 'none' )
+                library_id = params.get( 'sample_operation_library_id', 'none' )
+                folder_id = params.get( 'sample_operation_folder_id', 'none' )
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
                 for sample_index in range( len( samples ) ):
                     current_sample = samples[ sample_index ]
@@ -1254,15 +1248,14 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         if sample_operation != 'none':
             # The sample_operatin param has a value other than 'none', and a specified
             # set of samples was received.
-            library_id = util.restore_text( params.get( 'sample_0_library_id', 'none' ) )
-            folder_id = util.restore_text( params.get( 'sample_0_folder_id', 'none' ) )
+            library_id = util.restore_text( params.get( 'sample_operation_library_id', 'none' ) )
+            folder_id = util.restore_text( params.get( 'sample_operation_folder_id', 'none' ) )
         # Build the list of widgets which will be used to render each sample row on the request page
         if not request:
             return sample_widgets
         libraries = trans.app.security_agent.get_accessible_libraries( trans, request.user )
         # Build the list if sample widgets, populating the values from kwd.
         for index, sample in enumerate( samples ):
-            id_index = index + 1
             if sample is None:
                 # Use the sample from the request object since it will not have updated values from kwd.
                 sample = request.samples[ index ]
@@ -1277,10 +1270,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                 sample_id = None
                 name = util.restore_text( params.get( 'sample_%i_name' % index, sample.name ) )
                 bar_code = util.restore_text( params.get( 'sample_%i_bar_code' % index, sample.bar_code ) )
-                library_id = util.restore_text( params.get( 'sample_%i_library_id' % id_index, '' ) )
+                library_id = util.restore_text( params.get( 'sample_%i_library_id' % index, '' ) )
                 if not library_id and sample.library:
                     library_id = trans.security.encode_id( sample.library.id )
-                folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % id_index, '' ) )
+                folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % index, '' ) )
                 if not folder_id and sample.folder:
                     folder_id = trans.security.encode_id( sample.folder.id )
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
@@ -1290,7 +1283,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                     field_values.append( field_value )
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
                                                                                                        user=request.user,
-                                                                                                       sample_index=id_index,
+                                                                                                       sample_index=index,
                                                                                                        libraries=libraries,
                                                                                                        sample=sample,
                                                                                                        library_id=library_id,
@@ -1311,17 +1304,16 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             name = util.restore_text( params.get( 'sample_%i_name' % index, '' ) )
             if not name:
                 break
-            id_index = index + 1
             bar_code = util.restore_text( params.get( 'sample_%i_bar_code' % index, '' ) )
-            library_id = util.restore_text( params.get( 'sample_%i_library_id' % id_index, '' ) )
-            folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % id_index, '' ) )
+            library_id = util.restore_text( params.get( 'sample_%i_library_id' % index, '' ) )
+            folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % index, '' ) )
             library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
             field_values = []
             for field_index in range( len( request.type.sample_form.fields ) ):
                 field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
                                                                                                        user=request.user,
-                                                                                                       sample_index=id_index,
+                                                                                                       sample_index=index,
                                                                                                        libraries=libraries,
                                                                                                        sample=None,
                                                                                                        library_id=library_id,
@@ -1376,8 +1368,13 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         # not have ACCESS permissions associated with them (only LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE), so all folders will
         # be present in the folder_select_field for each library selected.
         params = util.Params( kwd )
-        library_select_field_name= "sample_%i_library_id" % sample_index
-        folder_select_field_name = "sample_%i_folder_id" % sample_index
+        if sample_index == 'sample_operation':
+            # build the library selection widget for the bulk sample operation
+            library_select_field_name= "sample_operation_library_id"
+            folder_select_field_name = "sample_operation_folder_id"
+        else:
+            library_select_field_name= "sample_%i_library_id" % sample_index
+            folder_select_field_name = "sample_%i_folder_id" % sample_index
         if not library_id:
             library_id = params.get( library_select_field_name, None )
         if not folder_id:

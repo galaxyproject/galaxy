@@ -72,7 +72,7 @@
     <div class="toolFormBody">
         <div class="form-row">
             <label>Current state:</label>
-            ${request.state}
+            <a href="${h.url_for( controller='requests_common', action='view_request_history', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">${request.state}</a>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -100,11 +100,7 @@
                     %>
                     <div class="form-row">
                         <label>${field_label}:</label>                   
-                        %if field_label == 'State':
-                            <a href="${h.url_for( controller='requests_common', action='view_request_history', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">${field_value}</a>
-                        %else:
-                            ${field_value}     
-                        %endif
+                        ${field_value}     
                     </div>
                     <div style="clear: both"></div>
                 %endfor

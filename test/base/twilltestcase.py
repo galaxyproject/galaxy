@@ -1571,10 +1571,9 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
         for sample_index, ( sample_name, target_library_info, sample_field_values ) in enumerate( sample_value_tuples ):
             tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
-            lib_widget_index = sample_index + 1
-            tc.fv( "1", "sample_%i_library_id" % lib_widget_index, target_library_info[ 'library' ] )
-            self.refresh_form( "sample_%i_library_id" % lib_widget_index, target_library_info[ 'library' ] )
-            tc.fv( "1", "sample_%i_folder_id" % lib_widget_index, target_library_info[ 'folder' ] )
+            tc.fv( "1", "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
+            self.refresh_form( "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
+            tc.fv( "1", "sample_%i_folder_id" % sample_index, target_library_info[ 'folder' ] )
             for field_index, field_value in enumerate( sample_field_values ):
                 tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
             # Do not click on Add sample button when all the sample have been added 
@@ -1592,10 +1591,9 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
         for sample_index, ( sample_name, target_library_info, sample_field_values ) in enumerate( sample_value_tuples ):
             tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
-            lib_widget_index = sample_index + 1
-            tc.fv( "1", "sample_%i_library_id" % lib_widget_index, target_library_info[ 'library' ] )
-            self.refresh_form( "sample_%i_library_id" % lib_widget_index, target_library_info[ 'library' ] )
-            tc.fv( "1", "sample_%i_folder_id" % lib_widget_index, target_library_info[ 'folder' ] )
+            tc.fv( "1", "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
+            self.refresh_form( "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
+            tc.fv( "1", "sample_%i_folder_id" % sample_index, target_library_info[ 'folder' ] )
             for field_index, field_value in enumerate( sample_field_values ):
                 tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
         tc.submit( "save_samples_button" )
@@ -1631,6 +1629,7 @@ class TwillTestCase( unittest.TestCase ):
         for sample_id in sample_ids:
             tc.fv( "1", "select_sample_%i" % sample_id, True )
         tc.fv( "1", "sample_operation", 'Change state' )
+        # refresh on change to show the sample states selectfield
         self.refresh_form( "sample_operation", 'Change state' )
         self.check_page_for_string( "Change current state" )
         tc.fv( "1", "sample_state_id", new_sample_state_id )
@@ -1646,12 +1645,15 @@ class TwillTestCase( unittest.TestCase ):
         for sample_id in sample_ids:
             tc.fv( "1", "select_sample_%i" % sample_id, True )
         tc.fv( "1", "sample_operation", 'Select data library and folder' )
+        # refresh on change to show the data libraries selectfield
         self.refresh_form( "sample_operation", 'Select data library and folder' )
         self.check_page_for_string( "Select data library:" )
-        tc.fv( "1", "sample_0_library_id", new_library_id )
-        self.refresh_form( "sample_0_library_id", new_library_id )
+        tc.fv( "1", "sample_operation_library_id", new_library_id )
+        # refresh on change to show the selectfield with the list of 
+        # folders in the selected data library above
+        self.refresh_form( "sample_operation_library_id", new_library_id )
         self.check_page_for_string( "Select folder:" )
-        tc.fv( "1", "sample_0_folder_id", new_folder_id )
+        tc.fv( "1", "sample_operation_folder_id", new_folder_id )
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )

@@ -476,13 +476,7 @@
                     <th>Name</th>
                     %for index, field in fields_dict.items():
                         <th>
-                            ${field['label']}
-                            ## TODO: help comments in the grid header are UGLY!
-                            ## If they are needed display them more appropriately,
-                            ## if they are not, delete this commented code.
-                            ##<div class="toolParamHelp" style="clear: both;">
-                            ##    <i>${field['helptext']}</i>
-                            ##</div>
+                            <a class="display tooltip" title="${field['helptext']}" >${field['label']}</a>
                         </th>
                     %endfor
                     <th></th>

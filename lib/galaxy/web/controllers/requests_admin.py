@@ -127,17 +127,14 @@ class DataTransferGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "Transfer",
                              allow_multiple=True,
-                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ),
-                             url_args=dict( webapp="galaxy" ) ),
+                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ) ),
         grids.GridOperation( "Rename",
                              allow_multiple=True,
                              allow_popup=False,
-                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ),
-                             url_args=dict( webapp="galaxy" ) ),
+                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ) ),
         grids.GridOperation( "Delete",
                              allow_multiple=True,
-                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ),
-                             url_args=dict( webapp="galaxy" ) )
+                             condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ) )
     ]
     def apply_query_filter( self, trans, query, **kwd ):
         sample_id = kwd.get( 'sample_id', None )
