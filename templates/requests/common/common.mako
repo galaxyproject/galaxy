@@ -160,7 +160,7 @@
         %if is_unsubmitted:
             <td>Unsubmitted</td>
         %else:
-            <td valign="top"><a href="${h.url_for( controller='requests_common', action='sample_events', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${sample.state.name}</a></td>
+            <td valign="top"><a href="${h.url_for( controller='requests_common', action='view_sample_history', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${sample.state.name}</a></td>
         %endif    
     %else:
         <td></td>
@@ -334,7 +334,7 @@
                         %if is_unsubmitted:
                             <td>Unsubmitted</td>
                         %else:
-                            <td><a id="sampleState-${sample.id}" href="${h.url_for( controller='requests_common', action='sample_events', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${render_sample_state( sample )}</a></td>
+                            <td><a id="sampleState-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_history', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${render_sample_state( sample )}</a></td>
                         %endif
                         %if sample_widget_library and library_cntrller is not None:
                             <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller=library_cntrller, id=trans.security.encode_id( sample_widget_library.id ) )}">${sample_widget_library.name}</a></td>                                  

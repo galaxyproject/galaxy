@@ -39,7 +39,7 @@
                     <div style="clear: both"></div>
                 </div>
             %endfor
-            <div class="toolFormTitle">Possible sample states</div>
+            <div class="toolFormTitle">Sample states</div>
             %if len(rt_states_widgets):
                 %for index, info in enumerate(rt_states_widgets):
                     ${render_state( index, info[0], info[1] )}

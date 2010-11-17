@@ -28,7 +28,7 @@
             </div>
             <div class="form-row">
                 <label>
-                    Sequencing Request Form definition: 
+                    Sequencing request form definition: 
                 </label>
                 <select name="form_id">
                     %for form in forms:
@@ -42,7 +42,7 @@
             </div>       
             <div class="form-row">
                 <label>
-                    Sample Form definition: 
+                    Sample form definition: 
                 </label>
                 <select name="form_id">
                     %for form in forms:

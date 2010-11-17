@@ -18,12 +18,6 @@ class BaseField(object):
             return ' disabled="disabled"'
         else:
             return ''
-    @staticmethod
-    def form_field_types():
-        return ['TextField', 'TextArea', 'SelectField', 'CheckboxField', 'AddressField', 'WorkflowField']
-    @staticmethod
-    def sample_field_types():
-        return ['TextField', 'SelectField', 'CheckboxField', 'WorkflowField']
 
 class TextField(BaseField):
     """
@@ -559,8 +553,8 @@ class AddressField(BaseField):
             self.select_address.add_option( 'Add a new address', 'new' )
         return self.select_address.get_html( disabled=disabled ) + address_html
 
-class WorkflowField(BaseField):
-    def __init__(self, name, user=None, value=None, params=None):
+class WorkflowField( BaseField ):
+    def __init__( self, name, user=None, value=None, params=None ):
         self.name = name
         self.user = user
         self.value = value
@@ -580,7 +574,7 @@ class WorkflowField(BaseField):
                     else:
                         self.select_workflow.add_option( a.name, str( a.id ) )
         return self.select_workflow.get_html( disabled=disabled )
-
+        
 def get_suite():
     """Get unittest suite for this module"""
     import doctest, sys
@@ -592,11 +586,11 @@ def build_select_field( trans, objs, label_attr,  select_field_name, initial_val
                         selected_value='none', refresh_on_change=False, multiple=False, display=None, size=None ):
     """
     Build a SelectField given a set of objects.  The received params are:
-    - objs: the set of object used to populate the option list
+    - objs: the set of objects used to populate the option list
     - label_attr: the attribute of each obj (e.g., name, email, etc ) whose value is used to populate each option label.  If the string
       'self' is passed as label_attr, each obj in objs is assumed to be a string, so the obj itself is used
     - select_field_name: the name of the SelectField
-    - initial_value: the vlaue of the first option in the SelectField - allows for an option telling the user to select something
+    - initial_value: the value of the first option in the SelectField - allows for an option telling the user to select something
     - selected_value: the value of the currently selected option
     - refresh_on_change: True if the SelectField should perform a refresh_on_change
     """

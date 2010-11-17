@@ -1495,12 +1495,11 @@ class MetadataFile( object ):
 
 class FormDefinition( object ):
     # The following form_builder classes are supported by the FormDefinition class.
-    # AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
     supported_field_types = [ AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
                    SAMPLE = 'Sequencing Sample Form',
                    LIBRARY_INFO_TEMPLATE = 'Library information template',
-                   USER_INFO = 'User Information'  )
+                   USER_INFO = 'User Information' )
     def __init__( self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None ):
         self.name = name
         self.desc = desc
@@ -1792,6 +1791,8 @@ class RequestTypePermissions( object ):
         self.role = role
     
 class Sample( object ):
+    # The following form_builder classes are supported by the Sample class.
+    supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField ]
     bulk_operations = Bunch( CHANGE_STATE = 'Change state', 
                              SELECT_LIBRARY = 'Select data library and folder' )
     api_collection_visible_keys = ( 'id', 'name' )

@@ -1536,7 +1536,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/requests_common/view_request_history?cntrller=%s&id=%s" % ( self.url, cntrller, request_id ) )
         self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
     def view_sample_history( self, cntrller, sample_id, strings_displayed=[], strings_displayed_count=[], strings_not_displayed=[] ):
-        self.visit_url( "%s/requests_common/sample_events?cntrller=%s&sample_id=%s" % ( self.url, cntrller, sample_id ) )
+        self.visit_url( "%s/requests_common/view_sample_history?cntrller=%s&sample_id=%s" % ( self.url, cntrller, sample_id ) )
         self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
     def edit_basic_request_info( self, cntrller, request_id, name, new_name='', new_desc='', new_fields=[],
                                  strings_displayed=[], strings_displayed_after_submit=[] ):

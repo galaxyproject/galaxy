@@ -8,7 +8,6 @@
     is_unsubmitted = request.is_unsubmitted
     can_add_samples = is_unsubmitted
     can_reject = is_admin and is_submitted
-    can_select_datasets = is_admin and ( is_complete or is_submitted )
     can_submit_request = request.samples and is_unsubmitted
 %>
 
@@ -23,9 +22,6 @@
         <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request_history', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">View history</a>
         %if can_reject:
             <a class="action-button" href="${h.url_for( controller='requests_admin', action='reject_request', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Reject this request</a>
-        %endif
-        %if can_select_datasets:
-            <a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', request_id=trans.security.encode_id( request.id ) )}">Select datasets to transfer</a>
         %endif
     </div>
 </ul>

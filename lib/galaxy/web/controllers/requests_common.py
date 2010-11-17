@@ -588,12 +588,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, request_id )
-        events_list = []
-        for event in request.events:         
-            events_list.append( ( event.state, time_ago( event.update_time ), event.comment ) )
         return trans.fill_template( '/requests/common/view_request_history.mako', 
                                     cntrller=cntrller,
-                                    events_list=events_list,
                                     request=request )
     @web.expose
     @web.require_login( "edit email notification settings" )
@@ -777,7 +773,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     search_box=search_box )
     @web.expose
     @web.require_login( "sample events" )
-    def sample_events( self, trans, cntrller, **kwd ):
+    def view_sample_history( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         status = params.get( 'status', 'done' )
         message = util.restore_text( params.get( 'message', '' ) )
@@ -786,15 +782,8 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, sample_id )
-        events_list = []
-        for event in sample.events:         
-            events_list.append( ( event.state.name,
-                                  event.state.desc, 
-                                  time_ago( event.update_time ), 
-                                  event.comment ) )
-        return trans.fill_template( '/requests/common/sample_events.mako', 
+        return trans.fill_template( '/requests/common/view_sample_history.mako', 
                                     cntrller=cntrller,
-                                    events_list=events_list,
                                     sample=sample )
     @web.expose
     @web.require_login( "add sample" )
@@ -1054,9 +1043,9 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             # selected sets of samples.  If samples are selected, the sample_operation param
             # will have a value other than 'none', and the samples param will be a list of
             # encoded sample ids.  There are currently only 2 multi-select operations;
-            # 'Change state' and 'Select data library and folder'.  If sample_operation is
-            # 'none, then the samples param will be a list of sample objects.
-            if sample_operation == 'Change state':
+            # model.Sample.bulk_operations.CHANGE_STATE and model.sample.bulk_operations.SELECT_LIBRARY.
+            # If sample_operation is 'none, then the samples param will be a list of sample objects.
+            if sample_operation == trans.model.Sample.bulk_operations.CHANGE_STATE:
                 sample_state_id = params.get( 'sample_state_id', None )
                 if sample_state_id in [ None, 'none' ]:
                     message = "Select a new state from the <b>Change current state</b> list before clicking the <b>Save</b> button."
@@ -1090,7 +1079,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                   cntrller=cntrller, 
                                                                   action='update_request_state',
                                                                   request_id=trans.security.encode_id( request.id ) ) )
-            elif sample_operation == 'Select data library and folder':
+            elif sample_operation == trans.model.sample.bulk_operations.SELECT_LIBRARY:
                 # TODO: fix the code so that the sample_operation_select_field does not use
                 # sample_0_library_id as it's name.  it should use something like sample_operation_library_id
                 # and sample_operation_folder_id because the name sample_0_library_id should belong to the

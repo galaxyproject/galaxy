@@ -2,6 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 <%
+    from galaxy.web.framework.helpers import time_ago
+
     is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
     is_complete = request.is_complete
     is_submitted = request.is_submitted
@@ -41,16 +43,16 @@
         <thead>
             <tr>
                 <th>State</th>
-                <th>Last Update</th>
+                <th>Last Updated</th>
                 <th>Comments</th>
             </tr>
         </thead>
         <tbody>
-            %for state, updated, comments in events_list:    
-                <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
-                    <td><b><a>${state}</a></b></td>
-                    <td><a>${updated}</a></td>
-                    <td><a>${comments}</a></td>
+            %for event in request.events:    
+                <tr>
+                    <td><b>${event.state}</b></td>
+                    <td>${time_ago( event.update_time )}</td>
+                    <td>${event.comment}</td>
                 </tr>             
             %endfor
         </tbody>

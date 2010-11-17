@@ -64,12 +64,12 @@ class FormsGrid( grids.Grid ):
     ]
 
 class Forms( BaseController ):
-    # Empty form field
+    # Empty TextField
     empty_field = { 'label': '', 
                     'helptext': '', 
                     'visible': True,
                     'required': False,
-                    'type': BaseField.form_field_types()[0],
+                    'type': model.TextField.__name__,
                     'selectlist': [],
                     'layout': 'none',
                     'default': '' }
@@ -597,12 +597,12 @@ class Forms( BaseController ):
             self.selectbox_options = []
             # if the form is for defining samples, then use the sample field types
             # which does not include TextArea & AddressField
-            if form_type == trans.app.model.FormDefinition.types.SAMPLE:
-                for ft in BaseField.sample_field_types():
-                    self.fieldtype.add_option(ft, ft)
+            if form_type == trans.model.FormDefinition.types.SAMPLE:
+                for ft in trans.model.Sample.supported_field_types:
+                    self.fieldtype.add_option( ft.__name__, ft.__name__ )
             else:
-                for ft in BaseField.form_field_types():
-                    self.fieldtype.add_option(ft, ft)
+                for ft in trans.model.Request.supported_field_types:
+                    self.fieldtype.add_option( ft.__name__, ft__name__ )
             self.required = SelectField('field_required_'+str(index), display='radio')
             self.required.add_option('Required', 'required')
             self.required.add_option('Optional', 'optional', selected=True)
@@ -632,22 +632,22 @@ class Forms( BaseController ):
                 field[ 'selectlist' ] = ['', '']
             # if the form is for defining samples, then use the sample field types
             # which does not include TextArea & AddressField
-            if form_type == trans.app.model.FormDefinition.types.SAMPLE:
-                for ft in BaseField.sample_field_types():
-                    if ft == field['type']:
-                        self.fieldtype.add_option(ft, ft, selected=True)
+            if form_type == trans.model.FormDefinition.types.SAMPLE:
+                for ft in trans.model.Sample.supported_field_types:
+                    if ft.__name__ == field[ 'type' ]:
+                        self.fieldtype.add_option( ft.__name__, ft__name__, selected=True )
                         if ft == 'SelectField':
-                            self.selectbox_ui(field)
+                            self.selectbox_ui( field )
                     else:
-                        self.fieldtype.add_option(ft, ft)
+                        self.fieldtype.add_option( ft.__name__, ft.__name__ )
             else:
-                for ft in BaseField.form_field_types():
-                    if ft == field['type']:
-                        self.fieldtype.add_option(ft, ft, selected=True)
+                for ft in trans.model.Request.supported_field_types:
+                    if ft.__name__ == field[ 'type' ]:
+                        self.fieldtype.add_option( ft.__name__, ft.__name__, selected=True )
                         if ft == 'SelectField':
-                            self.selectbox_ui(field)
+                            self.selectbox_ui( field )
                     else:
-                        self.fieldtype.add_option(ft, ft)
+                        self.fieldtype.add_option( ft.__name__, ft.__name__ )
             # required/optional
             if field['required'] == 'required':
                 self.required = SelectField('field_required_'+str(self.index), display='radio')
