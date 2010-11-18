@@ -108,6 +108,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # connection overhead.  Recommended when not using SQLite:
 #database_engine_option_strategy = threadlocal
 
+# Log all database transactions, can be useful for debugging and performance
+# profiling.  Logging is done via Python's 'logging' module under the qualname
+# 'galaxy.model.orm.logging_connection_proxy'
+#database_query_profiling_proxy = False
+
 # -- Files and directories
 
 # Dataset files are stored in this directory.
