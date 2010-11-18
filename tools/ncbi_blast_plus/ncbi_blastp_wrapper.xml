@@ -158,7 +158,7 @@ $adv_opts.parse_deflines
     
 .. class:: warningmark
 
-**Note**. Database searches may take substantial amount of time.
+**Note**. Database searches may take a substantial amount of time.
 For large input datasets it is advisable to allow overnight processing.  
 
 -----
