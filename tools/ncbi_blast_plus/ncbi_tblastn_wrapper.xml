@@ -121,7 +121,7 @@ $adv_opts.parse_deflines
         </data>
     </outputs>
     <requirements>
-        <requirement type="binary">blastn</requirement>
+        <requirement type="binary">tblastn</requirement>
     </requirements>
     <tests>
     </tests>

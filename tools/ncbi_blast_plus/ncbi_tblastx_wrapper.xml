@@ -119,23 +119,9 @@ $adv_opts.parse_deflines
         </data>
     </outputs>
     <requirements>
-        <requirement type="binary">blastn</requirement>
+        <requirement type="binary">tblastx</requirement>
     </requirements>
     <tests>
-        <test>
-            <param name="input_query" value="megablast_wrapper_test1.fa" ftype="fasta"/>
-            <!-- database needs to match the entry in the blastdb.loc file (first column), which includes the last update date if appropriate --> 
-            <param name="database" value="phiX" />
-            <param name="blast_type" value="megablast" />
-            <!--
-            <param name="word_size" value="28" />
-            <param name="iden_cutoff" value="99.0" />
-            -->
-            <param name="evalue_cutoff" value="10.0" />
-            <param name="filter_query" value="yes" />
-            <param name="out_format" value="-outfmt 6" />
-            <output name="output1" file="megablast_wrapper_test1.out"/> 
-        </test>
     </tests>
     <help>
     
