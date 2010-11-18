@@ -14,17 +14,17 @@
   <code file="operation_filter.py"/>
   <tests>
     <test>
-      <param name="input1" value="1.bed" />
+      <param name="input1" value="1.bed" dbkey="?" />
       <param name="allchroms" value="true" />
       <output name="output" file="gops_complement_out.bed" />
     </test>
     <test>
-      <param name="input1" value="2_mod.bed" ftype="interval"/>
+      <param name="input1" value="2_mod.bed" ftype="interval" dbkey="?" />
       <param name="allchroms" value="true" />
       <output name="output" file="gops_complement_out_diffCols.dat" />
     </test>
     <test>
-      <param name="input1" value="gops_bigint.interval" />
+      <param name="input1" value="gops_bigint.interval" dbkey="?" />
       <param name="allchroms" value="true" />
       <output name="output" file="gops_complement_out2.bed" />
     </test>
