@@ -44,8 +44,6 @@ class Configuration( object ):
         # web API
         self.enable_api = string_as_bool( kwargs.get( 'enable_api', False ) )
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
-        # dataset Track files
-        self.track_store_path = kwargs.get( "track_store_path", "${extra_files_path}/tracks")
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
@@ -112,11 +110,11 @@ class Configuration( object ):
             self.use_tool_dependencies = False
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
-        self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
-        self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
-        self.nginx_x_archive_files_base = kwargs.get( 'nginx_x_archive_files_base', False )
-        self.nginx_upload_store = kwargs.get( 'nginx_upload_store', False )
-        self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
+        self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
+        self.nginx_x_accel_redirect_base = string_as_bool( kwargs.get( 'nginx_x_accel_redirect_base', False ) )
+        self.nginx_x_archive_files_base = string_as_bool( kwargs.get( 'nginx_x_archive_files_base', False ) )
+        self.nginx_upload_store = string_as_bool( kwargs.get( 'nginx_upload_store', False ) )
+        self.nginx_upload_path = string_as_bool( kwargs.get( 'nginx_upload_path', False ) )
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         # Parse global_conf and save the parser

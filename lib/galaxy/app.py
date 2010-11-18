@@ -80,8 +80,6 @@ class UniverseApplication( object ):
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue
-        # Track Store
-        ## self.track_store = store.TrackStoreManager( self.config.track_store_path )
         
     def shutdown( self ):
         self.job_manager.shutdown()

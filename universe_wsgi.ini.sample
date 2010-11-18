@@ -136,6 +136,19 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
 
+# Each job is given a unique empty directory as its current working directory.
+# This option defines in what parent directory those directories will be
+# created.
+#job_working_directory = database/job_working_directory
+
+# If using a cluster, Galaxy will write job scripts and stdout/stderr to this
+# directory.
+#cluster_files_directory = database/pbs
+
+# If Galaxy's visualization module (Trackster) is enabled (see below), define
+# where it will store files.
+#track_store_path = ${extra_files_path}/tracks
+
 # -- Mail and notification
 
 # Galaxy sends mail for various things: Subscribing users to the mailing list
@@ -179,7 +192,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #wiki_url = http://bitbucket.org/galaxy/galaxy-central/wiki
 
 # The URL linked by the "Email comments..." link in the "Help" menu.
-#bugs_email = None
+#bugs_email = mailto:galaxy-bugs@bx.psu.edu
 
 # The URL linked by the "How to Cite..." link in the "Help" menu.
 #citation_url = http://bitbucket.org/galaxy/galaxy-central/wiki/Citations
@@ -195,6 +208,40 @@ static_images_dir = %(here)s/static/images
 static_favicon_dir = %(here)s/static/favicon.ico
 static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
+
+# -- Advanced proxy features
+
+# For help on configuring the Advanced proxy features, see:
+# http://usegalaxy.org/production
+
+# Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.  Set
+# this to True to inform Galaxy that mod_xsendfile is enabled upstream.
+#apache_xsendfile = False
+
+# The same download handling can be done by nginx using X-Accel-Redirect.  This
+# should be set to the path defined in the nginx config as an internal redirect
+# with access to Galaxy's data files (see documentation linked above).
+#nginx_x_accel_redirect_base = False
+
+# nginx can make use of mod_zip to create zip files containing multiple library
+# files.  If using X-Accel-Redirect, this can be the same value as that option.
+#nginx_x_archive_files_base = False
+
+# If using compression in the upstream proxy server, use this option to disable
+# gzipping of library .tar.gz and .zip archives, since the proxy server will do
+# it faster on the fly.
+#upstream_gzip = False
+
+# nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
+# Configuration for this is complex and explained in detail in the
+# documentation linked above.  The upload store is a temporary directory in
+# which files uploaded by the upload module will be placed.
+#nginx_upload_store = False
+
+# This value overrides the action set on the file upload form, e.g. the web
+# path where the nginx_upload_module has been configured to intercept upload
+# requests.
+#nginx_upload_path = False
 
 # -- Logging and Debugging
 
@@ -267,6 +314,13 @@ use_interactive = True
 # implication that this will give Galaxy Admins access to anything your Galaxy
 # user has access to.
 #allow_library_path_paste = False
+
+# Users may choose to download multiple files from a library in an archive.  By
+# default, Galaxy allows users to select from a few different archive formats
+# if testing shows that Galaxy is able to create files using these formats.
+# Specific formats can be disabled with this option, separate more than one
+# format with commas.  Available formats are currnetly 'zip', 'gz', and 'bz2'.
+#disable_library_comptypes = 
 
 # -- Users and Security
 
@@ -361,7 +415,7 @@ use_interactive = True
 
 # This enables splitting of jobs into tasks, if specified by the particular tool config.
 # This is a new feature and not recommended for production servers yet.
-#use_tasked_jobs = True
+#use_tasked_jobs = False
 #local_task_queue_workers = 2
 
 # Enable job recovery (if Galaxy is restarted while cluster jobs are running,
@@ -382,12 +436,23 @@ use_interactive = True
 # option to retry externally, or set metadata manually (when possible).
 #retry_metadata_internally = True
 
+# If (for example) you run on a cluster and your datasets (by default,
+# database/files/) are mounted read-only, this option will override tool output
+# paths to write outputs to the working directory instead, and the job manager
+# will move the outputs to their proper place in the dataset directory on the
+# Galaxy server after the job completes.
+#outputs_to_working_directory = False
+
 # Number of concurrent jobs to run (local job runner)
 #local_job_queue_workers = 5
 
 # Jobs can be killed after a certain amount of execution time.  Format is in
 # hh:mm:ss.  Currently only implemented for PBS.
 #job_walltime = None
+
+# Jobs can be killed if any of their ouputs grow over a certain size (in
+# bytes).  0 for no limit.
+#output_size_limit = 0
 
 # Clustering Galaxy is not a straightforward process and requires some
 # pre-configuration.  See the the wiki before attempting to set any of these
