@@ -268,8 +268,7 @@ function replace_big_select_inputs(min_length, max_length) {
             var new_value = select_mapping[cur_value];
             if (new_value !== null && new_value !== undefined) {
                 text_input_elt.attr('value', new_value);
-            } 
-            else {
+            } else {
                 // If there is a non-empty start value, use that; otherwise unknown.
                 if (start_value !== "") {
                     text_input_elt.attr('value', start_value);
@@ -282,7 +281,7 @@ function replace_big_select_inputs(min_length, max_length) {
         text_input_elt.parents('form').submit( function() { submit_hook(); } );
         
         // Add custom event so that other objects can execute name --> value conversion whenever they want.
-        $(document).bind("convert_dbkeys", function() { submit_hook(); } );
+        $(document).bind("convert_to_values", function() { submit_hook(); } );
         
         // If select is refresh on change, mirror this behavior.
         if (select_elt.attr('refresh_on_change') == 'true') {
@@ -588,6 +587,7 @@ $(document).ready( function() {
             }
         }
         $(window).trigger("refresh_on_change");
+        $(document).trigger("convert_to_values"); // Convert autocomplete text to values
         select_field.get(0).form.submit();
     });
     

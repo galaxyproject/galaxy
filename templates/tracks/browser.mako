@@ -103,7 +103,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 success: function(form_html) {
                     show_modal("New Track Browser", form_html, {
                         "Cancel": function() { window.location = "${h.url_for( controller='visualization', action='list' )}"; },
-                        "Continue": function() { $(document).trigger("convert_dbkeys"); continue_fn(); }
+                        "Continue": function() { $(document).trigger("convert_to_values"); continue_fn(); }
                     });
                     $("#new-title").focus();
                     replace_big_select_inputs();
