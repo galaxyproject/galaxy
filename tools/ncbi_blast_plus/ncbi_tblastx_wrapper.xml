@@ -17,7 +17,7 @@ tblastx
 #if $adv_opts.adv_opts_selector=="advanced":
 $adv_opts.filter_query
 $adv_opts.strand
-$adv_opts.matrix
+-matrix $adv_opts.matrix
 ## Need int(str(...)) because $adv_opts.max_hits is an InputValueWrapper object not a string
 ## Note -max_target_seqs overrides -num_descriptions and -num_alignments
 #if (str($adv_opts.max_hits) and int(str($adv_opts.max_hits)) > 0):
@@ -84,14 +84,14 @@ $adv_opts.parse_deflines
                     <option value="-strand minus">Minus (reverse complement)</option>
                 </param>
                 <param name="matrix" type="select" label="Scoring matrix">
-                    <option value="-matrix BLOSUM90">BLOSUM90</option>
-                    <option value="-matrix BLOSUM80">BLOSUM80</option>
-                    <option value="-matrix BLOSUM62" selected="true">BLOSUM62 (default)</option>
-                    <option value="-matrix BLOSUM50">BLOSUM50</option> 
-                    <option value="-matrix BLOSUM45">BLOSUM45</option>
-                    <option value="-matrix PAM250">PAM250</option>
-                    <option value="-matrix PAM70">PAM70</option>
-                    <option value="-matrix PAM30">PAM30</option>
+                    <option value="BLOSUM90">BLOSUM90</option>
+                    <option value="BLOSUM80">BLOSUM80</option>
+                    <option value="BLOSUM62" selected="true">BLOSUM62 (default)</option>
+                    <option value="BLOSUM50">BLOSUM50</option> 
+                    <option value="BLOSUM45">BLOSUM45</option>
+                    <option value="PAM250">PAM250</option>
+                    <option value="PAM70">PAM70</option>
+                    <option value="PAM30">PAM30</option>
                 </param>
                 <!-- Why doesn't optional override a validator? I want to accept an empty string OR a non-negative integer -->
                 <param name="max_hits" type="integer" value="0" label="Maximum hits to show" help="Use zero for default limits">
