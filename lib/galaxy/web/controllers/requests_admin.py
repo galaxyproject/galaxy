@@ -78,9 +78,10 @@ class RequestTypeGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [
+        grids.GridOperation( "Edit configuration", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
         grids.GridOperation( "Edit permissions", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
-        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted  )  ),
-        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
+        grids.GridOperation( "Delete configuration", allow_multiple=True, condition=( lambda item: not item.deleted  )  ),
+        grids.GridOperation( "Undelete configuration", condition=( lambda item: item.deleted ) ),    
     ]
     global_actions = [
         grids.GridAction( "Create new configuration", dict( controller='requests_admin', action='create_request_type' ) )
@@ -532,7 +533,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 # FIXME: handle folder selection
                 # ignore folders for now
                 if filepath[-1] != os.sep:
-                    name = self.__dataset_name( sample, filepath.split( '/' )[-1] )
+                    name = self.__rename_dataset( sample, filepath.split( '/' )[-1] )
                     status = trans.app.model.SampleDataset.transfer_status.NOT_STARTED
                     size = sample.get_untransferred_dataset_size( filepath )
                     sample_dataset = trans.model.SampleDataset( sample=sample,
@@ -555,7 +556,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                        pexpect.TIMEOUT:print_ticks}, 
                               timeout=10 )
         return output.replace( filepath, '' ).strip()
-    def __dataset_name( self, sample, filepath ):
+    def __rename_dataset( self, sample, filepath ):
         name = filepath.split( '/' )[-1]
         options = sample.request.type.rename_dataset_options
         option = sample.request.type.datatx_info.get( 'rename_dataset', options.NO ) 
@@ -744,9 +745,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                 return self.view_form_definition( trans, **kwd )
             elif operation == "view_request_type":
                 return self.view_request_type( trans, **kwd )
-            elif operation == "delete":
+            elif operation == "edit configuration":
+                return self.edit_request_type( trans, **kwd )
+            elif operation == "delete configuration":
                 return self.delete_request_type( trans, **kwd )
-            elif operation == "undelete":
+            elif operation == "undelete configuration":
                 return self.undelete_request_type( trans, **kwd )
             elif operation == "edit permissions":
                 return self.request_type_permissions( trans, **kwd )
@@ -758,54 +761,119 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        rt_info_widgets, rt_states_widgets = self.__create_request_type_form( trans, **kwd )
+        rt_info_widgets, rt_states_widgets = self.__get_populated_request_type_widgets( trans, **kwd )
         rename_dataset_select_field = self.__build_rename_dataset_select_field( trans )
         if params.get( 'add_state_button', False ):
-            # FIXME: why do we append a tuple of 2 empty strings????
+            # Append a new tuple to the set of states which will result in
+            # empty state name and description TextFields being displayed on
+            # the form.
             rt_states_widgets.append( ( "", "" ) )
         elif params.get( 'remove_state_button', False ):
             index = int( params.get( 'remove_state_button', '' ).split(" ")[2] )
             del rt_states_widgets[ index-1 ]
-        elif params.get( 'save_request_type', False ):
-            request_type, message = self.__save_request_type( trans, **kwd )
-            if not request_type:
-                status='error'
-            else:
-                message = 'Sequencer configuration (%s) has been created' % request_type.name
-                return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                  action='browse_request_types',
-                                                                  message=message,
-                                                                  status=status ) )
-        elif params.get( 'save_changes', False ):
-            request_type_id = params.get( 'rt_id', None )
-            try:
-                request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
-            except:
-                return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='browse_request_types' )
-            # Data transfer info - make sure password is retrieved from kwd rather
-            # than Params since Params may have munged the characters.
-            request_type.datatx_info = dict( host=util.restore_text( params.get( 'host', '' ) ),
-                                             username=util.restore_text( params.get( 'username', '' ) ),
-                                             password=kwd.get( 'password', '' ),
-                                             data_dir=util.restore_text( params.get( 'data_dir', '' ) ),
-                                             rename_dataset=util.restore_text( params.get( 'rename_dataset', False ) ) )
-            data_dir = self.__check_path( request_type.datatx_info[ 'data_dir' ] )
-            request_type.datatx_info[ 'data_dir' ] = data_dir
-            trans.sa_session.add( request_type )
-            trans.sa_session.flush()
-            message = 'Changes made to sequencer configuration <b>%s</b> has been saved' % request_type.name
+        elif params.get( 'create_request_type_button', False ):
+            self.__save_request_type( trans, **kwd )
+            message = 'The sequencer configuration has been created.'
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='view_request_type',
-                                                              id=request_type_id,
+                                                              action='browse_request_types',
                                                               message=message,
                                                               status=status ) )
-        return trans.fill_template( '/admin/requests/create_request_type.mako',
+        return trans.fill_template( '/admin/request_type/create_request_type.mako',
                                     rt_info_widgets=rt_info_widgets,
                                     rt_states_widgets=rt_states_widgets,
                                     rename_dataset_select_field=rename_dataset_select_field,
                                     message=message,
                                     status=status )
-    def __create_request_type_form( self, trans, **kwd ):
+    @web.expose
+    @web.require_admin
+    def view_request_type( self, trans, **kwd ):
+        request_type_id = kwd.get( 'id', None )
+        try:
+            request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='browse_request_types' )
+        rename_dataset_select_field = self.__build_rename_dataset_select_field( trans, request_type )
+        return trans.fill_template( '/admin/request_type/view_request_type.mako', 
+                                    request_type=request_type,
+                                    rename_dataset_select_field=rename_dataset_select_field )
+    @web.expose
+    @web.require_admin
+    def edit_request_type( self, trans, **kwd ):
+        ## TODO: RC: add the ability to edit the name and description of exisitng states
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        request_type_id = params.get( 'id', None )
+        try:
+            request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='browse_request_types' )
+        rename_dataset_select_field = self.__build_rename_dataset_select_field( trans )
+        if params.get( 'add_state_button', False ):
+            # Append a new tuple to the set of states which will result in
+            # empty state name and description TextFields being displayed on
+            # the form.
+            rt_states_widgets.append( ( "", "" ) )
+        elif params.get( 'remove_state_button', False ):
+            index = int( params.get( 'remove_state_button', '' ).split(" ")[2] )
+            del rt_states_widgets[ index-1 ]
+        if params.get( 'edit_request_type_button', False ):
+            self.__save_request_type( trans, **kwd )
+            message = 'Changes made to sequencer configuration (%s) have been saved' % request_type.name
+        return trans.fill_template( '/admin/request_type/edit_request_type.mako',
+                                    request_type=request_type,
+                                    rename_dataset_select_field=rename_dataset_select_field,
+                                    message=message,
+                                    status=status )
+    def __save_request_type( self, trans, **kwd ):
+        # Here we save a newly created request_type or save changed
+        # attributes of an existing request_type.
+        params = util.Params( kwd )
+        request_type_id = params.get( 'id', None )
+        name = util.restore_text( params.get( 'name', ''  ) )
+        desc = util.restore_text( params.get( 'desc', '' ) )
+        request_form_id = params.get( 'request_form_id', None )
+        request_form = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( request_form_id ) )
+        sample_form_id = params.get( 'sample_form_id', None )
+        sample_form = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( sample_form_id ) )
+        data_dir = util.restore_text( params.get( 'data_dir', '' ) )
+        data_dir = self.__check_path( data_dir )
+        # Data transfer info - Make sure password is retrieved from kwd rather than Params
+        # since Params may have munged the characters.
+        datatx_info = dict( host=util.restore_text( params.get( 'host', ''  ) ),
+                            username=util.restore_text( params.get( 'username', ''  ) ),
+                            password=kwd.get( 'password', '' ),
+                            data_dir=data_dir,
+                            rename_dataset=util.restore_text( params.get( 'rename_dataset', '' ) ) )
+        if request_type_id:
+            # We're saving changed attributes of an existing request_type.
+            request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
+            request_type.name = name
+            request_type.desc = desc
+            request_type.request_form = request_form
+            request_type.sample_form = sample_form
+            request_type.datatx_info = datatx_info
+        else:
+            # We're saving a newly created request_type
+            request_type = trans.model.RequestType( name=name,
+                                                    desc=desc,
+                                                    request_form=request_form,
+                                                    sample_form=sample_form,
+                                                    datatx_info=datatx_info ) 
+        trans.sa_session.add( request_type )
+        trans.sa_session.flush()
+        i = 0
+        while True:
+            if kwd.has_key( 'state_name_%i' % i ):
+                name = util.restore_text( params.get( 'state_name_%i' % i, None ) )
+                desc = util.restore_text( params.get( 'state_desc_%i' % i, None ) )
+                ss = trans.model.SampleState( name, desc, request_type ) 
+                trans.sa_session.add( ss )
+                trans.sa_session.flush()
+                i += 1
+            else:
+                break
+    def __get_populated_request_type_widgets( self, trans, **kwd ):
         request_form_definitions = self.get_all_forms( trans, 
                                                         filter=dict( deleted=False ),
                                                         form_type=trans.model.FormDefinition.types.REQUEST )
@@ -837,7 +905,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                   widget=request_form_id_select_field ),
                             dict( label='Sample form',
                                   widget=sample_form_id_select_field ) ]
-        # Possible sample states
+        # Sample states defined for this sequencer configuration
         rt_states = []
         i=0
         while True:
@@ -848,67 +916,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             else:
                 break
         return rt_info_widgets, rt_states
-    def __save_request_type(self, trans, **kwd):
-        params = util.Params( kwd )
-        name = util.restore_text( params.get( 'name', ''  ) )
-        desc = util.restore_text( params.get( 'desc', '' ) )
-        request_form_id = params.get( 'request_form_id', None )
-        request_form = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( request_form_id ) )
-        sample_form_id = params.get( 'sample_form_id', None )
-        sample_form = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( sample_form_id ) )
-        data_dir = util.restore_text( params.get( 'data_dir', ''  ) )
-        data_dir = self.__check_path( data_dir )
-        # Data transfer info - Make sure password is retrieved from kwd rather than Params
-        # since Params may have munged the characters.
-        datatx_info = dict( host=util.restore_text( params.get( 'host', ''  ) ),
-                            username=util.restore_text( params.get( 'username', ''  ) ),
-                            password=kwd.get( 'password', '' ),
-                            data_dir=data_dir,
-                            rename_dataset=util.restore_text( params.get( 'rename_dataset', '' ) ) )
-        request_type = trans.model.RequestType( name=name, desc=desc, request_form=request_form, sample_form=sample_form, datatx_info=datatx_info ) 
-        trans.sa_session.add( request_type )
-        trans.sa_session.flush()
-        # set sample states
-        ss_list = trans.sa_session.query( trans.model.SampleState ) \
-                                  .filter( trans.model.SampleState.table.c.request_type_id == request_type.id )
-        for ss in ss_list:
-            trans.sa_session.delete( ss )
-            trans.sa_session.flush()
-        i = 0
-        while True:
-            if kwd.has_key( 'state_name_%i' % i ):
-                name = util.restore_text( params.get( 'state_name_%i' % i, None ) )
-                desc = util.restore_text( params.get( 'state_desc_%i' % i, None ) )
-                ss = trans.model.SampleState( name, desc, request_type ) 
-                trans.sa_session.add( ss )
-                trans.sa_session.flush()
-                i = i + 1
-            else:
-                break
-        message = "The new sequencer configuration named (%s) with %s states has been created" % ( request_type.name, i )
-        return request_type, message
-    @web.expose
-    @web.require_admin
-    def view_request_type( self, trans, **kwd ):
-        request_type_id = kwd.get( 'id', None )
-        try:
-            request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', request_type_id, action='browse_request_types' )
-        rename_dataset_select_field = self.__build_rename_dataset_select_field( trans, request_type )
-        return trans.fill_template( '/admin/requests/view_request_type.mako', 
-                                    request_type=request_type,
-                                    rename_dataset_select_field=rename_dataset_select_field )
-    @web.expose
-    @web.require_admin
-    def view_form_definition( self, trans, **kwd ):
-        form_definition_id = kwd.get( 'id', None )
-        try:
-            form_definition = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( form_definition_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', form_definition_id, action='browse_request_types' )
-        return trans.fill_template( '/admin/forms/view_form_definition.mako',
-                                    form_definition=form_definition )
     @web.expose
     @web.require_admin
     def delete_request_type( self, trans, **kwd ):
@@ -969,11 +976,21 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             trans.app.security_agent.set_request_type_permissions( request_type, permissions )
             trans.sa_session.refresh( request_type )
             message = "Permissions updated for sequencer configuration '%s'" % request_type.name
-        return trans.fill_template( '/admin/requests/request_type_permissions.mako',
+        return trans.fill_template( '/admin/request_type/request_type_permissions.mako',
                                     request_type=request_type,
                                     roles=roles,
                                     status=status,
                                     message=message )
+    @web.expose
+    @web.require_admin
+    def view_form_definition( self, trans, **kwd ):
+        form_definition_id = kwd.get( 'id', None )
+        try:
+            form_definition = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( form_definition_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', form_definition_id, action='browse_request_types' )
+        return trans.fill_template( '/admin/forms/view_form_definition.mako',
+                                    form_definition=form_definition )
     # ===== Methods for building SelectFields used on various admin_requests forms
     def __build_sample_id_select_field( self, trans, request, selected_value ):
         return build_select_field( trans, request.samples, 'name', 'sample_id', selected_value=selected_value, refresh_on_change=False )

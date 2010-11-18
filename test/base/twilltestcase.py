@@ -1474,7 +1474,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "add_state_button" )
             tc.fv("1", "state_name_%i" % index, state[0])
             tc.fv("1", "state_desc_%i" % index, state[1])
-        tc.submit( "save_request_type" )
+        tc.submit( "create_request_type_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def request_type_permissions( self, request_type_id, request_type_name, role_ids_str, permissions_in, permissions_out ):

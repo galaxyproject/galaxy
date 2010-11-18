@@ -323,6 +323,10 @@
                                     %elif sample.datasets and len(sample.datasets ) == len( transferred_dataset_files ):
                                         <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">View transferred datasets</a></li>
                                     %endif
+                                    ###
+                                    ### For demo
+                                    <li><a class="action-button" target="demolocal" href="http://localhost:9011/">Validate sample sheet</a></li>
+                                    ###
                                 </div>
                             %else:
                                 ${sample_widget_name}

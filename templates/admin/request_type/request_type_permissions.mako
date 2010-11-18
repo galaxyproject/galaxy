@@ -25,7 +25,9 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}"><span>Browse this configuration</span></a></li>
+    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}">Edit configuration</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
 </ul>
 
 %if message:

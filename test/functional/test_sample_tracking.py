@@ -260,7 +260,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                   self.security.encode_id( sample_form_definition1.id ),
                                   sample_states,
                                   strings_displayed=[ 'Create a new sequencer configuration' ],
-                                  strings_displayed_after_submit=[ "Sequencer configuration (%s) has been created" % name ] )
+                                  strings_displayed_after_submit=[ "The sequencer configuration has been created." ] )
         global request_type1
         request_type1 = get_request_type_by_name( name )
         assert request_type1 is not None, 'Problem retrieving sequencer configuration named "%s" from the database' % name
