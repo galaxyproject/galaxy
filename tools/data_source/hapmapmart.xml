@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!--
+    hacked from biomart.xml - testing hapmap biomart - problem is going to be converting these to lped/pbed
+    the data returned will be in all sorts of different shapes - and the sample ids need to be obtained separately
+    to create reliable pedigrees. eesh...
+
+    If the value of 'URL_method' is 'get', the request will consist of the value of 'URL' coming back in
+    the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
+    initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
+
+    TODO: Hack to get biomart to work - the 'add_to_URL' param can be eliminated when the Biomart team encodes URL prior to sending, meanwhile
+    everything including and beyond the first '&' is truncated from URL.  They said they'll let us know when this is fixed at their end.
+-->
+<tool name="HapMapMart" id="hapmapmart" tool_type="data_source" version="0.0.01">
+	<description>HapMap Biomart</description>
+	<command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+	<inputs action="http://hapmap.ncbi.nlm.nih.gov/biomart/martview" check_values="false" method="get" target="_top">
+		<display>go to HapMap BioMart $GALAXY_URL</display>
+		<param name="GALAXY_URL" type="baseurl" value="/tool_runner/hapmapmart" />
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="">
+            <append_param separator="&amp;" first_separator="?" join="=">
+                <value name="_export" missing="1" />
+                <value name="GALAXY_URL" missing="0" />
+            </append_param>
+        </request_param>
+        <request_param galaxy_name="data_type" remote_name="exportView_outputformat" missing="tabular" >
+            <value_translation>
+                <value galaxy_value="tabular" remote_value="TSV" />
+            </value_translation>
+        </request_param>
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
+        <request_param galaxy_name="dbkey" remote_name="dbkey" missing="hg18" />
+        <request_param galaxy_name="organism" remote_name="organism" missing="human" />
+        <request_param galaxy_name="table" remote_name="table" missing="" />
+        <request_param galaxy_name="description" remote_name="description" missing="" />
+        <request_param galaxy_name="name" remote_name="name" missing="HapMap query" />
+        <request_param galaxy_name="info" remote_name="info" missing="" />
+    </request_param_translation>
+	<uihints minwidth="800"/>
+	<outputs>
+		<data name="output" format="tabular" />
+	</outputs>
+	<options sanitize="False" refresh="True"/>
+</tool>
