@@ -1,4 +1,4 @@
-<tool id="ncbi_tblastn_wrapper" name="NCBI BLAST+ tblastn" version="0.0.5">
+<tool id="ncbi_tblastn_wrapper" name="NCBI BLAST+ tblastn" version="0.0.6">
     <description>Search translated nucleotide database with protein query sequence(s)</description>
     <command>
 ## The command is a Cheetah template which allows some Python based syntax.
@@ -12,7 +12,7 @@ tblastn
 #end if
 -evalue $evalue_cutoff
 -out $output1
-$out_format
+-outfmt $out_format
 -num_threads 8
 #if $adv_opts.adv_opts_selector=="advanced":
 $adv_opts.filter_query
@@ -58,14 +58,14 @@ $adv_opts.parse_deflines
         </conditional>
         <param name="evalue_cutoff" type="float" size="15" value="0.001" label="Set expectation value cutoff" />
         <param name="out_format" type="select" label="Output format">
-            <option value="-outfmt 6" selected="True">Tabular</option>
-            <option value="-outfmt 5">BLAST XML</option>
-            <option value="-outfmt 0">Pairwise text</option>
-            <option value="-outfmt 0 -html">Pairwise HTML</option>
-            <option value="-outfmt 2">Query-anchored text</option>
-            <option value="-outfmt 2 -html">Query-anchored HTML</option>
-            <option value="-outfmt 4">Flat query-anchored text</option>
-            <option value="-outfmt 4 -html">Flat query-anchored HTML</option>
+            <option value="6" selected="True">Tabular</option>
+            <option value="5">BLAST XML</option>
+            <option value="0">Pairwise text</option>
+            <option value="0 -html">Pairwise HTML</option>
+            <option value="2">Query-anchored text</option>
+            <option value="2 -html">Query-anchored HTML</option>
+            <option value="4">Flat query-anchored text</option>
+            <option value="4 -html">Flat query-anchored HTML</option>
             <!--
             <option value="-outfmt 11">BLAST archive format (ASN.1)</option>
             -->
@@ -110,13 +110,13 @@ $adv_opts.parse_deflines
     <outputs>
         <data name="output1" format="tabular" label="tblastn on ${db_opts.db_opts_selector}">
             <change_format>
-                <when input="out_format" value="-outfmt 0" format="txt"/>
-                <when input="out_format" value="-outfmt 0 -html" format="html"/>
-                <when input="out_format" value="-outfmt 2" format="txt"/>
-                <when input="out_format" value="-outfmt 2 -html" format="html"/>
-                <when input="out_format" value="-outfmt 4" format="txt"/>
-                <when input="out_format" value="-outfmt 4 -html" format="html"/>
-                <when input="out_format" value="-outfmt 5" format="blastxml"/>
+                <when input="out_format" value="0" format="txt"/>
+                <when input="out_format" value="0 -html" format="html"/>
+                <when input="out_format" value="2" format="txt"/>
+                <when input="out_format" value="2 -html" format="html"/>
+                <when input="out_format" value="4" format="txt"/>
+                <when input="out_format" value="4 -html" format="html"/>
+                <when input="out_format" value="5" format="blastxml"/>
             </change_format>
         </data>
     </outputs>
