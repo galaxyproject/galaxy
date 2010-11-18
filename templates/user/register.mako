@@ -11,10 +11,6 @@
     ${parent.javascripts()}
 </%def>
 
-<%
-    from galaxy.web.form_builder import CheckboxField
-    subscribe_check_box = CheckboxField( 'subscribe' )
-%>
 %if not redirect_url and message:
     ${render_msg( message, status )}
 %endif
@@ -30,6 +26,8 @@
     <%
         if form_action is None:
             form_action = h.url_for( controller='user', action='create', admin_view=admin_view )
+        from galaxy.web.form_builder import CheckboxField
+        subscribe_check_box = CheckboxField( 'subscribe' )
     %>
 
     <div class="toolForm">
