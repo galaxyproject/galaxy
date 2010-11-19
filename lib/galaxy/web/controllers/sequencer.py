@@ -133,7 +133,6 @@ class Sequencer( BaseController, UsesFormDefinitionWidgets ):
     @web.expose
     @web.require_admin
     def edit_request_type( self, trans, **kwd ):
-        ## TODO: RC: add the ability to edit the name and description of exisitng states
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -179,6 +178,14 @@ class Sequencer( BaseController, UsesFormDefinitionWidgets ):
             request_type.request_form = request_form
             request_type.sample_form = sample_form
             request_type.datatx_info = datatx_info
+            for sample_state in request_type.states:
+                sample_state_id = trans.security.encode_id( sample_state.id )
+                name = util.restore_text( params.get( 'state_name_%s' % sample_state_id, '' ) )
+                desc = util.restore_text( params.get( 'state_desc_%s' % sample_state_id, '' ) )
+                sample_state.name = name
+                sample_state.desc = desc
+                trans.sa_session.add( sample_state )
+                trans.sa_session.flush()
         else:
             # We're saving a newly created request_type
             request_type = trans.model.RequestType( name=name,
@@ -186,19 +193,19 @@ class Sequencer( BaseController, UsesFormDefinitionWidgets ):
                                                     request_form=request_form,
                                                     sample_form=sample_form,
                                                     datatx_info=datatx_info ) 
-        trans.sa_session.add( request_type )
-        trans.sa_session.flush()
-        i = 0
-        while True:
-            if kwd.has_key( 'state_name_%i' % i ):
-                name = util.restore_text( params.get( 'state_name_%i' % i, None ) )
-                desc = util.restore_text( params.get( 'state_desc_%i' % i, None ) )
-                ss = trans.model.SampleState( name, desc, request_type ) 
-                trans.sa_session.add( ss )
-                trans.sa_session.flush()
-                i += 1
-            else:
-                break
+            trans.sa_session.add( request_type )
+            trans.sa_session.flush()
+            i = 0
+            while True:
+                if kwd.has_key( 'state_name_%i' % i ):
+                    name = util.restore_text( params.get( 'state_name_%i' % i, '' ) )
+                    desc = util.restore_text( params.get( 'state_desc_%i' % i, '' ) )
+                    sample_state = trans.model.SampleState( name, desc, request_type ) 
+                    trans.sa_session.add( sample_state )
+                    trans.sa_session.flush()
+                    i += 1
+                else:
+                    break
     def __check_path( self, a_path ):
         # Return a valid folder_path
         if a_path and not a_path.endswith( os.sep ):

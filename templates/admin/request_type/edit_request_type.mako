@@ -36,15 +36,13 @@
         </div>
         <div class="form-row">
             <label>Sequencing request form definition:</label>
-            ## TODO: RC, fix this link
-            <a href="${h.url_for( controller='forms', action='manage', operation='view', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name}</a>
+            <a href="${h.url_for( controller='sequencer', action='view_form_definition', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name}</a>
             ## Hidden field needed by the __save_request_type() method
             <input type="hidden" name="request_form_id" value="${trans.security.encode_id( request_type.request_form_id )}" size="40"/>
         </div>       
         <div class="form-row">
             <label>Sample form definition:</label>
-            ## TODO: RC, fix this link
-            <a href="${h.url_for( controller='forms', action='manage', operation='view', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name}</a>
+            <a href="${h.url_for( controller='sequencer', action='view_form_definition', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name}</a>
             ## Hidden field needed by the __save_request_type() method
             <input type="hidden" name="sample_form_id" value="${trans.security.encode_id( request_type.sample_form_id )}" size="40"/>
         </div>
@@ -52,13 +50,21 @@
     <p/>
     <div class="toolForm">
         <div class="toolFormTitle">Sample states defined for this sequencer configuration</div>
-        ## TODO: RC: add the ability to edit the name and description of exisitng states
-        %for state in request_type.states:
-            <div class="form-row">
-                <label>${state.name}</label>
-                ${state.desc}
-            </div>
-            <div style="clear: both"></div>
+        %for element_count, state in enumerate( request_type.states ):
+		    <div class="repeat-group-item">
+		        <div class="form-row">
+		            <label>${1+element_count}. State name:</label>
+		            <input type="text" name="state_name_${trans.security.encode_id( state.id )}" value="${state.name}" size="40"/>
+		        </div>
+		        <div class="form-row">
+		            <label>Description:</label>
+		            <input type="text" name="state_desc_${trans.security.encode_id( state.id )}" value="${state.desc}" size="40"/>
+		            <div class="toolParamHelp" style="clear: both;">
+		                optional
+		            </div>
+		        </div>
+		        <div style="clear: both"></div>
+		   </div>
         %endfor
     </div>
     <p/>
