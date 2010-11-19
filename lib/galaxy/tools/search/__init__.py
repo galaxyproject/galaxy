@@ -6,7 +6,8 @@ try:
     from whoosh.filedb.filestore import RamStorage
     from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
     from whoosh.index import Index
-    from whoosh.qparser import QueryParser
+    from whoosh.scoring import BM25F
+    from whoosh.qparser import MultifieldParser
     tool_search_enabled = True
     schema = Schema( id = STORED, title = TEXT, description = TEXT, help = TEXT )
 except ImportError, e:
@@ -46,10 +47,11 @@ class ToolBoxSearch( object ):
     def search( self, query, return_attribute='id' ):
         if not tool_search_enabled:
             return []
-        searcher = self.index.searcher()
-        parser = QueryParser( "help", schema = schema )
+        # Change field boosts for searcher to place more weight on title, description than help.
+        searcher = self.index.searcher( \
+                        weighting=BM25F( field_B={ 'title_B' : 3, 'description_B' : 2, 'help_B' : 1 } \
+                                    ) )
         # Set query to search title, description, and help.
-        query = "title:query OR description:query OR help:query".replace( "query", query ) 
-        results = searcher.search( parser.parse( query ), minscore=1.5 )
-        print results.scores
+        parser = MultifieldParser( [ 'title', 'description', 'help' ], schema = schema )
+        results = searcher.search( parser.parse( query ), minscore=2.0 )
         return [ result[ return_attribute ] for result in results ]
