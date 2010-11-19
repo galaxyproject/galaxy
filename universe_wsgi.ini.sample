@@ -145,10 +145,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # directory.
 #cluster_files_directory = database/pbs
 
-# If Galaxy's visualization module (Trackster) is enabled (see below), define
-# where it will store files.
-#track_store_path = ${extra_files_path}/tracks
-
 # -- Mail and notification
 
 # Galaxy sends mail for various things: Subscribing users to the mailing list
@@ -319,7 +315,7 @@ use_interactive = True
 # default, Galaxy allows users to select from a few different archive formats
 # if testing shows that Galaxy is able to create files using these formats.
 # Specific formats can be disabled with this option, separate more than one
-# format with commas.  Available formats are currnetly 'zip', 'gz', and 'bz2'.
+# format with commas.  Available formats are currently 'zip', 'gz', and 'bz2'.
 #disable_library_comptypes = 
 
 # -- Users and Security
@@ -450,7 +446,7 @@ use_interactive = True
 # hh:mm:ss.  Currently only implemented for PBS.
 #job_walltime = None
 
-# Jobs can be killed if any of their ouputs grow over a certain size (in
+# Jobs can be killed if any of their outputs grow over a certain size (in
 # bytes).  0 for no limit.
 #output_size_limit = 0
 
@@ -465,7 +461,7 @@ use_interactive = True
 # currently available are 'pbs' and 'drmaa'.
 #start_job_runners = None
 
-# The URL for the default runner to use when a tool doesn't explicity define a
+# The URL for the default runner to use when a tool doesn't explicitly define a
 # runner below.
 #default_cluster_job_runner = local:///
 
