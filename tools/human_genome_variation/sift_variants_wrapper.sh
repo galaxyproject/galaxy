@@ -9,7 +9,8 @@ pos_col=$6
 base=$7
 allele_col=$8
 strand_col=$9
-output_opts=${10}
+comment_col=${10}
+output_opts=${11}
 
 working_dir=$PWD
 sift_input="$working_dir/sift_input.txt"
@@ -59,13 +60,23 @@ else
     strand_cvt='if ( '"${strand}"' == "+") { '"${strand}"' = "1" } else if ( '"${strand}"' == "-") { '"${strand}"' = "-1"}'
 fi
 
+if [ "$comment_col" = "-" ]; then
+    is_comment=0
+else
+    is_comment=1
+fi
+
 awk '
 BEGIN {FS="\t";OFS=","}
 {
     $'"${chrom_col}"' = tolower($'"${chrom_col}"')
     sub(/^chr/, "", $'"${chrom_col}"')
     '"${strand_cvt}"'
-    print $'"${chrom_col}"', $'"${beg_col}"', $'"${end_col}"', '"${strand}"', $'"${allele_col}"'
+    if ('"${is_comment}"') {
+      print $'"${chrom_col}"', $'"${beg_col}"', $'"${end_col}"', '"${strand}"', $'"${allele_col}"', $'"${comment_col}"'
+    } else {
+      print $'"${chrom_col}"', $'"${beg_col}"', $'"${end_col}"', '"${strand}"', $'"${allele_col}"'
+    }
 }
 ' "$input_file" > "$sift_input"
 

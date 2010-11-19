@@ -2,7 +2,7 @@
   <description>predictions of functional sites</description>
 
   <command interpreter="bash">
-    sift_variants_wrapper.sh "$input" "$output" "${input.metadata.dbkey}" "${GALAXY_DATA_INDEX_DIR}/sift_db.loc" "$chrom_col" "$pos_col" "$base" "$allele_col" "$strand_source.strand_col" "$output_opts"
+    sift_variants_wrapper.sh "$input" "$output" "${input.metadata.dbkey}" "${GALAXY_DATA_INDEX_DIR}/sift_db.loc" "$chrom_col" "$pos_col" "$base" "$allele_col" "$strand_source.strand_col" "$comment_source.comment_col" "$output_opts"
   </command>
 
   <inputs>
@@ -13,12 +13,12 @@
     <param name="chrom_col"  type="data_column" data_ref="input" label="Column with chromosome"/>
     <param name="pos_col"    type="data_column" data_ref="input" numerical="true" label="Column with position"/>
     <param name="base" type="select" label="Position coordinates are">
-      <option value="0">zero-based</option>
       <option value="1" selected="true">one-based</option>
+      <option value="0">zero-based</option>
     </param>
     <param name="allele_col" type="data_column" data_ref="input" label="Column with allele"/>
     <conditional name="strand_source">
-      <param name="choice" type="select" label="Strand info">
+      <param name="strand_choice" type="select" label="Strand info">
         <option value="data_column" selected="true">a column in the dataset</option>
         <option value="all_pos">all on sense/forward/+ strand</option>
         <option value="all_neg">all on antisense/reverse/- strand</option>
@@ -31,6 +31,18 @@
       </when>
       <when value="all_neg">
         <param name="strand_col" type="hidden" value="-"/>
+      </when>
+    </conditional>
+    <conditional name="comment_source">
+      <param name="comment_choice" type="select" label="Include comment column">
+        <option value="no" selected="true">no</option>
+        <option value="yes">yes</option>
+      </param>
+      <when value="no">
+        <param name="comment_col" type="hidden" value="-"/>
+      </when>
+      <when value="yes">
+        <param name="comment_col" type="data_column" data_ref="input" label="Column with comment"/>
       </when>
     </conditional>
     <param name="output_opts" type="select" multiple="true" display="checkboxes" label="Include the following additional fields in the output">
@@ -66,7 +78,7 @@
       <param name="pos_col" value="3"/>
       <param name="base" value="1"/>
       <param name="allele_col" value="5"/>
-      <param name="choice" value="data_column"/>
+      <param name="strand_choice" value="data_column"/>
       <param name="strand_col" value="4"/>
       <param name="output_opts" value="A"/>
       <output name="output" file="sift_variants_result.tab"/>
