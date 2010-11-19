@@ -121,17 +121,21 @@ function make_popup_menus() {
             var confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
                 target = link_dom.getAttribute( "target" );
-            options[ link.text() ] = function() {
-                if ( !confirmtext || confirm( confirmtext ) ) {
-                    var f = window;
-                    if ( target == "_parent" ) {
-                        f = window.parent;
-                    } else if ( target == "_top" ) {
-                        f = window.top;
+            if (!href) {
+                options[ link.text() ] = null;
+            } else {
+                options[ link.text() ] = function() {
+                    if ( !confirmtext || confirm( confirmtext ) ) {
+                        var f = window;
+                        if ( target == "_parent" ) {
+                            f = window.parent;
+                        } else if ( target == "_top" ) {
+                            f = window.top;
+                        }
+                        f.location = href;
                     }
-                    f.location = href;
-                }
-            };
+                };
+            }
         });
         var box = $( "#" + menu.attr( 'popupmenu' ) );
         

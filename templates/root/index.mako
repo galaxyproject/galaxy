@@ -86,7 +86,13 @@
     
             // Update menu option.
             delete menu_options[old_text];
-            menu_options[menu_option_text] = toggle_tool_search_fn;
+            
+            var new_menu_options = {}; 
+            // Because we always want tool menu to be the first link in the dropdown,
+            // we re-create the menu_options dictionary by creating a new
+            // dict and then appending the old dict to it
+            new_menu_options[menu_option_text] = toggle_tool_search_fn;
+            menu_options = $.extend( new_menu_options, menu_options );
             make_popupmenu( $("#tools-options-button"), menu_options );
             galaxy_async.set_user_pref("show_tool_search", pref_value);
         };

@@ -125,14 +125,17 @@
                     <% meta_files = [ k for k in data.metadata.spec.keys() if isinstance( data.metadata.spec[k].param, FileParameter ) ] %>
                     %if meta_files:
                         <div popupmenu="dataset-${dataset_id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, \
+                                to_ext=data.ext )}">Download Dataset</a>
+                            <a>Additional Files</a>
                         %for file_type in meta_files:
-                            <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', hda_id=dataset_id, metadata_type=file_type )}">
-                                Download ${file_type}</a>
+                            <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', \
+                                hda_id=dataset_id, metadata_type=file_type )}">Download ${file_type}</a>
                         %endfor
                         </div>
                         <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
                     %endif
-                    <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Save" class="icon-button disk tooltip"></a>
+                    <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Download" class="icon-button disk tooltip"></a>
                     %if meta_files:
                         </div>
                     %endif

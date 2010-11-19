@@ -36,6 +36,7 @@
                                     }
                                     $(this).hide();
                                 });
+                                make_popup_menus();
                             }
                         });
                     } else {
