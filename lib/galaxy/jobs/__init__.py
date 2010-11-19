@@ -610,7 +610,7 @@ class JobWrapper( object ):
         try:
             for fname in self.extra_filenames:
                 os.remove( fname )
-            if self.working_directory is not None:
+            if self.working_directory is not None and os.path.isdir( self.working_directory ):
                 shutil.rmtree( self.working_directory )
             if self.app.config.set_metadata_externally:
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
