@@ -34,13 +34,11 @@
     </div>
     <div class="form-row">
         <label>Sequencing request form definition:</label>
-        ## TODO: RC, fix this link
-        <a href="${h.url_for( controller='forms', action='manage', operation='view', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name}</a>
+        <a href="${h.url_for( controller='sequencer', action='view_form_definition', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name}</a>
     </div>       
     <div class="form-row">
         <label>Sample form definition:</label>
-        ## TODO: RC, fix this link
-        <a href="${h.url_for( controller='forms', action='manage', operation='view', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name}</a>
+        <a href="${h.url_for( controller='sequencer', action='view_form_definition', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name}</a>
     </div>
 </div>
 <p/>

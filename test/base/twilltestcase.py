@@ -892,11 +892,11 @@ class TwillTestCase( unittest.TestCase ):
     def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
         """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
         for check_str in strings_displayed:
-            self.check_page_for_string(check_str)
+            self.check_page_for_string( check_str )
         for check_str, count in strings_displayed_count:
-            self.check_string_count_in_page(check_str, count)
+            self.check_string_count_in_page( check_str, count )
         for check_str in strings_not_displayed:
-            self.check_string_not_in_page(check_str)
+            self.check_string_not_in_page( check_str )
 
     
     def write_temp_file( self, content, suffix='.html' ):
@@ -1519,10 +1519,18 @@ class TwillTestCase( unittest.TestCase ):
             field_name = "field_%i" % index
             field_value, refresh_on_change = field_value_tuple
             if refresh_on_change:
-                # TODO: If the field is an AddressField, we should test for adding a new address
-                # which would need to be handled here.  This currently only allows an existing
-                # user_address to be selected.
-                self.refresh_form( field_name, field_value )
+                # Only the AddressField type has a refresh on change setup on selecting an option
+                address_option = field_value[0]
+                address_value = field_value[1]
+                self.refresh_form( field_name, address_option )
+                if address_option == 'new':
+                    # handle new address
+                    self.check_page_for_string( 'Short address description' )
+                    for address_field, value in address_value.items():
+                        tc.fv( "1", field_name+'_'+address_field, value )
+                else:
+                    # existing address
+                    tc.fv( "1", field_name, address_value )
             else:
                 tc.fv( "1", field_name, field_value )
         tc.submit( "create_request_button" )
@@ -1537,6 +1545,9 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
     def view_sample_history( self, cntrller, sample_id, strings_displayed=[], strings_displayed_count=[], strings_not_displayed=[] ):
         self.visit_url( "%s/requests_common/view_sample_history?cntrller=%s&sample_id=%s" % ( self.url, cntrller, sample_id ) )
+        self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
+    def view_sample_dataset( self, sample_dataset_id, strings_displayed=[], strings_displayed_count=[], strings_not_displayed=[] ):
+        self.visit_url( "%s/requests_admin/manage_datasets?operation=view&id=%s" % ( self.url, sample_dataset_id ) )
         self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
     def edit_basic_request_info( self, cntrller, request_id, name, new_name='', new_desc='', new_fields=[],
                                  strings_displayed=[], strings_displayed_after_submit=[] ):
@@ -1657,6 +1668,60 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
+    def add_datasets_to_sample( self, request_id, sample_id, sample_datasets, strings_displayed=[], strings_displayed_after_submit=[] ):
+        # visit the dataset selection page
+        url = "%s/requests_admin/select_datasets_to_transfer?cntrller=requests_admin&sample_id=%s&request_id=%s" % ( self.url, sample_id, request_id )
+        self.visit_url( url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        # Datasets are associated with the given by the building the appropriate url
+        # and calling it as the dataset selection UI is a javascript dynatree
+        url = "%s/requests_admin/select_datasets_to_transfer?cntrller=requests_admin&sample_id=%s&request_id=%s" % ( self.url, sample_id, request_id )
+        url += '&select_datasets_to_transfer_button=Select%20datasets'
+        url += '&selected_datasets_to_transfer=%s' % ','.join( sample_datasets )
+        self.visit_url( url )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def rename_sample_datasets( self, sample_id, sample_dataset_ids, new_sample_dataset_names, strings_displayed=[], strings_displayed_after_submit=[] ):
+        sample_dataset_ids_string = ','.join( sample_dataset_ids )
+        url = "%s/requests_admin/manage_datasets?operation=rename&id=%s" % ( self.url, sample_dataset_ids_string )
+        self.visit_url( url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for sample_dataset_id, ( prefix, new_name ) in zip( sample_dataset_ids, new_sample_dataset_names ):
+            tc.fv( "1", 'rename_datasets_for_sample_%s' % sample_dataset_id, prefix )
+            tc.fv( "1", 'new_name_%s' % sample_dataset_id, new_name )
+        tc.submit( "rename_datasets_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def delete_sample_datasets( self, sample_id, sample_dataset_ids, strings_displayed=[], strings_displayed_after_submit=[], strings_not_displayed=[] ):
+        url = '%s/requests_admin/manage_datasets?cntrller=requests_admin&sample_id=%s' % ( self.url, sample_id )
+        self.visit_url( url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        # simulate selecting datasets and clicking the delete button on the sample datasets grid
+        sample_dataset_ids_string = ','.join( sample_dataset_ids )
+        url = "%s/requests_admin/manage_datasets?operation=delete&id=%s" % ( self.url, sample_dataset_ids_string )
+        self.visit_url( url )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
+            self.check_string_not_in_page( check_str )
+    def start_sample_datasets_transfer( self, sample_id, sample_dataset_ids, strings_displayed=[], strings_displayed_after_submit=[], strings_displayed_count=[], strings_not_displayed=[] ):
+        url = '%s/requests_admin/manage_datasets?cntrller=requests_admin&sample_id=%s' % ( self.url, sample_id )
+        self.visit_url( url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        # simulate selecting datasets and clicking the transfer button on the sample datasets grid
+        sample_dataset_ids_string = ','.join( sample_dataset_ids )
+        url = "%s/requests_admin/manage_datasets?operation=transfer&id=%s" % ( self.url, sample_dataset_ids_string )
+        self.visit_url( url )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
+            self.check_string_not_in_page( check_str )
+        for check_str, count in strings_displayed_count:
+            self.check_string_count_in_page( check_str, count )
     def add_user_address( self, user_id, address_dict ):
         self.home()
         self.visit_url( "%s/user/new_address?admin_view=False&user_id=%i" % ( self.url, user_id ) )

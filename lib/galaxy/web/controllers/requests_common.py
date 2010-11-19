@@ -871,7 +871,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         sample_index = int( params.get( 'sample_id', 0 ) )
         sample_name = displayable_sample_widgets[sample_index]['name']
-        sample = request.has_sample( sample_name )
+        sample = request.get_sample( sample_name )
         if sample:
             trans.sa_session.delete( sample.values )
             trans.sa_session.delete( sample )

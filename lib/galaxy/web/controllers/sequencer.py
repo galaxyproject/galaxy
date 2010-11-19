@@ -312,6 +312,16 @@ class Sequencer( BaseController, UsesFormDefinitionWidgets ):
                                     roles=roles,
                                     status=status,
                                     message=message )
+    @web.expose
+    @web.require_admin
+    def view_form_definition( self, trans, **kwd ):
+        form_definition_id = kwd.get( 'id', None )
+        try:
+            form_definition = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( form_definition_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', form_definition_id, action='browse_request_types' )
+        return trans.fill_template( '/admin/forms/view_form_definition.mako',
+                                    form_definition=form_definition )
 
     # ===== Methods for building SelectFields used on various admin_requests forms
     def __build_rename_dataset_select_field( self, trans, request_type=None ):

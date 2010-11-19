@@ -1660,11 +1660,11 @@ class Request( object ):
                 return latest_event.comment
             return ''
         return 'No comment'
-    def has_sample( self, sample_name ):
-        for s in self.samples:
-            if s.name == sample_name:
-                return s
-        return False
+    def get_sample( self, sample_name ):
+        for sample in self.samples:
+            if sample.name == sample_name:
+                return sample
+        return None
     @property
     def is_unsubmitted( self ):
         return self.state in [ self.states.REJECTED, self.states.NEW ]
@@ -1867,13 +1867,19 @@ class Sample( object ):
     def get_untransferred_dataset_size( self, filepath ):
         def print_ticks( d ):
             pass
+        error_msg = 'Error encountered in determining the file size of %s on the sequencer.' % filepath
         datatx_info = self.request.type.datatx_info
+        if not datatx_info['host'] or not datatx_info['username'] or not datatx_info['password']:
+            return error_msg
         login_str = '%s@%s' % ( datatx_info['username'], datatx_info['host'] )
         cmd  = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
-        output = pexpect.run( cmd,
-                              events={ '.ssword:*': datatx_info['password']+'\r\n', 
-                                       pexpect.TIMEOUT:print_ticks}, 
-                              timeout=10 )
+        try:
+            output = pexpect.run( cmd,
+                                  events={ '.ssword:*': datatx_info['password']+'\r\n', 
+                                           pexpect.TIMEOUT:print_ticks}, 
+                                  timeout=10 )
+        except Exception, e:
+            return error_msg
         # cleanup the output to get just the file size
         return  output.replace( filepath, '' )\
                       .replace( 'Password:', '' )\

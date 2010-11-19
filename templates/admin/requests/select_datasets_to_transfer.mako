@@ -91,9 +91,9 @@ ${h.js( "ui.core", "jquery.cookie", "jquery.dynatree" )}
 %endif
 
 %if request.samples_without_library_destinations:
-    <br/>
-    <font color="red"><b><i>Select a target data library and folder for all samples before starting the sequence run</i></b></font>
-    <br/>
+    <p>
+    <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer</i></b></font>
+    </p>
 %endif
 
 %if message:

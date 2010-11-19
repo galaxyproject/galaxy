@@ -3,21 +3,6 @@ from galaxy.model.orm import *
 from base.twilltestcase import *
 from base.test_db_util import *
 
-sample_states = [  ( 'New', 'Sample entered into the system' ), 
-                   ( 'Received', 'Sample tube received' ),
-                   ( 'Library Started', 'Sample library preparation' ), 
-                   ( 'Run Started', 'Sequence run in progress' ), 
-                   ( 'Done', 'Sequence run complete' ) ]
-address_dict = dict( short_desc="Office",
-                     name="James Bond",
-                     institution="MI6" ,
-                     address="MI6 Headquarters",
-                     city="London",
-                     state="London",
-                     postal_code="007",
-                     country="United Kingdom",
-                     phone="007-007-0007" )
-
 class TestFormsAndRequests( TwillTestCase ):
     #
     # ====== Setup Users, Groups & Roles required for this test suite ========= 
@@ -240,9 +225,6 @@ class TestFormsAndRequests( TwillTestCase ):
         global sample_form_definition1
         sample_form_definition1 = get_form( name )
         assert sample_form_definition1 is not None, "Error retrieving form %s from db" % name
-        print len( sample_form_definition1.fields ), len( field_dicts )
-        print sample_form_definition1.fields
-        print field_dicts
         assert len( sample_form_definition1.fields ) == len( field_dicts )
         # check form view
         self.view_form( id=self.security.encode_id( sample_form_definition1.current.id ),
@@ -254,6 +236,11 @@ class TestFormsAndRequests( TwillTestCase ):
     def test_020_create_request_type( self ):
         """Testing creating a request_type"""
         name = 'Sequencer configuration1'
+        sample_states = [  ( 'New', 'Sample entered into the system' ), 
+                           ( 'Received', 'Sample tube received' ),
+                           ( 'Library Started', 'Sample library preparation' ), 
+                           ( 'Run Started', 'Sequence run in progress' ), 
+                           ( 'Done', 'Sequence run complete' ) ]
         self.create_request_type( name,
                                   "test sequencer configuration",
                                   self.security.encode_id( request_form_definition1.id ),
@@ -300,12 +287,22 @@ class TestFormsAndRequests( TwillTestCase ):
         # Create a user_address
         self.logout()
         self.login( email=regular_user1.email )
+        # add new address for this user
+        address_dict = dict( short_desc="Office",
+                             name="James Bond",
+                             institution="MI6" ,
+                             address="MI6 Headquarters",
+                             city="London",
+                             state="London",
+                             postal_code="007",
+                             country="United Kingdom",
+                             phone="007-007-0007" )
         self.add_user_address( regular_user1.id, address_dict )
         global user_address1
         user_address1 = get_user_address( regular_user1, address_dict[ 'short_desc' ] )
         # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
         # is required for that field.
-        field_value_tuples = [ ( 'option1', False ), ( str( user_address1.id ), True ), ( 'field3 value', False ) ] 
+        field_value_tuples = [ ( 'option1', False ), ( (str( user_address1.id ), str( user_address1.id ) ), True ), ( 'field3 value', False ) ] 
         # Create the request
         name = 'Request1'
         desc = 'Request1 Description'
@@ -318,7 +315,8 @@ class TestFormsAndRequests( TwillTestCase ):
                                                  request_field_name1,
                                                  request_field_name2,
                                                  request_field_name3 ],
-                             strings_displayed_after_submit=[ name, desc ] )
+                             strings_displayed_after_submit=[ 'The sequencing request has been created.',
+                                                              name, desc ] )
         global request1
         request1 = get_request_by_name( name )        
         # Make sure the request's state is now set to NEW
@@ -405,6 +403,8 @@ class TestFormsAndRequests( TwillTestCase ):
         strings_displayed_after_submit = [ 'Unsubmitted' ]
         for sample_name, lib_info, field_values in sample_value_tuples:
             strings_displayed_after_submit.append( sample_name )
+            strings_displayed_after_submit.append( library2.name )
+            strings_displayed_after_submit.append( library2_folder1.name )
             # add the sample values too
             for values in field_values:
                 strings_displayed_after_submit.append( values )
@@ -494,23 +494,6 @@ class TestFormsAndRequests( TwillTestCase ):
                                    strings_displayed_count=strings_displayed_count,
                                    strings_not_displayed=[ request1.states.COMPLETE,
                                                            request1.states.REJECTED ] )
-        # change the target data library back to library2 using sample operation user interface
-        self.change_sample_target_data_library( cntrller='requests',
-                                                request_id=self.security.encode_id( request1.id ),
-                                                sample_ids=[ sample.id for sample in request1.samples ],
-                                                new_library_id=self.security.encode_id( library2.id ), 
-                                                new_folder_id=self.security.encode_id( library2_folder1.id ),
-                                                strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request1.name ],
-                                                strings_displayed_after_submit=[ 'Changes made to the samples have been saved.' ] )
-        # check the changed target data library & folder on the request page
-        strings_displayed_count = []
-        strings_displayed_count.append( ( library2.name, len( request1.samples ) ) )
-        strings_displayed_count.append( ( library2_folder1.name, len( request1.samples ) ) )
-        self.view_request( cntrller='requests',
-                           request_id=self.security.encode_id( request1.id ),
-                           strings_displayed=[],
-                           strings_displayed_count=strings_displayed_count )
-
     #
     # ====== Sequencing request test methods - Admin perspective ================ 
     #
@@ -603,85 +586,229 @@ class TestFormsAndRequests( TwillTestCase ):
                                  strings_displayed=[ request1.name ] )
         assert request1.state is not request1.states.COMPLETE, "The state of the sequencing request '%s' should be set to '%s'" \
             % ( request1.name, request1.states.COMPLETE )
+    def test_060_admin_create_request_on_behalf_of_regular_user( self ):
+        """Testing creating and submitting a request as an admin on behalf of a regular user"""
+        # Logged in as regular_user1
+        self.logout()
+        self.login( email=admin_user.email )
+        # Create the request
+        name = "Request2"
+        desc = 'Request2 Description'
+        # new address
+        new_address_dict = dict( short_desc="Home",
+                                 name="Sherlock Holmes",
+                                 institution="None" ,
+                                 address="221B Baker Street",
+                                 city="London",
+                                 state="London",
+                                 postal_code="34534",
+                                 country="United Kingdom",
+                                 phone="007-007-0007" )
+        # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
+        # is required for that field.
+        field_value_tuples = [ ( 'option2', False ), ( ( 'new', new_address_dict ) , True ), ( 'field_2_value', False ) ] 
+        self.create_request( cntrller='requests_admin',
+                             request_type_id=self.security.encode_id( request_type1.id ),
+                             other_users_id=self.security.encode_id( regular_user1.id ),
+                             name=name,
+                             desc=desc,
+                             field_value_tuples=field_value_tuples,
+                             strings_displayed=[ 'Create a new sequencing request',
+                                                 request_field_name1,
+                                                 request_field_name2,
+                                                 request_field_name3 ],
+                             strings_displayed_after_submit=[ "The sequencing request has been created.",
+                                                              name, desc ] )
+        global request2
+        request2 = get_request_by_name( name )
+        global user_address2
+        user_address2 = get_user_address( regular_user1, new_address_dict[ 'short_desc' ] )
+        # Make sure the request is showing in the 'new' filter
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request2.states.NEW,
+                                 strings_displayed=[ request2.name ] )
+        # Make sure the request's state is now set to 'new'
+        assert request2.state is not request2.states.NEW, "The state of the request '%s' should be set to '%s'" \
+            % ( request2.name, request2.states.NEW )
+        target_library_info = dict(library='none', folder='none' )
+        # Sample fields - the tuple represents a sample name and a list of sample form field values
+        sample_value_tuples = \
+        [ ( 'Sample1', target_library_info, [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
+          ( 'Sample2', target_library_info, [ 'option2', 'sample2 field2 value', 'sample2 field3 value' ] ),
+          ( 'Sample3', target_library_info, [ 'option1', 'sample3 field2 value', 'sample3 field3 value' ] ) ]
+        strings_displayed_after_submit = [ 'Unsubmitted' ]
+        for sample_name, lib_info, field_values in sample_value_tuples:
+            strings_displayed_after_submit.append( sample_name )
+            for values in field_values:
+                strings_displayed_after_submit.append( values )
+        # Add samples to the request
+        self.add_samples( cntrller='requests_admin',
+                          request_id=self.security.encode_id( request2.id ),
+                          sample_value_tuples=sample_value_tuples,
+                          strings_displayed=[ 'Add Samples to Sequencing Request "%s"' % request2.name,
+                                              '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
+                          strings_displayed_after_submit=strings_displayed_after_submit )
+        # Submit the request
+        select_target_library_message = "Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer"
+        self.submit_request( cntrller='requests_admin',
+                             request_id=self.security.encode_id( request2.id ),
+                             request_name=request2.name,
+                             strings_displayed_after_submit=[ select_target_library_message,
+                                                              'The sequencing request has been submitted.' ] )
+        refresh( request2 )
+        # Make sure the request is showing in the 'submitted' filter
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request2.states.SUBMITTED,
+                                 strings_displayed=[ request2.name ] )
+        # Make sure the request's state is now set to 'submitted'
+        assert request2.state is not request2.states.SUBMITTED, "The state of the sequencing request '%s' should be set to '%s'" \
+            % ( request2.name, request2.states.SUBMITTED )
+        # Make sure both requests are showing in the 'All' filter
+        self.check_request_grid( cntrller='requests_admin',
+                                 state='All',
+                                 strings_displayed=[ request1.name, request2.name ] )
+        # set the target data library to library2 using sample operation user interface
+        self.change_sample_target_data_library( cntrller='requests',
+                                                request_id=self.security.encode_id( request2.id ),
+                                                sample_ids=[ sample.id for sample in request2.samples ],
+                                                new_library_id=self.security.encode_id( library2.id ), 
+                                                new_folder_id=self.security.encode_id( library2_folder1.id ),
+                                                strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request2.name ],
+                                                strings_displayed_after_submit=[ 'Changes made to the samples have been saved.' ] )
+        # check the changed target data library & folder on the request page
+        strings_displayed_count = []
+        strings_displayed_count.append( ( library2.name, len( request1.samples ) ) )
+        strings_displayed_count.append( ( library2_folder1.name, len( request1.samples ) ) )
+        strings_displayed = [ 'Sequencing request "%s"' % name, regular_user1.email, request2.states.SUBMITTED ]
+        self.view_request( cntrller='requests',
+                           request_id=self.security.encode_id( request2.id ),
+                           strings_displayed=strings_displayed,
+                           strings_not_displayed=[ select_target_library_message ],
+                           strings_displayed_count=strings_displayed_count )
+    def test_065_reject_request( self ):
+        """Testing rejecting a request"""
+        # Logged in as admin_user
+        rejection_reason="This is why the sequencing request was rejected."
+        self.reject_request( request_id=self.security.encode_id( request2.id ),
+                             request_name=request2.name,
+                             comment=rejection_reason,
+                             strings_displayed=[ 'Reject sequencing request "%s"' % request2.name ],
+                             strings_displayed_after_submit=[ 'Sequencing request (%s) has been rejected.' % request2.name ] )
+        refresh( request2 )
+        # Make sure the request is showing in the 'rejected' filter
+        self.check_request_grid( cntrller='requests_admin',
+                                 state=request2.states.REJECTED,
+                                 strings_displayed=[ request2.name ] )
+        # Make sure the request's state is now set to REJECTED
+        assert request2.state is not request2.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
+            % ( request2.name, request2.states.REJECTED )
+        # The rejection reason should show up in the request page and the request history page
+        rejection_message = 'Sequencing request marked rejected by %s. Reason: %s' % ( admin_user.email, rejection_reason )
+        strings_displayed = [ request2.states.REJECTED, 
+                              rejection_message ]
+        self.view_request( cntrller='requests',
+                           request_id=self.security.encode_id( request2.id ),
+                           strings_displayed=strings_displayed )
+        self.view_request_history( cntrller='requests',
+                                   request_id=self.security.encode_id( request2.id ),
+                                   strings_displayed=strings_displayed )
+        # login as the regular user to make sure that the request2 is fully editable
+        self.logout()
+        self.login( email=regular_user1.email )
+        strings_displayed=[ 'Sequencing request "%s"' % request2.name,
+                            request1.states.REJECTED,
+                            rejection_message ]
+        visible_buttons = [ 'Add sample', 'Edit samples', 'Submit request' ]
+        strings_displayed.extend( visible_buttons )
+        self.view_request( cntrller='requests',
+                           request_id=self.security.encode_id( request2.id ),
+                           strings_displayed=strings_displayed,
+                           strings_not_displayed=[ request1.states.SUBMITTED,
+                                                   request1.states.COMPLETE,
+                                                   request1.states.NEW] )
+    def test_070_select_datasets_for_transfer( self ):
+        """Testing selecting datasets for data transfer"""
+        # Logged in as admin_user
+        self.logout()
+        self.login( email=admin_user.email )
+        # Setup the dummy datasets for sample1 of request1
+        sample_datasets = [ '/path/to/sample1_dataset1', 
+                            '/path/to/sample1_dataset2',
+                            '/path/to/sample1_dataset3' ] 
+        sample_dataset_file_names = [ dataset.split( '/' )[-1] for dataset in sample_datasets ]
+        global request1_sample1
+        request1_sample1 = request1.get_sample( 'Sample1_renamed' )
+        strings_displayed_after_submit = [ 'Datasets (%s) have been selected for sample (%s)' % \
+                                           ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), request1_sample1.name ) ]
+        strings_displayed = [ 'Select datasets to transfer from data directory configured for the sequencer' ]
+        self.add_datasets_to_sample( request_id=self.security.encode_id( request2.id ),
+                                     sample_id= self.security.encode_id( request1_sample1.id ),
+                                     sample_datasets=sample_datasets,
+                                     strings_displayed=strings_displayed,
+                                     strings_displayed_after_submit=strings_displayed_after_submit )
+        assert len( request1_sample1.datasets ) == len( sample_datasets )
+        # check the sample dataset info page
+        for sample1_dataset in request1_sample1.datasets:
+            strings_displayed = [ '"%s" Dataset' % request1_sample1.name,
+                                  sample1_dataset.file_path,
+                                  sample1_dataset.transfer_status.NOT_STARTED ]
+            self.view_sample_dataset( sample_dataset_id=self.security.encode_id( sample1_dataset.id ),
+                                      strings_displayed=strings_displayed )
+    def test_075_manage_sample_datasets( self ):
+        """Testing renaming, deleting and initiating transfer of sample datasets"""
+        # Logged in as admin_user
+        # Check renaming datasets
+        new_sample_dataset_names = [ ( 'path', request1_sample1.datasets[0].name ), 
+                                     ( 'to', request1_sample1.datasets[1].name+'/renamed' ),
+                                     ( 'none', request1_sample1.datasets[2].name+'_renamed' ) ] 
+        sample_dataset_ids = [ self.security.encode_id( dataset.id ) for dataset in request1_sample1.datasets ]
+        strings_displayed = [ 'Rename datasets for Sample "%s"' % request1_sample1.name ]
+        strings_displayed_after_submit = [ 'Changes saved successfully.' ]
+        strings_displayed_after_submit.extend( [ new_name for prefix, new_name in new_sample_dataset_names ] )
+        self.rename_sample_datasets( sample_id=self.security.encode_id( request1_sample1.id ),
+                                     sample_dataset_ids=sample_dataset_ids,
+                                     new_sample_dataset_names=new_sample_dataset_names,
+                                     strings_displayed=strings_displayed )
+        # Check deletion
+        sample_dataset_ids = [ self.security.encode_id( request1_sample1.datasets[0].id ) ]
+        strings_displayed = [ 'Manage "%s" datasets' % request1_sample1.name ]
+        strings_displayed_after_submit = [ '%i datasets have been deleted.' % len( sample_dataset_ids ) ]
+        strings_not_displayed = [ request1_sample1.datasets[0].name ]
+        self.delete_sample_datasets( sample_id=self.security.encode_id( request1_sample1.id ),
+                                     sample_dataset_ids=sample_dataset_ids,
+                                     strings_displayed=strings_displayed,
+                                     strings_displayed_after_submit=strings_displayed_after_submit,
+                                     strings_not_displayed=strings_not_displayed )
+        refresh( request1_sample1 )
+        assert len( request1_sample1.datasets ) == ( len( new_sample_dataset_names )-1 )
+        # Check data transfer
+        # In this test we only test transfer initiation. For data transfer to complete 
+        # successfully we need RabbitMQ setup. Since that is not possible in the functional 
+        # tests framework, this checks if correct error message is displayed and the transfer 
+        # status of the sample datasets remains at 'Not started' when the Transfer button is clicked.
+        sample_dataset_ids = [ self.security.encode_id( dataset.id ) for dataset in request1_sample1.datasets ]
+        strings_displayed = [ 'Manage "%s" datasets' % request1_sample1.name ]
+        strings_displayed_count = [ ( galaxy.model.SampleDataset.transfer_status.NOT_STARTED, len( request1_sample1.datasets ) ) ]
+        strings_displayed_after_submit = [ "Error in sequencer login information. The 'enable_api = True' setting is not correctly set in the Galaxy config file. Set your API Key in your User Preferences to transfer datasets." ]
+        strings_not_displayed = [ galaxy.model.SampleDataset.transfer_status.IN_QUEUE,
+                                  galaxy.model.SampleDataset.transfer_status.TRANSFERRING,
+                                  galaxy.model.SampleDataset.transfer_status.ADD_TO_LIBRARY,
+                                  galaxy.model.SampleDataset.transfer_status.COMPLETE ]
+        self.start_sample_datasets_transfer( sample_id=self.security.encode_id( request1_sample1.id ),
+                                     sample_dataset_ids=sample_dataset_ids,
+                                     strings_displayed=strings_displayed,
+                                     strings_displayed_after_submit=strings_displayed_after_submit,
+                                     strings_not_displayed=strings_not_displayed,
+                                     strings_displayed_count=strings_displayed_count )
+        # check the sample dataset info page
+        for sample1_dataset in request1_sample1.datasets:
+            strings_displayed = [ '"%s" Dataset' % request1_sample1.name,
+                                  sample1_dataset.file_path,
+                                  sample1_dataset.transfer_status.NOT_STARTED ]
+            self.view_sample_dataset( sample_dataset_id=self.security.encode_id( sample1_dataset.id ),
+                                      strings_displayed=strings_displayed )
 
-#    def test_045_admin_create_request_on_behalf_of_regular_user( self ):
-#        """Testing creating and submitting a request as an admin on behalf of a regular user"""
-#        # Logged in as regular_user1
-#        self.logout()
-#        self.login( email=admin_user.email )
-#        # Create the request
-#        name = "Request2"
-#        desc = 'Request2 Description'
-#        # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
-#        # is required for that field.
-#        field_value_tuples = [ ( 'option2', False ), ( str( user_address1.id ), True ), ( 'field_2_value', False ) ] 
-#        self.create_request( cntrller='requests_admin',
-#                             request_type_id=self.security.encode_id( request_type1.id ),
-#                             other_users_id=self.security.encode_id( regular_user1.id ),
-#                             name=name,
-#                             desc=desc,
-#                             field_value_tuples=field_value_tuples,
-#                             strings_displayed=[ 'Create a new sequencing request',
-#                                                 request_field_name1,
-#                                                 request_field_name2,
-#                                                 request_field_name3 ],
-#                             strings_displayed_after_submit=[ "The request has been created." ] )
-#        global request2
-#        request2 = get_request_by_name( name )      
-#        # Make sure the request is showing in the 'new' filter
-#        self.check_request_grid( cntrller='requests_admin',
-#                                 state=request2.states.NEW,
-#                                 strings_displayed=[ request2.name ] )
-#        # Make sure the request's state is now set to 'new'
-#        assert request2.state is not request2.states.NEW, "The state of the request '%s' should be set to '%s'" \
-#            % ( request2.name, request2.states.NEW )
-#        # Sample fields - the tuple represents a sample name and a list of sample form field values
-#        sample_value_tuples = [ ( 'Sample1', [ 'S1 Field 0 Value' ] ),
-#                                ( 'Sample2', [ 'S2 Field 0 Value' ] ) ]
-#        strings_displayed_after_submit = [ 'Unsubmitted' ]
-#        for sample_name, field_values in sample_value_tuples:
-#            strings_displayed_after_submit.append( sample_name )
-#        # Add samples to the request
-#        self.add_samples( cntrller='requests_admin',
-#                          request_id=self.security.encode_id( request2.id ),
-#                          request_name=request2.name,
-#                          sample_value_tuples=sample_value_tuples,
-#                          strings_displayed=[ 'There are no samples.' ],
-#                          strings_displayed_after_submit=strings_displayed_after_submit )
-#        # Submit the request
-#        self.submit_request( cntrller='requests_admin',
-#                             request_id=self.security.encode_id( request2.id ),
-#                             request_name=request2.name,
-#                             strings_displayed_after_submit=[ 'The request has been submitted.' ] )
-#        refresh( request2 )
-#        # Make sure the request is showing in the 'submitted' filter
-#        self.check_request_grid( cntrller='requests_admin',
-#                                 state=request2.states.SUBMITTED,
-#                                 strings_displayed=[ request2.name ] )
-#        # Make sure the request's state is now set to 'submitted'
-#        assert request2.state is not request2.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
-#            % ( request2.name, request2.states.SUBMITTED )
-#        # Make sure both requests are showing in the 'All' filter
-#        self.check_request_grid( cntrller='requests_admin',
-#                                 state='All',
-#                                 strings_displayed=[ request1.name, request2.name ] )
-#    def test_050_reject_request( self ):
-#        """Testing rejecting a request"""
-#        # Logged in as admin_user
-#        self.reject_request( request_id=self.security.encode_id( request2.id ),
-#                             request_name=request2.name,
-#                             comment="Rejection test comment",
-#                             strings_displayed=[ 'Reject Sequencing Request "%s"' % request2.name ],
-#                             strings_displayed_after_submit=[ 'Request (%s) has been rejected.' % request2.name ] )
-#        refresh( request2 )
-#        # Make sure the request is showing in the 'rejected' filter
-#        self.check_request_grid( cntrller='requests_admin',
-#                                 state=request2.states.REJECTED,
-#                                 strings_displayed=[ request2.name ] )
-#        # Make sure the request's state is now set to REJECTED
-#        assert request2.state is not request2.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
-#            % ( request2.name, request2.states.REJECTED )
-    def test_055_reset_data_for_later_test_runs( self ):
+    def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
         self.logout()
@@ -696,7 +823,18 @@ class TestFormsAndRequests( TwillTestCase ):
                                       library.name,
                                       item_type='library' )
             self.purge_library( self.security.encode_id( library.id ), library.name )
-
+            
+        ##################
+        # Mark all requests deleted and delete all their samples
+        ##################
+        for request in [ request1, request2 ]:
+            # delete samples
+            for sample in request.samples:
+                # delete sample datasets
+                for sample_dataset in sample.datasets:
+                    delete_obj( sample_dataset )
+                delete_obj( sample )
+            mark_obj_deleted( request )
         ##################
         # Delete request_type permissions
         ##################
@@ -708,11 +846,6 @@ class TestFormsAndRequests( TwillTestCase ):
         for request_type in [ request_type1 ]:
             mark_obj_deleted( request_type )
         ##################
-        # Mark all requests deleted
-        ##################
-        for request in [ request1 ]:
-            mark_obj_deleted( request )
-        ##################
         # Mark all forms deleted
         ##################
         for form in [ request_form_definition1, sample_form_definition1 ]:
@@ -720,7 +853,7 @@ class TestFormsAndRequests( TwillTestCase ):
         ##################
         # Mark all user_addresses deleted
         ##################
-        for user_address in [ user_address1 ]:
+        for user_address in [ user_address1, user_address2 ]:
             mark_obj_deleted( user_address )
         ##################
         # Delete all non-private roles

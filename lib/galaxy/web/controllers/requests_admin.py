@@ -578,15 +578,15 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
         if not datatx_info[ 'host' ] \
             or not datatx_info[ 'username' ] \
             or not datatx_info[ 'password' ]:
-            err_msg += "Error in sequencer login information.  "
+            err_msg += "Error in sequencer login information. "
         # Make sure web API is enabled and API key exists
         if not trans.app.config.enable_api:
-            err_msg += "The 'enable_api = True' setting is not correctly set in the Galaxy config file.  "
+            err_msg += "The 'enable_api = True' setting is not correctly set in the Galaxy config file. "
         if not trans.user.api_keys:
-            err_msg += "Set your API Key in your User Preferences to transfer datasets."
+            err_msg += "Set your API Key in your User Preferences to transfer datasets. "
         # check if library_import_dir is set
         if not trans.app.config.library_import_dir:
-            err_msg = "'The library_import_dir' setting is not correctly set in the Galaxy config file."
+            err_msg = "'The library_import_dir' setting is not correctly set in the Galaxy config file. "
         # check the RabbitMQ server settings in the config file
         for k, v in trans.app.config.amqp.items():
             if not v:
@@ -672,16 +672,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             trans.sa_session.add( sample_dataset )
             trans.sa_session.flush()
         return 200, 'Done'
-    @web.expose
-    @web.require_admin
-    def view_form_definition( self, trans, **kwd ):
-        form_definition_id = kwd.get( 'id', None )
-        try:
-            form_definition = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( form_definition_id ) )
-        except:
-            return invalid_id_redirect( trans, 'requests_admin', form_definition_id, action='browse_request_types' )
-        return trans.fill_template( '/admin/forms/view_form_definition.mako',
-                                    form_definition=form_definition )
     # ===== Methods for building SelectFields used on various admin_requests forms
     def __build_sample_id_select_field( self, trans, request, selected_value ):
         return build_select_field( trans, request.samples, 'name', 'sample_id', selected_value=selected_value, refresh_on_change=False )
