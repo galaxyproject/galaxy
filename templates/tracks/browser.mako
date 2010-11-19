@@ -189,8 +189,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 // Show saving dialog box
                 show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
                     
-                for (var i in sorted) {
-                    var track_id = parseInt(sorted[i].split("track_")[1]),
+                $.each( sorted, function(_, id) {
+                    var track_id = parseInt(id.split("track_")[1]),
                         track = view.tracks[track_id];
                     
                     tracks.push( {
@@ -199,7 +199,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                         "dataset_id": track.dataset_id,
                         "prefs": track.prefs
                     });
-                }
+                });
 
                 var payload = { 'tracks': tracks, 'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high } };
                 
