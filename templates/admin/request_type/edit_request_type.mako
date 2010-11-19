@@ -4,21 +4,24 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
-    %if not request_type.deleted:
-        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
-        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
-    %endif
-    %if request_type.deleted:
-        <li><a class="action-button" href="${h.url_for( controller='requests_common', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete configuration</a></li>
-    %endif
+    <li><a class="action-button" id="request_type-${request_type.id}-popup" class="menubutton">Configuration Actions</a></li>
+    <div popupmenu="request_type-${request_type.id}-popup">
+        <li><a class="action-button" href="${h.url_for( controller='sequencer', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
+        %if not request_type.deleted:
+            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
+        %endif
+        %if request_type.deleted:
+            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete configuration</a></li>
+        %endif
+    </div>
 </ul>
 
 %if message:
     ${render_msg( message, status )}
 %endif
 
-<form name="edit_request_type" action="${h.url_for( controller='requests_admin', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}" method="post" >
+<form name="edit_request_type" action="${h.url_for( controller='sequencer', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}" method="post" >
     <div class="toolForm">
         <div class="toolFormTitle">"Edit ${request_type.name}" sequencer configuration</div>
         <div class="form-row">

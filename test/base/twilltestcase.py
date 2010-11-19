@@ -1463,7 +1463,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
     def create_request_type( self, name, desc, request_form_id, sample_form_id, states, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
-        self.visit_url( "%s/requests_admin/create_request_type" % self.url )
+        self.visit_url( "%s/sequencer/create_request_type" % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( "1", "name", name )
@@ -1479,7 +1479,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
     def request_type_permissions( self, request_type_id, request_type_name, role_ids_str, permissions_in, permissions_out ):
         # role_ids_str must be a comma-separated string of role ids
-        url = "requests_admin/request_type_permissions?id=%s&update_roles_button=Save" % ( request_type_id )
+        url = "sequencer/request_type_permissions?id=%s&update_roles_button=Save" % ( request_type_id )
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, role_ids_str )
@@ -1494,7 +1494,7 @@ class TwillTestCase( unittest.TestCase ):
     def view_request_type( self, request_type_id, request_type_name, sample_states, strings_displayed=[] ):
         '''View request_type details'''
         self.home()
-        self.visit_url( "%s/requests_admin/view_request_type?id=%s" % ( self.url, request_type_id ) )
+        self.visit_url( "%s/sequencer/view_request_type?id=%s" % ( self.url, request_type_id ) )
         self.check_page_for_string( '"%s" sequencer configuration' % request_type_name )
         for name, desc in sample_states:
             self.check_page_for_string( name )

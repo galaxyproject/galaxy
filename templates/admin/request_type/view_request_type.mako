@@ -3,14 +3,17 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    %if not request_type.deleted:
-        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}">Edit configuration</a></li>
-        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
-        <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
-    %endif
-    %if request_type.deleted:
-        <li><a class="action-button" href="${h.url_for( controller='requests_common', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete configuration</a></li>
-    %endif
+    <li><a class="action-button" id="request_type-${request_type.id}-popup" class="menubutton">Configuration Actions</a></li>
+    <div popupmenu="request_type-${request_type.id}-popup">
+        %if not request_type.deleted:
+            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}">Edit configuration</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
+        %endif
+        %if request_type.deleted:
+            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete configuration</a></li>
+        %endif
+    </div>
 </ul>
 
 %if message:

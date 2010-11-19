@@ -17,7 +17,7 @@
     and a <b>Sequencing Sample Form</b>, which must be created first.  Click the <b>Create new form</b>
     button to create them.
 %else:
-    <form name="create_request_type" action="${h.url_for( controller='requests_admin', action='create_request_type')}" method="post" >
+    <form name="create_request_type" action="${h.url_for( controller='sequencer', action='create_request_type')}" method="post" >
         <div class="toolForm">
             <div class="toolFormTitle">Create a new sequencer configuration</div>
             %for rt_info in rt_info_widgets:

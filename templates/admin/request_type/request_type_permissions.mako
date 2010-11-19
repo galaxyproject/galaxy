@@ -25,9 +25,12 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
-    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}">Edit configuration</a></li>
-    <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
+    <li><a class="action-button" id="request_type-${request_type.id}-popup" class="menubutton">Configuration Actions</a></li>
+    <div popupmenu="request_type-${request_type.id}-popup">
+        <li><a class="action-button" href="${h.url_for( controller='sequencer', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='sequencer', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}">Edit configuration</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='sequencer', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
+    </div>
 </ul>
 
 %if message:
@@ -37,7 +40,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Manage access permissions on sequencer interface "${request_type.name}"</div>
     <div class="toolFormBody">
-        <form name="request_type_permissions" id="request_type_permissions" action="${h.url_for( controller='requests_admin', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}" method="post">
+        <form name="request_type_permissions" id="request_type_permissions" action="${h.url_for( controller='sequencer', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}" method="post">
             <div class="form-row">
                 <%
                     current_actions = request_type.actions
