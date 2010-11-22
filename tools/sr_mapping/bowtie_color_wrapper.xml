@@ -317,21 +317,13 @@
         <conditional name="refGenomeSource.genomeSource">
           <when value="indexed">
             <action type="metadata" name="dbkey">
-              <option type="from_file" name="bowtie_indices_color.loc" column="0" offset="0">
+              <option type="from_file" name="bowtie_indices_color.loc" column="1" offset="0">
                 <filter type="param_value" column="0" value="#" filter_by="startswith" keep="False"/>
-                <filter type="param_value" ref="refGenomeSource.index" column="1"/>
+                <filter type="param_value" ref="refGenomeSource.index" column="0"/>
               </option>
             </action>
           </when>
         </conditional>
-        <!-- Special casing equCab2chrM to equCab2 -->
-        <action type="metadata" name="dbkey">
-          <option type="from_param" name="refGenomeSource.genomeSource" column="0" offset="0">
-            <filter type="insert_column" column="0" value="equCab2chrM"/>
-            <filter type="insert_column" column="0" value="equCab2"/>
-            <filter type="metadata_value" ref="output" name="dbkey" column="1" />
-          </option>
-        </action>
       </actions>
     </data>
   </outputs>
