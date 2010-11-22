@@ -262,6 +262,8 @@
         <tool file="sr_assembly/velveth.xml" />
   </section>
   -->
+  <!-- The BLAST+ tools are not hosted on Galaxy Test but are provided for
+       local installations
   <section name="NCBI BLAST+" id="ncbi_blast_plus_tools">
    <tool file="ncbi_blast_plus/ncbi_blastn_wrapper.xml" />
    <tool file="ncbi_blast_plus/ncbi_blastp_wrapper.xml" />
@@ -270,6 +272,7 @@
    <tool file="ncbi_blast_plus/ncbi_tblastx_wrapper.xml" />
    <tool file="ncbi_blast_plus/blastxml_to_tabular.xml" />
   </section>
+  -->
   <section name="NGS: Mapping" id="solexa_tools">
    <tool file="sr_mapping/lastz_wrapper.xml" />
    <tool file="sr_mapping/lastz_paired_reads_wrapper.xml" />
