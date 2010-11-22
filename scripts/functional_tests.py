@@ -55,6 +55,9 @@ def main():
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ   
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
+    tool_data_table_config_path = 'tool_data_table_conf.xml'
+    if os.path.exists( 'tool_data_table_conf.test.xml' ):
+        tool_data_table_config_path = 'tool_data_table_conf.test.xml'
     if start_server:
         psu_production = False
         galaxy_test_proxy_port = None
@@ -148,6 +151,7 @@ def main():
                                    datatype_converters_config_file = "datatype_converters_conf.xml.sample",
                                    tool_parse_help = False,
                                    test_conf = "test.conf",
+                                   tool_data_table_config_path = tool_data_table_config_path,
                                    log_destination = "stdout",
                                    use_heartbeat = False,
                                    allow_user_creation = True,
