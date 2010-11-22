@@ -292,7 +292,7 @@ class Crate( object ):
 
 class GalaxyConfig( object ):
     config_file = os.path.join( galaxy_dir, "universe_wsgi.ini" )
-    always_conditional = ( 'GeneTrack', 'pysam' )
+    always_conditional = ( 'GeneTrack', 'pysam', 'ctypes' )
     def __init__( self ):
         self.config = ConfigParser.ConfigParser()
         if self.config.read( GalaxyConfig.config_file ) == []:
