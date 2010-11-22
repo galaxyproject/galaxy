@@ -317,12 +317,13 @@ class GalaxyConfig( object ):
                 return { "psycopg2":        lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres://" ),
                          "MySQL_python":    lambda: self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ),
                          "DRMAA_python":    lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
-                         "drmaa":           lambda: ( "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(",") ) and sys.version_info[:2] >= ( 2, 5 ),
+                         "drmaa":           lambda: "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "pbs_python":      lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "threadframe":     lambda: self.config.get( "app:main", "use_heartbeat" ),
                          "guppy":           lambda: self.config.get( "app:main", "use_memdump" ),
                          "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
                          "GeneTrack":       lambda: sys.version_info[:2] >= ( 2, 5 ),
+                         "ctypes":          lambda: ( "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(",") ) and sys.version_info[:2] == ( 2, 4 ),
                          "pysam":           check_pysam()
                        }.get( egg_name, lambda: True )()
             except:

@@ -1,4 +1,4 @@
-import os, logging, threading, time
+import os, sys, logging, threading, time
 from Queue import Queue, Empty
 
 from galaxy import model
@@ -9,6 +9,8 @@ from paste.deploy.converters import asbool
 import pkg_resources
 
 try:
+    if sys.version_info[:2] == ( 2, 4 ):
+        pkg_resources.require( "ctypes" )
     pkg_resources.require( "drmaa" )
     drmaa = __import__( "drmaa" )
 except Exception, e:
