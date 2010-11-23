@@ -14,17 +14,6 @@ import pkg_resources
 pkg_resources.require( "SVGFig" )
 import svgfig as svg
 
-COLS_PER_SAMPLE = 7
-HEADER_COLS = 4
-
-HEIGHT = 6
-WIDTH = 12
-BAR_WIDTH = 1.5
-GAP = 2
-
-
-colors = {'A':'blue', 'C':'green', 'G':'orange', 'T':'red'}
-bases = ['A', 'C', 'G', 'T' ]
 
 SVGPan = """
 /**
@@ -256,8 +245,34 @@ function handleMouseUp(evt) {
 }
 """
 
+COLS_PER_SAMPLE = 7
+HEADER_COLS = 4
 
-def mainsvg(opts, args):
+HEIGHT = 6
+WIDTH = 12
+BAR_WIDTH = 1.5
+GAP = 2
+
+
+colors = {'A':'blue', 'C':'green', 'G':'orange', 'T':'red'}
+bases = ['A', 'C', 'G', 'T' ]
+
+def stop_error(message):
+    print >> sys.stderr, message
+    sys.exit(1)
+
+def validate_bases(n_a, n_c, n_g, n_t, total):
+    if n_a > total:
+        return 'A'
+    elif n_c > total:
+        return 'C'
+    elif n_g > total:
+        return 'G'
+    elif n_t > total:
+        return 'T'
+    return None
+
+def main(opts, args):
     s = svg.SVG('g', id='viewport')
     
     # display legend
@@ -292,7 +307,10 @@ def mainsvg(opts, args):
         highlighted_position = False
         show_pos = True
         position = row[int(opts.position_col)-1]
-        ref = row[int(opts.ref_col)-1]
+        ref = row[int(opts.ref_col)-1].strip().upper()
+        # validate
+        if ref not in bases: 
+            stop_error( "The reference column (col%s) contains invalid character '%s' at row %i of the dataset." % ( opts.ref_col, ref, count ) )
         # display positions
         if opts.zoom == 'interactive':
             textx = 0
@@ -309,20 +327,19 @@ def mainsvg(opts, args):
             n_g = int(row[int(sample['a_col'])+2-1])
             n_t = int(row[int(sample['a_col'])+3-1])
             total = int(row[int(sample['totals_col'])-1])
-            imp = 1 #int(row[start_col+6])
+            # validate
+            base_error = validate_bases(n_a, n_c, n_g, n_t, total)
+            if base_error:
+                stop_error("For sample %i (%s), the number of base %s reads is more than the coverage on row %i." % (sample_index+1, 
+                                                                                                                     sample['name'], 
+                                                                                                                     base_error, 
+                                                                                                                     count))
+ 
             if total:
                 x = 16+(sample_index*(WIDTH+GAP))
                 y = 30+(count*(HEIGHT+GAP))
                 width = WIDTH
                 height = HEIGHT
-                
-                if imp == 1:
-                    fill_opacity = 0.1
-                elif imp == 2:
-                    fill_opacity = 0.2
-                else:
-                    fill_opacity = 0.3
-
                 if count%2:
                     s.append(svg.SVG("rect", x=x, y=y, width=width, height=height, 
                                      stroke='none', fill='grey', fill_opacity=0.25))
@@ -368,7 +385,7 @@ if __name__ == '__main__':
     parser.add_option('-p', '--position_col', dest='position_col', action='store', default='c0')
     parser.add_option('-r', '--ref_col', dest='ref_col', action='store', default='c1')
     (opts, args) = parser.parse_args()
-    mainsvg(opts, args)
+    main(opts, args)
     sys.exit(1)
 
     
