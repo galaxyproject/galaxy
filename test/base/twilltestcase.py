@@ -1348,12 +1348,12 @@ class TwillTestCase( unittest.TestCase ):
     def create_form( self, name, desc, form_type, field_type='TextField', form_layout_name='',
                      num_fields=1, num_options=0, strings_displayed=[], strings_displayed_after_submit=[] ):
         """Create a new form definition."""
-        self.visit_url( "%s/forms/create_form" % self.url )
+        self.visit_url( "%s/forms/create_form_definition" % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( "1", "name", name )
         tc.fv( "1", "description", desc )
-        tc.fv( "1", "form_type_selectbox", form_type )
+        tc.fv( "1", "form_type_select_field", form_type )
         tc.submit( "create_form_button" )
         if form_type == "Sequencing Sample Form":
             tc.submit( "add_layout_grid" )
@@ -1397,7 +1397,7 @@ class TwillTestCase( unittest.TestCase ):
                    strings_displayed=[], strings_not_displayed=[], strings_displayed_after_submit=[] ):
         """Edit form details; name and description"""
         self.home()
-        self.visit_url( "%s/forms/manage?operation=Edit&id=%s" % ( self.url, id ) )
+        self.visit_url( "%s/forms/edit_form_definition?id=%s" % ( self.url, id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         if new_form_name:
@@ -1433,7 +1433,7 @@ class TwillTestCase( unittest.TestCase ):
     def view_form( self, id, form_type='', form_name='', form_desc='', form_layout_name='', field_dicts=[] ):
         '''View form details'''
         self.home()
-        self.visit_url( "%s/forms/manage?operation=view&id=%s" % ( self.url, id ) )
+        self.visit_url( "%s/forms/view_latest_form_definition?id=%s" % ( self.url, id ) )
         #self.check_page_for_string( form_type )
         self.check_page_for_string( form_name )
         #self.check_page_for_string( form_desc )
@@ -1449,7 +1449,7 @@ class TwillTestCase( unittest.TestCase ):
     def mark_form_deleted( self, form_id ):
         """Mark a form_definition as deleted"""
         self.home()
-        url = "%s/forms/manage?operation=delete&id=%s" % ( self.url, form_id )
+        url = "%s/forms/delete_form_definition?id=%s" % ( self.url, form_id )
         self.visit_url( url )
         check_str = "1 forms have been deleted."
         self.check_page_for_string( check_str )

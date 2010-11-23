@@ -1983,7 +1983,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                                                     ldda_id=ldda_id,
                                                     edited=True,
                                                     **kwd ) )
-        return trans.response.send_redirect( web.url_for( controller='forms', action='edit', **vars ) )
+        return trans.response.send_redirect( web.url_for( controller='forms', action='edit_form_definition', **vars ) )
     @web.expose
     def edit_template_info( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
         # Edit the contents of the template fields without altering the template itself.

@@ -3,8 +3,7 @@
 <%namespace file="/requests/common/common.mako" import="render_sample_datasets" />
 
 ${h.js( "ui.core", "jquery.cookie", "jquery.dynatree" )}
-<link href='/static/june_2007_style/blue/dynatree_skin/ui.dynatree.css' rel='stylesheet' type='text/css'>
-##${h.js( "jquery.dynatree" )}
+${h.css( "dynatree_skin/ui.dynatree" )}
 
 <script type="text/javascript">
     $(function(){

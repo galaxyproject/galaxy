@@ -45,7 +45,7 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='forms', action='manage', operation='Edit', id=trans.security.encode_id( form_definition.current.id ) )}">Edit</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='forms', action='edit_form_definition', id=trans.security.encode_id( form_definition.current.id ) )}">Edit</a></li>
 </ul>
 
 %if message:
@@ -53,7 +53,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Form definition "${form_definition.name}"</div>    
+    <div class="toolFormTitle">Form definition "${form_definition.name}"  (${form_definition.type})</div>    
     %if form_definition.type == trans.app.model.FormDefinition.types.SAMPLE:
         %if form_definition.layout:
             %for grid_index, grid_name in enumerate( form_definition.layout ):

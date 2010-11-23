@@ -105,7 +105,7 @@
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
-                    <div class="toolTitle"><a href="${h.url_for( controller='forms', action='manage' )}" target="galaxy_main">Manage form definitions</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( controller='forms', action='browse_form_definitions' )}" target="galaxy_main">Manage form definitions</a></div>
                   </div>
                 </div>
                 <div class="toolSectionPad"></div>

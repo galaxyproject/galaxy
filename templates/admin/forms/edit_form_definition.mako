@@ -50,20 +50,23 @@ $(document).ready(function(){
         </h4>
         <div class="msg_body">
     %else:
+        <h4 class="msg_head"> 
+            <div class="form-row">${index+1}. ${field[0][1].value}</div>
+        </h4>
         <div class="msg_body2">
     %endif
-    <div class="repeat-group-item">
-        %for field_attr in field:
-            <div class="form-row">
-                <label>${field_attr[0]}</label>
-                ${field_attr[1].get_html()}
-                ${render_selectbox_options( index, field_attr )}
-            </div>
-        %endfor
-        <div class="form-row">
-            <input type="submit" name="remove_button" value="Remove field ${index+1}"/>
-        </div>
-    </div>
+	    <div class="repeat-group-item">
+	        %for field_attr in field:
+	            <div class="form-row">
+	                <label>${field_attr[0]}</label>
+	                ${field_attr[1].get_html()}
+	                ${render_selectbox_options( index, field_attr )}
+	            </div>
+	        %endfor
+	        <div class="form-row">
+	            <input type="submit" name="remove_button" value="Remove field ${index+1}"/>
+	        </div>
+	    </div>
     </div>
 </%def>
 
@@ -79,16 +82,16 @@ $(document).ready(function(){
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='forms', action='manage', operation='View', id=trans.security.encode_id( form_definition.current.id ) )}">View</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='forms', action='view_latest_form_definition', id=trans.security.encode_id( form_definition.current.id ) )}">View</a></li>
 </ul>
 
 %if message:
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Edit form definition "${form_definition.name}"</div>
-    <form id="edit_form_definition" name="edit_form_definition" action="${h.url_for( controller='forms', action='edit', id=trans.security.encode_id( form_definition.current.id ) )}" method="post" >
+<form id="edit_form_definition" name="edit_form_definition" action="${h.url_for( controller='forms', action='edit_form_definition', id=trans.security.encode_id( form_definition.current.id ) )}" method="post" >
+    <div class="toolForm">
+	   <div class="toolFormTitle">Edit form definition "${form_definition.name}" (${form_definition.type})</div>
         %if response_redirect:
             <input type="hidden" name="response_redirect" value="${response_redirect}" size="40" />
         %endif
@@ -103,19 +106,25 @@ $(document).ready(function(){
                 <div style="clear: both"></div>
             </div>
         %endfor
-        %if current_form_type == trans.app.model.FormDefinition.types.SAMPLE:
-            <div class="toolFormTitle">Form Layout</div>
-            <div class="form-row">
-                <label>Layout grid names</label>
-            </div>
-            %for index, lg in enumerate( layout_grids ):
-                ${render_layout( index, lg )}
-            %endfor
-            <div class="form-row">
-                <input type="submit" name="add_layout_grid" value="Add layout grid"/>
-            </div>
-        %endif
-        <div class="toolFormTitle">Form fields</div>
+    </div>
+	%if current_form_type == trans.app.model.FormDefinition.types.SAMPLE:
+	    <p/>
+		<div class="toolForm">
+	        <div class="toolFormTitle">Form Layout</div>
+	        <div class="form-row">
+	            <label>Layout grid names</label>
+	        </div>
+	        %for index, lg in enumerate( layout_grids ):
+	            ${render_layout( index, lg )}
+	        %endfor
+	        <div class="form-row">
+	            <input type="submit" name="add_layout_grid_button" value="Add layout grid"/>
+	        </div>
+	    </div>
+    %endif
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Form definition fields</div>
         %for ctr, field in enumerate(field_details):
             %if ctr < len( form_definition.fields ):
                 ${render_field( ctr, field, True )}
@@ -127,14 +136,13 @@ $(document).ready(function(){
             <input type="submit" name="add_field_button" value="Add field"/>
         </div>
         <div class="form-row">
-            ## TODO: Eliminate the need for this hidden refresh param
             <div style="float: left; width: 250px; margin-right: 10px;">
                 <input type="hidden" name="refresh" value="true" size="40"/>
             </div>
-          <div style="clear: both"></div>
+            <div style="clear: both"></div>
         </div>
-        <div class="form-row">
-            <input type="submit" name="save_changes_button" value="Save"/>
-        </div>
-    </form>
-</div>
+    </div>
+    <div class="form-row">
+        <input type="submit" name="save_changes_button" value="Save"/>
+    </div>
+</form>

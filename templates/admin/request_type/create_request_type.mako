@@ -10,7 +10,7 @@
 %if not rt_info_widgets:
     <br/><br/>
     <ul class="manage-table-actions">
-        <li><a class="action-button" href="${h.url_for( controller='forms', action='create_form' )}">Create new form</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='forms', action='create_form_definition' )}">Create new form</a></li>
     </ul>
     <br/<br/>
     Creating a new sequencer configuration requires two form definitions, a <b>Sequencing Request Form</b>,

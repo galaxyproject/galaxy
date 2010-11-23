@@ -36,7 +36,8 @@ class FormsGrid( grids.Grid ):
         NameColumn( "Name", 
                     key="name", 
                     model_class=model.FormDefinition,
-                    link=( lambda item: iff( item.deleted, None, dict( operation="view", id=item.id ) ) ),
+                    link=( lambda item: iff( item.deleted, None, dict( operation="view_latest_form_definition", 
+                                                                       id=item.id ) ) ),
                     attach_popup=True, 
                     filterable="advanced" ),
         DescriptionColumn( "Description",
@@ -60,7 +61,7 @@ class FormsGrid( grids.Grid ):
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
     global_actions = [
-        grids.GridAction( "Create new form", dict( controller='forms', action='create_form' ) )
+        grids.GridAction( "Create new form", dict( controller='forms', action='create_form_definition' ) )
     ]
 
 class Forms( BaseController ):
@@ -77,126 +78,79 @@ class Forms( BaseController ):
 
     @web.expose
     @web.require_admin
-    def manage( self, trans, **kwd ):
+    def browse_form_definitions( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not kwd.get( 'id', None ):
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='manage',
+                                                                  action='browse_form_definitions',
                                                                   status='error',
                                                                   message="Invalid form ID") )
-            if operation == "view":
-                return self.view_form_definition( trans, **kwd )
+            if operation == "view_latest_form_definition":
+                return self.view_latest_form_definition( trans, **kwd )
             elif operation == "delete":
-                return self.__delete( trans, **kwd )
+                return self.delete_form_definition( trans, **kwd )
             elif operation == "undelete":
-                return self.__undelete( trans, **kwd )
+                return self.undelete_form_definition( trans, **kwd )
             elif operation == "edit":
-                return self.edit( trans, **kwd )
+                return self.edit_form_definition( trans, **kwd )
         return self.forms_grid( trans, **kwd )
     @web.expose
-    def view_form_definition( self, trans, **kwd ):
+    @web.require_admin
+    def view_latest_form_definition( self, trans, **kwd ):
+        '''
+        Displays the layout of the latest version of the form definition 
+        '''
         form_definition_current_id = kwd.get( 'id', None )
         try:
-            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ) \
-                                  .get( trans.security.decode_id( form_definition_current_id ) )
+            form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ) \
+                                                      .get( trans.security.decode_id( form_definition_current_id ) )
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
-                                                              action='manage',
+                                                              action='browse_form_definitions',
                                                               message='Invalid form',
                                                               status='error' ) )
         return trans.fill_template( '/admin/forms/view_form_definition.mako',
-                                    form_definition=fdc.latest_form )
-    def __form_types_widget(self, trans, selected='none'):
-        form_type_selectbox = SelectField( 'form_type_selectbox' )
-        if selected == 'none':
-            form_type_selectbox.add_option('Select one', 'none', selected=True)
-        else:
-            form_type_selectbox.add_option('Select one', 'none')
-        fd_types = trans.app.model.FormDefinition.types.items()
-        fd_types.sort()
-        for ft in fd_types:
-            if selected == ft[1]:
-                form_type_selectbox.add_option(ft[1], ft[1], selected=True)
-            else:
-                form_type_selectbox.add_option(ft[1], ft[1])
-        return form_type_selectbox
-    
+                                    form_definition=form_definition_current.latest_form )
     @web.expose
     @web.require_admin
-    def create_form( self, trans, **kwd ):
+    def create_form_definition( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         self.__imported_from_file = False
         if params.get( 'create_form_button', False ):   
-            fd, message = self.__save_form( trans, fdc_id=None, **kwd )
-            if not fd:
+            form_definition, message = self.save_form_definition( trans, form_definition_current_id=None, **kwd )
+            if not form_definition:
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='create_form',
+                                                                  action='create_form_definition',
                                                                   message=message,
                                                                   status='error',
                                                                   name=util.restore_text( params.get( 'name', '' ) ),
                                                                   description=util.restore_text( params.get( 'description', '' ) ) ))
-            self.__get_saved_form( fd )
             if self.__imported_from_file:
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='edit',
-                                                                  id=trans.security.encode_id(fd.current.id)) )                  
+                                                                  action='edit_form_definition',
+                                                                  id=trans.security.encode_id( form_definition.current.id )) )                  
             else:
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='edit',
-                                                                  id=trans.security.encode_id(fd.current.id),
+                                                                  action='edit_form_definition',
+                                                                  id=trans.security.encode_id( form_definition.current.id ),
                                                                   add_field_button='Add field',
-                                                                  name=fd.name,
-                                                                  description=fd.desc,
-                                                                  form_type_selectbox=fd.type ) )  
+                                                                  name=form_definition.name,
+                                                                  description=form_definition.desc,
+                                                                  form_type_select_field=form_definition.type ) )  
         inputs = [ ( 'Name', TextField( 'name', 40, util.restore_text( params.get( 'name', '' ) ) ) ),
                    ( 'Description', TextField( 'description', 40, util.restore_text( params.get( 'description', '' ) ) ) ),
-                   ( 'Type', self.__form_types_widget(trans, selected=params.get( 'form_type', 'none' )) ),
+                   ( 'Type', self.__build_form_types_widget( trans, selected=params.get( 'form_type', 'none' ) ) ),
                    ( 'Import from csv file (Optional)', FileField( 'file_data', 40, '' ) ) ]
         return trans.fill_template( '/admin/forms/create_form.mako', 
                                     inputs=inputs,
                                     message=message,
-                                    status=status )     
-    def __delete( self, trans, **kwd ):
-        id_list = util.listify( kwd['id'] )
-        delete_failed = []
-        for id in id_list:
-            try:
-                fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(id) )
-            except:
-                return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='manage',
-                                                                  message='Invalid form',
-                                                                  status='error' ) )
-            fdc.deleted = True
-            trans.sa_session.add( fdc )
-            trans.sa_session.flush()
-        return trans.response.send_redirect( web.url_for( controller='forms',
-                                                          action='manage',
-                                                          message='%i forms have been deleted.' % len(id_list), 
-                                                          status='done') )
-    def __undelete( self, trans, **kwd ):
-        id_list = util.listify( kwd['id'] )
-        delete_failed = []
-        for id in id_list:
-            try:
-                fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(id) )
-            except:
-                return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='manage',
-                                                                  message='Invalid form',
-                                                                  status='error' ) )
-            fdc.deleted = False
-            trans.sa_session.add( fdc )
-            trans.sa_session.flush()
-        return trans.response.send_redirect( web.url_for( controller='forms',
-                                                          action='manage',
-                                                          message='%i forms have been undeleted.' % len(id_list), 
-                                                          status='done') )
+                                    status=status )
     @web.expose
-    def edit( self, trans, response_redirect=None, **kwd ):
+    @web.require_admin
+    def edit_form_definition( self, trans, response_redirect=None, **kwd ):
         '''
         This callback method is for handling form editing.  The value of response_redirect
         should be an URL that is defined by the caller.  This allows for redirecting as desired
@@ -207,273 +161,104 @@ class Forms( BaseController ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         try:
-            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(kwd['id']) )
+            form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(kwd['id']) )
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
-                                                              action='manage',
+                                                              action='browse_form_definitions',
                                                               message='Invalid form',
                                                               status='error' ) )
-        fd = fdc.latest_form
-        #
+        form_definition = form_definition_current.latest_form
+        if params.get( 'refresh', False ):
+            # Refresh 
+            current_form = self.get_current_form( trans, **kwd )
+        else:
+            # Show the saved form for editing
+            current_form = self.get_saved_form( form_definition )
         # Save changes
-        #
         if params.get( 'save_changes_button', False ):
-            fd_new, message = self.__save_form( trans, fdc_id=fd.form_definition_current.id, **kwd )
+            new_form_definition, message = self.save_form_definition( trans, form_definition_current_id=form_definition.form_definition_current.id, **kwd )
             # if validation error encountered while saving the form, show the 
             # unsaved form, with the error message
-            if not fd_new:
-                current_form = self.__get_form( trans, **kwd )
-                return self.__show( trans=trans,
-                                    form_definition=fd,
-                                    current_form=current_form, 
-                                    message=message,
-                                    status='error',
-                                    response_redirect=response_redirect,
-                                    **kwd )
-            # everything went fine. form saved successfully. Show the saved form or redirect
-            # to response_redirect if appropriate.
-            if response_redirect:
-                return trans.response.send_redirect( response_redirect )
-            fd = fd_new
-            current_form = self.__get_saved_form( fd )
-            message = "The form '%s' has been updated with the changes." % fd.name
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message=message,
-                                status=status,
-                                response_redirect=response_redirect,
-                                **kwd )
-        #
+            if not new_form_definition:
+                status = 'error'
+            else:
+                # everything went fine. form saved successfully. Show the saved form or redirect
+                # to response_redirect if appropriate.
+                if response_redirect:
+                    return trans.response.send_redirect( response_redirect )
+                form_definition = new_form_definition
+                current_form = self.get_saved_form( form_definition )
+                message = "The form '%s' has been updated with the changes." % form_definition.name
         # Add a layout grid
-        #
-        elif params.get( 'add_layout_grid', False ):
-            current_form = self.__get_form( trans, **kwd )
-            current_form['layout'].append('')
-            # show the form again
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message=message,
-                                status=status,
-                                response_redirect=response_redirect,
-                                **kwd )
-        #
+        elif params.get( 'add_layout_grid_button', False ):
+            current_form[ 'layout' ].append( '' )
         # Delete a layout grid
-        #
         elif params.get( 'remove_layout_grid_button', False ):
-            current_form = self.__get_form( trans, **kwd )
             index = int( kwd[ 'remove_layout_grid_button' ].split( ' ' )[2] ) - 1
-            del current_form['layout'][index]
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message=message,
-                                status=status,
-                                response_redirect=response_redirect,
-                                **kwd )
-        #
+            del current_form[ 'layout' ][index]
         # Add a field
-        #
         elif params.get( 'add_field_button', False ):
-            current_form = self.__get_form( trans, **kwd )
-            current_form['fields'].append( self.empty_field )
-            # show the form again with one empty field
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message=message,
-                                status=status,
-                                response_redirect=response_redirect,
-                                **kwd )
-        #
+            self.empty_field[ 'label' ] = 'Field_%i' % ( len( current_form[ 'fields' ] ) + 1 )
+            current_form[ 'fields' ].append( self.empty_field )
         # Delete a field
-        #
         elif params.get( 'remove_button', False ):
-            current_form = self.__get_form( trans, **kwd )
             # find the index of the field to be removed from the remove button label
             index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
-            del current_form['fields'][index]
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message=message,
-                                status=status,
-                                response_redirect=response_redirect,
-                                **kwd )
-        #
+            del current_form[ 'fields' ][ index ]
         # Add SelectField option
-        #
         elif 'Add' in kwd.values():
-            return self.__add_selectbox_option(trans, fd, message, status, response_redirect=response_redirect, **kwd)
-        #
+            current_form, status, message = self.__add_select_field_option( trans=trans, 
+                                                                            current_form=current_form,
+                                                                            **kwd)
         # Remove SelectField option
-        #
         elif 'Remove' in kwd.values():
-            return self.__remove_selectbox_option(trans, fd, message, status, response_redirect=response_redirect, **kwd)
-        #
-        # Refresh page
-        #
-        elif params.get( 'refresh', False ):
-            current_form = self.__get_form( trans, **kwd )
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message=message,
-                                status=status,
-                                response_redirect=response_redirect,
-                                **kwd )
-        #
-        # Show the form for editing
-        #
-        else:
-            current_form = self.__get_saved_form( fd )
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message=message,
-                                status=status,
-                                response_redirect=response_redirect,
-                                **kwd )
-            
-    def __add_selectbox_option( self, trans, fd, message, status, response_redirect=None, **kwd ):
-        '''
-        This method adds a selectbox option. The kwd dict searched for
-        the field index which needs to be removed
-        '''
-        current_form = self.__get_form( trans, **kwd )
-        index = -1
-        for k, v in kwd.items():
-            if v == 'Add':
-                # extract the field index from the
-                # button name of format: 'addoption_<field>'
-                index = int(k.split('_')[1])
-                break
-        if index == -1:
-            # something wrong happened
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message='Error in adding selectfield option', 
-                                status='error',
-                                response_redirect=response_redirect,
-                                **kwd )
-        # add an empty option
-        current_form[ 'fields' ][ index ][ 'selectlist' ].append( '' )
-        return self.__show( trans=trans,
-                            form_definition=fd,
-                            current_form=current_form, 
-                            message=message,
-                            status=status,
-                            response_redirect=response_redirect,
-                            **kwd )
-    def __remove_selectbox_option( self, trans, fd, message, status, response_redirect=None, **kwd ):
-        '''
-        This method removes a selectbox option. The kwd dict searched for
-        the field index and option index which needs to be removed
-        '''
-        current_form = self.__get_form( trans, **kwd )
-        option = -1
-        for k, v in kwd.items():
-            if v == 'Remove':
-                # extract the field & option indices from the
-                # button name of format: 'removeoption_<field>_<option>'
-                index = int(k.split('_')[1])
-                option = int(k.split('_')[2])
-                break
-        if option == -1:
-            # something wrong happened
-            return self.__show( trans=trans,
-                                form_definition=fd,
-                                current_form=current_form, 
-                                message='Error in removing selectfield option', 
-                                status='error',
-                                response_redirect=response_redirect,
-                                **kwd )
-        # remove the option
-        del current_form[ 'fields' ][ index ][ 'selectlist' ][ option ]
-        return self.__show( trans=trans,
-                            form_definition=fd,
-                            current_form=current_form, 
-                            message=message,
-                            status=status,
-                            response_redirect=response_redirect,
-                            **kwd )
-
-    
-    def __get_field(self, index, **kwd):
-        '''
-        This method retrieves all the user-entered details of a field and
-        returns a dict.
-        '''
-        params = util.Params( kwd )
-        name = util.restore_text( params.get( 'field_name_%i' % index, '' ) )
-        helptext = util.restore_text( params.get( 'field_helptext_%i' % index, '' ) )
-        required =  params.get( 'field_required_%i' % index, False )
-        field_type = util.restore_text( params.get( 'field_type_%i' % index, '' ) )
-        layout = params.get( 'field_layout_%i' % index, '' )
-        default = params.get( 'field_default_%i' % index, '' )
-        if field_type == 'SelectField':
-            options = self.__get_selectbox_options(index, **kwd)
-            return { 'label': name, 
-                     'helptext': helptext, 
-                     'visible': True,
-                     'required': required,
-                     'type': field_type,
-                     'selectlist': options,
-                     'layout': layout,
-                     'default': default }
-        return { 'label': name, 
-                 'helptext': helptext, 
-                 'visible': True,
-                 'required': required,
-                 'type': field_type,
-                 'layout': layout,
-                 'default': default }
-    def __get_selectbox_options(self, index, **kwd):
-        '''
-        This method gets all the options entered by the user for field when
-        the fieldtype is SelectField 
-        '''
-        params = util.Params( kwd )
-        ctr=0
-        sb_options = []
-        while True:
-            if kwd.has_key( 'field_'+str(index)+'_option_'+str(ctr) ):
-                option = params.get( 'field_'+str(index)+'_option_'+str(ctr), None ) 
-                sb_options.append(util.restore_text(option))
-                ctr = ctr+1
-            else:
-                return sb_options
-    def __get_saved_form(self, fd):
+            current_form, status, message = self.__remove_select_field_option( trans=trans, 
+                                                                               current_form=current_form,
+                                                                               **kwd)
+        return self.show_editable_form_definition( trans=trans,
+                                                   form_definition=form_definition,
+                                                   current_form=current_form, 
+                                                   message=message,
+                                                   status=status,
+                                                   response_redirect=response_redirect,
+                                                   **kwd )
+    def get_saved_form( self, form_definition ):
         '''
         This retrieves the saved form and returns a dictionary containing the name, 
         desc, type, layout & fields of the form
         '''
-        return dict(name = fd.name,
-                    desc = fd.desc,
-                    type = fd.type,
-                    layout = list(copy.deepcopy(fd.layout)),
-                    fields = list(copy.deepcopy(fd.fields)))
-    def __get_form(self, trans, **kwd):
+        if form_definition.type == form_definition.types.SAMPLE:
+            return dict( name=form_definition.name,
+                         desc=form_definition.desc,
+                         type=form_definition.type,
+                         layout=list( copy.deepcopy( form_definition.layout ) ), 
+                         fields=list( copy.deepcopy( form_definition.fields ) ) )
+        return dict( name=form_definition.name,
+                     desc=form_definition.desc,
+                     type=form_definition.type,
+                     layout=[], 
+                     fields=list( copy.deepcopy( form_definition.fields ) ) )
+
+    def get_current_form( self, trans, **kwd ):
         '''
-        This method gets all the user-entered form details and returns a 
+        This method gets all the unsaved user-entered form details and returns a 
         dictionary containing the name, desc, type, layout & fields of the form
         '''
         params = util.Params( kwd )
         name = util.restore_text( params.name ) 
         desc = util.restore_text( params.description ) or ""
-        form_type = util.restore_text( params.form_type_selectbox )
-        # get the user entered layout grids 
+        form_type = util.restore_text( params.form_type_select_field )
+        # get the user entered layout grids in it is a sample form definition
         layout = []
-        index = 0
-        while True:
-            if kwd.has_key( 'grid_layout%i' % index ):
-                grid_name = util.restore_text( params.get( 'grid_layout%i' % index, '' ) )
-                layout.append( grid_name )
-                index = index + 1
-            else:
-                break
+        if form_type == trans.model.FormDefinition.types.SAMPLE:
+            index = 0
+            while True:
+                if kwd.has_key( 'grid_layout%i' % index ):
+                    grid_name = util.restore_text( params.get( 'grid_layout%i' % index, '' ) )
+                    layout.append( grid_name )
+                    index = index + 1
+                else:
+                    break
         # for csv file import
         csv_file = params.get( 'file_data', '' )
         fields = []
@@ -494,8 +279,283 @@ class Forms( BaseController ):
                     type = form_type,
                     layout = layout,
                     fields = fields)
-        
-    def __import_fields(self, trans, csv_file, form_type):
+    def save_form_definition( self, trans, form_definition_current_id=None, **kwd ):
+        '''
+        This method saves the current form 
+        '''
+        # check the form for invalid inputs
+        flag, message = self.__validate_form( **kwd )
+        if not flag:
+            return None, message
+        current_form = self.get_current_form( trans, **kwd )
+        # validate fields
+        for field in current_form[ 'fields' ]:
+            if not field[ 'label' ]:
+                return None, "All the field labels must be completed."
+        # create a new form definition
+        form_definition = trans.app.model.FormDefinition( name=current_form[ 'name' ], 
+                                                          desc=current_form[ 'desc' ], 
+                                                          fields=current_form[ 'fields' ], 
+                                                          form_definition_current=None, 
+                                                          form_type=current_form[ 'type' ], 
+                                                          layout=current_form[ 'layout' ] )
+        if form_definition_current_id: # save changes to the existing form    
+            # change the pointer in the form_definition_current table to point 
+            # to this new record
+            form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( form_definition_current_id )
+        else: # create a new form
+            form_definition_current = trans.app.model.FormDefinitionCurrent()
+        # create corresponding row in the form_definition_current table
+        form_definition.form_definition_current = form_definition_current
+        form_definition_current.latest_form = form_definition
+        trans.sa_session.add( form_definition_current )
+        trans.sa_session.flush()
+        message = "The new form named '%s' has been created. " % (form_definition.name)
+        return form_definition, message
+    def show_editable_form_definition( self, trans, form_definition, current_form, message='', status='done', response_redirect=None, **kwd ):
+        """
+        Displays the form and any of the changes made to it in edit mode. In this method 
+        all the widgets are build for all name, description and all the fields of a form 
+        definition.
+        """
+        params = util.Params( kwd )
+        # name & description
+        form_details = [ ( 'Name', TextField( 'name', 40, current_form[ 'name' ] ) ),
+                         ( 'Description', TextField( 'description', 40, current_form[ 'desc' ] ) ),
+                         ( 'Type', HiddenField( 'form_type_select_field', current_form['type']) ) ]
+        form_layout = []
+        if current_form[ 'type' ] == trans.app.model.FormDefinition.types.SAMPLE:
+            for index, layout_name in enumerate( current_form[ 'layout' ] ):
+                form_layout.append( TextField( 'grid_layout%i' % index, 40, layout_name )) 
+        # fields
+        field_details = []
+        for field_index, field in enumerate( current_form[ 'fields' ] ):
+            field_widgets = self.build_form_definition_field_widgets( trans=trans, 
+                                                                      layout_grids=current_form['layout'], 
+                                                                      field_index=field_index, 
+                                                                      field=field, 
+                                                                      form_type=current_form['type'] )
+            field_details.append( field_widgets )
+        return trans.fill_template( '/admin/forms/edit_form_definition.mako',
+                                    form_details=form_details,
+                                    field_details=field_details,
+                                    form_definition=form_definition,
+                                    field_types=trans.model.FormDefinition.supported_field_types,
+                                    message=message,
+                                    status=status,
+                                    current_form_type=current_form[ 'type' ],
+                                    layout_grids=form_layout,
+                                    response_redirect=response_redirect )
+    @web.expose
+    @web.require_admin 
+    def delete_form_definition( self, trans, **kwd ):
+        id_list = util.listify( kwd['id'] )
+        delete_failed = []
+        for id in id_list:
+            try:
+                form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(id) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='forms',
+                                                                  action='browse_form_definitions',
+                                                                  message='Invalid form',
+                                                                  status='error' ) )
+            form_definition_current.deleted = True
+            trans.sa_session.add( form_definition_current )
+            trans.sa_session.flush()
+        return trans.response.send_redirect( web.url_for( controller='forms',
+                                                          action='browse_form_definitions',
+                                                          message='%i forms have been deleted.' % len(id_list), 
+                                                          status='done') )
+    @web.expose
+    @web.require_admin
+    def undelete_form_definition( self, trans, **kwd ):
+        id_list = util.listify( kwd['id'] )
+        delete_failed = []
+        for id in id_list:
+            try:
+                form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(id) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='forms',
+                                                                  action='browse_form_definitions',
+                                                                  message='Invalid form',
+                                                                  status='error' ) )
+            form_definition_current.deleted = False
+            trans.sa_session.add( form_definition_current )
+            trans.sa_session.flush()
+        return trans.response.send_redirect( web.url_for( controller='forms',
+                                                          action='browse_form_definitions',
+                                                          message='%i forms have been undeleted.' % len(id_list), 
+                                                          status='done') )
+    def build_form_definition_field_widgets( self, trans, layout_grids, field_index, field, form_type ):
+        '''
+        This method returns a list of widgets which describes a form definition field. This 
+        includes the field label, helptext, type, selectfield options, required/optional & layout
+        '''
+        # field name
+        name = TextField( 'field_name_'+str( field_index ), 40, field['label'] )
+        # help text
+        helptext = TextField( 'field_helptext_'+str( field_index ), 40, field['helptext'] )
+        # field type
+        field_type_select_field = SelectField( 'field_type_'+str( field_index ), 
+                                            refresh_on_change=True, 
+                                            refresh_on_change_values=[ SelectField.__name__ ] )
+        # fill up the field type selectfield options
+        field_type_options = []
+        # if the form is for defining samples, then use the sample field types
+        # which does not include TextArea & AddressField
+        if form_type == trans.model.FormDefinition.types.SAMPLE:
+            for supported_field_type in trans.model.Sample.supported_field_types:
+                if supported_field_type.__name__ == field[ 'type' ]:
+                    field_type_select_field.add_option( supported_field_type.__name__, 
+                                                     supported_field_type.__name__, 
+                                                     selected=True )
+                    if supported_field_type.__name__ == SelectField.__name__:
+                        # when field type is Selectfield, add option Textfields 
+                        field_type_options = self.__build_field_type_select_field_options( field, field_index )
+                else:
+                    field_type_select_field.add_option( supported_field_type.__name__, 
+                                                     supported_field_type.__name__ )
+        else:
+            for supported_field_type in trans.model.FormDefinition.supported_field_types:
+                if supported_field_type.__name__ == field[ 'type' ]:
+                    field_type_select_field.add_option( supported_field_type.__name__, 
+                                                     supported_field_type.__name__, 
+                                                     selected=True )
+                    if supported_field_type.__name__ == SelectField.__name__:
+                        # when field type is Selectfield, add option Textfields 
+                        field_type_options = self.__build_field_type_select_field_options( field, field_index )
+                else:
+                    field_type_select_field.add_option( supported_field_type.__name__, 
+                                                     supported_field_type.__name__ )
+        # required/optional radio button
+        required = SelectField( 'field_required_'+str(field_index), display='radio' )
+        if field[ 'required' ] == 'required':
+            required.add_option( 'Required', 'required', selected=True )
+            required.add_option( 'Optional', 'optional' )
+        else:
+            required.add_option( 'Required', 'required' )
+            required.add_option( 'Optional', 'optional', selected=True )
+        # layout grid option select_field
+        if layout_grids and form_type == trans.model.FormDefinition.types.SAMPLE:
+            layout_select_field = SelectField( 'field_layout_'+str( field_index ) )
+            for index, grid_name in enumerate( layout_grids ):
+                layout_select_field.add_option("%i. %s" %( index+1, grid_name ), index )
+        # default value
+        default_value = TextField( 'field_default_'+str(field_index), 
+                                   40, 
+                                   field.get( 'default', '' ) )
+        if layout_grids and form_type == trans.model.FormDefinition.types.SAMPLE:
+            return [ ( 'Field label', name ),
+                     ( 'Help text', helptext ),
+                     ( 'Type', field_type_select_field, field_type_options ),
+                     ( 'Default value', default_value ),
+                     ( '', required ),
+                     ( 'Select the grid layout to place this field', layout_select_field ) ]
+        return [ ( 'Field name', name ),
+                 ( 'Help text', helptext ),
+                 ( 'Type', field_type_select_field, field_type_options),
+                 ( 'Default value', default_value ),
+                 ( '', required) ]
+    def __build_field_type_select_field_options( self, field, field_index ):
+        '''
+        Returns a list of TextFields, one for each select field option
+        '''
+        field_type_options = []
+        if field[ 'selectlist' ]:
+            for ctr, option in enumerate( field[ 'selectlist' ] ):
+                option_textfield = TextField( 'field_'+str( field_index )+'_option_'+str( ctr ), 40, option )
+                field_type_options.append( ( 'Option '+str( ctr+1 ), option_textfield ) )
+        return field_type_options
+    def __add_select_field_option( self, trans, current_form, **kwd ):
+        '''
+        This method adds a select_field option. The kwd dict searched for
+        the field index which needs to be removed
+        '''
+        message='' 
+        status='ok',
+        index = -1
+        for k, v in kwd.items():
+            if v == 'Add':
+                # extract the field index from the
+                # button name of format: 'addoption_<field>'
+                index = int(k.split('_')[1])
+                break
+        if index == -1:
+            # something wrong happened
+            message='Error in adding selectfield option', 
+            status='error',
+            return current_form, status, message
+        # add an empty option
+        current_form[ 'fields' ][ index ][ 'selectlist' ].append( '' )
+        return current_form, status, message
+    def __remove_select_field_option( self, trans, current_form, **kwd ):
+        '''
+        This method removes a select_field option. The kwd dict searched for
+        the field index and option index which needs to be removed
+        '''
+        message='' 
+        status='ok',
+        option = -1
+        for k, v in kwd.items():
+            if v == 'Remove':
+                # extract the field & option indices from the
+                # button name of format: 'removeoption_<field>_<option>'
+                index = int( k.split( '_' )[1] )
+                option = int( k.split( '_' )[2] )
+                break
+        if option == -1:
+            # something wrong happened
+            message='Error in removing selectfield option', 
+            status='error',
+            return current_form, status, message
+        # remove the option
+        del current_form[ 'fields' ][ index ][ 'selectlist' ][ option ]
+        return current_form, status, message
+    def __get_select_field_options( self, index, **kwd ):
+        '''
+        This method gets all the options entered by the user for field when
+        the fieldtype is SelectField 
+        '''
+        params = util.Params( kwd )
+        ctr=0
+        sb_options = []
+        while True:
+            if kwd.has_key( 'field_'+str(index)+'_option_'+str(ctr) ):
+                option = params.get( 'field_'+str(index)+'_option_'+str(ctr), None ) 
+                sb_options.append( util.restore_text( option ) )
+                ctr = ctr+1
+            else:
+                return sb_options
+    def __get_field( self, index, **kwd ):
+        '''
+        This method retrieves all the user-entered details of a field and
+        returns a dict.
+        '''
+        params = util.Params( kwd )
+        name = util.restore_text( params.get( 'field_name_%i' % index, '' ) )
+        helptext = util.restore_text( params.get( 'field_helptext_%i' % index, '' ) )
+        required =  params.get( 'field_required_%i' % index, False )
+        field_type = util.restore_text( params.get( 'field_type_%i' % index, '' ) )
+        layout = params.get( 'field_layout_%i' % index, '' )
+        default = util.restore_text( params.get( 'field_default_%i' % index, '' ) )
+        if field_type == 'SelectField':
+            options = self.__get_select_field_options(index, **kwd)
+            return { 'label': name, 
+                     'helptext': helptext, 
+                     'visible': True,
+                     'required': required,
+                     'type': field_type,
+                     'selectlist': options,
+                     'layout': layout,
+                     'default': default }
+        return { 'label': name, 
+                 'helptext': helptext, 
+                 'visible': True,
+                 'required': required,
+                 'type': field_type,
+                 'layout': layout,
+                 'default': default }
+    def __import_fields( self, trans, csv_file, form_type ):
         '''
         "company","name of the company", "True", "required", "TextField",,
         "due date","turnaround time", "True", "optional", "SelectField","24 hours, 1 week, 1 month"
@@ -534,7 +594,7 @@ class Forms( BaseController ):
                                                               message='Error in importing <b>%s</b> file' % csv_file.file))
         self.__imported_from_file = True
         return fields, list(layouts)
-    def __validate_form(self, **kwd):
+    def __validate_form( self, **kwd ):
         '''
         This method checks the following text inputs are filled out by the user
         - the name of form
@@ -545,177 +605,21 @@ class Forms( BaseController ):
         if not util.restore_text( params.name ):
             return None, 'Form name must be filled.'
         # form type
-        if util.restore_text( params.form_type_selectbox ) == 'none': 
+        if util.restore_text( params.form_type_select_field ) == 'none': 
             return None, 'Form type must be selected.'        
         return True, ''
-    def __save_form(self, trans, fdc_id=None, **kwd):
-        '''
-        This method saves the current form 
-        '''
-        # check the form for invalid inputs
-        flag, message = self.__validate_form(**kwd)
-        if not flag:
-            return None, message
-        current_form = self.__get_form( trans, **kwd )
-        # validate fields
-        for field in current_form[ 'fields' ]:
-            if not field[ 'label' ]:
-                return None, "All the field labels must be completed."
-        # create a new form definition
-        fd = trans.app.model.FormDefinition(name=current_form[ 'name' ], 
-                                            desc=current_form[ 'desc' ], 
-                                            fields=current_form[ 'fields' ], 
-                                            form_definition_current=None, 
-                                            form_type=current_form[ 'type' ], 
-                                            layout=current_form[ 'layout' ] )
-        if fdc_id: # save changes to the existing form    
-            # change the pointer in the form_definition_current table to point 
-            # to this new record
-            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( fdc_id )
-        else: # create a new form
-            fdc = trans.app.model.FormDefinitionCurrent()
-        # create corresponding row in the form_definition_current table
-        fd.form_definition_current = fdc
-        fdc.latest_form = fd
-        trans.sa_session.add( fdc )
-        trans.sa_session.flush()
-        message = "The new form named '%s' has been created. " % (fd.name)
-        return fd, message
-    
-    class FieldUI(object):
-        def __init__(self, trans, layout_grids, index, field=None, field_type=None, form_type=None):
-            '''
-            This method returns a list of widgets which describes a field. This 
-            includes label, helptext, type, & required/optional
-            '''
-            self.index = index
-            self.label = TextField('field_name_'+str(index), 40, '')
-            self.helptext = TextField('field_helptext_'+str(index), 40, '')
-            self.fieldtype = SelectField('field_type_'+str(index), 
-                                         refresh_on_change=True, 
-                                         refresh_on_change_values=['SelectField'])
-            self.selectbox_options = []
-            # if the form is for defining samples, then use the sample field types
-            # which does not include TextArea & AddressField
-            if form_type == trans.model.FormDefinition.types.SAMPLE:
-                for ft in trans.model.Sample.supported_field_types:
-                    self.fieldtype.add_option( ft.__name__, ft.__name__ )
+    def __build_form_types_widget( self, trans, selected='none' ):
+        form_type_select_field = SelectField( 'form_type_select_field' )
+        if selected == 'none':
+            form_type_select_field.add_option( 'Select one', 'none', selected=True )
+        else:
+            form_type_select_field.add_option( 'Select one', 'none' )
+        fd_types = trans.app.model.FormDefinition.types.items()
+        fd_types.sort()
+        for ft in fd_types:
+            if selected == ft[1]:
+                form_type_select_field.add_option( ft[1], ft[1], selected=True )
             else:
-                for ft in trans.model.FormDefinition.supported_field_types:
-                    self.fieldtype.add_option( ft.__name__, ft.__name__ )
-            self.required = SelectField('field_required_'+str(index), display='radio')
-            self.required.add_option('Required', 'required')
-            self.required.add_option('Optional', 'optional', selected=True)
-            self.layout_grids = layout_grids
-            if layout_grids:
-                self.layout_selectbox = SelectField('field_layout_'+str(index))
-                for index, grid_name in enumerate(layout_grids):
-                    self.layout_selectbox.add_option("%i. %s" %(index+1, grid_name), index)
-            # default value
-            self.default = TextField('field_default_'+str(index), 40, '')
-            if field:
-                self.fill(trans, field, field_type, form_type)
-        def fill(self, trans, field, field_type=None, form_type=None):
-            # label
-            self.label.value = field['label']
-            # helptext
-            self.helptext.value = field['helptext']
-            # default value
-            self.default.value = field.get('default', '')
-            # type
-            self.fieldtype = SelectField('field_type_'+str(self.index), 
-                                         refresh_on_change=True, 
-                                         refresh_on_change_values=['SelectField'])
-            if field_type:
-                field['type'] = unicode(field_type)
-            if field_type == 'SelectField' and not field[ 'selectlist' ]:
-                field[ 'selectlist' ] = ['', '']
-            # if the form is for defining samples, then use the sample field types
-            # which does not include TextArea & AddressField
-            if form_type == trans.model.FormDefinition.types.SAMPLE:
-                for ft in trans.model.Sample.supported_field_types:
-                    if ft.__name__ == field[ 'type' ]:
-                        self.fieldtype.add_option( ft.__name__, ft.__name__, selected=True )
-                        if ft.__name__ == 'SelectField':
-                            self.selectbox_ui( field )
-                    else:
-                        self.fieldtype.add_option( ft.__name__, ft.__name__ )
-            else:
-                for ft in trans.model.FormDefinition.supported_field_types:
-                    if ft.__name__ == field[ 'type' ]:
-                        self.fieldtype.add_option( ft.__name__, ft.__name__, selected=True )
-                        if ft.__name__ == 'SelectField':
-                            self.selectbox_ui( field )
-                    else:
-                        self.fieldtype.add_option( ft.__name__, ft.__name__ )
-            # required/optional
-            if field['required'] == 'required':
-                self.required = SelectField('field_required_'+str(self.index), display='radio')
-                self.required.add_option('Required', 'required', selected=True)
-                self.required.add_option('Optional', 'optional')
-            # layout
-            if self.layout_grids:
-                self.layout_selectbox = SelectField('field_layout_'+str(self.index))
-                for i, grid_name in enumerate(self.layout_grids):
-                    if field['layout'] == str(i):
-                        self.layout_selectbox.add_option("%i. %s" %(i+1, grid_name), i, selected=True)
-                    else:
-                        self.layout_selectbox.add_option("%i. %s" %(i+1, grid_name), i)
-        def selectbox_ui(self, field):
-            self.selectbox_options = []
-            if field[ 'selectlist' ]:
-                for ctr, option in enumerate(field[ 'selectlist' ]):
-                    self.selectbox_options.append(('Option '+str(ctr+1),
-                                                   TextField('field_'+str(self.index)+'_option_'+str(ctr), 
-                                                            40, option)))
-        def get(self):
-            if self.layout_grids:
-                return [( 'Label', self.label ),
-                        ( 'Help text', self.helptext ),
-                        ( 'Type', self.fieldtype, self.selectbox_options),
-                        ( 'Default value', self.default ),
-                        ( '', self.required),
-                        ( 'Select the grid layout to place this field', self.layout_selectbox)]
-            return [( 'Label', self.label ),
-                    ( 'Help text', self.helptext ),
-                    ( 'Type', self.fieldtype, self.selectbox_options),
-                    ( 'Default value', self.default ),
-                    ( '', self.required)]
-        def __repr__(self):
-            return str(self.index)+'.'+self.label 
-        def label(self):
-            return str(self.index)+'.'+self.label 
-        
-    def __show( self, trans, form_definition, current_form, message='', status='done', response_redirect=None, **kwd ):
-        """
-        Displays the form and any of the changes made to it, The empty_form param allows for this method to
-        simulate clicking the "add_field_button" on the edit_form_definition.mako page so that the page is
-        displayed with the first field to be added, saving a mouse click.
-        """
-        params = util.Params( kwd )
-        # name & description
-        form_details = [ ( 'Name', TextField( 'name', 40, current_form[ 'name' ] ) ),
-                         ( 'Description', TextField( 'description', 40, current_form[ 'desc' ] ) ),
-                         ( 'Type', HiddenField( 'form_type_selectbox', current_form['type']) ) ]
-        form_layout = []
-        if current_form[ 'type' ] == trans.app.model.FormDefinition.types.SAMPLE:
-            for index, lg in enumerate(current_form[ 'layout' ]):
-                form_layout.append( TextField( 'grid_layout%i' % index, 40, lg )) 
-        # fields
-        field_details = []
-        for index, field in enumerate( current_form[ 'fields' ] ):
-            if current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE:
-                field_ui = self.FieldUI( trans, current_form['layout'], index, field, form_type=current_form['type'] )
-            else:
-                field_ui = self.FieldUI( trans, None, index, field, form_type=current_form['type'] )
-            field_details.append( field_ui.get() )
-        return trans.fill_template( '/admin/forms/edit_form_definition.mako',
-                                    form_details=form_details,
-                                    field_details=field_details,
-                                    form_definition=form_definition,
-                                    field_types=trans.model.FormDefinition.supported_field_types,
-                                    message=message,
-                                    status=status,
-                                    current_form_type=current_form[ 'type' ],
-                                    layout_grids=form_layout,
-                                    response_redirect=response_redirect )
+                form_type_select_field.add_option( ft[1], ft[1] )
+        return form_type_select_field
+

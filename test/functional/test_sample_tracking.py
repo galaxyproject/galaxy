@@ -3,7 +3,7 @@ from galaxy.model.orm import *
 from base.twilltestcase import *
 from base.test_db_util import *
 
-class TestFormsAndRequests( TwillTestCase ):
+class TestFormsAndSampleTracking( TwillTestCase ):
     #
     # ====== Setup Users, Groups & Roles required for this test suite ========= 
     #

@@ -504,7 +504,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             return sample.name + '_' + name
         if option == options.EXPERIMENT_AND_SAMPLE_NAME:
             return sample.request.name + '_' + sample.name + '_' + name
-        if opt == options.EXPERIMENT_NAME:
+        if option == options.EXPERIMENT_NAME:
             return sample.request.name + '_' + name
     def __check_library_add_permission( self, trans, target_library, target_folder ):
         """
