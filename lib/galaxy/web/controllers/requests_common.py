@@ -1198,13 +1198,13 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         else:
             folder = None
         return library, folder
-    def __get_active_folders( self, library ):
+    def __get_active_folders( self, folder, active_folders_list=[] ):
+#        print >> sys.stderr, '#######', [ f.name for f in active_folders_list]
         """Return all of the active folders for the received library"""
-        root_folder = library.root_folder
-        active_folders = [ root_folder ]
-        for folder in root_folder.active_folders:
-            active_folders.append( folder )
-        return active_folders
+        active_folders_list.extend( folder.active_folders )
+        for sub_folder in folder.active_folders:
+            self.__get_active_folders( sub_folder, active_folders_list ) 
+        return active_folders_list
     # ===== Methods for handling form definition widgets =====
     def __get_request_widgets( self, trans, id ):
         """Get the widgets for the request"""
@@ -1402,7 +1402,7 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                    refresh_on_change=True )
         # Get all folders for the selected library, if one is indeed selected
         if selected_library:
-            folders = self.__get_active_folders( selected_library )
+            folders = self.__get_active_folders( selected_library.root_folder, active_folders_list=[] )
             if folder_id:
                 selected_folder_id = folder_id
             elif sample and sample.folder:

@@ -114,7 +114,7 @@
                                     Optional
                                 </div>
                             </div>
-                        %elif not is_complete and sample_operation_selected_value == trans.app.model.Sample.bulk_operations.SELECT_LIBRARY:
+                        %elif sample_operation_selected_value == trans.app.model.Sample.bulk_operations.SELECT_LIBRARY:
                         <% libraries_selected_value = libraries_select_field.get_selected( return_value=True ) %>
                             <div class="form-row">
     	                        <label>Select data library:</label>
