@@ -548,16 +548,21 @@
     ## filtered by a transfer_status value.  The value of title changes based on this filter.
     %if sample_datasets:
         <%
+            trans.sa_session.refresh( sample )
             is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
             is_complete = sample.request.is_complete
             is_submitted = sample.request.is_submitted
             can_select_datasets = is_admin and ( is_complete or is_submitted )
             can_transfer_datasets = is_admin and sample.untransferred_dataset_files
         %>
-	    <script type="text/javascript">
-	        // Sample dataset transfer status updater
-	        dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( sd.id, sd.status ) for sd in sample_datasets ] ) }});
-	    </script>
+        ## The transfer status should update only when the request has been submitted or complete
+        ## and when the sample has in-progress datasets.
+        %if ( is_complete or is_submitted ) and sample.inprogress_dataset_files: 
+		    <script type="text/javascript">
+		        // Sample dataset transfer status updater
+		        dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( sd.id, sd.status ) for sd in sample_datasets ] ) }});
+		    </script>
+	    %endif
         <h3>${title}</h3>
         <table class="grid">
             <thead>
