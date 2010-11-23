@@ -183,7 +183,7 @@
         %if request.samples and request.is_submitted:
             <script type="text/javascript">
                 // Updater
-                updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
+                sample_state_updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
             </script>
         %endif
     </form>

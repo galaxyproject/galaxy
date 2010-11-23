@@ -112,6 +112,24 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                                                                sample=sample),
                                                                                'utf-8' ) }
         return rval
+    @web.json
+    def dataset_transfer_status_updates( self, trans, ids=None, transfer_status_list=None ):
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        # Create new HTML for any that have changed
+        rval = {}
+        if ids is not None and transfer_status_list is not None:
+            ids = map( int, ids.split( "," ) )
+            transfer_status_list = transfer_status_list.split( "," )
+            for id, transfer_status in zip( ids, transfer_status_list ):
+                sample_dataset = trans.sa_session.query( self.app.model.SampleDataset ).get( id )
+                if sample_dataset.status != transfer_status:
+                    rval[ id ] = { "status": sample_dataset.status,
+                                   "html_status": unicode( trans.fill_template( "requests/common/sample_dataset_transfer_status.mako",
+                                                                                sample_dataset=sample_dataset),
+                                                                                'utf-8' ) }
+        return rval
     @web.expose
     @web.require_login( "create sequencing requests" )
     def create_request( self, trans, cntrller, **kwd ):

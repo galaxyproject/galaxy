@@ -69,7 +69,7 @@
         // Looks for changes in sample states using an async request. Keeps
         // calling itself (via setTimeout) until all samples are in a terminal
         // state.
-        var updater = function ( sample_states ) {
+        var sample_state_updater = function ( sample_states ) {
             // Check if there are any items left to track
             var empty = true;
             for ( i in sample_states ) {
@@ -77,11 +77,11 @@
                 break;
             }
             if ( ! empty ) {
-                setTimeout( function() { updater_callback( sample_states ) }, 1000 );
+                setTimeout( function() { sample_state_updater_callback( sample_states ) }, 1000 );
             }
         };
 
-        var updater_callback = function ( sample_states ) {
+        var sample_state_updater_callback = function ( sample_states ) {
             // Build request data
             var ids = []
             var states = []
@@ -102,11 +102,56 @@
                         cell1.html( val.html_state );
                         sample_states[ parseInt( id ) ] = val.state;
                     });
-                    updater( sample_states ); 
+                    sample_state_updater( sample_states ); 
                 },
                 error: function() {
                     // Just retry, like the old method, should try to be smarter
-                    updater( sample_states );
+                    sample_state_updater( sample_states );
+                }
+            });
+        };
+        
+        // Looks for changes in sample dataset transfer status using an async request. Keeps
+        // calling itself (via setTimeout) until all samples are in a terminal
+        // state.
+        var dataset_transfer_status_updater = function ( dataset_transfer_status_list ) {
+            // Check if there are any items left to track
+            var empty = true;
+            for ( i in dataset_transfer_status_list ) {
+                empty = false;
+                break;
+            }
+            if ( ! empty ) {
+                setTimeout( function() { dataset_transfer_status_updater_callback( dataset_transfer_status_list ) }, 1000 );
+            }
+        };
+
+        var dataset_transfer_status_updater_callback = function ( dataset_transfer_status_list ) {
+            // Build request data
+            var ids = []
+            var transfer_status_list = []
+            $.each( dataset_transfer_status_list, function ( id, dataset_transfer_status ) {
+                ids.push( id );
+                transfer_status_list.push( dataset_transfer_status );
+            });
+            // Make ajax call
+            $.ajax( {
+                type: "POST",
+                url: "${h.url_for( controller='requests_common', action='dataset_transfer_status_updates' )}",
+                dataType: "json",
+                data: { ids: ids.join( "," ), transfer_status_list: transfer_status_list.join( "," ) },
+                success : function ( data ) {
+                    $.each( data, function( id, val ) {
+                        // Replace HTML
+                        var cell1 = $("#datasetTransferStatus-" + id);
+                        cell1.html( val.html_status );
+                        dataset_transfer_status_list[ parseInt( id ) ] = val.status;
+                    });
+                    dataset_transfer_status_updater( dataset_transfer_status_list ); 
+                },
+                error: function() {
+                    // Just retry, like the old method, should try to be smarter
+                    dataset_transfer_status_updater( dataset_transfer_status_list ); 
                 }
             });
         };
@@ -509,6 +554,10 @@
             can_select_datasets = is_admin and ( is_complete or is_submitted )
             can_transfer_datasets = is_admin and sample.untransferred_dataset_files
         %>
+	    <script type="text/javascript">
+	        // Sample dataset transfer status updater
+	        dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( sd.id, sd.status ) for sd in sample_datasets ] ) }});
+	    </script>
         <h3>${title}</h3>
         <table class="grid">
             <thead>
@@ -539,7 +588,7 @@
                             %endif
                         </td>
                         <td>${dataset.size}</td>
-                        <td>${dataset.status}</td>
+                        <td id="datasetTransferStatus-${dataset.id}">${dataset.status}</td>
                     </tr>
                 %endfor
             </tbody>

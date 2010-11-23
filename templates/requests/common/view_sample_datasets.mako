@@ -1,6 +1,12 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/requests/common/common.mako" import="render_sample_datasets" />
+<%namespace file="/requests/common/common.mako" import="common_javascripts" />
+
+<%def name="javascripts()">
+   ${parent.javascripts()}
+   ${common_javascripts()}
+</%def>
 
 <%
     is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
