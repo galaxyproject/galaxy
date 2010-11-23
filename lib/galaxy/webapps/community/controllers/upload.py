@@ -115,6 +115,15 @@ class UploadController( BaseController ):
                         if replace_version and replace_id:
                             replace_version.newer_version_id = obj.id
                             trans.sa_session.add( replace_version )
+                            # TODO: should the state be changed to archived?  We'll leave it alone for now
+                            # because if the newer version is deleted, we'll need to add logic to reset the
+                            # the older version back to it's previous state ( possible approved ).
+                            comment = "Replaced by new version %s" % obj.version
+                            event = trans.app.model.Event( state=replace_version.state, comment=comment )
+                            # Flush to get an event id
+                            trans.sa_session.add( event )
+                            trans.sa_session.flush()
+                            tea = trans.app.model.ToolEventAssociation( replace_version, event )
                         trans.sa_session.flush()
                         try:
                             os.link( uploaded_file.name, obj.file_name )

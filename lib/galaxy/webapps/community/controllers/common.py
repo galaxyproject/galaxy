@@ -205,6 +205,7 @@ class CommonController( BaseController, ItemRatings ):
         if not id:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='Select a tool to edit',
                                                               status='error' ) )
         tool = get_tool( trans, id )
@@ -212,6 +213,7 @@ class CommonController( BaseController, ItemRatings ):
         if not can_edit:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='You are not allowed to edit this tool',
                                                               status='error' ) )
         if params.get( 'edit_tool_button', False ):
@@ -306,6 +308,7 @@ class CommonController( BaseController, ItemRatings ):
         if not id:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='Select a tool to view',
                                                               status='error' ) )
         tool = get_tool( trans, id )
@@ -313,6 +316,7 @@ class CommonController( BaseController, ItemRatings ):
         if not can_view:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='You are not allowed to view this tool',
                                                               status='error' ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, tool, webapp_model=trans.model )
@@ -368,6 +372,7 @@ class CommonController( BaseController, ItemRatings ):
             if not trans.app.security_agent.can_delete( trans.user, trans.user_is_admin(), cntrller, tool ):
                 return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                                   action='browse_tools',
+                                                                  cntrller=cntrller,
                                                                   message='You are not allowed to delete this tool',
                                                                   status='error' ) )
             # Create a new event
@@ -382,10 +387,11 @@ class CommonController( BaseController, ItemRatings ):
             trans.sa_session.add_all( ( tool, tea ) )
             trans.sa_session.flush()
             # TODO: What if the tool has versions, should they all be deleted?
-            message = "Tool '%s' has been marked deleted" % tool.name
+            message = "Tool '%s' version %s has been marked deleted" % ( tool.name, tool.version )
             status = 'done'
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='browse_tools',
+                                                          cntrller=cntrller,
                                                           message=message,
                                                           status=status ) )
     @web.expose
@@ -395,12 +401,14 @@ class CommonController( BaseController, ItemRatings ):
         if not id:
             return trans.response.send_redirect( web.url_for( controller='tool',
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='Select a tool to download',
                                                               status='error' ) )
         tool = get_tool( trans, id )
         if not trans.app.security_agent.can_download( trans.user, trans.user_is_admin(), cntrller, tool ):
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='You are not allowed to download this tool',
                                                               status='error' ) )
         trans.response.set_content_type( tool.mimetype )
@@ -416,12 +424,14 @@ class CommonController( BaseController, ItemRatings ):
         if not id:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='Select a tool to upload a new version',
                                                               status='error' ) )
         tool = get_tool( trans, id )
         if not trans.app.security_agent.can_upload_new_version( trans.user, tool ):
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='You are not allowed to upload a new version of this tool',
                                                               status='error' ) )
         return trans.response.send_redirect( web.url_for( controller='upload',
@@ -439,6 +449,7 @@ class CommonController( BaseController, ItemRatings ):
         if not id:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='Select a tool to view its history',
                                                               status='error' ) )
         tool = get_tool( trans, id )
@@ -446,6 +457,7 @@ class CommonController( BaseController, ItemRatings ):
         if not can_view:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message="You are not allowed to view this tool's history",
                                                               status='error' ) )
         can_approve_or_reject = trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), cntrller, tool )
@@ -476,6 +488,7 @@ class CommonController( BaseController, ItemRatings ):
         if not id:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message='Select a tool to rate',
                                                               status='error' ) )
         tool = get_tool( trans, id )
@@ -483,6 +496,7 @@ class CommonController( BaseController, ItemRatings ):
         if not can_rate:
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_tools',
+                                                              cntrller=cntrller,
                                                               message="You are not allowed to rate this tool",
                                                               status='error' ) )
         if params.get( 'rate_button', False ):
@@ -539,15 +553,16 @@ def get_tool( trans, id ):
 def get_latest_versions_of_tools( trans ):
     """Get only the latest version of each tool from the database"""
     return trans.sa_session.query( trans.model.Tool ) \
-                           .filter( trans.model.Tool.newer_version_id == None ) \
-                           .order_by( trans.model.Tool.name )
-def get_approved_tools( trans ):
-    """Get the tools from the database whose state is APPROVED"""
-    approved_tools = []
-    for tool in get_latest_versions_of_tools( trans ):
-        if tool.state == trans.model.Tool.states.APPROVED:
-            approved_tools.append( tool )
-    return approved_tools
+                           .filter( trans.model.Tool.table.c.newer_version_id == None ) \
+                           .order_by( trans.model.Tool.table.c.name )
+def get_latest_versions_of_tools_by_state( trans, state ):
+    """Get only the latest version of each tool whose state is the received state from the database"""
+    tools = []
+    for tool in trans.sa_session.query( trans.model.Tool ) \
+                                .order_by( trans.model.Tool.table.c.name ):
+        if tool.state == state:
+            tools.append( tool )
+    return tools
 def get_event( trans, id ):
     """Get an event from the databse"""
     return trans.sa_session.query( trans.model.Event ).get( trans.security.decode_id( id ) )

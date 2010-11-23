@@ -28,7 +28,7 @@ class ToolStateColumn( grids.StateColumn ):
             pass
         elif column_filter in [ v for k, v in self.model_class.states.items() ]:
             # Get all of the latest Events associated with the current version of each tool
-            latest_event_id_for_current_versions_of_tools = [ tool.latest_event.id for tool in get_latest_versions_of_tools( trans ) ]
+            latest_event_id_for_current_versions_of_tools = [ tool.latest_event.id for tool in get_latest_versions_of_tools_by_state( trans, column_filter ) ]
             # Filter query by the latest state for the current version of each tool
             return query.filter( and_( model.Event.table.c.state == column_filter,
                                        model.Event.table.c.id.in_( latest_event_id_for_current_versions_of_tools ) ) )
@@ -113,6 +113,7 @@ class ToolController( BaseController ):
                         del kwd[ k ]
                 return trans.response.send_redirect( web.url_for( controller='tool',
                                                                   action='browse_tools',
+                                                                  cntrller='tool',
                                                                   **kwd ) )
         # Render the list view
         return self.category_list_grid( trans, **kwd )
@@ -121,6 +122,15 @@ class ToolController( BaseController ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
         # to take this approach because the "-" character is illegal in HTTP requests.
+        if 'operation' not in kwd:
+            # We may have been redirected here after performing an action.  If we were
+            # redirected from the tool controller, we have to add the default tools_by_category
+            # operation to kwd so only tools we should see are displayed.  This implies that
+            # all redirectes from the tool controller added the cntrller value to kwd when
+            # redirecting.
+            cntrller = kwd.get( 'cntrller', None )
+            if cntrller == 'tool':
+                kwd[ 'operation' ] = 'approved_tools'
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_tool":
@@ -187,6 +197,7 @@ class ToolController( BaseController ):
         if not id:
             return trans.response.send_redirect( web.url_for( controller='tool',
                                                               action='browse_tools',
+                                                              cntrller='tool',
                                                               message='Select a tool to download',
                                                               status='error' ) )
         tool = get_tool( trans, id )

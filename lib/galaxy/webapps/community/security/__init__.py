@@ -223,7 +223,7 @@ class CommunityRBACAgent( RBACAgent ):
         # or if the item's state is APPROVED.
         if user and user_is_admin and cntrller == 'admin':
             return True
-        if cntrller in [ 'tool' ] and item.is_approved:
+        if cntrller in [ 'tool' ] and item.is_approved or item.is_archived or item.is_deleted:
             return True
         return user and user==item.user
     def get_all_action_permissions( self, user, user_is_admin, cntrller, item ):
