@@ -29,9 +29,6 @@ space character (probably a bug).
 """
 import sys
 
-#Parse Command Line
-in_file, out_file = sys.argv[1:]
-
 assert sys.version_info[:2] >= ( 2, 4 )
 if sys.version_info[:2] >= ( 2, 5 ):
     import xml.etree.cElementTree as cElementTree
@@ -41,6 +38,12 @@ else:
 def stop_err( msg ):
     sys.stderr.write("%s\n" % msg)
     sys.exit(1)
+
+#Parse Command Line
+try:
+    in_file, out_file = sys.argv[1:]
+except:
+    stop_err("Expect 2 arguments: input BLAST XML file, output tabular file")
 
 tags = ["Hsp_identity",
         "Hsp_align-len",
@@ -86,7 +89,8 @@ for event, elem in context:
                               len(h_seq.replace('-', ' ').split())-1)
                 mismatch = str(len(q_seq) - sum(1 for q,h in zip(q_seq, h_seq) \
                                                 if q == h or q == "-" or h == "-"))
-                assert int(identity) == sum(1 for q,h in zip(q_seq, h_seq) if q == h)
+                expected_idendity = sum(1 for q,h in zip(q_seq, h_seq) if q == h)
+                assert expected_idendity <= int(identity) <= expected_idendity + q_seq.count("X")
 
                 evalue = hsp.findtext("Hsp_evalue")
                 if evalue == "0":
