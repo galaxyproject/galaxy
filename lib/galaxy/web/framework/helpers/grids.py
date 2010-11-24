@@ -297,7 +297,7 @@ class GridColumn( object ):
     def __init__( self, label, key=None, model_class=None, method=None, format=None, \
                   link=None, attach_popup=False, visible=True, ncells=1, \
                   # Valid values for filterable are ['standard', 'advanced', None]
-                  filterable=None, sortable=True ):
+                  filterable=None, sortable=True, label_id_prefix=None ):
         """Create a grid column."""
         self.label = label
         self.key = key
@@ -311,6 +311,7 @@ class GridColumn( object ):
         self.filterable = filterable
         # Column must have a key to be sortable.
         self.sortable = ( self.key is not None and sortable )
+        self.label_id_prefix = label_id_prefix or ''
     def get_value( self, trans, grid, item ):
         if self.method:
             value = getattr( grid, self.method )( trans, item )

@@ -22,7 +22,6 @@
     %if can_transfer_datasets:
         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Manage selected datasets</a></li>
     %endif
-    <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=transfer_status )}">Refresh page</a></li>
     <li><a class="action-button" id="sample-${sample.id}-popup" class="menubutton">Dataset Actions</a></li>
     <div popupmenu="sample-${sample.id}-popup">
         %if can_select_datasets:

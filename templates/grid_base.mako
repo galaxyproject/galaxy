@@ -911,7 +911,7 @@
                                 </div>
                                 %endif
                             %else:
-                                <div id="${id}" class="${cls}"><label for="${encoded_id}">${v}</label></div>
+                                <div id="${id}" class="${cls}"><label id="${column.label_id_prefix}${encoded_id}" for="${encoded_id}">${v}</label></div>
                             %endif
                             </td>
                         %endfor

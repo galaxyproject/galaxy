@@ -120,10 +120,10 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
         # Create new HTML for any that have changed
         rval = {}
         if ids is not None and transfer_status_list is not None:
-            ids = map( int, ids.split( "," ) )
+            ids = ids.split( "," )
             transfer_status_list = transfer_status_list.split( "," )
             for id, transfer_status in zip( ids, transfer_status_list ):
-                sample_dataset = trans.sa_session.query( self.app.model.SampleDataset ).get( id )
+                sample_dataset = trans.sa_session.query( self.app.model.SampleDataset ).get( trans.security.decode_id( id ) )
                 if sample_dataset.status != transfer_status:
                     rval[ id ] = { "status": sample_dataset.status,
                                    "html_status": unicode( trans.fill_template( "requests/common/sample_dataset_transfer_status.mako",

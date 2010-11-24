@@ -66,6 +66,8 @@
             }
         }
 
+        // Sample State Updater
+        // 
         // Looks for changes in sample states using an async request. Keeps
         // calling itself (via setTimeout) until all samples are in a terminal
         // state.
@@ -80,7 +82,6 @@
                 setTimeout( function() { sample_state_updater_callback( sample_states ) }, 1000 );
             }
         };
-
         var sample_state_updater_callback = function ( sample_states ) {
             // Build request data
             var ids = []
@@ -111,9 +112,13 @@
             });
         };
         
+        
+        // Sample Dataset Transfer Status Updater
+        //
+        // It is used to update the transfer status on Manage Datasets page for a sample 
+        // of a sequencing request
         // Looks for changes in sample dataset transfer status using an async request. Keeps
-        // calling itself (via setTimeout) until all samples are in a terminal
-        // state.
+        // calling itself (via setTimeout) until transfer_status is Complete
         var dataset_transfer_status_updater = function ( dataset_transfer_status_list ) {
             // Check if there are any items left to track
             var empty = true;
@@ -125,7 +130,6 @@
                 setTimeout( function() { dataset_transfer_status_updater_callback( dataset_transfer_status_list ) }, 1000 );
             }
         };
-
         var dataset_transfer_status_updater_callback = function ( dataset_transfer_status_list ) {
             // Build request data
             var ids = []
@@ -145,7 +149,7 @@
                         // Replace HTML
                         var cell1 = $("#datasetTransferStatus-" + id);
                         cell1.html( val.html_status );
-                        dataset_transfer_status_list[ parseInt( id ) ] = val.status;
+                        dataset_transfer_status_list[ id ] = val.status;
                     });
                     dataset_transfer_status_updater( dataset_transfer_status_list ); 
                 },
@@ -156,6 +160,25 @@
             });
         };
     </script>
+</%def>
+
+<%def name="transfer_status_updater()">
+    <% 
+        can_update = False
+        if query.count():
+            # Get the first sample dataset to get to the parent sample
+            sample_dataset = query[0]
+            sample = sample_dataset.sample
+            is_complete = sample.request.is_complete
+            is_submitted = sample.request.is_submitted
+            can_update = ( is_complete or is_submitted ) and sample.inprogress_dataset_files
+    %>
+    %if can_update:
+		<script type="text/javascript">
+		    // Sample dataset transfer status updater
+		    dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( sd.id ), sd.status ) for sd in query ] ) }});
+		</script>
+	%endif
 </%def>
 
 <%def name="render_editable_sample_row( cntrller, request, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )">
@@ -560,7 +583,7 @@
         %if ( is_complete or is_submitted ) and sample.inprogress_dataset_files: 
 		    <script type="text/javascript">
 		        // Sample dataset transfer status updater
-		        dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( sd.id, sd.status ) for sd in sample_datasets ] ) }});
+		        dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( sd.id ), sd.status ) for sd in sample_datasets ] ) }});
 		    </script>
 	    %endif
         <h3>${title}</h3>
@@ -574,10 +597,10 @@
             <thead>
             <tbody>
                 %for dataset in sample_datasets:
+                    <% encoded_id = trans.security.encode_id( dataset.id ) %>
                     <tr>
                         <td>
                             %if is_admin:
-                                <% encoded_id = trans.security.encode_id( dataset.id ) %>
                                 <span class="expandLink dataset-${dataset}-click"><span class="rowIcon"></span>
                                     <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="dataset-${dataset.id}-popup">
                                         <a class="dataset-${encoded_id}-click" href="${h.url_for( controller='requests_admin', action='manage_datasets', operation='view', id=trans.security.encode_id( dataset.id ) )}">${dataset.name}</a>
@@ -593,7 +616,7 @@
                             %endif
                         </td>
                         <td>${dataset.size}</td>
-                        <td id="datasetTransferStatus-${dataset.id}">${dataset.status}</td>
+                        <td id="datasetTransferStatus-${encoded_id}">${dataset.status}</td>
                     </tr>
                 %endfor
             </tbody>

@@ -43,7 +43,7 @@ class DataTransferGrid( grids.Grid ):
     # Grid definition
     webapp = "galaxy"
     title = "Sample Datasets"
-    template = "admin/requests/grid.mako"
+    template = "admin/requests/sample_datasets_grid.mako"
     model_class = model.SampleDataset
     default_sort_key = "-create_time"
     num_rows_per_page = 50
@@ -60,7 +60,8 @@ class DataTransferGrid( grids.Grid ):
                           key="update_time", 
                           format=time_ago ),
         StatusColumn( "Status",
-                      filterable="advanced" ),
+                      filterable="advanced",
+                      label_id_prefix='datasetTransferStatus-' ),
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0] ], 
@@ -273,11 +274,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
                                                               dict( controller='requests_common', 
                                                                     action='view_request',
                                                                     cntrller='requests_admin',
-                                                                    id=request_id ) ),
-                                            grids.GridAction( "Refresh page", 
-                                                              dict( controller='requests_admin', 
-                                                                    action='manage_datasets',
-                                                                    sample_id=sample_id ) ) ]
+                                                                    id=request_id ) ) ]
         return self.datatx_grid( trans, **kwd )
     @web.expose
     @web.require_admin
@@ -644,7 +641,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
             except Exception, e:
                 err_msg = "Error sending the data transfer message to the Galaxy AMQP message queue:<br/>%s" % str(e)
         if not err_msg:
-            err_msg = "%i datasets have been queued for transfer from the sequencer. Click the Refresh button above to monitor the transfer status." % len( sample_datasets )
+            err_msg = "%i datasets have been queued for transfer from the sequencer." % len( sample_datasets )
             status = "done"
         else:
             status = 'error'
