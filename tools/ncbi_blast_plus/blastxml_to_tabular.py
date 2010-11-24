@@ -84,13 +84,29 @@ for event, elem in context:
 
                 q_seq = hsp.findtext("Hsp_qseq")
                 h_seq = hsp.findtext("Hsp_hseq")
-                assert len(q_seq) == len(h_seq) == int(length)
+                m_seq = hsp.findtext("Hsp_midline")
+                assert len(q_seq) == len(h_seq) == len(m_seq) == int(length)
                 gapopen = str(len(q_seq.replace('-', ' ').split())-1  + \
                               len(h_seq.replace('-', ' ').split())-1)
-                mismatch = str(len(q_seq) - sum(1 for q,h in zip(q_seq, h_seq) \
-                                                if q == h or q == "-" or h == "-"))
+
+                mismatch = m_seq.count(' ') + m_seq.count('+') \
+                         - q_seq.count('-') - h_seq.count('-')
+                #TODO - Remove this alternative mismatch calculation and test
+                #once satisifed there are no problems
+                expected_mismatch = len(q_seq) \
+                                  - sum(1 for q,h in zip(q_seq, h_seq) \
+                                        if q == h or q == "-" or h == "-")
+                assert expected_mismatch - q_seq.count("X") <= int(mismatch) <= expected_mismatch, \
+                       "%s vs %s mismatches, expected %i <= %i <= %i" \
+                       % (qseqid, sseqid, expected_mismatch - q_seq.count("X"), int(mismatch), expected_mismatch)
+
+                #TODO - Remove this alternative identity calculation and test
+                #once satisifed there are no problems
                 expected_idendity = sum(1 for q,h in zip(q_seq, h_seq) if q == h)
-                assert expected_idendity <= int(identity) <= expected_idendity + q_seq.count("X")
+                assert expected_idendity <= int(identity) <= expected_idendity + q_seq.count("X"), \
+                       "%s vs %s identities, expected %i <= %i <= %i" \
+                       % (qseqid, sseqid, expected_idendity, int(identity), expected_idendity + q_seq.count("X"))
+                
 
                 evalue = hsp.findtext("Hsp_evalue")
                 if evalue == "0":
@@ -110,7 +126,7 @@ for event, elem in context:
                           sseqid,
                           pident,
                           length, #hsp.findtext("Hsp_align-len")
-                          mismatch,
+                          str(mismatch),
                           gapopen,
                           hsp.findtext("Hsp_query-from"), #qstart,
                           hsp.findtext("Hsp_query-to"), #qend,
