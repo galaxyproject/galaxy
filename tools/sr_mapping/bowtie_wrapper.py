@@ -123,6 +123,25 @@ def __main__():
     (options, args) = parser.parse_args()
     stdout = ''
 
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='bowtie --version', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'version' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( '%s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Bowtie version\n' )
+
     # make temp directory for placement of indices and copy reference file there if necessary
     tmp_index_dir = tempfile.mkdtemp()
     # get type of data (solid or solexa)

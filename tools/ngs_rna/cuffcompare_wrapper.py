@@ -23,9 +23,27 @@ def __main__():
     parser.add_option( '', '--input2-tmap-output', dest='input2_tmap_output_file', help='' )
     parser.add_option( '', '--input2-refmap-output', dest='input2_refmap_output_file', help='' )
     
-    
     (options, args) = parser.parse_args()
     
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='cuffcompare 2>&1', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'cuffcompare v' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( '%s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Cuffcompare version\n' )
+
     # Make temp directory for output.
     tmp_output_dir = tempfile.mkdtemp()
     

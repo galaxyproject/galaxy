@@ -350,8 +350,8 @@
         <!-- Test using test data: paired-end reads, index from history. -->
         <test>
             <!-- TopHat commands:
-            bowtie-build -f test-data/tophat_in4.fasta tophat_in4
-            tophat -o tmp_dir -p 1 -r 20 tophat_in4 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            bowtie-build -f test-data/tophat_in1.fasta tophat_in1
+            tophat -o tmp_dir -p 1 -r 20 tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
             -->
             <param name="genomeSource" value="history" />
             <param name="ownFile" ftype="fasta" value="tophat_in1.fasta" />

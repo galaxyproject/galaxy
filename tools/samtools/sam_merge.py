@@ -21,6 +21,24 @@ def __main__():
     if len( sys.argv ) < 3:
         stop_err( 'There are not enough files to merge' )
     filenames = sys.argv[3:]
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='samtools 2>&1', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'version' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( 'Samtools %s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Samtools version\n' )
     cmd = 'samtools merge %s %s %s' % ( outfile, infile, ' '.join( filenames ) )
     tmp = tempfile.NamedTemporaryFile().name
     try:

@@ -1,10 +1,11 @@
-<tool id="PerM" name="Map with PerM" version="1.1.0">
+<tool id="PerM" name="Map with PerM" version="1.1.1">
   <description>for SOLiD and Illumina</description>
   <!-- works with PerM version 0.2.6 -->
   <requirements>
       <requirement type="package">perm</requirement>
   </requirements>
   <command>
+    echo -n "PerM "; PerM 2>&amp;1 | grep "Version";
     PerM
       #if $s.sourceOfRef.refSource == "history"
         $s.sourceOfRef.ref

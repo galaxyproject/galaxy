@@ -152,6 +152,25 @@ def __main__():
     parser.add_option( '', '--lastzSeqsFileDir', dest='lastzSeqsFileDir', help='Directory of local lastz_seqs.loc file' )
     ( options, args ) = parser.parse_args()
 
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='lastz -v', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'version' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( '%s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Lastz version\n' )
+
     if options.unmask == 'yes':
         unmask = '[unmask]'
     else:

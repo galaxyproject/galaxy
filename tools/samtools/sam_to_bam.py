@@ -42,6 +42,25 @@ def __main__():
     parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
     ( options, args ) = parser.parse_args()
 
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='samtools 2>&1', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'version' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( 'Samtools %s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Samtools version\n' )
+
     cached_seqs_pointer_file = '%s/sam_fa_indices.loc' % options.index_dir
     if not os.path.exists( cached_seqs_pointer_file ):
         stop_err( 'The required file (%s) does not exist.' % cached_seqs_pointer_file )

@@ -756,8 +756,27 @@ def __main__():
     parser.add_option( '', '--input4', dest='input4', help='The base quality score 454 file' )
     parser.add_option( '', '--output', dest='output', help='The output file' )
     parser.add_option( '', '--lastz_seqs_file_dir', dest='lastz_seqs_file_dir', help='Directory of local lastz_seqs.loc file' )
-
     ( options, args ) = parser.parse_args()
+
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='lastz -v', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'version' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( '%s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Lastz version\n' )
+
     if options.ref_name:
         ref_name = '[nickname=%s]' % options.ref_name
     else:

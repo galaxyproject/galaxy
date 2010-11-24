@@ -1,4 +1,4 @@
-<tool id="lastz_wrapper_2" name="Lastz" version="1.2.0">
+<tool id="lastz_wrapper_2" name="Lastz" version="1.2.1">
     <description> map short reads against reference sequence</description>
     <command interpreter="python">lastz_wrapper.py
       #if $seq_name.how_to_name=="yes":
@@ -146,7 +146,7 @@
             You need to point to phiX.2bit somewhere on your system. b1.fasta is located in galaxy's test-data.  You will have to replace all the pluses before the
             commands with 2 dashes, as double-dash can't appear in an XML comment.
             -->
-            <param name="input2" value="b1.fasta" ftype="fasta" dbkey="phiX" />
+            <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="cached" />
             <!-- this is the backwards-compatible "unique value" for this file, not an actual path -->
             <param name="input1_2bit" value="/galaxy/data/phiX/seq/phiX.2bit" />
@@ -226,7 +226,7 @@
     </tests>
     <help>
         
-**What it does**    
+**What it does**
         
 **LASTZ** is a high performance pairwise sequence aligner derived from BLASTZ. It is written by Bob Harris in Webb Miller's laboratory at Penn State University. Special scoring sets were derived to improve runtime performance and quality. This Galaxy version of LASTZ is geared towards aligning short (Illumina/Solexa, AB/SOLiD) and medium (Roche/454) reads against a reference sequence. There is excellent, extensive documentation on LASTZ available here_.
 

@@ -72,6 +72,26 @@ def __main__():
     parser.add_option( '-X', '--do_not_build_index', dest='do_not_build_index', help="Don't build index" )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
     (options, args) = parser.parse_args()
+
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='bwa 2>&1', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'version' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( 'BWA %s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine BWA version\n' )
+
     # make temp directory for placement of indices
     tmp_index_dir = tempfile.mkdtemp()
     tmp_dir = tempfile.mkdtemp()

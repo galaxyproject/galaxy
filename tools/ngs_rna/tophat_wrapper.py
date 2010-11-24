@@ -67,6 +67,21 @@ def __main__():
 
     (options, args) = parser.parse_args()
 
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='tophat -v', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = open( tmp_stdout.name, 'rb' ).readline().strip()
+        if stdout:
+            sys.stdout.write( '%s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Tophat version\n' )
+
     # Creat bowtie index if necessary.
     tmp_index_dir = tempfile.mkdtemp()
     if options.own_file:

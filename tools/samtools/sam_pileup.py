@@ -49,6 +49,24 @@ def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
     seqPath = check_seq_file( options.dbkey, options.indexDir )
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='samtools 2>&1', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'version' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( 'Samtools %s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Samtools version\n' )
     #prepare file names 
     tmpDir = tempfile.mkdtemp()
     tmpf0 = tempfile.NamedTemporaryFile( dir=tmpDir )

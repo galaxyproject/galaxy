@@ -43,6 +43,25 @@ def __main__():
     
     (options, args) = parser.parse_args()
     
+    # output version # of tool
+    try:
+        tmp = tempfile.NamedTemporaryFile().name
+        tmp_stdout = open( tmp, 'wb' )
+        proc = subprocess.Popen( args='cuffdiff 2>&1', shell=True, stdout=tmp_stdout )
+        tmp_stdout.close()
+        returncode = proc.wait()
+        stdout = None
+        for line in open( tmp_stdout.name, 'rb' ):
+            if line.lower().find( 'cuffdiff v' ) >= 0:
+                stdout = line.strip()
+                break
+        if stdout:
+            sys.stdout.write( '%s\n' % stdout )
+        else:
+            raise Exception
+    except:
+        sys.stdout.write( 'Could not determine Cuffdiff version\n' )
+
     # Make temp directory for output.
     tmp_output_dir = tempfile.mkdtemp()
     
