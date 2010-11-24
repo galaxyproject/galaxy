@@ -1,4 +1,4 @@
-<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.1">
+<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.2">
     <description>Convert BLAST XML output to tabular</description>
     <command interpreter="python">
       blastxml_to_tabular.py $blastxml_file $tabular_file
@@ -12,6 +12,11 @@
     <requirements>
     </requirements>
     <tests>
+        <test>
+            <param name="blastxml_file" value="blastp_sample.xml" ftype="blastxml" />
+            <!-- Note this has some white space differences from the actual blastp output -->
+            <output name="tabular_file" file="blastp_sample_converted.tabular" ftype="tabular" />
+        </test>
     </tests>
     <help>
     
