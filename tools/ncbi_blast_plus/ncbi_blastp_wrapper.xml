@@ -136,11 +136,29 @@ $adv_opts.parse_deflines
             <param name="subject" value="rhodopsin_proteins.fasta" ftype="fasta" />
             <param name="database" value="" />
             <param name="evalue_cutoff" value="1e-8" />
-            <!-- Why can't I leave these out to get the defaults given above? -->
-            <param name="blast_type" value="blastp" />
-            <param name="out_format" value="6" />
-            <param name="adv_opts_selector" value="basic" />
+            <param name="adv_opts_selector" value="advanced" />
+            <param name="filter_query" value="True" />
+            <param name="matrix" value="BLOSUM62" />
+            <param name="max_hits" value="0" />
+            <param name="word_size" value="0" />
+            <param name="parse_deflines" value="True" />
             <output name="output1" file="blastp_four_human_vs_rhodopsin.tabular" ftype="tabular" />
+        </test>
+        <test>
+            <param name="query" value="four_human_proteins.fasta" ftype="fasta" />
+            <param name="db_opts_selector" value="file" />
+            <param name="subject" value="rhodopsin_proteins.fasta" ftype="fasta" />
+            <param name="database" value="" />
+            <param name="evalue_cutoff" value="1e-8" />
+            <param name="blast_type" value="blastp" />
+            <param name="out_format" value="6 std sallseqid score nident positive gaps ppos qframe sframe qseq sseq" />
+            <param name="adv_opts_selector" value="advanced" />
+            <param name="filter_query" value="True" />
+            <param name="matrix" value="BLOSUM62" />
+            <param name="max_hits" value="0" />
+            <param name="word_size" value="0" />
+            <param name="parse_deflines" value="True" />
+            <output name="output1" file="blastp_four_human_vs_rhodopsin_22c.tabular" ftype="tabular" />
         </test>
         <test>
             <param name="query" value="rhodopsin_proteins.fasta" ftype="fasta" />
@@ -148,7 +166,6 @@ $adv_opts.parse_deflines
             <param name="subject" value="four_human_proteins.fasta" ftype="fasta" />
             <param name="database" value="" />
             <param name="evalue_cutoff" value="1e-8" />
-            <!-- Why can't I leave these out to get the defaults given above? -->
             <param name="blast_type" value="blastp" />
             <param name="out_format" value="6" />
             <param name="adv_opts_selector" value="basic" />
