@@ -13,7 +13,7 @@ import pkg_resources
 def _get_build_platform():
     plat = pkg_resources._get_build_platform()
     if sys.version_info[:2] == ( 2, 5 ) and \
-        ( ( os.uname()[-1] in ( 'i386', 'ppc' ) and sys.platform == 'darwin' and os.path.abspath( sys.prefix ).startswith( '/System' ) ) or \
+        ( ( os.uname()[-1] in ( 'x86_64', 'i386', 'ppc' ) and sys.platform == 'darwin' and os.path.abspath( sys.prefix ).startswith( '/System' ) ) or \
           ( sys.platform == 'darwin' and get_config_vars().get('UNIVERSALSDK', '').strip() ) ):
         plat = 'macosx-10.3-fat'
     if sys.platform == "sunos5" and not (plat.endswith('_32') or plat.endswith('_64')):
