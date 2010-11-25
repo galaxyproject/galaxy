@@ -176,20 +176,24 @@ using the NCBI BLAST+ tblastn command line tool.
 
 Because Galaxy focuses on processing tabular data, the default output of this tool is tabular. This contains 12 columns:
 
-1. Id of your sequence 
-2. GI of the database hit 
-3. % identity
-4. Alignment length
-5. # mismatches
-6. # gaps
-7. Start position in your sequence
-8. End position in your sequence
-9. Start position in database hit
-10. End position in database hit
-11. E-value
-12. Bit score
+====== ========= ============================================
+Column NCBI name Description
+------ --------- --------------------------------------------
+     1 qseqid    Query Seq-id (ID of your sequence)
+     2 sseqid    Subject Seq-id (ID of the database hit)
+     3 pident    Percentage of identical matches
+     4 length    Alignment length
+     5 mismatch  Number of mismatches
+     6 gapopen   Number of gap openings
+     7 qstart    Start of alignment in query
+     8 qend      End of alignment in query
+     9 sstart    Start of alignment in subject (database hit)
+    10 send      End of alignment in subject (database hit)
+    11 evalue    Expectation value (E-value)
+    12 bitscore  Bit score
+====== ========= ============================================
 
-The second option is BLAST XML output, which is designed to be parsed by another program, and is understood by other Galaxy tools.
+The second option is BLAST XML output, which is designed to be parsed by another program, and is understood by some Galaxy tools.
 
 You can also choose several plain text or HTML output formats which are designed to be read by a person (not by another program).
 The HTML versions use basic webpage formatting and can include links to the hits on the NCBI website.
