@@ -1,10 +1,14 @@
-<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.3">
+<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.4">
     <description>Convert BLAST XML output to tabular</description>
     <command interpreter="python">
-      blastxml_to_tabular.py $blastxml_file $tabular_file
+      blastxml_to_tabular.py $blastxml_file $tabular_file $out_format
     </command>
     <inputs>
         <param name="blastxml_file" type="data" format="blastxml" label="BLAST results as XML"/> 
+        <param name="out_format" type="select" label="Output format">
+            <option value="std" selected="True">Tabular (standard 12 columns)</option>
+            <option value="x22">Tabular (extended 22 columns)</option>
+        </param>
     </inputs>
     <outputs>
         <data name="tabular_file" format="tabular" label="BLAST results as tabular" />
@@ -14,13 +18,33 @@
     <tests>
         <test>
             <param name="blastxml_file" value="blastp_sample.xml" ftype="blastxml" />
+            <param name="out_format" value="std" />
             <!-- Note this has some white space differences from the actual blastp output -->
             <output name="tabular_file" file="blastp_sample_converted.tabular" ftype="tabular" />
         </test>
         <test>
             <param name="blastxml_file" value="blastx_sample.xml" ftype="blastxml" />
+            <param name="out_format" value="std" />
             <!-- Note this has some white space differences from the actual blastx output -->
             <output name="tabular_file" file="blastx_sample_converted.tabular" ftype="tabular" />
+        </test>
+        <test>
+            <param name="blastxml_file" value="blastp_human_vs_pdb.xml" ftype="blastxml" />
+            <param name="out_format" value="std" />
+            <output name="tabular_file" file="blastp_human_vs_pdb_converted_std.tabular" ftype="tabular" />
+            <!--
+            Reference output is blastp_human_vs_pdb_std.tabular
+            Note slight disagreement in column 3, percentage identity.
+            -->
+        </test>
+        <test>
+            <param name="blastxml_file" value="blastp_human_vs_pdb.xml" ftype="blastxml" />
+            <param name="out_format" value="x22" />
+            <output name="tabular_file" file="blastp_human_vs_pdb_converted_x22.tabular" ftype="tabular" />
+            <!--
+            Reference output is blastp_human_vs_pdb_x22.tabular
+            Note this has XXX masking in the sequence, but the XML file does not (BLAST oddity)
+            -->
         </test>
     </tests>
     <help>
@@ -32,8 +56,8 @@ formats including tabular and a more detailed XML format. A complex workflow
 may need both the XML and the tabular output - but running BLAST twice is
 slow and wasteful.
 
-This tool takes the BLAST XML output and converts it into the standard 12
-column tabular equivalent:
+This tool takes the BLAST XML output and by default converts it into the
+standard 12 column tabular equivalent:
 
 ====== ========= ============================================
 Column NCBI name Description
@@ -51,6 +75,32 @@ Column NCBI name Description
     11 evalue    Expectation value (E-value)
     12 bitscore  Bit score
 ====== ========= ============================================
+
+The BLAST+ tools can optionally output additional columns of information,
+but this takes longer to calculate. Most (but not all) of these columns are
+included by selecting the extended tabular output. The extra columns are
+included *after* the standard 12 columns. This is so that you can write
+workflow filtering steps that accept either the 12 or 22 column tabular
+BLAST output.
+
+====== ============= ===========================================
+Column NCBI name     Description
+------ ------------- -------------------------------------------
+    13 sallseqid     All subject Seq-id(s), separated by a ';'
+    14 score         Raw score
+    15 nident        Number of identical matches
+    16 positive      Number of positive-scoring matches
+    17 gaps          Total number of gaps
+    18 ppos          Percentage of positive-scoring matches
+    19 qframe        Query frame
+    20 sframe        Subject frame
+    21 qseq          Aligned part of query sequence
+    22 sseq          Aligned part of subject sequence
+====== ============= ===========================================
+
+Beware that the XML file (and thus the conversion) contains the original
+aligned sequences, but the tabular output direct from BLAST+ may use XXXX
+masking on regions of low complexity (columns 21 and 22).
 
     </help>
 </tool>
