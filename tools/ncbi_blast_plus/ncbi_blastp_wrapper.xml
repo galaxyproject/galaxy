@@ -84,7 +84,7 @@ $adv_opts.parse_deflines
             <when value="basic" />
             <when value="advanced">
                 <!-- Could use a select (yes, no, other) where other allows setting 'window locut hicut' -->
-                <param name="filter_query" type="boolean" label="Filter out low complexity regions (with SEG)" truevalue="-seg yes" falsevalue="-seg no" checked="true" />
+                <param name="filter_query" type="boolean" label="Filter out low complexity regions (with SEG)" truevalue="-seg yes" falsevalue="-seg no" checked="false" />
                 <param name="matrix" type="select" label="Scoring matrix">
                     <option value="BLOSUM90">BLOSUM90</option>
                     <option value="BLOSUM80">BLOSUM80</option>
