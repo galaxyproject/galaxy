@@ -27,11 +27,13 @@
     
 **What it does**
 
-NCBI BLAST+ (and the older NCBI 'legacy' BLAST) can output in a range of formats including
-tabular and a more detailed XML format. A complex workflow may need both the XML and the
-tabular output.
+NCBI BLAST+ (and the older NCBI 'legacy' BLAST) can output in a range of
+formats including tabular and a more detailed XML format. A complex workflow
+may need both the XML and the tabular output - but running BLAST twice is
+slow and wasteful.
 
-This tool takes the BLAST XML output and converts it into the 12 column tabular equivalent:
+This tool takes the BLAST XML output and converts it into the standard 12
+column tabular equivalent:
 
 ====== ========= ============================================
 Column NCBI name Description
