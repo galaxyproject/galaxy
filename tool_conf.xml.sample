@@ -215,6 +215,17 @@
     <tool file="fastx_toolkit/fasta_nucleotide_changer.xml" />
     <tool file="fastx_toolkit/fastx_collapser.xml" />
   </section>
+  <!-- The BLAST+ tools are not hosted on Galaxy Test but are provided for
+       local installations
+  <section name="NCBI BLAST+" id="ncbi_blast_plus_tools">
+   <tool file="ncbi_blast_plus/ncbi_blastn_wrapper.xml" />
+   <tool file="ncbi_blast_plus/ncbi_blastp_wrapper.xml" />
+   <tool file="ncbi_blast_plus/ncbi_blastx_wrapper.xml" />
+   <tool file="ncbi_blast_plus/ncbi_tblastn_wrapper.xml" />
+   <tool file="ncbi_blast_plus/ncbi_tblastx_wrapper.xml" />
+   <tool file="ncbi_blast_plus/blastxml_to_tabular.xml" />
+  </section>
+  -->
   <section name="NGS: QC and manipulation" id="cshl_library_information">
     <label text="Illumina data" id="illumina" />
         <tool file="fastq/fastq_groomer.xml" />
@@ -263,17 +274,6 @@
         <label text="Velvet" id="velvet"/>
         <tool file="sr_assembly/velvetg.xml" />
         <tool file="sr_assembly/velveth.xml" />
-  </section>
-  -->
-  <!-- The BLAST+ tools are not hosted on Galaxy Test but are provided for
-       local installations
-  <section name="NCBI BLAST+" id="ncbi_blast_plus_tools">
-   <tool file="ncbi_blast_plus/ncbi_blastn_wrapper.xml" />
-   <tool file="ncbi_blast_plus/ncbi_blastp_wrapper.xml" />
-   <tool file="ncbi_blast_plus/ncbi_blastx_wrapper.xml" />
-   <tool file="ncbi_blast_plus/ncbi_tblastn_wrapper.xml" />
-   <tool file="ncbi_blast_plus/ncbi_tblastx_wrapper.xml" />
-   <tool file="ncbi_blast_plus/blastxml_to_tabular.xml" />
   </section>
   -->
   <section name="NGS: Mapping" id="solexa_tools">
