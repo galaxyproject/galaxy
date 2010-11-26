@@ -1,4 +1,4 @@
-<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.4">
+<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.5">
     <description>Convert BLAST XML output to tabular</description>
     <command interpreter="python">
       blastxml_to_tabular.py $blastxml_file $tabular_file $out_format
@@ -27,24 +27,6 @@
             <param name="out_format" value="std" />
             <!-- Note this has some white space differences from the actual blastx output -->
             <output name="tabular_file" file="blastx_sample_converted.tabular" ftype="tabular" />
-        </test>
-        <test>
-            <param name="blastxml_file" value="blastp_human_vs_pdb.xml" ftype="blastxml" />
-            <param name="out_format" value="std" />
-            <output name="tabular_file" file="blastp_human_vs_pdb_converted_std.tabular" ftype="tabular" />
-            <!--
-            Reference output is blastp_human_vs_pdb_std.tabular
-            Note slight disagreement in column 3, percentage identity.
-            -->
-        </test>
-        <test>
-            <param name="blastxml_file" value="blastp_human_vs_pdb.xml" ftype="blastxml" />
-            <param name="out_format" value="x22" />
-            <output name="tabular_file" file="blastp_human_vs_pdb_converted_x22.tabular" ftype="tabular" />
-            <!--
-            Reference output is blastp_human_vs_pdb_x22.tabular
-            Note this has XXX masking in the sequence, but the XML file does not (BLAST oddity)
-            -->
         </test>
     </tests>
     <help>
