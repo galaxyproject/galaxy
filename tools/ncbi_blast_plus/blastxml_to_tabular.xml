@@ -1,4 +1,4 @@
-<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.5">
+<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.6">
     <description>Convert BLAST XML output to tabular</description>
     <command interpreter="python">
       blastxml_to_tabular.py $blastxml_file $tabular_file $out_format
@@ -19,7 +19,7 @@
         <test>
             <param name="blastxml_file" value="blastp_sample.xml" ftype="blastxml" />
             <param name="out_format" value="std" />
-            <!-- Note this has some white space differences from the actual blastp output -->
+            <!-- Note this has some white space differences from the actual blastx output -->
             <output name="tabular_file" file="blastp_sample_converted.tabular" ftype="tabular" />
         </test>
         <test>
@@ -27,6 +27,18 @@
             <param name="out_format" value="std" />
             <!-- Note this has some white space differences from the actual blastx output -->
             <output name="tabular_file" file="blastx_sample_converted.tabular" ftype="tabular" />
+        </test>
+        <test>
+            <param name="blastxml_file" value="blastp_human_vs_pdb_seg_no.xml" ftype="blastxml" />
+            <param name="out_format" value="std" />
+            <!-- Note this has some white space differences from the actual blastp output -->
+            <output name="tabular_file" file="blastp_human_vs_pdb_seg_no_converted_std.tabular" ftype="tabular" />
+        </test>
+        <test>
+            <param name="blastxml_file" value="blastp_human_vs_pdb_seg_no.xml" ftype="blastxml" />
+            <param name="out_format" value="x22" />
+            <!-- Note this has some white space differences from the actual blastp output -->
+            <output name="tabular_file" file="blastp_human_vs_pdb_seg_no_converted_x22.tabular" ftype="tabular" />
         </test>
     </tests>
     <help>
