@@ -165,7 +165,7 @@ for event, elem in context:
 
                 if extended:
                     hit_def = sseqid + " " + hit.findtext("Hit_def")
-                    sallseqid = ":".join(name.split(None,1)[0] for name in hit_def.split(">"))
+                    sallseqid = ";".join(name.split(None,1)[0] for name in hit_def.split(">"))
                     #print hit_def, "-->", sallseqid
                     positive = hsp.findtext("Hsp_positive")
                     ppos = "%0.2f" % (100*float(positive)/float(length))
