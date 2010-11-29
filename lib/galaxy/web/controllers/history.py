@@ -493,7 +493,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                                 )
                                 
         # Run job to do import.
-        history_imp_tool = trans.app.toolbox.tools_by_id[ '__IMPORT_HISTORY__' ]
+        history_imp_tool = trans.app.toolbox.tools_by_id[ '__import_history__' ]
         incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
         history_imp_tool.execute( trans, incoming=incoming )
         return trans.show_message( "Importing history from '%s'. \
@@ -550,7 +550,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                         % ( { 'n' : history.name, 's' : url_for( action="export_archive", id=id, qualified=True ) } ) )
                     
         # Run job to do export.
-        history_exp_tool = trans.app.toolbox.tools_by_id[ '__EXPORT_HISTORY__' ]
+        history_exp_tool = trans.app.toolbox.tools_by_id[ '__export_history__' ]
         params = { 
             'history_to_export' : history, 
             'compress' : gzip, 
