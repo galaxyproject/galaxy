@@ -439,7 +439,11 @@ class Forms( BaseController ):
         if layout_grids and form_type == trans.model.FormDefinition.types.SAMPLE:
             layout_select_field = SelectField( 'field_layout_'+str( field_index ) )
             for index, grid_name in enumerate( layout_grids ):
-                layout_select_field.add_option("%i. %s" %( index+1, grid_name ), index )
+                if str( field.get( 'layout', None ) ) == str( index ): #existing behavior: integer indexes are stored as strings.
+                    grid_selected = True
+                else:
+                    grid_selected = False
+                layout_select_field.add_option("%i. %s" %( index+1, grid_name ), index, selected=grid_selected )
         # default value
         default_value = TextField( 'field_default_'+str(field_index), 
                                    40, 
