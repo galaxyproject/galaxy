@@ -202,7 +202,7 @@ class DefaultToolAction( object ):
         for name, output in tool.outputs.items():
             for filter in output.filters:
                 try:
-                    if not eval( filter.text, globals(), incoming ):
+                    if not eval( filter.text.strip(), globals(), incoming ):
                         break #do not create this dataset
                 except Exception, e:
                     log.debug( 'Dataset output filter failed: %s' % e )
