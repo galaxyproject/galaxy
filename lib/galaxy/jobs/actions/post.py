@@ -1,10 +1,6 @@
-import logging, datetime
-
-from galaxy.util.json import to_json_string
-
-#  For email notification PJA
+import logging, datetime, smtplib
 from email.MIMEText import MIMEText
-import smtplib
+from galaxy.util.json import to_json_string
 
 log = logging.getLogger( __name__ )
 
@@ -39,7 +35,6 @@ def get_form_template(action_type, title, content, help, on_output = True ):
 class DefaultJobAction(object):
     name = "DefaultJobAction"
     verbose_name = "Default Job"
-
     
     @classmethod
     def execute(cls, app, sa_session, action, job):
@@ -132,7 +127,7 @@ class ChangeDatatypeAction(DefaultJobAction):
 			    <select id='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype' name='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>\
 		        %s\
 		        </select>";
-	        if (pja.action_arguments != undefined && pja.action_arguments.newtype != undefined){
+	        if (pja.action_arguments !== undefined && pja.action_arguments.newtype !== undefined){
                  p_str += "<scrip" + "t type='text/javascript'>$('#pja__" + pja.output_name + "__ChangeDatatypeAction__newtype').val('" + pja.action_arguments.newtype + "');</scrip" + "t>";
 	        }
 		    """ % dt_list
@@ -159,7 +154,7 @@ class RenameDatasetAction(DefaultJobAction):
     @classmethod
     def get_config_form(cls, trans):
         form = """
-			if ((pja.action_arguments != undefined) && (pja.action_arguments.newname != undefined)){
+			if ((pja.action_arguments !== undefined) && (pja.action_arguments.newname !== undefined)){
 				p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
 				          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value='"+pja.action_arguments.newname + "'/>";
 			}
@@ -191,12 +186,11 @@ class HideDatasetAction(DefaultJobAction):
 
     @classmethod
     def get_config_form(cls, trans):
-        form = """
-        	p_str += "<label for='pja__"+pja.output_name+"__HideDatasetAction'>There are no additional options for this action.</label>\
-        	            <input type='hidden' name='pja__"+pja.output_name+"__HideDatasetAction'/>";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will hide the result dataset.")
-
+        return  """
+                if (pja.action_type == "HideDatasetAction"){
+                    p_str += "<input type='hidden' name='pja__"+pja.output_name+"__HideDatasetAction'/>";
+                }
+                """
     @classmethod
     def get_short_str(cls, trans):
         return "Hide this dataset."
@@ -245,13 +239,12 @@ class ColumnSetAction(DefaultJobAction):
     @classmethod
     def get_config_form(cls, trans):
         form = """
-            var chrom_col = ''
-            if (pja.action_arguments != undefined){
-                (pja.action_arguments.chromCol == undefined) ? chromCol = "" : chromCol=pja.action_arguments.chromCol;
-                (pja.action_arguments.startCol == undefined) ? startCol = "" : startCol=pja.action_arguments.startCol;
-                (pja.action_arguments.endCol == undefined) ? endCol = "" : endCol=pja.action_arguments.endCol;
-                (pja.action_arguments.strandCol == undefined) ? strandCol = "" : strandCol=pja.action_arguments.strandCol;
-                (pja.action_arguments.nameCol == undefined) ? nameCol = "" : nameCol=pja.action_arguments.nameCol;
+            if (pja.action_arguments !== undefined){
+                (pja.action_arguments.chromCol === undefined) ? chromCol = "" : chromCol=pja.action_arguments.chromCol;
+                (pja.action_arguments.startCol === undefined) ? startCol = "" : startCol=pja.action_arguments.startCol;
+                (pja.action_arguments.endCol === undefined) ? endCol = "" : endCol=pja.action_arguments.endCol;
+                (pja.action_arguments.strandCol === undefined) ? strandCol = "" : strandCol=pja.action_arguments.strandCol;
+                (pja.action_arguments.nameCol === undefined) ? nameCol = "" : nameCol=pja.action_arguments.nameCol;
             }else{
                 chromCol = '';
                 startCol = '';
@@ -326,6 +319,7 @@ class ActionBox(object):
                 # "SetMetadataAction" : SetMetadataAction,
                 # "DeleteDatasetAction" : DeleteDatasetAction,
                 }
+    public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction', 'ColumnSetAction', 'EmailAction']
     immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction']
 
     @classmethod
@@ -360,7 +354,7 @@ class ActionBox(object):
     @classmethod
     def get_add_list(cls):
         addlist = "<select id='new_pja_list' name='new_pja_list'>"
-        for action in ActionBox.actions:
+        for action in ActionBox.public_actions:
             addlist += "<option value='%s'>%s</option>" % (ActionBox.actions[action].name, ActionBox.actions[action].verbose_name)
         addlist += "</select>"
         return addlist
