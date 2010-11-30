@@ -743,6 +743,9 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             if upload_option == 'upload_paths' and not trans.app.config.allow_library_path_paste:
                 error = True
                 message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
+            elif upload_option == 'upload_paths' and not is_admin:
+                error = True
+                message = 'Uploading files via filesystem paths can only be performed by administrators'
             elif roles:
                 # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
                 # on the dataset that would cause accessibility issues.
@@ -905,7 +908,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             action = trans.app.config.nginx_upload_path + '?nginx_redir=' + web.url_for( controller='library_common', action='upload_library_dataset' )
         else:
             action = web.url_for( controller='library_common', action='upload_library_dataset' )
-        upload_option_select_list = self._build_upload_option_select_list( trans, upload_option )
+        upload_option_select_list = self._build_upload_option_select_list( trans, upload_option, is_admin )
         roles_select_list = self._build_roles_select_list( trans, cntrller, library, util.listify( roles ) )
         return trans.fill_template( '/library/common/upload.mako',
                                     cntrller=cntrller,
@@ -1251,7 +1254,7 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
                 history = trans.get_history()
                 trans.sa_session.refresh( history )
                 action = 'add_history_datasets_to_library'
-                upload_option_select_list = self._build_upload_option_select_list( trans, upload_option )
+                upload_option_select_list = self._build_upload_option_select_list( trans, upload_option, is_admin )
                 roles_select_list = self._build_roles_select_list( trans, cntrller, library, util.listify( roles ) )
                 return trans.fill_template( "/library/common/upload.mako",
                                             cntrller=cntrller,
@@ -1288,13 +1291,21 @@ class LibraryCommon( BaseController, UsesFormDefinitionWidgets ):
             return roles_select_list
         else:
             return None
-    def _build_upload_option_select_list( self, trans, upload_option ):
+    def _build_upload_option_select_list( self, trans, upload_option, is_admin ):
         # Build the upload_option select list
         upload_refresh_on_change_values = [ option_value for option_value, option_label in trans.model.LibraryDataset.upload_options ]
         upload_option_select_list = SelectField( 'upload_option', 
                                                  refresh_on_change=True, 
                                                  refresh_on_change_values=upload_refresh_on_change_values )
         for option_value, option_label in trans.model.LibraryDataset.upload_options:
+            if option_value == 'upload_directory':
+                if is_admin and not trans.app.config.library_import_dir:
+                    continue
+                elif not is_admin and not trans.app.config.user_library_import_dir:
+                    continue
+            elif option_value == 'upload_paths':
+                if not is_admin or not trans.app.config.allow_library_path_paste:
+                    continue
             upload_option_select_list.add_option( option_label, option_value, selected=option_value==upload_option )
         return upload_option_select_list
     def _get_populated_widgets( self, folder ):
