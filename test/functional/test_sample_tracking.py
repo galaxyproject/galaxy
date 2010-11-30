@@ -123,6 +123,41 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         global library2_folder1
         library2_folder1 = get_folder( library2.root_folder.id, 'library2_folder1', 'library2_folder1 description' )
         assert library2_folder1 is not None, 'Problem retrieving library folder named "library2_folder1" from the database'
+        # add folders 4 levels deep to library1_folder1
+        # level 2
+        name = "%s_folder2" % library2.name
+        description = "%s description" % name
+        self.add_folder( 'library_admin',
+                         self.security.encode_id( library2.id ),
+                         self.security.encode_id( library2_folder1.id ),
+                         name=name,
+                         description=description )
+        global library2_folder2
+        library2_folder2 = get_folder( library2_folder1.id, name, description )
+        assert library2_folder2 is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        # level 3
+        name = "%s_folder3" % library2.name
+        description = "%s description" % name
+        self.add_folder( 'library_admin',
+                         self.security.encode_id( library2.id ),
+                         self.security.encode_id( library2_folder2.id ),
+                         name=name,
+                         description=description )
+        global library2_folder3
+        library2_folder3 = get_folder( library2_folder2.id, name, description )
+        assert library2_folder3 is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        # level 4
+        name = "%s_folder4" % library2.name
+        description = "%s description" % name
+        self.add_folder( 'library_admin',
+                         self.security.encode_id( library2.id ),
+                         self.security.encode_id( library2_folder3.id ),
+                         name=name,
+                         description=description )
+        global library2_folder4
+        library2_folder4 = get_folder( library2_folder3.id, name, description )
+        assert library2_folder4 is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        
     #
     # ====== Form definition test methods ================================================ 
     #
@@ -408,10 +443,17 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             # add the sample values too
             for values in field_values:
                 strings_displayed_after_submit.append( values )
+        # list folders that populates folder selectfield when a data library is selected
+        folder_options = []
+        folder_options.append( library2_folder1.name )
+        folder_options.append( library2_folder2.name )
+        folder_options.append( library2_folder3.name )
+        folder_options.append( library2_folder4.name )
         # Add samples to the request
         self.add_samples( cntrller='requests',
                           request_id=self.security.encode_id( request1.id ),
                           sample_value_tuples=sample_value_tuples,
+                          folder_options=folder_options,
                           strings_displayed=[ 'Add Samples to Sequencing Request "%s"' % request1.name,
                                               '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
@@ -442,12 +484,18 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             # add the sample values too
             for values in field_values:
                 strings_displayed_after_submit.append( values )
+        strings_displayed = [ 'Edit Current Samples of Sequencing Request "%s"' % request1.name,
+                              '<input type="text" name="sample_0_name" value="Sample1" size="10"/>' ] # sample name input field
+        # all the folders in library2 should show up in the folder selectlist
+        strings_displayed.append( library2_folder1.name )
+        strings_displayed.append( library2_folder2.name )
+        strings_displayed.append( library2_folder3.name )
+        strings_displayed.append( library2_folder4.name )
         # Add samples to the request
         self.edit_samples( cntrller='requests',
                            request_id=self.security.encode_id( request1.id ),
                            sample_value_tuples=new_sample_value_tuples,
-                           strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request1.name,
-                                               '<input type="text" name="sample_0_name" value="Sample1" size="10"/>' ], # sample name input field
+                           strings_displayed=strings_displayed,
                            strings_displayed_after_submit=strings_displayed_after_submit )
         # check the changed sample field values on the request page
         strings_displayed = [ 'Sequencing request "%s"' % request1.name ]
@@ -667,12 +715,19 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.check_request_grid( cntrller='requests_admin',
                                  state='All',
                                  strings_displayed=[ request1.name, request2.name ] )
+        # list folders that populates folder selectfield when a data library is selected
+        folder_options = []
+        folder_options.append( library2_folder1.name )
+        folder_options.append( library2_folder2.name )
+        folder_options.append( library2_folder3.name )
+        folder_options.append( library2_folder4.name )
         # set the target data library to library2 using sample operation user interface
         self.change_sample_target_data_library( cntrller='requests',
                                                 request_id=self.security.encode_id( request2.id ),
                                                 sample_ids=[ sample.id for sample in request2.samples ],
                                                 new_library_id=self.security.encode_id( library2.id ), 
                                                 new_folder_id=self.security.encode_id( library2_folder1.id ),
+                                                folder_options=folder_options,
                                                 strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request2.name ],
                                                 strings_displayed_after_submit=[ 'Changes made to the samples have been saved.' ] )
         # check the changed target data library & folder on the request page
@@ -795,11 +850,11 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                   galaxy.model.SampleDataset.transfer_status.ADD_TO_LIBRARY,
                                   galaxy.model.SampleDataset.transfer_status.COMPLETE ]
         self.start_sample_datasets_transfer( sample_id=self.security.encode_id( request1_sample1.id ),
-                                     sample_dataset_ids=sample_dataset_ids,
-                                     strings_displayed=strings_displayed,
-                                     strings_displayed_after_submit=strings_displayed_after_submit,
-                                     strings_not_displayed=strings_not_displayed,
-                                     strings_displayed_count=strings_displayed_count )
+                                             sample_dataset_ids=sample_dataset_ids,
+                                             strings_displayed=strings_displayed,
+                                             strings_displayed_after_submit=strings_displayed_after_submit,
+                                             strings_not_displayed=strings_not_displayed,
+                                             strings_displayed_count=strings_displayed_count )
         # check the sample dataset info page
         for sample1_dataset in request1_sample1.datasets:
             strings_displayed = [ '"%s" Dataset' % request1_sample1.name,

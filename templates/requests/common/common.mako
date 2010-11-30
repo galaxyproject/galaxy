@@ -118,7 +118,7 @@
         // It is used to update the transfer status on Manage Datasets page for a sample 
         // of a sequencing request
         // Looks for changes in sample dataset transfer status using an async request. Keeps
-        // calling itself (via setTimeout) until transfer_status is Complete
+        // calling itself (via setTimeout) until transfer_status is complete
         var dataset_transfer_status_updater = function ( dataset_transfer_status_list ) {
             // Check if there are any items left to track
             var empty = true;

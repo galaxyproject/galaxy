@@ -73,7 +73,7 @@
     %if sequencer_login_info:
         <div class="form-row">
             <label>Hostname or IP Address:</label>
-            ${host}"
+            ${host}
         </div>
         <div style="clear: both"></div>
         <div class="form-row">

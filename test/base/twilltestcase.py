@@ -1575,7 +1575,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "edit_email_settings_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-    def add_samples( self, cntrller, request_id, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
+    def add_samples( self, cntrller, request_id, sample_value_tuples, folder_options=[], strings_displayed=[], strings_displayed_after_submit=[] ):
         url = "%s/requests_common/add_sample?cntrller=%s&request_id=%s&add_sample_button=Add+sample" % ( self.url, cntrller, request_id )
         self.visit_url( url )
         for check_str in strings_displayed:
@@ -1584,6 +1584,9 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
             tc.fv( "1", "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
             self.refresh_form( "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
+            # check if the folder selectfield has been correctly populated
+            for check_str in folder_options:
+                self.check_page_for_string( check_str )
             tc.fv( "1", "sample_%i_folder_id" % sample_index, target_library_info[ 'folder' ] )
             for field_index, field_value in enumerate( sample_field_values ):
                 tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
@@ -1648,7 +1651,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-    def change_sample_target_data_library( self, cntrller, request_id, sample_ids, new_library_id, new_folder_id, comment='', strings_displayed=[], strings_displayed_after_submit=[] ):
+    def change_sample_target_data_library( self, cntrller, request_id, sample_ids, new_library_id, new_folder_id, folder_options=[], comment='', strings_displayed=[], strings_displayed_after_submit=[] ):
         url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=True" % ( self.url, cntrller, request_id )
         self.visit_url( url )
         for check_str in strings_displayed:
@@ -1664,6 +1667,9 @@ class TwillTestCase( unittest.TestCase ):
         # folders in the selected data library above
         self.refresh_form( "sample_operation_library_id", new_library_id )
         self.check_page_for_string( "Select folder:" )
+        # check if the folder selectfield has been correctly populated
+        for check_str in folder_options:
+            self.check_page_for_string( check_str )
         tc.fv( "1", "sample_operation_folder_id", new_folder_id )
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
