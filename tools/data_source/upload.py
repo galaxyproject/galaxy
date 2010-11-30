@@ -373,7 +373,6 @@ def add_file( dataset, registry, json_file, output_path ):
     # Groom the dataset content if necessary
     datatype = registry.get_datatype_by_extension( ext )
     datatype.groom_dataset_content( output_path )
-    raise Exception( 'KAPOW' )
 
 def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         if dataset.composite_files:
