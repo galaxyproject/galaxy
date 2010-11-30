@@ -13,6 +13,7 @@ SAMPLES="
     universe_wsgi.ini.sample
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/*.sample
+    static/welcome.html.sample
 "
 
 # Create any missing config/location files
