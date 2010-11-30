@@ -111,10 +111,10 @@ class Configuration( object ):
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
-        self.nginx_x_accel_redirect_base = string_as_bool( kwargs.get( 'nginx_x_accel_redirect_base', False ) )
-        self.nginx_x_archive_files_base = string_as_bool( kwargs.get( 'nginx_x_archive_files_base', False ) )
-        self.nginx_upload_store = string_as_bool( kwargs.get( 'nginx_upload_store', False ) )
-        self.nginx_upload_path = string_as_bool( kwargs.get( 'nginx_upload_path', False ) )
+        self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
+        self.nginx_x_archive_files_base = kwargs.get( 'nginx_x_archive_files_base', False )
+        self.nginx_upload_store = kwargs.get( 'nginx_upload_store', False )
+        self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         # Parse global_conf and save the parser
