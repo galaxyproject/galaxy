@@ -1309,6 +1309,7 @@ assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistor
                      history=relation( History ) ) )
 
 HistoryDatasetAssociation.mapper.add_property( "creating_job_associations", relation( JobToOutputDatasetAssociation ) )
+LibraryDatasetDatasetAssociation.mapper.add_property( "creating_job_associations", relation( JobToOutputLibraryDatasetAssociation ) )
 
 assign_mapper( context, Workflow, Workflow.table,
     properties=dict( steps=relation( WorkflowStep, backref='workflow',
