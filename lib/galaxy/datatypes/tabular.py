@@ -356,6 +356,19 @@ class Sam( Tabular ):
             pass
         return False
 
+    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 5, **kwd ):
+        if dataset.has_data():
+            dataset_fh = open( dataset.file_name )
+            comment_lines = 0
+            for i, l in enumerate(dataset_fh):
+                if l.startswith('@'):
+                    comment_lines += 1
+            dataset_fh.close()
+            dataset.metadata.data_lines = i + 1 - comment_lines
+            dataset.metadata.comment_lines = comment_lines
+            dataset.metadata.columns = 12
+            dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
+
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
