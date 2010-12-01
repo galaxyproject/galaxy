@@ -5,7 +5,7 @@ import pkg_resources;
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, re
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -326,9 +326,6 @@ class Tool:
         self.id = root.get( "id" )
         if not self.id: 
             raise Exception, "Missing tool 'id'" 
-        # Sanitize ID so that it has only lowercase characters, numbers, and 
-        # underscores.
-        self.id = re.sub( '[^a-z0-9_]', '_', self.id.lower() )
         self.version = root.get( "version" )
         if not self.version: 
             # For backward compatibility, some tools may not have versions yet.
