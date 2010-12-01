@@ -129,7 +129,7 @@
         </param>
     </inputs>
     <outputs>
-        <data format="tabular" name="output1">
+        <data format="tabular" name="output1" label="Mapped Reads">
             <change_format>
                 <when input="out_format" value="sam" format="sam" />
             </change_format>

@@ -10,7 +10,7 @@
     </param>
   </inputs>
  <outputs>
-    <data format="interval" name="out_file1" />
+    <data format="interval" name="out_file1" label="Converted Interval" />
   </outputs>
 <tests>
     <test>          

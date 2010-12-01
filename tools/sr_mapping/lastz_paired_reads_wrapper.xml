@@ -47,7 +47,7 @@
         </conditional>
     </inputs>
     <outputs>
-        <data format="sam" name="output1" />
+        <data format="sam" name="output1" label="Mapped Reads" />
     </outputs>
     <requirements>
         <requirement type="package">lastz</requirement>

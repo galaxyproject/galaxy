@@ -34,7 +34,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data name="output1" format="bam"/>
+    <data name="output1" format="bam" label="Converted BAM" />
   </outputs>
   <tests>
     <test>

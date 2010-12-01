@@ -157,7 +157,7 @@
     <param name="suppressHeader" type="boolean" truevalue="--suppressHeader" falsevalue="" checked="True" label="Suppress the header in the output SAM file" help="BFAST produces SAM with several lines of header information" />
   </inputs>
   <outputs>
-    <data format="sam" name="output" >
+    <data format="sam" name="output" label="Unmapped Reads" >
       <actions>
         <conditional name="refGenomeSource.refGenomeSource_type">
           <when value="indexed">

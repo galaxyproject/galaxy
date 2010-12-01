@@ -159,11 +159,11 @@
     </param>
   </inputs>
   <outputs>
-    <data name="output" format="sam"/> 
-    <data name="unmappedReadOut" format="fastqsanger">
+    <data name="output" format="sam" label="Mapped Reads" /> 
+    <data name="unmappedReadOut" format="fastqsanger" label="Unmapped Reads">
       <filter>bUnmappedRead == "true" and s["space"] == "base"</filter>
     </data>
-    <data name="unmappedReadOutCS" format="fastqcssanger">
+    <data name="unmappedReadOutCS" format="fastqcssanger" label="Unmapped Reads">
       <filter>bUnmappedRead == "true" and s["space"] == "color"</filter>
     </data>
   </outputs>

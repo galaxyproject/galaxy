@@ -73,7 +73,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="tabular" name="output1" />
+    <data format="tabular" name="output1" label="Converted Pileup" />
   </outputs>
   <tests>
     <test>

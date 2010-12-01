@@ -3,9 +3,29 @@
   <description></description>
   <command interpreter="python">
     bowtie_wrapper.py 
+    ## Hackish setting of number of threads
     --threads="4"
+    ## Outputs
+      --output=$output
+      #if $singlePaired == "single"
+        #if $output_unmapped_reads_l
+          --output_unmapped_reads=$output_unmapped_reads_l
+        #end if
+        #if $output_suppressed_reads_l
+          --output_suppressed_reads=$output_suppressed_reads_l
+        #end if
+      #else
+        #if $output_unmapped_reads_l and $output_unmapped_reads_r
+          --output_unmapped_reads_l=$output_unmapped_reads_l
+          --output_unmapped_reads_r=$output_unmapped_reads_r
+        #end if
+        #if $output_suppressed_reads_l and $output_suppressed_reads_l
+          --output_suppressed_reads_l=$output_suppressed_reads_l
+          --output_suppressed_reads_r=$output_suppressed_reads_r
+        #end if
+      #end if
+    ## Inputs
     --dataType="solid"
-    --output=$output 
     --suppressHeader=$suppressHeader 
     --genomeSource=$refGenomeSource.genomeSource
     #if $refGenomeSource.genomeSource == "history":
@@ -166,10 +186,10 @@
             </param> 
             <param name="seed" type="integer" value="-1" label="Seed for the pseudorandom number generator (--seed)" help="Use -1 to use default" />
             <param name="cutoff" type="integer" value="-1" label="Number of first bases of the reference sequence to index (--cutoff)" help="Use -1 to use default" />
-          </when>  <!-- cIndexFull -->
-        </conditional>  <!-- cIndexParams -->
-      </when>  <!-- cHistory -->
-    </conditional>  <!-- cRefGenomeSource -->
+          </when>  <!-- indexFull -->
+        </conditional>  <!-- indexParams -->
+      </when>  <!-- history -->
+    </conditional>  <!-- refGenomeSource -->
     <conditional name="singlePaired">
       <param name="sPaired" type="select" label="Is this library mate-paired?">
         <option value="single">Single-end</option>
@@ -206,6 +226,8 @@
               <option value="doAllValAligns">Report all valid alignments</option>
             </param>
             <param name="sSuppressAlign" type="integer" value="-1" label="Suppress all alignments for a read if more than n reportable alignments exist (-m)" help="-1 for no limit" />
+            <param name="sMaxFile" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Write all reads with a number of valid alignments exceeding the limit set with the -m option to a file (--max)" />
+            <param name="sUnmappedFile" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Write all reads that could not be aligned to a file (--un)" />
             <conditional name="sBestOption">
               <param name="sBest" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
                 <option value="noBest">Do not use best</option>
@@ -221,7 +243,7 @@
                   <option value="doStrata">Use strata option</option>
                 </param>
               </when>
-            </conditional> <!-- csBestOption -->
+            </conditional> <!-- sBestOption -->
             <param name="sOffrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
             <param name="sSeed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
             <param name="sSnpphred" type="integer" value="-1" label="SNP penalty (ratio of SNPs per base in the subject genome) (--snpphred)" help="Enter this OR Ratio of SNPs per base" />
@@ -230,9 +252,9 @@
               <option value="doKeepends">Keep ends</option>
               <option value="noKeepends">Trim ends</option>
             </param>
-          </when> <!-- csFull -->
-        </conditional> <!-- csParams -->
-      </when> <!-- cSingle -->
+          </when> <!-- full -->
+        </conditional> <!-- sParams -->
+      </when> <!-- single -->
       <when value="paired">
         <param name="pInput1" type="data" format="fastqcssanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <param name="pInput2" type="data" format="fastqcssanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
@@ -281,6 +303,8 @@
               <option value="doAllValAligns">Report all valid alignments</option>
             </param>
             <param name="pSuppressAlign" type="integer" value="-1" label="Suppress all alignments for a pair if more than n reportable alignments exist (-m)" help="-1 for no limit" />
+            <param name="pMaxFile" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Write all reads with a number of valid alignments exceeding the limit set with the -m option to a file (--max)" />
+            <param name="pUnmappedFile" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Write all reads that could not be aligned to a file (--un)" />
             <conditional name="pBestOption">
               <param name="pBest" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
                 <option value="noBest">Do not use best</option>
@@ -296,7 +320,7 @@
                   <option value="doStrata">Use strata option</option>
                 </param>
               </when>
-            </conditional>  <!-- cpBestOption -->
+            </conditional>  <!-- pBestOption -->
             <param name="pOffrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
             <param name="pSeed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
             <param name="pSnpphred" type="integer" value="-1" label="SNP penalty (ratio of SNPs per base in the subject genome) (--snpphred)" help="Enter this OR Ratio of SNPs per base" />
@@ -305,33 +329,77 @@
               <option value="doKeepends">Keep ends</option>
               <option value="noKeepends">Trim ends</option>
             </param>
-          </when> <!-- cpFull -->
-        </conditional> <!-- cpParams -->
-      </when> <!-- cPaired -->
-    </conditional> <!-- cSinglePaired -->
+          </when> <!-- full -->
+        </conditional> <!-- pParams -->
+      </when> <!-- paired -->
+    </conditional> <!-- singlePaired -->
     <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information by default" />
   </inputs>
   <outputs>
-    <data format="sam" name="output" >
+    <data format="sam" name="output" label="Mapped Reads">
       <actions>
         <conditional name="refGenomeSource.genomeSource">
           <when value="indexed">
             <action type="metadata" name="dbkey">
-              <option type="from_file" name="bowtie_indices_color.loc" column="1" offset="0">
+              <option type="from_file" name="bowtie_indices_color.loc" column="0" offset="0">
                 <filter type="param_value" column="0" value="#" filter_by="startswith" keep="False"/>
-                <filter type="param_value" ref="refGenomeSource.index" column="0"/>
+                <filter type="param_value" ref="refGenomeSource.index" column="1"/>
               </option>
             </action>
           </when>
         </conditional>
+        <!-- Special casing equCab2chrM to equCab2 -->
+        <action type="metadata" name="dbkey">
+          <option type="from_param" name="refGenomeSource.genomeSource" column="0" offset="0">
+            <filter type="insert_column" column="0" value="equCab2chrM"/>
+            <filter type="insert_column" column="0" value="equCab2"/>
+            <filter type="metadata_value" ref="output" name="dbkey" column="1" />
+          </option>
+        </action>
       </actions>
+    </data>
+    <data format="fastqcssanger" name="output_suppressed_reads_l" label="Suppressed Reads">
+      <filter>((
+          singlePaired['sPaired'] == "single" and
+          singlePaired['sParams']['sSettingsType'] == "full" and
+          singlePaired['sParams']['sMaxFile'] is True
+        ) or (
+          singlePaired['sPaired'] == "paired" and
+          singlePaired['pParams']['pSettingsType'] == "full" and
+          singlePaired['pParams']['pMaxFile'] is True
+        ))
+      </filter>
+    </data>
+    <data format="fastqcssanger" name="output_suppressed_reads_r" label="Suppressed Reads (R)">
+      <filter>singlePaired['sPaired'] == "paired"</filter>
+      <filter>singlePaired['pParams']['pSettingsType'] == "full"</filter>
+      <filter>singlePaired['pParams']['pMaxFile'] is True</filter>
+    </data>
+    <data format="fastqcssanger" name="output_unmapped_reads_l" label="Unmapped Reads (L)">
+      <filter>
+        ((
+          singlePaired['sPaired'] == "single" and
+          singlePaired['sParams']['sSettingsType'] == "full" and
+          singlePaired['sParams']['sUnmappedFile'] is True
+        ) or (
+          singlePaired['sPaired'] == "paired" and
+          singlePaired['pParams']['pSettingsType'] == "full" and
+          singlePaired['pParams']['pUnmappedFile'] is True
+        ))
+      </filter>
+    </data>
+    <data format="fastqcssanger" name="output_unmapped_reads_r" label="Unmapped Reads (R)">
+      <filter>singlePaired['sPaired'] == "paired"</filter>
+      <filter>singlePaired['pParams']['pSettingsType'] == "full"</filter>
+      <filter>singlePaired['pParams']['pUnmappedFile'] is True</filter>
     </data>
   </outputs>
   <tests>
     <test>
       <!--
       Bowtie command:
-      bowtie -p 4 -S +sam-nohead -q -C chrM_color test-data/bowtie_in1.fastqcssanger > test-data/bowtie_out1.sam
+      bowtie -q -p 4 -S +sam-nohead -C chrM_color test-data/bowtie_in1.fastqcssanger > bowtie_out1_u.sam
+      sort bowtie_out1_u.sam > bowtie_out1.sam
       -p is the number of threads, which is hardcoded above. You need to replace the + with 2 dashes. 
       chrM_color needs to be the base location/name of the index files.
       -->
@@ -342,13 +410,18 @@
       <param name="sInput1" ftype="fastqcssanger" value="bowtie_in1.fastqcssanger" />
       <param name="sSettingsType" value="preSet" />
       <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out1.sam" />
+      <output name="output" ftype="sam" file="bowtie_out1.sam" sort="True" />
     </test>
     <test>
       <!--
       Bowtie command:
-      bowtie-build -f -C test-data/chr_m.fasta chrM_color
-      bowtie -X 1000 +ff -n 2 -e 70 -l 28 -X 250 +pairtries 100 +maxbts 125 -k 1 -C +snpfrac 0.001 +col-keepends -p 4 -S +sam-nohead -q chrM_color -1 test-data/bowtie_in3.fastqcssanger -2 test-data/bowtie_in4.fastqcssanger > test-data/bowtie_out3.sam
+      bowtie-build -C -f test-data/chr_m.fasta chrM_color
+      bowtie -q -X 1000 +ff -p 4 -S +sam-nohead -C -n 2 -e 70 -l 28 -X 250 +pairtries 100 +maxbts 125 -k 1 +snpfrac 0.001 +col-keepends +un bowtie_out3_u.fastq chrM_color -1 test-data/bowtie_in3.fastqcssanger -2 test-data/bowtie_in4.fastqcssanger > bowtie_out2_u.sam
+      sort bowtie_out2_u.sam > bowtie_out2.sam
+      sort bowtie_out3_u_1.sam > bowtie_out3_1.sam
+      sort bowtie_out3_u_2.sam > bowtie_out3_2.sam
+      Then also need to modify bowtie_out3_1.sam and bowtie_out3_2.sam so that all @ lines come before sequence lines.
+      The two unmapped output files will be named bowtie_out4_1.fastq and bowtie_out4_2.fastq
       -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
       chrM_base is the index files' location/base name. 
       -->
@@ -378,6 +451,8 @@
       <param name="pValAlign" value="1" />
       <param name="pAllValAligns" value="noAllValAligns" />
       <param name="pSuppressAlign" value="-1" />
+      <param name="pUnmappedFile" value="true" />
+      <param name="pMaxFile" value="false" />
       <param name="pBest" value="noBest" />
       <param name="pnMaxBacktracks" value="125" />
       <param name="pOffrate" value="-1" />
@@ -386,12 +461,15 @@
       <param name="pSnpfrac" value="0.001" />
       <param name="pKeepends" value="doKeepends" />
       <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out3.sam" />
+      <output name="output" ftype="sam" file="bowtie_out2.sam" sort="True" />
+      <output name="output_unmapped_reads_l" ftype="fastqcssanger" file="bowtie_out3_1.fastq" sort="True" />
+      <output name="output_unmapped_reads_r" ftype="fastqcssanger" file="bowtie_out3_2.fastq" sort="True" />
     </test>
     <test>
       <!--
       Bowtie command:
-      bowtie -n 2 -e 70 -l 28 +maxbts 125 -k 1 -C +snpfrac 0.001 +col-keepends -p 4 -S +sam-nohead -q chrM_color test-data/bowtie_in1.fastqcssanger > test-data/bowtie_out5.sam
+      bowtie -q -p 4 -S +sam-nohead -C -n 2 -e 70 -l 28 +maxbts 125 -k 1 +snpfrac 0.001 +col-keepends chrM_color test-data/bowtie_in1.fastqcssanger > bowtie_out4_u.sam
+      sort bowtie_out4_u.sam > bowtie_out4.sam
       -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
       chrM_base is the index files' location/base name. 
       -->
@@ -414,6 +492,8 @@
       <param name="sValAlign" value="1" />
       <param name="sAllValAligns" value="noAllValAligns" />
       <param name="sSuppressAlign" value="-1" />
+      <param name="sUnmappedFile" value="false" />
+      <param name="sMaxFile" value="false" />
       <param name="sBest" value="noBest" />
       <param name="snMaxBacktracks" value="125" />
       <param name="sOffrate" value="-1" />
@@ -422,13 +502,14 @@
       <param name="sSnpfrac" value="0.001" />
       <param name="sKeepends" value="doKeepends" />
       <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out5.sam" />
+      <output name="output" ftype="sam" file="bowtie_out4.sam" sort="True" />
     </test>
     <test>
       <!--
       Bowtie command:
       bowtie-build +noauto +bmaxdivn 4 +dcv 1024 +offrate 5 +ftabchars 10 +little -C -f test-data/chr_m.fasta chrM_color
-      bowtie -X 1000 +ff -p 4 -S +sam-nohead -q -C chrM_color -1 test-data/bowtie_in3.fastqcssanger -2 test-data/bowtie_in4.fastqcssanger > test-data/bowtie_out7.sam
+      bowtie -q -X 1000 +ff -p 4 -S +sam-nohead -C chrM_color -1 test-data/bowtie_in3.fastqcssanger -2 test-data/bowtie_in4.fastqcssanger > bowtie_out5_u.sam
+      sort bowtie_out5_u.sam > bowtie_out5.sam
       -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
       chrM_base is the index files' location/base name. 
       -->
@@ -455,7 +536,7 @@
       <param name="pMateOrient" value="ff" />
       <param name="pSettingsType" value="preSet" />
       <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out7.sam" />
+      <output name="output" ftype="sam" file="bowtie_out5.sam" sort="True" />
     </test>
   </tests> 
 
@@ -482,6 +563,12 @@ There is no such thing (yet) as an automated gearshift in short read mapping. It
 **Input formats**
 
 Bowtie accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare your files.
+
+------
+
+**A Note on Built-in Reference Genomes**
+
+Some genomes have multiple variants. If only one "type" of genome is listed, it is the Full version, which means that everything that came in the original genome data download (possibly with mitochondrial and plasmid DNA added if it wasn't already included). The Full version is available for every genome. Some genomes also come in the Canonical variant, which contains only the "canonical" (well-defined) chromosomes or segments, such as chr1-chr22, chrX, chrY, and chrM for human. Other variations include gender. These will come in the canonical form only, so the general Canonical variant is actually Canonical Female and the other is Canonical Male (identical to female excluding chrX).
 
 ------
 

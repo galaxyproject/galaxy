@@ -6,9 +6,15 @@ For use with Bowtie v. 0.12.3
 
 usage: bowtie_wrapper.py [options]
     -t, --threads=t: The number of threads to run
+    -o, --output=o: The output file
+    --output_unmapped_reads=: File name for unmapped reads (single-end)
+    --output_unmapped_reads_l=: File name for unmapped reads (left, paired-end)
+    --output_unmapped_reads_r=: File name for unmapped reads (right, paired-end)
+    --output_suppressed_reads=: File name for suppressed reads because of max setting (single-end)
+    --output_suppressed_reads_l=: File name for suppressed reads because of max setting (left, paired-end)
+    --output_suppressed_reads_r=: File name for suppressed reads because of max setting (right, paired-end)
     -i, --input1=i: The (forward or single-end) reads file in Sanger FASTQ format
     -I, --input2=I: The reverse reads file in Sanger FASTQ format
-    -o, --output=o: The output file
     -4, --dataType=4: The type of data (SOLiD or Solexa)
     -2, --paired=2: Whether the data is single- or paired-end
     -g, --genomeSource=g: The type of reference provided
@@ -69,10 +75,16 @@ def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option( '-t', '--threads', dest='threads', help='The number of threads to run' )
+    parser.add_option( '-o', '--output', dest='output', help='The output file' )
+    parser.add_option( '', '--output_unmapped_reads', dest='output_unmapped_reads', help='File name for unmapped reads (single-end)' )
+    parser.add_option( '', '--output_unmapped_reads_l', dest='output_unmapped_reads_l', help='File name for unmapped reads (left, paired-end)' )
+    parser.add_option( '', '--output_unmapped_reads_r', dest='output_unmapped_reads_r', help='File name for unmapped reads (right, paired-end)' )
+    parser.add_option( '', '--output_suppressed_reads', dest='output_suppressed_reads', help='File name for suppressed reads because of max setting (single-end)' )
+    parser.add_option( '', '--output_suppressed_reads_l', dest='output_suppressed_reads_l', help='File name for suppressed reads because of max setting (left, paired-end)' )
+    parser.add_option( '', '--output_suppressed_reads_r', dest='output_suppressed_reads_r', help='File name for suppressed reads because of max setting (right, paired-end)' )
     parser.add_option( '-4', '--dataType', dest='dataType', help='The type of data (SOLiD or Solexa)' )
     parser.add_option( '-i', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format' )
     parser.add_option( '-I', '--input2', dest='input2', help='The reverse reads file in Sanger FASTQ format' )
-    parser.add_option( '-o', '--output', dest='output', help='The output file' )
     parser.add_option( '-2', '--paired', dest='paired', help='Whether the data is single- or paired-end' )
     parser.add_option( '-g', '--genomeSource', dest='genomeSource', help='The type of reference provided' )
     parser.add_option( '-r', '--ref', dest='ref', help='The reference genome to use or index' )
@@ -122,25 +134,6 @@ def __main__():
     parser.add_option( '--do_not_build_index', dest='do_not_build_index', action="store_true", default=False, help='Flag to specify that provided file is already indexed, use as is' )
     (options, args) = parser.parse_args()
     stdout = ''
-
-    # output version # of tool
-    try:
-        tmp = tempfile.NamedTemporaryFile().name
-        tmp_stdout = open( tmp, 'wb' )
-        proc = subprocess.Popen( args='bowtie --version', shell=True, stdout=tmp_stdout )
-        tmp_stdout.close()
-        returncode = proc.wait()
-        stdout = None
-        for line in open( tmp_stdout.name, 'rb' ):
-            if line.lower().find( 'version' ) >= 0:
-                stdout = line.strip()
-                break
-        if stdout:
-            sys.stdout.write( '%s\n' % stdout )
-        else:
-            raise Exception
-    except:
-        sys.stdout.write( 'Could not determine Bowtie version\n' )
 
     # make temp directory for placement of indices and copy reference file there if necessary
     tmp_index_dir = tempfile.mkdtemp()
@@ -248,6 +241,8 @@ def __main__():
         ref_file_name = options.ref
     # set up aligning and generate aligning command options
     # automatically set threads in both cases
+    tmp_suppressed_file_name = None
+    tmp_unmapped_file_name = None
     if options.suppressHeader == 'true':
         suppressHeader = '--sam-nohead'
     else:
@@ -261,7 +256,7 @@ def __main__():
     else:
         mateOrient = ''
     if options.params == 'preSet':
-        aligning_cmds = '%s %s -p %s -S %s -q %s ' % \
+        aligning_cmds = '-q %s %s -p %s -S %s %s ' % \
                 ( maxInsert, mateOrient, options.threads, suppressHeader, colorspace )
     else:
         try:
@@ -281,6 +276,10 @@ def __main__():
                 trimL = '-3 %s' % options.trimL
             else:
                 trimL = ''
+            if options.maqSoapAlign != '-1' and int( options.maqSoapAlign ) >= 0:
+                maqSoapAlign = '-v %s' % options.maqSoapAlign
+            else:
+                maqSoapAlign = ''
             if options.mismatchSeed and (options.mismatchSeed == '0' or options.mismatchSeed == '1' \
                         or options.mismatchSeed == '2' or options.mismatchSeed == '3'):
                 mismatchSeed = '-n %s' % options.mismatchSeed
@@ -298,10 +297,6 @@ def __main__():
                 rounding = '--nomaqround'
             else:
                 rounding = ''
-            if options.maqSoapAlign != '-1' and int( options.maqSoapAlign ) >= 0:
-                maqSoapAlign = '-v %s' % options.maqSoapAlign
-            else:
-                maqSoapAlign = ''
             if options.minInsert and int( options.minInsert ) > 0:
                 minInsert = '-I %s' % options.minInsert
             else:
@@ -355,26 +350,50 @@ def __main__():
                 seed = '--seed %s' % options.seed
             else:
                 seed = ''
+            if options.paired == 'paired':
+                if options.output_unmapped_reads_l and options.output_unmapped_reads_r:
+                    tmp_unmapped_file = tempfile.NamedTemporaryFile( dir=tmp_index_dir, suffix='.fastq' )
+                    tmp_unmapped_file_name = tmp_unmapped_file.name
+                    tmp_unmapped_file.close()
+                    output_unmapped_reads = '--un %s' % tmp_unmapped_file_name
+                else:
+                    output_unmapped_reads = ''
+                if options.output_suppressed_reads:
+                    tmp_suppressed_file = tempfile.NamedTemporaryFile( dir=tmp_index_dir, suffix='.fastq' )
+                    tmp_suppressed_file_name = tmp_suppressed_file.name
+                    tmp_suppressed_file.close()
+                    output_suppressed_reads = '--max %s' % tmp_suppressed_file_name
+                else:
+                    output_suppressed_reads = ''
+            else:
+                if options.output_unmapped_reads:
+                    output_unmapped_reads = '--un %s' % options.output_unmapped_reads
+                else:
+                    output_unmapped_reads = ''
+                if options.output_suppressed_reads:
+                    output_suppressed_reads = '--max %s' % options.output_suppressed_reads
+                else:
+                    output_suppressed_reads = ''
+            snpfrac = ''
             if options.snpphred and int( options.snpphred ) >= 0:
                 snpphred = '--snpphred %s' % options.snpphred
             else:
                 snpphred = ''
                 if options.snpfrac and float( options.snpfrac ) >= 0:
                     snpfrac = '--snpfrac %s' % options.snpfrac
-                else:
-                    snpfrac = ''
             if options.keepends and options.keepends == 'doKeepends':
                 keepends = '--col-keepends'
             else:
                 keepends = ''
-            aligning_cmds = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s ' \
-                            '%s %s %s %s %s %s %s %s %s %s %s -p %s -S %s -q' % \
-                            ( skip, alignLimit, trimH, trimL, mismatchSeed, mismatchQual, 
-                              seedLen, rounding, maqSoapAlign, minInsert, maxInsert, 
-                              mateOrient, maxAlignAttempt, forwardAlign, reverseAlign, 
-                              maxBacktracks, tryHard, valAlign, allValAligns, suppressAlign, 
-                              best, strata, offrate, seed, colorspace, snpphred, snpfrac, 
-                              keepends, options.threads, suppressHeader )
+            aligning_cmds = '-q %s %s -p %s -S %s %s %s %s %s %s %s %s %s %s %s %s ' \
+                            '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % \
+                            ( maxInsert, mateOrient, options.threads, suppressHeader,
+                              colorspace, skip, alignLimit, trimH, trimL, maqSoapAlign,
+                              mismatchSeed, mismatchQual, seedLen, rounding, minInsert, 
+                              maxAlignAttempt, forwardAlign, reverseAlign, maxBacktracks,
+                              tryHard, valAlign, allValAligns, suppressAlign, best,
+                              strata, offrate, seed, snpphred, snpfrac, keepends,
+                              output_unmapped_reads, output_suppressed_reads )
         except ValueError, e:
             # clean up temp dir
             if os.path.exists( tmp_index_dir ):
@@ -383,7 +402,7 @@ def __main__():
     try:
         # have to nest try-except in try-finally to handle 2.4
         try:
-            # prepare actual aligning commands
+            # prepare actual mapping commands
             if options.paired == 'paired':
                 cmd2 = 'bowtie %s %s -1 %s -2 %s > %s' % ( aligning_cmds, ref_file_name, options.input1, options.input2, options.output )
             else:
@@ -408,9 +427,28 @@ def __main__():
             tmp_stderr.close()
             if returncode != 0:
                 raise Exception, stderr
+            # get suppressed and unmapped reads output files in place if appropriate
+            if options.paired == 'paired' and tmp_suppressed_file_name and \
+                               options.output_suppressed_reads_l and options.output_suppressed_reads_r:
+                try:
+                    left = tmp_suppressed_file_name.replace( '.fastq', '_1.fastq' )
+                    right = tmp_suppressed_file_name.replace( '.fastq', '_1.fastq' )
+                    shutil.move( left, options.output_suppressed_reads_l )
+                    shutil.move( right, options.output_suppressed_reads_r )
+                except Exception, e:
+                    sys.stdout.write( 'Error producing the suppressed output file.\n' )
+            if options.paired == 'paired' and tmp_unmapped_file_name and \
+                               options.output_unmapped_reads_l and options.output_unmapped_reads_r:
+                try:
+                    left = tmp_unmapped_file_name.replace( '.fastq', '_1.fastq' )
+                    right = tmp_unmapped_file_name.replace( '.fastq', '_2.fastq' )
+                    shutil.move( left, options.output_unmapped_reads_l )
+                    shutil.move( right, options.output_unmapped_reads_r )
+                except Exception, e:
+                    sys.stdout.write( 'Error producing the unmapped output file.\n' )
             # check that there are results in the output file
             if os.path.getsize( options.output ) == 0:
-                raise Exception, 'The output file is empty, there may be an error with your input file or settings.' + '\nextra: ' + str(extra)
+                raise Exception, 'The output file is empty, there may be an error with your input file or settings.'
         except Exception, e:
             stop_err( 'Error aligning sequence. ' + str( e ) )
     finally:

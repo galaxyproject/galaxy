@@ -20,7 +20,7 @@
     </repeat>
   </inputs>
   <outputs>
-    <data name="output1" format="bam" />
+    <data name="output1" format="bam" label="Merged BAM" />
   </outputs>
   <tests>
     <!-- TODO: add ability to test framework to test without at least 

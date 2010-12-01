@@ -61,7 +61,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="bam" name="output">
+    <data format="bam" name="output" label="Re-aligned Reads">
       <actions>
         <conditional name="refGenomeSource.refGenomeSource_type">
           <when value="built-in">
