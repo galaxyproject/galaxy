@@ -367,6 +367,7 @@ class Sam( Tabular ):
                         comment_lines += 1
                     else:
                         # No more comments, and the file is too big to look at the whole thing.  Give up.
+                        dataset.metadata.data_lines = None
                         break
             else:
                 # Otherwise, read the whole thing and set num data lines.
