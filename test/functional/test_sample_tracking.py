@@ -444,12 +444,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             for values in field_values:
                 strings_displayed_after_submit.append( values )
         # list folders that populates folder selectfield when a data library is selected
-        folder_options = []
-        folder_options.append( library2_folder1.name )
-        folder_options.append( library2_folder2.name )
-        folder_options.append( library2_folder3.name )
-        folder_options.append( library2_folder4.name )
-        # Add samples to the request
+        folder_options = [ library2_folder1.name, library2_folder2.name, library2_folder3.name, library2_folder4.name ]        # Add samples to the request
         self.add_samples( cntrller='requests',
                           request_id=self.security.encode_id( request1.id ),
                           sample_value_tuples=sample_value_tuples,
@@ -485,12 +480,11 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             for values in field_values:
                 strings_displayed_after_submit.append( values )
         strings_displayed = [ 'Edit Current Samples of Sequencing Request "%s"' % request1.name,
-                              '<input type="text" name="sample_0_name" value="Sample1" size="10"/>' ] # sample name input field
-        # all the folders in library2 should show up in the folder selectlist
-        strings_displayed.append( library2_folder1.name )
-        strings_displayed.append( library2_folder2.name )
-        strings_displayed.append( library2_folder3.name )
-        strings_displayed.append( library2_folder4.name )
+                              '<input type="text" name="sample_0_name" value="Sample1" size="10"/>', # sample name input field
+                              library2_folder1.name, # all the folders in library2 should show up in the folder selectlist 
+                              library2_folder2.name, 
+                              library2_folder3.name, 
+                              library2_folder4.name ]
         # Add samples to the request
         self.edit_samples( cntrller='requests',
                            request_id=self.security.encode_id( request1.id ),
@@ -716,11 +710,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                  state='All',
                                  strings_displayed=[ request1.name, request2.name ] )
         # list folders that populates folder selectfield when a data library is selected
-        folder_options = []
-        folder_options.append( library2_folder1.name )
-        folder_options.append( library2_folder2.name )
-        folder_options.append( library2_folder3.name )
-        folder_options.append( library2_folder4.name )
+        folder_options = [ library2_folder1.name, library2_folder2.name, library2_folder3.name, library2_folder4.name ]
         # set the target data library to library2 using sample operation user interface
         self.change_sample_target_data_library( cntrller='requests',
                                                 request_id=self.security.encode_id( request2.id ),

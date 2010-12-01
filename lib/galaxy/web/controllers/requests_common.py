@@ -170,6 +170,11 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
             elif user is None:
                 message = 'Invalid user ID (%s)' % str(user_id)
                 status = 'error'
+            # when creating a request from the user perspective, check if the 
+            # user has access permission to this request_type 
+            elif cntrller == 'requests' and not trans.app.security_agent.can_access_request_type( user.all_roles(), request_type ):
+                message = '%s does not have access permission to the "%s" sequencer configuration.' % ( user.email, request_type.name )
+                status = 'error'
             elif not name:
                 message = 'Enter the name of the request.'
                 status = 'error'

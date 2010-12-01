@@ -26,7 +26,7 @@ class RBACAgent:
         LIBRARY_MODIFY = Action( "modify library item", "Users having associated role can modify this library item", "grant" ),
         LIBRARY_MANAGE = Action( "manage library permissions", "Users having associated role can manage roles associated with permissions on this library item", "grant" ),
         # Request type permissions
-        REQUEST_TYPE_ACCESS = Action( "access request_type", "Restrict access to only users having associated role", "restrict" )
+        REQUEST_TYPE_ACCESS = Action( "access request_type", "Users having associated role can access this sequencer configuration", "grant" )
         
     )
     def get_action( self, name, default=None ):
@@ -917,12 +917,12 @@ class GalaxyRBACAgent( RBACAgent ):
         request_type_actions = []
         for permission in request_type.actions:
             if permission.action == action.action:
-                request_type_actions.append(permission)
+                request_type_actions.append( permission )
         if not request_type_actions:
-            return action.model == 'restrict'
+            return False
         ret_val = False
-        for item_action in item_actions:
-            if item_action.role in roles:
+        for request_type_action in request_type_actions:
+            if request_type_action.role in roles:
                 ret_val = True
                 break
         return ret_val
