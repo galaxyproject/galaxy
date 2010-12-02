@@ -1,0 +1,15 @@
+<form type="request" name="Sample Request Form" description="Sample Request Form description">
+    <fields>
+        <field type="text" name="Request form field1" description="Description of request form field1" value="" required="True"/>
+        <field type="text" area="True" name="Request form field2" description="Description of request form field2" value=""/>
+        <field type="select" name="Request form field3" description="Description of request form field3" value="">
+            <option value="option1" />
+            <option value="option2" />
+        </field>
+        <field type="select" name="Request form field4" description="Description of request form field4" value="" checkboxes="True">
+            <option value="option1" />
+            <option value="option2" />
+        </field>
+        <field type="address" name="Request form field5" description="Description of request form field5"/>
+    </fields>
+</form>

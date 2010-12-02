@@ -76,7 +76,8 @@ def display( api_key, url, return_formatted=True ):
         for n, i in enumerate(r):
             # All collection members should have a name and url in the response.
             print '#%d: %s' % (n+1, i.pop( 'url' ) )
-            print '  name: %s' % i.pop( 'name' )
+            if 'name' in i:
+                print '  name: %s' % i.pop( 'name' )
             for k, v in i.items():
                 print '  %s: %s' % ( k, v )
         print ''

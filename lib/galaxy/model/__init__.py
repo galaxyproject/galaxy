@@ -13,7 +13,7 @@ from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.security import RBACAgent, get_permitted_actions
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
-from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
 import os.path, os, errno, codecs, operator, smtplib, socket, pexpect, logging
 
@@ -28,7 +28,9 @@ def set_datatypes_registry( d_registry ):
     global datatypes_registry
     datatypes_registry = d_registry
 
-class User( object ):
+class User( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'email' )
+    api_element_visible_keys = ( 'id', 'email', 'username' )
     def __init__( self, email=None, password=None ):
         self.email = email
         self.password = password
@@ -39,6 +41,7 @@ class User( object ):
         # Relationships
         self.histories = []
         self.credentials = []
+        
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash( text_type=cleartext )
@@ -365,7 +368,9 @@ class GroupRoleAssociation( object ):
         self.group = group
         self.role = role
 
-class Role( object ):
+class Role( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
     types = Bunch( 
         PRIVATE = 'private',
@@ -890,7 +895,7 @@ class HistoryDatasetAssociationDisplayAtAuthorization( object ):
         self.user = user
         self.site = site
 
-class Library( object ):
+class Library( object, APIItem ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     api_collection_visible_keys = ( 'id', 'name' )
     api_element_visible_keys = ( 'name', 'description', 'synopsis' )
@@ -936,20 +941,8 @@ class Library( object ):
         if isinstance( name, str ):
             name = unicode( name, 'utf-8' )
         return name
-    def get_api_value( self, view='collection' ):
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[key] = self.__getattribute__( key )
-            except AttributeError:
-                rval[key] = None
-        return rval
 
-class LibraryFolder( object ):
+class LibraryFolder( object, APIItem ):
     api_element_visible_keys = ( 'name', 'description', 'item_count', 'genome_build' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
@@ -1046,7 +1039,7 @@ class LibraryFolder( object ):
             name = unicode( name, 'utf-8' )
         return name
     def get_api_value( self, view='collection' ):
-        rval = {}
+        rval = super( APIItem, self ).get_api_value( vew=view )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -1054,16 +1047,6 @@ class LibraryFolder( object ):
             else:
                 template = info_association.template
             rval['data_template'] = template.name
-        
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[key] = self.__getattribute__( key )
-            except AttributeError:
-                rval[key] = None
         return rval
     @property
     def parent_library( self ):
@@ -1493,13 +1476,15 @@ class MetadataFile( object ):
         # Return filename inside hashed directory
         return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 
-class FormDefinition( object ):
+class FormDefinition( object, APIItem ):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [ AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
                    SAMPLE = 'Sequencing Sample Form',
                    LIBRARY_INFO_TEMPLATE = 'Library information template',
                    USER_INFO = 'User Information' )
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout' )
     def __init__( self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None ):
         self.name = name
         self.desc = desc
@@ -1602,7 +1587,7 @@ class FormDefinition( object ):
             return form_field.get_html( disabled=True )
         # Return None if unsupported field type
         return None
-        
+
 class FormDefinitionCurrent( object ):
     def __init__(self, form_definition=None):
         self.latest_form = form_definition
@@ -1612,7 +1597,7 @@ class FormValues( object ):
         self.form_definition = form_def
         self.content = content
         
-class Request( object ):
+class Request( object, APIItem ):
     states = Bunch( NEW = 'New',
                     SUBMITTED = 'In Progress',
                     REJECTED = 'Rejected',
@@ -1748,18 +1733,6 @@ All samples in state:     %(sample_state)s
             trans.sa_session.add( event )
             trans.sa_session.flush()
         return comments
-    def get_api_value( self, view='collection' ):
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[key] = self.__getattribute__( key )
-            except AttributeError:
-                rval[key] = None
-        return rval
     
 class RequestEvent( object ):
     def __init__(self, request=None, request_state=None, comment=''):
@@ -1767,7 +1740,9 @@ class RequestEvent( object ):
         self.state = request_state
         self.comment = comment
         
-class RequestType( object ):
+class RequestType( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'name', 'desc' )
+    api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id', 'datatx_info' )
     rename_dataset_options = Bunch( NO = 'Do not rename',
                                     SAMPLE_NAME = 'Preprend sample name',
                                     EXPERIMENT_NAME = 'Prepend experiment name',
@@ -1790,7 +1765,7 @@ class RequestTypePermissions( object ):
         self.request_type = request_type
         self.role = role
     
-class Sample( object ):
+class Sample( object, APIItem ):
     # The following form_builder classes are supported by the Sample class.
     supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField ]
     bulk_operations = Bunch( CHANGE_STATE = 'Change state', 
@@ -1886,18 +1861,6 @@ class Sample( object ):
                       .replace( "'s password:", '' )\
                       .replace( login_str, '' )\
                       .strip()
-    def get_api_value( self, view='collection' ):
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[key] = self.__getattribute__( key )
-            except AttributeError:
-                rval[key] = None
-        return rval
 
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):

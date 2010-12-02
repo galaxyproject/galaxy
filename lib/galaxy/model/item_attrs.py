@@ -150,3 +150,24 @@ class UsesAnnotations:
         """ Returns an item's item-annotation association class. """
         class_name = '%sAnnotationAssociation' % item.__class__.__name__
         return getattr( galaxy.model, class_name, None )
+
+class APIItem:
+    """ Mixin for api representation. """
+    #api_collection_visible_keys = ( 'id' )
+    #api_element_visible_keys = ( 'id' )
+    def get_api_value( self, view='collection', value_mapper = None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[key] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[key] = value_mapper.get( key )( rval[key] ) 
+            except AttributeError:
+                rval[key] = None
+        return rval

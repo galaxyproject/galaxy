@@ -114,6 +114,11 @@ def app_factory( global_conf, **kwargs ):
                                     path_prefix='/api/requests/:request_id', 
                                     parent_resources=dict( member_name='request', collection_name='requests' ) )
         webapp.api_mapper.resource( 'request', 'requests', path_prefix='/api' )
+        webapp.api_mapper.resource( 'form', 'forms', path_prefix='/api' )
+        webapp.api_mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
+        webapp.api_mapper.resource( 'role', 'roles', path_prefix='/api' )
+        webapp.api_mapper.resource( 'user', 'users', path_prefix='/api' )
+        
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
