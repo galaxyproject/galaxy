@@ -6,7 +6,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 class UploadToolAction( ToolAction ):
-    def execute( self, tool, trans, incoming={}, set_output_hid = True ):
+    def execute( self, tool, trans, incoming={}, set_output_hid = True, history=None ):
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
             if input.type == "upload_dataset":

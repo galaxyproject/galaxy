@@ -8,7 +8,7 @@ log = logging.getLogger( __name__ )
 class SetMetadataToolAction( ToolAction ):
     """Tool action used for setting external metadata on an existing dataset"""
     
-    def execute( self, tool, trans, incoming = {}, set_output_hid = False, overwrite = True ):
+    def execute( self, tool, trans, incoming = {}, set_output_hid = False, overwrite = True, history=None ):
         for name, value in incoming.iteritems():
             if isinstance( value, trans.app.model.HistoryDatasetAssociation ):
                 dataset = value
