@@ -471,15 +471,71 @@ $.extend( View.prototype, {
     }
 });
 
+//
+// Tools.
+//
+
+var Tool = function(name, params) {
+    this.name = name;
+    this.params = params;  
+};
+$.extend(Tool.prototype, {
+    // Returns a dictionary of parameter values; key is parameter name, value
+    // is parameter value.
+    get_param_values: function() {
+        var param_dict = {};
+        for (var i = 0; i < this.params.length; i++) {
+            var param = this.params[i];
+            param_dict[param.name] = param.value;
+        }
+        return param_dict;
+    }
+});
+
+var NumberToolParameter = function(name, label, min, max, init_value) {
+    this.name = name;
+    this.label = label;
+    this.min = min;
+    this.max = max;
+    this.value = init_value;
+}
+
+var get_tool = function(tool_dict) {
+    if (obj_length(tool_dict) == 0) {
+        return undefined;
+    }
+    
+    // Get tool.
+    var tool_name = tool_dict.name;
+    var params_dict = tool_dict.params;
+    var params = Array();
+    for (var i = 0; i < params_dict.length; i++) {
+        var param_dict = params_dict[i];
+        var 
+            name = param_dict.name,
+            label = param_dict.label,
+            type = param_dict.type,
+            min = param_dict.min,
+            max = param_dict.max,
+            value = param_dict.value;
+        params[params.length] = new NumberToolParameter(name, label, min, max, value);
+    }
+    return new Tool(tool_name, params);
+};
+
+//
+// Filters.
+//
+
 // Generic filter.
-var Filter = function( name, index, value ) {
+var Filter = function(name, index, value) {
     this.name = name;
     this.index = index;
     this.value = value;
 };
 
 // Number filter for a track.
-var NumberFilter = function( name, index ) {
+var NumberFilter = function(name, index) {
     this.name = name;
     // Index into payload to filter.
     this.index = index;
@@ -493,35 +549,35 @@ var NumberFilter = function( name, index ) {
     this.slider = null;
     this.slider_label = null;
 };
-$.extend( NumberFilter.prototype, {
+$.extend(NumberFilter.prototype, {
     // Returns true if filter can be applied to element.
-    applies_to: function( element ) {
-        if ( element.length > this.index ) {
+    applies_to: function(element) {
+        if (element.length > this.index) {
             return true;
         }
         return false;
     },
     // Returns true iff element is in [low, high]; range is inclusive.
-    keep: function( element ) {
+    keep: function(element) {
         if ( !this.applies_to( element ) ) {
             // No element to filter on.
             return true;
         }
-        return ( element[this.index] >= this.low && element[this.index] <= this.high );
+        return (element[this.index] >= this.low && element[this.index] <= this.high);
     },
     // Update filter's min and max values based on element's values.
-    update_attrs: function( element ) {
+    update_attrs: function(element) {
         var updated = false;
-        if ( !this.applies_to( element ) ) {
+        if (!this.applies_to(element) ) {
             return updated;
         }
         
         // Update filter's min, max based on element values.
-        if ( element[this.index] < this.slider_min ) {
+        if (element[this.index] < this.slider_min) {
             this.slider_min = element[this.index];
             updated = true;
         }
-        if ( element[this.index] > this.slider_max ) {
+        if (element[this.index] > this.slider_max) {
             this.slider_max = element[this.index];
             updated = false;
         }
@@ -530,16 +586,16 @@ $.extend( NumberFilter.prototype, {
     // Update filter's slider.
     update_ui_elt: function () {
         var 
-            slider_min = this.slider.slider( "option", "min" ),
-            slider_max = this.slider.slider( "option", "max" );
+            slider_min = this.slider.slider("option", "min"),
+            slider_max = this.slider.slider("option", "max");
         if (this.slider_min < slider_min || this.slider_max > slider_max) {
             // Need to update slider.        
-            this.slider.slider( "option", "min", this.slider_min );
-            this.slider.slider( "option", "max", this.slider_max );
+            this.slider.slider("option", "min", this.slider_min);
+            this.slider.slider("option", "max", this.slider_max);
             // Refresh slider:
             // TODO: do we want to keep current values or reset to min/max?
             // Currently we reset values:
-            this.slider.slider( "option", "values", [ this.slider_min, this.slider_max ] );
+            this.slider.slider("option", "values", [this.slider_min, this.slider_max]);
             // To use the current values.
             //var values = this.slider.slider( "option", "values" );
             //this.slider.slider( "option", "values", values );
@@ -548,25 +604,26 @@ $.extend( NumberFilter.prototype, {
 });
 
 // Parse filters dict and return filters.
-var get_filters = function( filters_dict ) {
+var get_filters = function(filters_dict) {
     var filters = [];
     for (var i = 0; i < filters_dict.length; i++) {
         var filter_dict = filters_dict[i];
         var name = filter_dict.name, type = filter_dict.type, index = filter_dict.index;
-        if ( type == 'int' || type == 'float' ) {
-            filters[i] = new NumberFilter( name, index );
+        if (type == 'int' || type == 'float') {
+            filters[i] = new NumberFilter(name, index);
         } else {
-            filters[i] = new Filter( name, index, type );
+            filters[i] = new Filter(name, index, type);
         }
     }
     return filters;
 };
 
-var Track = function (name, view, parent_element, filters) {
+var Track = function (name, view, parent_element, filters, tool) {
     this.name = name;
     this.view = view;    
     this.parent_element = parent_element;
     this.filters = (filters !== undefined ? get_filters( filters ) : []);
+    this.tool = (tool !== undefined ? get_tool( tool ) : undefined);
     this.init_global();
 };
 $.extend( Track.prototype, {
@@ -579,17 +636,78 @@ $.extend( Track.prototype, {
             this.name_div.text(this.name);
             this.name_div.attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         }
-        // Create track filtering div.
-        this.filtering_div = $("<div class='track-filters'>").appendTo(this.container_div);
-        this.filtering_div.hide();
-        // Dragging is disabled on div so that actions on slider do not impact viz.
+        
+        //
+        // Create dynamic tool div.
+        //
+        this.dynamic_tool_div = $("<div class='dynamic-tool'>").appendTo(this.container_div); // .hide();
+        // Disable dragging, double clicking on div so that actions on slider do not impact viz.
+        this.dynamic_tool_div.bind( "drag", function(e) {
+            e.stopPropagation();
+        }).bind("dblclick", function( e ) {
+            e.stopPropagation();
+        });
+        if (this.tool) {
+            var name_div = $("<div class='tool-name'>").appendTo(this.dynamic_tool_div).text(this.tool.name);
+            var tool_params = this.tool.params;
+            var track = this;
+            $.each(this.tool.params, function(index, param) {
+                var param_div = $("<div>").addClass("param-row").appendTo(track.dynamic_tool_div)
+                
+                //
+                // Slider label.
+                //
+                var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
+                var name_span = $("<span class='param-name'>").text(param.label + "  ").appendTo(label_div);
+                var values_span = $("<span class='values'>").appendTo(label_div).text("[" + param.value + "]");
+                
+                //
+                // Slider.
+                //
+                var slider_div = $("<div>").addClass("slider").appendTo(param_div);
+                var slider = $("<div id='" + param.name + "-param-control'>").appendTo(slider_div);
+                // Make step reasonable.
+                var step = (param.max <= 1 ? 0.01 : 1 );
+                slider.slider({
+                    min: param.min,
+                    max: param.max,
+                    step: step,
+                    value: param.value,
+                    slide: function( event, ui ) {
+                        var value = ui.value;
+                        param.value = value;
+                        // Set new value in UI.
+                        if (0 < value && value < 1) {
+                            value = parseFloat(value).toFixed(2);
+                        }
+                        values_span.text("[" + value + "]");
+                    }
+                });
+                $("<div style='clear: both;'>").appendTo(param_div); 
+            });
+            
+            // Add 'Go' button.
+            var run_tool_row = $("<div>").addClass("param-row").appendTo(this.dynamic_tool_div);
+            var run_tool_button = $("<input type='submit'>").attr("value", "Run Tool").appendTo(run_tool_row);
+            var track = this;
+            run_tool_button.click( function() {
+                track.run_tool(); 
+            });
+        }
+        
+        //
+        // Create filtering div.
+        //
+        this.filtering_div = $("<div class='track-filters'>").appendTo(this.container_div).hide();
+        // Disable dragging, double clicking on div so that actions on slider do not impact viz.
         this.filtering_div.bind( "drag", function(e) {
+            e.stopPropagation();
+        }).bind("dblclick", function( e ) {
             e.stopPropagation();
         });
         var filters_table = $("<table class='filters'>").appendTo(this.filtering_div);
         var track = this;
-        for (var i = 0; i < this.filters.length; i++) {
-            var filter = this.filters[i];
+        $.each(this.filters, function(index, filter) {
             var table_row = $("<tr>").appendTo(filters_table);
             var filter_th = $("<th class='filter-info'>").appendTo(table_row);
             var name_span = $("<span class='name'>").appendTo(filter_th);
@@ -619,7 +737,7 @@ $.extend( Track.prototype, {
             });
             filter.slider = filter.control_element;
             filter.slider_label = values_span;
-        }
+        });
         
         this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
         this.parent_element.append(this.container_div);
@@ -673,6 +791,25 @@ $.extend( Track.prototype, {
             track.container_div.addClass("nodata");
             track.content_div.text(DATA_NONE);
         }
+    },
+    // Run track's tool.
+    run_tool: function() {
+        var url_params = { 
+            dataset_id: this.original_dataset_id,
+            chrom: this.view.chrom,
+            low: this.view.low,
+            high: this.view.high,
+            tool_id: this.tool.name,
+        };
+
+        $.extend(url_params, this.tool.get_param_values());
+        
+        var track = this;
+        $.getJSON(run_tool_url, url_params, function (result) {
+            // Result should be id of new dataset.
+            track.dataset_id = result;
+            track.init();
+        });
     }
 });
 
@@ -736,6 +873,7 @@ var TiledTrack = function() {
         });
     };
     if (track.filters.length > 0) {
+        // Show/hide filters menu item.
         track_dropdown["Show filters"] = function() {
             // Set option text and toggle filtering div.
             var menu_option_text;
@@ -747,10 +885,26 @@ var TiledTrack = function() {
                 menu_option_text = "Show filters";
                 track.filters_visible = false;
             }
-            $("#" + track.name_div.attr("id") + "-menu").find("li").eq(2).text(menu_option_text);
+            // TODO: set menu option name.
             track.filtering_div.toggle();
         };
     }
+    if (track.tool) {
+        // Show/hide dynamic tool menu item.
+        track_dropdown["Toggle Tool Controls"] = function() {
+            // Set option text and toggle div.
+            var menu_option_text;
+            if (!track.dynamic_tool_div.is(":visible")) {
+                menu_option_text = "Hide dynamic tool";
+            }
+            else {
+                menu_option_text = "Show dynamic tool";
+            }
+            // TODO: set menu option name.
+            track.dynamic_tool_div.toggle();
+        };
+    }
+    
     track_dropdown.Remove = function() {
         view.remove_track(track);
         if (view.num_tracks === 0) {
@@ -758,7 +912,7 @@ var TiledTrack = function() {
         }
     };
     track.popup_menu = make_popupmenu(track.name_div, track_dropdown);
-    show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters", false);
+    
     /*
     if (track.overview_check_div === undefined) {
         track.overview_check_div = $("<div class='right-float' />").css("margin-top", "-3px").appendTo(track.header_div);
@@ -840,7 +994,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
             if (low <= track.view.high && high >= track.view.low) {
-                var tile_element = track.draw_tile( resolution, tile_index, parent_element, w_scale );
+                var tile_element = track.draw_tile(resolution, tile_index, parent_element, w_scale);
                 if (tile_element) {
                     // Store initial canvas in case we need to use it for overview
                     if (!track.initial_canvas && !window.G_vmlCanvasManager) {
@@ -1009,6 +1163,7 @@ var LineTrack = function ( name, view, dataset_id, prefs ) {
     
     this.height_px = 80;
     this.dataset_id = dataset_id;
+    this.original_dataset_id = dataset_id;
     this.data_cache = new Cache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.prefs = { 'color': 'black', 'min_value': undefined, 'max_value': undefined, 'mode': this.mode };
@@ -1207,15 +1362,16 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var FeatureTrack = function ( name, view, dataset_id, filters, prefs ) {
+var FeatureTrack = function ( name, view, dataset_id, filters, tool, prefs ) {
     this.track_type = "FeatureTrack";
     this.display_modes = ["Auto", "Dense", "Squish", "Pack"];
-    Track.call( this, name, view, view.viewport_container, filters );
+    Track.call( this, name, view, view.viewport_container, filters, tool );
     TiledTrack.call( this );
     
     this.height_px = 0;
     this.container_div.addClass( "feature-track" );
     this.dataset_id = dataset_id;
+    this.original_dataset_id = dataset_id;
     this.zo_slots = {};
     this.show_labels_scale = 0.001;
     this.showing_details = false;

@@ -1214,14 +1214,14 @@ class Tool:
                 raise Exception( "Unexpected parameter type" )
         return args
             
-    def execute( self, trans, incoming={}, set_output_hid=True ):
+    def execute( self, trans, incoming={}, set_output_hid=True, history=None ):
         """
         Execute the tool using parameter values in `incoming`. This just
         dispatches to the `ToolAction` instance specified by 
         `self.tool_action`. In general this will create a `Job` that 
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
-        return self.tool_action.execute( self, trans, incoming=incoming, set_output_hid=set_output_hid )
+        return self.tool_action.execute( self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history )
         
     def params_to_strings( self, params, app ):
         return params_to_strings( self.inputs, params, app )

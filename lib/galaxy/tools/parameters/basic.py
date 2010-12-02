@@ -196,6 +196,8 @@ class IntegerToolParameter( TextToolParameter ):
     """
     def __init__( self, tool, elem ):
         TextToolParameter.__init__( self, tool, elem )
+        self.min = elem.get( 'min' )
+        self.max = elem.get( 'max' )
         if self.value:
             try:
                 int( self.value )
@@ -238,6 +240,8 @@ class FloatToolParameter( TextToolParameter ):
     """
     def __init__( self, tool, elem ):
         TextToolParameter.__init__( self, tool, elem )
+        self.min = elem.get( 'min' )
+        self.max = elem.get( 'max' )
         if self.value:
             try:
                 float( self.value )
@@ -245,6 +249,16 @@ class FloatToolParameter( TextToolParameter ):
                 raise ValueError( "A real number is required" )
         elif self.value is None:
             raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be a real number" )
+        if self.min:
+            try:
+                float( self.min )
+            except:
+                raise ValueError( "A real number is required" )
+        if self.max:
+            try:
+                float( self.max )
+            except:
+                raise ValueError( "A real number is required" )
     def get_html_field( self, trans=None, value=None, other_values={} ):
         if isinstance( value, float ):
             value = str( value )

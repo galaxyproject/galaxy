@@ -84,19 +84,10 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         expect traditional interval format.
     """
     
-    def __init__( self, reader, chrom_col=0, start_col=3, end_col=4, strand_col=6, score_col=5, **kwargs ):
-        """
-        Create wrapper. Defaults are group_entries=False and 
-        convert_coords_to_bed=True to support backward compatibility.
-        """
-        
-        # Add columns to kwargs here so that defaults can be used rather than 
-        # requiring them to be passed in.
-        kwargs[ 'chrom_col' ] = chrom_col
-        kwargs[ 'start_col' ] = start_col
-        kwargs[ 'end_col' ] = end_col
-        kwargs[ 'strand_col' ] = strand_col
-        NiceReaderWrapper.__init__( self, reader, **kwargs )
+    def __init__( self, reader, chrom_col=0, start_col=3, end_col=4, strand_col=6, score_col=5, \
+                  fix_strand=False, **kwargs ):
+        NiceReaderWrapper.__init__( self, reader, chrom_col=chrom_col, start_col=start_col, end_col=end_col, \
+                                    strand_col=strand_col, fix_strand=fix_strand, **kwargs )
         # HACK: NiceReaderWrapper (bx-python) does not handle score_col yet, so store ourselves.
         self.score_col = score_col
         self.last_line = None
@@ -126,7 +117,9 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             if self.skipped < 10:
                self.skipped_lines.append( ( self.linenum, self.current_line, str( e ) ) )
                
-            # For debugging, uncomment this to propogate parsing exceptions up.
+            # For debugging, uncomment this to propogate parsing exceptions up. 
+            # I.e. the underlying reason for an unexpected StopIteration exception 
+            # can be found by uncommenting this. 
             # raise e
                
         #
@@ -210,7 +203,7 @@ def convert_gff_coords_to_bed( interval ):
     if isinstance( interval, GenomicInterval ):
         interval.start -= 1
         if isinstance( interval, GFFFeature ):
-            for subinterval in interval:
+            for subinterval in interval.intervals:
                 convert_gff_coords_to_bed( subinterval )
     elif type ( interval ) is list:
         interval[ 0 ] -= 1

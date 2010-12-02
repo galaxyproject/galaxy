@@ -10,6 +10,7 @@ from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
 from galaxy.visualization.tracks.data_providers import get_data_provider
+from galaxy.visualization.tracks.visual_analytics import get_tool_def
 
 from Cheetah.Template import Template
 
@@ -180,7 +181,8 @@ class UsesVisualization( SharableItemSecurity ):
                         "name": dataset.name,
                         "dataset_id": dataset.id,
                         "prefs": simplejson.dumps(prefs),
-                        "filters": track_data_provider.get_filters()
+                        "filters": track_data_provider.get_filters(),
+                        "tool": get_tool_def( trans, dataset )
                     } )
             
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 

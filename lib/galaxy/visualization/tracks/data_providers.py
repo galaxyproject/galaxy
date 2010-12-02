@@ -33,6 +33,14 @@ class TracksDataProvider( object ):
         self.converted_dataset = converted_dataset
         self.original_dataset = original_dataset
         
+    def write_data_to_file( self, chrom, start, end, filename ):
+        """
+        Write data in region defined by chrom, start, and end to a file.
+        """
+        # Override.
+        pass
+
+        
     def get_data( self, chrom, start, end, **kwargs ):
         """ Returns data in region defined by chrom, start, and end. """
         # Override.
@@ -165,7 +173,39 @@ class VcfDataProvider( TracksDataProvider ):
 class BamDataProvider( TracksDataProvider ):
     """
     Provides access to intervals from a sorted indexed BAM file.
-    """        
+    """
+    
+    def write_data_to_file( self, chrom, start, end, filename ):
+        """
+        Write reads in [chrom:start-end] to file.
+        """
+        
+        # Open current BAM file using index.
+        start, end = int(start), int(end)
+        bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', \
+                                     index_filename=self.converted_dataset.file_name )
+        try:
+            data = bamfile.fetch(start=start, end=end, reference=chrom)
+        except ValueError, e:
+            # Some BAM files do not prefix chromosome names with chr, try without
+            if chrom.startswith( 'chr' ):
+                try:
+                    data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
+                except ValueError:
+                    return None
+            else:
+                return None
+        
+        # Write new BAM file.
+        # TODO: write headers as well?
+        new_bamfile = csamtools.Samfile( template=bamfile, filename=filename, mode='wb' )
+        for i, read in enumerate( data ):
+            new_bamfile.write( read )
+        new_bamfile.close()
+        
+        # Cleanup.
+        bamfile.close()
+    
     def get_data( self, chrom, start, end, **kwargs ):
         """
         Fetch intervals in the region 
@@ -310,6 +350,10 @@ class IntervalIndexDataProvider( TracksDataProvider ):
     
     col_name_data_attr_mapping = { 4 : { 'index': 8 , 'name' : 'Score' } }
     
+    def write_data_to_file( self, chrom, start, end, filename ):
+        # TODO: write function.
+        pass
+    
     def get_data( self, chrom, start, end, **kwargs ):
         start, end = int(start), int(end)
         source = open( self.original_dataset.file_name )
@@ -337,7 +381,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
             if "no_detail" not in kwargs:
                 if isinstance( self.original_dataset.datatype, Gff ):
                     # GFF dataset.
-                    reader = GFFReaderWrapper( source )
+                    reader = GFFReaderWrapper( source, fix_strand=True )
                     feature = reader.next()
                     
                     payload.append( feature.name() )
@@ -348,6 +392,14 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                     # thick.
                     payload.append( start )
                     payload.append( end )
+                    
+                    # HACK: remove interval with name 'transcript' from feature. 
+                    # Cufflinks puts this interval in each of its transcripts, 
+                    # and they mess up trackster by covering the feature's blocks.
+                    # This interval will always be a feature's first interval,
+                    # and the GFF's third column is its feature name. 
+                    if feature.intervals[0].fields[2] == 'transcript':
+                        feature.intervals = feature.intervals[1:]
                     
                     # Add blocks.
                     feature = convert_gff_coords_to_bed( feature )

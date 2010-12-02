@@ -100,7 +100,12 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True ):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None ):
+        """
+        Executes a tool, creating job and tool outputs, associating them, and
+        submitting the job to the job queue. If history is not specified, use
+        trans.history as destination for tool's output datasets.
+        """
         def make_dict_copy( from_dict ):
             """
             Makes a copy of input dictionary from_dict such that all values that are dictionaries
@@ -147,6 +152,11 @@ class DefaultToolAction( object ):
                     input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values = incoming )
                 else:
                     input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
+        
+        # Set history.
+        if not history:
+            history = trans.history
+        
         out_data = odict()
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
@@ -180,7 +190,7 @@ class DefaultToolAction( object ):
             output_permissions = trans.app.security_agent.guess_derived_permissions_for_datasets( existing_datasets )
         else:
             # No valid inputs, we will use history defaults
-            output_permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
+            output_permissions = trans.app.security_agent.history_get_default_permissions( history )
         # Build name for output datasets based on tool name and input names
         if len( input_names ) == 1:
             on_text = input_names[0]
@@ -300,7 +310,7 @@ class DefaultToolAction( object ):
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming: #don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
-                trans.history.add_dataset( data, set_hid = set_output_hid )
+                history.add_dataset( data, set_hid = set_output_hid )
                 trans.sa_session.add( data )
                 trans.sa_session.flush()
         # Add all the children to their parents
@@ -318,7 +328,7 @@ class DefaultToolAction( object ):
             job.session_id = galaxy_session.id
         if trans.user is not None:
             job.user_id = trans.user.id
-        job.history_id = trans.history.id
+        job.history_id = history.id
         job.tool_id = tool.id
         try:
             # For backward compatibility, some tools may not have versions yet.

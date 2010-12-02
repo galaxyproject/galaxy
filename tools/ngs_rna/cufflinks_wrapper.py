@@ -107,11 +107,7 @@ def __main__():
         
         # Error checking.
         if returncode != 0:
-            raise Exception, stderr
-            
-        # check that there are results in the output file
-        if len( open( os.path.join( tmp_output_dir, "transcripts.gtf" ), 'rb' ).read().strip() ) == 0:
-            raise Exception, 'The main output file is empty, there may be an error with your input file or settings.'
+            raise Exception, stderr            
     except Exception, e:
         stop_err( 'Error running cufflinks. ' + str( e ) )
         

@@ -31,7 +31,9 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
     .nav-container {
         width: 100%;
     }
-    # Styles for filters.
+    #
+    # Styles for dynamics tools and filters.
+    #
     .filter-name {
         float: left;
     }
@@ -40,7 +42,28 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         border-spacing: 7px 0px;
     }
     .values {
-        padding-right: 1em;
+        padding-left: 0.25em;
+    }
+    .dynamic-tool {
+        width: 400px;
+        margin-left: 0.25em;
+    }
+    .param-row {
+        margin-top: 0.4em;
+        margin-left: 1em;
+    }
+    .slider-label {
+        float: left;
+        font-weight: bold;
+    }
+    .slider {
+        float: right;
+        width: 200px; 
+        position: relative;
+    }
+    .tool-name {
+        font-size: 120%;
+        font-weight: bold;
     }
 </style>
 </%def>
@@ -70,6 +93,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
 <script type="text/javascript">
 
     var data_url = "${h.url_for( action='data' )}",
+        run_tool_url = "${h.url_for( action='run_tool' )}",
     	reference_url = "${h.url_for( action='reference' )}",
 		chrom_url = "${h.url_for( action='chroms' )}",
     	view;
@@ -85,7 +109,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             view.editor = true;
             %for track in config.get('tracks'):
                 view.add_track(
-                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['filters']}, ${track['prefs']} )
+                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['filters']}, 
+                        ${track['tool']}, ${track['prefs']} )
                 );
             %endfor
             init();
@@ -136,7 +161,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             var add_async_success = function(track_data) {
                 var td = track_data,
 					track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
-					new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.filters, track_data.prefs);
+					new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.filters, track_data.tool, track_data.prefs);
 					
                 view.add_track(new_track);
                 view.has_changes = true;
