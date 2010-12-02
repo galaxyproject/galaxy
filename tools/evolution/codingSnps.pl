@@ -1,7 +1,5 @@
-#!/usr/bin/env perl
-
+#!/usr/bin/perl -w 
 use strict;
-use warnings;
 
 #########################################################################
 #	codingSnps.pl
@@ -11,17 +9,18 @@ use warnings;
 #	those that cause a frameshift or substitution in the amino acid.
 #########################################################################
 
+my $seqFlag = "2bit"; #flag to set sequence type 2bit|nib
 if (!@ARGV or scalar @ARGV < 3) {
-   print "Usage: codingSnps.pl snps.bed genes.bed (/dir/nib/|Galaxy build= loc=) [chr=# start=# end=# snp=#] > codingSnps.txt\n";
+   print "Usage: codingSnps.pl snps.bed genes.bed (/dir/*$seqFlag|Galaxy build= loc=) [chr=# start=# end=# snp=# keepColumns=1] > codingSnps.txt\n";
    exit;
 }
 my $uniq = 0; #flag for whether want uniq positions
 my $syn = 0;  #flag for if want synonomous changes rather than non-syn
+my $keep = 0; #keep old columns and append new ones
 my $snpFile = shift @ARGV;
 my $geneFile = shift @ARGV;
-my $nibDir = shift @ARGV;
+my $nibDir = shift @ARGV;  #2bit or nib, depending on flag above
 if ($nibDir eq 'Galaxy') { getGalaxyInfo(); }
-my $seqFlag = "2bit"; #flag to set sequence type 2bit|nib
 my $col0 = 0; #bed like columns in default positions
 my $col1 = 1;
 my $col2 = 2;
@@ -32,6 +31,7 @@ foreach (@ARGV) {
    elsif (/start=(\d+)/) { $col1 = $1 -1; }
    elsif (/end=(\d+)/) { $col2 = $1 -1; }
    elsif (/snp=(\d+)/) { $col3 = $1 -1; }
+   elsif (/keepColumns=1/) { $keep = 1; }
 }
 if ($col0 < 0 || $col1 < 0 || $col2 < 0 || $col3 < 0) {
    print STDERR "ERROR column numbers are given with origin 1\n";
@@ -103,6 +103,10 @@ while(<FH>) {
    if (!@g && exists $chrSt{$s[$col0]}) { #need to fetch first gene row
       $i = $chrSt{$s[$col0]};
       @g = split(/\t/, $genes[$i]);
+      if (scalar @g < 12) {  
+         print STDERR "ERROR the gene file must be the whole genes in BED format\n";
+         exit 1;
+      }
    }elsif (!@g) { 
       next; #no gene for this chrom
    }elsif ($s[$col0] ne $g[0] && exists $chrSt{$s[$col0]}) { #new chrom 
@@ -195,28 +199,32 @@ sub processSnp {
       my $copy = $sref->[$col3];
       my $c = ($copy =~ tr/-//);
       if ($c % 3 == 0) { return; } #not frameshift 
-      #handle bed4 to bed4 + 4 (pgSnp)
-      print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
-      #if ($sref->[4]) { print "\t$sref->[4]"; }
-      #if ($sref->[5]) { print "\t$sref->[5]"; }
-      #if ($sref->[6]) { print "\t$sref->[6]"; }
-      #if ($sref->[7]) { print "\t$sref->[7]"; }
-      print "\t$gref->[3]\tframeshift\n";
+      #handle bed4 or any interval file
+      if (!$keep) {
+         print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
+         print "\t$gref->[3]\tframeshift\n";
+      }else {
+         my @s = @{$sref};
+         print join("\t", @s), "\t$gref->[3]\tframeshift\n";
+      }
       $done{"$sref->[$col0] $sref->[$col1] $sref->[$col2]"}++;
       return;
    }elsif ($sref->[$col1] == $sref->[$col2]) { #insertion
       my $copy = $sref->[$col3];
       my $c = ($copy =~ tr/\[ACTG]+//);
       if ($c % 3 == 0) { return; } #not frameshift
-      #handle bed4 to bed4 + 4 (pgSnp)
-      print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
-      #if ($sref->[4]) { print "\t$sref->[4]"; }
-      #if ($sref->[5]) { print "\t$sref->[5]"; }
-      #if ($sref->[6]) { print "\t$sref->[6]"; }
-      #if ($sref->[7]) { print "\t$sref->[7]"; }
-      print "\t$gref->[3]\tframeshift\n";
+      #handle bed4 or any interval file
+      if (!$keep) {
+         print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
+         print "\t$gref->[3]\tframeshift\n";
+      }else {
+         my @s = @{$sref};
+         print join("\t", @s), "\t$gref->[3]\tframeshift\n";
+      }
       $done{"$sref->[$col0] $sref->[$col1] $sref->[$col2]"}++;
       return;
+   }elsif ($sref->[$col3] =~ /-/) { #indel and sub?
+      return; #skip
    }
    #check for amino acid substitutions
    my $s = $sref->[$col1] + 1;
@@ -263,7 +271,7 @@ sub processSnp {
          if (!$oldnts) { return; } #skip this one
          $oldnts = join('', (reverse(split(/ */, $oldnts))));
          foreach (@vars) {
-            $_ = reverse(split(/ */));
+            $_ = reverse(split(/ */)); #needed for indels
             $_ = compl($_);
          }
       }
@@ -287,25 +295,29 @@ sub processSnp {
          push(@newaa, $t);
       }
       if (!$change && $syn) { 
-          print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
-          print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\n";
+          if (!$keep) {
+             print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
+             print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\n";
+          }else {
+             my @s = @{$sref};
+             print join("\t", @s), 
+                   "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\n";
+          }
           return;
       }elsif ($syn) { return; } #only want synonymous changes
       if (!$change) { return; } #no change in amino acids
-#if (abs($pos[$i] - $pos[$i2]) > 200) {
-#print STDERR "TESTING found mutation at splice site $sref->[0]\t$sref->[1]\t$sref->[2]\n";
-#print STDERR "old $oldaa, new ", join(', ', @newaa), "\n";
-#print STDERR "oldnt $oldnts, strand $gref->[5]\n";
-#exit;
-#}
-      print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
-      #if (defined $sref->[4]) { print "\t$sref->[4]"; }
-      #if (defined $sref->[5]) { print "\t$sref->[5]"; }
-      #if (defined $sref->[6]) { print "\t$sref->[6]"; }
-      #if (defined $sref->[7]) { print "\t$sref->[7]"; }
-      if ($gref->[5] eq '-') { $changed = compl($changed); } #use plus for ref
-      if (!$changed) { return; } #skip this one
-      print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\n";
+      if (!$keep) {
+         print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
+         if ($gref->[5] eq '-') { $changed = compl($changed); } #use plus for ref
+         if (!$changed) { return; } #skip this one
+         print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\n";
+      }else {
+         my @s = @{$sref};
+         print join("\t", @s);
+         if ($gref->[5] eq '-') { $changed = compl($changed); } #use plus for ref
+         if (!$changed) { return; } #skip this one
+         print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\n";
+      }
       $done{"$sref->[$col0] $sref->[$col1] $sref->[$col2]"}++;
    }
 }
@@ -328,10 +340,6 @@ sub getnts {
          $s = $pos[$i];
       }
       if (length $seq != scalar @pos) { #still need to fetch seq
-#if (abs($pos[$#pos]-$pos[0]) > 200) {
-#print STDERR "TESTING have split codon $chr $pos[0] $pos[$#pos]\n";
-#exit;
-#}
          if ($seqFlag eq '2bit') {
             $seq .= fetchSeq2bit($chr, $s, $pos[$#pos]);
          }else {
@@ -350,9 +358,6 @@ sub getnts {
          $s = $pos[$i];
       }
       if (length $seq != scalar @pos) { #still need to fetch seq
-#if (abs($pos[$#pos]-$pos[0]) > 200) {
-#print STDERR "TESTING have split codon $pos[0] .. $pos[$#pos]\n";
-#}
          if ($seqFlag eq '2bit') {
             $seq .= fetchSeq2bit($chr, $s, $pos[0]);
          }else {
@@ -374,7 +379,7 @@ sub fetchSeq2bit {
    while (<BIT>) {
       chomp;
       if (/^>/) { next; } #header
-      $seq .= $_;
+      $seq .= uc($_);
    }
    close BIT or die "Couldn't finish twoBitToFa on $chr $st $end, $!\n";
    return $seq;
@@ -400,6 +405,7 @@ sub fetchSeqNib {
 sub compl {
    my $nts = shift;
    my $comp = '';
+   if (!$nts) { die "ERROR called compl with nts undefined"; }
    foreach my $n (split(/ */, $nts)) {
       if ($n eq 'A') { $comp .= 'T'; }
       elsif ($n eq 'T') { $comp .= 'A'; }
@@ -519,3 +525,4 @@ sub getGalaxyInfo {
    }
    $nibDir .= "/$build.2bit";  #we want full path and filename
 }
+
