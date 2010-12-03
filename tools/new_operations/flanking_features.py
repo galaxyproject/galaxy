@@ -27,7 +27,7 @@ def get_closest_feature (node, direction, threshold_up, threshold_down, report_f
     #threhold_Up is equal to the interval start for +ve strand, and interval end for -ve strand
     #threhold_down is equal to the interval end for +ve strand, and interval start for -ve strand
     if direction == 1: 
-        if node.maxend < threshold_up:
+        if node.maxend <= threshold_up:
             if node.end == node.maxend:
                 report_func_up(node)
             elif node.right and node.left:
@@ -39,19 +39,19 @@ def get_closest_feature (node, direction, threshold_up, threshold_down, report_f
                 get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
             elif node.left and node.left.maxend == node.maxend:
                 get_closest_feature(node.left, direction, threshold_up, threshold_down, report_func_up, report_func_down)
-        elif node.minend < threshold_up:
-            if node.end < threshold_up:
+        elif node.minend <= threshold_up:
+            if node.end <= threshold_up:
                 report_func_up(node)
             if node.left and node.right:
-                if node.right.minend < threshold_up:
+                if node.right.minend <= threshold_up:
                     get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
-                if node.left.minend < threshold_up:
+                if node.left.minend <= threshold_up:
                     get_closest_feature(node.left, direction, threshold_up, threshold_down, report_func_up, report_func_down)
             elif node.left:
-                if node.left.minend < threshold_up:
+                if node.left.minend <= threshold_up:
                     get_closest_feature(node.left, direction, threshold_up, threshold_down, report_func_up, report_func_down)
             elif node.right:
-                if node.right.minend < threshold_up:
+                if node.right.minend <= threshold_up:
                     get_closest_feature(node.right, direction, threshold_up, threshold_down, report_func_up, report_func_down)
     elif direction == 0:
         if node.start > threshold_down:

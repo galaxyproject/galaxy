@@ -1,4 +1,4 @@
-<tool id="flanking_features_1" name="Fetch closest feature" version="4.0.0">
+<tool id="flanking_features_1" name="Fetch closest non-overlapping feature" version="4.0.1">
   <description>  for every interval</description>
   <command interpreter="python">
       flanking_features.py $input1 $input2 $out_file1 $direction
@@ -53,7 +53,12 @@
       <param name="direction" value="Downstream"/>
       <output name="out_file1" file="closest_features_down.interval"/>
     </test>
-    
+    <test>
+      <param name="input1" value="4_windows.bed"/>
+      <param name="input2" value="4_windows_3.bed"/>
+      <param name="direction" value="Both"/>
+      <output name="out_file1" file="closest_features_both.interval"/>
+    </test>
     <!-- Tests for GFF functionality. -->
 
     <test>
@@ -76,7 +81,7 @@
 
 **What it does**
 
-For every interval in the **interval** dataset, this tool fetches the **closest** upstream and / or downstream features from the **features** dataset.
+For every interval in the **interval** dataset, this tool fetches the **closest non-overlapping** upstream and / or downstream features from the **features** dataset.
 
 -----
 
