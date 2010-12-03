@@ -10,19 +10,19 @@
     <param name="graph_size" type="text" value="2048,768" label="Dimensions of Graph"/>
     <param name="xlabel" type="text" value="X Axis Label" label="X axis label" size="50"/>
     <param name="ylabel" type="text" value="Score Value" label="Y axis label" size="50"/>
-    <param name="xcol" type="data_column" data_ref="input_file" label="Column for X axis position" default_value="1" help="A unique number"/>
-    <param name="q1col" type="data_column" data_ref="input_file" label="Column for Q1" default_value="7"/>
-    <param name="medcol" type="data_column" data_ref="input_file" label="Column for Median" default_value="8"/>
-    <param name="q3col" type="data_column" data_ref="input_file" label="Column for Q3" default_value="9"/>
-    <param name="lwcol" type="data_column" data_ref="input_file" label="Column for left whisker" default_value="11"/>
-    <param name="rwcol" type="data_column" data_ref="input_file" label="Column for right whisker" default_value="12"/>
+    <param name="xcol" type="data_column" data_ref="input_file" label="Column for X axis position" default_value="1" help="A unique number; c1 if plotting output of FASTQ summary"/>
+    <param name="q1col" type="data_column" data_ref="input_file" label="Column for Q1" default_value="7" help="c7 if plotting output of FASTQ summary"/>
+    <param name="medcol" type="data_column" data_ref="input_file" label="Column for Median" default_value="8" help="c8 if plotting output of FASTQ summary"/>
+    <param name="q3col" type="data_column" data_ref="input_file" label="Column for Q3" default_value="9" help="c9 if plotting output of FASTQ summary"/>
+    <param name="lwcol" type="data_column" data_ref="input_file" label="Column for left whisker" default_value="11" help="c11 if plotting output of FASTQ summary"/>
+    <param name="rwcol" type="data_column" data_ref="input_file" label="Column for right whisker" default_value="12" help="c12 if plotting output of FASTQ summary"/>
     <conditional name="use_outliers">
       <param name="use_outliers_type" type="select" label="Plot Outliers">
         <option value="use_outliers" selected="true">Plot Outliers</option>
         <option value="dont_use_outliers">Don't Plot Outliers</option>
       </param>
       <when value="use_outliers">
-        <param name="outliercol" type="data_column" data_ref="input_file" label="Column for Outliers" default_value="13"/>
+        <param name="outliercol" type="data_column" data_ref="input_file" label="Column for Outliers" default_value="13" help="c13 if plotting output of FASTQ summary"/>
       </when>
       <when value="dont_use_outliers">
       </when>
@@ -70,7 +70,33 @@ plot '${input_file}' using ${xcol}:${q1col}:${lwcol}:${rwcol}:${q3col} with cand
     </test>
   </tests>
   <help>
-This tool creates a boxplot from a tabular file containing summary statistics. 
-Outliers are optionally defined using a comma-separated list of values.
+
+**What it does**
+
+Creates a boxplot graph. Its main purpose is to display a distribution of quality scores produced by *NGS: QC and maniupulation -> FASTQ Summary Statistics* tool.
+
+.. class:: warningmark
+
+**TIP:** If you want to display a distribution of quality scores produced by *NGS: QC and maniupulation -> FASTQ Summary Statistics* and the column assignments within the tool's interface are not automatically set (they will all read "c1" in that case) set columns manually to the following values::
+
+  Column for X axis           c1
+  Column for Q1               c7
+  Column for Median           c8
+  Column for Q3               c9
+  Column for left whisker     c11
+  Column for right whisker    c12
+  Column for Outliers         c13
+
+-----
+
+**Output Example**
+
+* Black horizontal lines are medians
+* Rectangular red boxes show the Inter-quartile Range (IQR) (top value is Q3, bottom value is Q1)
+* Whiskers show outliers at max. 1.5*IQR
+
+.. image:: ../static/images/solid_qual.png
+
+
   </help>
 </tool>
