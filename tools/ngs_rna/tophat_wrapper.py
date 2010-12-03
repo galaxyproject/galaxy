@@ -208,11 +208,11 @@ def __main__():
         shutil.copyfile( os.path.join( tmp_output_dir, "accepted_hits.bam" ), options.accepted_hits_output_file )
     except Exception, e:
         stop_err( 'Error in tophat:\n' + str( e ) ) 
-    finally:
-        # Clean up temp dirs
-        if os.path.exists( tmp_index_dir ):
-            shutil.rmtree( tmp_index_dir )
-        if os.path.exists( tmp_output_dir ):
-            shutil.rmtree( tmp_output_dir )
+
+    # Clean up temp dirs
+    if os.path.exists( tmp_index_dir ):
+        shutil.rmtree( tmp_index_dir )
+    if os.path.exists( tmp_output_dir ):
+        shutil.rmtree( tmp_output_dir )
 
 if __name__=="__main__": __main__()
