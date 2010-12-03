@@ -2,11 +2,6 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/requests/common.mako" import="*" />
 
-%if message:
-    ${render_msg( message, status )}
-%endif
-
-
 %if not rt_info_widgets:
     <br/><br/>
     <ul class="manage-table-actions">
@@ -16,8 +11,14 @@
     Creating a new sequencer configuration requires two form definitions, a <b>Sequencing Request Form</b>,
     and a <b>Sequencing Sample Form</b>, which must be created first.  Click the <b>Create new form</b>
     button to create them.
-%else:
-    <form name="create_request_type" action="${h.url_for( controller='sequencer', action='create_request_type')}" method="post" >
+%endif
+
+%if message:
+    ${render_msg( message, status )}
+%endif
+
+%if rt_info_widgets:
+    <form name="create_request_type" action="${h.url_for( controller='sequencer', action='create_request_type' )}" method="post">
         <div class="toolForm">
             <div class="toolFormTitle">Create a new sequencer configuration</div>
             %for rt_info in rt_info_widgets:
