@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<sequencer_actions>
+    <redirect title="Start run" action="start_run"/>
+    <redirect title="Run finished" action="run_finished"/>
+</sequencer_actions>

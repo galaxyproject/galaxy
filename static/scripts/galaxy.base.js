@@ -126,16 +126,24 @@ function make_popup_menus() {
             } else {
                 options[ link.text() ] = function() {
                     if ( !confirmtext || confirm( confirmtext ) ) {
-                        var f = window;
+                        var f;
                         if ( target == "_parent" ) {
-                            f = window.parent;
+                            window.parent.location = href;
                         } else if ( target == "_top" ) {
-                            f = window.top;
-                        }
-                        f.location = href;
-                    }
+                            window.top.location = href;
+                        } else if ( target == "demo" ) {
+                            // Http request target is a window named
+                            // demolocal on the local box
+                            if ( f == undefined || f.closed ) {
+                                f = window.open( href,target );
+                                f.creator = self;
+                            };
+                        } else {
+                            window.location = href;
+                        };
+                    };
                 };
-            }
+            };
         });
         var box = $( "#" + menu.attr( 'popupmenu' ) );
         
