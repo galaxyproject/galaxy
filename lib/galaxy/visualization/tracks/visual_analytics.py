@@ -20,7 +20,6 @@ def get_tool_def( trans, hda ):
         return {}
 
     # Get list of tool parameters that can be interactively modified.
-    # raise 'hi'
     tool_params = []
     tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
     tool_param_values = tool.params_from_strings( tool_param_values, trans.app )

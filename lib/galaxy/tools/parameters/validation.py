@@ -84,7 +84,7 @@ class ExpressionValidator( Validator ):
             if self.substitute_value_in_message:
                 message = message % value
             raise ValueError( message )
-        
+            
 class InRangeValidator( Validator ):
     """
     Validator that ensures a number is in a specific range
@@ -109,7 +109,10 @@ class InRangeValidator( Validator ):
     def __init__( self, message, range_min, range_max ):
         self.min = float( range_min )
         self.max = float( range_max )  
-        self.message = message or ( "Value must be between %f and %f" % ( self.min, self.max ) )  
+        # Remove unneeded 0s and decimal from floats to make message pretty.
+        self_min_str = str( self.min ).rstrip( '0' ).rstrip( '.' )
+        self_max_str = str( self.max ).rstrip( '0' ).rstrip( '.' )
+        self.message = message or "Value must be between %s and %s" % ( self_min_str, self_max_str )
     def validate( self, value, history=None ):
         if not( self.min <= float( value ) <= self.max ):
             raise ValueError( self.message )   
