@@ -127,7 +127,7 @@ class DRMAAJobRunner( BaseJobRunner ):
             command_line = self.build_command_line( job_wrapper, include_metadata=True )
         except:
             job_wrapper.fail( "failure preparing job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.get_id_tag())
+            log.exception("failure running job %s" % job_wrapper.get_id_tag())
             return
 
         runner_url = job_wrapper.tool.job_runner
