@@ -65,6 +65,10 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         font-size: 120%;
         font-weight: bold;
     }
+    .child-track-icon {
+        background:url(${h.url_for('/static/images/fugue/arrow-000-small-bw.png')}) no-repeat;}
+        width: 30px;
+    }
 </style>
 </%def>
 
@@ -109,8 +113,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             view.editor = true;
             %for track in config.get('tracks'):
                 view.add_track(
-                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['filters']}, 
-                        ${track['tool']}, ${track['prefs']} )
+                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']},  ${track['prefs']}, 
+                                                                              ${track['filters']}, ${track['tool']} )
                 );
             %endfor
             init();
@@ -161,7 +165,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             var add_async_success = function(track_data) {
                 var td = track_data,
 					track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
-					new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.filters, track_data.tool, track_data.prefs);
+					new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs, 
+					                                                    track_data.filters, track_data.tool );
 					
                 view.add_track(new_track);
                 view.has_changes = true;
@@ -217,6 +222,11 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 $.each( sorted, function(_, id) {
                     var track_id = parseInt(id.split("track_")[1]),
                         track = view.tracks[track_id];
+                    
+                    // HACK: do not save child track.
+                    if (track.parent_track !== undefined) {
+                        return;
+                    }
                     
                     tracks.push( {
                         "track_type": track.track_type,

@@ -2,6 +2,9 @@
     2010, James Taylor, Kanwei Li
 */
 
+/**
+ * Init constants & functions used throughout trackster.
+ */
 var DENSITY = 200,
     FEATURE_LEVELS = 10,
     MAX_FEATURE_DEPTH = 50,
@@ -17,7 +20,8 @@ var DENSITY = 200,
     CACHED_DATA = 5,
     DUMMY_CANVAS = document.createElement("canvas"),
     RIGHT_STRAND, LEFT_STRAND;
-    
+
+// Get information for rendering canvas elements.    
 if (window.G_vmlCanvasManager) {
     G_vmlCanvasManager.initElement(DUMMY_CANVAS);
 }
@@ -48,7 +52,10 @@ left_img_inv.onload = function() {
 function round_1000(num) {
     return Math.round(num * 1000) / 1000;    
 }
-    
+
+/**
+ * Generic cache that handles key/value pairs.
+ */ 
 var Cache = function( num_elements ) {
     this.num_elements = num_elements;
     this.clear();
@@ -81,6 +88,9 @@ $.extend( Cache.prototype, {
     }
 });
 
+/**
+ * View object manages complete viz view, including tracks and interactions.
+ */
 var View = function( container, title, vis_id, dbkey, callback ) {
     this.container = container;
     this.chrom = null;
@@ -125,7 +135,7 @@ $.extend( View.prototype, {
         this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
         this.overview_close = $("<a href='javascript:void(0);'>Close Overview</a>").addClass("overview-close").hide().appendTo(this.overview_viewport);
-        this.overview_highlight = $("<div />").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
+        this.overview_highlight = $("<div/>").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
         this.overview_box_background = $("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport);
         this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
         this.default_overview_height = this.overview_box.height();
@@ -471,10 +481,9 @@ $.extend( View.prototype, {
     }
 });
 
-//
-// Tools.
-//
-
+/**
+ * Encapsulation of tools that users can apply to tracks/datasets.
+ */
 var Tool = function(name, params) {
     this.name = name;
     this.params = params;  
@@ -482,13 +491,21 @@ var Tool = function(name, params) {
 $.extend(Tool.prototype, {
     // Returns a dictionary of parameter values; key is parameter name, value
     // is parameter value.
-    get_param_values: function() {
+    get_param_values_dict: function() {
         var param_dict = {};
         for (var i = 0; i < this.params.length; i++) {
             var param = this.params[i];
             param_dict[param.name] = param.value;
         }
         return param_dict;
+    },
+    // Returns an array of parameter values.
+    get_param_values: function() {
+        var param_values = [];
+        for (var i = 0; i < this.params.length; i++) {
+            param_values[i] = this.params[i].value;
+        }
+        return param_values;
     }
 });
 
@@ -500,7 +517,8 @@ var NumberToolParameter = function(name, label, min, max, init_value) {
     this.value = init_value;
 }
 
-var get_tool = function(tool_dict) {
+// Uses a dictionary to construct a tool object.
+var get_tool_from_dict = function(tool_dict) {
     if (obj_length(tool_dict) == 0) {
         return undefined;
     }
@@ -523,18 +541,14 @@ var get_tool = function(tool_dict) {
     return new Tool(tool_name, params);
 };
 
-//
-// Filters.
-//
-
-// Generic filter.
+/**
+ * Filters that enable users to show/hide data points dynamically.
+ */
 var Filter = function(name, index, value) {
     this.name = name;
     this.index = index;
     this.value = value;
 };
-
-// Number filter for a track.
 var NumberFilter = function(name, index) {
     this.name = name;
     // Index into payload to filter.
@@ -604,7 +618,7 @@ $.extend(NumberFilter.prototype, {
 });
 
 // Parse filters dict and return filters.
-var get_filters = function(filters_dict) {
+var get_filters_from_dict = function(filters_dict) {
     var filters = [];
     for (var i = 0; i < filters_dict.length; i++) {
         var filter_dict = filters_dict[i];
@@ -618,16 +632,29 @@ var get_filters = function(filters_dict) {
     return filters;
 };
 
-var Track = function (name, view, parent_element, filters, tool) {
+/**
+ * Tracks are objects can be added to the View. 
+ * 
+ * Track object hierarchy:
+ * Track
+ * -> LabelTrack 
+ * -> TiledTrack
+ * ----> LineTrack
+ * ----> ReferenceTrack
+ * ----> FeatureTrack
+ * -------> ReadTrack
+ */
+var Track = function (name, view, parent_element) {
     this.name = name;
     this.view = view;    
     this.parent_element = parent_element;
-    this.filters = (filters !== undefined ? get_filters( filters ) : []);
-    this.tool = (tool !== undefined ? get_tool( tool ) : undefined);
     this.init_global();
 };
 $.extend( Track.prototype, {
     init_global: function () {
+        //
+        // Create HTML element structure for track.
+        //
         this.container_div = $("<div />").addClass('track').css("position", "relative");
         if (!this.hidden) {
             this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
@@ -638,107 +665,8 @@ $.extend( Track.prototype, {
         }
         
         //
-        // Create dynamic tool div.
+        // Create content div, which is where track is displayed.
         //
-        this.dynamic_tool_div = $("<div class='dynamic-tool'>").appendTo(this.container_div); // .hide();
-        // Disable dragging, double clicking on div so that actions on slider do not impact viz.
-        this.dynamic_tool_div.bind( "drag", function(e) {
-            e.stopPropagation();
-        }).bind("dblclick", function( e ) {
-            e.stopPropagation();
-        });
-        if (this.tool) {
-            var name_div = $("<div class='tool-name'>").appendTo(this.dynamic_tool_div).text(this.tool.name);
-            var tool_params = this.tool.params;
-            var track = this;
-            $.each(this.tool.params, function(index, param) {
-                var param_div = $("<div>").addClass("param-row").appendTo(track.dynamic_tool_div)
-                
-                //
-                // Slider label.
-                //
-                var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
-                var name_span = $("<span class='param-name'>").text(param.label + "  ").appendTo(label_div);
-                var values_span = $("<span class='values'>").appendTo(label_div).text("[" + param.value + "]");
-                
-                //
-                // Slider.
-                //
-                var slider_div = $("<div>").addClass("slider").appendTo(param_div);
-                var slider = $("<div id='" + param.name + "-param-control'>").appendTo(slider_div);
-                // Make step reasonable.
-                var step = (param.max <= 1 ? 0.01 : 1 );
-                slider.slider({
-                    min: param.min,
-                    max: param.max,
-                    step: step,
-                    value: param.value,
-                    slide: function( event, ui ) {
-                        var value = ui.value;
-                        param.value = value;
-                        // Set new value in UI.
-                        if (0 < value && value < 1) {
-                            value = parseFloat(value).toFixed(2);
-                        }
-                        values_span.text("[" + value + "]");
-                    }
-                });
-                $("<div style='clear: both;'>").appendTo(param_div); 
-            });
-            
-            // Add 'Go' button.
-            var run_tool_row = $("<div>").addClass("param-row").appendTo(this.dynamic_tool_div);
-            var run_tool_button = $("<input type='submit'>").attr("value", "Run Tool").appendTo(run_tool_row);
-            var track = this;
-            run_tool_button.click( function() {
-                track.run_tool(); 
-            });
-        }
-        
-        //
-        // Create filtering div.
-        //
-        this.filtering_div = $("<div class='track-filters'>").appendTo(this.container_div).hide();
-        // Disable dragging, double clicking on div so that actions on slider do not impact viz.
-        this.filtering_div.bind( "drag", function(e) {
-            e.stopPropagation();
-        }).bind("dblclick", function( e ) {
-            e.stopPropagation();
-        });
-        var filters_table = $("<table class='filters'>").appendTo(this.filtering_div);
-        var track = this;
-        $.each(this.filters, function(index, filter) {
-            var table_row = $("<tr>").appendTo(filters_table);
-            var filter_th = $("<th class='filter-info'>").appendTo(table_row);
-            var name_span = $("<span class='name'>").appendTo(filter_th);
-            name_span.text(filter.name + "  "); // Extra spacing to separate name and values
-            var values_span = $("<span class='values'>").appendTo(filter_th);
-            // TODO: generate custom interaction elements based on filter type.
-            var table_data = $("<td>").appendTo(table_row);
-            filter.control_element = $("<div id='" + filter.name + "-filter-control' style='width: 200px; position: relative'>").appendTo(table_data);
-            filter.control_element.slider({
-                range: true,
-                min: Number.MAX_VALUE,
-                max: -Number.MIN_VALUE,
-                values: [0, 0],
-                slide: function( event, ui ) {
-                    var values = ui.values;
-                    // Set new values in UI.
-                    values_span.text( "[" + values[0] + "-" + values[1] + "]" );
-                    // Set new values in filter.
-                    filter.low = values[0];
-                    filter.high = values[1];                    
-                    // Redraw track.
-                    track.draw( true );
-                },
-                change: function( event, ui ) {
-                    filter.control_element.slider( "option", "slide" ).call( filter.control_element, event, ui );
-                }
-            });
-            filter.slider = filter.control_element;
-            filter.slider_label = values_span;
-        });
-        
         this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
         this.parent_element.append(this.container_div);
     },
@@ -791,29 +719,134 @@ $.extend( Track.prototype, {
             track.container_div.addClass("nodata");
             track.content_div.text(DATA_NONE);
         }
-    },
-    // Run track's tool.
-    run_tool: function() {
-        var url_params = { 
-            dataset_id: this.original_dataset_id,
-            chrom: this.view.chrom,
-            low: this.view.low,
-            high: this.view.high,
-            tool_id: this.tool.name,
-        };
-
-        $.extend(url_params, this.tool.get_param_values());
-        
-        var track = this;
-        $.getJSON(run_tool_url, url_params, function (result) {
-            // Result should be id of new dataset.
-            track.dataset_id = result;
-            track.init();
-        });
     }
 });
 
-var TiledTrack = function() {
+var TiledTrack = function(filters, tool, parent_track) {
+    // Attribute init.
+    this.filters = (filters !== undefined ? get_filters_from_dict( filters ) : []);
+    this.tool = (tool !== undefined ? get_tool_from_dict( tool ) : undefined);
+    this.parent_track = parent_track;
+    this.child_tracks = [];
+    
+    //
+    // Init HTML elements. for tool, filters.
+    //
+    
+    // If track has parent:
+    //   -replace drag handle with child-track icon button; (TODO: eventually, we'll want to be able 
+    //    to make a set of child tracks dragable.)
+    //   -remove tool b/c child tracks cannot have tools.
+    if (this.parent_track) {
+        this.header_div.find(".draghandle").removeClass('draghandle').addClass('child-track-icon').addClass('icon-button');
+        this.parent_element.addClass("child-track");
+        this.tool = undefined;
+    }
+    
+    // Create filtering div.
+    this.filtering_div = $("<div/>").addClass("track-filters").hide();
+    this.header_div.after(this.filtering_div);
+    // Disable dragging, double clicking on div so that actions on slider do not impact viz.
+    this.filtering_div.bind( "drag", function(e) {
+        e.stopPropagation();
+    }).bind("dblclick", function( e ) {
+        e.stopPropagation();
+    });
+    var filters_table = $("<table class='filters'>").appendTo(this.filtering_div);
+    var track = this;
+    $.each(this.filters, function(index, filter) {
+        var table_row = $("<tr>").appendTo(filters_table);
+        var filter_th = $("<th class='filter-info'>").appendTo(table_row);
+        var name_span = $("<span class='name'>").appendTo(filter_th);
+        name_span.text(filter.name + "  "); // Extra spacing to separate name and values
+        var values_span = $("<span class='values'>").appendTo(filter_th);
+        // TODO: generate custom interaction elements based on filter type.
+        var table_data = $("<td>").appendTo(table_row);
+        filter.control_element = $("<div id='" + filter.name + "-filter-control' style='width: 200px; position: relative'>").appendTo(table_data);
+        filter.control_element.slider({
+            range: true,
+            min: Number.MAX_VALUE,
+            max: -Number.MIN_VALUE,
+            values: [0, 0],
+            slide: function( event, ui ) {
+                var values = ui.values;
+                // Set new values in UI.
+                values_span.text( "[" + values[0] + "-" + values[1] + "]" );
+                // Set new values in filter.
+                filter.low = values[0];
+                filter.high = values[1];                    
+                // Redraw track.
+                track.draw( true );
+            },
+            change: function( event, ui ) {
+                filter.control_element.slider( "option", "slide" ).call( filter.control_element, event, ui );
+            }
+        });
+        filter.slider = filter.control_element;
+        filter.slider_label = values_span;
+    });
+    
+    // Create dynamic tool div.
+    if (this.tool) {
+        // Create div elt.
+        this.dynamic_tool_div = $("<div/>").addClass("dynamic-tool"); // .hide();
+        this.header_div.after(this.dynamic_tool_div);
+        // Disable dragging, double clicking on div so that actions on slider do not impact viz.
+        this.dynamic_tool_div.bind( "drag", function(e) {
+            e.stopPropagation();
+        }).bind("dblclick", function( e ) {
+            e.stopPropagation();
+        });
+        var name_div = $("<div class='tool-name'>").appendTo(this.dynamic_tool_div).text(this.tool.name);
+        var tool_params = this.tool.params;
+        var track = this;
+        $.each(this.tool.params, function(index, param) {
+            var param_div = $("<div>").addClass("param-row").appendTo(track.dynamic_tool_div)
+            
+            //
+            // Slider label.
+            //
+            var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
+            var name_span = $("<span class='param-name'>").text(param.label + "  ").appendTo(label_div);
+            var values_span = $("<span class='values'>").appendTo(label_div).text("[" + param.value + "]");
+            
+            //
+            // Slider.
+            //
+            var slider_div = $("<div/>").addClass("slider").appendTo(param_div);
+            var slider = $("<div id='" + param.name + "-param-control'>").appendTo(slider_div);
+            // Make step reasonable.
+            var step = (param.max <= 1 ? 0.01 : (param.max <= 1000 ? 1 : 5));
+            slider.slider({
+                min: param.min,
+                max: param.max,
+                step: step,
+                value: param.value,
+                slide: function( event, ui ) {
+                    var value = ui.value;
+                    param.value = value;
+                    // Set new value in UI.
+                    if (0 < value && value < 1) {
+                        value = parseFloat(value).toFixed(2);
+                    }
+                    values_span.text("[" + value + "]");
+                }
+            });
+            $("<div style='clear: both;'/>").appendTo(param_div); 
+        });
+        
+        // Add 'Go' button.
+        var run_tool_row = $("<div>").addClass("param-row").appendTo(this.dynamic_tool_div);
+        var run_tool_button = $("<input type='submit'>").attr("value", "Run").appendTo(run_tool_row);
+        var track = this;
+        run_tool_button.click( function() {
+            track.run_tool(); 
+        });
+    }
+    
+    //
+    // Functional init.
+    //
     var track = this,
         view = track.view;
     
@@ -844,6 +877,10 @@ var TiledTrack = function() {
             track.mode_div.hide();
         }
     }
+    
+    //
+    // Track dropdown menu.
+    //
     var track_dropdown = {};
     track_dropdown["Set as overview"] = function() {
         view.overview_viewport.find("canvas").remove();
@@ -1045,6 +1082,36 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             view.overview_viewport.height(this.initial_canvas.height() + view.overview_box.height());
         }
         $(window).trigger("resize");
+    },
+    // Run track's tool.
+    run_tool: function() {
+        var url_params = { 
+            dataset_id: this.original_dataset_id,
+            chrom: this.view.chrom,
+            low: this.view.low,
+            high: this.view.high,
+            tool_id: this.tool.name,
+        };
+        $.extend(url_params, this.tool.get_param_values_dict());
+        var current_track = this;
+        $.getJSON(run_tool_url, url_params, function(track_data) {
+            //
+            // Add new track for tool output.
+            //
+                
+            // Set name of track to include tool name, parameters, and region used.
+			var track_name = url_params.tool_id + 
+			                ", region=[" + url_params.chrom + ":" + url_params.low + "-" + url_params.high + 
+			                "], parameters=[" + current_track.tool.get_param_values().join(", ") + "]";
+			
+            // TODO: Copied from browser.mako when user adds track manually; abstract function 
+            // and use in both places.
+            var td = track_data,
+				track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
+				new_track = new track_types[track_data.track_type](track_name, view, track_data.dataset_id, track_data.prefs,
+				                                                   track_data.filters, track_data.tool, current_track);			                 
+            view.add_track(new_track);
+        });
     }
 });
 
@@ -1362,11 +1429,11 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var FeatureTrack = function ( name, view, dataset_id, filters, tool, prefs ) {
+var FeatureTrack = function (name, view, dataset_id, prefs, filters, tool, parent_track) {
     this.track_type = "FeatureTrack";
     this.display_modes = ["Auto", "Dense", "Squish", "Pack"];
-    Track.call( this, name, view, view.viewport_container, filters, tool );
-    TiledTrack.call( this );
+    Track.call(this, name, view, view.viewport_container);
+    TiledTrack.call(this, filters, tool, parent_track);
     
     this.height_px = 0;
     this.container_div.addClass( "feature-track" );
@@ -1894,8 +1961,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var ReadTrack = function ( name, view, dataset_id, filters, prefs ) {
-    FeatureTrack.call( this, name, view, dataset_id, filters, prefs );
+var ReadTrack = function ( name, view, dataset_id, prefs, filters ) {
+    FeatureTrack.call( this, name, view, dataset_id, prefs, filters );
     this.track_type = "ReadTrack";
     this.vertical_detail_px = 10;
     this.vertical_nodetail_px = 5;

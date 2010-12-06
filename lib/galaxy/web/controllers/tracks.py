@@ -132,10 +132,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     @web.json
     @web.require_login()
     def add_track_async(self, trans, id):
-        dataset_id = trans.security.decode_id( id )
-        
-        hda_query = trans.sa_session.query( model.HistoryDatasetAssociation )
-        dataset = hda_query.get( dataset_id )
+        dataset = self.get_dataset( trans, id, check_ownership=False, check_accessible=True )
         track_type, _ = dataset.datatype.get_track_type()
         track_data_provider_class = get_data_provider( original_dataset=dataset )
         track_data_provider = track_data_provider_class( original_dataset=dataset )
@@ -365,7 +362,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     def list_tracks( self, trans, **kwargs ):
         return self.tracks_grid( trans, **kwargs )
                 
-    @web.json
+    @web.expose
     def run_tool( self, trans, dataset_id, chrom, low, high, tool_id, **kwargs ):
         """ 
         Run a tool on a subset of input data to produce a new output dataset that 
@@ -478,7 +475,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             output.visible = False
         trans.sa_session.flush()
         
-        # Return new output that corresponds to the input dataset.
+        # Return new track that corresponds to the original dataset.
         output_name = None
         for joda in original_job.output_datasets:
             if joda.dataset == original_dataset:
@@ -487,7 +484,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         for joda in subset_job.output_datasets:
             if joda.name == output_name:
                 output_dataset = joda.dataset
-        return output_dataset.id
+        return self.add_track_async( trans, output_dataset.id )
         
     #
     # Helper methods.
