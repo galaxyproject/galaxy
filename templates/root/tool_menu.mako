@@ -1,3 +1,7 @@
+<%!
+    import re
+%>
+
 ## Render a tool
 <%def name="render_tool( tool, section )">
     %if not tool.hidden:
@@ -15,10 +19,11 @@
             ## FIXME: This doesn't look right
             ## %if "[[" in tool.description and "]]" in tool.description:
             ##   ${tool.description.replace( '[[', '<a href="link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
+            <% tool_id = re.sub( '[^a-z0-9_]', '_', tool.id.lower() ) %>
             %if tool.name:
-                <a id="link-${tool.id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${_(tool.name)}</a> ${tool.description} 
+                <a id="link-${tool_id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${_(tool.name)}</a> ${tool.description} 
             %else:
-                <a id="link-${tool.id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
+                <a id="link-${tool_id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
             %endif
         </div>
     %endif
@@ -135,8 +140,8 @@
                                 $(".toolSectionWrapper").find(".toolTitle").hide();
                                 if ( data.length != 0 ) {
                                     // Map tool ids to element ids and join them.
-                                    var s = $.map( data, function( n, i ) { return "#link-" + n; } ).join( ", " );
-                                    
+                                    var s = $.map( data, function( n, i ) { return "#link-" + n.toLowerCase().replace(/[^a-z0-9_]/g,'_'); } ).join( ", " );
+
                                     // First pass to show matching tools and their parents.
                                     $(s).each( function() {
                                         // Add class to denote match.
