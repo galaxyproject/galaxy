@@ -190,7 +190,7 @@
     
                 </div>
                 %if data.peek != "no peek":
-                    <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>
+                    <div><pre id="peek${data.id}" class="peek">${_(h.to_unicode(data.display_peek()))}</pre></div>
                 %endif            
         %else:
             <div>${_('Error: unknown dataset state "%s".') % data_state}</div>
