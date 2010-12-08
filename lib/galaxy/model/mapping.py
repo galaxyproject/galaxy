@@ -573,6 +573,18 @@ FormDefinition.table = Table('form_definition', metadata,
     Column( "type", TrimmedString( 255 ), index=True ),
     Column( "layout", JSONType() ), )
 
+Sequencer.table = Table( 'sequencer', metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "description", TEXT ),
+    Column( "sequencer_type_id", TrimmedString( 255 ), nullable=False ),
+    Column( "version", TrimmedString( 255 ) ),
+    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
 RequestType.table = Table('request_type', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -926,6 +938,13 @@ assign_mapper( context, Request, Request.table,
 
 assign_mapper( context, RequestEvent, RequestEvent.table,
                properties=None )
+
+assign_mapper( context, Sequencer, Sequencer.table,
+               properties=dict( form_definition=relation( FormDefinition,
+                                                       primaryjoin=( Sequencer.table.c.form_definition_id == FormDefinition.table.c.id ) ),
+                                form_values=relation( FormValues,
+                                                      primaryjoin=( Sequencer.table.c.form_values_id == FormValues.table.c.id ) ) 
+                                ) )
 
 assign_mapper( context, RequestType, RequestType.table,               
                properties=dict( states=relation( SampleState, 

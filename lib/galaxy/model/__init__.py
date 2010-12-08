@@ -1740,6 +1740,16 @@ class RequestEvent( object ):
         self.state = request_state
         self.comment = comment
         
+class Sequencer( object ):
+    def __init__( self, name=None, description=None, sequencer_type_id=None, version=None, form_definition_id=None, form_values_id=None, deleted=None ):
+        self.name = name
+        self.description = description
+        self.sequencer_type_id = sequencer_type_id
+        self.version = version
+        self.form_definition_id = form_definition_id
+        self.form_values_id = form_values_id
+        self.deleted = deleted 
+        
 class RequestType( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'name', 'desc' )
     api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id', 'datatx_info' )

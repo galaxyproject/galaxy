@@ -186,6 +186,8 @@ class Sequencer( BaseController, UsesFormDefinitionWidgets ):
                 sample_state.desc = desc
                 trans.sa_session.add( sample_state )
                 trans.sa_session.flush()
+            trans.sa_session.add( request_type )
+            trans.sa_session.flush()
         else:
             # We're saving a newly created request_type
             request_type = trans.model.RequestType( name=name,
