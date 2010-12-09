@@ -325,7 +325,7 @@ class UsesFormDefinitions:
             if not item:
                 message = "Invalid %s id ( %s ) specified." % ( item_desc, str( id ) )
                 if in_sample_tracking:
-                    return trans.response.send_redirect( web.url_for( controller='sequencer',
+                    return trans.response.send_redirect( web.url_for( controller='request_type',
                                                                       action='browse_request_types',
                                                                       id=request_type_id,
                                                                       message=util.sanitize_text( message ),
@@ -396,7 +396,7 @@ class UsesFormDefinitions:
                                 message=util.sanitize_text( message ),
                                 status='done' )
                 if in_sample_tracking:
-                    new_kwd.update( dict( controller='sequencer',
+                    new_kwd.update( dict( controller='request_type',
                                           request_type_id=request_type_id,
                                           sample_id=sample_id,
                                           id=id ) )
@@ -524,13 +524,13 @@ class UsesFormDefinitions:
                                       show_deleted=show_deleted ) )
                 return trans.response.send_redirect( web.url_for( **new_kwd ) )
             elif in_sample_tracking:
-                new_kwd.update( dict( controller='sequencer',
+                new_kwd.update( dict( controller='request_type',
                                       request_type_id=request_type_id,
                                       sample_id=sample_id ) )
                 return trans.response.send_redirect( web.url_for( **new_kwd ) )
         # "template" is a FormDefinition, so since we're changing it, we need to use the latest version of it.
         vars = dict( id=trans.security.encode_id( template.form_definition_current_id ),
-                     response_redirect=web.url_for( controller='sequencer',
+                     response_redirect=web.url_for( controller='request_type',
                                                     action='edit_template',
                                                     cntrller=cntrller,
                                                     item_type=item_type,
@@ -613,7 +613,7 @@ class UsesFormDefinitions:
                                                       show_deleted=show_deleted ) )
                                 return trans.response.send_redirect( web.url_for( **new_kwd ) )
                             if in_sample_tracking:
-                                new_kwd.update( dict( controller='sequencer',
+                                new_kwd.update( dict( controller='request_type',
                                                       request_type_id=request_type_id,
                                                       sample_id=sample_id ) )
                                 return trans.response.send_redirect( web.url_for( **new_kwd ) )
@@ -787,7 +787,7 @@ class UsesFormDefinitions:
                                   show_deleted=show_deleted ) )
             return trans.response.send_redirect( web.url_for( **new_kwd ) )
         if in_sample_tracking:
-            new_kwd.update( dict( controller='sequencer',
+            new_kwd.update( dict( controller='request_type',
                                   request_type_id=request_type_id,
                                   sample_id=sample_id ) )
             return trans.response.send_redirect( web.url_for( **new_kwd ) )

@@ -91,7 +91,7 @@
                 can_modify = trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item )
             else:
                 can_modify = False
-        elif cntrller in [ 'requests_admin', 'requests', 'sequencer' ]:
+        elif cntrller in [ 'requests_admin', 'requests', 'request_type' ]:
             in_sample_tracking = True
             template_section_title = 'Run details'
             form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE
@@ -117,9 +117,9 @@
                             %endif
                         %endif
                     %elif in_sample_tracking:
-                        <a class="action-button" href="${h.url_for( controller='sequencer', action='add_template', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}">Select a different template</a>
-                        <a class="action-button" href="${h.url_for( controller='sequencer', action='edit_template', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}">Edit template</a>
-                        <a class="action-button" href="${h.url_for( controller='sequencer', action='delete_template', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}">Unuse template</a>
+                        <a class="action-button" href="${h.url_for( controller='request_type', action='add_template', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}">Select a different template</a>
+                        <a class="action-button" href="${h.url_for( controller='request_type', action='edit_template', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}">Edit template</a>
+                        <a class="action-button" href="${h.url_for( controller='request_type', action='delete_template', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}">Unuse template</a>
                     %endif
                 </div>
             </div>
@@ -138,7 +138,7 @@
                 %if in_library:
                     <form name="edit_info" id="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, form_type=form_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
                 %elif in_sample_tracking:
-                    <form name="edit_info" id="edit_info" action="${h.url_for( controller='sequencer', action='edit_template_info', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}" method="post">
+                    <form name="edit_info" id="edit_info" action="${h.url_for( controller='request_type', action='edit_template_info', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}" method="post">
                 %endif
                     %for i, field in enumerate( widgets ):
                         <div class="form-row">

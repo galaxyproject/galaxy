@@ -10,6 +10,7 @@ log = logging.getLogger( __name__ )
 class CommonController( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
+        log.debug("#####In index, kwd: %s" % str( kwd ))
         params = util.Params( kwd )
         redirect_action = util.restore_text( params.get( 'redirect_action', '' ) )
         title = util.restore_text( params.get( 'title', '' ) )

@@ -82,7 +82,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='sequencer', action='view_request_type', id=trans.security.encode_id( request.type.id ) )}">Sequencer configuration</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='request_type', action='view_request_type', id=trans.security.encode_id( request.type.id ) )}">Sequencer configuration</a></li>
     %if can_transfer_datasets:
         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Transfer datasets</a></li>
     %endif

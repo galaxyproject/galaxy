@@ -123,7 +123,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
             if operation == "reject":
                 return self.reject_request( trans, **kwd )
             if operation == "view_type":
-                return trans.response.send_redirect( web.url_for( controller='sequencer',
+                return trans.response.send_redirect( web.url_for( controller='request_type',
                                                                   action='view_request_type',
                                                                   **kwd ) )
             if operation == "delete":

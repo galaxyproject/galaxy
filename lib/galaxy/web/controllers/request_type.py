@@ -8,7 +8,7 @@ import logging, os
 
 log = logging.getLogger( __name__ )
 
-class SequencerGrid( grids.Grid ):
+class RequestTypeGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
@@ -25,7 +25,7 @@ class SequencerGrid( grids.Grid ):
 
     # Grid definition
     webapp = "galaxy"
-    title = "Sequencer Configurations"
+    title = "Request Types"
     template = "admin/request_type/grid.mako"
     model_class = model.RequestType
     default_sort_key = "-create_time"
@@ -64,11 +64,11 @@ class SequencerGrid( grids.Grid ):
         grids.GridOperation( "Undelete configuration", condition=( lambda item: item.deleted ) ),    
     ]
     global_actions = [
-        grids.GridAction( "Create new configuration", dict( controller='sequencer', action='create_request_type' ) )
+        grids.GridAction( "Create new configuration", dict( controller='request_type', action='create_request_type' ) )
     ]
 
-class Sequencer( BaseController, UsesFormDefinitions ):
-    sequencer_grid = SequencerGrid()
+class RequestType( BaseController, UsesFormDefinitions ):
+    request_type_grid = RequestTypeGrid()
 
     @web.expose
     @web.require_admin
@@ -96,7 +96,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
             elif operation == "edit permissions":
                 return self.request_type_permissions( trans, **kwd )
         # Render the grid view
-        return self.sequencer_grid( trans, **kwd )
+        return self.request_type_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def create_request_type( self, trans, **kwd ):
@@ -116,7 +116,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         elif params.get( 'create_request_type_button', False ):
             self.__save_request_type( trans, **kwd )
             message = 'The sequencer configuration has been created.'
-            return trans.response.send_redirect( web.url_for( controller='sequencer',
+            return trans.response.send_redirect( web.url_for( controller='request_type',
                                                               action='browse_request_types',
                                                               message=message,
                                                               status=status ) )
@@ -136,7 +136,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         try:
             request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
         except:
-            return invalid_id_redirect( trans, 'sequencer', request_type_id, action='browse_request_types' )
+            return invalid_id_redirect( trans, 'request_type', request_type_id, action='browse_request_types' )
         rename_dataset_select_field = self.__build_rename_dataset_select_field( trans, request_type )
         # See if we have any associated templates
         widgets = request_type.get_template_widgets( trans )
@@ -158,7 +158,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         try:
             request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
         except:
-            return invalid_id_redirect( trans, 'sequencer', request_type_id, action='browse_request_types' )
+            return invalid_id_redirect( trans, 'request_type', request_type_id, action='browse_request_types' )
         rename_dataset_select_field = self.__build_rename_dataset_select_field( trans )
         # See if we have any associated templates
         widgets = request_type.get_template_widgets( trans )
@@ -288,13 +288,13 @@ class Sequencer( BaseController, UsesFormDefinitions ):
             try:
                 request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
             except:
-                return invalid_id_redirect( trans, 'sequencer', request_type_id, action='browse_request_types' )
+                return invalid_id_redirect( trans, 'request_type', request_type_id, action='browse_request_types' )
             request_type.deleted = True
             trans.sa_session.add( request_type )
             trans.sa_session.flush()
         status = 'done'
         message = '%i sequencer configurations has been deleted' % len( request_type_id_list )
-        return trans.response.send_redirect( web.url_for( controller='sequencer',
+        return trans.response.send_redirect( web.url_for( controller='request_type',
                                                           action='browse_request_types',
                                                           message=message,
                                                           status='done' ) )
@@ -307,13 +307,13 @@ class Sequencer( BaseController, UsesFormDefinitions ):
             try:
                 request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
             except:
-                return invalid_id_redirect( trans, 'sequencer', request_type_id, action='browse_request_types' )
+                return invalid_id_redirect( trans, 'request_type', request_type_id, action='browse_request_types' )
             request_type.deleted = False
             trans.sa_session.add( request_type )
             trans.sa_session.flush()
         status = 'done'
         message = '%i sequencer configurations have been undeleted' % len( request_type_id_list )
-        return trans.response.send_redirect( web.url_for( controller='sequencer',
+        return trans.response.send_redirect( web.url_for( controller='request_type',
                                                           action='browse_request_types',
                                                           message=message,
                                                           status=status ) )
@@ -327,7 +327,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         try:
             request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
         except:
-            return invalid_id_redirect( trans, 'sequencer', request_type_id, action='browse_request_types' )
+            return invalid_id_redirect( trans, 'request_type', request_type_id, action='browse_request_types' )
         roles = trans.sa_session.query( trans.model.Role ) \
                                 .filter( trans.model.Role.table.c.deleted==False ) \
                                 .order_by( trans.model.Role.table.c.name )
@@ -351,7 +351,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         try:
             form_definition = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( form_definition_id ) )
         except:
-            return invalid_id_redirect( trans, 'sequencer', form_definition_id, action='browse_request_types' )
+            return invalid_id_redirect( trans, 'request_type', form_definition_id, action='browse_request_types' )
         return trans.fill_template( '/admin/forms/view_form_definition.mako',
                                     form_definition=form_definition )
     

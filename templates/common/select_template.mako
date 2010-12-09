@@ -16,7 +16,7 @@
     %if in_library:
         <li><a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id, use_panels=use_panels, show_deleted=show_deleted )}"><span>Browse the data library</span></a></li>
     %elif in_sample_tracking:
-        <li><a class="action-button" href="${h.url_for( controller='sequencer', action='view_request_type', id=request_type_id )}"><span>Browse the configuration</span></a></li>
+        <li><a class="action-button" href="${h.url_for( controller='request_type', action='view_request_type', id=request_type_id )}"><span>Browse the configuration</span></a></li>
     %endif
 </ul>
 
@@ -30,7 +30,7 @@
         %if form_type == trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE:
             <form id="select_template" name="select_template" action="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type=item_type, form_type=trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, use_panels=use_panels, show_deleted=show_deleted )}" method="post" >
         %elif form_type == trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE:
-            <form id="select_template" name="select_template" action="${h.url_for( controller='sequencer', action='add_template', cntrller=cntrller, item_type=item_type, form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE, request_type_id=request_type_id, sample_id=sample_id )}" method="post">
+            <form id="select_template" name="select_template" action="${h.url_for( controller='request_type', action='add_template', cntrller=cntrller, item_type=item_type, form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE, request_type_id=request_type_id, sample_id=sample_id )}" method="post">
         %endif
             <div class="form-row">
                 <label>Template:</label>

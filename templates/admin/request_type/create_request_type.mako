@@ -18,7 +18,7 @@
 %endif
 
 %if rt_info_widgets:
-    <form name="create_request_type" action="${h.url_for( controller='sequencer', action='create_request_type' )}" method="post">
+    <form name="create_request_type" action="${h.url_for( controller='request_type', action='create_request_type' )}" method="post">
         <div class="toolForm">
             <div class="toolFormTitle">Create a new sequencer configuration</div>
             %for rt_info in rt_info_widgets:

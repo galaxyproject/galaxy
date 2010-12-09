@@ -9,19 +9,19 @@
 <ul class="manage-table-actions">
     <li><a class="action-button" id="request_type-${request_type.id}-popup" class="menubutton">Configuration Actions</a></li>
     <div popupmenu="request_type-${request_type.id}-popup">
-        <li><a class="action-button" href="${h.url_for( controller='sequencer', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='request_type', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
         %if not request_type.deleted:
             %if not request_type.run_details:
-                <a class="action-button" href="${h.url_for( controller='sequencer', action='add_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Use run details template</a>
+                <a class="action-button" href="${h.url_for( controller='request_type', action='add_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Use run details template</a>
             %elif request_type.run_details:
-                <a class="action-button" href="${h.url_for( controller='sequencer', action='edit_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Edit run details template</a>
-                <a class="action-button" href="${h.url_for( controller='sequencer', action='delete_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Unuse run details template</a>
+                <a class="action-button" href="${h.url_for( controller='request_type', action='edit_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Edit run details template</a>
+                <a class="action-button" href="${h.url_for( controller='request_type', action='delete_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Unuse run details template</a>
             %endif
-            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
-            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='request_type', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='request_type', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
         %endif
         %if request_type.deleted:
-            <li><a class="action-button" href="${h.url_for( controller='sequencer', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete configuration</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='request_type', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete configuration</a></li>
         %endif
     </div>
 </ul>
@@ -30,7 +30,7 @@
     ${render_msg( message, status )}
 %endif
 
-<form name="edit_request_type" action="${h.url_for( controller='sequencer', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}" method="post" >
+<form name="edit_request_type" action="${h.url_for( controller='request_type', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}" method="post" >
     <div class="toolForm">
         <div class="toolFormTitle">"Edit ${request_type.name}" sequencer configuration</div>
         <div class="form-row">
@@ -45,13 +45,13 @@
         </div>
         <div class="form-row">
             <label>Sequencing request form definition:</label>
-            <a href="${h.url_for( controller='sequencer', action='view_form_definition', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name}</a>
+            <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name}</a>
             ## Hidden field needed by the __save_request_type() method
             <input type="hidden" name="request_form_id" value="${trans.security.encode_id( request_type.request_form_id )}" size="40"/>
         </div>       
         <div class="form-row">
             <label>Sample form definition:</label>
-            <a href="${h.url_for( controller='sequencer', action='view_form_definition', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name}</a>
+            <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name}</a>
             ## Hidden field needed by the __save_request_type() method
             <input type="hidden" name="sample_form_id" value="${trans.security.encode_id( request_type.sample_form_id )}" size="40"/>
         </div>

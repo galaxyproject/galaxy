@@ -75,8 +75,7 @@ class Requests( BaseController ):
             message = "%d requests (highlighted in red) were rejected.  Click on the request name for details." % rejected
             kwd[ 'status' ] = status
             kwd[ 'message' ] = message
-        # Allow the user to create a new request only if they have permission to access a 
-        # (sequencer configuration) request type.
+        # Allow the user to create a new request only if they have permission to access a request type.
         accessible_request_types = trans.app.security_agent.get_accessible_request_types( trans, trans.user )
         if accessible_request_types:
             self.request_grid.global_actions = [ grids.GridAction( "Create new request", dict( controller='requests_common',
