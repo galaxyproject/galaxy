@@ -109,20 +109,22 @@
             ${ldda.info}
             <div style="clear: both"></div>
         </div>
-        <% job = ldda.creating_job_associations[0].job %>
-        %if job.stdout.strip() != '':
-            <div class="form-row">
-                <label>Job Standard Output</label>
-                <pre>${job.stdout}</pre>
-                <div style="clear: both"></div>
-            </div>
-        %endif
-        %if job.stderr.strip() != '':
-            <div class="form-row">
-                <label>Job Standard Error</label>
-                <pre>${job.stderr}</pre>
-                <div style="clear: both"></div>
-            </div>
+        %if ldda.creating_job_associations:
+            <% job = ldda.creating_job_associations[0].job %>
+            %if job.stdout.strip() != '':
+                <div class="form-row">
+                    <label>Job Standard Output</label>
+                    <pre>${job.stdout}</pre>
+                    <div style="clear: both"></div>
+                </div>
+            %endif
+            %if job.stderr.strip() != '':
+                <div class="form-row">
+                    <label>Job Standard Error</label>
+                    <pre>${job.stderr}</pre>
+                    <div style="clear: both"></div>
+                </div>
+            %endif
         %endif
         <div class="form-row">
             <div>${ldda.blurb}</div>
