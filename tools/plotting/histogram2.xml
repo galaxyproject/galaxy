@@ -1,6 +1,6 @@
-<tool id="histogram_rpy" name="Histogram" version="1.0.2">
+<tool id="histogram_rpy" name="Histogram" version="1.0.3">
   <description>of a numeric column</description>
-  <command interpreter="python">histogram.py $input $out_file1 $numerical_column "$title" "$xlab" $breaks $density</command>
+  <command interpreter="python">histogram.py $input $out_file1 $numerical_column "$title" "$xlab" $breaks $density $frequency</command>
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset" help="Query missing? See TIP below"/>
     <param name="numerical_column" type="data_column" data_ref="input" numerical="True" label="Numerical column for x axis" />
@@ -8,6 +8,7 @@
     <param name="title" type="text" size="30" value="Histogram" label="Plot title"/>
     <param name="xlab" type="text" size="30" value="V1" label="Label for x axis"/>
     <param name="density" type="boolean" checked="yes" label="Include smoothed density"/>
+    <param name="frequency" type="boolean" checked="no" label="Plot as frequency (counts)"/>
   </inputs>
   <outputs>
     <data format="pdf" name="out_file1" />
@@ -20,6 +21,7 @@
       <param name="title" value="Histogram"/>
       <param name="xlab" value="V1"/>
       <param name="density" value="true"/>
+      <param name="frequency" value="false"/>
       <output name="out_file1" file="histogram_out1.pdf" />
     </test>
   </tests>

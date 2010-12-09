@@ -27,6 +27,9 @@ def main():
     if sys.argv[7] == "true":
         density = True
     else: density = False
+    if len( sys.argv ) >= 9 and sys.argv[8] == "true":
+        frequency = True
+    else: frequency = False
 
     matrix = []
     skipped_lines = 0
@@ -72,9 +75,13 @@ def main():
         try:
             a = array( matrix )
             r.pdf( out_fname, 8, 8 )
-            r.hist( a, probability=True, main=title, xlab=xlab, breaks=breaks )
+            histogram = r.hist( a, probability=not frequency, main=title, xlab=xlab, breaks=breaks )
             if density:
-                r.lines( r.density( a ) )
+                density = r.density( a )
+                if frequency:
+                    scale_factor = len( matrix ) * ( histogram['mids'][1] - histogram['mids'][0] ) #uniform bandwidth taken from first 2 midpoints
+                    density[ 'y' ] = map( lambda x: x * scale_factor, density[ 'y' ] )
+                r.lines( density )
             r.dev_off()
         except Exception, exc:
             stop_err( "%s" %str( exc ) )
