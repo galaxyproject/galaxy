@@ -37,7 +37,7 @@ class DefaultJobAction(object):
     verbose_name = "Default Job"
     
     @classmethod
-    def execute(cls, app, sa_session, action, job):
+    def execute(cls, app, sa_session, action, job, replacement_dict = None):
         pass
 
     @classmethod
@@ -57,7 +57,7 @@ class EmailAction(DefaultJobAction):
     verbose_name = "Email Notification"
     
     @classmethod
-    def execute(cls, app, sa_session, action, job):
+    def execute(cls, app, sa_session, action, job, replacement_dict):
         smtp_server = app.config.smtp_server
         if action.action_arguments and action.action_arguments.has_key('host'):
             host = action.action_arguments['host']
@@ -110,7 +110,7 @@ class ChangeDatatypeAction(DefaultJobAction):
     name = "ChangeDatatypeAction"
     verbose_name = "Change Datatype"
     @classmethod
-    def execute(cls, app, sa_session, action, job):
+    def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 app.datatypes_registry.change_datatype( dataset_assoc.dataset, action.action_arguments['newtype'])
@@ -144,12 +144,16 @@ class RenameDatasetAction(DefaultJobAction):
     verbose_name = "Rename Dataset"
 
     @classmethod
-    def execute(cls, app, sa_session, action, job):
+    def execute(cls, app, sa_session, action, job, replacement_dict):        
         # Prevent renaming a dataset to the empty string.
         if action.action_arguments and action.action_arguments.has_key('newname') and action.action_arguments['newname'] != '':
+            new_name = action.action_arguments['newname']
+            if replacement_dict:
+                for k, v in replacement_dict.iteritems():
+                    new_name = new_name.replace("${%s}" % k, v)
             for dataset_assoc in job.output_datasets:
                 if action.output_name == '' or dataset_assoc.name == action.output_name:
-                    dataset_assoc.dataset.name = action.action_arguments['newname']
+                    dataset_assoc.dataset.name = new_name
 
     @classmethod
     def get_config_form(cls, trans):
@@ -179,7 +183,7 @@ class HideDatasetAction(DefaultJobAction):
     verbose_name = "Hide Dataset"
     
     @classmethod
-    def execute(cls, app, sa_session, action, job):
+    def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 dataset_assoc.dataset.visible=False
@@ -201,7 +205,7 @@ class DeleteDatasetAction(DefaultJobAction):
     verbose_name = "Delete Dataset"
 
     @classmethod
-    def execute(cls, app, sa_session, action, job):
+    def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 dataset_assoc.dataset.deleted=True
@@ -224,7 +228,7 @@ class ColumnSetAction(DefaultJobAction):
     name = "ColumnSetAction"
     verbose_name = "Assign Columns"
     @classmethod
-    def execute(cls, app, sa_session, action, job):
+    def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 for k, v in action.action_arguments.items():
@@ -276,7 +280,7 @@ class SetMetadataAction(DefaultJobAction):
     # DBTODO Setting of Metadata is currently broken and disabled.  It should not be used (yet).
     
     @classmethod
-    def execute(cls, app, sa_session, action, job):
+    def execute(cls, app, sa_session, action, job, replacement_dict):
         for data in job.output_datasets:
             data.set_metadata( action.action_arguments['newtype'] )
             
@@ -367,6 +371,6 @@ class ActionBox(object):
         return forms
     
     @classmethod
-    def execute(cls, app, sa_session, pja, job):
+    def execute(cls, app, sa_session, pja, job, replacement_dict = None):
         if ActionBox.actions.has_key(pja.action_type):
-            ActionBox.actions[pja.action_type].execute(app, sa_session, pja, job)
+            ActionBox.actions[pja.action_type].execute(app, sa_session, pja, job, replacement_dict)

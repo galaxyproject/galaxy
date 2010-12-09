@@ -854,6 +854,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                     m = model.WorkflowOutput(workflow_step = step, output_name = output_name)
                     trans.sa_session.add(m)
             if step.tool_errors:
+                # DBTODO Check for conditional inputs here.
                 workflow.has_errors = True
             # Stick this in the step temporarily
             step.temp_input_connections = step_dict['input_connections']
@@ -1277,9 +1278,15 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                         job, out_data = tool.execute( trans, step.state.inputs )
                         outputs[ step.id ] = out_data
                         # Create new PJA associations with the created job, to be run on completion.
+                        # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
+                        # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
+                        replacement_dict = {}
+                        for k, v in kwargs.iteritems():
+                            if k.startswith('wf_parm|'):
+                                replacement_dict[k[8:]] = v
                         for pja in step.post_job_actions:
                             if pja.action_type in ActionBox.immediate_actions:
-                                ActionBox.execute(trans.app, trans.sa_session, pja, job)
+                                ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict)
                             else:
                                 job.add_post_job_action(pja)
                     else:

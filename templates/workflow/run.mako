@@ -34,6 +34,20 @@
 <%
 from galaxy.tools.parameters import DataToolParameter, RuntimeValue
 from galaxy.jobs.actions.post import ActionBox
+import re
+import colorsys
+import random
+
+colorseed = 0
+
+wf_parms = {}
+for step in steps:
+    for v in step.state.inputs.itervalues():
+        if isinstance(v, basestring):
+            for rematch in re.findall('\$\{.+?\}', v):
+                if rematch[2:-1] not in wf_parms:
+                    # Do color generation that actually makes sense as a scheme at some point, instead of just random.
+                    wf_parms[rematch[2:-1]] = "#%X%X%X" % tuple([int(x * 255) for x in colorsys.hsv_to_rgb(random.random(), .1, .9)])
 %>
 
 <%def name="do_inputs( inputs, values, errors, prefix, step, other_values = None )">
@@ -112,7 +126,25 @@ from galaxy.jobs.actions.post import ActionBox
                 ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                 <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
             %else:
-                ${param.value_to_display_text( value, app )}
+                ##DBTEST Hack spans around the substitution text for easy replacement.
+                <%
+                p_text = param.value_to_display_text( value, app )
+                replacements = []
+                if isinstance(p_text, basestring):
+                    for rematch in re.findall('\$\{.+?\}', p_text):
+                        replacements.append('wf_parm__%s' % rematch[2:-1])
+                        p_text = p_text.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
+                %>
+                %if replacements:
+                    ##There are classes for replaceme
+                    <span style="display:none" class="parm_wrap ${' '.join(replacements)}">
+                    ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                    </span>
+                    <span class="p_text_wrapper">${p_text}</span>
+                    <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
+                %else:
+                    ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                %endif
             %endif
         </div>
         %if step.upgrade_messages and param.name in step.upgrade_messages:
@@ -144,6 +176,35 @@ from galaxy.jobs.actions.post import ActionBox
 
 <form id="tool_form" name="tool_form" method="POST">
 ## <input type="hidden" name="workflow_name" value="${h.to_unicode( workflow.name ) | h}" />
+
+
+%if wf_parms:
+<div class="metadataForm">
+    <div class="metadataFormTitle">Workflow Parameters</div>
+    <div class="metadataFormBody">
+    %for parm in wf_parms:
+        <div class='form-row'><label style='width:100px;'>${parm}<input style="border:2px solid ${wf_parms[parm]};border-left-width:8px;" type="text" class='wf_parm_input ptag_${parm}' name="wf_parm|${parm}" value=""/></label></div>
+    %endfor
+    </div>
+</div>
+    <script type="text/javascript">
+    // Set the change hooks for workflow parameters.
+    $(document).ready(function () {
+        $('.wf_parm_input').bind('change keypress', function(){
+            // DBTODO This is probably not reliable.  Ensure we have the right class.
+            var tag_id = $(this).attr("class").split(' ')[1].substring(5);
+            // Set text properly.
+            $('.wfpspan.wf_parm__'+tag_id).text($(this).val());
+            // Now set the hidden input to the generated text.
+            $('.wfpspan.wf_parm__'+tag_id).not('.pja_wfp').each(function(){
+                var new_text = $(this).parent().text();
+                $(this).parent().siblings().children().val(new_text);
+            });
+        });
+    });
+    </script>
+%endif
+
 %for i, step in enumerate( steps ):    
     %if step.type == 'tool' or step.type is None:
       <% tool = app.toolbox.tools_by_id[step.tool_id] %>
@@ -165,7 +226,15 @@ from galaxy.jobs.actions.post import ActionBox
 				% else:
 					<label>Action:</label>
 				% endif
-				${'<br/>'.join([ActionBox.get_short_str(pja) for pja in step.post_job_actions])}
+<%
+pja_ss_all = []
+for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
+    for rematch in re.findall('\$\{.+?\}', pja_ss):
+        # pja_ss = pja_ss.replace(rematch, '<span class="wfpspan, wf_parm__%s">%s</span>' % (rematch[2:-1], rematch[2:-1]))
+        pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
+    pja_ss_all.append(pja_ss)
+%>
+                ${'<br/>'.join(pja_ss_all)}
 				</div>
 			% endif
           </div>

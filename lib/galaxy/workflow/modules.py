@@ -1,5 +1,5 @@
+import re
 from elementtree.ElementTree import Element
-
 from galaxy import web
 from galaxy.tools.parameters import DataToolParameter, DummyDataset, RuntimeValue, check_param, visit_input_values
 from galaxy.tools import DefaultToolState
@@ -283,6 +283,9 @@ class ToolModule( WorkflowModule ):
                 return old_value, None
             elif key == make_runtime_key:
                 return RuntimeValue(), None
+            elif isinstance(value, basestring) and re.search("\$\{.+?\}", str(value)):
+                # Workflow Parameter Replacement, so suppress error from going to the workflow level.
+                return value, None
             else:
                 return value, error
         # Update state using incoming values
