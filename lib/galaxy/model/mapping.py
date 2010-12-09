@@ -671,6 +671,24 @@ SampleDataset.table = Table('sample_dataset', metadata,
     Column( "error_msg", TEXT ),
     Column( "size", TrimmedString( 255 ) ) )
 
+Run.table = Table( 'run', metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+RequestTypeRunAssociation.table = Table( "request_type_run_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True, nullable=False ),
+    Column( "run_id", Integer, ForeignKey( "run.id" ), index=True, nullable=False ) )
+
+SampleRunAssociation.table = Table( "sample_run_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True, nullable=False ),
+    Column( "run_id", Integer, ForeignKey( "run.id" ), index=True, nullable=False ) )
+
 Page.table = Table( "page", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -987,6 +1005,20 @@ assign_mapper( context, SampleState, SampleState.table,
 
 assign_mapper( context, SampleDataset, SampleDataset.table,
                properties=None )
+
+assign_mapper( context, SampleRunAssociation, SampleRunAssociation.table,
+               properties=dict( sample=relation( Sample, backref="runs", order_by=desc( Run.table.c.update_time ) ),
+                                run=relation( Run, backref="samples", order_by=asc( Sample.table.c.id ) ) ) )
+
+assign_mapper( context, RequestTypeRunAssociation, RequestTypeRunAssociation.table,
+               properties=dict( request_type=relation( RequestType, backref="run" ),
+                                run=relation( Run, backref="request_type" ) ) )
+
+assign_mapper( context, Run, Run.table,
+                properties=dict( template=relation( FormDefinition,
+                                                    primaryjoin=( Run.table.c.form_definition_id == FormDefinition.table.c.id ) ), 
+                                 info=relation( FormValues,
+                                                primaryjoin=( Run.table.c.form_values_id == FormValues.table.c.id ) ) ) )
 
 assign_mapper( context, UserAddress, UserAddress.table,
                properties=dict( 

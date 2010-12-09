@@ -86,7 +86,7 @@ class DataTransferGrid( grids.Grid ):
             return query
         return query.filter_by( sample_id=trans.security.decode_id( sample_id ) )
 
-class RequestsAdmin( BaseController, UsesFormDefinitionWidgets ):
+class RequestsAdmin( BaseController, UsesFormDefinitions ):
     request_grid = AdminRequestsGrid()
     datatx_grid = DataTransferGrid()
 

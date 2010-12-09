@@ -239,6 +239,7 @@
         if current_version and ldda.state not in ( 'ok', 'error', 'empty', 'deleted', 'discarded' ):
             tracked_datasets[ldda.id] = ldda.state
         info_association, inherited = ldda.get_info_association( restrict=True )
+        form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
     %>
     %if current_version and ( not ldda.library_dataset.deleted or show_deleted ):
         <tr class="datasetRow"
@@ -269,11 +270,11 @@
                             <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">View information</a>
                         %endif
                         %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and can_modify and not info_association:
-                            <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
+                            <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='ldda', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
                         %endif
                         %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and can_modify and info_association:
-                            <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
-                            <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Unuse template</a>
+                            <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='ldda', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
+                            <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='ldda', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Unuse template</a>
                         %endif
                         %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and can_manage:
                             %if not trans.app.security_agent.dataset_is_public( ldda.dataset ):
@@ -329,7 +330,7 @@
         my_row = None
         if trans.user_is_admin() and cntrller == 'library_admin':
             can_add = can_modify = can_manage = True
-        elif cntrller in [ 'library', 'requests' ]:
+        elif cntrller in [ 'library' ]:
             can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, folder )
             if not can_access:
                 can_show, folder_ids = \
@@ -346,6 +347,7 @@
             can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, folder )
         else:
             can_add = can_modify = can_manage = False
+        form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
         info_association, inherited = folder.get_info_association( restrict=True )
     %>
     %if not root_folder and ( not folder.deleted or show_deleted ):
@@ -383,11 +385,11 @@
                                 %endif
                             %endif
                             %if not branch_deleted( folder ) and can_modify and not info_association:
-                                <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
+                                <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='folder', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
                             %endif
                             %if not branch_deleted( folder ) and can_modify and info_association:
-                                <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
-                                <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Unuse template</a>
+                                <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='folder', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
+                                <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='folder', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Unuse template</a>
                             %endif
                             %if not branch_deleted( folder ) and can_manage:
                                %if not trans.app.security_agent.folder_is_public( folder ):
@@ -466,6 +468,7 @@
         else:
             can_add = can_modify = can_manage = False
         info_association, inherited = library.get_info_association()
+        form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
  
         tracked_datasets = {}
  
@@ -479,7 +482,7 @@
     %>
  
     <h2>Data Library &ldquo;${library.name}&rdquo;</h2>
- 
+
      <ul class="manage-table-actions">
          %if not library.deleted and ( ( trans.user_is_admin() and cntrller == 'library_admin' ) or can_add ):
              <li><a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}"><span>Add datasets</span></a></li>
@@ -499,11 +502,11 @@
                          %endif
                      %endif
                      %if can_modify and not library.info_association:
-                         <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
+                         <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='library', form_type=form_type, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
                      %endif
                      %if can_modify and info_association:
-                         <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
-                         <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Unuse template</a>
+                         <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='library', form_type=form_type, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
+                         <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='library', form_type=form_type, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Unuse template</a>
                      %endif
                      %if can_manage:
                          %if not trans.app.security_agent.library_is_public( library, contents=True ):

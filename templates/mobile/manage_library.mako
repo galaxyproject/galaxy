@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
-<%namespace file="/library/common/common.mako" import="render_template_fields" />
+<%namespace file="/common/template_common.mako" import="render_template_fields" />
 
 <% current_user_roles = trans.get_current_user_roles() %>
 
@@ -59,7 +59,7 @@
         </div>
         <div style="clear: both"></div>
         <div class="toolForm">
-            ${render_template_fields( 'mobile', 'library', trans.security.encode_id( library.id ), widgets, widget_fields_have_contents, info_association, inherited )}
+            ${render_template_fields( cntrller='mobile', item_type='library', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, library_id=trans.security.encode_id( library.id ), info_association=info_association, inherited=inherited )}
         </div>
     </div>
 %endif
@@ -69,5 +69,5 @@
 %endif
 
 %if widgets:
-    ${render_template_fields( 'mobile', 'library', trans.security.encode_id( library.id ), widgets, widget_fields_have_contents, info_association inherited )}
+    ${render_template_fields( cntrller='mobile', item_type='library', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, library_id=trans.security.encode_id( library.id ), info_association=info_association, inherited=inherited )}
 %endif

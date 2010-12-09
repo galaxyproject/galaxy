@@ -4,7 +4,7 @@
 %if message:
     ${render_msg( message, status )}
 %endif
-<form name="create_form" action="${h.url_for( controller='forms', action='create_form_definition', create_form=True )}" enctype="multipart/form-data" method="post" >
+<form name="create_form_definition" action="${h.url_for( controller='forms', action='create_form_definition' )}" enctype="multipart/form-data" method="post" >
     <div class="toolForm">
         <div class="toolFormTitle">Create a new form definition</div>
         %for label, input in inputs:

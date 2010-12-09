@@ -1738,22 +1738,23 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'Address (%s) has been added' % address_dict[ 'short_desc' ] )
         
     # Library stuff
-    def add_library_template( self, cntrller, item_type, library_id, form_id, form_name, folder_id=None, ldda_id=None ):
+    def add_template( self, cntrller, item_type, form_type, form_id, form_name,
+                      library_id=None, folder_id=None, ldda_id=None, request_type_id=None, sample_id=None ):
         """
-        Add a new info template to a library item - the template will ALWAYS BE SET TO INHERITABLE here.  If you want to
+        Add a new template to an item - for library items, the template will ALWAYS BE SET TO INHERITABLE here.  If you want to
         dis-inherit your template, call the manage_library_template_inheritance() below immediately after you call this
-        method in your test code.
+        method in your test code.  Templates added to Requesttype objects are always inherited to samples.
         """
         self.home()
         if item_type == 'library':
-            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&library_id=%s" % \
-            ( self.url, cntrller, item_type, library_id )
+            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s" % \
+            ( self.url, cntrller, item_type, form_type, library_id )
         elif item_type == 'folder':
-            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s" % \
-            ( self.url, cntrller, item_type, library_id, folder_id )
+            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s&folder_id=%s" % \
+            ( self.url, cntrller, item_type, form_type, library_id, folder_id )
         elif item_type == 'ldda':
-            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s&ldda_id=%s" % \
-            ( self.url, cntrller, item_type, library_id, folder_id, ldda_id )
+            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s&folder_id=%s&ldda_id=%s" % \
+            ( self.url, cntrller, item_type, form_type, library_id, folder_id, ldda_id )
         self.visit_url( url )
         self.check_page_for_string ( "Select a template for the" )
         self.refresh_form( "form_id", form_id )
@@ -1824,11 +1825,11 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "The new library named '%s' has been created" % name
         self.check_page_for_string( check_str )
         self.home()
-    def edit_template( self, cntrller, item_type, library_id, field_type, field_name_1, field_helptext_1, field_default_1,
+    def edit_template( self, cntrller, item_type, form_type, library_id, field_type, field_name_1, field_helptext_1, field_default_1,
                        folder_id='', ldda_id='', action='add_field'  ):
         """Edit the form fields defining a library template"""
-        self.visit_url( "%s/library_common/edit_template?cntrller=%s&item_type=%s&library_id=%s" % \
-                        ( self.url, cntrller, item_type, library_id ) )
+        self.visit_url( "%s/library_common/edit_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s" % \
+                        ( self.url, cntrller, item_type, form_type, library_id ) )
         self.check_page_for_string( "Edit form definition" )
         if action == 'add_field':
             tc.submit( "add_field_button" )

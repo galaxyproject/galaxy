@@ -1,5 +1,8 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/common/template_common.mako" import="render_template_fields" />
+
+<% form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE %>
 
 <br/><br/>
 <ul class="manage-table-actions">
@@ -9,6 +12,12 @@
             <li><a class="action-button" href="${h.url_for( controller='sequencer', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}">Edit configuration</a></li>
             <li><a class="action-button" href="${h.url_for( controller='sequencer', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
             <li><a class="action-button" href="${h.url_for( controller='sequencer', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
+            %if not request_type.run_details:
+                <a class="action-button" href="${h.url_for( controller='sequencer', action='add_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Use run details template</a>
+            %elif request_type.run_details:
+                <a class="action-button" href="${h.url_for( controller='sequencer', action='edit_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Edit run details template</a>
+                <a class="action-button" href="${h.url_for( controller='sequencer', action='delete_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Unuse run details template</a>
+            %endif
         %endif
         %if request_type.deleted:
             <li><a class="action-button" href="${h.url_for( controller='sequencer', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete configuration</a></li>
@@ -102,7 +111,11 @@
         <div style="clear: both"></div>
     %else:
         <div class="form-row">
-            Sequencer login information is not set, click the <b>Edit configuration</b> button to set it.
+            Sequencer login information is not set, select the <b>Edit configuration</b> option in the <b>Configuration options</b> menu.
         </div>
     %endif
 </div>
+
+%if widgets:
+    ${render_template_fields( cntrller='requests_admin', item_type='request_type', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, request_type_id=trans.security.encode_id( request_type.id ), editable=False )}
+%endif

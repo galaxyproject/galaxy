@@ -155,7 +155,7 @@ class Forms( BaseController ):
         This callback method is for handling form editing.  The value of response_redirect
         should be an URL that is defined by the caller.  This allows for redirecting as desired
         when the form changes have been saved.  For an example of how this works, see the 
-        edit_template() method in the library_common controller.
+        edit_template() method in the base controller.
         '''
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -168,6 +168,7 @@ class Forms( BaseController ):
                                                               message='Invalid form',
                                                               status='error' ) )
         form_definition = form_definition_current.latest_form
+        # TODO: eliminate the need for this refresh param.
         if params.get( 'refresh', False ):
             # Refresh 
             current_form = self.get_current_form( trans, **kwd )
@@ -455,7 +456,7 @@ class Forms( BaseController ):
                      ( 'Default value', default_value ),
                      ( '', required ),
                      ( 'Select the grid layout to place this field', layout_select_field ) ]
-        return [ ( 'Field name', name ),
+        return [ ( 'Field label', name ),
                  ( 'Help text', helptext ),
                  ( 'Type', field_type_select_field, field_type_options),
                  ( 'Default value', default_value ),

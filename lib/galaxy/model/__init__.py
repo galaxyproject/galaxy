@@ -1481,6 +1481,7 @@ class FormDefinition( object, APIItem ):
     supported_field_types = [ AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
                    SAMPLE = 'Sequencing Sample Form',
+                   RUN_DETAILS_TEMPLATE = 'Sample run details template',
                    LIBRARY_INFO_TEMPLATE = 'Library information template',
                    USER_INFO = 'User Information' )
     api_collection_visible_keys = ( 'id', 'name' )
@@ -1768,6 +1769,28 @@ class RequestType( object, APIItem ):
     def final_sample_state( self ):
         # The states mapper for this object orders ascending
         return self.states[-1]
+    @property
+    def run_details( self ):
+        if self.run:
+            # self.run[0] is [RequestTypeRunAssociation]
+            return self.run[0]
+        return None
+    def get_template_widgets( self, trans, get_contents=True ):
+        # See if we have any associated templates.  The get_contents param
+        # is passed by callers that are inheriting a template - these are
+        # usually new samples for which we want to include template fields,
+        # but not necessarily the contents of the inherited template.
+        rtra = self.run_details
+        if rtra:
+            run = rtra.run
+            template = run.template
+            if get_contents:
+                # See if we have any field contents
+                info = run.info
+                if info:
+                    return template.get_widgets( trans.user, contents=info.content )
+            return template.get_widgets( trans.user )
+        return []
         
 class RequestTypePermissions( object ):
     def __init__( self, action, request_type, role ):
@@ -1871,6 +1894,39 @@ class Sample( object, APIItem ):
                       .replace( "'s password:", '' )\
                       .replace( login_str, '' )\
                       .strip()
+    @property
+    def run_details( self ):
+        # self.runs is a list of SampleRunAssociations ordered descending on update_time.
+        if self.runs:
+            # Always use the lates run details template, self.runs[0] is a SampleRunAssociation
+            return self.runs[0]
+        # Inherit this sample's RequestType run details, if one exists.
+        return self.request.type.run_details
+    def get_template_widgets( self, trans, get_contents=True ):
+        # Samples have a one-to-many relationship with run details, so we return the
+        # widgets for last associated template.  The get_contents param will populate
+        # the widget fields with values from the template inherited from the sample's
+        # RequestType.
+        template = None
+        if self.runs:
+            # The self.runs mapper orders descending on update_time.
+            run = self.runs[0].run
+            template = run.template
+        if template is None:
+            # There are no run details associated with this sample, so inherit the
+            # run details template from the sample's RequestType.
+            rtra = self.request.type.run_details
+            if rtra:
+                run = rtra.run
+                template = run.template
+        if template:
+            if get_contents:
+                # See if we have any field contents
+                info = run.info
+                if info:
+                    return template.get_widgets( trans.user, contents=info.content )
+            return template.get_widgets( trans.user )
+        return []
 
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):
@@ -1898,7 +1954,22 @@ class SampleDataset( object ):
         self.status = status
         self.error_msg = error_msg
         self.size = size
-        
+
+class Run( object ):
+    def __init__( self, form_definition, form_values ):
+        self.template = form_definition
+        self.info = form_values
+
+class RequestTypeRunAssociation( object ):
+    def __init__( self, request_type, run ):
+        self.request_type = request_type
+        self.run = run
+
+class SampleRunAssociation( object ):
+    def __init__( self, sample, run ):
+        self.sample = sample
+        self.run = run
+
 class UserAddress( object ):
     def __init__( self, user=None, desc=None, name=None, institution=None, 
                   address=None, city=None, state=None, postal_code=None, 

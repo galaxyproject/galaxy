@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common/common.mako" import="render_template_fields" />
+<%namespace file="/common/template_common.mako" import="render_template_fields" />
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -41,7 +41,7 @@
             <div popupmenu="library-${library.id}-popup">
                 %if not library.deleted:
                     %if can_add and not library.info_association:
-                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='library', form_type=trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
                     %endif
                     %if can_manage:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
@@ -112,5 +112,5 @@
 </div>
 
 %if widgets:
-    ${render_template_fields( cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, info_association=info_association, inherited=inherited, editable=not( library.deleted ) )}
+    ${render_template_fields( cntrller=cntrller, item_type='library', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, library_id=trans.security.encode_id( library.id ), info_association=info_association, inherited=inherited, editable=not( library.deleted ) )}
 %endif

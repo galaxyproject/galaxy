@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common/common.mako" import="render_template_fields" />
+<%namespace file="/common/template_common.mako" import="render_template_fields" />
 <%
     from galaxy import util
     from galaxy.web.controllers.library_common import branch_deleted, get_containing_library_from_library_dataset
@@ -21,6 +21,7 @@
         can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, ldda.library_dataset )
     else:
         can_modify = can_manage = False
+    form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
 %>
 
 <%def name="javascripts()">
@@ -52,10 +53,10 @@
                 %if can_modify:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                     %if not info_association:
-                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='ldda', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
                     %else:
-                        <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
-                        <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Unuse template</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='ldda', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='ldda', form_type=form_type, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Unuse template</a>
                     %endif
                 %endif
                 %if can_manage:
@@ -163,7 +164,7 @@
     </div>
 </div>
 %if widgets:
-    ${render_template_fields( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, info_association=info_association, inherited=inherited, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), editable=False )}
+    ${render_template_fields( cntrller=cntrller, item_type='ldda', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), info_association=info_association, inherited=inherited, editable=False )}
 %endif
 %if trans.user_is_admin() and cntrller == 'library_admin':
     %if associated_hdas:

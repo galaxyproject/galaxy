@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common/common.mako" import="render_template_fields" />
+<%namespace file="/common/template_common.mako" import="render_template_fields" />
 <% from galaxy import util %>
 
 <%def name="javascripts()">
@@ -155,5 +155,5 @@
     </div>
 %endif
 %if widgets:
-    ${render_template_fields( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, info_association=info_association, inherited=inherited, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ) )}
+    ${render_template_fields( cntrller=cntrller, item_type='ldda', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), info_association=info_association, inherited=inherited )}
 %endif

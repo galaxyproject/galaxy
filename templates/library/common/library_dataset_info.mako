@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common/common.mako" import="render_template_fields" />
+<%namespace file="/common/template_common.mako" import="render_template_fields" />
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -66,5 +66,5 @@
 %endif
 
 %if widgets:
-    ${render_template_fields( cntrller, 'library_dataset', library_id, widgets, widget_fields_have_contents, info_association=None, inherited=False, editable=False )}
+    ${render_template_fields( cntrller, item_type='library_dataset', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, library_id=library_id, info_association=None, inherited=False, editable=False )}
 %endif

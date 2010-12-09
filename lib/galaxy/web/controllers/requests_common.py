@@ -92,7 +92,7 @@ class RequestsGrid( grids.Grid ):
                              confirm="Samples cannot be added to this request after it is submitted. Click OK to submit."  )
         ]
 
-class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
+class RequestsCommon( BaseController, UsesFormDefinitions ):
     @web.json
     def sample_state_updates( self, trans, ids=None, states=None ):
         # Avoid caching
@@ -975,6 +975,17 @@ class RequestsCommon( BaseController, UsesFormDefinitionWidgets ):
                                     status=status,
                                     files=[],
                                     folder_path=folder_path )
+    @web.expose
+    def update_sample_run_details( self, trans, **kwd ):
+        # TODO: Here we are editing the contents of a sample's run details template.  The sample_id
+        # param must be in kwd.  This method provides a means for an external application to perform
+        # a post to update this relevant information for a sample.  This method assumes trans.user()
+        # is an admin user.  If this is not the case, things will not work.  This method will soon be
+        # eliminated, moving this feature to Galaxy's API which will handle authentication.
+        cntrller = 'requests_admin'
+        item_type = 'sample'
+        form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE
+        return self.edit_template_info( trans, cntrller=cntrller, item_type=item_type, form_type=form_type, **kwd )
     def __import_samples( self, trans, cntrller, request, displayable_sample_widgets, libraries, **kwd ):
         """
         Reads the samples csv file and imports all the samples.  The format of the csv file is:

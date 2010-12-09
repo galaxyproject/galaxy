@@ -1,6 +1,9 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/requests/common.mako" import="*" />
+<%namespace file="/common/template_common.mako" import="render_template_fields" />
+
+<% form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE %>
 
 <br/><br/>
 <ul class="manage-table-actions">
@@ -8,6 +11,12 @@
     <div popupmenu="request_type-${request_type.id}-popup">
         <li><a class="action-button" href="${h.url_for( controller='sequencer', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
         %if not request_type.deleted:
+            %if not request_type.run_details:
+                <a class="action-button" href="${h.url_for( controller='sequencer', action='add_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Use run details template</a>
+            %elif request_type.run_details:
+                <a class="action-button" href="${h.url_for( controller='sequencer', action='edit_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Edit run details template</a>
+                <a class="action-button" href="${h.url_for( controller='sequencer', action='delete_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Unuse run details template</a>
+            %endif
             <li><a class="action-button" href="${h.url_for( controller='sequencer', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
             <li><a class="action-button" href="${h.url_for( controller='sequencer', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
         %endif
@@ -108,3 +117,7 @@
         <input type="submit" name="edit_request_type_button" value="Save"/>
     </div>
 </form>
+
+%if widgets:
+    ${render_template_fields( cntrller='requests_admin', item_type='request_type', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, request_type_id=trans.security.encode_id( request_type.id ) )}
+%endif

@@ -91,11 +91,12 @@ class TestLibraryFeatures( TwillTestCase ):
         """Testing add an inheritable template containing an AddressField to library1"""
         # Logged in as admin_user
         # Add a template containing an AddressField to library1
-        self.add_library_template( 'library_admin',
-                                   'library',
-                                   self.security.encode_id( library1.id ),
-                                   self.security.encode_id( AddressField_form.id ),
-                                   AddressField_form.name )
+        self.add_template( cntrller='library_admin',
+                           item_type='library',
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_id=self.security.encode_id( AddressField_form.id ),
+                           form_name=AddressField_form.name,
+                           library_id=self.security.encode_id( library1.id ) )
     def test_020_add_folder_to_library1( self ):
         """Testing adding a folder to library1"""
         # Logged in as admin_user
@@ -219,11 +220,12 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_050_add_template_to_library2( self ):
         """ Testing add an inheritable template containing an CheckboxField to library2"""
         # Add a template containing an CheckboxField to library1
-        self.add_library_template( 'library_admin',
-                                   'library',
-                                   self.security.encode_id( library2.id ),
-                                   self.security.encode_id( CheckboxField_form.id ),
-                                   CheckboxField_form.name )
+        self.add_template( cntrller='library_admin',
+                           item_type='library',
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_id=self.security.encode_id( CheckboxField_form.id ),
+                           form_name=CheckboxField_form.name,
+                           library_id=self.security.encode_id( library2.id ) )
         # Check the CheckboxField to make sure the template contents are inherited
         self.library_info( 'library_admin',
                             self.security.encode_id( library2.id ),
@@ -289,11 +291,12 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_080_add_template_to_library3( self ):
         """ Testing add an inheritable template containing an SelectField to library3"""
         # Logged in as admin_user
-        self.add_library_template( 'library_admin',
-                                   'library',
-                                   self.security.encode_id( library3.id ),
-                                   self.security.encode_id( SelectField_form.id ),
-                                   SelectField_form.name )
+        self.add_template( cntrller='library_admin',
+                           item_type='library',
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_id=self.security.encode_id( SelectField_form.id ),
+                           form_name=SelectField_form.name,
+                           library_id=self.security.encode_id( library3.id ) )
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         # SelectField option names are zero-based
         self.library_info( 'library_admin',
@@ -385,11 +388,12 @@ class TestLibraryFeatures( TwillTestCase ):
         """ Testing add an inheritable template containing an TextArea to library4"""
         # Logged in as admin_user
         # Add an inheritable template to library4
-        self.add_library_template( 'library_admin',
-                                   'library',
-                                   self.security.encode_id( library4.id ),
-                                   self.security.encode_id( TextArea_form.id ),
-                                   TextArea_form.name )
+        self.add_template( cntrller='library_admin',
+                           item_type='library',
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_id=self.security.encode_id( TextArea_form.id ),
+                           form_name=TextArea_form.name,
+                           library_id=self.security.encode_id( library4.id ) )
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         self.library_info( 'library_admin',
                             self.security.encode_id( library4.id ),
@@ -450,11 +454,12 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_125_add_template_to_library5( self ):
         """ Testing add an inheritable template containing an TextField to library5"""
         # Add an inheritable template to library5
-        self.add_library_template( 'library_admin',
-                                   'library',
-                                   self.security.encode_id( library5.id ),
-                                   self.security.encode_id( TextField_form.id ),
-                                   TextField_form.name )
+        self.add_template( cntrller='library_admin',
+                           item_type='library',
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_id=self.security.encode_id( TextField_form.id ),
+                           form_name=TextField_form.name,
+                           library_id=self.security.encode_id( library5.id ) )
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         self.library_info( 'library_admin',
                            self.security.encode_id( library5.id ),
@@ -515,9 +520,10 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_145_edit_library5_template_layout( self ):
         """Test editing the layout of library5's template"""
         # Currently there is only a TextField, and we'll add a TextArea.
-        self.edit_template( 'library_admin',
-                            'library',
-                            self.security.encode_id( library5.id ),
+        self.edit_template( cntrller='library_admin',
+                            item_type='library',
+                            form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                            library_id=self.security.encode_id( library5.id ),
                             field_type='TextArea',
                             field_name_1=TextArea_form.name,
                             field_helptext_1='%s help' % TextArea_form.name,
@@ -559,11 +565,12 @@ class TestLibraryFeatures( TwillTestCase ):
         """ Testing add an inheritable template containing an WorkflowField to library6"""
         # Add an inheritable template to library6
         # We won't select an option since we have no workflow to select
-        self.add_library_template( 'library_admin',
-                                   'library',
-                                   self.security.encode_id( library6.id ),
-                                   self.security.encode_id( WorkflowField_form.id ),
-                                   WorkflowField_form.name )
+        self.add_template( cntrller='library_admin',
+                           item_type='library',
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_id=self.security.encode_id( WorkflowField_form.id ),
+                           form_name=WorkflowField_form.name,
+                           library_id=self.security.encode_id( library6.id ) )
     def test_160_add_folder6_to_library6( self ):
         """Testing adding a folder to library6"""
         # Logged in as admin_user

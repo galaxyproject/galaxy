@@ -51,7 +51,7 @@ class UserOpenIDGrid( grids.Grid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.user_id == trans.user.id )
 
-class User( BaseController, UsesFormDefinitionWidgets ):
+class User( BaseController, UsesFormDefinitions ):
     user_openid_grid = UserOpenIDGrid()
     @web.expose
     def index( self, trans, webapp='galaxy', **kwd ):
