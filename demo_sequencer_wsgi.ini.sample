@@ -1,0 +1,66 @@
+# ---- HTTP Server ----------------------------------------------------------
+
+[server:main]
+
+use = egg:Paste#http
+port = 9011
+host = 0.0.0.0
+use_threadpool = true
+threadpool_workers = 10
+
+# ---- Galaxy Demo Sequencer Emulator Interface -------------------------------------------------
+
+[app:main]
+
+# Specifies the factory for the universe WSGI application
+paste.app_factory = galaxy.webapps.demo_sequencer.buildapp:app_factory
+log_level = DEBUG
+
+# Where dataset files are saved
+file_path = database/demo_sequencer_files
+# Temporary storage for additional datasets, this should be shared through the cluster
+new_file_path = database/tmp
+
+# Sequencer emulator actions
+sequencer_actions_config_file = %(here)s/lib/galaxy/webapps/demo_sequencer/sequencer_actions.xml
+
+# Session support (beaker)
+use_beaker_session = True
+session_type = memory
+session_data_dir = %(here)s/database/beaker_sessions
+session_key = galaxysessions
+session_secret = changethisinproduction
+
+# Galaxy session security
+id_secret = changethisinproductiontoo
+
+# Configuration for debugging middleware
+debug = true
+use_lint = false
+
+# NEVER enable this on a public site (even test or QA)
+# use_interactive = true
+
+# this should be a comma-separated list of valid Galaxy users
+#admin_users = test@bx.psu.edu
+
+# Force everyone to log in (disable anonymous access)
+require_login = False
+
+# Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
+## use_heartbeat = True
+
+# Profiling middleware (cProfile based)
+## use_profile = True
+
+# Use the new iframe / javascript based layout
+use_new_layout = true
+
+# Serving static files (needed if running standalone)
+static_enabled = True
+static_cache_time = 360
+static_dir = %(here)s/static/
+static_images_dir = %(here)s/static/images
+static_favicon_dir = %(here)s/static/favicon.ico
+static_scripts_dir = %(here)s/static/scripts/
+static_style_dir = %(here)s/static/june_2007_style/blue
