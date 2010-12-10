@@ -98,9 +98,9 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
 
     var data_url = "${h.url_for( action='data' )}",
         run_tool_url = "${h.url_for( action='run_tool' )}",
-    	reference_url = "${h.url_for( action='reference' )}",
-		chrom_url = "${h.url_for( action='chroms' )}",
-    	view;
+        reference_url = "${h.url_for( action='reference' )}",
+        chrom_url = "${h.url_for( action='chroms' )}",
+        view;
     
     $(function() {
         
@@ -164,10 +164,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             
             var add_async_success = function(track_data) {
                 var td = track_data,
-					track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
-					new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs, 
-					                                                    track_data.filters, track_data.tool );
-					
+                    track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
+                    new_track = new track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs, 
+                                                                        track_data.filters, track_data.tool );
+                    
                 view.add_track(new_track);
                 view.has_changes = true;
                 $("#no-tracks").hide();
