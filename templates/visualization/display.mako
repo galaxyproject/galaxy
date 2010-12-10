@@ -15,12 +15,6 @@
     ${parent.stylesheets()}
 
     <style type="text/css">
-        .nav-container {
-            position: fixed;
-            width: 100%;
-            left: 0;
-            bottom: 0;
-        }
         .page-body {
             padding: 0px;
         }
@@ -37,7 +31,7 @@
 </%def>
 
 <%def name="render_item( visualization, config )">
-    <div id="${visualization.id}"></div>
+    <div id="${visualization.id}" class="unified-panel-body" style="overflow:none;top:0px;"></div>
 
     <script type="text/javascript">
 
@@ -46,19 +40,21 @@
             chrom_url = "${h.url_for( controller='/tracks', action='chroms' )}",
             view,
             container_element = $("#${visualization.id}");
+        
+        $(function() {
             
-        if (container_element.parents(".item-content").length > 0) { // Embedded viz
-            container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
-        } else { // Viewing just one shared viz
-            container_element = $("#center");
-            $("#right-border").live("click", function() { view.resize_window(); });
-        }
-        view = new View( container_element, "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
-        %for track in config.get('tracks'):
-            view.add_track(
-                new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['prefs']} )
-            );
-        %endfor
+            if (container_element.parents(".item-content").length > 0) { // Embedded viz
+                container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
+            } else { // Viewing just one shared viz
+                $("#right-border").live("click", function() { view.resize_window(); });
+            }
+            view = new View( container_element, "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
+            %for track in config.get('tracks'):
+                view.add_track(
+                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']}, ${track['prefs']} )
+                );
+            %endfor
+        });
 
     </script>
 </%def>
