@@ -137,7 +137,7 @@
   </outputs>
 
   <requirements>
-    <requirement type="binary">lps_tool</requirement>
+    <requirement type="package">lps_tool</requirement>
   </requirements>
 
   <tests>

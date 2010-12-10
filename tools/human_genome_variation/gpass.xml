@@ -15,7 +15,7 @@
   </outputs>
 
   <requirements>
-    <requirement type="binary">gpass</requirement>
+    <requirement type="package">gpass</requirement>
   </requirements>
 
   <!-- we need to be able to set the seed for the random number generator

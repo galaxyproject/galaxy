@@ -18,7 +18,7 @@
   </outputs>
 
   <requirements>
-    <requirement type="binary">BEAM2</requirement>
+    <requirement type="package">beam</requirement>
     <requirement type="binary">mv</requirement>
     <requirement type="binary">rm</requirement>
   </requirements>

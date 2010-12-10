@@ -17,7 +17,7 @@
   </outputs>
 
   <requirements>
-    <requirement type="binary">pass</requirement>
+    <requirement type="package">pass</requirement>
     <requirement type="binary">sed</requirement>
   </requirements>
 
