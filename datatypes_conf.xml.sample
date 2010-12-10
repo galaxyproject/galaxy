@@ -121,6 +121,7 @@
         </datatype>
         <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
         <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
+            <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
             <converter file="wiggle_to_array_tree_converter.xml" target_datatype="array_tree"/>
             <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
             <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->

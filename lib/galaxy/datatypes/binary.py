@@ -230,6 +230,8 @@ class BigWig(Binary):
             return dataset.peek
         except:
             return "Binary UCSC %s file (%s)" % ( self._name, data.nice_size( dataset.get_size() ) )
+    def get_track_type( self ):
+        return "LineTrack", {"data_standalone": "bigwig"}
 
 class BigBed(BigWig):
     """BigBed support from UCSC."""

@@ -26,7 +26,7 @@ def get_tool_def( trans, hda ):
     # Get list of tool parameters that can be interactively modified.
     tool_params = []
     tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
-    tool_param_values = tool.params_from_strings( tool_param_values, trans.app )
+    tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
     for name, input in tool.inputs.items():
         if type( input ) == IntegerToolParameter:
             tool_params.append( { 'name' : name, 'label': input.label, 'type': 'int', \

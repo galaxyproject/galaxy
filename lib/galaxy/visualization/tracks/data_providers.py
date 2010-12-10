@@ -8,6 +8,7 @@ pkg_resources.require( "bx-python" ); pkg_resources.require( "pysam" ); pkg_reso
 from galaxy.datatypes.util.gff_util import *
 from bx.interval_index_file import Indexes
 from bx.arrays.array_tree import FileArrayTreeDict
+from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
 from galaxy.datatypes.tabular import Vcf
@@ -15,6 +16,13 @@ from galaxy.datatypes.interval import Bed, Gff
 from pysam import csamtools
 
 MAX_VALS = 5000 # only display first MAX_VALS features
+
+# Return None instead of NaN to pass jQuery 1.4's strict JSON
+def float_nan(n):
+    if n != n: # NaN != NaN
+        return None
+    else:
+        return float(n)
 
 class TracksDataProvider( object ):
     """ Base class for tracks data providers. """
@@ -340,6 +348,50 @@ class ArrayTreeDataProvider( TracksDataProvider ):
 
         f.close()
         return results
+        
+class BigWigDataProvider( TracksDataProvider ):
+    """
+    BigWig data provider for the Galaxy track browser. 
+    """
+                 
+    def get_data( self, chrom, start, end, **kwargs ):
+        # Bigwig has the possibility of it being a standalone bigwig file, in which case we use
+        # original_dataset, or coming from wig->bigwig conversion in which we use converted_dataset
+        if self.converted_dataset is not None:
+            f = open( self.converted_dataset.file_name )
+        else:
+            f = open( self.original_dataset.file_name )
+        bw = BigWigFile(file=f)
+        
+        if 'stats' in kwargs:
+            all_dat = bw.query(chrom, 0, 2147483647, 1)
+            f.close()
+            if all_dat is None:
+                return None
+            
+            all_dat = all_dat[0] # only 1 summary
+            return { 'max': float( all_dat['max'] ), \
+                     'min': float( all_dat['min'] ), \
+                     'total_frequency': float( all_dat['coverage'] ) }
+                     
+        
+        start = int(start)
+        end = int(end)
+        num_points = 2000
+        if (end - start) < num_points:
+            num_points = end - start
+
+        data = bw.query(chrom, start, end, num_points)
+        f.close()
+        
+        pos = start
+        step_size = (end - start) / num_points
+        result = []
+        for dat_dict in data:
+            result.append( (pos, float_nan(dat_dict['mean']) ) )
+            pos += step_size
+            
+        return result
 
 class IntervalIndexDataProvider( TracksDataProvider ):
     """
@@ -448,7 +500,8 @@ dataset_type_name_to_data_provider = {
     "array_tree": ArrayTreeDataProvider,
     "interval_index": { "vcf": VcfDataProvider, "default" : IntervalIndexDataProvider },
     "bai": BamDataProvider,
-    "summary_tree": SummaryTreeDataProvider
+    "summary_tree": SummaryTreeDataProvider,
+    "bigwig": BigWigDataProvider
 }
 
 dataset_type_to_data_provider = {
@@ -477,7 +530,10 @@ def get_data_provider( name=None, original_dataset=None ):
                 # Get data provider mapping and data provider for 'data'. If 
                 # provider available, use it; otherwise use generic provider.
                 _ , data_provider_mapping = original_dataset.datatype.get_track_type()
-                data_provider_name = data_provider_mapping[ 'data' ]
+                if 'data_standalone' in data_provider_mapping:
+                    data_provider_name = data_provider_mapping[ 'data_standalone' ]
+                else:
+                    data_provider_name = data_provider_mapping[ 'data' ]
                 if data_provider_name:
                     data_provider = get_data_provider( name=data_provider_name, original_dataset=original_dataset )
                 else: 

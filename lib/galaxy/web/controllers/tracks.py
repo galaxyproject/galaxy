@@ -120,7 +120,6 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     @web.require_login()
     def index( self, trans, **kwargs ):
         config = {}
-        
         return trans.fill_template( "tracks/browser.mako", config=config, add_dataset=kwargs.get("dataset_id", None), \
                                         default_dbkey=kwargs.get("default_dbkey", None) )
     
@@ -267,7 +266,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return msg
             
         # Get converted datasets.
-        data_sources, message = self._get_converted_datasets( trans, dataset )
+        data_sources, message = self._get_datasource_info( trans, dataset )
         if not data_sources:
             return message
             
@@ -286,9 +285,14 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                     return { 'dataset_type': data_sources['index'], 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
         
         # Get data provider.
-        tracks_dataset_type = data_sources['data']
-        data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
-        data_provider = data_provider_class( dataset.get_converted_dataset(trans, tracks_dataset_type), dataset )
+        if "data_standalone" in data_sources:
+            tracks_dataset_type = data_sources['data_standalone']
+            data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
+            data_provider = data_provider_class( original_dataset=dataset )
+        else:
+            tracks_dataset_type = data_sources['data']
+            data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
+            data_provider = data_provider_class( dataset.get_converted_dataset(trans, tracks_dataset_type), dataset )
         
         # Get and return data from data_provider.
         data = data_provider.get_data( chrom, low, high, **kwargs )
@@ -502,13 +506,17 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return messages.PENDING
         return None
         
-    def _get_converted_datasets( self, trans, dataset ):
+    def _get_datasource_info( self, trans, dataset ):
         """
-        Returns (a) converted datasets for a dataset and (b) dictionary of
+        Returns (a) datasource info for a dataset and (b) dictionary of
         any messages based on or derived from the conversion.
         """
         track_type, data_sources = dataset.datatype.get_track_type()
+        
         for source_type, data_source in data_sources.iteritems():
+            if source_type == "data_standalone":
+                break
+                
             try:
                 converted_dataset = dataset.get_converted_dataset(trans, data_source)
             except ValueError:

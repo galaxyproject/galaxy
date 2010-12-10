@@ -690,8 +690,8 @@ $.extend( Track.prototype, {
                     track.content_div.text(DATA_ERROR);
                     if (result.message) {
                         var track_id = track.view.tracks.indexOf(track);
-                        var error_link = $("<a href='javascript:void(0);'></a>").attr("id", track_id + "_error");
-                        error_link.text("Click to view error");
+                        var error_link = $(" <a href='javascript:void(0);'></a>").attr("id", track_id + "_error");
+                        error_link.text("View error");
                         $("#" + track_id + "_error").live("click", function() {                        
                             show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
                         });
@@ -719,15 +719,28 @@ $.extend( Track.prototype, {
             track.container_div.addClass("nodata");
             track.content_div.text(DATA_NONE);
         }
+    },
+    restore_prefs: function(prefs) {
+        var that = this;
+        $.each(prefs, function(pref, val) {
+            if (val !== undefined) {
+                that.prefs[pref] = val;
+            }
+        });
     }
 });
 
 var TiledTrack = function(filters, tool, parent_track) {
+    var track = this,
+        view = track.view;
+    
     // Attribute init.
     this.filters = (filters !== undefined ? get_filters_from_dict( filters ) : []);
     this.tool = (tool !== undefined ? get_tool_from_dict( tool ) : undefined);
     this.parent_track = parent_track;
     this.child_tracks = [];
+    
+    if (track.hidden) { return; }
     
     //
     // Init HTML elements. for tool, filters.
@@ -753,7 +766,6 @@ var TiledTrack = function(filters, tool, parent_track) {
         e.stopPropagation();
     });
     var filters_table = $("<table class='filters'>").appendTo(this.filtering_div);
-    var track = this;
     $.each(this.filters, function(index, filter) {
         var table_row = $("<tr>").appendTo(filters_table);
         var filter_th = $("<th class='filter-info'>").appendTo(table_row);
@@ -844,14 +856,6 @@ var TiledTrack = function(filters, tool, parent_track) {
         });
     }
     
-    //
-    // Functional init.
-    //
-    var track = this,
-        view = track.view;
-    
-    if (track.hidden) { return; }
-    
     if (track.display_modes !== undefined) {
         if (track.mode_div === undefined) {
             track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
@@ -882,16 +886,6 @@ var TiledTrack = function(filters, tool, parent_track) {
     // Track dropdown menu.
     //
     var track_dropdown = {};
-    track_dropdown["Set as overview"] = function() {
-        view.overview_viewport.find("canvas").remove();
-        track.is_overview = true;
-        track.set_overview();
-        for (var track_id in view.tracks) {
-            if (view.tracks[track_id] !== track) {
-                view.tracks[track_id].is_overview = false;
-            }
-        }
-    };
     track_dropdown["Edit configuration"] = function() {
         var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
             ok_fn = function() { track.update_options(track.track_id); hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
@@ -909,6 +903,18 @@ var TiledTrack = function(filters, tool, parent_track) {
             "OK": ok_fn
         });
     };
+    
+    track_dropdown["Set as overview"] = function() {
+        view.overview_viewport.find("canvas").remove();
+        track.is_overview = true;
+        track.set_overview();
+        for (var track_id in view.tracks) {
+            if (view.tracks[track_id] !== track) {
+                view.tracks[track_id].is_overview = false;
+            }
+        }
+    };
+    
     if (track.filters.length > 0) {
         // Show/hide filters menu item.
         track_dropdown["Show filters"] = function() {
@@ -1061,7 +1067,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         parent_element.append( tile_element );
         track.max_height = Math.max( track.max_height, tile_element.height() );
         track.content_div.css("height", track.max_height + "px");
-
+        
+        if (track.hidden) { return; }
+        
         // Show/hide filters based on whether tile is filterable.
         if ( tile_element.hasClass(FILTERABLE_CLASS) ) {
             show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters");
@@ -1234,6 +1242,7 @@ var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.data_cache = new Cache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.prefs = { 'color': 'black', 'min_value': undefined, 'max_value': undefined, 'mode': this.mode };
+    this.restore_prefs(prefs);
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -1454,6 +1463,7 @@ var FeatureTrack = function (name, view, dataset_id, prefs, filters, tool, paren
     this.left_offset = 200;
     
     this.prefs = { 'block_color': '#444', 'label_color': 'black', 'show_counts': true };
+    this.restore_prefs(prefs);
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {

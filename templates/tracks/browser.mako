@@ -15,7 +15,7 @@ ${parent.stylesheets()}
 ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom" )}
 
 <style type="text/css">
-    #center, #browser-container {
+    #browser-container {
         overflow: none;
     }
     ul#sortable-ul {
@@ -120,7 +120,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             init();
         %else:
             var continue_fn = function() {
-                view = new View( $("#center"), $("#new-title").val(), undefined, $("#new-dbkey").val() );
+                view = new View( $("#browser-container"), $("#new-title").val(), undefined, $("#new-dbkey").val() );
                 view.editor = true;
                 init();
                 hide_modal();
