@@ -38,8 +38,6 @@ import re
 import colorsys
 import random
 
-colorseed = 0
-
 wf_parms = {}
 for step in steps:
     for v in step.state.inputs.itervalues():
@@ -47,7 +45,12 @@ for step in steps:
             for rematch in re.findall('\$\{.+?\}', v):
                 if rematch[2:-1] not in wf_parms:
                     # Do color generation that actually makes sense as a scheme at some point, instead of just random.
-                    wf_parms[rematch[2:-1]] = "#%X%X%X" % tuple([int(x * 255) for x in colorsys.hsv_to_rgb(random.random(), .1, .9)])
+                    wf_parms[rematch[2:-1]] = ""
+hue_offset = 1.0 / len(wf_parms)
+hue = 0.0
+for k in wf_parms.iterkeys():
+    wf_parms[k] = "#%X%X%X" % tuple([int(x * 255) for x in colorsys.hsv_to_rgb(hue, .1, .9)])
+    hue += hue_offset
 %>
 
 <%def name="do_inputs( inputs, values, errors, prefix, step, other_values = None )">
