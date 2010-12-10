@@ -653,7 +653,14 @@ class UsesFormDefinitions:
                     # be the Sample's RequestType RequestTypeRunAssociation, in which case we need to
                     # create a SampleRunAssociation using the inherited template from the RequestType.
                     if isinstance( assoc, trans.model.RequestTypeRunAssociation ):
-                        sra = trans.model.SampleRunAssociation( item, assoc.run )
+                        form_definition = assoc.run.template
+                        new_form_values = trans.model.FormValues( form_definition, [] )
+                        trans.sa_session.add( new_form_values )
+                        trans.sa_session.flush()
+                        new_run = trans.model.Run( form_definition, new_form_values )
+                        trans.sa_session.add( new_run )
+                        trans.sa_session.flush()
+                        sra = trans.model.SampleRunAssociation( item, new_run )
                         trans.sa_session.add( sra )
                         trans.sa_session.flush()
                         info_association = sra.run

@@ -380,7 +380,7 @@
                                         transferred_dataset_files = []
                                 %>
                                 <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="sample-${sample.id}-popup">
-                                    ${sample.name}
+                                    <a class="view-info" href="${h.url_for( controller='requests_common', action='view_sample', cntrller=cntrller, id=trans.security.encode_id( sample.id ) )}">${sample.name}</a>
                                 </div>
                                 <div popupmenu="sample-${sample.id}-popup">
                                     %if can_select_datasets:

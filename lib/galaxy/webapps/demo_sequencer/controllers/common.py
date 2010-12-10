@@ -11,14 +11,13 @@ log = logging.getLogger( __name__ )
 class CommonController( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
-        params = util.Params( kwd )
-        redirect_action = util.restore_text( params.get( 'redirect_action', '' ) )
-        title = util.restore_text( params.get( 'title', '' ) )
-        JobId = util.restore_text( params.get( 'JobId', '' ) )
-        sample_id = util.restore_text( params.get( 'sample_id', '' ) )
-        field_0 = util.restore_text( params.get( 'field_0', '' ) )
-        message = util.restore_text( params.get( 'message', '' ) )
-        status = params.get( 'status', 'done' )
+        redirect_action = util.restore_text( kwd.get( 'redirect_action', '' ) )
+        title = util.restore_text( kwd.get( 'title', '' ) )
+        JobId = util.restore_text( kwd.get( 'JobId', '' ) )
+        sample_id = util.restore_text( kwd.get( 'sample_id', '' ) )
+        field_0 = util.restore_text( kwd.get( 'field_0', '' ) )
+        message = util.restore_text( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
         redirect_delay = trans.app.sequencer_actions_registry.redirect_delay
         # FIXME: this doesn't work, and the user is currently forced to login manually
         #sequencer_authentication = trans.app.sequencer_actions_registry.authentication
@@ -83,14 +82,13 @@ class CommonController( BaseController ):
                                     message=message,
                                     status=status )
     def parse_request_tup( self, request_tup, **kwd ):
-        params = util.Params( kwd )
-        redirect_action = util.restore_text( params.get( 'redirect_action', '' ) )
-        title = util.restore_text( params.get( 'title', '' ) )
-        JobId = util.restore_text( params.get( 'JobId', '' ) )
-        sample_id = util.restore_text( params.get( 'sample_id', '' ) )
-        field_0 = util.restore_text( params.get( 'field_0', '' ) )
-        message = util.restore_text( params.get( 'message', '' ) )
-        status = params.get( 'status', 'done' )
+        redirect_action = util.restore_text( kwd.get( 'redirect_action', '' ) )
+        title = util.restore_text( kwd.get( 'title', '' ) )
+        JobId = util.restore_text( kwd.get( 'JobId', '' ) )
+        sample_id = util.restore_text( kwd.get( 'sample_id', '' ) )
+        field_0 = util.restore_text( kwd.get( 'field_0', '' ) )
+        message = util.restore_text( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
         url, http_method, request_params, response_type = request_tup
         url = unquote_plus( url )
         # Handle URLs in which we replace param values, which will look something like:

@@ -881,6 +881,28 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                     message=message,
                                     status=status )
     @web.expose
+    @web.require_login( "view request" )
+    def view_sample( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        sample_id = params.get( 'id', None )
+        try:
+            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
+        except:
+            return invalid_id_redirect( trans, cntrller, sample_id )
+        # See if we have any associated templates
+        widgets = sample.get_template_widgets( trans )
+        widget_fields_have_contents = self.widget_fields_have_contents( widgets )
+        return trans.fill_template( '/requests/common/view_sample.mako',
+                                    cntrller=cntrller, 
+                                    sample=sample,
+                                    widgets=widgets,
+                                    widget_fields_have_contents=widget_fields_have_contents,
+                                    status=status,
+                                    message=message )
+    @web.expose
     @web.require_login( "delete sample from sequencing request" )
     def delete_sample( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
