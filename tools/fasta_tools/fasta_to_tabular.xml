@@ -63,7 +63,7 @@
 
 This tool converts FASTA formatted sequences to TAB-delimited format.
 
-Many tools consider the first word of the FASTA "&gt;" title line to be an identifier, and any remaing text to be a free form description.
+Many tools consider the first word of the FASTA "&gt;" title line to be an identifier, and any remaining text to be a free form description.
 It is therefore useful to split this text into two columns in Galaxy (identifier and any description) by setting **How many columns to divide title string into?** to **2**.
 In some cases the description can be usefully broken up into more columns -- see the examples .
 
@@ -76,7 +76,11 @@ With the introduction of the **How many columns to divide title string into?** o
 
 Suppose you have the following FASTA formatted sequences from a Roche (454) FLX sequencing run::
 
-    &gt;EYKX4VC02EQLO5 length=108 xy=1826_0455 region=2 run=R_2007_11_07_16_15_57_    TCCGCGCCGAGCATGCCCATCTTGGATTCCGGCGCGATGACCATCGCCCGCTCCACCACG    TTCGGCCGGCCCTTCTCGTCGAGGAATGACACCAGCGCTTCGCCCACG    &gt;EYKX4VC02D4GS2 length=60 xy=1573_3972 region=2 run=R_2007_11_07_16_15_57_    AATAAAACTAAATCAGCAAAGACTGGCAAATACTCACAGGCTTATACAATACAAATGTAA
+    &gt;EYKX4VC02EQLO5 length=108 xy=1826_0455 region=2 run=R_2007_11_07_16_15_57_
+    TCCGCGCCGAGCATGCCCATCTTGGATTCCGGCGCGATGACCATCGCCCGCTCCACCACG
+    TTCGGCCGGCCCTTCTCGTCGAGGAATGACACCAGCGCTTCGCCCACG
+    &gt;EYKX4VC02D4GS2 length=60 xy=1573_3972 region=2 run=R_2007_11_07_16_15_57_
+    AATAAAACTAAATCAGCAAAGACTGGCAAATACTCACAGGCTTATACAATACAAATGTAA
 
 Running this tool with the default settings will produce this (2 column output):
 

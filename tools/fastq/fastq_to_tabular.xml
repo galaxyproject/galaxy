@@ -36,7 +36,7 @@
 
 This tool converts FASTQ sequencing reads to a Tabular file.
 
-It is conventional to take the first word of the FASTQ "@" title line as the identifier, and any remaing text to be a free form description.
+It is conventional to take the first word of the FASTQ "@" title line as the identifier, and any remaining text to be a free form description.
 It is therefore often useful to split this text into two columns in Galaxy (identifier and any description) by setting **How many columns to divide title string into?** to **2**.
 In some cases the description can be usefully broken up into more columns -- see the examples .
 
