@@ -25,6 +25,6 @@
 
 %if redirect_action != 'exit':
     <script type="text/javascript">
-        top.location.href = "${h.url_for( controller='common', action='index', redirect_action=redirect_action, JobId=JobId )}";;
+        top.location.href = "${h.url_for( controller='common', action='index', redirect_action=redirect_action, JobId=JobId, sample_id=sample_id, field_0=field_0 )}";;
     </script>
 %endif

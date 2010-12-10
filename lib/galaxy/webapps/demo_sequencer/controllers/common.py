@@ -3,6 +3,7 @@ from galaxy.web.framework.helpers import time_ago
 from galaxy import util
 import time, socket, urllib, urllib2, base64
 from galaxy.util.json import *
+from urllib import quote_plus, unquote_plus
 
 import logging
 log = logging.getLogger( __name__ )
@@ -10,11 +11,12 @@ log = logging.getLogger( __name__ )
 class CommonController( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
-        log.debug("#####In index, kwd: %s" % str( kwd ))
         params = util.Params( kwd )
         redirect_action = util.restore_text( params.get( 'redirect_action', '' ) )
         title = util.restore_text( params.get( 'title', '' ) )
         JobId = util.restore_text( params.get( 'JobId', '' ) )
+        sample_id = util.restore_text( params.get( 'sample_id', '' ) )
+        field_0 = util.restore_text( params.get( 'field_0', '' ) )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
         redirect_delay = trans.app.sequencer_actions_registry.redirect_delay
@@ -32,7 +34,7 @@ class CommonController( BaseController ):
             for request_tup in sequencer_requests:
                 # Hack: this currently only allows for a single sequencer request since we are redirecting.
                 # We only use the url from the tuple of 4 elements, the tuple is built simply to re-use code.
-                url, http_method, request_params, response_type = self.parse_request_tup( request_tup, JobId )
+                url, http_method, request_params, response_type = self.parse_request_tup( request_tup, **kwd )
                 return trans.fill_template( 'webapps/demo_sequencer/redirect.mako', redirect_url=url )
             # Exit if we have no redirection
             redirect_action = 'exit'
@@ -45,20 +47,20 @@ class CommonController( BaseController ):
             for index, key in enumerate( sequencer_redirects.iterkeys() ):
                 if redirect_action == key:
                     try:
-                        # Move to the next action, if there is one
+                        # Move to the next action, if there is one.
                         redirect_action = sequencer_redirects.keys()[ index + 1 ]
                         action_dict = sequencer_redirects[ redirect_action ]
                         title = action_dict[ 'title' ]
                     except:
-                        # Keep displaying the same title on the page until we redirect ( if we do )
+                        # Keep displaying the same title on the page until we redirect ( if we do ).
                         action_dict = sequencer_redirects[ redirect_action ]
                         title = action_dict[ 'title' ]
-                        # If we're done redirecting, stop
+                        # If we're done redirecting, stop.
                         redirect_action = 'stop'
                     break
         # Handle requests, if there are any
         for request_tup in requests:
-            url, http_method, request_params, response_type = self.parse_request_tup( request_tup, JobId )
+            url, http_method, request_params, response_type = self.parse_request_tup( request_tup, **kwd )
             response = self.handle_request( trans, url, http_method, **request_params )
             # Handle response, currently only handles json
             if response_type == 'json':
@@ -69,53 +71,47 @@ class CommonController( BaseController ):
                     message = response[ 'Message' ]
                     return self.handle_failure( trans, url, message )
                 if 'JobId' in response:
-                    JobId = response[ 'JobId' ]
+                    JobId = str( response[ 'JobId' ] )
+                    kwd[ 'JobId' ] = JobId
         time.sleep( redirect_delay )
         return trans.fill_template( "webapps/demo_sequencer/index.mako",
                                     redirect_action=redirect_action,
                                     title=title,
+                                    sample_id=sample_id,
+                                    field_0=field_0,
                                     JobId=JobId,
                                     message=message,
                                     status=status )
-    def parse_request_tup( self, request_tup, JobId ):
+    def parse_request_tup( self, request_tup, **kwd ):
+        params = util.Params( kwd )
+        redirect_action = util.restore_text( params.get( 'redirect_action', '' ) )
+        title = util.restore_text( params.get( 'title', '' ) )
+        JobId = util.restore_text( params.get( 'JobId', '' ) )
+        sample_id = util.restore_text( params.get( 'sample_id', '' ) )
+        field_0 = util.restore_text( params.get( 'field_0', '' ) )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
         url, http_method, request_params, response_type = request_tup
-        # Some requests can look like this: http://127.0.0.1/getinfo/{id}
-        # which requires us to replace the {id} string with a param value
-        # in the XML config that has the same name.  This is a hack,
-        # especially since it only handles a single replacement, but works
-        # for now...
+        url = unquote_plus( url )
+        # Handle URLs in which we replace param values, which will look something like:
+        # http://127.0.0.1/getinfo/{id}.
         replace_with_param = url.find( '{' ) > 0
         if replace_with_param:
-            # Get the location of the item that needs to be replaced so we can
-            # rebuild the request with the proper value/
-            split_url = url.split( '/' )
-            for index, item in enumerate( split_url ):
-                if item.startswith( '{' ):
-                    item = item.lstrip( '{' )
-                    item = item.rstrip( '}' )
-                    if item == 'JobId':
-                        if JobId:
-                            # JobId is a special parameter since it is unknown until the job is created,
-                            # so we need this hack.
-                            item = JobId
-                            split_url[ index ] = str( item )
-                    else:
-                        # Get the value from the defined request_params dict
-                        item = request_params[ item ]
-                        del request_params[ item ]
-                        split_url[ index ] = str( item )
-                    break
-            url = '/'.join( split_url )
+            # Handle the special-case {JobId} param.
+            if url.find( '{JobId}' ) > 0:
+                if JobId:
+                    url = url.replace( '{JobId}', str( JobId ) )
+            for key, value in kwd.items():
+                # Don't attempt to replace if there is nothing with which to do it
+                # or if the value itself should be replaced with something.
+                if value and not value.startswith( '{' ):
+                    replace_str = '{%s}' % key
+                    if url.find( replace_str ) > 0:
+                        url = url.replace( replace_str, value )
         return url, http_method, request_params, response_type
     def handle_request( self, trans, url, http_method=None, **kwd ):
-        # The Python support for fetching resources from the web is layered. urllib2 uses the httplib
-        # library, which in turn uses the socket library.  As of Python 2.3 you can specify how long
-        # a socket should wait for a response before timing out. By default the socket module has no
-        # timeout and can hang. Currently, the socket timeout is not exposed at the httplib or urllib2
-        # levels. However, you can set the default timeout ( in seconds ) globally for all sockets by
-        # doing the following.
         socket.setdefaulttimeout( 600 )
-        # The following calls to urllib2.urlopen() will use the above default timeout
+        # The following calls to urllib2.urlopen() will use the above default timeout.
         try:
             if not http_method or http_method == 'get':
                 page = urllib2.urlopen( url )
