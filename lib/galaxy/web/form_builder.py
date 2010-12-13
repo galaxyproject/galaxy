@@ -616,7 +616,10 @@ def build_select_field( trans, objs, label_attr,  select_field_name, initial_val
     - selected_value: the value of the currently selected option
     - refresh_on_change: True if the SelectField should perform a refresh_on_change
     """
-    values = [ initial_value ]
+    if initial_value == 'none':
+        values = [ initial_value ]
+    else:
+        values = []
     for obj in objs:
         if label_attr == 'self':
             # Each obj is a string
@@ -633,8 +636,9 @@ def build_select_field( trans, objs, label_attr,  select_field_name, initial_val
                                 refresh_on_change=refresh_on_change, 
                                 refresh_on_change_values=refresh_on_change_values,
                                 size=size )
-    if display is None:
-        # only insert an initial "Select one" option if we are not displaying check boxes or radio buttons
+    if display is None and initial_value == 'none':
+        # Only insert an initial "Select one" option if we are not displaying check boxes
+        # or radio buttons and we have not received an initial_value other than 'none'.
         if selected_value == initial_value:
             select_field.add_option( 'Select one', initial_value, selected=True )
         else:

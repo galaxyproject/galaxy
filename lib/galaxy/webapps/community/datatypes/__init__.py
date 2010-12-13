@@ -51,10 +51,10 @@ class Registry( object ):
                     log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
     def get_datatype_by_extension( self, ext ):
         return self.datatypes_by_extension.get( ext, None )
-    def get_datatype_labels( self ):
+    def get_datatype_extensions( self ):
         rval = []
         for ext, datatype in self.datatypes_by_extension.items():
-            rval.append( ( ext, datatype.label ) )
+            rval.append( ext )
         return rval
 
 class Tool( object ):

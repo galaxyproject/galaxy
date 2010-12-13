@@ -219,6 +219,12 @@ class Tool( object ):
         else:
             return 'tool'
     @property
+    def type( self ):
+        # Hack
+        if self.is_suite:
+            return 'toolsuite'
+        return 'tool'
+    @property
     def download_file_name( self ):
         return '%s_%s.%s' % ( self.tool_id, self.version, self.extension )
     @property
