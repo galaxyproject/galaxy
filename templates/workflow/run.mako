@@ -193,22 +193,29 @@ for k in wf_parms.iterkeys():
     <script type="text/javascript">
     // Set the change hooks for workflow parameters.
     $(document).ready(function () {
-        $('.wf_parm_input').bind('change keypress', function(){
+        $('.wf_parm_input').bind('change keypress keyup', function(event){
             // DBTODO This is probably not reliable.  Ensure we have the right class.
-            var tag_id = $(this).attr("class").split(' ')[1].substring(5);
-            // Set text properly.
-            $('.wfpspan.wf_parm__'+tag_id).text($(this).val());
-            // Now set the hidden input to the generated text.
-            $('.wfpspan.wf_parm__'+tag_id).not('.pja_wfp').each(function(){
-                var new_text = $(this).parent().text();
-                $(this).parent().siblings().children().val(new_text);
-            });
+            var new_text = $(this).val();
+            if (new_text === ''){
+                var tag_id = $(this).attr("class").split(' ')[1].substring(5);
+                // Set text properly.
+                $('.wfpspan.wf_parm__'+tag_id).text(tag_id);
+            }else{
+                var tag_id = $(this).attr("class").split(' ')[1].substring(5);
+                // Set text properly.
+                $('.wfpspan.wf_parm__'+tag_id).text(new_text);
+                // Now set the hidden input to the generated text.
+                $('.wfpspan.wf_parm__'+tag_id).not('.pja_wfp').each(function(){
+                    // var new_text = $(this).parent().text();
+                    $(this).parent().siblings().children().val(new_text);
+                });
+            }
         });
     });
     </script>
 %endif
 
-%for i, step in enumerate( steps ):    
+%for i, step in enumerate( steps ):
     %if step.type == 'tool' or step.type is None:
       <% tool = app.toolbox.tools_by_id[step.tool_id] %>
       <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
@@ -216,30 +223,29 @@ for k in wf_parms.iterkeys():
           <div class="toolFormTitle">
               Step ${int(step.order_index)+1}: ${tool.name}
               % if step.annotations:
-      			<div class="step-annotation">Annotation: ${h.to_unicode( step.annotations[0].annotation )}</div>
-      		  % endif
+                <div class="step-annotation">Annotation: ${h.to_unicode( step.annotations[0].annotation )}</div>
+              % endif
           </div>
           <div class="toolFormBody">
-              ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
-			% if step.post_job_actions:
-				<hr/>
-				<div class='form-row'>
-				% if len(step.post_job_actions) > 1:
-					<label>Actions:</label>
-				% else:
-					<label>Action:</label>
-				% endif
+            ${do_inputs( tool.inputs, step.state.inputs, errors.get( step.id, dict() ), "", step )}
+            % if step.post_job_actions:
+                <hr/>
+                <div class='form-row'>
+                % if len(step.post_job_actions) > 1:
+                    <label>Actions:</label>
+                % else:
+                    <label>Action:</label>
+                % endif
 <%
 pja_ss_all = []
 for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
     for rematch in re.findall('\$\{.+?\}', pja_ss):
-        # pja_ss = pja_ss.replace(rematch, '<span class="wfpspan, wf_parm__%s">%s</span>' % (rematch[2:-1], rematch[2:-1]))
         pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
     pja_ss_all.append(pja_ss)
 %>
                 ${'<br/>'.join(pja_ss_all)}
-				</div>
-			% endif
+                </div>
+            % endif
           </div>
       </div>
     %else:
@@ -249,9 +255,8 @@ for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
           <div class="toolFormTitle">
               Step ${int(step.order_index)+1}: ${module.name}
               % if step.annotations:
-  				<div class="step-annotation">Annotation: ${step.annotations[0].annotation}</div>
+                <div class="step-annotation">Annotation: ${step.annotations[0].annotation}</div>
               % endif
-  			
           </div>
           <div class="toolFormBody">
               ${do_inputs( module.get_runtime_inputs(), step.state.inputs, errors.get( step.id, dict() ), "", step )}
