@@ -20,6 +20,7 @@ log = logging.getLogger( __name__ )
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
+
 def upgrade():
     print __doc__
     metadata.reflect()
@@ -31,6 +32,11 @@ def upgrade():
         FormValues_table = Table( "form_values", metadata, autoload=True )
     except Exception, e:
         log.debug( "Loading 'form_values' table failed: %s" % str( e ) )
+    def get_value(lst, index):
+        try:
+            return lst[index]
+        except IndexError,e:
+            return ''
     # Go through the entire table and add a 'name' attribute for each field
     # in the list of fields for each form definition
     cmd = "SELECT id, fields FROM form_definition"
@@ -44,6 +50,8 @@ def upgrade():
         if len( fields_list ):
             for index, field in enumerate( fields_list ):
                 field[ 'name' ] = 'field_%i' % index
+                field[ 'helptext' ] = field[ 'helptext' ].replace('"', '').replace("'", "")
+                field[ 'label' ] = field[ 'label' ].replace('"', '').replace("'", "")
             cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( to_json_string( fields_list ), form_definition_id )
             db_session.execute( cmd )
     # replace the values list in the content field of the form_values table with a name:value dict
@@ -56,15 +64,16 @@ def upgrade():
         form_values_id = int( row[0] )
         if not str( row[1] ).strip():
             continue
-        values_list = from_json_string( str( row[1] ) )
+        row1 = str(row[1]).replace('\n', '').replace('\r', '')
+        values_list = from_json_string( str( row1 ).strip() )
         if not str( row[2] ).strip():
             continue
-        fields_list = from_json_string( str( row[2] ) )
-        if fields_list:
+        fields_list = from_json_string( str( row[2] ).strip() )
+        if fields_list and type(values_list) == type(list()):
             values_dict = {}
             for field_index, field in enumerate( fields_list ):
                 field_name = field[ 'name' ]
-                values_dict[ field_name ] = values_list[ field_index ]
+                values_dict[ field_name ] = str(get_value(values_list, field_index )).replace('"', '').replace("'", "")
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( to_json_string( values_dict ), form_values_id )
             db_session.execute( cmd )
                 
@@ -116,4 +125,3 @@ def downgrade():
                     del field[ 'name' ]
             cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( to_json_string( fields_list ), form_definition_id )
         db_session.execute( cmd )
-
