@@ -62,13 +62,17 @@ class FormDefinitionFieldFactory( object ):
     type = None
     def __get_stored_field_type( self, **kwds ):
         raise 'not implemented'
-    def new( self, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
         """
         Return new FormDefinition field.
         """
         rval = {}
-        assert label, 'Must provide a name / label'
-        rval['label'] = label
+        assert name, 'Must provide a name'
+        rval['name'] = name
+        if not label:
+            rval['label'] = name
+        else:
+            rval['label'] = label
         if required:
             rval['required'] = 'required'
         else:
@@ -88,7 +92,8 @@ class FormDefinitionFieldFactory( object ):
         """
         Return FormDefinition created from an xml element.
         """
-        label = elem.get( 'name' )
+        name = elem.get( 'name' )
+        label = elem.get( 'label' )
         required = string_as_bool( elem.get( 'required', 'false' ) )
         default = elem.get( 'value' )
         helptext = elem.get( 'helptext' )
@@ -97,7 +102,7 @@ class FormDefinitionFieldFactory( object ):
         if field_layout:
             assert layout and field_layout in layout, 'Invalid layout specified: %s not in %s' %( field_layout, layout )
             field_layout = str( layout.index( field_layout ) ) #existing behavior: integer indexes are stored as strings. why?
-        return self.new( label=label, required=required, helptext=helptext, default=default, visible=visible, layout=field_layout )
+        return self.new( name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=field_layout )
 
 class FormDefinitionTextFieldFactory( FormDefinitionFieldFactory ):
     type = 'text'
@@ -106,11 +111,11 @@ class FormDefinitionTextFieldFactory( FormDefinitionFieldFactory ):
             return 'TextArea'
         else:
             return 'TextField'
-    def new( self, label=None, required=False, helptext=None, default=None, visible=True, layout=None, area=False ):
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, area=False ):
         """
         Return new FormDefinition field.
         """
-        rval = super( FormDefinitionTextFieldFactory, self ).new( label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
+        rval = super( FormDefinitionTextFieldFactory, self ).new( name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
         rval['type'] = self.__get_stored_field_type( area )
         return rval
     def from_elem( self, elem, layout=None ):
@@ -125,11 +130,11 @@ class FormDefinitionAddressFieldFactory( FormDefinitionFieldFactory ):
     type = 'address'
     def __get_stored_field_type( self ):
         return 'AddressField'
-    def new( self, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
         """
         Return new FormDefinition field.
         """
-        rval = super( FormDefinitionAddressFieldFactory, self ).new( label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
+        rval = super( FormDefinitionAddressFieldFactory, self ).new( name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
         rval['type'] = self.__get_stored_field_type()
         return rval
     def from_elem( self, elem, layout=None ):
@@ -144,11 +149,11 @@ class FormDefinitionWorkflowFieldFactory( FormDefinitionFieldFactory ):
     type = 'workflow'
     def __get_stored_field_type( self ):
         return 'WorkflowField'
-    def new( self, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
         """
         Return new FormDefinition field.
         """
-        rval = super( FormDefinitionWorkflowFieldFactory, self ).new( label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
+        rval = super( FormDefinitionWorkflowFieldFactory, self ).new( name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
         rval['type'] = self.__get_stored_field_type()
         return rval
     def from_elem( self, elem, layout=None ):
@@ -167,7 +172,7 @@ class FormDefinitionHistoryFieldFactory( FormDefinitionFieldFactory ):
         """
         Return new FormDefinition field.
         """
-        rval = super( FormDefinitionHistoryFieldFactory, self ).new( label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
+        rval = super( FormDefinitionHistoryFieldFactory, self ).new( name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
         rval['type'] = self.__get_stored_field_type()
         return rval
     def from_elem( self, elem, layout=None ):
@@ -185,11 +190,11 @@ class FormDefinitionSelectFieldFactory( FormDefinitionFieldFactory ):
             return 'CheckboxField'
         else:
             return 'SelectField'
-    def new( self, label=None, required=False, helptext=None, default=None, visible=True, layout=None, options=[], checkboxes=False ):
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, options=[], checkboxes=False ):
         """
         Return new FormDefinition field.
         """
-        rval = super( FormDefinitionSelectFieldFactory, self ).new( label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
+        rval = super( FormDefinitionSelectFieldFactory, self ).new( name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
         rval['type'] = self.__get_stored_field_type( checkboxes )
         if options is None:
             options = []

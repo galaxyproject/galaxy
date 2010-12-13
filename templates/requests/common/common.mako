@@ -474,28 +474,32 @@
     <tr>
         <td>${sample_name}</td>
         %for field_index, field in fields_dict.items():
-            <% field_type = field[ 'type' ] %>
+            <% 
+                field_type = field[ 'type' ]
+                field_name = field[ 'name' ]
+                field_value = sample_values[ field_name ]
+            %>
             <td>
                 %if display_only:
-                    %if sample_values[field_index]:
+                    %if field_value:
                         %if field_type == 'WorkflowField':
-                            %if str(sample_values[field_index]) != 'none':
-                                <% workflow = trans.sa_session.query( trans.app.model.StoredWorkflow ).get( int( sample_values[ field_index ] ) ) %>
+                            %if str( field_value ) != 'none':
+                                <% workflow = trans.sa_session.query( trans.app.model.StoredWorkflow ).get( int( field_value ) ) %>
                                 <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id( workflow.id ) )}">${workflow.name}</a>
                             %endif
                         %else:
-                            ${sample_values[ field_index ]}
+                            ${field_value}
                         %endif
                     %else:
                         <i>None</i>
                     %endif
                 %else:
                     %if field_type == 'TextField':
-                        <input type="text" name="sample_${index}_field_${field_index}" value="${sample_values[field_index]}" size="7"/>
+                        <input type="text" name="sample_${index}_field_${field_index}" value="${field_value}" size="7"/>
                     %elif field_type == 'SelectField':
                         <select name="sample_${index}_field_${field_index}" last_selected_value="2">
                             %for option_index, option in enumerate(field[ 'selectlist' ]):
-                                %if option == sample_values[field_index]:
+                                %if option == field_value:
                                     <option value="${option}" selected>${option}</option>
                                 %else:
                                     <option value="${option}">${option}</option>
@@ -504,14 +508,14 @@
                         </select>
                     %elif field_type == 'WorkflowField':
                         <select name="sample_${index}_field_${field_index}">
-                            %if str(sample_values[field_index]) == 'none':
+                            %if str( field_value ) == 'none':
                                 <option value="none" selected>Select one</option>
                             %else:
                                 <option value="none">Select one</option>
                             %endif
                             %for option_index, option in enumerate(request.user.stored_workflows):
                                 %if not option.deleted:
-                                    %if str(option.id) == str(sample_values[field_index]):
+                                    %if str( option.id ) == str( field_value ):
                                         <option value="${option.id}" selected>${option.name}</option>
                                     %else:
                                         <option value="${option.id}">${option.name}</option>
@@ -521,14 +525,14 @@
                         </select>
                     %elif field_type == 'HistoryField':
                         <select name="sample_${index}_field_${field_index}">
-                            %if str(sample_values[field_index]) == 'none':
+                            %if str( field_value ) == 'none':
                                 <option value="none" selected>Select one</option>
                             %else:
                                 <option value="none">Select one</option>
                             %endif
                             %for option_index, option in enumerate(request.user.histories):
                                 %if not option.deleted:
-                                    %if str(option.id) == str(sample_values[field_index]):
+                                    %if str( option.id ) == str( field_value ):
                                         <option value="${option.id}" selected>${option.name}</option>
                                     %else:
                                         <option value="${option.id}">${option.name}</option>

@@ -1363,13 +1363,13 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "remove_button" )
         # Add fields to the new form definition
         for index1 in range( num_fields ):
-            field_name = 'field_name_%i' % index1
+            field_label = 'field_label_%i' % index1
             field_contents = field_type
             field_help_name = 'field_helptext_%i' % index1
             field_help_contents = 'Field %i help' % index1
             field_default = 'field_default_0'
             field_default_contents = '%s default contents' % form_type
-            tc.fv( "1", field_name, field_contents )
+            tc.fv( "1", field_label, field_contents )
             tc.fv( "1", field_help_name, field_help_contents )
             if field_type == 'SelectField':
                 # SelectField field_type requires a refresh_on_change
@@ -1407,15 +1407,15 @@ class TwillTestCase( unittest.TestCase ):
         for i, field_dict in enumerate( field_dicts ):
             index = i + field_index
             tc.submit( "add_field_button" )
-            field_name = "field_name_%i" % index
-            field_value = field_dict[ 'name' ]
+            field_label = "field_label_%i" % index
+            field_value = field_dict[ 'label' ]
             field_help = "field_helptext_%i" % index
             field_help_value = field_dict[ 'desc' ]
             field_type = "field_type_%i" % index
             field_type_value = field_dict[ 'type' ]
             field_required = "field_required_%i" % index
             field_required_value = field_dict[ 'required' ]
-            tc.fv( "1", field_name, field_value )
+            tc.fv( "1", field_label, field_value )
             tc.fv( "1", field_help, field_help_value )
             tc.fv( "1", field_required, field_required_value )
             if field_type_value.lower() == 'selectfield':
@@ -1439,7 +1439,7 @@ class TwillTestCase( unittest.TestCase ):
         #self.check_page_for_string( form_desc )
         self.check_page_for_string( form_layout_name )
         for i, field_dict in enumerate( field_dicts ):
-            self.check_page_for_string( field_dict[ 'name' ] )
+            self.check_page_for_string( field_dict[ 'label' ] )
             self.check_page_for_string( field_dict[ 'desc' ] )
             self.check_page_for_string( field_dict[ 'type' ] )
             if field_dict[ 'type' ].lower() == 'selectfield':
@@ -1825,7 +1825,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "The new library named '%s' has been created" % name
         self.check_page_for_string( check_str )
         self.home()
-    def edit_template( self, cntrller, item_type, form_type, library_id, field_type, field_name_1, field_helptext_1, field_default_1,
+    def edit_template( self, cntrller, item_type, form_type, library_id, field_type, field_label_1, field_helptext_1, field_default_1,
                        folder_id='', ldda_id='', action='add_field'  ):
         """Edit the form fields defining a library template"""
         self.visit_url( "%s/library_common/edit_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s" % \
@@ -1833,7 +1833,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( "Edit form definition" )
         if action == 'add_field':
             tc.submit( "add_field_button" )
-            tc.fv( "edit_form", "field_name_1", field_name_1 )
+            tc.fv( "edit_form", "field_label_1", field_label_1 )
             tc.fv( "edit_form", "field_helptext_1", field_helptext_1 )
             if field_type == 'SelectField':
                 # Performs a refresh_on_change in this case

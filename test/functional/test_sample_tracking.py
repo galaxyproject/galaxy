@@ -178,23 +178,23 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         # Edit the name and description of the form definition, and add 3 fields.
         new_name = "Request Form"
         new_desc = "Request Form description"
-        global request_field_name1
-        request_field_name1 = 'Request form field1'
-        global request_field_name2
-        request_field_name2 = 'Request form field2'
-        global request_field_name3
-        request_field_name3 = 'Request form field3'
-        field_dicts = [ dict( name=request_field_name1,
-                             desc='Description of '+request_field_name1,
+        global request_field_label1
+        request_field_label1 = 'Request form field1'
+        global request_field_label2
+        request_field_label2 = 'Request form field2'
+        global request_field_label3
+        request_field_label3 = 'Request form field3'
+        field_dicts = [ dict( label=request_field_label1,
+                             desc='Description of '+request_field_label1,
                              type='SelectField',
                              required='optional',
                              selectlist=[ 'option1', 'option2' ] ),
-                        dict( name=request_field_name2,
-                              desc='Description of '+request_field_name2,
+                        dict( label=request_field_label2,
+                              desc='Description of '+request_field_label2,
                               type='AddressField',
                               required='optional' ),
-                        dict( name=request_field_name3,
-                              desc='Description of '+request_field_name3,
+                        dict( label=request_field_label3,
+                              desc='Description of '+request_field_label3,
                               type='TextField',
                               required='required' ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
@@ -231,23 +231,23 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                           strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % name ] )
         tmp_form = get_form( name )
         # now add fields to the sample form definition
-        global sample_field_name1
-        sample_field_name1 = 'Sample form field1'
-        global sample_field_name2
-        sample_field_name2 = 'Sample form field2'
-        global sample_field_name3
-        sample_field_name3 = 'Sample form field3'
-        field_dicts = [ dict( name=sample_field_name1,
-                             desc='Description of '+sample_field_name1,
+        global sample_field_label1
+        sample_field_label1 = 'Sample form field1'
+        global sample_field_label2
+        sample_field_label2 = 'Sample form field2'
+        global sample_field_label3
+        sample_field_label3 = 'Sample form field3'
+        field_dicts = [ dict( label=sample_field_label1,
+                             desc='Description of '+sample_field_label1,
                              type='SelectField',
                              required='optional',
                              selectlist=[ 'option1', 'option2' ] ),
-                        dict( name=sample_field_name2,
-                              desc='Description of '+sample_field_name2,
+                        dict( label=sample_field_label2,
+                              desc='Description of '+sample_field_label2,
                               type='TextField',
                               required='optional' ),
-                        dict( name=sample_field_name3,
-                              desc='Description of '+sample_field_name3,
+                        dict( label=sample_field_label3,
+                              desc='Description of '+sample_field_label3,
                               type='TextField',
                               required='required' ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
@@ -347,9 +347,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                              desc=desc,
                              field_value_tuples=field_value_tuples,
                              strings_displayed=[ 'Create a new sequencing request',
-                                                 request_field_name1,
-                                                 request_field_name2,
-                                                 request_field_name3 ],
+                                                 request_field_label1,
+                                                 request_field_label2,
+                                                 request_field_label3 ],
                              strings_displayed_after_submit=[ 'The sequencing request has been created.',
                                                               name, desc ] )
         global request1
@@ -656,9 +656,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                              desc=desc,
                              field_value_tuples=field_value_tuples,
                              strings_displayed=[ 'Create a new sequencing request',
-                                                 request_field_name1,
-                                                 request_field_name2,
-                                                 request_field_name3 ],
+                                                 request_field_label1,
+                                                 request_field_label2,
+                                                 request_field_label3 ],
                              strings_displayed_after_submit=[ "The sequencing request has been created.",
                                                               name, desc ] )
         global request2

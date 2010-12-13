@@ -23,7 +23,7 @@ $(document).ready(function(){
 <%def name="render_selectbox_options( index, field_attr )">
     %if field_attr[0] == 'Type':
         %if field_attr[1].get_selected( return_label=True ) == 'SelectField':
-            <% options = field_attr[2] %>
+            <% options = field_attr[3] %>
             <div class="repeat-group-item">
                 <div class="form-row">
                     <label> Options</label>
@@ -61,6 +61,11 @@ $(document).ready(function(){
 	                <label>${field_attr[0]}</label>
 	                ${field_attr[1].get_html()}
 	                ${render_selectbox_options( index, field_attr )}
+                    %if len(field_attr) == 3:
+	                    <div class="toolParamHelp" style="clear: both;">
+	                       ${field_attr[2]}
+	                    </div>
+                    %endif
 	            </div>
 	        %endfor
 	        <div class="form-row">

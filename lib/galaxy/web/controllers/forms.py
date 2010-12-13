@@ -12,6 +12,8 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 
 log = logging.getLogger( __name__ )
 
+VALID_FIELDNAME_RE = re.compile( "^[a-zA-Z0-9\_]+$" )
+
 class FormsGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
@@ -66,7 +68,8 @@ class FormsGrid( grids.Grid ):
 
 class Forms( BaseController ):
     # Empty TextField
-    empty_field = { 'label': '', 
+    empty_field = { 'name': '', 
+                    'label': '', 
                     'helptext': '', 
                     'visible': True,
                     'required': False,
@@ -199,7 +202,9 @@ class Forms( BaseController ):
             del current_form[ 'layout' ][index]
         # Add a field
         elif params.get( 'add_field_button', False ):
-            self.empty_field[ 'label' ] = 'Field_%i' % ( len( current_form[ 'fields' ] ) + 1 )
+            field_index = len( current_form[ 'fields' ] ) + 1
+            self.empty_field[ 'name' ] = '%i_field_name' % field_index
+            self.empty_field[ 'label' ] = 'Field label %i' % field_index
             current_form[ 'fields' ].append( self.empty_field )
         # Delete a field
         elif params.get( 'remove_button', False ):
@@ -267,7 +272,7 @@ class Forms( BaseController ):
             # get the user entered fields
             index = 0
             while True:
-                if kwd.has_key( 'field_name_%i' % index ):
+                if kwd.has_key( 'field_label_%i' % index ):
                     fields.append( self.__get_field( index, **kwd ) )
                     index = index + 1
                 else:
@@ -290,9 +295,16 @@ class Forms( BaseController ):
             return None, message
         current_form = self.get_current_form( trans, **kwd )
         # validate fields
+        field_names_dict = {} 
         for field in current_form[ 'fields' ]:
             if not field[ 'label' ]:
                 return None, "All the field labels must be completed."
+            if not VALID_FIELDNAME_RE.match( field[ 'name' ] ):
+                return None, "'%s' is not a valid field name." % field[ 'name' ]
+            if field_names_dict.has_key( field[ 'name' ] ):
+                return None, "Each field name must be unique in the form definition. '%s' is not unique." % field[ 'name' ]
+            else:
+                field_names_dict[ field[ 'name' ] ] = 1
         # create a new form definition
         form_definition = trans.app.model.FormDefinition( name=current_form[ 'name' ], 
                                                           desc=current_form[ 'desc' ], 
@@ -392,8 +404,8 @@ class Forms( BaseController ):
         This method returns a list of widgets which describes a form definition field. This 
         includes the field label, helptext, type, selectfield options, required/optional & layout
         '''
-        # field name
-        name = TextField( 'field_name_'+str( field_index ), 40, field['label'] )
+        # field label
+        label = TextField( 'field_label_'+str( field_index ), 40, field['label'] )
         # help text
         helptext = TextField( 'field_helptext_'+str( field_index ), 40, field['helptext'] )
         # field type
@@ -449,18 +461,23 @@ class Forms( BaseController ):
         default_value = TextField( 'field_default_'+str(field_index), 
                                    40, 
                                    field.get( 'default', '' ) )
+        # field name
+        name = TextField( 'field_name_'+str( field_index ), 40, field['name'] )
+        name_helptext = "The field name needs to be unique for each field. It should only contain alphanumeric characters and underscore ('_'). (Required)"
         if layout_grids and form_type == trans.model.FormDefinition.types.SAMPLE:
-            return [ ( 'Field label', name ),
+            return [ ( 'Field label', label ),
                      ( 'Help text', helptext ),
-                     ( 'Type', field_type_select_field, field_type_options ),
+                     ( 'Type', field_type_select_field, "Add options below", field_type_options ),
                      ( 'Default value', default_value ),
                      ( '', required ),
-                     ( 'Select the grid layout to place this field', layout_select_field ) ]
-        return [ ( 'Field label', name ),
+                     ( 'Select the grid layout to place this field', layout_select_field ),
+                     ( 'Field name', name, name_helptext ) ]
+        return [ ( 'Field label', label ),
                  ( 'Help text', helptext ),
-                 ( 'Type', field_type_select_field, field_type_options),
+                 ( 'Type', field_type_select_field, "Add options below", field_type_options),
                  ( 'Default value', default_value ),
-                 ( '', required) ]
+                 ( '', required),
+                 ( 'Field name', name, name_helptext ) ]
     def __build_field_type_select_field_options( self, field, field_index ):
         '''
         Returns a list of TextFields, one for each select field option
@@ -537,15 +554,19 @@ class Forms( BaseController ):
         returns a dict.
         '''
         params = util.Params( kwd )
+        label = util.restore_text( params.get( 'field_label_%i' % index, '' ) )
         name = util.restore_text( params.get( 'field_name_%i' % index, '' ) )
         helptext = util.restore_text( params.get( 'field_helptext_%i' % index, '' ) )
         required =  params.get( 'field_required_%i' % index, False )
         field_type = util.restore_text( params.get( 'field_type_%i' % index, '' ) )
         layout = params.get( 'field_layout_%i' % index, '' )
         default = util.restore_text( params.get( 'field_default_%i' % index, '' ) )
+        if not name.strip():
+            name = '%i_field_name' % index
         if field_type == 'SelectField':
             options = self.__get_select_field_options(index, **kwd)
-            return { 'label': name, 
+            return { 'name': name,
+                     'label': label, 
                      'helptext': helptext, 
                      'visible': True,
                      'required': required,
@@ -553,7 +574,8 @@ class Forms( BaseController ):
                      'selectlist': options,
                      'layout': layout,
                      'default': default }
-        return { 'label': name, 
+        return { 'name': name,
+                 'label': label, 
                  'helptext': helptext, 
                  'visible': True,
                  'required': required,
@@ -570,12 +592,14 @@ class Forms( BaseController ):
         layouts = set()
         try:
             reader = csv.reader(csv_file.file)
+            index = 1
             for row in reader:
                 if len(row) < 7: # ignore bogus rows
 		    continue
                 options = row[5].split(',')
                 if len(row) >= 8:
-                    fields.append( { 'label': row[0], 
+                    fields.append( { 'name': '%i_field_name' % index,
+                                     'label': row[0], 
                                      'helptext': row[1], 
                                      'visible': row[2],
                                      'required': row[3],
@@ -585,13 +609,15 @@ class Forms( BaseController ):
                                      'default': row[7] } )
                     layouts.add(row[6])             
                 else:
-                    fields.append( { 'label': row[0], 
+                    fields.append( { 'name': '%i_field_name' % index,
+                                     'label': row[0], 
                                      'helptext': row[1], 
                                      'visible': row[2],
                                      'required': row[3],
                                      'type': row[4],
                                      'selectlist': options,
                                      'default': row[6] } )
+                index = index + 1
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
                                                               action='create_form',
@@ -611,7 +637,7 @@ class Forms( BaseController ):
             return None, 'Form name must be filled.'
         # form type
         if util.restore_text( params.form_type_select_field ) == 'none': 
-            return None, 'Form type must be selected.'        
+            return None, 'Form type must be selected.'
         return True, ''
     def __build_form_types_widget( self, trans, selected='none' ):
         form_type_select_field = SelectField( 'form_type_select_field' )

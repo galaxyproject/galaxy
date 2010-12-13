@@ -525,7 +525,7 @@ class TestLibraryFeatures( TwillTestCase ):
                             form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
                             library_id=self.security.encode_id( library5.id ),
                             field_type='TextArea',
-                            field_name_1=TextArea_form.name,
+                            field_label_1=TextArea_form.name,
                             field_helptext_1='%s help' % TextArea_form.name,
                             field_default_1='%s default' % TextArea_form.name )
     def test_150_add_ldda_to_library5( self ):

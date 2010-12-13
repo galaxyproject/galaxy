@@ -309,26 +309,28 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         name = util.restore_text( params.get( 'name', '' ) )
         desc = util.restore_text( params.get( 'desc', '' ) )
         notification = dict( email=[ user.email ], sample_states=[ request_type.final_sample_state.id ], body='', subject='' )
-        values = []
+        values = {}
         for index, field in enumerate( request_type.request_form.fields ):
             field_type = field[ 'type' ]
-            field_value = params.get( 'field_%i' % index, '' )
+            field_name = field[ 'name' ]
+            input_value = params.get( 'field_%i' % index, '' )
             if field[ 'type' ] == 'AddressField':
-                value = util.restore_text( field_value )
-                if value == 'new':
+                input_text_value = util.restore_text( input_value )
+                if input_text_value == 'new':
                     # Save this new address in the list of this user's addresses
                     user_address = trans.model.UserAddress( user=user )
                     self.save_widget_field( trans, user_address, index, **kwd )
                     trans.sa_session.refresh( user )
-                    values.append( int( user_address.id ) )
-                elif value in [ '', 'none', 'None', None ]:
-                    values.append( '' )
+                    field_value = int( user_address.id )
+                elif input_text_value in [ '', 'none', 'None', None ]:
+                    field_value = ''
                 else:
-                    values.append( int( value ) )
+                    field_value = int( input_text_value )
             elif field[ 'type' ] == 'CheckboxField':
-                values.append( CheckboxField.is_checked( field_value )) 
+                field_value = CheckboxField.is_checked( input_value ) 
             else:
-                values.append( util.restore_text( field_value ) )
+                field_value = util.restore_text( input_value )
+            values[ field_name ] = field_value
         form_values = trans.model.FormValues( request_type.request_form, values )
         trans.sa_session.add( form_values )
         trans.sa_session.flush()
@@ -844,7 +846,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                     library_id = None
                     folder_id = None
                     name = 'Sample_%i' % ( len( displayable_sample_widgets ) + 1 )
-                    field_values = [ '' for field in request.type.sample_form.fields ]
+                    field_values = {}
+                    for field in request.type.sample_form.fields:
+                        field_values[ field['name'] ] = ''
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                            user=request.user, 
@@ -1270,14 +1274,15 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         # The request_widgets list is a list of dictionaries
         request_widgets = []
         for index, field in enumerate( request.type.request_form.fields ):
+            field_value = request.values.content[ field['name'] ]
             if field[ 'required' ]:
                 required_label = 'Required'
             else:
                 required_label = 'Optional'
             if field[ 'type' ] == 'AddressField':
-                if request.values.content[ index ]:
+                if field_value:
                     request_widgets.append( dict( label=field[ 'label' ],
-                                                  value=trans.sa_session.query( trans.model.UserAddress ).get( int( request.values.content[ index ] ) ).get_html(),
+                                                  value=trans.sa_session.query( trans.model.UserAddress ).get( int( field_value ) ).get_html(),
                                                   helptext=field[ 'helptext' ] + ' (' + required_label + ')' ) )
                 else:
                     request_widgets.append( dict( label=field[ 'label' ],
@@ -1285,7 +1290,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                   helptext=field[ 'helptext' ] + ' (' + required_label + ')' ) )
             else: 
                 request_widgets.append( dict( label=field[ 'label' ],
-                                              value=request.values.content[ index ],
+                                              value=field_value,
                                               helptext=field[ 'helptext' ] + ' (' + required_label + ')' ) )
         return request_widgets
     def __get_sample_widgets( self, trans, request, samples, **kwd ):
@@ -1335,10 +1340,11 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 if not folder_id and sample.folder:
                     folder_id = trans.security.encode_id( sample.folder.id )
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
-                field_values = []
-                for field_index in range( len( request.type.sample_form.fields ) ):
-                    field_value = util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), sample.values.content[ field_index ] ) )
-                    field_values.append( field_value )
+                field_values = {}
+                for field_index, field in enumerate( request.type.sample_form.fields ):
+                    field_name = field['name']
+                    field_value = util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), sample.values.content[ field_name ] ) )
+                    field_values[ field_name ] = field_value
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
                                                                                                        user=request.user,
                                                                                                        sample_index=index,
@@ -1366,9 +1372,10 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             library_id = util.restore_text( params.get( 'sample_%i_library_id' % index, '' ) )
             folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % index, '' ) )
             library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
-            field_values = []
-            for field_index in range( len( request.type.sample_form.fields ) ):
-                field_values.append( util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) ) )
+            field_values = {}
+            for field_index, field in enumerate( request.type.sample_form.fields ):
+                field_name = field['name']
+                field_values[ field_name ] = util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) )
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
                                                                                                        user=request.user,
                                                                                                        sample_index=index,
@@ -1499,7 +1506,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         empty_fields = []
         # Make sure required form fields are filled in.
         for index, field in enumerate( request.type.request_form.fields ):
-            if field[ 'required' ] == 'required' and request.values.content[ index ] in [ '', None ]:
+            if field[ 'required' ] == 'required' and request.values.content[ field[ 'name' ] ] in [ '', None ]:
                 empty_fields.append( field[ 'label' ] )
         if empty_fields:
             message = 'Complete the following fields of the request before submitting: '
