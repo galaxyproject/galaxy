@@ -2,7 +2,7 @@ import sys, os, shutil, logging, urllib2
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
-from galaxy.web.form_builder import SelectField
+from galaxy.web.form_builder import SelectField, build_select_field
 from galaxy.webapps.community import datatypes
 from common import get_categories, get_category, get_versions
 
@@ -24,16 +24,23 @@ class UploadController( BaseController ):
         status = params.get( 'status', 'done' )
         category_ids = util.listify( params.get( 'category_id', '' ) )
         replace_id = params.get( 'replace_id', None )
-        replace_version = None
+        if replace_id:
+            replace_version = trans.sa_session.query( trans.app.model.Tool ).get( trans.security.decode_id( replace_id ) )
+            upload_type = replace_version.type
+        else:
+            replace_version = None
+            upload_type = params.get( 'upload_type', 'tool' )
         uploaded_file = None
-        upload_type = params.get( 'upload_type', 'tool' )
         categories = get_categories( trans )
         if not categories:
+            message = 'No categories have been configured in this instance of the Galaxy Tool Shed.  ' + \
+                'An administrator needs to create some via the Administrator control panel before anything can be uploaded',
+            status = 'error'
             return trans.response.send_redirect( web.url_for( controller='tool',
                                                               action='browse_tools',
                                                               cntrller='tool',
-                                                              message='No categories have been configured in this instance of the Galaxy Tool Shed.  An administrator needs to create some via the Administrator control panel before anything can be uploaded',
-                                                              status='error' ) )
+                                                              message=message,
+                                                              status=status ) )
         if params.get( 'upload_button', False ):
             url_paste = params.get( 'url', '' ).strip()
             file_data = params.get( 'file_data', '' )
@@ -69,8 +76,6 @@ class UploadController( BaseController ):
                             existing = trans.sa_session.query( trans.app.model.Tool ) \
                                                        .filter_by( tool_id = meta.id ) \
                                                        .first()
-                            if replace_id:
-                                replace_version = trans.sa_session.query( trans.app.model.Tool ).get( trans.security.decode_id( replace_id ) )
                             if existing and not replace_id:
                                 raise UploadError( 'A %s with the same Id already exists.  If you are trying to update this %s to a new version, use the upload form on the "Edit Tool" page.  Otherwise, change the Id in the %s config.' % \
                                                    ( obj.label, obj.label, obj.label ) )
@@ -142,7 +147,6 @@ class UploadController( BaseController ):
                         status = 'error'
                     uploaded_file.close()
             elif replace_id is not None:
-                replace_version = trans.sa_session.query( trans.app.model.Tool ).get( int( trans.app.security.decode_id( replace_id ) ) )
                 old_version = None
                 for old_version in get_versions( replace_version ):
                     if old_version.is_new:
@@ -161,22 +165,19 @@ class UploadController( BaseController ):
                                                                       message=message,
                                                                       status='error' ) )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
-        datatype_labels=trans.app.datatypes_registry.get_datatype_labels()
-        type_ids = [ tup[0] for tup in datatype_labels ]
-        upload_type_select_list = SelectField( 'upload_type', 
-                                               refresh_on_change=True, 
-                                               refresh_on_change_values=type_ids )
-        for type_id, type_label in datatype_labels:
-            if type_id == upload_type:
-                upload_type_select_list.add_option( type_label, type_id, selected = True )
-            else:
-                upload_type_select_list.add_option( type_label, type_id, selected = False )
+        datatype_extensions = trans.app.datatypes_registry.get_datatype_extensions()
+        upload_type_select_list = build_select_field( trans,
+                                                      objs=datatype_extensions,
+                                                      label_attr='self',
+                                                      select_field_name='upload_type',
+                                                      initial_value=upload_type,
+                                                      selected_value=upload_type,
+                                                      refresh_on_change=True )
         return trans.fill_template( '/webapps/community/upload/upload.mako',
                                     message=message,
                                     status=status,
                                     selected_upload_type=upload_type,
                                     upload_type_select_list=upload_type_select_list,
-                                    datatype_labels=trans.app.datatypes_registry.get_datatype_labels(),
                                     replace_id=replace_id,
                                     selected_categories=selected_categories,
                                     categories=get_categories( trans ) )

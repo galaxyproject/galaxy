@@ -7,7 +7,21 @@
        else:
            return '/base.mako'
 %>
+
 <%inherit file="${inherit(context)}"/>
+
+<%
+    if selected_upload_type == 'tool':
+        title = 'Upload a tool archive'
+        type_label = 'tool'
+    elif selected_upload_type == 'toolsuite':
+        title = 'Upload a tool suite archive'
+        type_label = 'tool suite'
+%>
+
+<%def name="title()">
+    ${title}
+</%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -20,32 +34,14 @@
     </script>
 </%def>
 
-<%def name="title()">
-    %if selected_upload_type == 'tool':
-        Upload a tool archive
-    %elif selected_upload_type == 'toolsuite':
-        Upload a tool suite archive
-    %endif
-</%def>
-
-<h2>
-    %if selected_upload_type == 'tool':
-        Upload a tool archive
-    %elif selected_upload_type == 'toolsuite':
-        Upload a tool suite archive
-    %endif
-</h2>
+<h2>${title}</h2>
 
 %if message:
     ${render_msg( message, status )}
 %endif
 
 <div class="toolForm">
-    %if selected_upload_type == 'tool':
-        <div class="toolFormTitle">Upload a single tool archive</div>
-    %else:
-        <div class="toolFormTitle">Upload a tool suite archive</div>
-    %endif
+    <div class="toolFormTitle">${title}</div>
     <div class="toolFormBody">
     ## TODO: nginx
     <form id="upload_form" name="upload_form" action="${h.url_for( controller='upload', action='upload' )}" enctype="multipart/form-data" method="post">
@@ -58,11 +54,7 @@
             ${upload_type_select_list.get_html()}
         </div>
         <div class="toolParamHelp" style="clear: both;">
-            %if selected_upload_type == 'tool':
-                Need help creating a single tool archive?  See details below.
-            %elif selected_upload_type == 'toolsuite':
-                Need help creating a tool suite archive?  See details below.
-            %endif
+            Need help creating a ${type_label} archive?  See details below.
         </div>
         <div style="clear: both"></div>
     </div>

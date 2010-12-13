@@ -1001,9 +1001,11 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
     def update_sample_run_details( self, trans, **kwd ):
         # TODO: Here we are editing the contents of a sample's run details template.  The sample_id
         # param must be in kwd.  This method provides a means for an external application to perform
-        # a post to update this relevant information for a sample.  This method assumes trans.user()
-        # is an admin user.  If this is not the case, things will not work.  This method will soon be
-        # eliminated, moving this feature to Galaxy's API which will handle authentication.
+        # a post to update the relevant information for a sample.  This method requires trans.user_is_admin()
+        # to be true.  This method will soon be eliminated, moving this feature to Galaxy's API which will
+        # handle authentication.
+        if not trans.user_is_admin():
+            return trans.show_error_message( "You must be logged in as a Galaxy administrator (admin user)." )
         cntrller = 'requests_admin'
         item_type = 'sample'
         form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE
