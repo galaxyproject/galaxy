@@ -3,9 +3,15 @@ CONTENTS
 
 edu.psu.galaxy.GalaxyServer.plist:
 
-    LaunchDaemon definition for OS X (pre-Snow Leopard?).  Modify paths and
-    load with `launchctl load edu.psu.galaxy.GalaxyServer.plist`.  Written and
-    submitted by James Casbon.
+    This is the LaunchDaemon definition for OS X (pre-Snow Leopard?). Assuming
+    that Galaxy is installed in the home directory of the user 'galaxy', run:
+        mkdir /Users/galaxy/galaxy_dist/log
+        sudo cp /Users/galaxy/galaxy_dist/contrib/edu.psu.galaxy.GalaxyServer.plist /Library/LaunchDaemons/
+        sudo chown root:wheel /Library/LaunchDaemons/edu.psu.galaxy.GalaxyServer.plist
+    Launch Galaxy with:
+        sudo launchctl load /Library/LaunchDaemons/edu.psu.galaxy.GalaxyServer.plist
+    Galaxy will now be started everytime the computer starts.
+    Written and submitted by James Casbon.
 
 galaxy.debian-init:
 
