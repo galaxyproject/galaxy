@@ -1478,7 +1478,7 @@ class MetadataFile( object ):
 
 class FormDefinition( object, APIItem ):
     # The following form_builder classes are supported by the FormDefinition class.
-    supported_field_types = [ AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField ]
+    supported_field_types = [ AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
                    SAMPLE = 'Sequencing Sample Form',
                    RUN_DETAILS_TEMPLATE = 'Sample run details template',
@@ -1547,11 +1547,7 @@ class FormDefinition( object, APIItem ):
             elif field_type == 'TextArea':
                 field_widget.set_size( 3, 40 )
                 field_widget.value = value
-            elif field_type == 'AddressField':
-                field_widget.user = user
-                field_widget.value = value
-                field_widget.params = params
-            elif field['type'] == 'WorkflowField':
+            elif field_type in ['AddressField', 'WorkflowField', 'HistoryField']:
                 field_widget.user = user
                 field_widget.value = value
                 field_widget.params = params
@@ -1800,7 +1796,7 @@ class RequestTypePermissions( object ):
     
 class Sample( object, APIItem ):
     # The following form_builder classes are supported by the Sample class.
-    supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField ]
+    supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, HistoryField ]
     bulk_operations = Bunch( CHANGE_STATE = 'Change state', 
                              SELECT_LIBRARY = 'Select data library and folder' )
     api_collection_visible_keys = ( 'id', 'name' )

@@ -519,6 +519,23 @@
                                 %endif
                             %endfor
                         </select>
+                    %elif field_type == 'HistoryField':
+                        <select name="sample_${index}_field_${field_index}">
+                            %if str(sample_values[field_index]) == 'none':
+                                <option value="none" selected>Select one</option>
+                            %else:
+                                <option value="none">Select one</option>
+                            %endif
+                            %for option_index, option in enumerate(request.user.histories):
+                                %if not option.deleted:
+                                    %if str(option.id) == str(sample_values[field_index]):
+                                        <option value="${option.id}" selected>${option.name}</option>
+                                    %else:
+                                        <option value="${option.id}">${option.name}</option>
+                                    %endif
+                                %endif
+                            %endfor
+                        </select>
                     %elif field_type == 'CheckboxField':
                         <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/>
                     %endif

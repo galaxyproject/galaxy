@@ -3,7 +3,7 @@
 <%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, space_to_tab, link_data_only, widgets, roles_select_list, history, show_deleted )">
     <%
         import os, os.path
-        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
+        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField
     %>
     %if upload_option in [ 'upload_file', 'upload_directory', 'upload_paths' ]:
         <div class="toolForm" id="upload_library_dataset_tool_form">

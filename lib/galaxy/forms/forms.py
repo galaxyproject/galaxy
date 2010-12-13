@@ -159,6 +159,25 @@ class FormDefinitionWorkflowFieldFactory( FormDefinitionFieldFactory ):
         rval['type'] = self.__get_stored_field_type( area )
         return rval
 
+class FormDefinitionHistoryFieldFactory( FormDefinitionFieldFactory ):
+    type = 'history'
+    def __get_stored_field_type( self ):
+        return 'HistoryField'
+    def new( self, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
+        """
+        Return new FormDefinition field.
+        """
+        rval = super( FormDefinitionHistoryFieldFactory, self ).new( label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
+        rval['type'] = self.__get_stored_field_type()
+        return rval
+    def from_elem( self, elem, layout=None ):
+        """
+        Return FormDefinition field created from an xml element.
+        """
+        rval = super( FormDefinitionHistoryFieldFactory, self ).from_elem( elem, layout=layout )
+        rval['type'] = self.__get_stored_field_type( area )
+        return rval
+
 class FormDefinitionSelectFieldFactory( FormDefinitionFieldFactory ):
     type = 'select'
     def __get_stored_field_type( self, checkboxes ):
@@ -190,6 +209,6 @@ class FormDefinitionSelectFieldFactory( FormDefinitionFieldFactory ):
             rval['selectlist'].append( value )
         return rval
 
-field_type_factories = dict( [ ( field.type, field() ) for field in ( FormDefinitionTextFieldFactory, FormDefinitionAddressFieldFactory, FormDefinitionSelectFieldFactory, FormDefinitionWorkflowFieldFactory ) ] )
+field_type_factories = dict( [ ( field.type, field() ) for field in ( FormDefinitionTextFieldFactory, FormDefinitionAddressFieldFactory, FormDefinitionSelectFieldFactory, FormDefinitionWorkflowFieldFactory, FormDefinitionHistoryFieldFactory ) ] )
 
 form_factory = FormDefinitionFactory( FORM_TYPES, field_type_factories )

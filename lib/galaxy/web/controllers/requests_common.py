@@ -147,7 +147,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         user_id_encoded = True
         user_id = params.get( 'user_id', 'none' )
         if user_id != 'none':
-            try: 
+            try:
                 user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
             except TypeError, e:
                 # We must have an email address rather than an encoded user id

@@ -574,7 +574,29 @@ class WorkflowField( BaseField ):
                     else:
                         self.select_workflow.add_option( a.name, str( a.id ) )
         return self.select_workflow.get_html( disabled=disabled )
-        
+
+class HistoryField( BaseField ):
+    def __init__( self, name, user=None, value=None, params=None ):
+        self.name = name
+        self.user = user
+        self.value = value
+        self.select_history = None
+        self.params = params
+    def get_html( self, disabled=False ):
+        self.select_history = SelectField( self.name )
+        if self.value == 'none':
+            self.select_history.add_option( 'Select one', 'none', selected=True )
+        else:
+            self.select_history.add_option( 'Select one', 'none' )
+        if self.user:
+            for a in self.user.histories:
+                if not a.deleted:
+                    if str( self.value ) == str( a.id ):
+                        self.select_history.add_option( a.name, str( a.id ), selected=True )
+                    else:
+                        self.select_history.add_option( a.name, str( a.id ) )
+        return self.select_history.get_html( disabled=disabled )
+
 def get_suite():
     """Get unittest suite for this module"""
     import doctest, sys

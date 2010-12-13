@@ -8,7 +8,7 @@ from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, build_select_field
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField, build_select_field
 from galaxy.visualization.tracks.data_providers import get_data_provider
 from galaxy.visualization.tracks.visual_analytics import get_tool_def
 
@@ -811,6 +811,8 @@ class UsesFormDefinitions:
             if isinstance( field[ 'widget' ], CheckboxField ) and field[ 'widget' ].checked:
                 return True
             if isinstance( field[ 'widget' ], WorkflowField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
+                return True
+            if isinstance( field[ 'widget' ], HistoryField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
                 return True
             if isinstance( field[ 'widget' ], AddressField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
                 return True

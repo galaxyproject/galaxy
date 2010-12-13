@@ -1,6 +1,6 @@
 <%def name="render_template_field( field, render_as_hidden=False )">
     <%
-        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField
+        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField
 
         widget = field[ 'widget' ]
         has_contents = False
@@ -36,6 +36,20 @@
                     for workflow in workflow_user.stored_workflows:
                         if not workflow.deleted and str( widget.value ) == str( workflow.id ):
                             value = workflow.name
+                            break
+                else:
+                    # If we didn't find the selected workflow option above, we'll just print the value
+                    value = widget.value
+        elif isinstance( widget, HistoryField ) and str( widget.value ).lower() not in [ 'none' ]:
+            has_contents = True
+            if render_as_hidden:
+                value = widget.value
+            else:
+                history_user = widget.user
+                if history_user:
+                    for history in history_user.histories:
+                        if not history.deleted and str( widget.value ) == str( history.id ):
+                            value = history.name
                             break
                 else:
                     # If we didn't find the selected workflow option above, we'll just print the value
