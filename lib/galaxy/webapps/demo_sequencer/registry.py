@@ -1,5 +1,4 @@
 import logging
-from time import gmtime, strftime
 import galaxy.util
 from galaxy.util.odict import odict
 
@@ -61,14 +60,6 @@ class Registry( object ):
         for param_elem in request_elem.findall( 'param' ):
             param_name = param_elem.get( 'name' )
             param_value = param_elem.get( 'value' )
-            if param_name == 'Name' and not param_value:
-                # Hack: specially handle parameters named "Name" if no param_value is given
-                # by providing a date / time string - guarantees uniqueness, if required.
-                param_value = strftime( "%a, %d %b %Y %H:%M:%S", gmtime() )
-            if param_name == 'Comments' and not param_value:
-                # Hack: specially handle parameters named "Comments" if no param_value is given
-                # by providing a date / time string.
-                param_value = strftime( "%a, %d %b %Y %H:%M:%S", gmtime() )
             params[ param_name ] = param_value
         # Handle response, if any ( there should only be 0 or 1 ).
         response_type = None

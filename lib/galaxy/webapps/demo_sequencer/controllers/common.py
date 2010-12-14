@@ -108,6 +108,14 @@ class CommonController( BaseController ):
                         url = url.replace( replace_str, value )
         return url, http_method, request_params, response_type
     def handle_request( self, trans, url, http_method=None, **kwd ):
+        if 'Name' in kwd and not kwd[ 'Name' ]:
+            # Hack: specially handle parameters named "Name" if no param_value is given
+            # by providing a date / time string - guarantees uniqueness, if required.
+            kwd[ 'Name' ] = time.strftime( "%a, %d %b %Y %H:%M:%S", time.gmtime() )
+        if 'Comments' in kwd and not kwd[ 'Comments' ]:
+            # Hack: specially handle parameters named "Comments" if no param_value is given
+            # by providing a date / time string.
+            kwd[ 'Comments' ] = time.strftime( "%a, %d %b %Y %H:%M:%S", time.gmtime() )
         socket.setdefaulttimeout( 600 )
         # The following calls to urllib2.urlopen() will use the above default timeout.
         try:
