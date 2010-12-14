@@ -76,7 +76,7 @@ This application plots GC content over a sequence. It is intended for large sequ
 
 - Output graphics file:
 
-.. image:: ../static/emboss_icons/isochore.png
+.. image:: ./static/emboss_icons/isochore.png
 
   </help>
 </tool>

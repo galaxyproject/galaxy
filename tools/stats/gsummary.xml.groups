@@ -56,7 +56,7 @@ This tool computes basic summary statistics on a given column, or on an expressi
 
 Currently, these R functions are supported: *abs, sign, sqrt, floor, ceiling, trunc, round, signif, exp, log, cos, sin, tan, acos, asin, atan, cosh, sinh, tanh, acosh, asinh, atanh, lgamma, gamma, gammaCody, digamma, trigamma, cumsum, cumprod, cummax, cummin*
 
-.. |INFO| image:: ../static/images/icon_info_sml.gif
+.. |INFO| image:: ./static/images/icon_info_sml.gif
 
 </help>
 </tool>
