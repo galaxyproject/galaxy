@@ -1501,7 +1501,7 @@ class FormDefinition( object, APIItem ):
             if str( f[ 'layout' ] ) == str( grid_index ):
                 gridfields[i] = f
         return gridfields
-    def get_widgets( self, user, contents=[], **kwd ):
+    def get_widgets( self, user, contents={}, **kwd ):
         '''
         Return the list of widgets that comprise a form definition,
         including field contents if any.
