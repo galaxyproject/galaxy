@@ -1521,7 +1521,7 @@ class FormDefinition( object, APIItem ):
             elif contents:
                 try:
                     # This field has a saved value.
-                    value = str( contents[ index ] )
+                    value = str( contents[ field[ 'name' ] ] )
                 except:
                     # If there was an error getting the saved value, we'll still
                     # display the widget, but it will be empty.
