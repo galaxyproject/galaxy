@@ -221,6 +221,7 @@
                          } else {
                             hide_modal();
                          }
+                         show_workflow_parameters();
                      },
                      beforeSubmit: function( data ) {
                          show_modal( "Loading workflow", "progress" );
@@ -517,6 +518,48 @@
         }
     }
     
+    function show_workflow_parameters(){
+        var parameter_re = /\$\{.+?\}/g;
+        var workflow_parameters = [];
+        var wf_parm_container = $("#workflow-parameters-container");
+        var wf_parm_box = $("#workflow-parameters-box");
+        var new_parameter_content = "";
+        var matches = [];
+        $.each(workflow.nodes, function (k, node){
+            var form_matches = node.form_html.match(parameter_re);
+            if (form_matches){
+                matches = matches.concat(form_matches);
+            }
+            $.each(node.post_job_actions, function(k, pja){
+                    $.each(pja.action_arguments, function(k, action_argument){
+                        var arg_matches = action_argument.match(parameter_re);
+                        if (arg_matches){
+                            matches = matches.concat(arg_matches);
+                        }
+                    });
+            });
+            if (matches){
+                $.each(matches, function(k, element){
+                    if ($.inArray(element, workflow_parameters) === -1){
+                        workflow_parameters.push(element);
+                    }
+                });
+            }
+        });
+        if (workflow_parameters && workflow_parameters.length !== 0){
+            $.each(workflow_parameters, function(k, element){
+                new_parameter_content += "<div>" + element.substring(2, element.length -1) + "</div>";
+            });
+            wf_parm_container.html(new_parameter_content);
+            wf_parm_box.show();
+        }else{
+            wf_parm_container.html(new_parameter_content);
+            wf_parm_box.hide();
+        }
+    }
+    
+    
+    
     function show_form_for_tool( text, node ) {
         $('.right-content').hide();
         $("#right-content").show().html( text );
@@ -556,6 +599,7 @@
             success: function( data ) {
                 workflow.active_form_has_changes = false;
                 node.update_field_data( data );
+                show_workflow_parameters();
             },
             beforeSubmit: function( data ) {
                 data.push( { name: 'tool_state', value: node.tool_state } );
@@ -652,6 +696,7 @@
                     workflow.name = data.name;
                     workflow.has_changes = false;
                     workflow.stored = true;
+                    show_workflow_parameters();
                     if ( data.errors ) {
                         show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
                     } else {
@@ -993,6 +1038,11 @@
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
                     <div id="overview-viewport" style="position: absolute; width: 0px; height: 0px; border: solid blue 1px; z-index: 10;"></div>
                 </div>
+            </div>
+        </div>
+        <div id='workflow-parameters-box' style="display:none; position: absolute; /*width: 150px; height: 150px;*/ right: 0px; top: 0px; border-bottom: solid gray 1px; border-left: solid grey 1px; padding: 7px; background: #EEEEEE; z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; /*min-width: 50px; min-height: 50px*/">
+            <div style="margin-bottom:5px;"><b>Workflow Parameters</b></div>
+            <div id="workflow-parameters-container">
             </div>
         </div>
         <div id="close-viewport" style="border-left: 1px solid #999; border-top: 1px solid #999; background: #ddd url(${h.url_for('/static/images/overview_arrows.png')}) 12px 0px; position: absolute; right: 0px; bottom: 0px; width: 12px; height: 12px; z-index: 25000;"></div>

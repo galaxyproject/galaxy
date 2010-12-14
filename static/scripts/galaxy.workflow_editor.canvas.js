@@ -285,14 +285,9 @@ $.extend( Node.prototype, {
         this.tool_errors = data.tool_errors;
         this.tooltip = data.tooltip ? data.tooltip : ""
         this.annotation = data.annotation;
-        this.post_job_actions = data.post_job_actions;
-        if (data.workflow_outputs){
-            this.workflow_outputs = data.workflow_outputs;            
-        }else{
-            this.workflow_outputs = [];
-        }
+        this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
+        this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
 
-        
         if ( this.tool_errors ) {
             f.addClass( "tool-node-error" );
         } else {
