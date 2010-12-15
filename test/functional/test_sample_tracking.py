@@ -4,9 +4,7 @@ from base.twilltestcase import *
 from base.test_db_util import *
 
 class TestFormsAndSampleTracking( TwillTestCase ):
-    #
     # ====== Setup Users, Groups & Roles required for this test suite ========= 
-    #
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
         self.logout()
@@ -169,9 +167,10 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         tmp_desc = "Temp form description"
         form_type = galaxy.model.FormDefinition.types.REQUEST
         self.create_form( name=tmp_name,
-                          desc=tmp_desc,
+                          description=tmp_desc,
                           form_type=form_type,
                           num_fields=0,
+                          field_name='1_field_name',
                           strings_displayed=[ 'Create a new form definition' ],
                           strings_displayed_after_submit=[ tmp_name, tmp_desc, form_type ] )
         tmp_form = get_form( tmp_name )
@@ -223,10 +222,11 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         global sample_form_layout_grid_name
         sample_form_layout_grid_name = 'Layout Grid1'
         self.create_form( name=name,
-                          desc=desc,
+                          description=desc,
                           form_type=form_type,
                           form_layout_name=sample_form_layout_grid_name,
                           num_fields=0,
+                          field_name='1_field_name',
                           strings_displayed=[ 'Create a new form definition' ],
                           strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % name ] )
         tmp_form = get_form( name )
@@ -313,9 +313,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             pass
         self.logout()
         self.login( email=admin_user.email )
-    #
-    # ====== Sequencing request test methods - User perspective ================ 
-    #
+    # ====== Sequencing request test methods - regular user perspective ================ 
     def test_025_create_request( self ):
         """Testing creating a sequencing request as a regular user"""
         # logged in as admin_user
@@ -536,9 +534,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                    strings_displayed_count=strings_displayed_count,
                                    strings_not_displayed=[ request1.states.COMPLETE,
                                                            request1.states.REJECTED ] )
-    #
     # ====== Sequencing request test methods - Admin perspective ================ 
-    #
     def test_050_receive_request_as_admin( self ):
         """Testing receiving a sequencing request and assigning it barcodes"""
         # logged in as regular_user1
@@ -852,7 +848,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                   sample1_dataset.transfer_status.NOT_STARTED ]
             self.view_sample_dataset( sample_dataset_id=self.security.encode_id( sample1_dataset.id ),
                                       strings_displayed=strings_displayed )
-
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user

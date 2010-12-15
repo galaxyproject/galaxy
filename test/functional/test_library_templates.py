@@ -36,6 +36,7 @@ class TestLibraryFeatures( TwillTestCase ):
         """Testing creating several LibraryInformationTemplate form definitions"""
         # Logged in as admin_user
         for type in [ 'AddressField', 'CheckboxField', 'SelectField', 'TextArea', 'TextField', 'WorkflowField' ]:
+            field_name = type.lower()
             form_desc = '%s description' % type
             num_options = 0
             if type == 'SelectField':
@@ -43,23 +44,44 @@ class TestLibraryFeatures( TwillTestCase ):
                 num_options = 2
             # Create form for library template
             self.create_form( name=type,
-                              desc=form_desc,
+                              description=form_desc,
                               form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                               field_type=type,
-                              num_options=num_options )
+                              num_options=num_options,
+                              field_name=field_name )
         # Get all of the new form definitions for later use
         global AddressField_form
         AddressField_form = get_form( 'AddressField' )
+        # NOTE: each of these names need to be the same as field_name defined above
+        # for each type.
+        global address_field_name
+        address_field_name = 'addressfield'
+
         global CheckboxField_form
         CheckboxField_form = get_form( 'CheckboxField' )
+        global checkbox_field_name
+        checkbox_field_name = 'checkboxfield'
+
         global SelectField_form
         SelectField_form = get_form( 'SelectField' )
+        global select_field_name
+        select_field_name = 'selectfield'
+
         global TextArea_form
         TextArea_form = get_form( 'TextArea' )
+        global textarea_name
+        textarea_name = 'textarea'
+
         global TextField_form
         TextField_form = get_form( 'TextField' )
+        global textfield_name
+        textfield_name = 'textfield'
+
         global WorkflowField_form
         WorkflowField_form = get_form( 'WorkflowField' )
+        global workflow_field_name
+        workflow_field_name = 'workflowfield'
+
     def test_010_create_libraries( self ):
         """Testing creating a new library for each template"""
         # Logged in as admin_user
@@ -118,9 +140,10 @@ class TestLibraryFeatures( TwillTestCase ):
                              self.security.encode_id( library1.id ),
                              strings_displayed=[ folder1.name, folder1.description ] )
         # Make sure the template and contents were inherited to folder1
-        self.folder_info( 'library_admin',
-                          self.security.encode_id( folder1.id ),
-                          self.security.encode_id( library1.id ),
+        self.folder_info( cntrller='library_admin',
+                          folder_id=self.security.encode_id( folder1.id ),
+                          library_id=self.security.encode_id( library1.id ),
+                          template_refresh_field_name=address_field_name,
                           strings_displayed=[ AddressField_form.name,
                                               'This is an inherited template and is not required to be used with this folder' ] )
     def test_030_add_dataset_to_folder1( self ):
@@ -138,16 +161,17 @@ class TestLibraryFeatures( TwillTestCase ):
                                      filename=filename,
                                      file_type='bed',
                                      dbkey='hg18',
+                                     template_refresh_field_name=address_field_name,
                                      ldda_message=ldda_message,
                                      template_refresh_field_contents='new',
-                                     template_fields=[ ( 'field_0_short_desc', short_desc ),
-                                                       ( 'field_0_name', 'Dick' ),
-                                                       ( 'field_0_institution', 'PSU' ),
-                                                       ( 'field_0_address', '32 O Street' ),
-                                                       ( 'field_0_city', 'Anywhere' ),
-                                                       ( 'field_0_state', 'AK' ),
-                                                       ( 'field_0_postal_code', '0000000' ),
-                                                       ( 'field_0_country', 'USA' ) ],
+                                     template_fields=[ ( '%s_short_desc' % address_field_name, short_desc ),
+                                                       ( '%s_name' % address_field_name, 'Dick' ),
+                                                       ( '%s_institution' % address_field_name, 'PSU' ),
+                                                       ( '%s_address' % address_field_name, '32 O Street' ),
+                                                       ( '%s_city' % address_field_name, 'Anywhere' ),
+                                                       ( '%s_state' % address_field_name, 'AK' ),
+                                                       ( '%s_postal_code' % address_field_name, '0000000' ),
+                                                       ( '%s_country' % address_field_name, 'USA' ) ],
                                      strings_displayed=[ 'Upload files' ] )
         global user_address1
         user_address1 = get_user_address( admin_user, short_desc )
@@ -174,15 +198,16 @@ class TestLibraryFeatures( TwillTestCase ):
                              self.security.encode_id( folder1.id ),
                              self.security.encode_id( ldda1.id ),
                              ldda1.name,
+                             template_refresh_field_name=address_field_name,
                              template_refresh_field_contents='new',
-                             template_fields=[ ( 'field_0_short_desc', short_desc ),
-                                               ( 'field_0_name', 'Richard' ),
-                                               ( 'field_0_institution', 'PSU' ),
-                                               ( 'field_0_address', '32 O Street' ),
-                                               ( 'field_0_city', 'Anywhere' ),
-                                               ( 'field_0_state', 'AK' ),
-                                               ( 'field_0_postal_code', '0000000' ),
-                                               ( 'field_0_country', 'USA' ) ],
+                             template_fields=[ ( '%s_short_desc' % address_field_name, short_desc ),
+                                               ( '%s_name' % address_field_name, 'Richard' ),
+                                               ( '%s_institution' % address_field_name, 'PSU' ),
+                                               ( '%s_address' % address_field_name, '32 O Street' ),
+                                               ( '%s_city' % address_field_name, 'Anywhere' ),
+                                               ( '%s_state' % address_field_name, 'AK' ),
+                                               ( '%s_postal_code' % address_field_name, '0000000' ),
+                                               ( '%s_country' % address_field_name, 'USA' ) ],
                              strings_displayed=[ short_desc ] )
         global user_address2
         user_address2 = get_user_address( admin_user, short_desc )
@@ -190,9 +215,10 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_040_edit_contents_of_folder1_template( self ):
         """Testing editing the contents of folder1 AddressField template"""
         # Make sure the template and contents were inherited to folder1
-        self.folder_info( 'library_admin',
-                          self.security.encode_id( folder1.id ),
-                          self.security.encode_id( library1.id ),
+        self.folder_info( cntrller='library_admin',
+                          folder_id=self.security.encode_id( folder1.id ),
+                          library_id=self.security.encode_id( library1.id ),
+                          template_refresh_field_name=address_field_name,
                           template_refresh_field_contents=str( user_address2.id ),
                           strings_displayed=[ AddressField_form.name,
                                               'This is an inherited template and is not required to be used with this folder' ],
@@ -208,14 +234,16 @@ class TestLibraryFeatures( TwillTestCase ):
                                      filename=filename,
                                      file_type='bed',
                                      dbkey='hg18',
+                                     template_refresh_field_name=address_field_name,
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload files' ] )
         # Make sure user_address2 is associated with ldda.
-        self.ldda_edit_info( 'library_admin',
-                             self.security.encode_id( library1.id ),
-                             self.security.encode_id( folder1.id ),
-                             self.security.encode_id( ldda1.id ),
-                             ldda1.name,
+        self.ldda_edit_info( cntrller='library_admin',
+                             library_id=self.security.encode_id( library1.id ),
+                             folder_id=self.security.encode_id( folder1.id ),
+                             ldda_id=self.security.encode_id( ldda1.id ),
+                             ldda_name=ldda1.name,
+                             template_refresh_field_name=address_field_name,
                              strings_displayed=[ user_address2.desc ] )
     def test_050_add_template_to_library2( self ):
         """ Testing add an inheritable template containing an CheckboxField to library2"""
@@ -229,7 +257,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Check the CheckboxField to make sure the template contents are inherited
         self.library_info( 'library_admin',
                             self.security.encode_id( library2.id ),
-                            template_fields = [ ( 'field_0', '1' ) ] )
+                            template_fields = [ ( checkbox_field_name, '1' ) ] )
     def test_055_add_folder2_to_library2( self ):
         """Testing adding a folder to library2"""
         # Logged in as admin_user
@@ -257,7 +285,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.folder_info( cntrller='library_admin',
                           folder_id=self.security.encode_id( folder2.id ),
                           library_id=self.security.encode_id( library2.id ),
-                          template_fields=[ ( "field_0", '1' ) ],
+                          template_fields=[ ( checkbox_field_name, '1' ) ],
                           strings_displayed=[ CheckboxField_form.name,
                                               'This is an inherited template and is not required to be used with this folder' ] )
     def test_070_add_ldda_to_folder2( self ):
@@ -301,7 +329,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # SelectField option names are zero-based
         self.library_info( 'library_admin',
                             self.security.encode_id( library3.id ),
-                            template_fields=[ ( 'field_0', 'Option1' ) ] )
+                            template_fields=[ ( select_field_name, 'Option1' ) ] )
     def test_085_add_folder3_to_library3( self ):
         """Testing adding a folder to library3"""
         # Logged in as admin_user
@@ -329,7 +357,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.folder_info( cntrller='library_admin',
                           folder_id=self.security.encode_id( folder3.id ),
                           library_id=self.security.encode_id( library3.id ),
-                          template_fields=[ ( "field_0", 'Option1' ) ],
+                          template_fields=[ ( select_field_name, 'Option1' ) ],
                           strings_displayed=[ SelectField_form.name,
                                               'This is an inherited template and is not required to be used with this folder',
                                               'Option1' ] )
@@ -371,7 +399,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      folder_id=self.security.encode_id( folder3.id ),
                                      upload_option='import_from_history',
                                      hda_ids=self.security.encode_id( hda.id ),
-                                     strings_displayed=[ '<input type="hidden" name="field_0" value="Option1"/>' ] )
+                                     strings_displayed=[ '<input type="hidden" name="%s" value="Option1"/>' % select_field_name ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
         self.browse_library( 'library_admin',
@@ -397,7 +425,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         self.library_info( 'library_admin',
                             self.security.encode_id( library4.id ),
-                            template_fields=[ ('field_0', 'This text should be inherited' ) ] )
+                            template_fields=[ ( textarea_name, 'This text should be inherited' ) ] )
     def test_110_add_folder4_to_library4( self ):
         """Testing adding a folder to library4"""
         # Logged in as admin_user
@@ -419,7 +447,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.folder_info( cntrller='library_admin',
                           folder_id=self.security.encode_id( folder4.id ),
                           library_id=self.security.encode_id( library4.id ),
-                          template_fields=[ ( "field_0", 'This text should be inherited' ) ],
+                          template_fields=[ ( textarea_name, 'This text should be inherited' ) ],
                           strings_displayed=[ TextArea_form.name,
                                               'This is an inherited template and is not required to be used with this folder',
                                               'This text should be inherited' ] )
@@ -463,7 +491,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         self.library_info( 'library_admin',
                            self.security.encode_id( library5.id ),
-                           template_fields=[ ( 'field_0', 'This text should be inherited' ) ] )
+                           template_fields=[ ( textfield_name, 'This text should be inherited' ) ] )
     def test_130_add_folder5_to_library5( self ):
         """Testing adding a folder to library5"""
         # Logged in as admin_user
@@ -485,7 +513,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.folder_info( cntrller='library_admin',
                           folder_id=self.security.encode_id( folder5.id ),
                           library_id=self.security.encode_id( library5.id ),
-                          template_fields=[ ( "field_0", 'This text should be inherited' ) ],
+                          template_fields=[ ( textfield_name, 'This text should be inherited' ) ],
                           strings_displayed=[ TextField_form.name,
                                               'This is an inherited template and is not required to be used with this folder',
                                               'This text should be inherited' ] )
@@ -592,7 +620,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.folder_info( cntrller='library_admin',
                           folder_id=self.security.encode_id( folder6.id ),
                           library_id=self.security.encode_id( library6.id ),
-                          template_fields=[ ( "field_0", 'none' ) ],
+                          template_fields=[ ( workflow_field_name, 'none' ) ],
                           strings_displayed=[ WorkflowField_form.name,
                                               'This is an inherited template and is not required to be used with this folder',
                                               'none' ] )

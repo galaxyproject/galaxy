@@ -313,13 +313,13 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         for index, field in enumerate( request_type.request_form.fields ):
             field_type = field[ 'type' ]
             field_name = field[ 'name' ]
-            input_value = params.get( 'field_%i' % index, '' )
-            if field[ 'type' ] == 'AddressField':
+            input_value = params.get( field_name, '' )
+            if field_type == 'AddressField':
                 input_text_value = util.restore_text( input_value )
                 if input_text_value == 'new':
                     # Save this new address in the list of this user's addresses
                     user_address = trans.model.UserAddress( user=user )
-                    self.save_widget_field( trans, user_address, index, **kwd )
+                    self.save_widget_field( trans, user_address, field_name, **kwd )
                     trans.sa_session.refresh( user )
                     field_value = int( user_address.id )
                 elif input_text_value in [ '', 'none', 'None', None ]:

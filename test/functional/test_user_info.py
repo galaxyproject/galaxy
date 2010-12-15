@@ -40,23 +40,23 @@ class TestUserInfo( TwillTestCase ):
         desc = "This is Student user info form's description"
         form_type = get_user_info_form_definition()
         self.create_form( name=name,
-                          desc=desc,
+                          description=desc,
                           form_type=form_type,
                           num_fields=0,
                           strings_displayed=[ 'Create a new form definition' ],
                           strings_displayed_after_submit=[ name, desc, form_type ] )
         tmp_form = get_form( name )
         # Add fields to the form
-        field_dicts = [ dict( name='Affiliation',
+        field_dicts = [ dict( label='Affiliation',
                               desc='The type of  organization you are affiliated with',
                               type='SelectField',
                               required='optional',
                               selectlist=[ 'Educational', 'Research', 'Commercial' ] ),
-                        dict( name='Name of Organization',
+                        dict( label='Name of Organization',
                               desc='',
                               type='TextField',
                               required='optional' ),
-                        dict( name='Contact for feedback',
+                        dict( label='Contact for feedback',
                               desc='',
                               type='CheckboxField',
                               required='optional' ) ]
@@ -74,23 +74,23 @@ class TestUserInfo( TwillTestCase ):
         name = "Researcher"
         desc = "This is Researcher user info form's description"
         self.create_form( name=name,
-                          desc=desc,
+                          description=desc,
                           form_type=form_type,
                           num_fields=0,
                           strings_displayed=[ 'Create a new form definition' ],
                           strings_displayed_after_submit=[ name, desc, form_type ] )
         tmp_form = get_form( name )
         # Add fields to the form
-        field_dicts = [ dict( name='Affiliation',
+        field_dicts = [ dict( label='Affiliation',
                               desc='The type of  organization you are affiliated with',
                               type='SelectField',
                               required='optional',
                               selectlist=[ 'Educational', 'Research', 'Commercial' ] ),
-                        dict( name='Name of Organization',
+                        dict( label='Name of Organization',
                               desc='',
                               type='TextField',
                               required='optional' ),
-                        dict( name='Contact for feedback',
+                        dict( label='Contact for feedback',
                               desc='',
                               type='CheckboxField',
                               required='optional' ) ]
@@ -131,7 +131,7 @@ class TestUserInfo( TwillTestCase ):
         self.edit_user_info( strings_displayed=[ "Manage User Information",
                                                  user_info_values[0],
                                                  user_info_values[1],
-                                                 '<input type="checkbox" id="field_2" name="field_2" value="true" checked="checked">' ] )
+                                                 '<input type="checkbox" id="subscribe" name="subscribe" value="true">' ] )
     def test_015_user_reqistration_single_user_info_forms( self ):
         """Testing user registration with a single user info form"""
         # Logged in as regular_user_11

@@ -1510,8 +1510,13 @@ class FormDefinition( object, APIItem ):
         widgets = []
         for index, field in enumerate( self.fields ):
             field_type = field[ 'type' ]
-            field_name = 'field_%i' % index
-            # determine the value of the field
+            if 'name' in field:
+                field_name = field[ 'name' ]
+            else:
+                # Default to names like field_0, field_1, etc for backward compatibility
+                # (not sure this is necessary)...
+                field_name = 'field_%i' % index
+            # Determine the value of the field
             if field_name in kwd:
                 # The form was submitted via refresh_on_change
                 if field_type == 'CheckboxField':
@@ -1525,20 +1530,24 @@ class FormDefinition( object, APIItem ):
                 except:
                     # If there was an error getting the saved value, we'll still
                     # display the widget, but it will be empty.
-                    if field_type == 'CheckboxField':
+                    if field_type == 'AddressField':
+                        value = 'none'
+                    elif field_type == 'CheckboxField':
                         # Since we do not have contents, set checkbox value to False
                         value = False
                     else:
                         # Set other field types to empty string
-                        value = '' 
+                        value = ''
             else:
-                # if none of the above, then leave the field empty
-                if field_type == 'CheckboxField':
+                # If none of the above, then leave the field empty
+                if field_type == 'AddressField':
+                    value = 'none'
+                elif field_type == 'CheckboxField':
                     # Since we do not have contents, set checkbox value to False
                     value = False
                 else:
                     # Set other field types to the default value of the field
-                    value = field.get('default', '')
+                    value = field.get( 'default', '' )
             # Create the field widget
             field_widget = eval( field_type )( field_name )
             if field_type == 'TextField':

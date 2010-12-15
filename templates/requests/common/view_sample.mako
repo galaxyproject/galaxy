@@ -29,16 +29,18 @@
             ${sample.bar_code}
             <div style="clear: both"></div>
         </div>
-        <div class="form-row">
-            <label>Library:</label>
-            ${sample.library.name}
-            <div style="clear: both"></div>
-        </div>
-        <div class="form-row">
-            <label>Folder:</label>
-            ${sample.folder.name}
-            <div style="clear: both"></div>
-        </div>
+        %if sample.library:
+            <div class="form-row">
+                <label>Library:</label>
+                ${sample.library.name}
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Folder:</label>
+                ${sample.folder.name}
+                <div style="clear: both"></div>
+            </div>
+        %endif
         <div class="form-row">
             <label>Request:</label>
             ${sample.request.name}

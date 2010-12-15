@@ -777,12 +777,12 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     for index, widget_dict in enumerate( widgets ):
                         widget = widget_dict[ 'widget' ]
                         if isinstance( widget, AddressField ):
-                            value = util.restore_text( params.get( 'field_%i' % index, '' ) )
+                            value = util.restore_text( params.get( widget.name, '' ) )
                             if value == 'new':
-                                if self.field_param_values_ok( index, 'AddressField', **kwd ):
+                                if self.field_param_values_ok( widget.name, 'AddressField', **kwd ):
                                     # Save the new address
                                     address = trans.app.model.UserAddress( user=trans.user )
-                                    self.save_widget_field( trans, address, index, **kwd )
+                                    self.save_widget_field( trans, address, widget.name, **kwd )
                                     widget.value = str( address.id )
                                     widget_dict[ 'widget' ] = widget
                                     processed_widgets.append( widget_dict )
@@ -791,7 +791,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                     # method below calls the handle_library_params() method, which does not parse the
                                     # widget fields, it instead pulls form values from kwd.  See the FIXME comments in the
                                     # handle_library_params() method, and the CheckboxField code in the next conditional.
-                                    kwd[ 'field_%i' % index ] = str( address.id )
+                                    kwd[ widget.name ] = str( address.id )
                                 else:
                                     # The invalid address won't be saved, but we cannot display error
                                     # messages on the upload form due to the ajax upload already occurring.
@@ -802,12 +802,13 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                         elif isinstance( widget, CheckboxField ):
                             # We need to check the value from kwd since util.Params would have munged the list if
                             # the checkbox is checked.
-                            value = kwd.get( 'field_%i' % index, '' )
+                            value = kwd.get( widget.name, '' )
                             if CheckboxField.is_checked( value ):
                                 widget.value = 'true'
                                 widget_dict[ 'widget' ] = widget
                                 processed_widgets.append( widget_dict )
-                                kwd[ 'field_%i' % index ] = 'true'
+                                #kwd[ 'field_%i' % index ] = 'true'
+                                kwd[ widget.name ] = 'true'
                         else:
                             processed_widgets.append( widget_dict )
                     widgets = processed_widgets
@@ -978,7 +979,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                 message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
         # Some error handling should be added to this method.
         try:
-            # FIXME: instead of passing params here ( chiech have been process by util.Params(), the original kwd
+            # FIXME: instead of passing params here ( which have been processed by util.Params(), the original kwd
             # should be passed so that complex objects that may have been included in the initial request remain.
             library_bunch = upload_common.handle_library_params( trans, params, folder_id, replace_dataset )
         except:

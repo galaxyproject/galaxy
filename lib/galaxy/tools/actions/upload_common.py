@@ -37,23 +37,23 @@ def persist_uploads( params ):
 def handle_library_params( trans, params, folder_id, replace_dataset=None ):
     # FIXME: the received params has already been parsed by util.Params() by the time it reaches here,
     # so no complex objects remain.  This is not good because it does not allow for those objects to be
-    # manipulated here.  The receivd params should be the original kwd from the initial request.
+    # manipulated here.  The received params should be the original kwd from the initial request.
     library_bunch = util.bunch.Bunch()
     library_bunch.replace_dataset = replace_dataset
     library_bunch.message = params.get( 'ldda_message', '' )
     # See if we have any template field contents
-    library_bunch.template_field_contents = []
+    library_bunch.template_field_contents = {}
     template_id = params.get( 'template_id', None )
     library_bunch.folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
     # We are inheriting the folder's info_association, so we may have received inherited contents or we may have redirected
     # here after the user entered template contents ( due to errors ).
     if template_id not in [ None, 'None' ]:
         library_bunch.template = trans.sa_session.query( trans.app.model.FormDefinition ).get( template_id )
-        for field_index in range( len( library_bunch.template.fields ) ):
-            field_name = 'field_%i' % field_index
+        for field in library_bunch.template.fields:
+            field_name = field[ 'name' ]
             if params.get( field_name, False ):
                 field_value = util.restore_text( params.get( field_name, ''  ) )
-                library_bunch.template_field_contents.append( field_value )
+                library_bunch.template_field_contents[ field_name ] = field_value
     else:
         library_bunch.template = None
     library_bunch.roles = []

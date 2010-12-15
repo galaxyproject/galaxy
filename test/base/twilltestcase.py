@@ -780,8 +780,9 @@ class TwillTestCase( unittest.TestCase ):
         if user_info_select:
             # The user_info_select SelectField requires a refresh_on_change
             self.refresh_form( 'user_info_select', user_info_select )
-        for index, info_value in enumerate( user_info_values ):
-            tc.fv( "1", "field_%i" % index, info_value )
+            for index, info_value in enumerate( user_info_values ):
+                field_index = index + 1
+                tc.fv( "1", "%i_field_name" % field_index, info_value )
         tc.submit( "create_user_button" )
     def edit_user_info( self, new_email='', new_username='', password='', new_password='',
                         info_values=[], strings_displayed=[], strings_displayed_after_submit=[] ):
@@ -801,7 +802,8 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "change_password_button" )
         if info_values:
             for index, info_value in enumerate( info_values ):
-                tc.fv( "user_info", "field_%i" % index, info_value )
+                field_index = index + 1
+                tc.fv( "user_info", "%i_field_name" % field_index, info_value )
             tc.submit( "edit_user_info_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
@@ -1345,14 +1347,15 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Form stuff
-    def create_form( self, name, desc, form_type, field_type='TextField', form_layout_name='',
-                     num_fields=1, num_options=0, strings_displayed=[], strings_displayed_after_submit=[] ):
+    def create_form( self, name, description, form_type, field_type='TextField', form_layout_name='',
+                     num_fields=1, num_options=0, field_name='1_field_name', strings_displayed=[],
+                     strings_displayed_after_submit=[] ):
         """Create a new form definition."""
         self.visit_url( "%s/forms/create_form_definition" % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( "1", "name", name )
-        tc.fv( "1", "description", desc )
+        tc.fv( "1", "description", description )
         tc.fv( "1", "form_type_select_field", form_type )
         tc.submit( "create_form_button" )
         if form_type == "Sequencing Sample Form":
@@ -1387,6 +1390,7 @@ class TwillTestCase( unittest.TestCase ):
                     tc.fv( "1", option_field_name, option_field_value )
             else:
                 tc.fv( "1", "field_type_0", field_type )
+            tc.fv( "1", 'field_name_0', field_name )
             tc.fv( "1", field_default, field_default_contents )
         # All done... now save
         tc.submit( "save_changes_button" )
@@ -1516,7 +1520,8 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "name", name )
         tc.fv( "1", "desc", desc )
         for index, field_value_tuple in enumerate( field_value_tuples ):
-            field_name = "field_%i" % index
+            field_index = index + 1
+            field_name = "%i_field_name" % field_index
             field_value, refresh_on_change = field_value_tuple
             if refresh_on_change:
                 # Only the AddressField type has a refresh on change setup on selecting an option
@@ -1559,7 +1564,8 @@ class TwillTestCase( unittest.TestCase ):
         if new_desc:
             tc.fv( "1", "desc", new_desc )
         for index, field_value in enumerate( new_fields ):
-            tc.fv( "1", "field_%i" % index, field_value )
+            field_name_index = index + 1
+            tc.fv( "1", "%i_field_name" % field_name_index, field_value )
         tc.submit( "edit_basic_request_info_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
@@ -1904,7 +1910,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "The new folder named '%s' has been added to the data library." % name
         self.check_page_for_string( check_str )
         self.home()
-    def folder_info( self, cntrller, folder_id, library_id, name='', new_name='', description='',
+    def folder_info( self, cntrller, folder_id, library_id, name='', new_name='', description='', template_refresh_field_name='1_field_name',
                      template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[],
                      strings_displayed_after_submit=[], strings_not_displayed_after_submit=[] ):
         """Add information to a library using an existing template with 2 elements"""
@@ -1926,7 +1932,7 @@ class TwillTestCase( unittest.TestCase ):
             # A template containing an AddressField is displayed on the form, so we need to refresh the form 
             # with the received template_refresh_field_contents.  There are 2 forms on the folder_info page
             # when in edit mode, and the 2nd one is the one we want.
-            self.refresh_form( "field_0", template_refresh_field_contents, form_no=2 )
+            self.refresh_form( template_refresh_field_name, template_refresh_field_contents, form_no=2 )
         if template_fields:
             # We have an information template associated with the folder, so
             # there are 2 forms on this page and the template is the 2nd form
@@ -1947,7 +1953,8 @@ class TwillTestCase( unittest.TestCase ):
     def upload_library_dataset( self, cntrller, library_id, folder_id, filename='', server_dir='', replace_id='',
                                 upload_option='upload_file', file_type='auto', dbkey='hg18', space_to_tab='',
                                 link_data_only='', dont_preserve_dirs='', roles=[], ldda_message='', hda_ids='',
-                                template_refresh_field_contents='', template_fields=[], show_deleted='False', strings_displayed=[] ):
+                                template_refresh_field_name='1_field_name', template_refresh_field_contents='', template_fields=[],
+                                show_deleted='False', strings_displayed=[] ):
         """Add datasets to library using any upload_option"""
         # NOTE: due to the library_wait() method call at the end of this method, no tests should be done
         # for strings_displayed_after_submit.
@@ -1961,7 +1968,7 @@ class TwillTestCase( unittest.TestCase ):
         if template_refresh_field_contents:
             # A template containing an AddressField is displayed on the upload form, so we need to refresh the form 
             # with the received template_refresh_field_contents.
-            self.refresh_form( "field_0", template_refresh_field_contents )
+            self.refresh_form( template_refresh_field_name, template_refresh_field_contents )
         for tup in template_fields:
             tc.fv( "1", tup[0], tup[1] )
         tc.fv( "1", "library_id", library_id )
@@ -2024,7 +2031,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
-    def ldda_edit_info( self, cntrller, library_id, folder_id, ldda_id, ldda_name, new_ldda_name='',
+    def ldda_edit_info( self, cntrller, library_id, folder_id, ldda_id, ldda_name, new_ldda_name='', template_refresh_field_name='1_field_name',
                         template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[] ):
         """Edit library_dataset_dataset_association information, optionally template element information"""
         self.visit_url( "%s/library_common/ldda_edit_info?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
@@ -2040,7 +2047,7 @@ class TwillTestCase( unittest.TestCase ):
             # A template containing an AddressField is displayed on the upload form, so we need to refresh the form 
             # with the received template_refresh_field_contents.  There are 4 forms on this page, and the template is
             # contained in the 4th form named "edit_info".
-            self.refresh_form( "field_0", template_refresh_field_contents, form_no=4 )
+            self.refresh_form( template_refresh_field_name, template_refresh_field_contents, form_no=4 )
         if template_fields:
             # We have an information template associated with the folder, so
             # there are 2 forms on this page and the template is the 2nd form

@@ -595,26 +595,28 @@ class User( BaseController, UsesFormDefinitions ):
                     # to change the user_info form 
                     user_info_form = user_info_forms[0]
         values = []
-        for index, field in enumerate(user_info_form.fields):
-            if field['type'] == 'AddressField':
-                value = util.restore_text(params.get('field_%i' % index, ''))
+        for index, field in enumerate( user_info_form.fields ):
+            field_type = field[ 'type' ]
+            field_name = field[ 'name' ]
+            if field_type == 'AddressField':
+                value = util.restore_text( params.get( field_name, '' ) )
                 if value == 'new':
                     # save this new address in the list of this user's addresses
                     user_address = trans.app.model.UserAddress( user=user )
-                    self.save_widget_field( trans, user_address, index, **kwd )
+                    self.save_widget_field( trans, user_address, field_name, **kwd )
                     trans.sa_session.refresh( user )
-                    values.append(int(user_address.id))
-                elif value == unicode('none'):
-                    values.append('')
+                    values.append(int( user_address.id ) )
+                elif value == unicode( 'none' ):
+                    values.append( '' )
                 else:
-                    values.append(int(value))
-            elif field['type'] == 'CheckboxField':
-                values.append(CheckboxField.is_checked( params.get('field_%i' % index, '') )) 
+                    values.append( int( value ) )
+            elif field[ 'type' ] == 'CheckboxField':
+                values.append( CheckboxField.is_checked( params.get( field_name, '' ) ) ) 
             else:
-                values.append(util.restore_text(params.get('field_%i' % index, '')))
+                values.append( util.restore_text( params.get( field_name, '' ) ) )
         if new_user or not user.values:
             # new user or existing 
-            form_values = trans.app.model.FormValues(user_info_form, values)
+            form_values = trans.app.model.FormValues( user_info_form, values )
             trans.sa_session.add( form_values )
             trans.sa_session.flush()
             user.values = form_values
@@ -719,16 +721,16 @@ class User( BaseController, UsesFormDefinitions ):
         try:
             user_info_form = trans.sa_session.query( trans.app.model.FormDefinition ).get(int(selected_user_form_id))
         except:
-            return user_info_select, None, None
+            return user_info_select, None, []
         if user:
             if user.values:
                 widgets = user_info_form.get_widgets(user=user, 
                                                      contents=user.values.content, 
                                                      **kwd)
             else:
-                widgets = user_info_form.get_widgets(None, contents=[], **kwd)
+                widgets = user_info_form.get_widgets(None, contents={}, **kwd)
         else:
-            widgets = user_info_form.get_widgets(None, contents=[], **kwd)
+            widgets = user_info_form.get_widgets(None, contents={}, **kwd)
         return user_info_select, user_info_form, widgets
     @web.expose
     def show_info( self, trans, **kwd ):
