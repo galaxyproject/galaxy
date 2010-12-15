@@ -289,7 +289,6 @@ class UsesFormDefinitions:
         return forms
     @web.expose
     def add_template( self, trans, cntrller, item_type, form_type, **kwd ):
-        log.debug("####     IN add_template, kwd: %s" % str( kwd ))
         params = util.Params( kwd )
         form_id = params.get( 'form_id', 'none' )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -418,7 +417,6 @@ class UsesFormDefinitions:
             decoded_form_id = trans.security.decode_id( form_id )
         except:
             decoded_form_id = None
-        log.debug("####     IN add_template, decoded_form_id: %s" % str( decoded_form_id ))
         if decoded_form_id:
             for form in forms:
                 if decoded_form_id == form.id:
@@ -445,7 +443,6 @@ class UsesFormDefinitions:
                                   ldda_id=ldda_id,
                                   inheritable_checked=inheritable,
                                   show_deleted=show_deleted ) )
-        log.debug("####     IN add_template, widgets: %s" % str( widgets ))
         return trans.fill_template( '/common/select_template.mako',
                                     **new_kwd )
     @web.expose
@@ -505,7 +502,6 @@ class UsesFormDefinitions:
             info_association = rtra.run
         template = info_association.template
         info = info_association.info
-        log.debug("&&&&&&&&In edit_template, info: %s" % str( info ))
         form_values = trans.sa_session.query( trans.app.model.FormValues ).get( info.id )
         if edited:
             # The form on which the template is based has been edited, so we need to update the
@@ -544,7 +540,6 @@ class UsesFormDefinitions:
         return trans.response.send_redirect( web.url_for( controller='forms', action='edit_form_definition', **vars ) )
     @web.expose
     def edit_template_info( self, trans, cntrller, item_type, form_type, **kwd ):
-        log.debug(">>>>>>>>>>>In edit_template_info, kwd: %s" % str( kwd ))
         # Edit the contents of the template fields without altering the template itself.
         params = util.Params( kwd )
         # form_type must be one of: RUN_DETAILS_TEMPLATE, LIBRARY_INFO_TEMPLATE
@@ -591,11 +586,8 @@ class UsesFormDefinitions:
                                                                   status='error' ) )
         # We need the type of each template field widget
         widgets = item.get_template_widgets( trans )
-        log.debug(">>>>>>>>>>>In edit_template_info, widgets: %s" % str( widgets ))
         # The list of widgets may include an AddressField which we need to save if it is new
         for index, widget_dict in enumerate( widgets ):
-            log.debug(">>>>>>>>>>>In edit_template_info, index: %s" % str( index ))
-            log.debug(">>>>>>>>>>>In edit_template_info, widget_dict: %s" % str( widget_dict ))
             widget = widget_dict[ 'widget' ]
             if isinstance( widget, AddressField ):
                 #value = util.restore_text( params.get( 'field_%i' % index, '' ) )
@@ -643,10 +635,8 @@ class UsesFormDefinitions:
             else:
                 #widget.value = util.restore_text( params.get( 'field_%i' % index, '' ) )
                 widget.value = util.restore_text( params.get( widget.name, '' ) )
-                log.debug(">>>>>>>>>>>In edit_template_info, widget.value: %s" % str( widget.value ))
         # Save updated template field contents
         field_contents = self.clean_field_contents( widgets, **kwd )
-        log.debug(">>>>>>>>>>>In edit_template_info, field_contents: %s" % str( field_contents ))
         if field_contents:
             if in_library:
                 # In in a library, since information templates are inherited, the template fields can be displayed
@@ -684,15 +674,10 @@ class UsesFormDefinitions:
             if info_association:
                 template = info_association.template
                 info = info_association.info
-                log.debug(">>>>>>>>>>>In edit_template_info, info: %s" % str( info ))
-                log.debug(">>>>>>>>>>>In edit_template_info, info.content: %s" % str( info.content ))
                 form_values = trans.sa_session.query( trans.app.model.FormValues ).get( info.id )
-                log.debug(">>>>>>>>>>>In edit_template_info, form_values.content 1: %s" % str( form_values.content ))
                 # Update existing content only if it has changed
                 flush_required = False
                 for field_contents_key, field_contents_value in field_contents.items():
-                    log.debug(">>>>>>>>>>>In edit_template_info, field_contents_key: %s" % str( field_contents_key ))
-                    log.debug(">>>>>>>>>>>In edit_template_info, field_contents_value: %s" % str( field_contents_value ))
                     if field_contents_key in form_values.content:
                         if form_values.content[ field_contents_key ] != field_contents_value:
                             flush_required = True
@@ -703,7 +688,6 @@ class UsesFormDefinitions:
                 if flush_required:
                     trans.sa_session.add( form_values )
                     trans.sa_session.flush()
-                log.debug(">>>>>>>>>>>In edit_template_info, form_values.content 2: %s" % str( form_values.content ))
             else:
                 if in_library:
                     # Inherit the next available info_association so we can get the template
@@ -829,11 +813,7 @@ class UsesFormDefinitions:
         # Return True if any of the fields in widgets contain contents, widgets is a list of dictionaries that looks something like:
         # [{'widget': <galaxy.web.form_builder.TextField object at 0x10867aa10>, 'helptext': 'Field 0 help (Optional)', 'label': 'Field 0'}]
         for i, field in enumerate( widgets ):
-            #log.debug("VVVVVVVV   In widget_fields_have_contents, field: %s" % str( field ))
-            #log.debug("VVVVVVVV   In widget_fields_have_contents, field[ 'widget' ]: %s" % str( field[ 'widget' ] ))
-            #log.debug("VVVVVVVV   In widget_fields_have_contents, field[ 'widget' ].value: %s" % str( field[ 'widget' ].value ))
             if ( isinstance( field[ 'widget' ], TextArea ) or isinstance( field[ 'widget' ], TextField ) ) and field[ 'widget' ].value:
-                #log.debug("VVVVVVVV   In widget_fields_have_contents, returning True...." )
                 return True
             if isinstance( field[ 'widget' ], SelectField ) and field[ 'widget' ].options:
                 for option_label, option_value, selected in field[ 'widget' ].options:
@@ -845,13 +825,10 @@ class UsesFormDefinitions:
                 return True
             if isinstance( field[ 'widget' ], HistoryField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
                 return True
-            #log.debug("VVVVVVVV   In widget_fields_have_contents, str( field[ 'widget' ].value ).lower(): *%s*" % str( str( field[ 'widget' ].value ).lower() ))
             if isinstance( field[ 'widget' ], AddressField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
                 return True
         return False
     def clean_field_contents( self, widgets, **kwd ):
-        log.debug("=====In clean_field_contents, widgets: %s" % str( widgets ))
-        log.debug("=====In clean_field_contents, kwd: %s" % str( kwd ))
         field_contents = {}
         for index, widget_dict in enumerate( widgets ):
             widget = widget_dict[ 'widget' ]
@@ -863,12 +840,8 @@ class UsesFormDefinitions:
                 # If the address was new, is has already been saved and widget.value is the new address.id
                 value = widget.value
             field_contents[ widget.name ] = util.restore_text( value )
-        log.debug("=====In clean_field_contents, returning field_contents: %s" % str( field_contents ))
         return field_contents
     def field_param_values_ok( self, widget_name, widget_type, **kwd ):
-        log.debug("++++++In field_param_values_ok, widget_name: %s" % str( widget_name ))
-        log.debug("++++++In field_param_values_ok, widget_type: %s" % str( widget_type ))
-        log.debug("++++++In field_param_values_ok, kwd: %s" % str( kwd ))
         # Make sure required fields have contents, etc
         params = util.Params( kwd )
         if widget_type == 'AddressField':
@@ -883,9 +856,6 @@ class UsesFormDefinitions:
                 return False
         return True
     def save_widget_field( self, trans, field_obj, widget_name, **kwd ):
-        log.debug("<<<<<<<<In save_widget_field, field_obj: %s" % str( field_obj ))
-        log.debug("<<<<<<<<In save_widget_field, widget_name: %s" % str( widget_name ))
-        log.debug("<<<<<<<<In save_widget_field, kwd: %s" % str( kwd ))
         # Save a form_builder field object
         params = util.Params( kwd )
         if isinstance( field_obj, trans.model.UserAddress ):
@@ -901,27 +871,20 @@ class UsesFormDefinitions:
             trans.sa_session.add( field_obj )
             trans.sa_session.flush()
     def populate_widgets_from_kwd( self, trans, widgets, **kwd ):
-        log.debug("^^^^^^^^In populate_widgets_from_kwd, widgets: %s" % str( widgets ))
-        log.debug("^^^^^^^^In populate_widgets_from_kwd, kwd: %s" % str( kwd ))
         # A form submitted via refresh_on_change requires us to populate the widgets with the contents of
         # the form fields the user may have entered so that when the form refreshes the contents are retained.
         params = util.Params( kwd )
         populated_widgets = []
         for widget_dict in widgets:
             widget = widget_dict[ 'widget' ]
-            log.debug("^^^^^^^^In populate_widgets_from_kwd, widget 1: %s" % str( widget ))
-            log.debug("^^^^^^^^In populate_widgets_from_kwd, widget.name 1: %s" % str( widget.name ))
-            #log.debug("^^^^^^^^In populate_widgets_from_kwd, widget.value 1: %s" % str( widget.value ))
             if params.get( widget.name, False ):
                 # The form included a field whose contents should be used to set the
                 # value of the current widget (widget.name is field_0, field_1, etc).
                 if isinstance( widget, AddressField ):
                     value = util.restore_text( params.get( widget.name, '' ) )
-                    log.debug("^^^^^^^^In populate_widgets_from_kwd, value: %s" % str( value ))
                     if value == 'none':
                         value = ''
                     widget.value = value
-                    log.debug("^^^^^^^^In populate_widgets_from_kwd, widget.value 2: %s" % str( widget.value ))
                     widget_dict[ 'widget' ] = widget
                     # Populate the AddressField params with the form field contents
                     widget_params_dict = {}
@@ -929,7 +892,6 @@ class UsesFormDefinitions:
                         form_param_name = '%s_%s' % ( widget.name, field_name )
                         widget_params_dict[ form_param_name ] = util.restore_text( params.get( form_param_name, '' ) )
                     widget.params = widget_params_dict
-                    log.debug("^^^^^^^^In populate_widgets_from_kwd, widget.params: %s" % str( widget.params ))
                 elif isinstance( widget, CheckboxField ):
                     # Check the value from kwd since util.Params would have
                     # stringify'd the list if the checkbox is checked.
@@ -947,7 +909,6 @@ class UsesFormDefinitions:
                     widget.options = processed_options
                 else:
                     widget.value = util.restore_text( params.get( widget.name, '' ) )
-                    log.debug("^^^^^^^^In populate_widgets_from_kwd, widget.value 3: %s" % str( widget.value ))
                     widget_dict[ 'widget' ] = widget
             populated_widgets.append( widget_dict )
         return populated_widgets
