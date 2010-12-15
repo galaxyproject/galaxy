@@ -7,15 +7,15 @@
 	<key>OnDemand</key>
 	<false/>
 	<key>Program</key>
-	<string>galaxy_dist/run.sh<string>
+	<string>/Users/galaxy/galaxy_dist/run.sh</string>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>ServiceDescription</key>
 	<string>Galaxy</string>
 	<key>StandardErrorPath</key>
-	<string>galaxy_dist/log/galaxy.stderr</string>
+	<string>/Users/galaxy/galaxy_dist/log/galaxy.stderr</string>
 	<key>StandardOutPath</key>
-	<string>galaxy_dist/log/galaxy.stdout</string>
+	<string>/Users/galaxy/galaxy_dist/log/galaxy.stdout</string>
 	<key>UserName</key>
 	<string>galaxy</string>
 </dict>
