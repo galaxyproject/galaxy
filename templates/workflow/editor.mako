@@ -530,20 +530,24 @@
             if (form_matches){
                 matches = matches.concat(form_matches);
             }
-            $.each(node.post_job_actions, function(k, pja){
-                    $.each(pja.action_arguments, function(k, action_argument){
-                        var arg_matches = action_argument.match(parameter_re);
-                        if (arg_matches){
-                            matches = matches.concat(arg_matches);
-                        }
-                    });
-            });
-            if (matches){
-                $.each(matches, function(k, element){
-                    if ($.inArray(element, workflow_parameters) === -1){
-                        workflow_parameters.push(element);
+            if (node.post_job_actions){
+                $.each(node.post_job_actions, function(k, pja){
+                    if (pja.action_arguments){
+                        $.each(pja.action_arguments, function(k, action_argument){
+                            var arg_matches = action_argument.match(parameter_re);
+                            if (arg_matches){
+                                matches = matches.concat(arg_matches);
+                            }
+                        });                        
                     }
                 });
+                if (matches){
+                    $.each(matches, function(k, element){
+                        if ($.inArray(element, workflow_parameters) === -1){
+                            workflow_parameters.push(element);
+                        }
+                    });
+                }                
             }
         });
         if (workflow_parameters && workflow_parameters.length !== 0){

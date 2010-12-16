@@ -390,7 +390,8 @@ $.extend( Node.prototype, {
         this.form_html = data.form_html;
         this.tool_errors = data.tool_errors;
         this.annotation = data['annotation'];
-        this.post_job_actions = $.parseJSON(data.post_job_actions);
+        var pja_in = $.parseJSON(data.post_job_actions);
+        this.post_job_actions = pja_in ? pja_in : {};
         if ( this.tool_errors ) {
                 el.addClass( "tool-node-error" );
         } else {
