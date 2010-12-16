@@ -1546,7 +1546,7 @@ class Tool:
                 if script_file is None:
                     log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
                 else:
-                    commands.append( 'export PACKAGE_BASE=%s; . %s' % ( base_path, script_file ) )
+                    commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, script_file ) )
         return commands
 
     def build_redirect_url_params( self, param_dict ):
