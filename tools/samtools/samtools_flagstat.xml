@@ -1,0 +1,29 @@
+<tool id="samtools_flagstat" name="flagstat" version="1.0.0">
+  <requirements>
+    <requirement type="package">samtools</requirement>
+  </requirements>
+  <description>provides simple stats on BAM files</description>
+  <command>samtools flagstat $input1 > $output1
+  </command>
+  <inputs>
+    <param name="input1" type="data" format="bam" label="BAM File to Convert" />
+  </inputs>
+  <outputs>
+    <data name="output1" format="text" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="3.bam" ftype="bam" />
+      <param name="output1" file="samtools_flagstat_out1.txt" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool uses the SAMTools_ toolkit to produce simple stats on a BAM file.
+
+.. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
+
+  </help>
+</tool>

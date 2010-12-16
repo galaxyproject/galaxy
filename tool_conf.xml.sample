@@ -309,6 +309,7 @@
    <tool file="samtools/sam_pileup.xml" />
    <tool file="samtools/pileup_parser.xml" />
    <tool file="samtools/pileup_interval.xml" />
+   <tool file="samtools/samtools_flagstat.xml" />
   </section>
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />
