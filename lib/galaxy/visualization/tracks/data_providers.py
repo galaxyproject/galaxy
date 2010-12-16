@@ -120,14 +120,12 @@ class SummaryTreeDataProvider( TracksDataProvider ):
         level = ceil( log( resolution, st.block_size ) ) - 1
         level = int(max( level, 0 ))
         if level <= 1:
-            return None
+            return "detail"
 
         stats = st.chrom_stats[chrom]
         results = st.query(chrom, int(start), int(end), level)
-        if results == "detail":
-            return None
-        elif results == "draw":
-            return "no_detail"
+        if results == "detail" or results == "draw":
+            return results
         else:
             return results, stats[level]["max"], stats[level]["avg"], stats[level]["delta"]
 
@@ -229,6 +227,7 @@ class BamDataProvider( TracksDataProvider ):
             # Some BAM files do not prefix chromosome names with chr, try without
             if chrom.startswith( 'chr' ):
                 try:
+                    bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', index_filename=self.converted_dataset.file_name )
                     data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
                 except ValueError:
                     return None

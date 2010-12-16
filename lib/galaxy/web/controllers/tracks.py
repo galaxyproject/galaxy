@@ -271,18 +271,21 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return message
             
         extra_info = None
-        if 'index' in data_sources:
+        if 'index' in data_sources and kwargs.get("mode", "Auto") == "Auto":
+            # Only check for summary if it's Auto mode (which is the default)
+            # 
             # Have to choose between indexer and data provider
             indexer = get_data_provider( name=data_sources['index'] )( dataset.get_converted_dataset(trans, data_sources['index']), dataset )
             summary = indexer.get_summary( chrom, low, high, **kwargs )
-            if summary is not None and kwargs.get("mode", "Auto") == "Auto":
-                # Only check for summary if it's Auto mode (which is the default)
-                if summary == "no_detail":
-                    kwargs["no_detail"] = True # meh
-                    extra_info = "no_detail"
-                else:
-                    frequencies, max_v, avg_v, delta = summary
-                    return { 'dataset_type': data_sources['index'], 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
+            if summary is None:
+                return { 'dataset_type': data_sources['index'], 'data': None }
+                
+            if summary == "draw":
+                kwargs["no_detail"] = True # meh
+                extra_info = "no_detail"
+            elif summary != "detail":
+                frequencies, max_v, avg_v, delta = summary
+                return { 'dataset_type': data_sources['index'], 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
         
         # Get data provider.
         if "data_standalone" in data_sources:
