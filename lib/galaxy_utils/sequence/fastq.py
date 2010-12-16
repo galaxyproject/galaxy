@@ -609,12 +609,15 @@ class fastqJoiner( object ):
         return rval
     def get_paired_identifier( self, fastq_read ):
         identifier = fastq_read.identifier
+        identifier_is_first = None
         if identifier[-2] == '/':
             if identifier[-1] == "1":
                 identifier = "%s2" % identifier[:-1]
+                identifier_is_first = False
             elif identifier[-1] == "2":
                 identifier = "%s1" % identifier[:-1]
-        return identifier
+                identifier_is_first = True
+        return identifier, identifier_is_first
 
 class fastqSplitter( object ):   
     def split( self, fastq_read ):
