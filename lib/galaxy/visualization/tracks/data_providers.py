@@ -217,9 +217,11 @@ class BamDataProvider( TracksDataProvider ):
         Fetch intervals in the region 
         """
         start, end = int(start), int(end)
+        orig_data_filename = self.original_dataset.file_name
+        index_filename = self.converted_dataset.file_name
         no_detail = "no_detail" in kwargs
         # Attempt to open the BAM file with index
-        bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', index_filename=self.converted_dataset.file_name )
+        bamfile = csamtools.Samfile( filename=orig_data_filename, mode='rb', index_filename=index_filename )
         message = None
         try:
             data = bamfile.fetch(start=start, end=end, reference=chrom)
@@ -227,7 +229,6 @@ class BamDataProvider( TracksDataProvider ):
             # Some BAM files do not prefix chromosome names with chr, try without
             if chrom.startswith( 'chr' ):
                 try:
-                    bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', index_filename=self.converted_dataset.file_name )
                     data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
                 except ValueError:
                     return None
@@ -242,7 +243,10 @@ class BamDataProvider( TracksDataProvider ):
                 break
             qname = read.qname
             seq = read.seq
-            read_len = sum( [cig[1] for cig in read.cigar] ) # Use cigar to determine length
+            if read.cigar is not None:
+                read_len = sum( [cig[1] for cig in read.cigar] ) # Use cigar to determine length
+            else:
+                read_len = len(seq) # If no cigar, just use sequence length
             if read.is_proper_pair:
                 if qname in paired_pending: # one in dict is always first
                     pair = paired_pending[qname]
