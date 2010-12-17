@@ -82,8 +82,8 @@ class UniverseApplication( object ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Transfer manager client
         if self.config.get_bool( 'enable_deferred_job_queue', False ):
-            import jobs.transfer_manager
-            self.transfer_manager = jobs.transfer_manager.TransferManager( self )
+            from jobs import transfer_manager
+            self.transfer_manager = transfer_manager.TransferManager( self )
         
     def shutdown( self ):
         self.job_manager.shutdown()
