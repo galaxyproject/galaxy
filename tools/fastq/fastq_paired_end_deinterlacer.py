@@ -23,17 +23,16 @@ def main():
             del found[mate1.identifier]
             continue
 
-        mate2_id, mate2_is_first = joiner.get_paired_identifier( mate1 )
+        mate2 = input.get( joiner.get_paired_identifier( mate1 ) )
 
-        mate2 = input.get( mate2_id )
         if mate2:
-            found[mate2_id] = None
-            if mate2_is_first:
-                out1.write( mate2 )
-                out2.write( mate1 )
-            else:
+            found[mate2.identifier] = None
+            if joiner.is_first_mate( mate1 ):
                 out1.write( mate1 )
                 out2.write( mate2 )
+            else:
+                out1.write( mate2 )
+                out2.write( mate1 )
         else:
             skip_count += 1
 

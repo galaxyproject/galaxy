@@ -21,9 +21,7 @@ def main():
     i = None
     skip_count = 0
     for i, mate1 in enumerate( fastqReader( open( mate1_filename, 'rb' ), format = type ) ):
-
         mate2 = mate_input.get( joiner.get_paired_identifier( mate1 ) )
-
         if mate2:
             out.write( mate1 )
             out.write( mate2 )

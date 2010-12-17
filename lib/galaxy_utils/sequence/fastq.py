@@ -609,15 +609,22 @@ class fastqJoiner( object ):
         return rval
     def get_paired_identifier( self, fastq_read ):
         identifier = fastq_read.identifier
-        identifier_is_first = None
         if identifier[-2] == '/':
             if identifier[-1] == "1":
                 identifier = "%s2" % identifier[:-1]
-                identifier_is_first = False
             elif identifier[-1] == "2":
                 identifier = "%s1" % identifier[:-1]
-                identifier_is_first = True
-        return identifier, identifier_is_first
+        return identifier
+    def is_first_mate( self, sequence_id ):
+        is_first = None
+        if not isinstance( sequence_id, basestring ):
+            sequence_id = sequence_id.identifier
+        if sequence_id[-2] == '/':
+            if sequence_id[-1] == "1":
+                is_first = True
+            else:
+                is_first = False
+        return is_first
 
 class fastqSplitter( object ):   
     def split( self, fastq_read ):
