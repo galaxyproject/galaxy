@@ -94,12 +94,12 @@ class DeferredJobQueue( object ):
                     job_state = self.plugins[job.plugin].check_job( job )
                 except:
                     raise # TODO: fail
-                if job_state == JOB_STATE.READY:
+                if job_state == self.job_states.READY:
                     try:
                         self.plugins[job.plugin].run_job( job )
                     except:
                         raise # TODO: fail
-                elif job_state == JOB_STATE.INVALID:
+                elif job_state == self.job_states.INVALID:
                     # TODO: fail
                     log.error( 'Unable to run deferred job (id: %s): Plugin "%s" marked it as invalid' % ( job.id, job.plugin ) )
                 else:
