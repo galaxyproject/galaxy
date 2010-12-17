@@ -15,7 +15,7 @@ from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
-import os.path, os, errno, codecs, operator, smtplib, socket, pexpect, logging
+import os.path, os, errno, codecs, operator, smtplib, socket, pexpect, logging, time
 
 log = logging.getLogger( __name__ )
 
@@ -249,6 +249,43 @@ class JobImportHistoryArchive( object ):
         self.job = job
         self.history = history
         self.archive_dir=archive_dir
+
+class DeferredJob( object ):
+    states = Bunch( NEW = 'new',
+                    WAITING = 'waiting',
+                    QUEUED = 'queued',
+                    RUNNING = 'running',
+                    OK = 'ok',
+                    ERROR = 'error' )
+    def __init__( self, state=None, plugin=None, params=None ):
+        self.state = state
+        self.plugin = plugin
+        self.params = params
+    def get_check_interval( self ):
+        if not hasattr( self, '_check_interval' ):
+            self._check_interval = None
+        return self._check_interval
+    def set_check_interval( self, seconds ):
+        self._check_interval = seconds
+    check_interval = property( get_check_interval, set_check_interval )
+    def get_last_check( self ):
+        if not hasattr( self, '_last_check' ):
+            self._last_check = 0
+        return self._last_check
+    def set_last_check( self, seconds ):
+        try:
+            self._last_check = int( seconds )
+        except:
+            self._last_check = time.time()
+    last_check = property( get_last_check, set_last_check )
+    @property
+    def is_check_time( self ):
+        if self.check_interval is None:
+            return True
+        elif ( int( time.time() ) - self.last_check ) > self.check_interval:
+            return True
+        else:
+            return False
         
 class Group( object ):
     def __init__( self, name = None ):
@@ -2058,6 +2095,16 @@ class VisualizationUserShareAssociation( object ):
         self.visualization = None
         self.user = None
         
+class TransferJob( object ):
+    states = Bunch( NEW = 'new',
+                    RUNNING = 'running',
+                    ERROR = 'error',
+                    DONE = 'done' )
+    def __init__( self, state=None, path=None, params=None ):
+        self.state = state
+        self.path = path
+        self.params = params
+
 class Tag ( object ):
     def __init__( self, id=None, type=None, parent_id=None, name=None ):
         self.id = id

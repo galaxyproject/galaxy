@@ -430,6 +430,22 @@ PostJobActionAssociation.table = Table("post_job_action_association", metadata,
     Column("job_id", Integer, ForeignKey( "job.id" ), index=True, nullable=False),
     Column("post_job_action_id", Integer, ForeignKey( "post_job_action.id" ), index=True, nullable=False))
 
+DeferredJob.table = Table( "deferred_job", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "state", String( 64 ), index=True ),
+    Column( "plugin", String( 128 ), index=True ),
+    Column( "params", JSONType ) )
+
+TransferJob.table = Table( "transfer_job", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "state", String( 64 ), index=True ),
+    Column( "path", String( 1024 ) ),
+    Column( "params", JSONType ) )
+
 Event.table = Table( "event", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1344,7 +1360,12 @@ assign_mapper( context, Job, Job.table,
 assign_mapper( context, Task, Task.table,
     properties=dict( job = relation( Job )))
                      
+assign_mapper( context, DeferredJob, DeferredJob.table, 
+    properties = {} )
 
+assign_mapper( context, TransferJob, TransferJob.table, 
+    properties = {} )
+    
 assign_mapper( context, Event, Event.table,
     properties=dict( history=relation( History ),
                      galaxy_session=relation( GalaxySession ),
