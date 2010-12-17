@@ -41,7 +41,6 @@ class RequestsController( BaseController ):
                 item['user'] = request.user.email
             rval.append( item )
         return rval
-    
     @web.expose_api
     def show( self, trans, id, **kwd ):
         """
@@ -66,9 +65,10 @@ class RequestsController( BaseController ):
         item['user'] = request.user.email
         item['num_of_samples'] = len(request.samples)
         return item
-    
     @web.expose_api
     def update( self, trans, id, key, payload, **kwd ):
+        # TODO RC: move samples-related updates over to the samples api controller - I've added a new
+        # update method there...
         """
         PUT /api/requests/{encoded_request_id}
         Updates a request state, sample state or sample dataset transfer status
@@ -104,8 +104,6 @@ class RequestsController( BaseController ):
         elif update_type == 'sample_dataset_transfer_status': 
             # update sample_dataset transfer status
             return self.__update_sample_dataset_status( trans, **payload )
-
-        
     def __update_request_state( self, trans, encoded_request_id ):
         requests_common_cntrller = trans.webapp.controllers['requests_common']
         status, output = requests_common_cntrller.update_request_state( trans, 
@@ -115,7 +113,7 @@ class RequestsController( BaseController ):
     def __update_sample_state( self, trans, request_type, **payload ):
         # only admin user may update sample state in Galaxy sample tracking
         if not trans.user_is_admin():
-            trans.response.status = 400
+            trans.response.status = 403
             return "only an admin user may update sample state in Galaxy sample tracking."
         if 'sample_ids' not in payload or 'new_state' not in payload:
             trans.response.status = 400
@@ -139,11 +137,10 @@ class RequestsController( BaseController ):
                                                                        new_state=new_state,
                                                                        comment=comment )
         return status, output
-    
     def __update_sample_dataset_status( self, trans, **payload ):
         # only admin user may transfer sample datasets in Galaxy sample tracking
         if not trans.user_is_admin():
-            trans.response.status = 400
+            trans.response.status = 403
             return "Only an admin user may transfer sample datasets in Galaxy sample tracking and thus update transfer status."
         if 'sample_dataset_ids' not in payload or 'new_status' not in payload:
             trans.response.status = 400

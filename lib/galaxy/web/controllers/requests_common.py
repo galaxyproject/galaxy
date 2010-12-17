@@ -835,20 +835,21 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             # See if the user has selected a sample to copy.
             copy_sample_index = int( params.get( 'copy_sample_index', -1 ) )
             for index in range( num_samples_to_add ):
+                field_values = {}
                 if copy_sample_index != -1:
                     # The user has selected a sample to copy.
                     library_id = displayable_sample_widgets[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
                     folder_id = displayable_sample_widgets[ copy_sample_index ][ 'folder_select_field' ].get_selected( return_value=True )
                     name = displayable_sample_widgets[ copy_sample_index ][ 'name' ] + '_%i' % ( len( displayable_sample_widgets ) + 1 )
-                    field_values = [ val for val in displayable_sample_widgets[ copy_sample_index ][ 'field_values' ] ]
+                    for field_name in displayable_sample_widgets[ copy_sample_index ][ 'field_values' ]:
+                        field_values[ field_name ] = ''
                 else:
                     # The user has not selected a sample to copy, just adding a new generic sample.
                     library_id = None
                     folder_id = None
                     name = 'Sample_%i' % ( len( displayable_sample_widgets ) + 1 )
-                    field_values = {}
                     for field in request.type.sample_form.fields:
-                        field_values[ field['name'] ] = ''
+                        field_values[ field[ 'name' ] ] = ''
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                            user=request.user, 
@@ -1001,19 +1002,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                     status=status,
                                     files=[],
                                     folder_path=folder_path )
-    @web.expose
-    def update_sample_run_details( self, trans, **kwd ):
-        # TODO: Here we are editing the contents of a sample's run details template.  The sample_id
-        # param must be in kwd.  This method provides a means for an external application to perform
-        # a post to update the relevant information for a sample.  This method requires trans.user_is_admin()
-        # to be true.  This method will soon be eliminated, moving this feature to Galaxy's API which will
-        # handle authentication.
-        if not trans.user_is_admin():
-            return trans.show_error_message( "You must be logged in as a Galaxy administrator (admin user)." )
-        cntrller = 'requests_admin'
-        item_type = 'sample'
-        form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE
-        return self.edit_template_info( trans, cntrller=cntrller, item_type=item_type, form_type=form_type, **kwd )
     def __import_samples( self, trans, cntrller, request, displayable_sample_widgets, libraries, **kwd ):
         """
         Reads the samples csv file and imports all the samples.  The format of the csv file is:

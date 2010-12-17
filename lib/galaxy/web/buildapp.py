@@ -109,10 +109,13 @@ def app_factory( global_conf, **kwargs ):
                                     path_prefix='/api/libraries/:library_id', 
                                     parent_resources=dict( member_name='library', collection_name='libraries' ) )
         webapp.api_mapper.resource( 'library', 'libraries', path_prefix='/api' )
+        # TODO RC: eliminate parent_resources on the samples API controller, we should be able to route to
+        # samples without knowing about a sample's request.
         webapp.api_mapper.resource( 'sample', 
                                     'samples', 
                                     path_prefix='/api/requests/:request_id', 
                                     parent_resources=dict( member_name='request', collection_name='requests' ) )
+        webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
         webapp.api_mapper.resource( 'request', 'requests', path_prefix='/api' )
         webapp.api_mapper.resource( 'form', 'forms', path_prefix='/api' )
         webapp.api_mapper.resource( 'request_type', 'request_types', path_prefix='/api' )

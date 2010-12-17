@@ -106,6 +106,12 @@ class CommonController( BaseController ):
                     replace_str = '{%s}' % key
                     if url.find( replace_str ) > 0:
                         url = url.replace( replace_str, value )
+        # Handle request parameters in which we replace param values.
+        for key, val in request_params.items():
+            if val and val.startswith( '{' ):
+                replace_key = val.lstrip( '{' ).rstrip( '}' )
+                if replace_key in kwd:
+                    request_params[ key ] = kwd[ replace_key ]
         return url, http_method, request_params, response_type
     def handle_request( self, trans, url, http_method=None, **kwd ):
         if 'Name' in kwd and not kwd[ 'Name' ]:
@@ -121,13 +127,21 @@ class CommonController( BaseController ):
         try:
             if not http_method or http_method == 'get':
                 page = urllib2.urlopen( url )
+                response = page.read()
+                page.close()
+                return response
             elif http_method == 'post':
                 page = urllib2.urlopen( url, urllib.urlencode( kwd ) )
-            response = page.read()
-            page.close()
-            return response
+                response = page.read()
+                page.close()
+                return response
+            elif http_method == 'put':
+                url += '/' + str( kwd.pop( 'id' ) ) + '?key=' + kwd.pop( 'key' )
+                output = self.put( url, **kwd )
         except Exception, e:
-            message = 'Problem sending request to the web application. Error: %s' % str( e )
+            raise
+            message = 'Problem sending request to the web application: %s.  URL: %s.  kwd: %s.  Http method: %s' % \
+            ( str( e ), str( url ), str( kwd ), str( http_method )  )
             return self.handle_failure( trans, url, message )
     def handle_failure( self, trans, url, message ):
         message = '%s, URL: %s' % ( message, url )
@@ -138,3 +152,11 @@ class CommonController( BaseController ):
         return trans.response.send_redirect( web.url_for( controller='common',
                                                           action='index',
                                                           **params ) )
+    def put( self, url, **kwd ):
+        opener = urllib2.build_opener( urllib2.HTTPHandler )
+        request = urllib2.Request( url, data=to_json_string( kwd ) )
+        request.add_header( 'Content-Type', 'application/json' )
+        request.get_method = lambda: 'PUT'
+        url = opener.open( request )
+        output = url.read()
+        return from_json_string( output )

@@ -573,10 +573,16 @@ class UsesFormDefinitions:
                                                                        request_type_id=request_type_id,
                                                                        sample_id=sample_id )
         except ValueError:
+            if cntrller == 'api':
+                trans.response.status = 400
+                return None
             return None
         if in_library:
             if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
                 message = "You are not authorized to modify %s '%s'." % ( item_desc, item.name )
+                if cntrller == 'api':
+                    trans.response.status = 400
+                    return message
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='browse_library',
                                                                   cntrller=cntrller,
@@ -590,7 +596,6 @@ class UsesFormDefinitions:
         for index, widget_dict in enumerate( widgets ):
             widget = widget_dict[ 'widget' ]
             if isinstance( widget, AddressField ):
-                #value = util.restore_text( params.get( 'field_%i' % index, '' ) )
                 value = util.restore_text( params.get( widget.name, '' ) )
                 if value == 'new':
                     if params.get( 'edit_info_button', False ):
@@ -601,6 +606,9 @@ class UsesFormDefinitions:
                             widget.value = str( address.id )
                         else:
                             message = 'Required fields are missing contents.'
+                            if cntrller == 'api':
+                                trans.response.status = 400
+                                return message
                             new_kwd = dict( action=action,
                                             id=id,
                                             message=util.sanitize_text( message ),
@@ -628,12 +636,10 @@ class UsesFormDefinitions:
             elif isinstance( widget, CheckboxField ):
                 # We need to check the value from kwd since util.Params would have munged the list if
                 # the checkbox is checked.
-                #value = kwd.get( 'field_%i' % index, '' )
                 value = kwd.get( widget.name, '' )
                 if CheckboxField.is_checked( value ):
                     widget.value = 'true'
             else:
-                #widget.value = util.restore_text( params.get( 'field_%i' % index, '' ) )
                 widget.value = util.restore_text( params.get( widget.name, '' ) )
         # Save updated template field contents
         field_contents = self.clean_field_contents( widgets, **kwd )
@@ -712,6 +718,8 @@ class UsesFormDefinitions:
                         trans.sa_session.add( info_association )
                         trans.sa_session.flush()
         message = 'The information has been updated.'
+        if cntrller == 'api':
+            return 200, message
         new_kwd = dict( action=action,
                         cntrller=cntrller,
                         id=id,

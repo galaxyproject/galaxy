@@ -807,7 +807,6 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                 widget.value = 'true'
                                 widget_dict[ 'widget' ] = widget
                                 processed_widgets.append( widget_dict )
-                                #kwd[ 'field_%i' % index ] = 'true'
                                 kwd[ widget.name ] = 'true'
                         else:
                             processed_widgets.append( widget_dict )
