@@ -76,7 +76,7 @@ class Configuration( object ):
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
         # Sequencer types
-        self.sequencer_type_config_file = resolve_path( kwargs.get( 'sequencer_type_config_file', 'sequencer_type_conf.xml' ), self.root )
+        self.sequencer_type_config_file = resolve_path( kwargs.get( 'sequencer_type_config_file', 'sequencer_types_conf.xml' ), self.root )
         self.sequencer_type_path = resolve_path( kwargs.get( 'sequencer_type_path', 'sequencer_types' ), self.root )
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
