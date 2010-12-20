@@ -201,7 +201,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                 try:
                     sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
                 except:
-                    return invalid_id_redirect( trans, 'requests_admin', sample_dataset_id )
+                    return invalid_id_redirect( trans, 'requests_admin', sample_dataset_id, 'sample dataset' )
                 selected_sample_datasets.append( sample_dataset )
             if operation == "view":
                 return trans.fill_template( '/admin/requests/view_sample_dataset.mako',
@@ -256,7 +256,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
         except:
-            return invalid_id_redirect( trans, 'requests_admin', sample_id )
+            return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Manage "%s" datasets'  % sample.name
@@ -288,7 +288,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
-            return invalid_id_redirect( trans, 'requests_admin', sample_id )
+            return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
         # id_list is list of SampleDataset ids, which is a subset of all
         # of the SampleDatasets associated with the Sample.  The user may
         # or may not have selected all of the SampleDatasets for renaming.
@@ -347,6 +347,9 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', request_id )
+        # load the data transfer settings
+        request.type.sequencer.load_data_transfer_settings( trans )
+        scp_configs = request.type.sequencer.data_transfer[ trans.model.Sequencer.data_transfer_types.SCP ]
         selected_datasets_to_transfer = util.restore_text( params.get( 'selected_datasets_to_transfer', '' ) )
         if selected_datasets_to_transfer:
             selected_datasets_to_transfer = selected_datasets_to_transfer.split(',')
@@ -380,7 +383,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                                   status=status,
                                                                   message=message ) )
             # Save the sample datasets 
-            sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_datasets_to_transfer )
+            sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_datasets_to_transfer, scp_configs )
             if sample_dataset_file_names:
                 message = 'Datasets (%s) have been selected for sample (%s)' % \
                     ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), sample.name )
@@ -390,9 +393,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                               sample_id=sample_id,
                                                               message=message,
                                                               status=status ) )
+        
         return trans.fill_template( '/admin/requests/select_datasets_to_transfer.mako',
                                     cntrller='requests_admin',
                                     request=request,
+                                    scp_configs=scp_configs,
                                     sample=sample,
                                     sample_id_select_field=sample_id_select_field,
                                     status=status,
@@ -406,12 +411,13 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         request = trans.sa_session.query( trans.model.Request ).get( int( id ) )
-        datatx_info = request.type.datatx_info
-        cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( datatx_info['username'],
-                                                 datatx_info['host'],
+        request.type.sequencer.load_data_transfer_settings( trans )
+        scp_configs = request.type.sequencer.data_transfer[ trans.model.Sequencer.data_transfer_types.SCP ]
+        cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( scp_configs['user_name'],
+                                                 scp_configs['host'],
                                                  folder_path )
         output = pexpect.run( cmd,
-                              events={ '.ssword:*' : datatx_info[ 'password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
+                              events={ '.ssword:*' : scp_configs[ 'password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )
         return unicode( output.replace( '\n', '<br/>' ) )
     @web.json
@@ -439,16 +445,17 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
     def __get_files( self, trans, request, folder_path ):
         # Retrieves the filenames to be transferred from the remote host.
         ok = True
-        datatx_info = request.type.datatx_info
-        if not datatx_info[ 'host' ] or not datatx_info[ 'username' ] or not datatx_info[ 'password' ]:
+        request.type.sequencer.load_data_transfer_settings( trans )
+        scp_configs = request.type.sequencer.data_transfer[ trans.model.Sequencer.data_transfer_types.SCP ]
+        if not scp_configs[ 'host' ] or not scp_configs[ 'user_name' ] or not scp_configs[ 'password' ]:
             status = 'error'
             message = "Error in sequencer login information."
             ok = False
         def print_ticks( d ):
             pass
-        cmd  = 'ssh %s@%s "ls -p \'%s\'"' % ( datatx_info['username'], datatx_info['host'], folder_path )
+        cmd  = 'ssh %s@%s "ls -p \'%s\'"' % ( scp_configs['user_name'], scp_configs['host'], folder_path )
         output = pexpect.run( cmd,
-                              events={ '.ssword:*' : datatx_info['password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
+                              events={ '.ssword:*' : scp_configs['password'] + '\r\n', pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )
         if 'No such file or directory' in output:
             status = 'error'
@@ -461,16 +468,16 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                           request_id=trans.security.encode_id( request.id ),
                                                           status=status,
                                                           message=message ) )
-    def __save_sample_datasets( self, trans, sample, selected_datasets_to_transfer ):
+    def __save_sample_datasets( self, trans, sample, selected_datasets_to_transfer, scp_configs ):
         sample_dataset_file_names = []
         if selected_datasets_to_transfer:
             for filepath in selected_datasets_to_transfer:
                 # FIXME: handle folder selection
                 # ignore folders for now
                 if filepath[-1] != os.sep:
-                    name = self.__rename_dataset( sample, filepath.split( '/' )[-1] )
+                    name = self.__rename_dataset( sample, filepath.split( '/' )[-1], scp_configs )
                     status = trans.app.model.SampleDataset.transfer_status.NOT_STARTED
-                    size = sample.get_untransferred_dataset_size( filepath )
+                    size = sample.get_untransferred_dataset_size( filepath, scp_configs )
                     sample_dataset = trans.model.SampleDataset( sample=sample,
                                                                 file_path=filepath,
                                                                 status=status,
@@ -481,28 +488,18 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                     trans.sa_session.flush()
                     sample_dataset_file_names.append( str( sample_dataset.name ) )
         return sample_dataset_file_names
-    def dataset_file_size( self, sample, filepath ):
-        def print_ticks(d):
-            pass
-        datatx_info = sample.request.type.datatx_info
-        cmd  = 'ssh %s@%s "du -sh \'%s\'"' % ( datatx_info['username'], datatx_info['host'], filepath )
-        output = pexpect.run( cmd,
-                              events={ '.ssword:*': datatx_info['password']+'\r\n', 
-                                       pexpect.TIMEOUT:print_ticks}, 
-                              timeout=10 )
-        return output.replace( filepath, '' ).strip()
-    def __rename_dataset( self, sample, filepath ):
+    def __rename_dataset( self, sample, filepath, scp_configs ):
         name = filepath.split( '/' )[-1]
         options = sample.request.type.rename_dataset_options
-        option = sample.request.type.datatx_info.get( 'rename_dataset', options.NO ) 
-        if option == options.NO:
-            return name
+        option = scp_configs.get( 'rename_dataset', options.NO ) 
         if option == options.SAMPLE_NAME:
             return sample.name + '_' + name
         if option == options.EXPERIMENT_AND_SAMPLE_NAME:
             return sample.request.name + '_' + sample.name + '_' + name
         if option == options.EXPERIMENT_NAME:
             return sample.request.name + '_' + name
+        else:
+            return name
     def __check_library_add_permission( self, trans, target_library, target_folder ):
         """
         Checks if the current admin user had ADD_LIBRARY permission on the target library
@@ -523,11 +520,10 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                         current_user_private_role )
             trans.sa_session.add( lfp )
             trans.sa_session.flush()
-    def __create_data_transfer_message( self, trans, sample, selected_sample_datasets ):
+    def __create_data_transfer_message( self, trans, sample, selected_sample_datasets, scp_configs ):
         """
         Creates an xml message to send to the rabbitmq server
         """
-        datatx_info = sample.request.type.datatx_info
         # Create the xml message based on the following template
         xml = \
             ''' <data_transfer>
@@ -559,22 +555,23 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                 trans.sa_session.flush()
         message = xml % dict(  GALAXY_HOST=trans.request.host,
                                API_KEY=trans.user.api_keys[0].key,
-                               DATA_HOST=datatx_info[ 'host' ],
-                               DATA_USER=datatx_info[ 'username' ],
-                               DATA_PASSWORD=datatx_info[ 'password' ],
+                               DATA_HOST=scp_configs[ 'host' ],
+                               DATA_USER=scp_configs[ 'user_name' ],
+                               DATA_PASSWORD=scp_configs[ 'password' ],
                                REQUEST_ID=str( sample.request.id ),
                                SAMPLE_ID=str( sample.id ),
                                LIBRARY_ID=str( sample.library.id ),
                                FOLDER_ID=str( sample.folder.id ),
                                DATASETS=datasets )
         return message
-    def __validate_data_transfer_settings( self, trans, sample ):
+    def __validate_data_transfer_settings( self, trans, request_type, scp_configs ):
         err_msg = ''
+        if not request_type.sequencer:
+            return "Assign a sequencer to this request's request type '%s' before selecting datasets." % request_type.name
         # check the sequencer login info
-        datatx_info = sample.request.type.datatx_info
-        if not datatx_info[ 'host' ] \
-            or not datatx_info[ 'username' ] \
-            or not datatx_info[ 'password' ]:
+        if not scp_configs.get( 'host', '' ) \
+            or not scp_configs.get( 'user_name', '' ) \
+            or not scp_configs.get( 'password', '' ):
             err_msg += "Error in sequencer login information. "
         # Make sure web API is enabled and API key exists
         if not trans.app.config.enable_api:
@@ -602,9 +599,12 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
-            return invalid_id_redirect( trans, 'requests_admin', sample_id )
+            return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
+        # load data transfer settings
+        sample.request.type.sequencer.load_data_transfer_settings( trans )
+        scp_configs = sample.request.type.sequencer.data_transfer[ trans.model.Sequencer.data_transfer_types.SCP ]
         # Check data transfer settings
-        err_msg = self.__validate_data_transfer_settings( trans, sample )
+        err_msg = self.__validate_data_transfer_settings( trans, sample.request.type, scp_configs )
         if not err_msg:
             # Make sure the current user has LIBRARY_ADD
             # permission on the target library and folder.
@@ -620,7 +620,8 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
             # Create the message
             message = self.__create_data_transfer_message( trans, 
                                                            sample, 
-                                                           sample_datasets )
+                                                           sample_datasets,
+                                                           scp_configs )
             # Send the message 
             try:
                 conn = amqp.Connection( host=trans.app.config.amqp[ 'host' ] + ":" + trans.app.config.amqp[ 'port' ], 

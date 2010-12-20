@@ -18,7 +18,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
 	    });
         // --- Initialize sample trees
         $("#tree").dynatree({
-            title: "${request.type.datatx_info['data_dir']}",
+            title: "${scp_configs['data_location']}",
 			rootVisible: true,
 			minExpandLevel: 0, // 1: root node is not collapsible
 			persist: false,
@@ -34,7 +34,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='requests_admin', action='open_folder' )}",
                            dataType: "json", 
-                           data: { id: "${request.id}", key: "${request.type.datatx_info['data_dir']}" },
+                           data: { id: "${request.id}", key: "${scp_configs['data_location']}" },
                        },
                 onLazyRead: function(dtnode){
                     dtnode.appendAjax({
@@ -82,7 +82,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='request_type', action='view_request_type', id=trans.security.encode_id( request.type.id ) )}">Sequencer configuration</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='sequencer', action='view_sequencer', id=trans.security.encode_id( request.type.sequencer.id ) )}">Sequencer configuration</a></li>
     %if can_transfer_datasets:
         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Transfer datasets</a></li>
     %endif

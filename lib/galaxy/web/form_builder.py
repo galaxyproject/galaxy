@@ -51,9 +51,9 @@ class PasswordField(BaseField):
         self.name = name
         self.size = int( size or 10 )
         self.value = value or ""
-    def get_html( self, prefix="" ):
-        return '<input type="password" name="%s%s" size="%d" value="%s">' \
-            % ( prefix, self.name, self.size, escape( str( self.value ), quote=True ) )
+    def get_html( self, prefix="", disabled=False  ):
+        return '<input type="password" name="%s%s" size="%d" value="%s"%s>' \
+            % ( prefix, self.name, self.size, escape( str( self.value ), quote=True ), self.get_disabled_str( disabled ) )
     def set_size(self, size):
         self.size = int( size )
 

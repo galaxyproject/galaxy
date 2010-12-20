@@ -2,6 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/requests/common.mako" import="*" />
 <%namespace file="/common/template_common.mako" import="render_template_fields" />
+<%namespace file="/admin/sequencer/common.mako" import="render_sequencer" />
 
 <% form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE %>
 
@@ -9,7 +10,7 @@
 <ul class="manage-table-actions">
     <li><a class="action-button" id="request_type-${request_type.id}-popup" class="menubutton">Configuration Actions</a></li>
     <div popupmenu="request_type-${request_type.id}-popup">
-        <li><a class="action-button" href="${h.url_for( controller='request_type', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse configuration</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='request_type', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse request type</a></li>
         %if not request_type.deleted:
             %if not request_type.run_details:
                 <a class="action-button" href="${h.url_for( controller='request_type', action='add_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Use run details template</a>
@@ -18,10 +19,10 @@
                 <a class="action-button" href="${h.url_for( controller='request_type', action='delete_template', cntrller='requests_admin', item_type='request_type', form_type=form_type, request_type_id=trans.security.encode_id( request_type.id ) )}">Unuse run details template</a>
             %endif
             <li><a class="action-button" href="${h.url_for( controller='request_type', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
-            <li><a class="action-button" href="${h.url_for( controller='request_type', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete configuration</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='request_type', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete request type</a></li>
         %endif
         %if request_type.deleted:
-            <li><a class="action-button" href="${h.url_for( controller='request_type', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete configuration</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='request_type', action='undelete_request_type', id=trans.security.encode_id( request_type.id ) )}">Undelete request type</a></li>
         %endif
     </div>
 </ul>
@@ -32,7 +33,7 @@
 
 <form name="edit_request_type" action="${h.url_for( controller='request_type', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}" method="post" >
     <div class="toolForm">
-        <div class="toolFormTitle">"Edit ${request_type.name}" sequencer configuration</div>
+        <div class="toolFormTitle">"Edit ${request_type.name}" request type</div>
         <div class="form-row">
             <label>Name:</label>
             <input type="text" name="name" value="${request_type.name}" size="40"/>
@@ -58,7 +59,7 @@
     </div>
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Sample states defined for this sequencer configuration</div>
+        <div class="toolFormTitle">Sample states defined for this request type</div>
         %for element_count, state in enumerate( request_type.states ):
 		    <div class="repeat-group-item">
 		        <div class="form-row">
@@ -78,40 +79,15 @@
     </div>
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Sequencer login information</div>
+        <div class="toolFormTitle">Sequencer information</div>
         <div class="form-row">
             This information is needed only if you will transfer datasets from the sequencer to a target Galaxy data library
         </div>
         <div style="clear: both"></div>
         <div class="form-row">
-            <label>Hostname or IP Address:</label>
-            <input type="text" name="host" value="${request_type.datatx_info['host']}" size="40"/>
+            <label>Sequencer:</label>
+            ${sequencer_select_field.get_html()}
         </div>
-        <div style="clear: both"></div>
-        <div class="form-row">
-            <label>Username:</label>
-            <input type="text" name="username" value="${request_type.datatx_info['username']}" size="40"/>
-        </div>
-        <div style="clear: both"></div>
-        <div class="form-row">
-            <label>Password:</label>
-            <input type="password" name="password" value="${request_type.datatx_info['password']}" size="40"/>
-        </div>
-        <div style="clear: both"></div>
-        <div class="form-row">
-            <label>Data directory:</label>
-            <input type="text" name="data_dir" value="${request_type.datatx_info.get('data_dir', '')}" size="40"/>
-        </div>
-        <div style="clear: both"></div>
-        <div class="form-row">
-            <label>Prepend the experiment name and sample name to the dataset name?</label>
-            ${rename_dataset_select_field.get_html()}
-            <div class="toolParamHelp" style="clear: both;">
-                Galaxy datasets are renamed by prepending the experiment name and sample name to the dataset name, ensuring
-                dataset names remain unique in Galaxy even when multiple datasets have the same name on the sequencer.
-            </div>
-        </div>
-        <div style="clear: both"></div>
     </div>
     <div class="form-row">
         <input type="submit" name="edit_request_type_button" value="Save"/>

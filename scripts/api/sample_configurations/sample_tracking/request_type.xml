@@ -6,5 +6,4 @@
         <state name="Run Started" description="Sequence run in progress"/>
         <state name="Done" description="Sequence run complete"/>
     </sample_states>
-    <login hostname="sequencer.lives.here" username="some_name" password="some_password" data_directory="/path/to/somewhere" rename_dataset="no"/>
 </sequencer>

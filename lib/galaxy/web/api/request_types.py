@@ -75,7 +75,12 @@ class RequestTypeAPIController( BaseController ):
             trans.response.status = 400
             return "Missing required parameter 'sample_form_id'."
         sample_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( sample_form_id ) )
-        request_type = request_type_factory.from_elem( elem, request_form, sample_form )
+        sequencer_id = payload.get( 'sequencer_id', None )
+        if sequencer_id is None:
+            trans.response.status = 400
+            return "Missing required parameter 'sequencer_id'."
+        sequencer = trans.sa_session.query( trans.app.model.Sequencer ).get( trans.security.decode_id( sequencer_id ) )
+        request_type = request_type_factory.from_elem( elem, request_form, sample_form, sequencer )
         #FIXME: move permission building/setting to separate abstract method call and
         #allow setting individual permissions by role (currently only one action, so not strictly needed)
         role_ids = payload.get( 'role_ids', [] )

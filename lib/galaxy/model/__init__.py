@@ -1515,9 +1515,10 @@ class MetadataFile( object ):
 
 class FormDefinition( object, APIItem ):
     # The following form_builder classes are supported by the FormDefinition class.
-    supported_field_types = [ AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField ]
+    supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, HistoryField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
                    SAMPLE = 'Sequencing Sample Form',
+                   SEQUENCER = 'Sequencer Information Form',
                    RUN_DETAILS_TEMPLATE = 'Sample run details template',
                    LIBRARY_INFO_TEMPLATE = 'Library information template',
                    USER_INFO = 'User Information' )
@@ -1587,7 +1588,7 @@ class FormDefinition( object, APIItem ):
                     value = field.get( 'default', '' )
             # Create the field widget
             field_widget = eval( field_type )( field_name )
-            if field_type == 'TextField':
+            if field_type in [ 'TextField', 'PasswordField' ]:
                 field_widget.set_size( 40 )
                 field_widget.value = value
             elif field_type == 'TextArea':
@@ -1784,6 +1785,7 @@ class RequestEvent( object ):
         self.comment = comment
         
 class Sequencer( object ):
+    data_transfer_types = Bunch( SCP = 'scp' )
     def __init__( self, name=None, description=None, sequencer_type_id=None, version=None, form_definition_id=None, form_values_id=None, deleted=None ):
         self.name = name
         self.description = description
@@ -1792,21 +1794,33 @@ class Sequencer( object ):
         self.form_definition_id = form_definition_id
         self.form_values_id = form_values_id
         self.deleted = deleted 
-        
+    def load_data_transfer_settings( self, trans ):
+        self.data_transfer = {}
+        sequencer_type = trans.app.sequencer_types.all_sequencer_types[ self.sequencer_type_id ]
+        for data_transfer_type, data_transfer in sequencer_type.data_transfer.items():
+            if data_transfer_type == self.data_transfer_types.SCP:
+                scp_configs = {}
+                scp_configs[ 'host' ] = self.form_values.content.get( data_transfer.config.get( 'host', '' ), '' )
+                scp_configs[ 'user_name' ] = self.form_values.content.get( data_transfer.config.get( 'user_name', '' ), '' )
+                scp_configs[ 'password' ] = self.form_values.content.get( data_transfer.config.get( 'password', '' ), '' )
+                scp_configs[ 'data_location' ] = self.form_values.content.get( data_transfer.config.get( 'data_location', '' ), '' )
+                scp_configs[ 'rename_dataset' ] = self.form_values.content.get( data_transfer.config.get( 'rename_dataset', '' ), '' )
+                self.data_transfer[ self.data_transfer_types.SCP ] = scp_configs
+                
 class RequestType( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'name', 'desc' )
-    api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id', 'datatx_info' )
+    api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id', 'sequencer_id' )
     rename_dataset_options = Bunch( NO = 'Do not rename',
                                     SAMPLE_NAME = 'Preprend sample name',
                                     EXPERIMENT_NAME = 'Prepend experiment name',
                                     EXPERIMENT_AND_SAMPLE_NAME = 'Prepend experiment and sample name')
     permitted_actions = get_permitted_actions( filter='REQUEST_TYPE' )
-    def __init__( self, name=None, desc=None, request_form=None, sample_form=None, datatx_info=None ):
+    def __init__( self, name=None, desc=None, request_form=None, sample_form=None, sequencer=None ):
         self.name = name
         self.desc = desc
         self.request_form = request_form
         self.sample_form = sample_form
-        self.datatx_info = datatx_info
+        self.sequencer = sequencer
     @property
     def final_sample_state( self ):
         # The states mapper for this object orders ascending
@@ -1914,18 +1928,17 @@ class Sample( object, APIItem ):
             if dataset.status != SampleDataset.transfer_status.COMPLETE:
                 untransferred_datasets.append( dataset )
         return untransferred_datasets
-    def get_untransferred_dataset_size( self, filepath ):
+    def get_untransferred_dataset_size( self, filepath, scp_configs ):
         def print_ticks( d ):
             pass
         error_msg = 'Error encountered in determining the file size of %s on the sequencer.' % filepath
-        datatx_info = self.request.type.datatx_info
-        if not datatx_info['host'] or not datatx_info['username'] or not datatx_info['password']:
+        if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
             return error_msg
-        login_str = '%s@%s' % ( datatx_info['username'], datatx_info['host'] )
+        login_str = '%s@%s' % ( scp_configs['user_name'], scp_configs['host'] )
         cmd  = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
         try:
             output = pexpect.run( cmd,
-                                  events={ '.ssword:*': datatx_info['password']+'\r\n', 
+                                  events={ '.ssword:*': scp_configs['password']+'\r\n', 
                                            pexpect.TIMEOUT:print_ticks}, 
                                   timeout=10 )
         except Exception, e:

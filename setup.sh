@@ -4,6 +4,7 @@ python ./scripts/check_python.py
 [ $? -ne 0 ] && exit 1
 
 SAMPLES="
+sequencer_types_conf.xml.sample
 datatypes_conf.xml.sample
 reports_wsgi.ini.sample
 tool_conf.xml.sample

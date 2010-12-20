@@ -270,22 +270,22 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                         field_dicts=field_dicts )
     def test_020_create_request_type( self ):
         """Testing creating a request_type"""
-        name = 'Sequencer configuration1'
+        name = 'Request type1'
         sample_states = [  ( 'New', 'Sample entered into the system' ), 
                            ( 'Received', 'Sample tube received' ),
                            ( 'Library Started', 'Sample library preparation' ), 
                            ( 'Run Started', 'Sequence run in progress' ), 
                            ( 'Done', 'Sequence run complete' ) ]
         self.create_request_type( name,
-                                  "test sequencer configuration",
+                                  name+" description",
                                   self.security.encode_id( request_form_definition1.id ),
                                   self.security.encode_id( sample_form_definition1.id ),
                                   sample_states,
-                                  strings_displayed=[ 'Create a new sequencer configuration' ],
-                                  strings_displayed_after_submit=[ "The sequencer configuration has been created." ] )
+                                  strings_displayed=[ 'Create a new request type' ],
+                                  strings_displayed_after_submit=[ "The request type has been created." ] )
         global request_type1
         request_type1 = get_request_type_by_name( name )
-        assert request_type1 is not None, 'Problem retrieving sequencer configuration named "%s" from the database' % name
+        assert request_type1 is not None, 'Problem retrieving request type named "%s" from the database' % name
         # check view
         self.view_request_type( self.security.encode_id( request_type1.id ),
                                 request_type1.name,
@@ -307,7 +307,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.login( email=regular_user2.email )
         self.visit_url( '%s/requests_common/create_request?cntrller=requests&request_type=True' % self.url )
         try:
-            self.check_page_for_string( 'There are no sequencer configurations created for a new request.' )
+            self.check_page_for_string( 'There are no request types created for a new request.' )
             raise AssertionError, 'The request_type %s is accessible by %s when it should be restricted' % ( request_type1.name, regular_user2.email )
         except:
             pass
@@ -767,7 +767,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                            strings_not_displayed=[ request1.states.SUBMITTED,
                                                    request1.states.COMPLETE,
                                                    request1.states.NEW] )
-    def test_070_select_datasets_for_transfer( self ):
+    def __test_070_select_datasets_for_transfer( self ):
         """Testing selecting datasets for data transfer"""
         # Logged in as admin_user
         self.logout()
@@ -795,7 +795,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                   sample1_dataset.transfer_status.NOT_STARTED ]
             self.view_sample_dataset( sample_dataset_id=self.security.encode_id( sample1_dataset.id ),
                                       strings_displayed=strings_displayed )
-    def test_075_manage_sample_datasets( self ):
+    def __test_075_manage_sample_datasets( self ):
         """Testing renaming, deleting and initiating transfer of sample datasets"""
         # Logged in as admin_user
         # Check renaming datasets

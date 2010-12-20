@@ -1492,14 +1492,14 @@ class TwillTestCase( unittest.TestCase ):
             url ="%s&%s=%s" % ( url, key, role_ids_str )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
-        check_str = "Permissions updated for sequencer configuration '%s'" % request_type_name
+        check_str = "Permissions updated for request type '%s'" % request_type_name
         self.check_page_for_string( check_str )
         self.home()
     def view_request_type( self, request_type_id, request_type_name, sample_states, strings_displayed=[] ):
         '''View request_type details'''
         self.home()
         self.visit_url( "%s/request_type/view_request_type?id=%s" % ( self.url, request_type_id ) )
-        self.check_page_for_string( '"%s" sequencer configuration' % request_type_name )
+        self.check_page_for_string( '"%s" request type' % request_type_name )
         for name, desc in sample_states:
             self.check_page_for_string( name )
             self.check_page_for_string( desc )

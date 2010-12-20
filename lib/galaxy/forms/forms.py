@@ -126,6 +126,25 @@ class FormDefinitionTextFieldFactory( FormDefinitionFieldFactory ):
         rval['type'] = self.__get_stored_field_type( string_as_bool( elem.get( 'area', 'false' ) ) )
         return rval
     
+class FormDefinitionPasswordFieldFactory( FormDefinitionFieldFactory ):
+    type = 'password'
+    def __get_stored_field_type( self ):
+        return 'PasswordField'
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, area=False ):
+        """
+        Return new FormDefinition field.
+        """
+        rval = super( FormDefinitionPasswordFieldFactory, self ).new( name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
+        rval['type'] = self.__get_stored_field_type()
+        return rval
+    def from_elem( self, elem, layout=None ):
+        """
+        Return FormDefinition field created from an xml element.
+        """
+        rval = super( FormDefinitionPasswordFieldFactory, self ).from_elem( elem, layout=layout )
+        rval['type'] = self.__get_stored_field_type()
+        return rval
+    
 class FormDefinitionAddressFieldFactory( FormDefinitionFieldFactory ):
     type = 'address'
     def __get_stored_field_type( self ):
@@ -214,6 +233,6 @@ class FormDefinitionSelectFieldFactory( FormDefinitionFieldFactory ):
             rval['selectlist'].append( value )
         return rval
 
-field_type_factories = dict( [ ( field.type, field() ) for field in ( FormDefinitionTextFieldFactory, FormDefinitionAddressFieldFactory, FormDefinitionSelectFieldFactory, FormDefinitionWorkflowFieldFactory, FormDefinitionHistoryFieldFactory ) ] )
+field_type_factories = dict( [ ( field.type, field() ) for field in ( FormDefinitionTextFieldFactory, FormDefinitionPasswordFieldFactory, FormDefinitionAddressFieldFactory, FormDefinitionSelectFieldFactory, FormDefinitionWorkflowFieldFactory, FormDefinitionHistoryFieldFactory ) ] )
 
 form_factory = FormDefinitionFactory( FORM_TYPES, field_type_factories )

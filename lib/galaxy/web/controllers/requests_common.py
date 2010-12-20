@@ -522,7 +522,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                     trans.response.status = 400
                     return "Invalid sample id ( %s ) specified, unable to decode." % str( sample_id )
                 else:
-                    return invalid_id_redirect( trans, cntrller, sample_id )
+                    return invalid_id_redirect( trans, cntrller, sample_id, 'sample' )
             event = trans.model.SampleEvent( sample, new_state, comment )
             trans.sa_session.add( event )
             trans.sa_session.flush()
@@ -806,7 +806,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
-            return invalid_id_redirect( trans, cntrller, sample_id )
+            return invalid_id_redirect( trans, cntrller, sample_id, 'sample' )
         return trans.fill_template( '/requests/common/view_sample_history.mako', 
                                     cntrller=cntrller,
                                     sample=sample )
@@ -896,7 +896,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
-            return invalid_id_redirect( trans, cntrller, sample_id )
+            return invalid_id_redirect( trans, cntrller, sample_id, 'sample' )
         # See if we have any associated templates
         widgets = sample.get_template_widgets( trans )
         widget_fields_have_contents = self.widget_fields_have_contents( widgets )
@@ -948,7 +948,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         try:
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
-            return invalid_id_redirect( trans, cntrller, sample_id )
+            return invalid_id_redirect( trans, cntrller, sample_id, 'sample' )
         # See if a library and folder have been set for this sample.
         if is_admin and not sample.library or not sample.folder:
             status = 'error'
@@ -960,19 +960,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                               editing_samples=True,
                                                               status=status,
                                                               message=message ) )
-        folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
-        if not folder_path:
-            if len( sample.datasets ):
-                folder_path = os.path.dirname( sample.datasets[-1].file_path[:-1] )
-            else:
-                folder_path = util.restore_text( sample.request.type.datatx_info.get( 'data_dir', '' ) )
-        if folder_path and folder_path[-1] != os.sep:
-            folder_path += os.sep
-        if not sample.request.type.datatx_info['host'] \
-            or not sample.request.type.datatx_info[ 'username' ] \
-            or not sample.request.type.datatx_info[ 'password' ]:
-            status = 'error'
-            message = 'The sequencer login information is incomplete. Click sequencer information to add login details.'
         transfer_status = params.get( 'transfer_status', None )
         if transfer_status in [ None, 'None' ]:
             title = 'All selected datasets for "%s"' % sample.name
@@ -1249,7 +1236,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             folder = None
         return library, folder
     def __get_active_folders( self, folder, active_folders_list=[] ):
-#        print >> sys.stderr, '#######', [ f.name for f in active_folders_list]
         """Return all of the active folders for the received library"""
         active_folders_list.extend( folder.active_folders )
         for sub_folder in folder.active_folders:
@@ -1567,9 +1553,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         return encoded_selected_sample_ids
 
 # ===== Miscellaneous utility methods outside of the RequestsCommon class =====
-def invalid_id_redirect( trans, cntrller, obj_id, action='browse_requests' ):
+def invalid_id_redirect( trans, cntrller, obj_id, item='sequencing request', action='browse_requests' ):
     status = 'error'
-    message = "Invalid request id (%s)" % str( obj_id )
+    message = "Invalid %s id (%s)" % ( item, str( obj_id ) )
     return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                       action=action,
                                                       status=status,

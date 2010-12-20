@@ -84,7 +84,7 @@
     elif a_class == model.FormDefinitionCurrent:
         class_plural = "Forms"
     elif a_class == model.RequestType:
-        class_plural = "sequencer configurations"
+        class_plural = "request types"
     elif a_class == model.UserOpenID:
         class_plural = "OpenIDs"
     else:

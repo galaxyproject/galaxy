@@ -609,7 +609,7 @@ RequestType.table = Table('request_type', metadata,
     Column( "desc", TEXT ),
     Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "datatx_info", JSONType() ),
+    Column( "sequencer_id", Integer, ForeignKey( "sequencer.id" ), nullable=True, index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 RequestTypePermissions.table = Table( "request_type_permissions", metadata,
@@ -989,6 +989,8 @@ assign_mapper( context, RequestType, RequestType.table,
                                                        primaryjoin=( RequestType.table.c.request_form_id == FormDefinition.table.c.id ) ),
                                 sample_form=relation( FormDefinition,
                                                       primaryjoin=( RequestType.table.c.sample_form_id == FormDefinition.table.c.id ) ),
+                                sequencer=relation( Sequencer,
+                                                    primaryjoin=( RequestType.table.c.sequencer_id == Sequencer.table.c.id ) )
                               ) )
 
 assign_mapper( context, RequestTypePermissions, RequestTypePermissions.table,

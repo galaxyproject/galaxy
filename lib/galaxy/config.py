@@ -47,7 +47,7 @@ class Configuration( object ):
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
-        self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )
+        self.tool_config = resolve_path( kwargs.get( 'tool_config_file', 'tool_conf.xml' ), self.root )        
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
@@ -75,6 +75,9 @@ class Configuration( object ):
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
+        # Sequencer types
+        self.sequencer_type_config_file = resolve_path( kwargs.get( 'sequencer_type_config_file', 'sequencer_type_conf.xml' ), self.root )
+        self.sequencer_type_path = resolve_path( kwargs.get( 'sequencer_type_path', 'sequencer_types' ), self.root )
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))

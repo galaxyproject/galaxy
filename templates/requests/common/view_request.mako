@@ -86,8 +86,12 @@
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <label>Sequencer configuration:</label>
-            ${request.type.name}
+            <label>Request type:</label>
+            %if is_admin:
+                <a href="${h.url_for( controller='request_type', action='view_request_type', cntrller=cntrller, id=trans.security.encode_id( request.type.id ) )}">${request.type.name}</a>
+            %else:
+                ${request.type.name}
+            %endif
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
