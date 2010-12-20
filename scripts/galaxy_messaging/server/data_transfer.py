@@ -41,7 +41,7 @@ sys.path = new_path
 from galaxy import eggs
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model import SampleDataset
-from galaxy.web.api.requests import RequestsController
+from galaxy.web.api.samples import SamplesAPIController
 import pkg_resources
 pkg_resources.require( "pexpect" )
 import pexpect
@@ -205,12 +205,12 @@ class DataTransfer( object ):
                 sample_dataset_ids.append( api.encode_id( self.config_id_secret, dataset_id ) )
             # update the transfer status
             data = {}
-            data[ 'update_type' ] = RequestsController.update_types.SAMPLE_DATASET
+            data[ 'update_type' ] = SamplesAPIController.update_types.SAMPLE_DATASET[0]
             data[ 'sample_dataset_ids' ] = sample_dataset_ids
             data[ 'new_status' ] = status
             data[ 'error_msg' ] = msg
-            url = "http://%s/api/requests/%s" % ( self.galaxy_host,
-                                                  api.encode_id(  self.config_id_secret, self.request_id ) )
+            url = "http://%s/api/samples/%s" % ( self.galaxy_host,
+                                                 api.encode_id(  self.config_id_secret, self.sample_id ) )
             log.debug( str( ( self.api_key, url, data)))
             retval = api.update( self.api_key, url, data, return_formatted=False )
             log.debug( str( retval ) )

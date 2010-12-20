@@ -986,9 +986,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                     sample_datasets=sample_datasets,
                                     transfer_status=transfer_status,
                                     message=message,
-                                    status=status,
-                                    files=[],
-                                    folder_path=folder_path )
+                                    status=status )
     def __import_samples( self, trans, cntrller, request, displayable_sample_widgets, libraries, **kwd ):
         """
         Reads the samples csv file and imports all the samples.  The format of the csv file is:

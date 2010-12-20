@@ -10,13 +10,12 @@ from common import update
 try:
     data = {}
     data[ 'update_type' ] = 'sample_state'
-    data[ 'sample_ids' ] = sys.argv[3].split(',')
-    data[ 'new_state' ] = sys.argv[4]
+    data[ 'new_state' ] = sys.argv[3]
 except IndexError:
-    print 'usage: %s key url sample_ids new_state [comment]' % os.path.basename( sys.argv[0] )
+    print 'usage: %s key url new_state [comment]' % os.path.basename( sys.argv[0] )
     sys.exit( 1 )
 try:
-    data[ 'comment' ] = sys.argv[5]
+    data[ 'comment' ] = sys.argv[4]
 except IndexError:
     data[ 'comment' ] = ''
 

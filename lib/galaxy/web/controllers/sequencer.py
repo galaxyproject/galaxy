@@ -132,11 +132,12 @@ class Sequencer( BaseController, UsesFormDefinitions ):
             sequencer = trans.sa_session.query( trans.model.Sequencer ).get( trans.security.decode_id( sequencer_id ) )
         except:
             return invalid_id_redirect( trans, 'sequencer', sequencer_id, 'sequencer', action='browse_sequencers' )
-        widgets = self.__build_sequencer_widgets( trans, sequencer, **kwd )
-        widgets.extend( sequencer.form_definition.get_widgets( trans.user, sequencer.form_values.content, **kwd ) )
         if params.get( 'edit_sequencer_button', False ):
             sequencer = self.__save_sequencer( trans, **kwd )
+            trans.sa_session.refresh( sequencer )
             message = 'Changes made to sequencer configuration (%s) have been saved' % sequencer.name
+        widgets = self.__build_sequencer_widgets( trans, sequencer, **kwd )
+        widgets.extend( sequencer.form_definition.get_widgets( trans.user, sequencer.form_values.content, **kwd ) )
         sequencer_type = self.get_sequencer_type( trans, sequencer.sequencer_type_id )
         return trans.fill_template( '/admin/sequencer/edit_sequencer.mako',
                                     sequencer=sequencer,

@@ -30,7 +30,7 @@ new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
 from galaxy import eggs
-from galaxy.web.api.requests import RequestsController
+from galaxy.web.api.requests import RequestsAPIController
 import pkg_resources
 pkg_resources.require( "amqplib" )
 from amqplib import client_0_8 as amqp
@@ -87,7 +87,7 @@ def update_sample_state( message ):
     
 def update_request( api_key, request_id ):
     encoded_request_id = api.encode_id( config.get( "app:main", "id_secret" ), request_id )
-    data = dict( update_type=RequestsController.update_types.REQUEST )
+    data = dict( update_type=RequestsAPIController.update_types.REQUEST )
     url = "http://%s:%s/api/requests/%s" % ( config.get(http_server_section, "host"),
                                              config.get(http_server_section, "port"),
                                              encoded_request_id )

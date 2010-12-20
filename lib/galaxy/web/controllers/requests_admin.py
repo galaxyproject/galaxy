@@ -654,17 +654,17 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
     @web.expose
     def update_sample_dataset_status(self, trans, cntrller, sample_dataset_ids, new_status, error_msg=None ):
         # check if the new status is a valid transfer status
-        possible_status_list = [v[1] for v in trans.app.model.SampleDataset.transfer_status.items()] 
+        possible_status_list = [ v[1] for v in trans.app.model.SampleDataset.transfer_status.items() ] 
         if new_status not in possible_status_list:
             trans.response.status = 400
-            return "The requested transfer status ( %s ) is not a valid transfer status." % new_status
+            return 400, "The requested transfer status ( %s ) is not a valid transfer status." % new_status
         for id in util.listify( sample_dataset_ids ):
             try:
                 sd_id = trans.security.decode_id( id )
                 sample_dataset = trans.sa_session.query( trans.app.model.SampleDataset ).get( sd_id )
             except:
                 trans.response.status = 400
-                return "Invalid sample dataset id ( %s ) specified." % str( id )
+                return 400, "Invalid sample dataset id ( %s ) specified." % str( id )
             sample_dataset.status = new_status
             sample_dataset.error_msg = error_msg
             trans.sa_session.add( sample_dataset )
