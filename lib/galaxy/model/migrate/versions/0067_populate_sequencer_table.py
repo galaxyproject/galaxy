@@ -47,6 +47,16 @@ def get_latest_id( table ):
         return row[0]
     else:
         raise Exception( 'Unable to get the latest id in the %s table.' % table )
+    
+def boolean( value ):
+   if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
+       return value
+   elif migrate_engine.name == 'sqlite':
+       if value in [ 'True, true' ]:
+           return 1
+       return 0
+   else:
+       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
 
 def create_sequencer_form_definition():
     '''
@@ -60,7 +70,7 @@ def create_sequencer_form_definition():
                   localtimestamp(),
                   localtimestamp(),
                   'NULL',
-                  'false')
+                  boolean( 'false' ) )
     db_session.execute( cmd )
     # get this form_definition_current id
     form_definition_current_id = get_latest_id( 'form_definition_current' )
@@ -167,7 +177,7 @@ def add_sequencer( sequencer_index, sequencer_form_definition_id, sequencer_info
                   version, 
                   sequencer_form_definition_id,
                   sequencer_form_values_id,
-                  'false' )
+                  boolean( 'false' ) )
     db_session.execute(cmd)
     return get_latest_id( 'sequencer' )
 
