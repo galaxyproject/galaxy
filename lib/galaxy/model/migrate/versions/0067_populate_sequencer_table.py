@@ -216,14 +216,14 @@ def upgrade():
         # column from the existing request_types.
         sequencer_form_definition_id = create_sequencer_form_definition()
         sequencer_index = 1
-        for row in result:
+        for row in results_list:
             request_type_id = row[0]
             request_type_name = row[1]
             sequencer_info = str( row[2] ) # datatx_info column
             # skip if sequencer_info is empty
-            if not sequencer_info.strip():
+            if not sequencer_info.strip() or sequencer_info in ['None', 'null']:
                 continue
-            sequencer_info = from_json_string( sequencer_info )
+            sequencer_info = from_json_string( sequencer_info.strip() )
             # proceed only if sequencer_info is a valid dict
             if sequencer_info and type( sequencer_info ) == type( dict() ):
                 # check if this sequencer has already been added to the sequencer table
@@ -281,3 +281,21 @@ def downgrade():
             RequestType_table.c.sequencer_id.drop()
         except Exception, e:
             log.debug( "Deleting column 'sequencer_id' in the 'request_type' table failed: %s" % ( str( e ) ) )   
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
