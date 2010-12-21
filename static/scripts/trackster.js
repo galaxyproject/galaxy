@@ -644,10 +644,11 @@ var get_filters_from_dict = function(filters_dict) {
  * ----> FeatureTrack
  * -------> ReadTrack
  */
-var Track = function (name, view, parent_element) {
+var Track = function (name, view, parent_element, data_url) {
     this.name = name;
     this.view = view;    
     this.parent_element = parent_element;
+    this.data_url = (data_url ? data_url : default_data_url);
     this.init_global();
 };
 $.extend( Track.prototype, {
@@ -683,8 +684,12 @@ $.extend( Track.prototype, {
         }
         track.container_div.removeClass("nodata error pending");
         
+        if (!track.dataset_id) {
+            return;
+        }
+        
         if (track.view.chrom) {
-            $.getJSON( data_url, params, function (result) {
+            $.getJSON( track.data_url, params, function (result) {
                 if (!result || result === "error" || result.kind === "error") {
                     track.container_div.addClass("error");
                     track.content_div.text(DATA_ERROR);
@@ -1093,6 +1098,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
     },
     // Run track's tool.
     run_tool: function() {
+        // Put together params for running tool.
         var url_params = { 
             dataset_id: this.original_dataset_id,
             chrom: this.view.chrom,
@@ -1101,24 +1107,25 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             tool_id: this.tool.name,
         };
         $.extend(url_params, this.tool.get_param_values_dict());
-        var current_track = this;
-        $.getJSON(run_tool_url, url_params, function(track_data) {
-            //
-            // Add new track for tool output.
-            //
-                
+        
+        // Create track immediately to provide user feedback.
+		var 
+		    current_track = this,
             // Set name of track to include tool name, parameters, and region used.
-			var track_name = url_params.tool_id + 
-			                ", region=[" + url_params.chrom + ":" + url_params.low + "-" + url_params.high + 
-			                "], parameters=[" + current_track.tool.get_param_values().join(", ") + "]";
-			
-            // TODO: Copied from browser.mako when user adds track manually; abstract function 
-            // and use in both places.
-            var td = track_data,
-				track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
-				new_track = new track_types[track_data.track_type](track_name, view, track_data.dataset_id, track_data.prefs,
-				                                                   track_data.filters, track_data.tool, current_track);			                 
-            view.add_track(new_track);
+		    track_name = url_params.tool_id + 
+		                ", region=[" + url_params.chrom + ":" + url_params.low + "-" + url_params.high + 
+		                "], parameters=[" + current_track.tool.get_param_values().join(", ") + "]",
+		    new_track;
+		    // TODO: add support for other kinds of tool data tracks.
+		    if (current_track.track_type == 'FeatureTrack') {
+		        new_track = new ToolDataFeatureTrack(track_name, view, undefined, {}, {}, {}, current_track);    
+		    }
+		view.add_track(new_track);
+		
+		// Run tool.
+        $.getJSON(run_tool_url, url_params, function(track_data) {
+            new_track.dataset_id = track_data.dataset_id;
+            new_track.init();
         });
     }
 });
@@ -1286,16 +1293,17 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         
         if (!track.data_queue[key]) {
             track.data_queue[key] = true;
-            /*$.getJSON( data_url, {  "chrom": this.view.chrom, 
-                                    "low": low, "high": high, "dataset_id": this.dataset_id,
-                                    "resolution": this.view.resolution }, function (data) {
+            /*$.getJSON( track.data_url, {  "chrom": this.view.chrom, 
+                                            "low": low, "high": high, "dataset_id": this.dataset_id,
+                                            "resolution": this.view.resolution }, function (data) {
                 track.data_cache.set(key, data);
                 delete track.data_queue[key];
                 track.draw();
             });*/
-            $.ajax({ 'url': data_url, 'dataType': 'json', 'data': {  "chrom": this.view.chrom, 
-                                    "low": low, "high": high, "dataset_id": this.dataset_id,
-                                    "resolution": this.view.resolution }, 
+            $.ajax({ 'url': this.data_url, 'dataType': 'json', 
+                     'data': {  "chrom": this.view.chrom, 
+                                "low": low, "high": high, "dataset_id": this.dataset_id,
+                                "resolution": this.view.resolution }, 
                 success: function (result) {
                     var data = result.data;
                     track.data_cache.set(key, data);
@@ -1471,7 +1479,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             key = "initial";
             
         this.init_each({    low: track.view.max_low, high: track.view.max_high, dataset_id: track.dataset_id,
-                            chrom: track.view.chrom, resolution: this.view.resolution, mode: track.mode }, function (result) {    
+                            chrom: track.view.chrom, resolution: this.view.resolution, mode: track.mode }, function (result) {
             track.mode_div.show();
             track.data_cache.set(key, result);
             track.draw();
@@ -1483,9 +1491,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         
         if (!track.data_queue[key]) {
             track.data_queue[key] = true;
-            $.getJSON( data_url, {  chrom: track.view.chrom, 
-                                    low: low, high: high, dataset_id: track.dataset_id,
-                                    resolution: this.view.resolution, mode: this.mode }, function (result) {
+            $.getJSON( track.data_url, {  chrom: track.view.chrom, 
+                                          low: low, high: high, dataset_id: track.dataset_id,
+                                          resolution: this.view.resolution, mode: this.mode }, function (result) {
                 track.data_cache.set(key, result);
                 // console.log("datacache", track.data_cache.get(key));
                 delete track.data_queue[key];
@@ -1644,7 +1652,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         var result = this.data_cache.get(k);
         var cur_mode;
         
-        if (result === undefined || (this.mode !== "Auto" && result.dataset_type === "summary_tree")) {
+        if (result === undefined || result === "pending" || 
+            (this.mode !== "Auto" && result.dataset_type === "summary_tree")) {
             this.data_queue[ [tile_low, tile_high] ] = true;
             this.get_data(tile_low, tile_high);
             return;
@@ -1980,3 +1989,52 @@ var ReadTrack = function ( name, view, dataset_id, prefs, filters ) {
 };
 $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
 });
+
+// Feature track that displays data generated from tool.
+var ToolDataFeatureTrack = function(name, view, dataset_id, prefs, filters) {
+    FeatureTrack.call( this, name, view, dataset_id, prefs, filters );
+    this.track_type = "ToolDataFeatureTrack";    
+};
+
+$.extend( ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+    init: function() {
+        var track = this,
+            key = "initial";
+        
+        // For tool data tracks, fetch initial data from raw data URL, then fetch additional data
+        // from default data URL.
+        track.data_url = raw_data_url;
+        var data_request_dict = { low: track.view.max_low, high: track.view.max_high, dataset_id: track.dataset_id,
+                                  chrom: track.view.chrom, resolution: this.view.resolution, mode: track.mode };
+        this.init_each(data_request_dict, function (result) {
+            // Feature track init.
+            track.mode_div.show();
+            track.data_cache.set(key, result);
+            track.draw();
+            
+            // Additional track-specific init.
+            // TODO: revisit this function. It seems that trackster makes two initial requests: one for the 
+            // current view and another for a (larger?) slot. So perhaps it's best to wait for the data cache
+            // to have 2 elements; otherwise, there may be a better way to determine if track is drawn.
+            //
+            // Also, the fetch to start the indexing is dependent on the number of times that trackster 
+            // fetchs as well.
+            var success_fn = function() {
+                if (track.data_cache.num_elements == 0) {
+                    // Track still drawing initial data.
+                    setTimeout(success_fn, 100);
+                }
+                else {
+                    // Track drawing done: set data URL and start indexing.
+                    track.data_url = default_data_url;
+                    // Call twice to start indexing for both overview and detail datasets.
+                    //$.getJSON(default_data_url, data_request_dict, function(track_data) {});
+
+                }
+            };
+            success_fn();
+        });
+    }
+});
+
+
