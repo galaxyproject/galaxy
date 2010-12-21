@@ -50,8 +50,8 @@ def upgrade():
         if len( fields_list ):
             for index, field in enumerate( fields_list ):
                 field[ 'name' ] = 'field_%i' % index
-                field[ 'helptext' ] = field[ 'helptext' ].replace('"', '').replace("'", "")
-                field[ 'label' ] = field[ 'label' ].replace('"', '').replace("'", "")
+                #field[ 'helptext' ] = field[ 'helptext' ].replace('"', '').replace("'", "")
+                #field[ 'label' ] = field[ 'label' ].replace('"', '').replace("'", "")
             cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( to_json_string( fields_list ), form_definition_id )
             db_session.execute( cmd )
     # replace the values list in the content field of the form_values table with a name:value dict
@@ -73,7 +73,7 @@ def upgrade():
             values_dict = {}
             for field_index, field in enumerate( fields_list ):
                 field_name = field[ 'name' ]
-                values_dict[ field_name ] = str(get_value(values_list, field_index )).replace('"', '').replace("'", "")
+                values_dict[ field_name ] = get_value(values_list, field_index )
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( to_json_string( values_dict ), form_values_id )
             db_session.execute( cmd )
                 
