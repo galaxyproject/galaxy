@@ -13,6 +13,7 @@ from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import grids
 from galaxy.util.bunch import Bunch
 from galaxy import util
+from galaxy.datatypes.interval import Gff
 
 from galaxy.visualization.tracks.data_providers import *
 from galaxy.visualization.tracks.visual_analytics import get_tool_def, get_dataset_job
@@ -65,7 +66,8 @@ class DatasetSelectionGrid( grids.Grid ):
                     .filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) ) \
                     .filter( model.Dataset.state == model.Dataset.states.OK ) \
                     .filter( model.History.deleted == False ) \
-                    .filter( model.HistoryDatasetAssociation.deleted == False )
+                    .filter( model.HistoryDatasetAssociation.deleted == False ) \
+                    .filter( model.HistoryDatasetAssociation.visible == True )
                     
 class TracksterSelectionGrid( grids.Grid ):
     # Grid definition.
@@ -248,6 +250,27 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return twobit[chrom].get(int(low), int(high))        
         
         return None
+        
+    @web.json
+    def raw_data( self, trans, dataset_id, chrom, low, high, **kwargs ):
+        """
+        Uses original (raw) dataset to return data. This method is useful 
+        when the dataset is not yet indexed and hence using /data would
+        be slow because indexes need to be created.
+        """
+        
+        # Dataset check.
+        dataset = self.get_dataset( trans, dataset_id )
+        msg = self._check_dataset_state( trans, dataset )
+        if msg:
+            return msg
+            
+        # Return data.
+        if isinstance( dataset.datatype, Gff ):
+            data = GFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
+            data[ 'dataset_type' ] = 'interval_index'
+            data[ 'extra_info' ] = None
+        return data
         
     @web.json
     def data( self, trans, dataset_id, chrom, low, high, **kwargs ):
@@ -515,13 +538,12 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         any messages based on or derived from the conversion.
         """
         track_type, data_sources = dataset.datatype.get_track_type()
-        
         for source_type, data_source in data_sources.iteritems():
             if source_type == "data_standalone":
                 break
                 
             try:
-                converted_dataset = dataset.get_converted_dataset(trans, data_source)
+                converted_dataset = dataset.get_converted_dataset( trans, data_source )
             except ValueError:
                 return None, messages.NO_CONVERTER
 

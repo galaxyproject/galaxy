@@ -337,7 +337,6 @@ class ArrayTreeDataProvider( TracksDataProvider ):
 
         results = []
         for block_start in range( start, end, stepsize * block_size ):
-            # print block_start
             # Return either data point or a summary depending on the level
             indexes = range( block_start, block_start + stepsize * block_size, stepsize )
             if level > 0:
@@ -429,8 +428,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                 message = "Only the first %s features are being displayed." % MAX_VALS
                 break
             count += 1
-            source.seek(offset)
-            payload = [ offset, start, end ]
+            source.seek( offset )
             # TODO: can we use column metadata to fill out payload?
             # TODO: use function to set payload data
             if "no_detail" not in kwargs:
@@ -438,35 +436,11 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                     # GFF dataset.
                     reader = GFFReaderWrapper( source, fix_strand=True )
                     feature = reader.next()
-                    
-                    payload.append( feature.name() )
-                    # Strand:
-                    payload.append( feature.strand )
-                    
-                    # No notion of thick start, end in GFF, so make everything
-                    # thick.
-                    payload.append( start )
-                    payload.append( end )
-                    
-                    # HACK: remove interval with name 'transcript' from feature. 
-                    # Cufflinks puts this interval in each of its transcripts, 
-                    # and they mess up trackster by covering the feature's blocks.
-                    # This interval will always be a feature's first interval,
-                    # and the GFF's third column is its feature name. 
-                    if feature.intervals[0].fields[2] == 'transcript':
-                        feature.intervals = feature.intervals[1:]
-                    
-                    # Add blocks.
-                    feature = convert_gff_coords_to_bed( feature )
-                    block_sizes = [ (interval.end - interval.start ) for interval in feature.intervals ]
-                    block_starts = [ ( interval.start - feature.start ) for interval in feature.intervals ]
-                    blocks = zip( block_sizes, block_starts )
-                    payload.append( [ ( start + block[1], start + block[1] + block[0] ) for block in blocks ] )
-                    
-                    # Score.
-                    payload.append( feature.score )
+                    payload = package_gff_feature( feature )
+                    payload.insert( 0, offset )
                 elif isinstance( self.original_dataset.datatype, Bed ):
                     # BED dataset.
+                    payload = [ offset, start, end ]
                     feature = source.readline().split()
                     length = len(feature)
                     if length >= 4:
@@ -488,10 +462,41 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                     if length >= 5:
                         payload.append( int(feature[4]) ) # score
 
-            results.append(payload)
+            results.append( payload )
 
         return { 'data': results, 'message': message }
+     
+
+class GFFDataProvider( TracksDataProvider ):
+    """
+    Provide data from GFF file.
+    
+    NOTE: this data provider does not use indices, and hence will be very slow
+    for large datasets. 
+    """
+    def get_data( self, chrom, start, end, **kwargs ):
+        start, end = int( start ), int( end )
+        source = open( self.original_dataset.file_name )
+        results = []
+        count = 0
+        message = None
+        offset = 0
         
+        for feature in GFFReaderWrapper( source, fix_strand=True ):
+            feature_start, feature_end = convert_gff_coords_to_bed( [ feature.start, feature.end ] )
+            if feature.chrom != chrom or feature_start < start or feature_end > end:
+                continue
+            if count >= MAX_VALS:
+                message = "Only the first %s features are being displayed." % MAX_VALS
+                break
+            count += 1
+            payload = package_gff_feature( feature )
+            payload.insert( 0, offset )
+            results.append( payload )
+            offset += feature.raw_size()
+            
+        return { 'data': results, 'message': message }
+       
 #        
 # Helper methods.
 #
@@ -545,3 +550,32 @@ def get_data_provider( name=None, original_dataset=None ):
                 pass
     return data_provider
 
+def package_gff_feature( feature ):
+    """ Package a GFF feature in an array for data providers. """
+    feature = convert_gff_coords_to_bed( feature )
+    payload = [ feature.start, 
+                feature.end, 
+                feature.name(), 
+                feature.strand,
+                # No notion of thick start, end in GFF, so make everything
+                # thick.
+                feature.start,
+                feature.end
+                ]
+    
+    # HACK: remove interval with name 'transcript' from feature. 
+    # Cufflinks puts this interval in each of its transcripts, 
+    # and they mess up trackster by covering the feature's blocks.
+    # This interval will always be a feature's first interval,
+    # and the GFF's third column is its feature name. 
+    if feature.intervals[0].fields[2] == 'transcript':
+        feature.intervals = feature.intervals[1:]
+    # Add blocks.
+    block_sizes = [ (interval.end - interval.start ) for interval in feature.intervals ]
+    block_starts = [ ( interval.start - feature.start ) for interval in feature.intervals ]
+    blocks = zip( block_sizes, block_starts )
+    payload.append( [ ( feature.start + block[1], feature.start + block[1] + block[0] ) for block in blocks ] )
+    
+    # Score.
+    payload.append( feature.score )
+    return payload

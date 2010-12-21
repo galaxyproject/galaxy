@@ -55,6 +55,20 @@ class GFFFeature( GFFInterval ):
         if not name:
             name = self.attributes.get( 'group', None )
         return name
+        
+    def raw_size( self ):
+        """
+        Returns raw size of feature; raw size is the number of bytes that
+        comprise feature.
+        """
+        # Feature length is all intervals/lines that comprise feature.
+        feature_len = 0
+        for interval in self.intervals:
+            # HACK: +1 for EOL char. Need bx-python to provide raw_line itself 
+            # b/c TableReader strips EOL characters, thus changing the line
+            # length.
+            feature_len += len( interval.raw_line ) + 1
+        return feature_len
                 
 class GFFIntervalToBEDReaderWrapper( NiceReaderWrapper ):
     """ 
