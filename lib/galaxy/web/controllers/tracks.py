@@ -581,5 +581,4 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             
             data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
         
-        print data_sources_dict    
         return data_sources_dict

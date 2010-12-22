@@ -37,6 +37,9 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
     .filter-name {
         float: left;
     }
+    input {
+        font: 10px verdana;
+    }
     table.filters {
         border-collapse: separate;
         border-spacing: 7px 0px;
@@ -62,12 +65,15 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         position: relative;
     }
     .tool-name {
-        font-size: 120%;
+        font-size: 110%;
         font-weight: bold;
     }
     .child-track-icon {
         background:url(${h.url_for('/static/images/fugue/arrow-000-small-bw.png')}) no-repeat;}
         width: 30px;
+    }
+    .param-value {
+        cursor: pointer;
     }
 </style>
 </%def>

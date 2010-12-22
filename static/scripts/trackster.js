@@ -210,6 +210,11 @@ $.extend( View.prototype, {
             e.preventDefault();
         });
         */
+        
+        // Blur tool/filter inputs when user clicks on content div.
+        this.content_div.bind("click", function( e ) {
+            $(this).find("input").trigger("blur"); 
+        });
 
         this.content_div.bind("dblclick", function( e ) {
             view.zoom_in(e.pageX, this.viewport_container);
@@ -765,9 +770,9 @@ var TiledTrack = function(filters, tool, parent_track) {
     this.filtering_div = $("<div/>").addClass("track-filters").hide();
     this.header_div.after(this.filtering_div);
     // Disable dragging, double clicking on div so that actions on slider do not impact viz.
-    this.filtering_div.bind( "drag", function(e) {
+    this.filtering_div.bind("drag", function(e) {
         e.stopPropagation();
-    }).bind("dblclick", function( e ) {
+    }).bind("dblclick", function(e) {
         e.stopPropagation();
     });
     var filters_table = $("<table class='filters'>").appendTo(this.filtering_div);
@@ -803,13 +808,17 @@ var TiledTrack = function(filters, tool, parent_track) {
         filter.slider_label = values_span;
     });
     
+    //
     // Create dynamic tool div.
+    //
     if (this.tool) {
         // Create div elt.
         this.dynamic_tool_div = $("<div/>").addClass("dynamic-tool"); // .hide();
         this.header_div.after(this.dynamic_tool_div);
-        // Disable dragging, double clicking on div so that actions on slider do not impact viz.
+        // Disable dragging, clicking, double clicking on div so that actions on slider do not impact viz.
         this.dynamic_tool_div.bind( "drag", function(e) {
+            e.stopPropagation();
+        }).bind("click", function( e ) {
             e.stopPropagation();
         }).bind("dblclick", function( e ) {
             e.stopPropagation();
@@ -825,7 +834,8 @@ var TiledTrack = function(filters, tool, parent_track) {
             //
             var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
             var name_span = $("<span class='param-name'>").text(param.label + "  ").appendTo(label_div);
-            var values_span = $("<span class='values'>").appendTo(label_div).text("[" + param.value + "]");
+            var values_span = $("<span/>").text(param.value);
+            var values_span_container = $("<span class='param-value'>").appendTo(label_div).append("[").append(values_span).append("]");
             
             //
             // Slider.
@@ -839,16 +849,58 @@ var TiledTrack = function(filters, tool, parent_track) {
                 max: param.max,
                 step: step,
                 value: param.value,
-                slide: function( event, ui ) {
+                slide: function(event, ui) {
                     var value = ui.value;
                     param.value = value;
                     // Set new value in UI.
                     if (0 < value && value < 1) {
                         value = parseFloat(value).toFixed(2);
                     }
-                    values_span.text("[" + value + "]");
-                }
+                    values_span.text(value);
+                },
+                change: function(event, ui) {
+                    param.value = ui.value;
+                }   
             });
+            
+            //
+            // Enable users to edit parameter's value via a text box.
+            //
+            values_span_container.click(function() {
+                var span = values_span,
+                    cur_value = span.text(),
+                    // TODO: is there a better way to handle input size when param max is <= 1?
+                    input_size = (param.max <= 1 ? 4 : param.max.length);
+                span.text("");
+                // Temporary input for changing value.
+                $("<input type='text'/>").attr("size", input_size).attr("maxlength", input_size)
+                                         .attr("value", cur_value).appendTo(span).focus().select()
+                                         .click(function(e) {
+                    // Don't want click to propogate up to values_span and restart everything.
+                    e.stopPropagation();
+                }).blur(function() {
+                    $(this).remove();
+                    span.text(cur_value);
+                }).keyup(function(e) {
+                    if ( e.keyCode === 27 ) {
+                        // Escape key.
+                        $(this).trigger("blur");
+                    } else if ( e.keyCode === 13 ) {
+                        // Enter/return key sets new value.
+                        var input = $(this),
+                            new_value = parseFloat(input.val());
+                        if (isNaN(new_value) || new_value > param.max || new_value < param.min) {
+                            // TODO: display popup menu instead of alert?
+                            alert("Parameter value must be in the range [" + param.min + "-" + param.max + "]");
+                            return $(this);
+                        }
+                        span.text(new_value);
+                        slider.slider('value', new_value);
+                    }
+                });
+            });
+            
+            // Added to clear floating layout.
             $("<div style='clear: both;'/>").appendTo(param_div); 
         });
         
