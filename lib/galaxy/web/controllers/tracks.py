@@ -288,35 +288,50 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if msg:
             return msg
             
-        # Get converted datasets.
-        data_sources, message = self._get_datasource_info( trans, dataset )
-        if not data_sources:
-            return message
+        # Get datasources and check for messages.
+        data_sources = self._get_datasources( trans, dataset )
+        return_message = None
+        # Can only return a single message, so return highest priority one; 
+        # priority is: job error (dict), no converter, pending.
+        for data_source_dict in data_sources.values():
+            message = data_source_dict[ 'message' ]
+            if message is not None:
+                if message is dict:
+                    return_message = message
+                    break
+                elif message == messages.NO_CONVERTER:
+                    return_message = message
+                elif return_message == None and message == messages.PENDING:
+                    return_message = message
+                    
+        if return_message:
+            return return_message
             
         extra_info = None
         if 'index' in data_sources and kwargs.get("mode", "Auto") == "Auto":
             # Only check for summary if it's Auto mode (which is the default)
             # 
             # Have to choose between indexer and data provider
-            indexer = get_data_provider( name=data_sources['index'] )( dataset.get_converted_dataset(trans, data_sources['index']), dataset )
+            tracks_dataset_type = data_sources['index']['name']
+            indexer = get_data_provider( tracks_dataset_type )( dataset.get_converted_dataset( trans, tracks_dataset_type ), dataset )
             summary = indexer.get_summary( chrom, low, high, **kwargs )
             if summary is None:
-                return { 'dataset_type': data_sources['index'], 'data': None }
+                return { 'dataset_type': tracks_dataset_type, 'data': None }
                 
             if summary == "draw":
                 kwargs["no_detail"] = True # meh
                 extra_info = "no_detail"
             elif summary != "detail":
                 frequencies, max_v, avg_v, delta = summary
-                return { 'dataset_type': data_sources['index'], 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
+                return { 'dataset_type': tracks_dataset_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
         
         # Get data provider.
         if "data_standalone" in data_sources:
-            tracks_dataset_type = data_sources['data_standalone']
+            tracks_dataset_type = data_sources['data_standalone']['name']
             data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
             data_provider = data_provider_class( original_dataset=dataset )
         else:
-            tracks_dataset_type = data_sources['data']
+            tracks_dataset_type = data_sources['data']['name']
             data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
             data_provider = data_provider_class( dataset.get_converted_dataset(trans, tracks_dataset_type), dataset )
         
@@ -532,28 +547,39 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return messages.PENDING
         return None
         
-    def _get_datasource_info( self, trans, dataset ):
+    def _get_datasources( self, trans, dataset ):
         """
-        Returns (a) datasource info for a dataset and (b) dictionary of
-        any messages based on or derived from the conversion.
+        Returns datasources for dataset; if datasources are not avaiable
+        due to indexing, indexing is started. Return value is a dictionary
+        with entries of type 
+        (<datasource_type> : {<datasource_name>, <indexing_message>}).
         """
         track_type, data_sources = dataset.datatype.get_track_type()
+        data_sources_dict = {}
+        msg = None
         for source_type, data_source in data_sources.iteritems():
             if source_type == "data_standalone":
-                break
-                
-            try:
-                converted_dataset = dataset.get_converted_dataset( trans, data_source )
-            except ValueError:
-                return None, messages.NO_CONVERTER
+                # Nothing to do.
+                msg = None
+            else:
+                # Get converted dataset; this will start the conversion if 
+                # necessary.
+                try:
+                    converted_dataset = dataset.get_converted_dataset( trans, data_source )
+                except ValueError:
+                    msg = messages.NO_CONVERTER
 
-            # Need to check states again for the converted version
-            if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
-                job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ).filter_by( dataset_id=converted_dataset.id ).first().job_id
-                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-                return None, { 'kind': messages.ERROR, 'message': job.stderr }
+                # If converted dataset in error, return the error.
+                if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
+                    job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
+                                .filter_by( dataset_id=converted_dataset.id ).first().job_id
+                    job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+                    msg = { 'kind': messages.ERROR, 'message': job.stderr }
                 
-            if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
-                return None, messages.PENDING
-                
-        return data_sources, None
+                if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
+                    msg = messages.PENDING
+            
+            data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
+        
+        print data_sources_dict    
+        return data_sources_dict
