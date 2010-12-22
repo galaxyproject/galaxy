@@ -143,7 +143,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
                 .filter( model.History.deleted==False ) \
                 .filter( self.model_class.visible==True )
         
-class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssociation, UsesItemRatings ):
+class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistoryDatasetAssociation, UsesItemRatings ):
         
     stored_list_grid = HistoryDatasetAssociationListGrid()
 
@@ -713,16 +713,19 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         raise "Error undeleting"
     
     @web.expose
-    def copy_datasets( self, trans, source_dataset_ids="", target_history_ids="", new_history_name="", do_copy=False, **kwd ):
+    def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_ids="", new_history_name="", do_copy=False, **kwd ):
         params = util.Params( kwd )
         user = trans.get_user()
-        history = trans.get_history()
+        if source_history is not None:
+            history = self.get_history(trans, source_history)
+        else:
+            history = trans.get_history()
         create_new_history = False
         refresh_frames = []
         if source_dataset_ids:
             if not isinstance( source_dataset_ids, list ):
                 source_dataset_ids = source_dataset_ids.split( "," )
-            source_dataset_ids = map( int, source_dataset_ids )
+            source_dataset_ids = map( trans.security.decode_id, source_dataset_ids )
         else:
             source_dataset_ids = []
         if target_history_ids:
@@ -731,7 +734,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             if "create_new_history" in target_history_ids:
                 create_new_history = True
                 target_history_ids.remove( "create_new_history" )
-            target_history_ids = map( int, target_history_ids )
+            target_history_ids = map( trans.security.decode_id, target_history_ids )
         else:
             target_history_ids = []
         done_msg = error_msg = ""
@@ -778,6 +781,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         if user:
            target_histories = user.active_histories 
         return trans.fill_template( "/dataset/copy_view.mako",
+                                    source_history = history,
                                     source_dataset_ids = source_dataset_ids,
                                     target_history_ids = target_history_ids,
                                     source_datasets = source_datasets,

@@ -187,18 +187,3 @@
         </div>
     </div>
 %endif
-<p/>
-<div class="toolForm">
-    <div class="toolFormTitle">Copy History Item</div>
-        <div class="toolFormBody">
-            <form name="copy_hda" action="${h.url_for( controller='dataset', action='copy_datasets', source_dataset_ids=data.id, target_history_ids=data.history_id )}" method="post">
-                <div class="form-row">
-                    <input type="submit" name="change" value="Copy history item"/>
-                    <div class="toolParamHelp" style="clear: both;">
-                        Make a copy of this history item in your current history or any of your active histories.
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>

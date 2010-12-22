@@ -25,6 +25,9 @@
             "Clone": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='clone')}";
             },
+            "Copy Datasets": function() {
+                galaxy_main.location = "${h.url_for( controller='dataset', action='copy_datasets' )}";
+            },
             "Share or Publish": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='sharing' )}";
             },

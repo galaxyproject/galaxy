@@ -21,52 +21,66 @@ ${javascripts()}
     <div style="clear: both"></div>
 </p>
 <p>
-    <div class="toolForm">
-        <form>
-            <div style="float: left; width: 50%; padding: 0px;">
-                <div class="toolFormTitle">Source History Items</div>
-                <div class="toolFormBody">
-                    %for data in source_datasets:
+    <form method="post">
+        <div class="toolForm" style="float: left; width: 45%; padding: 0px;">
+            <div class="toolFormTitle" style="height: 20px;">Source History:
+                <select id="source_history" name="source_history" refresh_on_change="true">
+                    %for hist in target_histories:
                         <%
-                            checked = ""
-                            if data.id in source_dataset_ids:
-                                checked = " checked='checked'"
+                            selected = ""
+                            if hist == source_history:
+                                selected = "selected='selected'"
                         %>
-                        <div class="form-row">
-                            <input type="checkbox" name="source_dataset_ids" id="dataset_${data.id}" value="${data.id}"${checked}/>
-                            <label for="dataset_${data.id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${data.name}</label>
-                        </div>
-                    %endfor 
-                </div>
-            </div>
-            <div style="float: right; width: 50%; padding: 0px;">
-                <div class="toolFormTitle">Target Histories</div>
-                <div class="toolFormBody">
-                    %for i, hist in enumerate( target_histories ):
-                        <%
-                            checked = ""
-                            if hist.id in target_history_ids:
-                                checked = " checked"
-                            cur_history_text = ""
-                            if hist == trans.get_history():
-                                cur_history_text = " <strong>(current history)</strong>"
-                        %>
-                        <div class="form-row">
-                            <input type="checkbox" name="target_history_ids" id="hist_${hist.id}" value="${hist.id}"${checked}/>
-                            <label for="hist_${hist.id}" style="display: inline;font-weight:normal;">${i + 1}: ${hist.name}${cur_history_text}</label>
-                        </div>
+                        <option value="${trans.security.encode_id(hist.id)}" ${selected}>${hist.name}</option>
                     %endfor
-                    %if trans.get_user():
-                        <%
-                            checked = ""
-                            if "create_new_history" in target_history_ids:
-                                checked = " checked='checked'"
-                        %>
-                        <br/>
-                        <div class="form-row"><input type="checkbox" name="target_history_ids" value="create_new_history"${checked}/>New history named: <input type="textbox" name="new_history_name" value="${new_history_name}"/></div>
-                    %endif
-                </div>
+                </select>
             </div>
+            <div class="toolFormBody">
+                %for data in source_datasets:
+                    <%
+                        checked = ""
+                        encoded_id = trans.security.encode_id(data.id)
+                        if data.id in source_dataset_ids:
+                            checked = " checked='checked'"
+                    %>
+                    <div class="form-row">
+                        <input type="checkbox" name="source_dataset_ids" id="dataset_${encoded_id}" value="${encoded_id}"${checked}/>
+                        <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${data.name}</label>
+                    </div>
+                %endfor 
+            </div>
+        </div>
+        <div class="toolForm" style="float: right; width: 45%; padding: 0px;">
+            <div class="toolFormTitle">Target Histories</div>
+            <div class="toolFormBody">
+                %for i, hist in enumerate( target_histories ):
+                    <%
+                        checked = ""
+                        encoded_id = trans.security.encode_id(hist.id)
+                        if hist.id in target_history_ids:
+                            checked = " checked='checked'"
+                        cur_history_text = ""
+                        if hist == source_history:
+                            cur_history_text = " <strong>(source history)</strong>"
+                    %>
+                    <div class="form-row">
+                        <input type="checkbox" name="target_history_ids" id="hist_${encoded_id}" value="${encoded_id}"${checked}/>
+                        <label for="hist_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${hist.name}${cur_history_text}</label>
+                    </div>
+                %endfor
+                %if trans.get_user():
+                    <%
+                        checked = ""
+                        if "create_new_history" in target_history_ids:
+                            checked = " checked='checked'"
+                    %>
+                    <br/>
+                    <div class="form-row"><input type="checkbox" name="target_history_ids" id="create_new_history" value="create_new_history"${checked}/>
+                        <label for="create_new_history" style="display: inline; font-weight:normal;"> New history named:</label> <input type="textbox" name="new_history_name" value="${new_history_name}"/>
+                    </div>
+                %endif
+            </div>
+        </div>
             <div style="clear: both"></div>
             <div class="form-row" align="center">
                 <input type="submit" class="primary-button" name="do_copy" value="Copy History Items"/>
