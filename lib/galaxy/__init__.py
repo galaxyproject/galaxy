@@ -21,6 +21,8 @@ def _get_build_platform():
             plat += '_64'
         else:
             plat += '_32'
+    if sys.platform == "linux2" and sys.maxint < 2**31 and plat.endswith( '-x86_64' ):
+        plat = plat.replace( '-x86_64', '-i686' )
     if not (plat.endswith('-ucs2') or plat.endswith('-ucs4')):
         if sys.maxunicode > 2**16:
             plat += '-ucs4'
