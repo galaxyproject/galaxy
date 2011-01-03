@@ -96,12 +96,12 @@ def __main__():
     # Need to symlink inputs so that output files are written to temp directory. 
     # Also need an extension for input file names so that cuffcompare produces
     # output files properly.
-    input1_file_name = os.path.join( tmp_output_dir, "input1.gtf" )
+    input1_file_name = os.path.join( tmp_output_dir, "input1" )
     os.symlink( options.input1,  input1_file_name )
     cmd += " %s" % input1_file_name
     two_inputs = ( options.input2 != None)
     if two_inputs:
-        input2_file_name = os.path.join( tmp_output_dir, "input2.gtf" )
+        input2_file_name = os.path.join( tmp_output_dir, "input2" )
         os.symlink( options.input2, input2_file_name )
         cmd += " %s" % input2_file_name
         

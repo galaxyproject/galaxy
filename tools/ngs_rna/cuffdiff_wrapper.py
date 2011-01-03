@@ -5,6 +5,20 @@ import optparse, os, shutil, subprocess, sys, tempfile
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
+    
+# Copied from sam_to_bam.py:
+def check_seq_file( dbkey, cached_seqs_pointer_file ):
+    seq_path = ''
+    for line in open( cached_seqs_pointer_file ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( '#' ) and line.startswith( 'index' ):
+            fields = line.split( '\t' )
+            if len( fields ) < 3:
+                continue
+            if fields[1] == dbkey:
+                seq_path = fields[2].strip()
+                break
+    return seq_path
 
 def __main__():
     #Parse Command Line
@@ -28,7 +42,14 @@ def __main__():
     parser.add_option( '-A', '--inputA', dest='inputA', help='A transcript GTF file produced by cufflinks, cuffcompare, or other source.')
     parser.add_option( '-1', '--input1', dest='input1', help='File of RNA-Seq read alignments in the SAM format. SAM is a standard short read alignment, that allows aligners to attach custom tags to individual alignments, and Cufflinks requires that the alignments you supply have some of these tags. Please see Input formats for more details.' )
     parser.add_option( '-2', '--input2', dest='input2', help='File of RNA-Seq read alignments in the SAM format. SAM is a standard short read alignment, that allows aligners to attach custom tags to individual alignments, and Cufflinks requires that the alignments you supply have some of these tags. Please see Input formats for more details.' )
+    
+    # Bias correction options.
+    parser.add_option( '-r', dest='do_bias_correction', action="store_true", help='Providing Cufflinks with a multifasta file via this option instructs it to run our new bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates.')
+    parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
+    parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
+    parser.add_option( '', '--ref_file', dest='ref_file', help='The reference dataset from the history' )
 
+    # Outputs.
     parser.add_option( "--isoforms_fpkm_tracking_output", dest="isoforms_fpkm_tracking_output" )
     parser.add_option( "--genes_fpkm_tracking_output", dest="genes_fpkm_tracking_output" )
     parser.add_option( "--cds_fpkm_tracking_output", dest="cds_fpkm_tracking_output" )
@@ -65,6 +86,19 @@ def __main__():
     # Make temp directory for output.
     tmp_output_dir = tempfile.mkdtemp()
     
+    # If doing bias correction, set/link to sequence file.
+    if options.do_bias_correction:
+        cached_seqs_pointer_file = os.path.join( options.index_dir, 'sam_fa_indices.loc' )
+        if not os.path.exists( cached_seqs_pointer_file ):
+            stop_err( 'The required file (%s) does not exist.' % cached_seqs_pointer_file )
+        # If found for the dbkey, seq_path will look something like /galaxy/data/equCab2/sam_index/equCab2.fa,
+        # and the equCab2.fa file will contain fasta sequences.
+        seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
+        if options.ref_file != 'None':
+            # Create symbolic link to ref_file so that index will be created in working directory.
+            seq_path = os.path.join( tmp_output_dir, "ref.fa" )
+            os.symlink( options.ref_file, seq_path  )
+    
     # Build command.
     
     # Base.
@@ -87,6 +121,11 @@ def __main__():
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
         cmd += ( " --max-mle-iterations %i" % int ( options.max_mle_iterations ) )
+    if options.do_bias_correction:
+        cmd += ( " -r %s" % seq_path )
+        
+    # Debugging.
+    print cmd
             
     # Add inputs.
     cmd += " " + options.inputA + " " + options.input1 + " " + options.input2

@@ -26,9 +26,22 @@
             --input1=$aligned_reads1
             --input2=$aligned_reads2
             
+            ## Set paired-end data parameters?
             #if $singlePaired.sPaired == "Yes":
                 -m $singlePaired.mean_inner_distance
                 -s $singlePaired.inner_distance_std_dev
+            #end if
+            
+            ## Bias correction?
+            #if $bias_correction.do_bias_correction == "Yes":
+	        -r
+                #if $bias_correction.seq_source.index_source == "history":
+                    --ref_file=$bias_correction.seq_source.ref_file
+                #else:
+                    --ref_file="None"
+                #end if
+                --dbkey=${gtf_input.metadata.dbkey} 
+                --index_dir=${GALAXY_DATA_INDEX_DIR}
             #end if
     </command>
     <inputs>
@@ -38,6 +51,25 @@
         <param name="fdr" type="float" value="0.05" label="False Discovery Rate" help="The allowed false discovery rate."/>
         <param name="min_mapqual" type="integer" value="0" label="Min SAM Mapping Quality" help="Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number."/>
         <param name="min_alignment_count" type="integer" value="0" label="Min Alignment Count" help="The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples."/>
+        <conditional name="bias_correction">
+            <param name="do_bias_correction" type="select" label="Perform Bias Correction" help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </param>
+            <when value="Yes">
+                <conditional name="seq_source">
+                  <param name="index_source" type="select" label="Reference sequence data">
+                    <option value="cached">Locally cached</option>
+                    <option value="history">History</option>
+                  </param>
+                  <when value="cached"></when>
+                  <when value="history">
+                      <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+                  </when>
+                </conditional>
+            </when>
+            <when value="No"></when>
+        </conditional>
         <conditional name="singlePaired">
             <param name="sPaired" type="select" label="Set Parameters for Paired-end Reads? (not recommended)">
                 <option value="No">No</option>
@@ -77,6 +109,7 @@
                 <param name="fdr" value="0.05" />
                 <param name="min_mapqual" value="0" ftype="sam" />
                 <param name="min_alignment_count" value="0" ftype="sam" />
+                <param name="do_bias_correction" value="No" />
                 <param name="sPaired" value="single" ftype="sam" />
                 <!-- 
                     Line diffs are needed because cuffdiff does not produce deterministic output.

@@ -14,12 +14,28 @@
             -F $min_isoform_fraction
             -j $pre_mrna_fraction
             -Q $min_map_quality
+            
+            ## Include reference annotation?
             #if $reference_annotation.use_ref == "Yes":
                 -G $reference_annotation.reference_annotation_file
             #end if
+            
+            ## Set paired-end parameters?
             #if $singlePaired.sPaired == "Yes":
                 -m $singlePaired.mean_inner_distance
                 -s $singlePaired.inner_distance_std_dev
+            #end if
+            
+            ## Bias correction?
+            #if $bias_correction.do_bias_correction == "Yes":
+	        -r
+                #if $bias_correction.seq_source.index_source == "history":
+                    --ref_file=$bias_correction.seq_source.ref_file
+                #else:
+                    --ref_file="None"
+                #end if
+                --dbkey=${input.metadata.dbkey} 
+                --index_dir=${GALAXY_DATA_INDEX_DIR}
             #end if
     </command>
     <inputs>
@@ -29,7 +45,7 @@
         <param name="pre_mrna_fraction" type="float" value="0.05" min="0" max="1" label="Pre MRNA Fraction" help=""/>
         <param name="min_map_quality" type="integer" value="0" min="0" max="255" label="Min SAM Map Quality" help=""/>
         <conditional name="reference_annotation">
-            <param name="use_ref" type="select" label="Use Reference Annotation?">
+            <param name="use_ref" type="select" label="Use Reference Annotation">
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
             </param>
@@ -37,6 +53,25 @@
             <when value="Yes">
                 <param format="gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
             </when>
+        </conditional>
+        <conditional name="bias_correction">
+            <param name="do_bias_correction" type="select" label="Perform Bias Correction" help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </param>
+            <when value="Yes">
+                <conditional name="seq_source">
+                  <param name="index_source" type="select" label="Reference sequence data">
+                    <option value="cached">Locally cached</option>
+                    <option value="history">History</option>
+                  </param>
+                  <when value="cached"></when>
+                  <when value="history">
+                      <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+                  </when>
+                </conditional>
+            </when>
+            <when value="No"></when>
         </conditional>
         <conditional name="singlePaired">
             <param name="sPaired" type="select" label="Set Parameters for Paired-end Reads? (not recommended)">
@@ -49,7 +84,6 @@
                 <param name="inner_distance_std_dev" type="integer" value="20" label="Standard Deviation for Inner Distance between Mate Pairs"/>
             </when>
         </conditional>
-        
     </inputs>
 
     <outputs>
@@ -71,6 +105,7 @@
             <param name="pre_mrna_fraction" value="0.05"/>
             <param name="min_map_quality" value="0"/>
             <param name="use_ref" value="No"/>
+            <param name="do_bias_correction" value="No"/>
             <output name="genes_expression" format="tabular" file="cufflinks_out3.expr"/>
             <output name="transcripts_expression" format="tabular" file="cufflinks_out2.expr"/>
             <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>
