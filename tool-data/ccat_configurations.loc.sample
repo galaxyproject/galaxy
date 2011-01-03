@@ -1,0 +1,4 @@
+#Provide Pre-compiled CCAT peak/region caller configuration files
+#UID	Description	path_to_config_file
+#ccat_2.0_tf_config	CCAT provided Transcription Factor Binding	/path_to/ccat/configs/config_TF.txt
+#ccat_2.0_histone_config	CCAT provided Histone Modification	/path_to/ccat/configs/config_histone.txt
