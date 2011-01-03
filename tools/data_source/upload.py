@@ -158,6 +158,12 @@ def add_file( dataset, registry, json_file, output_path ):
     converted_path = None
     stdout = None
 
+    try:
+        ext = dataset.file_type
+    except AttributeError:
+        file_err( 'Unable to process uploaded file, missing file_type parameter.', dataset, json_file )
+        return
+
     if dataset.type == 'url':
         try:
             temp_name, dataset.is_multi_byte = sniff.stream_to_file( urllib.urlopen( dataset.path ), prefix='url_paste' )
