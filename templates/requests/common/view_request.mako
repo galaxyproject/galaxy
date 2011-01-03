@@ -160,11 +160,11 @@
         grid_header = '<h3>Samples</h3>'
         render_buttons = can_edit_samples
     %>
-    ${render_samples_grid( cntrller, request, displayable_sample_widgets=displayable_sample_widgets, action='view_request', editing_samples=False, encoded_selected_sample_ids=[], render_buttons=render_buttons, grid_header=grid_header )}
+    ${render_samples_grid( cntrller, request, displayable_sample_widgets=displayable_sample_widgets, action='view_request', adding_new_samples=True, encoded_selected_sample_ids=[], render_buttons=render_buttons, grid_header=grid_header )}
     ## Render the other grids
     <% trans.sa_session.refresh( request.type.sample_form ) %>
     %for grid_index, grid_name in enumerate( request.type.sample_form.layout ):
-        ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), displayable_sample_widgets=displayable_sample_widgets, editing_samples=False )}
+        ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), displayable_sample_widgets=displayable_sample_widgets, adding_new_samples=False )}
     %endfor
 %else:
     There are no samples.

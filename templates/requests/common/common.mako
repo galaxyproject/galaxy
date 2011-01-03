@@ -181,7 +181,7 @@
 	%endif
 </%def>
 
-<%def name="render_editable_sample_row( cntrller, request, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )">
+<%def name="render_editable_sample_row( cntrller, request, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids, adding_new_samples=False )">
     <%
         trans.sa_session.refresh( request )
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
@@ -190,8 +190,8 @@
         is_submitted = request.is_submitted
         is_unsubmitted = request.is_unsubmitted
         if sample:
-            can_delete_samples = editing_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
-            display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
+            can_delete_samples = not adding_new_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
+            display_checkboxes = not adding_new_samples and ( is_complete or is_rejected or is_submitted )
             display_datasets = request.samples and ( is_complete or is_submitted )
         else:
             can_delete_samples = False
@@ -288,7 +288,7 @@
     %endif
 </%def>
 
-<%def name="render_samples_grid( cntrller, request, displayable_sample_widgets, action, editing_samples=False, encoded_selected_sample_ids=[], render_buttons=False, grid_header='<h3>Samples</h3>' )">
+<%def name="render_samples_grid( cntrller, request, displayable_sample_widgets, action, adding_new_samples=False, encoded_selected_sample_ids=[], render_buttons=False, grid_header='<h3>Samples</h3>' )">
     ## Displays the "Samples" grid
     <%
         trans.sa_session.refresh( request )
@@ -298,11 +298,11 @@
         is_submitted = request.is_submitted
         is_unsubmitted = request.is_unsubmitted
         can_add_samples = request.is_unsubmitted
-        can_delete_samples = editing_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
+        can_delete_samples = not adding_new_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
         can_edit_samples = request.samples and ( is_admin or not is_complete )
         can_select_datasets = is_admin and displayable_sample_widgets and ( is_submitted or is_complete )
         can_transfer_datasets = is_admin and request.samples and not request.is_rejected
-        display_checkboxes = editing_samples and ( is_complete or is_rejected or is_submitted )
+        display_checkboxes = not adding_new_samples and ( is_complete or is_rejected or is_submitted )
         display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
         display_datasets = request.samples and ( is_complete or is_submitted )
     %>
@@ -313,7 +313,7 @@
                 <li><a class="action-button" href="${h.url_for( controller='requests_common', action='add_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), add_sample_button='Add sample' )}">Add sample</a></li>
             %endif
             %if can_edit_samples:
-                <li><a class="action-button" href="${h.url_for( controller='requests_common', action='edit_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ), editing_samples='True' )}">Edit samples</a></li>
+                <li><a class="action-button" href="${h.url_for( controller='requests_common', action='edit_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}">Edit samples</a></li>
             %endif
         </ul>
     %endif
@@ -366,8 +366,8 @@
                     except:
                         sample = None 
                 %>
-                %if editing_samples:
-                    <tr>${render_editable_sample_row( cntrller, request, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids )}</tr>
+                %if not adding_new_samples:
+                    <tr>${render_editable_sample_row( cntrller, request, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids, adding_new_samples=False )}</tr>
                 %elif sample:
                     <tr>
                         <td>
@@ -463,7 +463,7 @@
                     </tr>
                 %else:
                     ## The Add sample button was clicked for this sample_widget
-                    <tr>${render_editable_sample_row( cntrller, request, None, sample_widget_index, sample_widget, encoded_selected_sample_ids )}</tr>
+                    <tr>${render_editable_sample_row( cntrller, request, None, sample_widget_index, sample_widget, encoded_selected_sample_ids, adding_new_samples=True )}</tr>
                 %endif
             %endfor
         </tbody>
@@ -552,7 +552,7 @@
     </tr> 
 </%def>
 
-<%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, displayable_sample_widgets, editing_samples )">
+<%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, displayable_sample_widgets, adding_new_samples )">
     <%
         if not grid_name:
             grid_name = "Sample form layout " + grid_index
@@ -575,7 +575,7 @@
                 <% trans.sa_session.refresh( request ) %>
                 %for sample_index, sample in enumerate( displayable_sample_widgets ):
                     <%
-                        if editing_samples or sample_index >= len( request.samples ):
+                        if not adding_new_samples or sample_index >= len( request.samples ):
                             display_only = False
                         else:
                             display_only = True

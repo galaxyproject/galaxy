@@ -415,7 +415,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                           status=status,
                                                           message=message ) )
     @web.expose
-    @web.require_login( "manage samples" )
+    @web.require_login( "edit samples" )
     def edit_samples( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
@@ -426,20 +426,11 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, request_id )
-        # This method is called when the user is adding new samples as well as
-        # editing existing samples, so we use the editing_samples flag to keep
-        # track of what's occurring.
-        # TODO: CRITICAL: We need another round of code fixes to abstract out 
-        # adding samples vs editing samples.  We need to eliminate the need for
-        # this editing_samples flag since it is not maintainable.  Greg will do
-        # this work as soon as possible.
-        editing_samples = util.string_as_bool( params.get( 'editing_samples', False ) )
         if params.get( 'cancel_changes_button', False ):
             return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                                           action='edit_samples',
                                                                           cntrller=cntrller,
-                                                                          id=request_id,
-                                                                          editing_samples=editing_samples ) )
+                                                                          id=request_id ) )
         libraries = trans.app.security_agent.get_accessible_libraries( trans, request.user )
         # Build a list of sample widgets (based on the attributes of each sample) for display.
         displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
@@ -457,12 +448,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             message = 'Select at least one sample before selecting an operation.'
             kwd[ 'message' ] = message
             handle_error( **kwd )
-        if params.get( 'import_samples_button', False ):
-            # Import sample field values from a csv file
-            return self.__import_samples( trans, cntrller, request, displayable_sample_widgets, libraries, **kwd )
-        elif params.get( 'add_sample_button', False ):
-            return self.add_sample( trans, cntrller, request_id, **kwd )
-        elif params.get( 'save_samples_button', False ):
+        if params.get( 'save_samples_button', False ):
             if encoded_selected_sample_ids:
                 # We need the list of displayable_sample_widgets to include the same number
                 # of objects that that request.samples has so that we can enumerate over each
@@ -485,9 +471,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 sample_widgets = self.__get_sample_widgets( trans, request, samples, **kwd )
             else:
                 sample_widgets = displayable_sample_widgets
-            return self.__save_samples( trans, cntrller, request, sample_widgets, **kwd )
+            return self.__save_samples( trans, cntrller, request, sample_widgets, saving_new_samples=False, **kwd )
         request_widgets = self.__get_request_widgets( trans, request.id )
-        sample_copy = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
+        sample_copy_select_field = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
         libraries_select_field, folders_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                       request.user,
                                                                                                       'sample_operation',
@@ -503,13 +489,12 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                     encoded_selected_sample_ids=encoded_selected_sample_ids,
                                     request_widgets=request_widgets,
                                     displayable_sample_widgets=displayable_sample_widgets,
-                                    sample_copy=sample_copy, 
+                                    sample_copy_select_field=sample_copy_select_field, 
                                     libraries=libraries,
                                     sample_operation_select_field=sample_operation_select_field,
                                     libraries_select_field=libraries_select_field,
                                     folders_select_field=folders_select_field,
                                     sample_state_id_select_field=sample_state_id_select_field,
-                                    editing_samples=editing_samples,
                                     status=status,
                                     message=message )
     @web.expose
@@ -697,40 +682,33 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 trans.sa_session.flush()
             if cntrller == 'api':
                 return 200, message
-            return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                              action='edit_samples',
-                                                              cntrller=cntrller,
-                                                              id=request_id,
-                                                              editing_samples=True,
-                                                              status=status,
-                                                              message=message ) )
-        final_state = False
-        request_type_state = request.type.final_sample_state
-        if common_state.id == request_type_state.id:
-            # since all the samples are in the final state, change the request state to 'Complete'
-            comment = "All samples of this sequencing request are in the final sample state (%s). " % request_type_state.name
-            state = request.states.COMPLETE
-            final_state = True
         else:
-            comment = "All samples of this sequencing request are in the (%s) sample state. " % common_state.name
-            state = request.states.SUBMITTED
-        event = trans.model.RequestEvent( request, state, comment )
-        trans.sa_session.add( event )
-        trans.sa_session.flush()
-        # See if an email notification is configured to be sent when the samples 
-        # are in this state.
-        retval = request.send_email_notification( trans, common_state, final_state )
-        if retval:
-            message = comment + retval
-        else:
-            message = comment
-        if cntrller == 'api':
-            return 200, message
+            final_state = False
+            request_type_state = request.type.final_sample_state
+            if common_state.id == request_type_state.id:
+                # since all the samples are in the final state, change the request state to 'Complete'
+                comment = "All samples of this sequencing request are in the final sample state (%s). " % request_type_state.name
+                state = request.states.COMPLETE
+                final_state = True
+            else:
+                comment = "All samples of this sequencing request are in the (%s) sample state. " % common_state.name
+                state = request.states.SUBMITTED
+            event = trans.model.RequestEvent( request, state, comment )
+            trans.sa_session.add( event )
+            trans.sa_session.flush()
+            # See if an email notification is configured to be sent when the samples 
+            # are in this state.
+            retval = request.send_email_notification( trans, common_state, final_state )
+            if retval:
+                message = comment + retval
+            else:
+                message = comment
+            if cntrller == 'api':
+                return 200, message
         return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                           action='edit_samples',
                                                           cntrller=cntrller,
                                                           id=request_id,
-                                                          editing_samples=True,
                                                           status=status,
                                                           message=message ) )
     @web.expose
@@ -811,6 +789,47 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                     cntrller=cntrller,
                                     sample=sample )
     @web.expose
+    @web.require_login( "add samples" )
+    def add_samples( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        request_id = params.get( 'id', None )
+        try:
+            request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
+        except:
+            return invalid_id_redirect( trans, cntrller, request_id )
+        libraries = trans.app.security_agent.get_accessible_libraries( trans, request.user )
+        # Build a list of sample widgets (based on the attributes of each sample) for display.
+        displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
+        if params.get( 'import_samples_button', False ):
+            # Import sample field values from a csv file
+            return self.__import_samples( trans, cntrller, request, displayable_sample_widgets, libraries, **kwd )
+        elif params.get( 'add_sample_button', False ):
+            return self.add_sample( trans, cntrller, request_id, **kwd )
+        elif params.get( 'save_samples_button', False ):
+            return self.__save_samples( trans, cntrller, request, displayable_sample_widgets, saving_new_samples=True, **kwd )
+        request_widgets = self.__get_request_widgets( trans, request.id )
+        sample_copy_select_field = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
+        libraries_select_field, folders_select_field = self.__build_library_and_folder_select_fields( trans,
+                                                                                                      request.user,
+                                                                                                      'sample_operation',
+                                                                                                      libraries,
+                                                                                                      None,
+                                                                                                      **kwd )
+        return trans.fill_template( '/requests/common/add_samples.mako',
+                                    cntrller=cntrller, 
+                                    request=request,
+                                    request_widgets=request_widgets,
+                                    displayable_sample_widgets=displayable_sample_widgets,
+                                    sample_copy_select_field=sample_copy_select_field, 
+                                    libraries=libraries,
+                                    libraries_select_field=libraries_select_field,
+                                    folders_select_field=folders_select_field,
+                                    status=status,
+                                    message=message )
+    @web.expose
     @web.require_login( "add sample" )
     def add_sample( self, trans, cntrller, request_id, **kwd ):
         params = util.Params( kwd )
@@ -870,19 +889,13 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                          field_values=field_values,
                                                          library_select_field=library_select_field,
                                                          folder_select_field=folder_select_field ) )
-        encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
-        sample_operation = params.get( 'sample_operation', 'none' )
-        sample_operation_select_field = self.__build_sample_operation_select_field( trans, is_admin, request, sample_operation )
-        sample_copy = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
-        return trans.fill_template( '/requests/common/edit_samples.mako',
+        sample_copy_select_field = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
+        return trans.fill_template( '/requests/common/add_samples.mako',
                                     cntrller=cntrller,
                                     request=request,
-                                    encoded_selected_sample_ids=encoded_selected_sample_ids,
                                     request_widgets=request_widgets,
                                     displayable_sample_widgets=displayable_sample_widgets,
-                                    sample_operation_select_field=sample_operation_select_field,
-                                    sample_copy=sample_copy, 
-                                    editing_samples=False,
+                                    sample_copy_select_field=sample_copy_select_field, 
                                     message=message,
                                     status=status )
     @web.expose
@@ -931,7 +944,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                           action='edit_samples',
                                                           cntrller=cntrller,
                                                           id=trans.security.encode_id( request.id ),
-                                                          editing_samples=True,
                                                           status=status,
                                                           message=message ) )
     @web.expose
@@ -957,7 +969,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                               action='edit_samples',
                                                               cntrller=cntrller,
                                                               id=trans.security.encode_id( sample.request.id ),
-                                                              editing_samples=True,
                                                               status=status,
                                                               message=message ) )
         transfer_status = params.get( 'transfer_status', None )
@@ -1042,15 +1053,14 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                               status='error',
                                                               message=message ) )
         request_widgets = self.__get_request_widgets( trans, request.id )
-        sample_copy = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
-        return trans.fill_template( '/requests/common/edit_samples.mako',
+        sample_copy_select_field = self.__build_copy_sample_select_field( trans, displayable_sample_widgets )
+        return trans.fill_template( '/requests/common/add_samples.mako',
                                     cntrller=cntrller,
                                     request=request,
                                     request_widgets=request_widgets,
                                     displayable_sample_widgets=displayable_sample_widgets,
-                                    sample_copy=sample_copy,
-                                    editing_samples=False )
-    def __save_samples( self, trans, cntrller, request, samples, **kwd ):
+                                    sample_copy_select_field=sample_copy_select_field )
+    def __save_samples( self, trans, cntrller, request, samples, saving_new_samples=False, **kwd ):
         # Here we handle saving all new samples added by the user as well as saving
         # changes to any subset of the request's samples.  A sample will not have an
         # associated SampleState until the request is submitted, at which time the
@@ -1059,18 +1069,21 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        editing_samples = util.string_as_bool( params.get( 'editing_samples', False ) )
         is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
         sample_operation = params.get( 'sample_operation', 'none' )
+        if saving_new_samples:
+            redirect_action = 'add_samples'
+        else:
+            redirect_action = 'edit_samples'
         # Check for duplicate sample names within the request
         self.__validate_sample_names( trans, cntrller, request, samples, **kwd )
-        if editing_samples:
+        if not saving_new_samples:
             library = None
             folder = None
             def handle_error( **kwd ):
                 kwd[ 'status' ] = 'error'
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                                  action='edit_samples',
+                                                                  action=redirect_action,
                                                                   cntrller=cntrller,
                                                                   **kwd ) )
             # Here we handle saving changes to single samples as well as saving changes to
@@ -1156,10 +1169,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 trans.sa_session.add( s )
                 trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                          action='edit_samples',
+                                                          action=redirect_action,
                                                           cntrller=cntrller,
                                                           id=trans.security.encode_id( request.id ),
-                                                          editing_samples=editing_samples,
                                                           status=status,
                                                           message=message ) )
     def __update_samples( self, trans, cntrller, request, sample_widgets, **kwd ):
@@ -1275,10 +1287,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         """
         params = util.Params( kwd )
         sample_operation = params.get( 'sample_operation', 'none' )
-        # This method is called when the user is adding new samples as well as
-        # editing existing samples, so we use the editing_samples flag to keep
-        # track of what's occurring.
-        editing_samples = util.string_as_bool( params.get( 'editing_samples', False ) )
         sample_widgets = []
         if sample_operation != 'none':
             # The sample_operatin param has a value other than 'none', and a specified
@@ -1488,7 +1496,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         return None
     def __validate_sample_names( self, trans, cntrller, request, displayable_sample_widgets, **kwd ):
         # Check for duplicate sample names for all samples of the request.
-        editing_samples = util.string_as_bool( kwd.get( 'editing_samples', False ) )
         message = ''
         for index in range( len( displayable_sample_widgets ) - len( request.samples ) ):
             sample_index = index + len( request.samples )

@@ -1605,7 +1605,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def edit_samples( self, cntrller, request_id, sample_value_tuples, strings_displayed=[], strings_displayed_after_submit=[] ):
-        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=True" % ( self.url, cntrller, request_id )
+        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s" % ( self.url, cntrller, request_id )
         self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
@@ -1620,7 +1620,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def add_bar_codes( self, cntrller, request_id, bar_codes, strings_displayed=[], strings_displayed_after_submit=[] ):
-        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=True" % ( self.url, cntrller, request_id )
+        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s" % ( self.url, cntrller, request_id )
         self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
@@ -1642,7 +1642,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def change_sample_state( self, request_id, sample_ids, new_sample_state_id, comment='', strings_displayed=[], strings_displayed_after_submit=[] ):
-        url = "%s/requests_common/edit_samples?cntrller=requests_admin&id=%s&editing_samples=True" % ( self.url, request_id )
+        url = "%s/requests_common/edit_samples?cntrller=requests_admin&id=%s" % ( self.url, request_id )
         self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
@@ -1658,7 +1658,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
     def change_sample_target_data_library( self, cntrller, request_id, sample_ids, new_library_id, new_folder_id, folder_options=[], comment='', strings_displayed=[], strings_displayed_after_submit=[] ):
-        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s&editing_samples=True" % ( self.url, cntrller, request_id )
+        url = "%s/requests_common/edit_samples?cntrller=%s&id=%s" % ( self.url, cntrller, request_id )
         self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )

@@ -104,8 +104,12 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                                   action='edit_basic_request_info',
                                                                   cntrller='requests_admin',
                                                                   **kwd ) )
+            if operation == "add_samples":
+                return trans.response.send_redirect( web.url_for( controller='requests_common',
+                                                                  action='add_samples',
+                                                                  cntrller='requests_admin',
+                                                                  **kwd ) )
             if operation == "edit_samples":
-                kwd[ 'editing_samples' ] = True
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                                   action='edit_samples',
                                                                   cntrller='requests_admin',
@@ -379,7 +383,6 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                                   action='edit_samples',
                                                                   cntrller='requests_admin',
                                                                   id=trans.security.encode_id( request.id ),
-                                                                  editing_samples=True,
                                                                   status=status,
                                                                   message=message ) )
             # Save the sample datasets 
