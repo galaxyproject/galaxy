@@ -6,6 +6,7 @@ from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
 from galaxy.datatypes.display_applications.util import encode_dataset_user, decode_dataset_user
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util import inflector
 from galaxy.model.item_attrs import *
 
 from email.MIMEText import MIMEText
@@ -720,7 +721,6 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             history = self.get_history(trans, source_history)
         else:
             history = trans.get_history()
-        create_new_history = False
         refresh_frames = []
         if source_dataset_ids:
             if not isinstance( source_dataset_ids, list ):
@@ -731,24 +731,18 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         if target_history_ids:
             if not isinstance( target_history_ids, list ):
                 target_history_ids = target_history_ids.split( "," )
-            if "create_new_history" in target_history_ids:
-                create_new_history = True
-                target_history_ids.remove( "create_new_history" )
-            target_history_ids = map( trans.security.decode_id, target_history_ids )
+            target_history_ids = [ trans.security.decode_id(h) for h in target_history_ids if h ]
         else:
             target_history_ids = []
         done_msg = error_msg = ""
         if do_copy:
             invalid_datasets = 0
-            if not source_dataset_ids or not ( target_history_ids or create_new_history ):
+            if not source_dataset_ids or not ( target_history_ids or new_history_name ):
                 error_msg = "You must provide both source datasets and target histories."
-                if create_new_history:
-                    target_history_ids.append( "create_new_history" )
             else:
-                if create_new_history:
+                if new_history_name:
                     new_history = trans.app.model.History()
-                    if new_history_name:
-                        new_history.name = new_history_name
+                    new_history.name = new_history_name
                     new_history.user = user
                     trans.sa_session.add( new_history )
                     trans.sa_session.flush()
@@ -772,10 +766,11 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                 if history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
-                done_msg = "%i datasets copied to %i histories." % ( len( source_dataset_ids ) - invalid_datasets, len( target_histories ) )
+                hist_names_str = ", ".join( [ hist.name for hist in target_histories ] )
+                num_source = len( source_dataset_ids ) - invalid_datasets
+                num_target = len(target_histories)
+                done_msg = "%i %s copied to %i %s: %s" % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str )
                 trans.sa_session.refresh( history )
-        elif create_new_history:
-            target_history_ids.append( "create_new_history" )
         source_datasets = history.visible_datasets
         target_histories = [history]
         if user:

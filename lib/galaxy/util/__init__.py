@@ -2,8 +2,7 @@
 Utility functions used systemwide.
 
 """
-import logging
-import threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp
+import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp
 
 # Older py compatibility
 try:
@@ -33,6 +32,9 @@ _lock = threading.RLock()
 
 gzip_magic = '\037\213'
 bz2_magic = 'BZh'
+
+from inflection import Inflector, English
+inflector = Inflector(English)
 
 def is_multi_byte( chars ):
     for char in chars:
