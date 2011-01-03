@@ -25,7 +25,7 @@
       #end if
     #else:
       ##use precomputed indexes
-      --ref="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.indices ), $__app__.tool_data_tables[ 'bfast_indexes' ].get_fields() )[0][-1] }"
+      --ref="${ refGenomeSource.indices.get_field( 'path' ) }"
     #end if
     
     #if $params.source_select == "full":
