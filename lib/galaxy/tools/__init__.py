@@ -1966,6 +1966,12 @@ class SelectToolParameterWrapper( object ):
         return self.input.to_param_dict_string( self.value, other_values = self._other_values )
     def __getattr__( self, key ):
         return getattr( self.input, key )
+    def get_field( self, field_name ):
+        """
+        Provide access to any field by name or index for this particular value.
+        Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
+        """
+        return self.input.options.get_field_by_name_for_value( field_name, self.value, None, self._other_values )
 
 class DatasetFilenameWrapper( object ):
     """

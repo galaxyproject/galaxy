@@ -494,6 +494,29 @@ class DynamicOptions( object ):
             options = filter.filter_options( options, trans, other_values )
         return options
     
+    def get_fields_by_value( self, value, trans, other_values ):
+        """
+        Return a list of fields with column 'value' matching provided value.
+        """
+        rval = []
+        val_index = self.columns[ 'value' ]
+        for fields in self.get_fields( trans, other_values ):
+            if fields[ val_index ] == value:
+                rval.append( fields )
+        return rval
+    
+    def get_field_by_name_for_value( self, field_name, value, trans, other_values ):
+        """
+        Get contents of field by name for specified value.
+        """
+        if isinstance( field_name, int ):
+            field_index = field_name
+        else:
+            assert field_name in self.columns, "Requested '%s' column missing from column def" % field_name
+            field_index = self.columns[ field_name ]
+        for fields in self.get_fields_by_value( value, trans, other_values ):
+            return fields[ field_index ]
+    
     def get_options( self, trans, other_values ):
         rval = []
         if self.file_fields is not None or self.tool_data_table is not None or self.dataset_ref_name is not None:
