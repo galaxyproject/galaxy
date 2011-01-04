@@ -104,6 +104,13 @@ class Sequencer( BaseController, UsesFormDefinitions ):
             trans.app.sequencer_types.reload( sequencer_type_id )
             sequencer_type = self.get_sequencer_type( trans, sequencer_type_id )
             widgets.extend( sequencer_type.form_definition.get_widgets( trans.user, **kwd ) )
+        if not trans.app.sequencer_types.visible_sequencer_types:
+            message = 'There are no visible sequencer types in the sequencer types config file'
+            status = 'error'
+            return trans.response.send_redirect( web.url_for( controller='sequencer',
+                                                              action='browse_sequencers',
+                                                              message=message,
+                                                              status=status ) )
         return trans.fill_template( '/admin/sequencer/create_sequencer.mako',
                                     widgets=widgets,
                                     message=message,
@@ -154,22 +161,14 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         description = util.restore_text( params.get( 'sequencer_description', '' ) )
         version = util.restore_text( params.get( 'sequencer_version', '' ) )
         sequencer_type_id = params.get( 'sequencer_type_id', '' )
-        def get_sequencer_form_values( sequencer ):
-            field_values = {}
-            for field_index, field in enumerate( sequencer.form_definition.fields ):
-                field_name = field[ 'name' ]
-                if field['type'] == PasswordField.__name__:
-                    field_values[ field_name ] = kwd.get( field_name, '' )
-                else:
-                    field_values[ field_name ] = util.restore_text( params.get( field_name, '' ) )
-            return field_values
+        values = self.get_form_values( trans, trans.user, sequencer.form_definition, **kwd )
         if sequencer_id:
             # We're saving changed attributes of an existing sequencer.
             sequencer = trans.sa_session.query( trans.model.Sequencer ).get( trans.security.decode_id( sequencer_id ) )
             sequencer.name = name
             sequencer.description = description
             sequencer.version = version
-            sequencer.form_values.content = get_sequencer_form_values( sequencer ) 
+            sequencer.form_values.content = values
             trans.sa_session.add( sequencer )
             trans.sa_session.add( sequencer.form_values )
             trans.sa_session.flush()
@@ -179,8 +178,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
             sequencer_type = self.get_sequencer_type( trans, sequencer_type_id )
             sequencer = trans.model.Sequencer( name, description, sequencer_type_id, version )
             sequencer.form_definition = sequencer_type.form_definition
-            field_values = get_sequencer_form_values( sequencer ) 
-            sequencer.form_values = trans.model.FormValues( sequencer.form_definition, field_values )
+            sequencer.form_values = trans.model.FormValues( sequencer.form_definition, values )
             trans.sa_session.add( sequencer.form_definition )
             trans.sa_session.add( sequencer.form_values )
             trans.sa_session.add( sequencer )
@@ -265,6 +263,13 @@ class Sequencer( BaseController, UsesFormDefinitions ):
                                                                                 sequencer_type_id, 
                                                                                 refresh_on_change=False,
                                                                                 reload=True )
+        if not trans.app.sequencer_types.visible_sequencer_types:
+            message = 'There are no visible sequencer types in the sequencer types config file.'
+            status = 'error'
+            return trans.response.send_redirect( web.url_for( controller='sequencer',
+                                                              action='browse_sequencers',
+                                                              message=message,
+                                                              status=status ) )
         return trans.fill_template( '/admin/sequencer/reload_sequencer_types.mako', 
                                     sequencer_type_select_field=sequencer_type_select_field,
                                     message=message,
@@ -313,17 +318,20 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         return widgets
     def __build_sequencer_type_select_field( self, trans, selected_value, refresh_on_change=True, reload=False ):
         sequencer_types = trans.app.sequencer_types.all_sequencer_types
+        # list of visible sequencer type ids
+        visible_sequencer_types = trans.app.sequencer_types.visible_sequencer_types
         refresh_on_change_values = [ 'none' ] 
-        refresh_on_change_values.extend( [ seq_type.id for seq_type in sequencer_types.values() ] )
+        refresh_on_change_values.extend( visible_sequencer_types )
         select_sequencer_type = SelectField( 'sequencer_type_id', 
-                                        refresh_on_change=refresh_on_change, 
-                                        refresh_on_change_values=refresh_on_change_values )
+                                             refresh_on_change=refresh_on_change, 
+                                             refresh_on_change_values=refresh_on_change_values )
         if selected_value == 'none':
             select_sequencer_type.add_option( 'Select one', 'none', selected=True )
         else:
             select_sequencer_type.add_option( 'Select one', 'none' )
-        for seq_type in sequencer_types.values():
-            if reload or seq_type.visible:
+        for seq_type_id in visible_sequencer_types:
+            seq_type = sequencer_types[ seq_type_id ] 
+            if reload:
                 option_name = " ".join( [ seq_type.name, "version", seq_type.version ] )
                 if selected_value == seq_type.id:
                     select_sequencer_type.add_option( option_name, seq_type.id, selected=True )

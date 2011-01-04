@@ -46,20 +46,30 @@ class TestUserInfo( TwillTestCase ):
                           strings_displayed=[ 'Create a new form definition' ],
                           strings_displayed_after_submit=[ name, desc, form_type ] )
         tmp_form = get_form( name )
+        # field names
+        global user_form_field_name1
+        user_form_field_name1 = 'affiliation'
+        global user_form_field_name2
+        user_form_field_name2 = 'name_of_organization'
+        global user_form_field_name3
+        user_form_field_name3 = 'contact_for_feedback'
         # Add fields to the form
         field_dicts = [ dict( label='Affiliation',
                               desc='The type of  organization you are affiliated with',
                               type='SelectField',
                               required='optional',
-                              selectlist=[ 'Educational', 'Research', 'Commercial' ] ),
+                              selectlist=[ 'Educational', 'Research', 'Commercial' ],
+                              name=user_form_field_name1 ),
                         dict( label='Name of Organization',
                               desc='',
                               type='TextField',
-                              required='optional' ),
+                              required='optional',
+                              name=user_form_field_name2 ),
                         dict( label='Contact for feedback',
                               desc='',
                               type='CheckboxField',
-                              required='optional' ) ]
+                              required='optional',
+                              name=user_form_field_name3 ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
                         field_dicts=field_dicts,
                         field_index=len( tmp_form.fields ),
@@ -85,15 +95,18 @@ class TestUserInfo( TwillTestCase ):
                               desc='The type of  organization you are affiliated with',
                               type='SelectField',
                               required='optional',
-                              selectlist=[ 'Educational', 'Research', 'Commercial' ] ),
+                              selectlist=[ 'Educational', 'Research', 'Commercial' ],
+                              name=user_form_field_name1 ),
                         dict( label='Name of Organization',
                               desc='',
                               type='TextField',
-                              required='optional' ),
+                              required='optional',
+                              name=user_form_field_name2 ),
                         dict( label='Contact for feedback',
                               desc='',
                               type='CheckboxField',
-                              required='optional' ) ]
+                              required='optional',
+                              name=user_form_field_name3 ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
                         field_dicts=field_dicts,
                         field_index=len( tmp_form.fields ),
@@ -114,7 +127,9 @@ class TestUserInfo( TwillTestCase ):
         email = 'test11@bx.psu.edu'
         password = 'testuser'
         username = 'test11'
-        user_info_values=[ 'Educational', 'Penn State', '1' ]
+        user_info_values=[ ( user_form_field_name1, 'Educational' ), 
+                           ( user_form_field_name2, 'Penn State' ), 
+                           ( user_form_field_name3, '1' ) ]
         self.create_user_with_info( email=email,
                                     password=password,
                                     username=username, 
@@ -128,10 +143,12 @@ class TestUserInfo( TwillTestCase ):
         regular_user11_private_role = get_private_role( regular_user11 )
         self.logout()
         self.login( email=regular_user11.email, username=username )
+        global form_checkbox_field3_sring
+        form_checkbox_field3_sring = '<input type="checkbox" id="%s" name="%s" value="true" checked="checked">' % ( user_form_field_name3, user_form_field_name3 )
         self.edit_user_info( strings_displayed=[ "Manage User Information",
-                                                 user_info_values[0],
-                                                 user_info_values[1],
-                                                 '<input type="checkbox" id="subscribe" name="subscribe" value="true">' ] )
+                                                 user_info_values[0][1],
+                                                 user_info_values[1][1],
+                                                 form_checkbox_field3_sring ] )
     def test_015_user_reqistration_single_user_info_forms( self ):
         """Testing user registration with a single user info form"""
         # Logged in as regular_user_11
@@ -145,7 +162,9 @@ class TestUserInfo( TwillTestCase ):
         email = 'test12@bx.psu.edu'
         password = 'testuser'
         username = 'test12'
-        user_info_values=[ 'Educational', 'Penn State', '1' ]
+        user_info_values=[ ( user_form_field_name1, 'Educational' ), 
+                           ( user_form_field_name2, 'Penn State' ), 
+                           ( user_form_field_name3, '1' ) ]
         self.create_user_with_info( email=email,
                                     password=password,
                                     username=username, 
@@ -160,9 +179,9 @@ class TestUserInfo( TwillTestCase ):
         self.logout()
         self.login( email=regular_user12.email, username=username )
         self.edit_user_info( strings_displayed=[ "Manage User Information",
-                                                 user_info_values[0],
-                                                 user_info_values[1],
-                                                 '<input type="checkbox" id="field_2" name="field_2" value="true" checked="checked">' ] )
+                                                 user_info_values[0][1],
+                                                 user_info_values[1][1],
+                                                 form_checkbox_field3_sring ] )
     def test_020_edit_user_info( self ):
         """Testing editing user info as a regular user"""
         # Logged in as regular_user_12
@@ -186,7 +205,9 @@ class TestUserInfo( TwillTestCase ):
         # Test logging in with new email and password
         self.login( email=regular_user12.email, password='testuser#' )
         # Test editing the user info
-        self.edit_user_info( info_values=[ 'Research', 'PSU' ],
+        new_user_info_values=[ ( user_form_field_name1, 'Educational' ), 
+                               ( user_form_field_name2, 'Penn State' ) ]
+        self.edit_user_info( info_values=new_user_info_values,
                              strings_displayed_after_submit=[ "The user information has been updated with the changes" ] )
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
@@ -198,6 +219,15 @@ class TestUserInfo( TwillTestCase ):
         ##################
         for form in [ form_one ]:
             self.mark_form_deleted( self.security.encode_id( form.current.id ) )
+        ###############
+        # Purge private roles
+        ###############
+        for role in [ regular_user11_private_role, regular_user12_private_role ]:
+            self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
+            self.purge_role( self.security.encode_id( role.id ), role.name )
+            # Manually delete the role from the database
+            refresh( role )
+            delete_obj( role )
         ###############
         # Purge appropriate users
         ###############

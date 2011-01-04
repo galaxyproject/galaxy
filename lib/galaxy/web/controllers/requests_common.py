@@ -309,32 +309,10 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         name = util.restore_text( params.get( 'name', '' ) )
         desc = util.restore_text( params.get( 'desc', '' ) )
         notification = dict( email=[ user.email ], sample_states=[ request_type.final_sample_state.id ], body='', subject='' )
-        values = {}
-        for index, field in enumerate( request_type.request_form.fields ):
-            field_type = field[ 'type' ]
-            field_name = field[ 'name' ]
-            input_value = params.get( field_name, '' )
-            if field_type == 'AddressField':
-                input_text_value = util.restore_text( input_value )
-                if input_text_value == 'new':
-                    # Save this new address in the list of this user's addresses
-                    user_address = trans.model.UserAddress( user=user )
-                    self.save_widget_field( trans, user_address, field_name, **kwd )
-                    trans.sa_session.refresh( user )
-                    field_value = int( user_address.id )
-                elif input_text_value in [ '', 'none', 'None', None ]:
-                    field_value = ''
-                else:
-                    field_value = int( input_text_value )
-            elif field[ 'type' ] == 'CheckboxField':
-                field_value = CheckboxField.is_checked( input_value ) 
-            else:
-                field_value = util.restore_text( input_value )
-            values[ field_name ] = field_value
-        form_values = trans.model.FormValues( request_type.request_form, values )
-        trans.sa_session.add( form_values )
-        trans.sa_session.flush()
+        values = self.get_form_values( trans, user, request_type.request_form, **kwd )
         if request is None:
+            form_values = trans.model.FormValues( request_type.request_form, values )
+            trans.sa_session.add( form_values )
             # We're creating a new request
             request = trans.model.Request( name, desc, request_type, user, form_values, notification )
             trans.sa_session.add( request )
@@ -354,8 +332,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             request.type = request_type
             request.user = user
             request.notification = notification
-            request.values = form_values
+            request.values.content = values
             trans.sa_session.add( request )
+            trans.sa_session.add( request.values )
             trans.sa_session.flush()
         return request
     @web.expose

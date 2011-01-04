@@ -21,12 +21,12 @@ class RBACAgent:
     permitted_actions = Bunch(
         DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset", "grant" ),
         DATASET_ACCESS = Action( "access", "Users having associated role can import this dataset into their history for analysis", "restrict" ),
-        LIBRARY_ACCESS = Action( "access library", "Restrict access to this library to only users having assocaited role", "restrict" ),
+        LIBRARY_ACCESS = Action( "access library", "Restrict access to this library to only users having associated role", "restrict" ),
         LIBRARY_ADD = Action( "add library item", "Users having associated role can add library items to this library item", "grant" ),
         LIBRARY_MODIFY = Action( "modify library item", "Users having associated role can modify this library item", "grant" ),
         LIBRARY_MANAGE = Action( "manage library permissions", "Users having associated role can manage roles associated with permissions on this library item", "grant" ),
         # Request type permissions
-        REQUEST_TYPE_ACCESS = Action( "access request_type", "Users having associated role can access this sequencer configuration", "grant" )
+        REQUEST_TYPE_ACCESS = Action( "access request_type", "Restrict access to this request type to only users having associated role", "restrict" )
         
     )
     def get_action( self, name, default=None ):
@@ -505,17 +505,23 @@ class GalaxyRBACAgent( RBACAgent ):
         return permissions
     def get_accessible_request_types( self, trans, user ):
         """Return all ReqquestTypes that the received user has permission to access."""
-        active_request_types = trans.sa_session.query( trans.app.model.RequestType ) \
-                                               .filter( trans.app.model.RequestType.table.c.deleted == False ) \
-                                               .order_by( trans.app.model.RequestType.name )
-        # Filter active_request_types to those that can be accessed by the received user
-        role_ids = [ r.id for r in user.all_roles() ]
-        accessible_request_types = set()
-        for request_type in active_request_types:
-            for permission in request_type.actions:
-                if permission.role.id in role_ids:
-                   accessible_request_types.add( request_type )
-        accessible_request_types = [ request_type for request_type in accessible_request_types ]
+        accessible_request_types = []
+        current_user_role_ids = [ role.id for role in user.all_roles() ]
+        request_type_access_action = self.permitted_actions.REQUEST_TYPE_ACCESS.action
+        restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query( trans.model.RequestTypePermissions ) \
+                                                                                        .filter( trans.model.RequestTypePermissions.table.c.action == request_type_access_action ) \
+                                                                                        .distinct() ]
+        accessible_restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query( trans.model.RequestTypePermissions ) \
+                                                                                      .filter( and_( trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
+                                                                                                     trans.model.RequestTypePermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
+        # Filter to get libraries accessible by the current user.  Get both 
+        # public libraries and restricted libraries accessible by the current user.
+        for request_type in trans.sa_session.query( trans.model.RequestType ) \
+                                            .filter( and_( trans.model.RequestType.table.c.deleted == False,
+                                                           ( or_( not_( trans.model.RequestType.table.c.id.in_( restricted_request_type_ids ) ),
+                                                                  trans.model.RequestType.table.c.id.in_( accessible_restricted_request_type_ids ) ) ) ) ) \
+                                       .order_by( trans.app.model.RequestType.name ):
+            accessible_request_types.append( request_type )
         return accessible_request_types
     def copy_dataset_permissions( self, src, dst ):
         if not isinstance( src, self.model.Dataset ):
@@ -919,7 +925,7 @@ class GalaxyRBACAgent( RBACAgent ):
             if permission.action == action.action:
                 request_type_actions.append( permission )
         if not request_type_actions:
-            return False
+            return True
         ret_val = False
         for request_type_action in request_type_actions:
             if request_type_action.role in roles:

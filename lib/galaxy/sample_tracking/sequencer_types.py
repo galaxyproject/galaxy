@@ -22,6 +22,7 @@ class SequencerTypesCollection( object ):
             log.exception( "SequencerTypesCollection error reading %s", config_filename )
 
     def load_all( self, config_filename ):
+        self.visible_sequencer_types = []
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
         for elem in root:
@@ -32,8 +33,10 @@ class SequencerTypesCollection( object ):
                     sequencer_type = self.load_sequencer_type( os.path.join( self.root_dir, file_path ), visible )
                     self.all_sequencer_types[ sequencer_type.id ] = sequencer_type
                     log.debug( "Loaded sequencer_type: %s %s" % ( sequencer_type.name, sequencer_type.config_version ) )
+                    if visible:
+                        self.visible_sequencer_types.append( sequencer_type.id )
             except:
-                log.exception( "error reading sequencer_type from path: %s" % file_path )        
+                log.exception( "error reading sequencer_type from path: %s" % file_path )
     def load_sequencer_type( self, config_file, visible=True ):
         # Parse XML configuration file and get the root element
         tree = util.parse_xml( config_file )

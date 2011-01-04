@@ -8,7 +8,7 @@ from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField, build_select_field
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField, PasswordField, build_select_field
 from galaxy.visualization.tracks.data_providers import get_data_provider
 from galaxy.visualization.tracks.visual_analytics import get_tool_def
 
@@ -878,6 +878,36 @@ class UsesFormDefinitions:
             field_obj.phone = util.restore_text( params.get( '%s_phone' % widget_name, '' ) )
             trans.sa_session.add( field_obj )
             trans.sa_session.flush()
+    def get_form_values( self, trans, user, form_definition, **kwd ):
+        '''
+        Returns the name:value dictionary containing all the form values
+        '''
+        params = util.Params( kwd )
+        values = {}
+        for index, field in enumerate( form_definition.fields ):
+            field_type = field[ 'type' ]
+            field_name = field[ 'name' ]
+            input_value = params.get( field_name, '' )
+            if field_type == AddressField.__name__:
+                input_text_value = util.restore_text( input_value )
+                if input_text_value == 'new':
+                    # Save this new address in the list of this user's addresses
+                    user_address = trans.model.UserAddress( user=user )
+                    self.save_widget_field( trans, user_address, field_name, **kwd )
+                    trans.sa_session.refresh( user )
+                    field_value = int( user_address.id )
+                elif input_text_value in [ '', 'none', 'None', None ]:
+                    field_value = ''
+                else:
+                    field_value = int( input_text_value )
+            elif field_type == CheckboxField.__name__:
+                field_value = CheckboxField.is_checked( input_value ) 
+            elif field_type == PasswordField.__name__:
+                field_value = kwd.get( field_name, '' )
+            else:
+                field_value = util.restore_text( input_value )
+            values[ field_name ] = field_value
+        return values
     def populate_widgets_from_kwd( self, trans, widgets, **kwd ):
         # A form submitted via refresh_on_change requires us to populate the widgets with the contents of
         # the form fields the user may have entered so that when the form refreshes the contents are retained.

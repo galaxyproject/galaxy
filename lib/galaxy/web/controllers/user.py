@@ -594,26 +594,7 @@ class User( BaseController, UsesFormDefinitions ):
                     # when there is only one user_info form then there is no way
                     # to change the user_info form 
                     user_info_form = user_info_forms[0]
-        values = []
-        for index, field in enumerate( user_info_form.fields ):
-            field_type = field[ 'type' ]
-            field_name = field[ 'name' ]
-            if field_type == 'AddressField':
-                value = util.restore_text( params.get( field_name, '' ) )
-                if value == 'new':
-                    # save this new address in the list of this user's addresses
-                    user_address = trans.app.model.UserAddress( user=user )
-                    self.save_widget_field( trans, user_address, field_name, **kwd )
-                    trans.sa_session.refresh( user )
-                    values.append(int( user_address.id ) )
-                elif value == unicode( 'none' ):
-                    values.append( '' )
-                else:
-                    values.append( int( value ) )
-            elif field[ 'type' ] == 'CheckboxField':
-                values.append( CheckboxField.is_checked( params.get( field_name, '' ) ) ) 
-            else:
-                values.append( util.restore_text( params.get( field_name, '' ) ) )
+        values = self.get_form_values( trans, user, user_info_form, **kwd )
         if new_user or not user.values:
             # new user or existing 
             form_values = trans.app.model.FormValues( user_info_form, values )
@@ -701,37 +682,28 @@ class User( BaseController, UsesFormDefinitions ):
             selected_user_form_id = params.get( 'user_info_select', 'none'  )
         # when there are more than one user information forms then show a select box
         # list all these forms
+        user_info_selectfield = None
         if len(user_info_forms) > 1:
-            # create the select box
-            user_info_select = SelectField('user_info_select', refresh_on_change=True, 
-                                           refresh_on_change_values=[str(u.id) for u in user_info_forms])
-            if selected_user_form_id == 'none':
-                user_info_select.add_option('Select one', 'none', selected=True)
-            else:
-                user_info_select.add_option('Select one', 'none')
-            for u in user_info_forms:
-                if selected_user_form_id == str(u.id):
-                    user_info_select.add_option(u.name, u.id, selected=True)
-                else:
-                    user_info_select.add_option(u.name, u.id)
+            # create the selectfield to select a user info form
+            user_info_selectfield = self.__build_user_info_forms_selectfield( trans, user_info_forms, selected_user_form_id )
         # when there is just one user information form the just render that form
         elif len(user_info_forms) == 1:
             selected_user_form_id = user_info_forms[0].id
         # user information
         try:
-            user_info_form = trans.sa_session.query( trans.app.model.FormDefinition ).get(int(selected_user_form_id))
+            user_info_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( selected_user_form_id ) )
         except:
-            return user_info_select, None, []
+            return user_info_selectfield, None, []
         if user:
             if user.values:
-                widgets = user_info_form.get_widgets(user=user, 
-                                                     contents=user.values.content, 
-                                                     **kwd)
+                widgets = user_info_form.get_widgets( user=user, 
+                                                      contents=user.values.content, 
+                                                      **kwd )
             else:
-                widgets = user_info_form.get_widgets(None, contents={}, **kwd)
+                widgets = user_info_form.get_widgets( None, contents={}, **kwd )
         else:
-            widgets = user_info_form.get_widgets(None, contents={}, **kwd)
-        return user_info_select, user_info_form, widgets
+            widgets = user_info_form.get_widgets( None, contents={}, **kwd )
+        return user_info_selectfield, user_info_form, widgets
     @web.expose
     def show_info( self, trans, **kwd ):
         '''
@@ -1346,3 +1318,18 @@ class User( BaseController, UsesFormDefinitions ):
                                     user=trans.user,
                                     message=message,
                                     status=status )
+
+    # ===== Methods for building SelectFields  ================================
+    def __build_user_info_forms_selectfield( self, trans, user_info_forms, selected_user_form_id ):
+        user_info_select = SelectField('user_info_select', refresh_on_change=True, 
+                                       refresh_on_change_values=[str(u.id) for u in user_info_forms])
+        if selected_user_form_id == 'none':
+            user_info_select.add_option('Select one', 'none', selected=True)
+        else:
+            user_info_select.add_option('Select one', 'none')
+        for u in user_info_forms:
+            if selected_user_form_id == str(u.id):
+                user_info_select.add_option(u.name, u.id, selected=True)
+            else:
+                user_info_select.add_option(u.name, u.id)
+        return user_info_select

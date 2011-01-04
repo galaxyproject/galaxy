@@ -177,25 +177,36 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         # Edit the name and description of the form definition, and add 3 fields.
         new_name = "Request Form"
         new_desc = "Request Form description"
+        # labels
         global request_field_label1
         request_field_label1 = 'Request form field1'
         global request_field_label2
         request_field_label2 = 'Request form field2'
         global request_field_label3
         request_field_label3 = 'Request form field3'
+        # field names
+        global request_form_field_name1
+        request_form_field_name1 = 'request_form_field1'
+        global request_form_field_name2
+        request_form_field_name2 = 'request_form_field2'
+        global request_form_field_name3
+        request_form_field_name3 = 'request_form_field3'
         field_dicts = [ dict( label=request_field_label1,
-                             desc='Description of '+request_field_label1,
-                             type='SelectField',
-                             required='optional',
-                             selectlist=[ 'option1', 'option2' ] ),
+                              desc='Description of '+request_field_label1,
+                              type='SelectField',
+                              required='optional',
+                              selectlist=[ 'option1', 'option2' ],
+                              name=request_form_field_name1 ),
                         dict( label=request_field_label2,
                               desc='Description of '+request_field_label2,
                               type='AddressField',
-                              required='optional' ),
+                              required='optional',
+                              name=request_form_field_name2 ),
                         dict( label=request_field_label3,
                               desc='Description of '+request_field_label3,
                               type='TextField',
-                              required='required' ) ]
+                              required='required',
+                              name=request_form_field_name3 ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
                         new_form_name=new_name,
                         new_form_desc=new_desc,
@@ -238,18 +249,21 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         global sample_field_label3
         sample_field_label3 = 'Sample form field3'
         field_dicts = [ dict( label=sample_field_label1,
-                             desc='Description of '+sample_field_label1,
-                             type='SelectField',
-                             required='optional',
-                             selectlist=[ 'option1', 'option2' ] ),
+                              desc='Description of '+sample_field_label1,
+                              type='SelectField',
+                              required='optional',
+                              selectlist=[ 'option1', 'option2' ],
+                              name='sample_form_field1' ),
                         dict( label=sample_field_label2,
                               desc='Description of '+sample_field_label2,
                               type='TextField',
-                              required='optional' ),
+                              required='optional',
+                              name='sample_form_field2' ),
                         dict( label=sample_field_label3,
                               desc='Description of '+sample_field_label3,
                               type='TextField',
-                              required='required' ) ]
+                              required='required',
+                              name='sample_form_field3' ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
                         new_form_name=name,
                         new_form_desc=desc,
@@ -335,7 +349,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         user_address1 = get_user_address( regular_user1, address_dict[ 'short_desc' ] )
         # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
         # is required for that field.
-        field_value_tuples = [ ( 'option1', False ), ( (str( user_address1.id ), str( user_address1.id ) ), True ), ( 'field3 value', False ) ] 
+        field_value_tuples = [ ( request_form_field_name1, 'option1', False ), 
+                               ( request_form_field_name2, ( str( user_address1.id ), str( user_address1.id ) ), True ), 
+                               ( request_form_field_name3, 'field3 value', False ) ] 
         # Create the request
         name = 'Request1'
         desc = 'Request1 Description'
@@ -379,7 +395,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     def test_030_edit_basic_request_info( self ):
         """Testing editing the basic information and email settings of a sequencing request"""
         # logged in as regular_user1
-        fields = [ 'option2', str( user_address1.id ), 'field3 value (edited)' ]
+        fields = [ ( request_form_field_name1, 'option2' ), 
+                   ( request_form_field_name2, str( user_address1.id ) ), 
+                   ( request_form_field_name3, 'field3 value (edited)' ) ]
         new_name=request1.name + ' (Renamed)'
         new_desc=request1.desc + ' (Re-described)'
         self.edit_basic_request_info( request_id=self.security.encode_id( request1.id ),
@@ -414,7 +432,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         strings_displayed = [ 'Sequencing request "%s"' % new_name,
                               new_desc ]
         for field in fields:
-            strings_displayed.append( field )        
+            strings_displayed.append( field[1] )        
         for state_name, id, is_checked in check_sample_states:
             strings_displayed.append( state_name )
         for email in additional_emails:
@@ -644,7 +662,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                  phone="007-007-0007" )
         # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
         # is required for that field.
-        field_value_tuples = [ ( 'option2', False ), ( ( 'new', new_address_dict ) , True ), ( 'field_2_value', False ) ] 
+        field_value_tuples = [ ( request_form_field_name1, 'option2', False ), 
+                               ( request_form_field_name2, ( 'new', new_address_dict ) , True ), 
+                               ( request_form_field_name3, 'field_2_value', False ) ] 
         self.create_request( cntrller='requests_admin',
                              request_type_id=self.security.encode_id( request_type1.id ),
                              other_users_id=self.security.encode_id( regular_user1.id ),

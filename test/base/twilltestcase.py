@@ -780,9 +780,8 @@ class TwillTestCase( unittest.TestCase ):
         if user_info_select:
             # The user_info_select SelectField requires a refresh_on_change
             self.refresh_form( 'user_info_select', user_info_select )
-            for index, info_value in enumerate( user_info_values ):
-                field_index = index + 1
-                tc.fv( "1", "%i_field_name" % field_index, info_value )
+            for index, ( field_name, info_value ) in enumerate( user_info_values ):
+                tc.fv( "1", field_name, info_value )
         tc.submit( "create_user_button" )
     def edit_user_info( self, new_email='', new_username='', password='', new_password='',
                         info_values=[], strings_displayed=[], strings_displayed_after_submit=[] ):
@@ -801,9 +800,9 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "change_password", "confirm", new_password )
             tc.submit( "change_password_button" )
         if info_values:
-            for index, info_value in enumerate( info_values ):
+            for index, ( field_name, info_value ) in enumerate( info_values ):
                 field_index = index + 1
-                tc.fv( "user_info", "%i_field_name" % field_index, info_value )
+                tc.fv( "user_info", field_name, info_value )
             tc.submit( "edit_user_info_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
@@ -1412,16 +1411,19 @@ class TwillTestCase( unittest.TestCase ):
             index = i + field_index
             tc.submit( "add_field_button" )
             field_label = "field_label_%i" % index
-            field_value = field_dict[ 'label' ]
+            field_label_value = field_dict[ 'label' ]
             field_help = "field_helptext_%i" % index
             field_help_value = field_dict[ 'desc' ]
             field_type = "field_type_%i" % index
             field_type_value = field_dict[ 'type' ]
             field_required = "field_required_%i" % index
             field_required_value = field_dict[ 'required' ]
-            tc.fv( "1", field_label, field_value )
+            field_name = "field_name_%i" % index
+            field_name_value = field_dict.get( 'name', '%i_field_name' % index )
+            tc.fv( "1", field_label, field_label_value )
             tc.fv( "1", field_help, field_help_value )
             tc.fv( "1", field_required, field_required_value )
+            tc.fv( "1", field_name, field_name_value )
             if field_type_value.lower() == 'selectfield':
                 # SelectFields require a refresh_on_change
                 self.refresh_form( field_type, field_type_value )
@@ -1521,8 +1523,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "desc", desc )
         for index, field_value_tuple in enumerate( field_value_tuples ):
             field_index = index + 1
-            field_name = "%i_field_name" % field_index
-            field_value, refresh_on_change = field_value_tuple
+            field_name, field_value, refresh_on_change = field_value_tuple
             if refresh_on_change:
                 # Only the AddressField type has a refresh on change setup on selecting an option
                 address_option = field_value[0]
@@ -1563,9 +1564,9 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "name", new_name )
         if new_desc:
             tc.fv( "1", "desc", new_desc )
-        for index, field_value in enumerate( new_fields ):
+        for index, ( field_name, field_value ) in enumerate( new_fields ):
             field_name_index = index + 1
-            tc.fv( "1", "%i_field_name" % field_name_index, field_value )
+            tc.fv( "1", field_name, field_value )
         tc.submit( "edit_basic_request_info_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
