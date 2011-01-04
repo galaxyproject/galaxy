@@ -34,7 +34,7 @@ def upgrade():
         log.debug( "Loading 'form_values' table failed: %s" % str( e ) )
     def get_value(lst, index):
         try:
-            return lst[index]
+            return str(lst[index]).replace("'", "''")
         except IndexError,e:
             return ''
     # Go through the entire table and add a 'name' attribute for each field
@@ -50,9 +50,10 @@ def upgrade():
         if len( fields_list ):
             for index, field in enumerate( fields_list ):
                 field[ 'name' ] = 'field_%i' % index
-                #field[ 'helptext' ] = field[ 'helptext' ].replace('"', '').replace("'", "")
-                #field[ 'label' ] = field[ 'label' ].replace('"', '').replace("'", "")
-            cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( to_json_string( fields_list ), form_definition_id )
+                field[ 'helptext' ] = field[ 'helptext' ].replace("'", "''").replace('"', "")
+                field[ 'label' ] = field[ 'label' ].replace("'", "''")
+            fields_json = to_json_string( fields_list )
+            cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( fields_json, form_definition_id )
             db_session.execute( cmd )
     # replace the values list in the content field of the form_values table with a name:value dict
     cmd = "SELECT form_values.id, form_values.content, form_definition.fields" \
