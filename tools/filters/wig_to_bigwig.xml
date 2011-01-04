@@ -1,6 +1,12 @@
 <tool id="wig_to_bigWig" name="Wig to bigWig" version="1.0.1">
   <description>converter</description>
-  <command>grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1 -blockSize=$blockSize -itemsPerSlot=$itemsPerSlot $clip $unc 2&gt;&amp;1 || echo "Error running wigToBigWig." >&amp;2</command>
+  <command>grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1 
+    #if $settings.settingsType == "full":
+      -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.clip} ${settings.unc}
+    #else:
+      -clip
+    #end if
+    2&gt;&amp;1 || echo "Error running wigToBigWig." >&amp;2</command>
   <requirements>
     <requirement type="package">ucsc_tools</requirement>
   </requirements>
@@ -8,10 +14,19 @@
     <param format="wig" name="input1" type="data" label="Convert">
       <validator type="unspecified_build" />
     </param>
-    <param name="blockSize" size="4" type="integer" value="256" label="Items to bundle in r-tree" help="Default is 256 (blockSize)" />
-    <param name="itemsPerSlot" size="4" type="integer" value="1024" label="Data points bundled at lowest level" help="Default is 1024 (itemsPerSlot)" />
-    <param name="clip" type="boolean" truevalue="-clip" falsevalue="" checked="True" label="Clip chromosome positions" help="Issue warning messages rather than dying if wig file contains items off end of chromosome. (clip)"/>
-    <param name="unc" type="boolean" truevalue="-unc" falsevalue="" checked="False" label="Do not use compression" help="(unc)"/>
+    <conditional name="settings">
+      <param name="settingsType" type="select" label="Converter settings to use" help="Default settings should usually be used.">
+        <option value="preset">Default</option>
+        <option value="full">Full parameter list</option>
+      </param>
+      <when value="preset" />
+      <when value="full">
+        <param name="blockSize" size="4" type="integer" value="256" label="Items to bundle in r-tree" help="Default is 256 (blockSize)" />
+        <param name="itemsPerSlot" size="4" type="integer" value="1024" label="Data points bundled at lowest level" help="Default is 1024 (itemsPerSlot)" />
+        <param name="clip" type="boolean" truevalue="-clip" falsevalue="" checked="True" label="Clip chromosome positions" help="Issue warning messages rather than dying if wig file contains items off end of chromosome. (clip)"/>
+        <param name="unc" type="boolean" truevalue="-unc" falsevalue="" checked="False" label="Do not use compression" help="(unc)"/>
+      </when>
+    </conditional>
   </inputs>
   <outputs>
     <data format="bigwig" name="out_file1" />
@@ -19,10 +34,16 @@
   <tests>
     <test>
       <param name="input1" value="2.wig" dbkey="hg17" />
+      <param name="settingsType" value="full" />
       <param name="blockSize" value="256" />
       <param name="itemsPerSlot" value="1024" />
-      <param name="clip" value="False" />
+      <param name="clip" value="True" />
       <param name="unc" value="False" />
+      <output name="out_file1" file="2.bigwig"/>
+    </test>
+    <test>
+      <param name="input1" value="2.wig" dbkey="hg17" />
+      <param name="settingsType" value="preset" />
       <output name="out_file1" file="2.bigwig"/>
     </test>
   </tests>
