@@ -161,14 +161,13 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         description = util.restore_text( params.get( 'sequencer_description', '' ) )
         version = util.restore_text( params.get( 'sequencer_version', '' ) )
         sequencer_type_id = params.get( 'sequencer_type_id', '' )
-        values = self.get_form_values( trans, trans.user, sequencer.form_definition, **kwd )
         if sequencer_id:
             # We're saving changed attributes of an existing sequencer.
             sequencer = trans.sa_session.query( trans.model.Sequencer ).get( trans.security.decode_id( sequencer_id ) )
             sequencer.name = name
             sequencer.description = description
             sequencer.version = version
-            sequencer.form_values.content = values
+            sequencer.form_values.content = self.get_form_values( trans, trans.user, sequencer.form_definition, **kwd )
             trans.sa_session.add( sequencer )
             trans.sa_session.add( sequencer.form_values )
             trans.sa_session.flush()
@@ -178,6 +177,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
             sequencer_type = self.get_sequencer_type( trans, sequencer_type_id )
             sequencer = trans.model.Sequencer( name, description, sequencer_type_id, version )
             sequencer.form_definition = sequencer_type.form_definition
+            values = self.get_form_values( trans, trans.user, sequencer.form_definition, **kwd )
             sequencer.form_values = trans.model.FormValues( sequencer.form_definition, values )
             trans.sa_session.add( sequencer.form_definition )
             trans.sa_session.add( sequencer.form_values )
