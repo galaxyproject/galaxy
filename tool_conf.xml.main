@@ -55,7 +55,7 @@
     <tool file="fastq/fastq_to_fasta.xml" />
     <tool file="filters/sff_extractor.xml" />
     <tool file="filters/wig_to_bigwig.xml" />
-	<tool file="filters/bed_to_bigbed.xml" />
+    <tool file="filters/bed_to_bigbed.xml" />
   </section>
   <section name="FASTA manipulation" id="fasta_manipulation">
     <tool file="fasta_tools/fasta_compute_length.xml" />
@@ -109,7 +109,7 @@
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
-  	<tool file="new_operations/intersect.xml" />  
+    <tool file="new_operations/intersect.xml" />  
     <tool file="new_operations/subtract.xml" />
     <tool file="new_operations/merge.xml" />
     <tool file="new_operations/concat.xml" />
