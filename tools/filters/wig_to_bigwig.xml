@@ -1,4 +1,4 @@
-<tool id="wig_to_bigWig" name="Wig to bigWig" version="1.0.1">
+<tool id="wig_to_bigWig" name="Wig-to-bigWig" version="1.1.0">
   <description>converter</description>
   <command>grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1 
     #if $settings.settingsType == "full":
