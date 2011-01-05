@@ -609,8 +609,10 @@ def build_select_field( trans, objs, label_attr,  select_field_name, initial_val
     """
     Build a SelectField given a set of objects.  The received params are:
     - objs: the set of objects used to populate the option list
-    - label_attr: the attribute of each obj (e.g., name, email, etc ) whose value is used to populate each option label.  If the string
-      'self' is passed as label_attr, each obj in objs is assumed to be a string, so the obj itself is used
+    - label_attr: the attribute of each obj (e.g., name, email, etc ) whose value is used to populate each option label.  
+        - If the string 'self' is passed as label_attr, each obj in objs is assumed to be a string, so the obj itself is used
+        - If the string 'do_not_encode' is passed as label_attr, obj in objs is not encoded and each obj is assumed to have a name and an id. 
+          It is currently used for non-model objects only.
     - select_field_name: the name of the SelectField
     - initial_value: the value of the first option in the SelectField - allows for an option telling the user to select something
     - selected_value: the value of the currently selected option
@@ -650,6 +652,11 @@ def build_select_field( trans, objs, label_attr,  select_field_name, initial_val
                 select_field.add_option( obj, obj, selected=True )
             else:
                 select_field.add_option( obj, obj )
+        elif label_attr == 'do_not_encode':
+            if str( selected_value ) == str( obj.id ):
+                select_field.add_option( obj.name, obj.id, selected=True )
+            else:
+                select_field.add_option( obj.name, obj.id )
         else:
             label = getattr( obj, label_attr )
             if str( selected_value ) == str( obj.id ) or str( selected_value ) == trans.security.encode_id( obj.id ):

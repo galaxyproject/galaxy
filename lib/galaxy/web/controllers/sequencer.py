@@ -262,7 +262,7 @@ class Sequencer( BaseController, UsesFormDefinitions ):
         sequencer_type_select_field = self.__build_sequencer_type_select_field( trans, 
                                                                                 sequencer_type_id, 
                                                                                 refresh_on_change=False,
-                                                                                reload=True )
+                                                                                visible_sequencer_types_only=False )
         if not trans.app.sequencer_types.visible_sequencer_types:
             message = 'There are no visible sequencer types in the sequencer types config file.'
             status = 'error'
@@ -316,25 +316,16 @@ class Sequencer( BaseController, UsesFormDefinitions ):
                                   widget=self.__build_sequencer_type_select_field( trans, seq_type ),
                                   helptext='') )
         return widgets
-    def __build_sequencer_type_select_field( self, trans, selected_value, refresh_on_change=True, reload=False ):
+    def __build_sequencer_type_select_field( self, trans, selected_value, refresh_on_change=True, visible_sequencer_types_only=True ):
         sequencer_types = trans.app.sequencer_types.all_sequencer_types
-        # list of visible sequencer type ids
-        visible_sequencer_types = trans.app.sequencer_types.visible_sequencer_types
-        refresh_on_change_values = [ 'none' ] 
-        refresh_on_change_values.extend( visible_sequencer_types )
-        select_sequencer_type = SelectField( 'sequencer_type_id', 
-                                             refresh_on_change=refresh_on_change, 
-                                             refresh_on_change_values=refresh_on_change_values )
-        if selected_value == 'none':
-            select_sequencer_type.add_option( 'Select one', 'none', selected=True )
+        if visible_sequencer_types_only:
+            objs_list = [ sequencer_types[ seq_type_id ] for seq_type_id in trans.app.sequencer_types.visible_sequencer_types ]
         else:
-            select_sequencer_type.add_option( 'Select one', 'none' )
-        for seq_type_id in visible_sequencer_types:
-            seq_type = sequencer_types[ seq_type_id ] 
-            if reload:
-                option_name = " ".join( [ seq_type.name, "version", seq_type.version ] )
-                if selected_value == seq_type.id:
-                    select_sequencer_type.add_option( option_name, seq_type.id, selected=True )
-                else:
-                    select_sequencer_type.add_option( option_name, seq_type.id )
-        return select_sequencer_type
+            objs_list = sequencer_types.values()
+        return build_select_field( trans,
+                                   objs=objs_list,
+                                   label_attr='do_not_encode',
+                                   select_field_name='sequencer_type_id',
+                                   initial_value='none',
+                                   selected_value=selected_value,
+                                   refresh_on_change=refresh_on_change )
