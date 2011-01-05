@@ -1957,21 +1957,29 @@ class SelectToolParameterWrapper( object ):
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
     attributes are accessible.
     """
+    
+    class SelectToolParameterFieldWrapper:
+        """
+        Provide access to any field by name or index for this particular value.
+        Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
+        """
+        def __init__( self, input, value, other_values ):
+            self.input = input
+            self.value = value
+            self.other_values = other_values
+        def __getattr__( self, name ):
+            return self.input.options.get_field_by_name_for_value( name, self.value, None, self.other_values )
+    
     def __init__( self, input, value, app, other_values={} ):
         self.input = input
         self.value = value
         self.input.value_label = input.value_to_display_text( value, app )
         self._other_values = other_values
+        self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values )
     def __str__( self ):
         return self.input.to_param_dict_string( self.value, other_values = self._other_values )
     def __getattr__( self, key ):
         return getattr( self.input, key )
-    def get_field( self, field_name ):
-        """
-        Provide access to any field by name or index for this particular value.
-        Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
-        """
-        return self.input.options.get_field_by_name_for_value( field_name, self.value, None, self._other_values )
 
 class DatasetFilenameWrapper( object ):
     """

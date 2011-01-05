@@ -4,7 +4,7 @@
   #if str( $options_type[ 'options_type_selector' ] ) == 'advanced':
   '$input_advanced_config_file' 
   #else:
-  '${ options_type.input_config_file.get_field( 'path' ) }'
+  '${ options_type.input_config_file.fields.path }'
   #end if
   'CCAT in Galaxy' 
   '$output_peak_file' '$output_region_file' '$output_top_file' '$output_log_file'</command>
