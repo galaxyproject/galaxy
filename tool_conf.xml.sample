@@ -89,6 +89,7 @@
     <tool file="filters/sff_extractor.xml" />
     <tool file="filters/gtf2bedgraph.xml" />
     <tool file="filters/wig_to_bigwig.xml" />
+	<tool file="filters/bed_to_bigbed.xml" />
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
