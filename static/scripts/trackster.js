@@ -5,9 +5,11 @@
 /**
  * Init constants & functions used throughout trackster.
  */
-var DENSITY = 200,
+var 
+    DENSITY = 200,
     FEATURE_LEVELS = 10,
     MAX_FEATURE_DEPTH = 50,
+    DEFAULT_DATA_QUERY_WAIT = 5000,
     CONNECTOR_COLOR = "#ccc",
     DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
@@ -648,12 +650,14 @@ var get_filters_from_dict = function(filters_dict) {
  * ----> ReferenceTrack
  * ----> FeatureTrack
  * -------> ReadTrack
+ * -------> ToolDataFeatureTrack
  */
-var Track = function (name, view, parent_element, data_url) {
+var Track = function(name, view, parent_element, data_url, data_query_wait) {
     this.name = name;
     this.view = view;    
     this.parent_element = parent_element;
     this.data_url = (data_url ? data_url : default_data_url);
+    this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     this.init_global();
 };
 $.extend( Track.prototype, {
@@ -716,7 +720,7 @@ $.extend( Track.prototype, {
                 } else if (result === "pending") {
                     track.container_div.addClass("pending");
                     track.content_div.text(DATA_PENDING);
-                    setTimeout(function() { track.init(); }, 5000);
+                    setTimeout(function() { track.init(); }, track.data_query_wait);
                 } else {
                     track.content_div.text("");
                     track.content_div.css( "height", track.height_px + "px" );
@@ -737,6 +741,16 @@ $.extend( Track.prototype, {
                 that.prefs[pref] = val;
             }
         });
+    },
+    // Provide support for updating and reverting track name. Currently, it's only possible to revert once.
+    update_name: function(new_name) {
+        this.old_name = this.name;
+        this.name = new_name;
+        this.name_div.text(this.name);
+    },
+    revert_name: function() {
+        this.name = this.old_name;
+        this.name_div.text(this.name);        
     }
 });
 
@@ -753,7 +767,7 @@ var TiledTrack = function(filters, tool, parent_track) {
     if (track.hidden) { return; }
     
     //
-    // Init HTML elements. for tool, filters.
+    // Init HTML elements for tool, filters.
     //
     
     // If track has parent:
@@ -811,9 +825,9 @@ var TiledTrack = function(filters, tool, parent_track) {
     //
     // Create dynamic tool div.
     //
-    if (this.tool) {
-        // Create div elt.
-        this.dynamic_tool_div = $("<div/>").addClass("dynamic-tool"); // .hide();
+    if (this.tool) {  
+        // Create div elt for tool UI.
+        this.dynamic_tool_div = $("<div/>").addClass("dynamic-tool").hide();
         this.header_div.after(this.dynamic_tool_div);
         // Disable dragging, clicking, double clicking on div so that actions on slider do not impact viz.
         this.dynamic_tool_div.bind( "drag", function(e) {
@@ -894,8 +908,11 @@ var TiledTrack = function(filters, tool, parent_track) {
                             alert("Parameter value must be in the range [" + param.min + "-" + param.max + "]");
                             return $(this);
                         }
+                        // Update value in three places; update param value last b/c slider updates param value 
+                        // as well and slider may round values depending on its settings.
                         span.text(new_value);
                         slider.slider('value', new_value);
+                        param.value = new_value;
                     }
                 });
             });
@@ -991,14 +1008,16 @@ var TiledTrack = function(filters, tool, parent_track) {
     }
     if (track.tool) {
         // Show/hide dynamic tool menu item.
-        track_dropdown["Toggle Tool Controls"] = function() {
-            // Set option text and toggle div.
+        track_dropdown["Toggle Tool"] = function() {
+            // Show/hide tool, update/revert name, and set menu text.
             var menu_option_text;
             if (!track.dynamic_tool_div.is(":visible")) {
                 menu_option_text = "Hide dynamic tool";
+                track.update_name(track.name + track.tool_region_and_parameters_str());
             }
             else {
                 menu_option_text = "Show dynamic tool";
+                track.revert_name();
             }
             // TODO: set menu option name.
             track.dynamic_tool_div.toggle();
@@ -1137,7 +1156,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters", false);
             track.filtering_div.hide();
         }
-    }, set_overview: function() {
+    }, 
+    // Set track as the overview track in the visualization.
+    set_overview: function() {
         var view = this.view;
         
         if (this.initial_canvas && this.is_overview) {
@@ -1160,13 +1181,12 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         };
         $.extend(url_params, this.tool.get_param_values_dict());
         
-        // Create track immediately to provide user feedback.
+        // Create track for tool's output immediately to provide user feedback.
 		var 
 		    current_track = this,
             // Set name of track to include tool name, parameters, and region used.
-		    track_name = url_params.tool_id + 
-		                ", region=[" + url_params.chrom + ":" + url_params.low + "-" + url_params.high + 
-		                "], parameters=[" + current_track.tool.get_param_values().join(", ") + "]",
+		    track_name = url_params.tool_id +
+		                 current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
 		    new_track;
 		    // TODO: add support for other kinds of tool data tracks.
 		    if (current_track.track_type == 'FeatureTrack') {
@@ -1175,10 +1195,37 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 		view.add_track(new_track);
 		
 		// Run tool.
-        $.getJSON(run_tool_url, url_params, function(track_data) {
-            new_track.dataset_id = track_data.dataset_id;
-            new_track.init();
-        });
+		var json_run_tool = function() {
+            $.getJSON(run_tool_url, url_params, function(track_data) {
+                if (track_data == "no converter") {
+                    // No converter available for input datasets, so cannot run tool.
+                    new_track.container_div.addClass("error");
+                    new_track.content_div.text(DATA_NOCONVERTER);
+                }
+                else if (track_data == "pending") {
+                    // Converting/indexing input datasets; show message and try again.
+                    new_track.container_div.addClass("pending");
+                    new_track.content_div.text("Converting input data so that it can be easily reused.");
+                    setTimeout(json_run_tool, 2000);
+                }
+                else {
+                    // Job submitted and running.
+                    new_track.dataset_id = track_data.dataset_id;
+                    new_track.content_div.text("Running job.");
+                    new_track.init();
+                }
+            });
+		};
+		json_run_tool();
+    },
+    // Utility function that creates a label string describing the region and parameters of a track's tool.
+    tool_region_and_parameters_str: function(chrom, low, high) {
+        // Region is chrom:low-high or 'all.'
+        var 
+            track = this,
+            region = (chrom !== undefined && low !== undefined && high != undefined ? 
+                      chrom + ":" + low + "-" + high : "all");
+        return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
     }
 });
 
@@ -2056,6 +2103,7 @@ $.extend( ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.pro
         // For tool data tracks, fetch initial data from raw data URL, then fetch additional data
         // from default data URL.
         track.data_url = raw_data_url;
+        track.data_query_wait = 1000;
         var data_request_dict = { low: track.view.max_low, high: track.view.max_high, dataset_id: track.dataset_id,
                                   chrom: track.view.chrom, resolution: this.view.resolution, mode: track.mode };
         this.init_each(data_request_dict, function (result) {
@@ -2074,14 +2122,13 @@ $.extend( ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.pro
             var success_fn = function() {
                 if (track.data_cache.num_elements == 0) {
                     // Track still drawing initial data.
-                    setTimeout(success_fn, 100);
+                    setTimeout(success_fn, 300);
                 }
                 else {
                     // Track drawing done: set data URL and start indexing.
                     track.data_url = default_data_url;
                     // Call twice to start indexing for both overview and detail datasets.
                     //$.getJSON(default_data_url, data_request_dict, function(track_data) {});
-
                 }
             };
             success_fn();

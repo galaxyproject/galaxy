@@ -7,7 +7,7 @@ pkg_resources.require( "bx-python" )
 
 from bx.seq.twobit import TwoBitFile
 from galaxy import model
-from galaxy.util.json import from_json_string
+from galaxy.util.json import to_json_string, from_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import grids
@@ -290,20 +290,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             
         # Get datasources and check for messages.
         data_sources = self._get_datasources( trans, dataset )
-        return_message = None
-        # Can only return a single message, so return highest priority one; 
-        # priority is: job error (dict), no converter, pending.
-        for data_source_dict in data_sources.values():
-            message = data_source_dict[ 'message' ]
-            if message is not None:
-                if message is dict:
-                    return_message = message
-                    break
-                elif message == messages.NO_CONVERTER:
-                    return_message = message
-                elif return_message == None and message == messages.PENDING:
-                    return_message = message
-                    
+        messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
+        return_message = _get_highest_priority_msg( messages_list )
         if return_message:
             return return_message
             
@@ -423,7 +411,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         original_dataset = self.get_dataset( trans, dataset_id )
         msg = self._check_dataset_state( trans, original_dataset )
         if msg:
-            return msg
+            return to_json_string( msg )
             
         #
         # Set tool parameters--except dataset parameters--using combination of
@@ -437,56 +425,44 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         tool_params = dict( [ ( p.name, p.value ) for p in original_job.parameters ] )
         tool_params.update( dict( [ ( key, value ) for key, value in kwargs.items() if key in tool.inputs ] ) )
         tool_params = tool.params_from_strings( tool_params, self.app )
+        
+        #
+        # Convert input datasets so that region of dataset can be quickly 
+        # extracted.
+        # TODO: Is it useful/necessary to create data subsets for all input
+        # datasets or only the original dataset (aka the dataset that the user
+        # is viewing)? Currently we create data subsets for all input datasets 
+        # because this provides the best performance as the tool runs on small 
+        # datasets.
+        # 
+        messages_list = []
+        for jida in original_job.input_datasets:
+            input_dataset = jida.dataset
+            track_type, data_sources = input_dataset.datatype.get_track_type()
+            # Convert to datasource that provides 'data' because we need to
+            # extract the original data.
+            data_source = data_sources[ 'data' ]
+            msg = self._convert_dataset( trans, input_dataset, data_source )
+            if msg is not None:
+                messages_list.append( msg )
+
+        # Return any messages generated during conversions.
+        return_message = _get_highest_priority_msg( messages_list )
+        if return_message:
+            return return_message
             
         #
         # Set input datasets for tool. Input datasets are subsets of full 
         # datasets and are based on chrom, low, high.
         #
-        # TODO - address these issues:
-        # 
-        # (1) Create data subsets for all input datasets or only the original 
-        #     dataset (aka the databat that the user is viewing)?
-        #
-        # --> Currently we create data subsets for all input datasets because
-        #     this provides the best performance as the tool runs on small 
-        #     datasets.
-        #
-        # (2) How best to handle new input datasets (and their corresponding 
-        #     converted datasets)? Options: (a) add to original dataset's 
-        #     history as HDA; (b) keep as Dataset object and create new 
-        #     association b/t history and dataset; (c) store new input in 
-        #     temporary file.
-        # 
-        # --> Currently we do (a) because it's simple to execute a tool and new 
-        #     inputs and outputs are easily available. (b) or (c) would require
-        #     custom tool execution.
-        #
         hda_permissions = trans.app.security_agent.history_get_default_permissions( original_dataset.history )
+        messages_list = []
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
-            
-            #
-            # Convert input dataset so that region of dataset can be extracted.
-            #
-            
-            # Try converting to interval index, BAI.
-            # TODO: put array of potential datatypes in data_providers class.
-            valid_datatypes = [ 'interval_index', 'bai' ]
-            converted_dataset = None
-            for datatype in valid_datatypes:
-                try:
-                    converted_dataset = input_dataset.get_converted_dataset( trans, datatype )
-                    # NOTE: this is blocking.
-                    while not converted_dataset:
-                        time.sleep(2)
-                    break
-                except ValueError:
-                    pass
-
-            # Exit if we can't find a converter for the dataset.    
-            if not converted_dataset:
-                return messages.NO_CONVERTER
-                
+            track_type, data_sources = input_dataset.datatype.get_track_type()
+            data_source = data_sources[ 'data' ]
+            converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
+                            
             #
             # Create new HDA for input dataset's subset.
             #
@@ -497,7 +473,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                                                                         name="Subset [%s:%i-%i] of data %i" % \
                                                                             ( chrom, low, high, input_dataset.hid ),
                                                                         visible=False )
-            original_dataset.history.add_dataset( subset_dataset )
+            input_dataset.history.add_dataset( subset_dataset )
             trans.sa_session.add( subset_dataset )
             trans.app.security_agent.set_all_dataset_permissions( subset_dataset.dataset, hda_permissions )
             if input_dataset.extension == 'bam':
@@ -529,6 +505,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         for joda in subset_job.output_datasets:
             if joda.name == output_name:
                 output_dataset = joda.dataset
+        
         return self.add_track_async( trans, output_dataset.id )
         
     #
@@ -562,23 +539,54 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 # Nothing to do.
                 msg = None
             else:
-                # Get converted dataset; this will start the conversion if 
-                # necessary.
-                try:
-                    converted_dataset = dataset.get_converted_dataset( trans, data_source )
-                except ValueError:
-                    msg = messages.NO_CONVERTER
-
-                # If converted dataset in error, return the error.
-                if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
-                    job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
-                                .filter_by( dataset_id=converted_dataset.id ).first().job_id
-                    job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-                    msg = { 'kind': messages.ERROR, 'message': job.stderr }
-                
-                if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
-                    msg = messages.PENDING
+                # Convert.
+                msg = self._convert_dataset( trans, dataset, data_source )
             
+            # Store msg.
             data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
         
         return data_sources_dict
+        
+    def _convert_dataset( self, trans, dataset, target_type ):
+        """
+        Converts a dataset to the target_type and returns a message indicating 
+        status of the conversion. None is returned to indicate that dataset
+        was converted successfully. 
+        """
+        msg = None
+        
+        # Get converted dataset; this will start the conversion if 
+        # necessary.
+        try:
+            converted_dataset = dataset.get_converted_dataset( trans, target_type )
+        except ValueError:
+            msg = messages.NO_CONVERTER
+
+        # Check dataset state and return any messages.
+        if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
+            job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
+                        .filter_by( dataset_id=converted_dataset.id ).first().job_id
+            job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+            msg = { 'kind': messages.ERROR, 'message': job.stderr }
+        elif not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
+            msg = messages.PENDING
+            
+        return msg
+        
+def _get_highest_priority_msg( message_list ):
+    """
+    Returns highest priority message from a list of messages.
+    """
+    return_message = None
+    
+    # For now, priority is: job error (dict), no converter, pending.
+    for message in message_list:
+        if message is not None:
+            if message is dict:
+                return_message = message
+                break
+            elif message == messages.NO_CONVERTER:
+                return_message = message
+            elif return_message == None and message == messages.PENDING:
+                return_message = message
+    return return_message
