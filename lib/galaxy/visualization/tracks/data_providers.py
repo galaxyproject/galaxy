@@ -234,7 +234,14 @@ class BamDataProvider( TracksDataProvider ):
                     return None
             else:
                 return None
-        # Encode reads as list of dictionaries
+        # Encode reads as list of lists; each read is a list with the format 
+        #   [<name>, <start>, <end>, <read_1_seq>, <cigar>, <read_1>, <read_2>] 
+        # where <read_1> has the format
+        #   [<start>, <end>, ?<read_seq>?]
+        # and <read_2> has the format
+        #   [<start>, <end>, ?<read_seq>?]
+        # NOTE: read end and sequence data are not valid for reads outside of
+        # requested region and should not be used.
         results = []
         paired_pending = {}
         for read in data:
@@ -247,6 +254,7 @@ class BamDataProvider( TracksDataProvider ):
                 read_len = sum( [cig[1] for cig in read.cigar] ) # Use cigar to determine length
             else:
                 read_len = len(seq) # If no cigar, just use sequence length
+
             if read.is_proper_pair:
                 if qname in paired_pending: # one in dict is always first
                     pair = paired_pending[qname]
@@ -256,18 +264,24 @@ class BamDataProvider( TracksDataProvider ):
                     paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos, 'rlen': read_len, 'cigar': read.cigar }
             else:
                 results.append( [qname, read.pos, read.pos + read_len, seq, read.cigar] )
-        # take care of reads whose mates are out of range
+        # Take care of reads whose mates are out of range.
         for qname, read in paired_pending.iteritems():
             if read['mate_start'] < read['start']:
+                # Mate is before read.
                 start = read['mate_start']
                 end = read['end']
-                r1 = [read['mate_start'], read['mate_start']  + read['rlen']]
+                # Make read_1 start=end so that length is 0 b/c we don't know
+                # read length.
+                r1 = [read['mate_start'], read['mate_start']]
                 r2 = [read['start'], read['end'], read['seq']]
             else:
+                # Mate is after read.
                 start = read['start']
-                end = read['mate_start'] + read['rlen']
+                # Make read_2 start=end so that length is 0 b/c we don't know
+                # read length. Hence, end of read is start of read_2.
+                end = read['mate_start']
                 r1 = [read['start'], read['end'], read['seq']]
-                r2 = [read['mate_start'], read['mate_start'] + read['rlen']]
+                r2 = [read['mate_start'], read['mate_start']]
 
             results.append( [ qname, start, end, read['seq'], read['cigar'], r1, r2 ] )
 
