@@ -525,15 +525,13 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        show_associated_hdas_and_lddas = util.string_as_bool( params.get( 'show_associated_hdas_and_lddas', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
-        try:
-            ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
-        except:
-            ldda = None
+        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
         self._check_access( trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted )
-        if is_admin:
+        if is_admin and show_associated_hdas_and_lddas:
             # Get all associated hdas and lddas that use the same disk file.
             associated_hdas = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
                                               .filter( and_( trans.model.HistoryDatasetAssociation.deleted == False,
@@ -559,6 +557,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                     use_panels=use_panels,
                                     ldda=ldda,
                                     library=ldda.library_dataset.folder.parent_library,
+                                    show_associated_hdas_and_lddas=show_associated_hdas_and_lddas,
                                     associated_hdas=associated_hdas,
                                     associated_lddas=associated_lddas,
                                     show_deleted=show_deleted,

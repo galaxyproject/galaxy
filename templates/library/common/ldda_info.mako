@@ -69,6 +69,11 @@
                     <a class="action-button" href="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), do_action='import_to_history', use_panels=use_panels, show_deleted=show_deleted )}">Import this dataset into your current history</a>
                     <a class="action-button" href="${h.url_for( controller='library_common', action='download_dataset_from_folder', cntrller=cntrller, id=trans.security.encode_id( ldda.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Download this dataset</a>
                 %endif
+                %if show_associated_hdas_and_lddas:
+                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), show_associated_hdas_and_lddas=False, use_panels=use_panels, show_deleted=show_deleted )}">Hide items using this dataset's disk file</a>
+                %else:
+                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), show_associated_hdas_and_lddas=True, use_panels=use_panels, show_deleted=show_deleted )}">Show items using this dataset's disk file</a>
+                %endif
             </div>
         %endif
     </div>
@@ -166,7 +171,7 @@
 %if widgets:
     ${render_template_fields( cntrller=cntrller, item_type='ldda', widgets=widgets, widget_fields_have_contents=widget_fields_have_contents, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), info_association=info_association, inherited=inherited, editable=False )}
 %endif
-%if trans.user_is_admin() and cntrller == 'library_admin':
+%if show_associated_hdas_and_lddas:
     %if associated_hdas:
         <p/>
         <b>Active (undeleted) history items that use this library dataset's disk file</b>
