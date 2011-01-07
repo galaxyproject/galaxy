@@ -4,7 +4,14 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Browse this request</a>
+    <li><a class="action-button" id="sample-${sample.id}-popup" class="menubutton">Sample Actions</a></li>
+    <div popupmenu="sample-${sample.id}-popup">
+        <a class="action-button" href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Browse this request</a>
+        %if sample.runs:
+            <a class="action-button" href="${h.url_for( controller='requests_common', action='edit_template', cntrller=cntrller, item_type='sample', form_type=trans.app.model.FormDefinition.types.RUN_DETAILS_TEMPLATE, sample_id=trans.security.encode_id( sample.id ) )}">Edit template</a>
+            <a class="action-button" href="${h.url_for( controller='requests_common', action='delete_template', cntrller=cntrller, item_type='sample', form_type=trans.app.model.FormDefinition.types.RUN_DETAILS_TEMPLATE, sample_id=trans.security.encode_id( sample.id ) )}">Unuse template</a>
+        %endif
+    </div>
 </ul>
 
 %if message:

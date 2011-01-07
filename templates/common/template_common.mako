@@ -152,7 +152,7 @@
                 %if in_library:
                     <form name="edit_info" id="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, form_type=form_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
                 %elif in_sample_tracking:
-                    <form name="edit_info" id="edit_info" action="${h.url_for( controller='request_type', action='edit_template_info', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id )}" method="post">
+                    <form name="edit_info" id="edit_info" action="${h.url_for( controller='request_type', action='edit_template_info', cntrller=cntrller, item_type=item_type, form_type=form_type, request_type_id=request_type_id, sample_id=sample_id )}" method="post">
                 %endif
                     %for i, field in enumerate( widgets ):
                         <div class="form-row">

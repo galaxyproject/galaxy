@@ -731,13 +731,12 @@ class UsesFormDefinitions:
                                   library_id=library_id,
                                   folder_id=folder_id,
                                   show_deleted=show_deleted ) )
-            return trans.response.send_redirect( web.url_for( **new_kwd ) )
         if in_sample_tracking:
             new_kwd.update( dict( controller='requests_common',
                                   cntrller='requests_admin',
-                                  id=trans.security.encode_id( sample.request.id ),
+                                  id=trans.security.encode_id( sample.id ),
                                   sample_id=sample_id ) )
-            return trans.response.send_redirect( web.url_for( **new_kwd ) )
+        return trans.response.send_redirect( web.url_for( **new_kwd ) )
     @web.expose
     def delete_template( self, trans, cntrller, item_type, form_type, **kwd ):
         params = util.Params( kwd )
@@ -917,7 +916,8 @@ class UsesFormDefinitions:
             widget = widget_dict[ 'widget' ]
             if params.get( widget.name, False ):
                 # The form included a field whose contents should be used to set the
-                # value of the current widget (widget.name is field_0, field_1, etc).
+                # value of the current widget (widget.name is the name set by the
+                # user when they defined the FormDefinition).
                 if isinstance( widget, AddressField ):
                     value = util.restore_text( params.get( widget.name, '' ) )
                     if value == 'none':
@@ -1000,7 +1000,7 @@ class UsesFormDefinitions:
             except:
                 item = None
             item_desc = 'sample'
-            action = 'edit_samples'
+            action = 'view_sample'
         else:
             item = None
             #message = "Invalid item type ( %s )" % str( item_type )
