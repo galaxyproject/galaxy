@@ -146,6 +146,9 @@ def upgrade():
         for row in results_list:
             request_type_id = row[0]
             sequencer_id = row[1]
+            sequencer_id = row[1]
+            if not sequencer_id:
+                sequencer_id = 'null'   
             cmd = "INSERT INTO request_type_external_service_association VALUES ( %s, %s, %s )"
             cmd = cmd % ( nextval( 'request_type_external_service_association' ),
                           request_type_id,
