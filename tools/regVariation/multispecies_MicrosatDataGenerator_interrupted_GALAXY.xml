@@ -1,0 +1,64 @@
+<tool id="multispecies_orthologous_microsats" name="Extract orthologous microsatellites" version="1.0.0">
+  <description> for multiple (>2) species alignments</description>
+  <command interpreter="perl">
+    multispecies_MicrosatDataGenerator_interrupted_GALAXY.pl   	
+    $input1 
+  	$out_file1 
+  	$thresholds 
+  	$species 
+  	"$treedefinition"
+  	$separation 
+	
+  </command>
+  <inputs>
+    <page>
+        <param format="maf" name="input1" type="data" label="Select MAF alignments"/>
+       	<param name="separation" size="10" type="integer" value="10" label="Minimum base pair distance between adjacent microsatellite blocks"
+    	help="A value of 10 means: Adjacent microsatellites separated by less than 10 base pairs will be excluded from the output."/>
+    	<param name="thresholds" size="15" type="text" value="9,10,12,12" label="Minimum Threshold for the number of repeats for microsatellites"
+    	help="A value of 9,10,12,12 means: All monos having fewer than 9 repeats, dis having fewer than 5 repeats, tris having fewer than 4 repeats, tetras having fewer than 3 repeats will be excluded from the output."/>
+        <param name="species" type="select" label="Species to extract" display="checkboxes" multiple="true">
+          <options>
+            <filter type="data_meta" ref="input1" key="species" />
+          </options>
+        </param>
+    	<param name="treedefinition" size="20" type="text" label="Tree definition of all species above whether or not selected for microsatellite extraction" 
+    	help="For example: ((hg17,panTro1),(mm5,rn3),canFam1)"/>
+    </page>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_file1" metadata_source="input1"/>
+  </outputs>
+  <requirements>
+     <requirement type="binary">bx-sputnik</requirement>
+  </requirements>
+  <tests>
+    <test>
+      <param name="input1" value="chr22_5sp.maf"/>
+      <param name="thresholds" value="9,10,12,12"/>
+      <param name="species" value="hg18,panTro2,ponAbe2,rheMac2,calJac1"/>
+      <param name="treedefinition" value="((((hg18, panTro2), ponAbe2), rheMac2), calJac1)"/>
+      <param name="separation" value="10"/>
+      <output name="out_file1" file="chr22_5sp.microraw.tabular"/>
+    </test>
+  </tests>
+
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool finds ortholgous microsatellite blocks between aligned species
+  
+-----
+
+.. class:: warningmark
+
+**Note**
+
+NA
+</help>  
+
+
+</tool>
