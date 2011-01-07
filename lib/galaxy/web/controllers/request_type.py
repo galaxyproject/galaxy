@@ -22,16 +22,11 @@ class RequestTypeGrid( grids.Grid ):
     class SampleFormColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
             return request_type.sample_form.name
-    class SequencerColumn( grids.TextColumn ):
+    class ExternalServiceColumn( grids.IntegerColumn ):
         def get_value(self, trans, grid, request_type):
-            if request_type.sequencer:
-                return request_type.sequencer.name
-            return 'No sequencer assigned'
-        def get_link( self, trans, grid, request_type ):
-            if request_type.sequencer:
-                self.link = ( lambda item: iff( item.deleted, None, dict( operation="view_sequencer", id=item.sequencer.id ) ) )
-                return self.link( request_type )
-            return None
+            if request_type.external_services:
+                return len( request_type.external_services )
+            return 'No external service assigned'
     # Grid definition
     webapp = "galaxy"
     title = "Request Types"
@@ -55,7 +50,7 @@ class RequestTypeGrid( grids.Grid ):
                            link=( lambda item: iff( item.deleted, None, dict( operation="view_form_definition", id=item.request_form.id ) ) ) ),
         SampleFormColumn( "Sample Form", 
                            link=( lambda item: iff( item.deleted, None, dict( operation="view_form_definition", id=item.sample_form.id ) ) ) ),
-        SequencerColumn( "Sequencer" ),
+        ExternalServiceColumn( "External Services" ),
         grids.DeletedColumn( "Deleted", 
                              key="deleted", 
                              visible=False, 
@@ -98,16 +93,16 @@ class RequestType( BaseController, UsesFormDefinitions ):
                                                                   form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE,
                                                                   request_type_id=obj_id ) )
             elif operation == "edit request type":
-                return self.edit_request_type( trans, **kwd )
+                return self.view_edittable_request_type( trans, **kwd )
             elif operation == "delete":
                 return self.delete_request_type( trans, **kwd )
             elif operation == "undelete":
                 return self.undelete_request_type( trans, **kwd )
             elif operation == "edit permissions":
                 return self.request_type_permissions( trans, **kwd )
-            elif operation == "view_sequencer":
-                return trans.response.send_redirect( web.url_for( controller='sequencer',
-                                                                  action='view_sequencer',
+            elif operation == "view_external_service":
+                return trans.response.send_redirect( web.url_for( controller='external_service',
+                                                                  action='view_external_service',
                                                                   **kwd ) )
         # Render the grid view
         return self.request_type_grid( trans, **kwd )
@@ -118,7 +113,14 @@ class RequestType( BaseController, UsesFormDefinitions ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         rt_info_widgets, rt_states_widgets = self.__get_populated_request_type_widgets( trans, **kwd )
-        sequencer_select_field = self.__build_sequencer_select_field( trans )
+        external_service_select_fields_list = []
+        # get all the external services selected till now
+        external_services_list = self.__get_external_services( trans, **kwd )
+        for index, external_service in enumerate( external_services_list ): 
+            external_service_select_field = self.__build_external_service_select_field( trans, 
+                                                                                        'external_service_id_%i' % index, 
+                                                                                        external_service )
+            external_service_select_fields_list.append( external_service_select_field )
         if params.get( 'add_state_button', False ):
             # Append a new tuple to the set of states which will result in
             # empty state name and description TextFields being displayed on
@@ -127,6 +129,11 @@ class RequestType( BaseController, UsesFormDefinitions ):
         elif params.get( 'remove_state_button', False ):
             index = int( params.get( 'remove_state_button', '' ).split( " " )[2] )
             del rt_states_widgets[ index-1 ]
+        elif params.get( 'add_external_service_button', False ):
+            # create a new one
+            external_service_select_field = self.__build_external_service_select_field( trans, 
+                                                                                        'external_service_id_%i' % len( external_services_list ) )
+            external_service_select_fields_list.append( external_service_select_field )
         elif params.get( 'create_request_type_button', False ):
             self.__save_request_type( trans, action='create_request_type', **kwd )
             message = 'The request type has been created.'
@@ -137,16 +144,34 @@ class RequestType( BaseController, UsesFormDefinitions ):
         return trans.fill_template( '/admin/request_type/create_request_type.mako',
                                     rt_info_widgets=rt_info_widgets,
                                     rt_states_widgets=rt_states_widgets,
-                                    sequencer_select_field=sequencer_select_field,
+                                    external_service_select_fields_list=external_service_select_fields_list,
                                     message=message,
                                     status=status )
+    def __get_external_services(self, trans, request_type=None, **kwd):
+        params = util.Params( kwd )
+        external_services_list = []
+#        if request_type:
+#            i = 
+        i = 0
+        while True:
+            if kwd.has_key( 'external_service_id_%i' % i ):
+                id = params.get( 'external_service_id_%i' % i, '' )
+                try:
+                    external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( id ) )
+                except:
+                    return invalid_id_redirect( trans, 'request_type', id, 'external service', action='browse_request_types' )
+                external_services_list.append( external_service )
+                i += 1
+            else:
+                break
+        return external_services_list
     @web.expose
     @web.require_admin
-    def view_request_type( self, trans, **kwd ):
+    def view_edittable_request_type( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        request_type_id = kwd.get( 'id', None )
+        request_type_id = params.get( 'id', None )
         try:
             request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
         except:
@@ -154,10 +179,18 @@ class RequestType( BaseController, UsesFormDefinitions ):
         # See if we have any associated templates
         widgets = request_type.get_template_widgets( trans )
         widget_fields_have_contents = self.widget_fields_have_contents( widgets )
-        return trans.fill_template( '/admin/request_type/view_request_type.mako', 
+        # get all the external services selected till now
+        external_service_select_fields_list = []
+        for index, external_service in enumerate( request_type.external_services ): 
+            external_service_select_field = self.__build_external_service_select_field( trans, 
+                                                                                        'external_service_id_%i' % index, 
+                                                                                        external_service )
+            external_service_select_fields_list.append( external_service_select_field )
+        return trans.fill_template( '/admin/request_type/edit_request_type.mako',
                                     request_type=request_type,
                                     widgets=widgets,
                                     widget_fields_have_contents=widget_fields_have_contents,
+                                    external_service_select_fields_list=external_service_select_fields_list,
                                     message=message,
                                     status=status )
     @web.expose
@@ -174,15 +207,28 @@ class RequestType( BaseController, UsesFormDefinitions ):
         # See if we have any associated templates
         widgets = request_type.get_template_widgets( trans )
         widget_fields_have_contents = self.widget_fields_have_contents( widgets )
+        # get all the external services selected till now
+        external_service_select_fields_list = []
+        external_services_list = self.__get_external_services( trans, request_type, **kwd )
         if params.get( 'edit_request_type_button', False ):
             request_type = self.__save_request_type( trans, action='edit_request_type', **kwd )
             message = 'Changes made to request type (%s) have been saved' % request_type.name
-        sequencer_select_field = self.__build_sequencer_select_field( trans, request_type.sequencer )
+        elif params.get( 'add_external_service_button', False ):
+            external_services_list.append( None )
+        elif params.get( 'remove_external_service_button', False ):
+            index = int( kwd[ 'remove_external_service_button' ].split(' ')[3] ) - 1
+            del external_services_list[index]
+        #if external_services_list
+        for index, external_service in enumerate( external_services_list ): 
+            external_service_select_field = self.__build_external_service_select_field( trans, 
+                                                                                        'external_service_id_%i' % index, 
+                                                                                        external_service )
+            external_service_select_fields_list.append( external_service_select_field )
         return trans.fill_template( '/admin/request_type/edit_request_type.mako',
                                     request_type=request_type,
                                     widgets=widgets,
                                     widget_fields_have_contents=widget_fields_have_contents,
-                                    sequencer_select_field=sequencer_select_field,
+                                    external_service_select_fields_list=external_service_select_fields_list,
                                     message=message,
                                     status=status )
     def __save_request_type( self, trans, action, **kwd ):
@@ -194,7 +240,7 @@ class RequestType( BaseController, UsesFormDefinitions ):
         desc = util.restore_text( params.get( 'desc', '' ) )
         request_form_id = params.get( 'request_form_id', 'none' )
         sample_form_id = params.get( 'sample_form_id', 'none' )
-        sequencer_id = params.get( 'sequencer_id', 'none' )
+        external_service_id = params.get( 'external_service_id', 'none' )
         # validate
         if not name or request_form_id == 'none' or sample_form_id == 'none':
             message = 'Enter the name, request form, and the sample form associated with this request type.'
@@ -211,10 +257,6 @@ class RequestType( BaseController, UsesFormDefinitions ):
             sample_form = trans.sa_session.query( trans.model.FormDefinition ).get( trans.security.decode_id( sample_form_id ) )
         except:
             return invalid_id_redirect( trans, 'request_type', request_type_id, 'form definition', action='browse_request_types' )
-        try:
-            sequencer = trans.sa_session.query( trans.model.Sequencer ).get( trans.security.decode_id( sequencer_id ) )
-        except:
-            sequencer = None
         if request_type_id:
             # We're saving changed attributes of an existing request_type.
             request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
@@ -222,7 +264,6 @@ class RequestType( BaseController, UsesFormDefinitions ):
             request_type.desc = desc
             request_type.request_form = request_form
             request_type.sample_form = sample_form
-            request_type.sequencer = sequencer
             for sample_state in request_type.states:
                 sample_state_id = trans.security.encode_id( sample_state.id )
                 name = util.restore_text( params.get( 'state_name_%s' % sample_state_id, '' ) )
@@ -238,8 +279,7 @@ class RequestType( BaseController, UsesFormDefinitions ):
             request_type = trans.model.RequestType( name=name,
                                                     desc=desc,
                                                     request_form=request_form,
-                                                    sample_form=sample_form,
-                                                    sequencer=sequencer ) 
+                                                    sample_form=sample_form ) 
             trans.sa_session.add( request_type )
             trans.sa_session.flush()
             i = 0
@@ -253,12 +293,13 @@ class RequestType( BaseController, UsesFormDefinitions ):
                     i += 1
                 else:
                     break
+        # delete existing associations
+        request_type.delete_external_service_association( trans, 'All' )
+        # save the external services associated with this request_type
+        external_services_list = self.__get_external_services( trans, **kwd )
+        for external_service in external_services_list:
+            request_type.add_external_service_association( trans, external_service )
         return request_type
-    def __check_path( self, a_path ):
-        # Return a valid folder_path
-        if a_path and not a_path.endswith( os.sep ):
-            a_path += os.sep
-        return a_path
     def __get_populated_request_type_widgets( self, trans, **kwd ):
         request_form_definitions = self.get_all_forms( trans, 
                                                         filter=dict( deleted=False ),
@@ -302,6 +343,27 @@ class RequestType( BaseController, UsesFormDefinitions ):
             else:
                 break
         return rt_info_widgets, rt_states
+                
+    @web.expose
+    @web.require_admin
+    def view_request_type( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        request_type_id = kwd.get( 'id', None )
+        try:
+            request_type = trans.sa_session.query( trans.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
+        except:
+            return invalid_id_redirect( trans, 'request_type', request_type_id, 'request type', action='browse_request_types' )
+        # See if we have any associated templates
+        widgets = request_type.get_template_widgets( trans )
+        widget_fields_have_contents = self.widget_fields_have_contents( widgets )
+        return trans.fill_template( '/admin/request_type/view_request_type.mako', 
+                                    request_type=request_type,
+                                    widgets=widgets,
+                                    widget_fields_have_contents=widget_fields_have_contents,
+                                    message=message,
+                                    status=status )
     @web.expose
     @web.require_admin
     def delete_request_type( self, trans, **kwd ):
@@ -379,15 +441,17 @@ class RequestType( BaseController, UsesFormDefinitions ):
                                     form_definition=form_definition )
 
     # ===== Methods for building SelectFields used on various admin_requests forms
-    def __build_sequencer_select_field( self, trans, sequencer=None ):
-        if sequencer:
-            selected_value = trans.security.encode_id( sequencer.id ) 
+    def __build_external_service_select_field( self, trans, select_field_name, external_service=None ):
+        if external_service:
+            selected_value = trans.security.encode_id( external_service.id ) 
         else:
             selected_value = 'none'
-        all_sequencers = trans.sa_session.query( trans.model.Sequencer ).filter( trans.model.Sequencer.table.c.deleted==False ).all()
+        all_external_services = trans.sa_session.query( trans.model.ExternalService ).filter( trans.model.ExternalService.table.c.deleted==False ).all()
+        for e in all_external_services:
+            e.get_type( trans )
         return build_select_field( trans,
-                                   objs=all_sequencers,
-                                   label_attr='name',
-                                   select_field_name='sequencer_id',
+                                   objs=all_external_services,
+                                   label_attr='label',
+                                   select_field_name=select_field_name,
                                    selected_value=selected_value,
                                    refresh_on_change=False )

@@ -7,69 +7,69 @@ from elementtree.ElementTree import XML
 from galaxy.sample_tracking.data_transfer import data_transfer_factories
 log = logging.getLogger( __name__ )
 
-class SequencerTypeNotFoundException( Exception ):
+class ExternalServiceTypeNotFoundException( Exception ):
     pass
 
-class SequencerTypesCollection( object ):
+class ExternalServiceTypesCollection( object ):
 
     def __init__( self, config_filename, root_dir, app ):
-        self.all_sequencer_types = odict()
+        self.all_external_service_types = odict()
         self.root_dir = root_dir
         self.app = app
         try:
             self.load_all( config_filename )
         except:
-            log.exception( "SequencerTypesCollection error reading %s", config_filename )
+            log.exception( "ExternalServiceTypesCollection error reading %s", config_filename )
 
     def load_all( self, config_filename ):
-        self.visible_sequencer_types = []
+        self.visible_external_service_types = []
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
         for elem in root:
             try:
-                if elem.tag == 'sequencer_type':
+                if elem.tag == 'external_service_type':
                     file_path = elem.get( "file" )
                     visible = util.string_as_bool( elem.get( "visible" ) )
-                    sequencer_type = self.load_sequencer_type( os.path.join( self.root_dir, file_path ), visible )
-                    self.all_sequencer_types[ sequencer_type.id ] = sequencer_type
-                    log.debug( "Loaded sequencer_type: %s %s" % ( sequencer_type.name, sequencer_type.config_version ) )
+                    external_service_type = self.load_external_service_type( os.path.join( self.root_dir, file_path ), visible )
+                    self.all_external_service_types[ external_service_type.id ] = external_service_type
+                    log.debug( "Loaded external_service_type: %s %s" % ( external_service_type.name, external_service_type.config_version ) )
                     if visible:
-                        self.visible_sequencer_types.append( sequencer_type.id )
+                        self.visible_external_service_types.append( external_service_type.id )
             except:
-                log.exception( "error reading sequencer_type from path: %s" % file_path )
-    def load_sequencer_type( self, config_file, visible=True ):
+                log.exception( "error reading external_service_type from path: %s" % file_path )
+    def load_external_service_type( self, config_file, visible=True ):
         # Parse XML configuration file and get the root element
         tree = util.parse_xml( config_file )
         root = tree.getroot()
-        return SequencerType( config_file, root, visible )
+        return ExternalServiceType( config_file, root, visible )
     
-    def reload( self, sequencer_type_id ):
+    def reload( self, external_service_type_id ):
         """
-        Attempt to reload the sequencer_type identified by 'sequencer_type_id', if successful
-        replace the old sequencer_type.
+        Attempt to reload the external_service_type identified by 'external_service_type_id', if successful
+        replace the old external_service_type.
         """
-        if sequencer_type_id not in self.all_sequencer_types.keys():
-            raise SequencerTypeNotFoundException( "No sequencer_type with id %s" % sequencer_type_id )
-        old_sequencer_type = self.all_sequencer_types[ sequencer_type_id ]
-        new_sequencer_type = self.load_sequencer_type( old_sequencer_type.config_file )
-        self.all_sequencer_types[ sequencer_type_id ] = new_sequencer_type
-        log.debug( "Reloaded sequencer_type %s" %( sequencer_type_id ) )
-        return new_sequencer_type
+        if external_service_type_id not in self.all_external_service_types.keys():
+            raise ExternalServiceTypeNotFoundException( "No external_service_type with id %s" % external_service_type_id )
+        old_external_service_type = self.all_external_service_types[ external_service_type_id ]
+        new_external_service_type = self.load_external_service_type( old_external_service_type.config_file )
+        self.all_external_service_types[ external_service_type_id ] = new_external_service_type
+        log.debug( "Reloaded external_service_type %s" %( external_service_type_id ) )
+        return new_external_service_type
 
-class SequencerType( object ):
-    def __init__( self, sequencer_type_xml_config, root, visible=True ):
-        self.config_file = sequencer_type_xml_config
+class ExternalServiceType( object ):
+    def __init__( self, external_service_type_xml_config, root, visible=True ):
+        self.config_file = external_service_type_xml_config
         self.parse( root )
         self.visible = visible
     def parse( self, root ):
         # Get the name 
         self.name = root.get( "name" )
         if not self.name: 
-            raise Exception, "Missing sequencer_type 'name'"
+            raise Exception, "Missing external_service_type 'name'"
         # Get the UNIQUE id for the tool 
         self.id = root.get( "id" )
         if not self.id: 
-            raise Exception, "Missing sequencer_type 'id'"
+            raise Exception, "Missing external_service_type 'id'"
         self.config_version = root.get( "version" )
         if not self.config_version: 
             self.config_version = '1.0.0'
@@ -84,10 +84,10 @@ class SequencerType( object ):
         data_transfer_settings_elem = root.find( 'data_transfer_settings' )
         # till now only data transfer using scp is supported.
         for data_transfer_elem in data_transfer_settings_elem.findall( "data_transfer" ):
-            if data_transfer_elem.get( 'type' ) == model.Sequencer.data_transfer_types.SCP:
-                scp_data_transfer = data_transfer_factories[ model.Sequencer.data_transfer_types.SCP ]
+            if data_transfer_elem.get( 'type' ) == model.ExternalService.data_transfer_types.SCP:
+                scp_data_transfer = data_transfer_factories[ model.ExternalService.data_transfer_types.SCP ]
                 scp_data_transfer.parse( self.config_file, data_transfer_elem  )
-                self.data_transfer[ model.Sequencer.data_transfer_types.SCP ] = scp_data_transfer
+                self.data_transfer[ model.ExternalService.data_transfer_types.SCP ] = scp_data_transfer
     def parse_run_details( self, root ):
         self.run_details = {}
         run_details_elem = root.find( 'run_details' )

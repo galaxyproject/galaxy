@@ -145,12 +145,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # directory.
 #cluster_files_directory = database/pbs
 
-# Sequencer types config file, defines what types of sequencers configurations 
+# External service types config file, defines what types of external_services configurations 
 # are available in Galaxy.
-sequencer_type_config_file = sequencer_type_conf.xml
+#external_service_type_config_file = external_service_types_conf.xml
 
-# Path to the directory containing the sequencer_types defined in the config.
-sequencer_type_path = sequencer_types
+# Path to the directory containing the external_service_types defined in the config.
+#external_service_type_path = external_service_types
 
 # -- Mail and notification
 

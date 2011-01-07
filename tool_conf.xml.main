@@ -2,6 +2,8 @@
 <toolbox>
   <section name="Get Data" id="getext">
     <tool file="data_source/upload.xml"/>
+<<<<<<< local
+=======
     <tool file="data_source/ucsc_tablebrowser.xml" />
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
     <tool file="data_source/bx_browser.xml" />
@@ -16,6 +18,7 @@
     <tool file="data_source/eupathdb.xml" />
     <tool file="data_source/encode_db.xml" />
     <tool file="data_source/epigraph_import.xml" />
+>>>>>>> other
   </section>
   <section name="Send Data" id="send">
     <tool file="data_destination/epigraph.xml" />

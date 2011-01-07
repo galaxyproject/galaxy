@@ -34,13 +34,13 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='requests_admin', action='open_folder' )}",
                            dataType: "json", 
-                           data: { id: "${request.id}", key: "${scp_configs['data_location']}" },
+                           data: { request_id: "${request.id}", external_service_id: "${external_service.id}", key: "${scp_configs['data_location']}" },
                        },
                 onLazyRead: function(dtnode){
                     dtnode.appendAjax({
                         url: "${h.url_for( controller='requests_admin', action='open_folder' )}", 
                         dataType: "json",
-                        data: { id: "${request.id}", key: dtnode.data.key },
+                        data: { request_id: "${request.id}", external_service_id: "${external_service.id}", key: dtnode.data.key },
                     });
                 },
 		      onSelect: function(select, dtnode) {
@@ -61,7 +61,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
 		                type: "POST",
 		                url: "${h.url_for( controller='requests_admin', action='get_file_details' )}",
 		                dataType: "json",
-		                data: { id: "${request.id}", folder_path: dtnode.data.key },
+		                data: { request_id: "${request.id}", external_service_id: "${external_service.id}", folder_path: dtnode.data.key },
 		                success : function ( data ) {
 		                    cell.html( '<label>'+data+'</label>' )
 		                }
@@ -82,7 +82,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='sequencer', action='view_sequencer', id=trans.security.encode_id( request.type.sequencer.id ) )}">Sequencer configuration</a></li>
+    <li><a class="action-button" href="${h.url_for( controller='external_service', action='view_external_service', id=trans.security.encode_id( external_service.id ) )}">External service configuration</a></li>
     %if can_transfer_datasets:
         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">Transfer datasets</a></li>
     %endif
@@ -97,7 +97,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
 
 %if request.samples_without_library_destinations:
     <p>
-    <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer</i></b></font>
+    <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the external service</i></b></font>
     </p>
 %endif
 
@@ -106,8 +106,8 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Select datasets to transfer from data directory configured for the sequencer</div>
-    <form name="select_datasets_to_transfer" id="select_datasets_to_transfer" action="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, request_id=trans.security.encode_id( request.id ))}" method="post" >
+    <div class="toolFormTitle">Select datasets to transfer from data directory configured for the external service</div>
+    <form name="select_datasets_to_transfer" id="select_datasets_to_transfer" action="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', cntrller=cntrller, external_service_id=trans.security.encode_id( external_service.id ), request_id=trans.security.encode_id( request.id ))}" method="post" >
         <div class="form-row">
             <label>Sample:</label>
             ${sample_id_select_field.get_html()}
@@ -116,7 +116,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
             </div>
         </div>
         <div class="form-row" >
-            <label>Select datasets from source data location defined in the sequencer configuration:</label>
+            <label>Select datasets from source data location defined in the external service configuration:</label>
             <div id="tree" >
                 Loading...
             </div>

@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<external_service_types>
+    <external_service_type file="simple_unknown_sequencer.xml" visible="False"/>
+    <external_service_type file="applied_biosystems_solid.xml" visible="True"/>
+</external_service_types>

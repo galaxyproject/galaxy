@@ -67,7 +67,7 @@ class RequestsGrid( grids.Grid ):
                            filterable="advanced" ),
         SamplesColumn( "Samples", 
                        link=( lambda item: iff( item.deleted, None, dict( operation="edit_samples", id=item.id ) ) ) ),
-        TypeColumn( "Sequencer",
+        TypeColumn( "Type",
                     link=( lambda item: iff( item.deleted, None, dict( operation="view_type", id=item.type.id ) ) ) ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         grids.DeletedColumn( "Deleted", 
@@ -173,7 +173,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             # when creating a request from the user perspective, check if the 
             # user has access permission to this request_type 
             elif cntrller == 'requests' and not trans.app.security_agent.can_access_request_type( user.all_roles(), request_type ):
-                message = '%s does not have access permission to the "%s" sequencer configuration.' % ( user.email, request_type.name )
+                message = '%s does not have access permission to the "%s" request type.' % ( user.email, request_type.name )
                 status = 'error'
             elif not name:
                 message = 'Enter the name of the request.'

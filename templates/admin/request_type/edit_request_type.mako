@@ -1,8 +1,8 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/admin/requests/common.mako" import="*" />
+<%namespace file="/admin/request_type/common.mako" import="*" />
 <%namespace file="/common/template_common.mako" import="render_template_fields" />
-<%namespace file="/admin/sequencer/common.mako" import="render_sequencer" />
+<%namespace file="/admin/external_service/common.mako" import="render_external_service" />
 
 <% form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE %>
 
@@ -79,14 +79,16 @@
     </div>
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Sequencer information</div>
+        <div class="toolFormTitle">External services information</div>
         <div class="form-row">
-            This information is needed only if you will transfer datasets from the sequencer to a target Galaxy data library
+            This information is needed only if you will transfer datasets from the sequencer or any other external service to a target Galaxy data library.
+            A request type can be associated with multiple external services. Click on 'Add' button below to add an external service to this request type.
         </div>
-        <div style="clear: both"></div>
+        %for index, external_service_select_field in enumerate( external_service_select_fields_list ):
+            ${render_external_services( index, external_service_select_field )}
+        %endfor
         <div class="form-row">
-            <label>Sequencer:</label>
-            ${sequencer_select_field.get_html()}
+            <input type="submit" name="add_external_service_button" value="Add external service"/>
         </div>
     </div>
     <div class="form-row">

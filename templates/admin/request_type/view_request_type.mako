@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/common/template_common.mako" import="render_template_fields" />
-<%namespace file="/admin/sequencer/common.mako" import="render_sequencer" />
+<%namespace file="/admin/external_service/common.mako" import="render_external_service" />
 
 <% form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE %>
 
@@ -10,7 +10,7 @@
     <li><a class="action-button" id="request_type-${request_type.id}-popup" class="menubutton">Configuration Actions</a></li>
     <div popupmenu="request_type-${request_type.id}-popup">
         %if not request_type.deleted:
-            <li><a class="action-button" href="${h.url_for( controller='request_type', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}">Edit request type</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='request_type', action='view_edittable_request_type', id=trans.security.encode_id( request_type.id ) )}">Edit request type</a></li>
             <li><a class="action-button" href="${h.url_for( controller='request_type', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}">Edit permissions</a></li>
             <li><a class="action-button" href="${h.url_for( controller='request_type', action='delete_request_type', id=trans.security.encode_id( request_type.id ) )}">Delete request type</a></li>
             %if not request_type.run_details:
@@ -64,15 +64,17 @@
 </div>
 <p/>
 <div class="toolForm">
-    <div class="toolFormTitle">Sequencer information</div>
-    <div class="form-row">
-        This information is needed only if you will transfer datasets from the sequencer to a target Galaxy data library
-    </div>
-    %if request_type.sequencer:
-        ${render_sequencer( request_type.sequencer, show_all='False' )}
+    <div class="toolFormTitle">External service information</div>
+    %if request_type.external_services:
+        %for index, external_service in enumerate( request_type.external_services ):
+            <div class="form-row">
+                <label><a href="${h.url_for( controller='external_service', action='view_external_service', id=trans.security.encode_id( external_service.id ) )}">${external_service.name}</a></label> 
+                ${external_service.get_type(trans).name}
+            </div>
+        %endfor
     %else:
         <div class="form-row">
-            Sequencer login information is not set, select the <b>Edit request type</b> option in the <b>Configuration options</b> menu.
+            External service login information is not set, select the <b>Edit request type</b> option in the <b>Configuration options</b> menu.
         </div>
     %endif
 </div>

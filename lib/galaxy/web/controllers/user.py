@@ -1321,6 +1321,13 @@ class User( BaseController, UsesFormDefinitions ):
 
     # ===== Methods for building SelectFields  ================================
     def __build_user_info_forms_selectfield( self, trans, user_info_forms, selected_user_form_id ):
+#        return build_select_field( trans,
+#                                   objs=user_info_forms,
+#                                   label_attr='name',
+#                                   select_field_name='user_info_select',
+#                                   initial_value='none',
+#                                   selected_value=selected_user_form_id,
+#                                   refresh_on_change=True )
         user_info_select = SelectField('user_info_select', refresh_on_change=True, 
                                        refresh_on_change_values=[str(u.id) for u in user_info_forms])
         if selected_user_form_id == 'none':

@@ -1784,20 +1784,27 @@ class RequestEvent( object ):
         self.state = request_state
         self.comment = comment
         
-class Sequencer( object ):
+class ExternalService( object ):
     data_transfer_types = Bunch( SCP = 'scp' )
-    def __init__( self, name=None, description=None, sequencer_type_id=None, version=None, form_definition_id=None, form_values_id=None, deleted=None ):
+    def __init__( self, name=None, description=None, external_service_type_id=None, version=None, form_definition_id=None, form_values_id=None, deleted=None ):
         self.name = name
         self.description = description
-        self.sequencer_type_id = sequencer_type_id
+        self.external_service_type_id = external_service_type_id
         self.version = version
         self.form_definition_id = form_definition_id
         self.form_values_id = form_values_id
         self.deleted = deleted 
+        self.type = self.external_service_type_id or ''
+    def get_type( self, trans ):
+        self.type = trans.app.external_service_types.all_external_service_types[ self.external_service_type_id ]
+        return self.type
+    @property
+    def label(self):
+        return self.name + " ( " +self.type.name + " )"
     def load_data_transfer_settings( self, trans ):
         self.data_transfer = {}
-        sequencer_type = trans.app.sequencer_types.all_sequencer_types[ self.sequencer_type_id ]
-        for data_transfer_type, data_transfer in sequencer_type.data_transfer.items():
+        external_service_type = self.get_type( trans )
+        for data_transfer_type, data_transfer in external_service_type.data_transfer.items():
             if data_transfer_type == self.data_transfer_types.SCP:
                 scp_configs = {}
                 scp_configs[ 'host' ] = self.form_values.content.get( data_transfer.config.get( 'host', '' ), '' )
@@ -1809,18 +1816,44 @@ class Sequencer( object ):
                 
 class RequestType( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'name', 'desc' )
-    api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id', 'sequencer_id' )
+    api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id' )
     rename_dataset_options = Bunch( NO = 'Do not rename',
                                     SAMPLE_NAME = 'Preprend sample name',
                                     EXPERIMENT_NAME = 'Prepend experiment name',
                                     EXPERIMENT_AND_SAMPLE_NAME = 'Prepend experiment and sample name')
     permitted_actions = get_permitted_actions( filter='REQUEST_TYPE' )
-    def __init__( self, name=None, desc=None, request_form=None, sample_form=None, sequencer=None ):
+    def __init__( self, name=None, desc=None, request_form=None, sample_form=None ):
         self.name = name
         self.desc = desc
         self.request_form = request_form
         self.sample_form = sample_form
-        self.sequencer = sequencer
+    @property
+    def external_services( self ):
+        external_services_list = []
+        for assoc in self.external_service_association:
+            external_services_list.append( assoc.external_service )
+        return external_services_list
+    def external_services_for_data_transfer( self, trans ):
+        external_services_list = []
+        for assoc in self.external_service_association:
+            external_service = assoc.external_service
+            # load data transfer settings
+            external_service.load_data_transfer_settings( trans )
+            if external_service.data_transfer:
+                external_services_list.append( external_service )
+        return external_services_list
+    def delete_external_service_association( self, trans, index='All' ):
+        '''Removes the given external service association. Removes all if index=All'''
+        if type( index ) == int and index < len( self.external_service_association ):
+            trans.sa_session.delete( self.external_service_association[index] )
+        elif index == 'All':
+            for assoc in self.external_service_association:
+                trans.sa_session.delete( assoc )
+        trans.sa_session.flush()
+    def add_external_service_association( self, trans, external_service ):
+        assoc = trans.model.RequestTypeExternalServiceAssociation( self, external_service )
+        trans.sa_session.add( assoc )
+        trans.sa_session.flush()
     @property
     def final_sample_state( self ):
         # The states mapper for this object orders ascending
@@ -1847,6 +1880,11 @@ class RequestType( object, APIItem ):
                     return template.get_widgets( trans.user, contents=info.content )
             return template.get_widgets( trans.user )
         return []
+    
+class RequestTypeExternalServiceAssociation( object ):
+    def __init__( self, request_type, external_service ):
+        self.request_type = request_type
+        self.external_service = external_service
         
 class RequestTypePermissions( object ):
     def __init__( self, action, request_type, role ):
@@ -1931,7 +1969,7 @@ class Sample( object, APIItem ):
     def get_untransferred_dataset_size( self, filepath, scp_configs ):
         def print_ticks( d ):
             pass
-        error_msg = 'Error encountered in determining the file size of %s on the sequencer.' % filepath
+        error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
         if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
             return error_msg
         login_str = '%s@%s' % ( scp_configs['user_name'], scp_configs['host'] )
@@ -2002,13 +2040,14 @@ class SampleDataset( object ):
                              ADD_TO_LIBRARY = 'Adding to data library',
                              COMPLETE = 'Complete',
                              ERROR = 'Error' )
-    def __init__( self, sample=None, name=None, file_path=None, status=None, error_msg=None, size=None):
+    def __init__( self, sample=None, name=None, file_path=None, status=None, error_msg=None, size=None, external_service=None ):
         self.sample = sample
         self.name = name
         self.file_path = file_path
         self.status = status
         self.error_msg = error_msg
         self.size = size
+        self.external_service = external_service
 
 class Run( object ):
     def __init__( self, form_definition, form_values ):

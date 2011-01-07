@@ -40,6 +40,12 @@ class DataTransferGrid( grids.Grid ):
     class StatusColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             return sample_dataset.status
+    class ExternalServiceColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, sample_dataset ):
+            try:
+                return sample_dataset.external_service.name
+            except:
+                return 'None'
     # Grid definition
     webapp = "galaxy"
     title = "Sample Datasets"
@@ -59,6 +65,8 @@ class DataTransferGrid( grids.Grid ):
         grids.GridColumn( "Last Updated", 
                           key="update_time", 
                           format=time_ago ),
+        ExternalServiceColumn( 'External service',
+                               link=( lambda item: dict( operation="view_external_service", id=item.external_service.id ) ), ),
         StatusColumn( "Status",
                       filterable="advanced",
                       label_id_prefix='datasetTransferStatus-' ),
@@ -179,7 +187,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                           status=status,
                                                           message=message,
                                                           **kwd ) )
-    # Data transfer from sequencer
+    # Data transfer from sequencer/external_service
     @web.expose
     @web.require_admin
     def manage_datasets( self, trans, **kwd ):
@@ -255,6 +263,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                 self.initiate_data_transfer( trans,
                                              trans.security.encode_id( selected_sample_datasets[0].sample.id ),
                                              sample_datasets=selected_sample_datasets )
+            elif operation == "view_external_service":
+                return trans.response.send_redirect( web.url_for( controller='external_service',
+                                                                  action='view_external_service',
+                                                                  **kwd ) )
+
         # Render the grid view
         sample_id = params.get( 'sample_id', None )
         try:
@@ -264,12 +277,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Manage "%s" datasets'  % sample.name
-        self.datatx_grid.global_actions = [ grids.GridAction( "Select more datasets", 
-                                                              dict( controller='requests_admin', 
-                                                                    action='select_datasets_to_transfer',
-                                                                    request_id=request_id,
-                                                                    sample_id=sample_id ) ),
-                                            grids.GridAction( "Browse target data library", 
+        self.datatx_grid.global_actions = [ grids.GridAction( "Browse target data library", 
                                                               dict( controller='library_common', 
                                                                     action='browse_library', 
                                                                     cntrller='library_admin', 
@@ -341,6 +349,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
         request_id = kwd.get( 'request_id', None )
+        external_service_id = kwd.get( 'external_service_id', None )
         files = []
         def handle_error( **kwd ):
             kwd[ 'status' ] = 'error'
@@ -351,9 +360,13 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', request_id )
+        try:
+            external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
+        except:
+            return invalid_id_redirect( trans, 'requests_admin', external_service_id, 'external_service', action='browse_external_services' )
         # load the data transfer settings
-        request.type.sequencer.load_data_transfer_settings( trans )
-        scp_configs = request.type.sequencer.data_transfer[ trans.model.Sequencer.data_transfer_types.SCP ]
+        external_service.load_data_transfer_settings( trans )
+        scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_types.SCP ]
         selected_datasets_to_transfer = util.restore_text( params.get( 'selected_datasets_to_transfer', '' ) )
         if selected_datasets_to_transfer:
             selected_datasets_to_transfer = selected_datasets_to_transfer.split(',')
@@ -386,7 +399,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                                   status=status,
                                                                   message=message ) )
             # Save the sample datasets 
-            sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_datasets_to_transfer, scp_configs )
+            sample_dataset_file_names = self.__save_sample_datasets( trans, sample, selected_datasets_to_transfer, external_service )
             if sample_dataset_file_names:
                 message = 'Datasets (%s) have been selected for sample (%s)' % \
                     ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), sample.name )
@@ -396,17 +409,17 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                               sample_id=sample_id,
                                                               message=message,
                                                               status=status ) )
-        
         return trans.fill_template( '/admin/requests/select_datasets_to_transfer.mako',
                                     cntrller='requests_admin',
                                     request=request,
+                                    external_service=external_service,
                                     scp_configs=scp_configs,
                                     sample=sample,
                                     sample_id_select_field=sample_id_select_field,
                                     status=status,
                                     message=message )
     @web.json
-    def get_file_details( self, trans, id, folder_path ):
+    def get_file_details( self, trans, request_id, external_service_id, folder_path ):
         def print_ticks( d ):
             # pexpect timeout method
             pass
@@ -414,8 +427,9 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         request = trans.sa_session.query( trans.model.Request ).get( int( id ) )
-        request.type.sequencer.load_data_transfer_settings( trans )
-        scp_configs = request.type.sequencer.data_transfer[ trans.model.Sequencer.data_transfer_types.SCP ]
+        external_service = trans.sa_session.query( trans.model.ExternalService ).get( int( external_service_id ) )
+        external_service.load_data_transfer_settings( trans )
+        scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_types.SCP ]
         cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( scp_configs['user_name'],
                                                  scp_configs['host'],
                                                  folder_path )
@@ -424,13 +438,14 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                               timeout=10 )
         return unicode( output.replace( '\n', '<br/>' ) )
     @web.json
-    def open_folder( self, trans, id, key ):
+    def open_folder( self, trans, request_id, external_service_id, key ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        request = trans.sa_session.query( trans.model.Request ).get( int( id ) )
+        request = trans.sa_session.query( trans.model.Request ).get( int( request_id ) )
+        external_service = trans.sa_session.query( trans.model.ExternalService ).get( int( external_service_id ) )
         folder_path = key
-        files_list = self.__get_files( trans, request, folder_path )
+        files_list = self.__get_files( trans, request, external_service, folder_path )
         folder_contents = []
         for filename in files_list:
             is_folder = False
@@ -445,11 +460,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                     }
             folder_contents.append(node)
         return folder_contents
-    def __get_files( self, trans, request, folder_path ):
+    def __get_files( self, trans, request, external_service, folder_path ):
         # Retrieves the filenames to be transferred from the remote host.
         ok = True
-        request.type.sequencer.load_data_transfer_settings( trans )
-        scp_configs = request.type.sequencer.data_transfer[ trans.model.Sequencer.data_transfer_types.SCP ]
+        external_service.load_data_transfer_settings( trans )
+        scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_types.SCP ]
         if not scp_configs[ 'host' ] or not scp_configs[ 'user_name' ] or not scp_configs[ 'password' ]:
             status = 'error'
             message = "Error in sequencer login information."
@@ -471,7 +486,8 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                           request_id=trans.security.encode_id( request.id ),
                                                           status=status,
                                                           message=message ) )
-    def __save_sample_datasets( self, trans, sample, selected_datasets_to_transfer, scp_configs ):
+    def __save_sample_datasets( self, trans, sample, selected_datasets_to_transfer, external_service ):
+        scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_types.SCP ]
         sample_dataset_file_names = []
         if selected_datasets_to_transfer:
             for filepath in selected_datasets_to_transfer:
@@ -486,7 +502,8 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                                 status=status,
                                                                 name=name,
                                                                 error_msg='',
-                                                                size=size )
+                                                                size=size,
+                                                                external_service=external_service )
                     trans.sa_session.add( sample_dataset )
                     trans.sa_session.flush()
                     sample_dataset_file_names.append( str( sample_dataset.name ) )
@@ -523,9 +540,10 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                         current_user_private_role )
             trans.sa_session.add( lfp )
             trans.sa_session.flush()
-    def __create_data_transfer_message( self, trans, sample, selected_sample_datasets, scp_configs ):
+    def __create_data_transfer_messages( self, trans, sample, selected_sample_datasets ):
         """
-        Creates an xml message to send to the rabbitmq server
+        Creates the xml messages to send to the rabbitmq server. It returns a dictionary of messages
+        keyed by the external service used to transfer the datasets
         """
         # Create the xml message based on the following template
         xml = \
@@ -547,30 +565,51 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                    <name>%(NAME)s</name>
                    <file>%(FILE)s</file>
                </dataset>'''
-        datasets = ''
+        # Here we group all the sample_datasets by the external service used to transfer them.
+        # The idea is to bundle up the sample_datasets which uses the same external service and 
+        # send a single AMQP message to the galaxy_listener
+        dataset_elements = {}
         for sample_dataset in selected_sample_datasets:
+            external_service = sample_dataset.external_service
             if sample_dataset.status == trans.app.model.SampleDataset.transfer_status.NOT_STARTED:
-                datasets = datasets + dataset_xml % dict( ID=str( sample_dataset.id ),
-                                                          NAME=sample_dataset.name,
-                                                          FILE=sample_dataset.file_path )
+                if not dataset_elements.has_key( external_service ):
+                    dataset_elements[ external_service ] = ''
+                dataset_elements[ external_service ] += dataset_xml % dict( ID=str( sample_dataset.id ),
+                                                                      NAME=sample_dataset.name,
+                                                                      FILE=sample_dataset.file_path )
+                # update the dataset transfer status
                 sample_dataset.status = trans.app.model.SampleDataset.transfer_status.IN_QUEUE
                 trans.sa_session.add( sample_dataset )
                 trans.sa_session.flush()
-        message = xml % dict(  GALAXY_HOST=trans.request.host,
-                               API_KEY=trans.user.api_keys[0].key,
-                               DATA_HOST=scp_configs[ 'host' ],
-                               DATA_USER=scp_configs[ 'user_name' ],
-                               DATA_PASSWORD=scp_configs[ 'password' ],
-                               REQUEST_ID=str( sample.request.id ),
-                               SAMPLE_ID=str( sample.id ),
-                               LIBRARY_ID=str( sample.library.id ),
-                               FOLDER_ID=str( sample.folder.id ),
-                               DATASETS=datasets )
-        return message
+        # Finally prepend the external service info to the sets of sample datasets 
+        messages = []
+        for external_service, dataset_elem in dataset_elements.items():
+            external_service.load_data_transfer_settings( trans )
+            scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_types.SCP ]
+            # Check data transfer settings
+            err_msg = self.__validate_data_transfer_settings( trans, sample.request.type, scp_configs )
+            if err_msg:
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='manage_datasets',
+                                                                  sample_id=trans.security.encode_id( sample.id ),
+                                                                  status='error',
+                                                                  message=err_msg ) )
+            message = xml % dict(  GALAXY_HOST=trans.request.host,
+                                   API_KEY=trans.user.api_keys[0].key,
+                                   DATA_HOST=scp_configs[ 'host' ],
+                                   DATA_USER=scp_configs[ 'user_name' ],
+                                   DATA_PASSWORD=scp_configs[ 'password' ],
+                                   REQUEST_ID=str( sample.request.id ),
+                                   SAMPLE_ID=str( sample.id ),
+                                   LIBRARY_ID=str( sample.library.id ),
+                                   FOLDER_ID=str( sample.folder.id ),
+                                   DATASETS=dataset_elem )
+            messages.append( message.replace( '\n', '' ).replace( '\r', '' ) )
+        return messages
     def __validate_data_transfer_settings( self, trans, request_type, scp_configs ):
         err_msg = ''
-        if not request_type.sequencer:
-            return "Assign a sequencer to this request's request type '%s' before selecting datasets." % request_type.name
+#        if not request_type.sequencer:
+#            return "Assign a sequencer to this request's request type '%s' before selecting datasets." % request_type.name
         # check the sequencer login info
         if not scp_configs.get( 'host', '' ) \
             or not scp_configs.get( 'user_name', '' ) \
@@ -603,29 +642,22 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
-        # load data transfer settings
-        sample.request.type.sequencer.load_data_transfer_settings( trans )
-        scp_configs = sample.request.type.sequencer.data_transfer[ trans.model.Sequencer.data_transfer_types.SCP ]
-        # Check data transfer settings
-        err_msg = self.__validate_data_transfer_settings( trans, sample.request.type, scp_configs )
-        if not err_msg:
-            # Make sure the current user has LIBRARY_ADD
-            # permission on the target library and folder.
-            self.__check_library_add_permission( trans, sample.library, sample.folder )
-            if sample_dataset_id and not sample_datasets:
-                # Either a list of SampleDataset objects or a comma-separated string of
-                # encoded SampleDataset ids can be received.  If the latter, parse the
-                # sample_dataset_id to build the list of sample_datasets.
-                id_list = util.listify( sample_dataset_id )
-                for sample_dataset_id in id_list:
-                    sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
+        err_msg = ''
+        # Make sure the current user has LIBRARY_ADD
+        # permission on the target library and folder.
+        self.__check_library_add_permission( trans, sample.library, sample.folder )
+        if sample_dataset_id and not sample_datasets:
+            # Either a list of SampleDataset objects or a comma-separated string of
+            # encoded SampleDataset ids can be received.  If the latter, parse the
+            # sample_dataset_id to build the list of sample_datasets.
+            id_list = util.listify( sample_dataset_id )
+            for sample_dataset_id in id_list:
+                sample_dataset = trans.sa_session.query( trans.model.SampleDataset ).get( trans.security.decode_id( sample_dataset_id ) )
                 sample_datasets.append( sample_dataset )
-            # Create the message
-            message = self.__create_data_transfer_message( trans, 
-                                                           sample, 
-                                                           sample_datasets,
-                                                           scp_configs )
-            # Send the message 
+        # Create the message
+        messages = self.__create_data_transfer_messages( trans, sample, sample_datasets )
+        # Send the messages 
+        for message in messages:
             try:
                 conn = amqp.Connection( host=trans.app.config.amqp[ 'host' ] + ":" + trans.app.config.amqp[ 'port' ], 
                                         userid=trans.app.config.amqp[ 'userid' ], 
@@ -633,7 +665,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                         virtual_host=trans.app.config.amqp[ 'virtual_host' ], 
                                         insist=False )    
                 chan = conn.channel()
-                msg = amqp.Message( message.replace( '\n', '' ).replace( '\r', '' ), 
+                msg = amqp.Message( message, 
                                     content_type='text/plain', 
                                     application_headers={ 'msg_type': 'data_transfer' } )
                 msg.properties[ "delivery_mode" ] = 2

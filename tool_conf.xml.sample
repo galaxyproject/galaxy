@@ -2,30 +2,10 @@
 <toolbox>
   <section name="Get Data" id="getext">
     <tool file="data_source/upload.xml"/>
-    <tool file="data_source/ucsc_tablebrowser.xml" />
-    <tool file="data_source/ucsc_tablebrowser_test.xml" />
-    <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
-    <tool file="data_source/bx_browser.xml" />
-    <tool file="data_source/microbial_import.xml" />
-    <tool file="data_source/biomart.xml" />
-    <tool file="data_source/biomart_test.xml" />
-    <tool file="data_source/cbi_rice_mart.xml" />
-    <tool file="data_source/gramene_mart.xml" />
-    <tool file="data_source/fly_modencode.xml" />
-    <tool file="data_source/flymine.xml" />
-    <tool file="data_source/flymine_test.xml" />
-    <tool file="data_source/modmine.xml" />
-    <tool file="data_source/ratmine.xml" />
-    <tool file="data_source/worm_modencode.xml" />
-    <tool file="data_source/wormbase.xml" />
-    <tool file="data_source/wormbase_test.xml" />
-    <tool file="data_source/eupathdb.xml" />
-    <tool file="data_source/encode_db.xml" />
-    <tool file="data_source/epigraph_import.xml" />
-    <tool file="data_source/epigraph_import_test.xml" />
-    <tool file="data_source/hbvar.xml" />
-    <tool file="validation/fix_errors.xml" />
+    <tool file="fasta_tools/fasta_filter_by_id.xml" />
   </section>
+<<<<<<< local
+=======
   <section name="Send Data" id="send">
     <tool file="data_destination/epigraph.xml" />
     <tool file="data_destination/epigraph_test.xml" />
@@ -481,4 +461,5 @@
     <tool file="emboss_5/emboss_wordmatch.xml" />
   </section>
 -->
+>>>>>>> other
 </toolbox>

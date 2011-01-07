@@ -990,8 +990,8 @@ class UsesFormDefinitions:
                 item = trans.sa_session.query( trans.app.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
             except:
                 item = None
-            item_desc = 'sequencer configuration'
-            action = 'edit_request_type'
+            item_desc = 'request type'
+            action = 'view_edittable_request_type'
         elif item_type == 'sample':
             sample_id = kwd.get( 'sample_id', None )
             id = sample_id

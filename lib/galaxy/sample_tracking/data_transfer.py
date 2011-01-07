@@ -17,7 +17,7 @@ class ScpDataTransferFactory( DataTransferFactory ):
         self.config['data_location'] = elem.get( 'data_location' )
         # validate 
         for name, value in self.config.items():
-            assert value, "'%s' attribute missing in 'data_transfer' element of type 'scp' in sequencer_type xml config file: '%s'." % ( name, config_file )
+            assert value, "'%s' attribute missing in 'data_transfer' element of type 'scp' in external_service_type xml config file: '%s'." % ( name, config_file )
         
 class FtpDataTransferFactory( DataTransferFactory ):
     type = 'ftp'

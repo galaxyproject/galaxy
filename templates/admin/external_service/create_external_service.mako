@@ -1,14 +1,14 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/admin/sequencer/common.mako" import="*" />
+<%namespace file="/admin/external_service/common.mako" import="*" />
 
 %if message:
     ${render_msg( message, status )}
 %endif
 
-<form name="create_sequencer" action="${h.url_for( controller='sequencer', action='create_sequencer' )}" method="post">
+<form name="create_external_service" action="${h.url_for( controller='external_service', action='create_external_service' )}" method="post">
     <div class="toolForm">
-        <div class="toolFormTitle">New sequencer</div>
+        <div class="toolFormTitle">New external service</div>
         %if widgets:
 	        %for i, field in enumerate( widgets ):
 	            <div class="form-row">
@@ -23,6 +23,6 @@
         %endif
     </div>
     <div class="form-row">
-        <input type="submit" name="create_sequencer_button" value="Save"/>
+        <input type="submit" name="create_external_service_button" value="Save"/>
     </div>
 </form>

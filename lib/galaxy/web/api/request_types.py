@@ -55,11 +55,11 @@ class RequestTypeAPIController( BaseController ):
     def create( self, trans, payload, **kwd ):
         """
         POST /api/request_types
-        Creates a new request type (sequencer configuration).
+        Creates a new request type (external_service configuration).
         """
         if not trans.user_is_admin():
             trans.response.status = 403
-            return "You are not authorized to create a new request type (sequencer configuration)."
+            return "You are not authorized to create a new request type (external_service configuration)."
         xml_text = payload.get( 'xml_text', None )
         if xml_text is None:
             trans.response.status = 400
@@ -75,12 +75,12 @@ class RequestTypeAPIController( BaseController ):
             trans.response.status = 400
             return "Missing required parameter 'sample_form_id'."
         sample_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( sample_form_id ) )
-        sequencer_id = payload.get( 'sequencer_id', None )
-        if sequencer_id is None:
+        external_service_id = payload.get( 'external_service_id', None )
+        if external_service_id is None:
             trans.response.status = 400
-            return "Missing required parameter 'sequencer_id'."
-        sequencer = trans.sa_session.query( trans.app.model.Sequencer ).get( trans.security.decode_id( sequencer_id ) )
-        request_type = request_type_factory.from_elem( elem, request_form, sample_form, sequencer )
+            return "Missing required parameter 'external_service_id'."
+        external_service = trans.sa_session.query( trans.app.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
+        request_type = request_type_factory.from_elem( elem, request_form, sample_form, external_service )
         #FIXME: move permission building/setting to separate abstract method call and
         #allow setting individual permissions by role (currently only one action, so not strictly needed)
         role_ids = payload.get( 'role_ids', [] )

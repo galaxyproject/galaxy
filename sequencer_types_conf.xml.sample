@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<sequencer_types>
-    <sequencer_type file="simple_unknown_sequencer.xml" visible="False"/>
-    <sequencer_type file="applied_biosystems_solid.xml" visible="True"/>
-</sequencer_types>

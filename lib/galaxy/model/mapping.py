@@ -589,13 +589,13 @@ FormDefinition.table = Table('form_definition', metadata,
     Column( "type", TrimmedString( 255 ), index=True ),
     Column( "layout", JSONType() ), )
 
-Sequencer.table = Table( 'sequencer', metadata,
+ExternalService.table = Table( 'external_service', metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), nullable=False ),
     Column( "description", TEXT ),
-    Column( "sequencer_type_id", TrimmedString( 255 ), nullable=False ),
+    Column( "external_service_type_id", TrimmedString( 255 ), nullable=False ),
     Column( "version", TrimmedString( 255 ) ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
@@ -609,8 +609,12 @@ RequestType.table = Table('request_type', metadata,
     Column( "desc", TEXT ),
     Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "sequencer_id", Integer, ForeignKey( "sequencer.id" ), nullable=True, index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
+
+RequestTypeExternalServiceAssociation.table = Table( "request_type_external_service_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
+    Column( "external_service_id", Integer, ForeignKey( "external_service.id" ), index=True ) )
 
 RequestTypePermissions.table = Table( "request_type_permissions", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -685,7 +689,8 @@ SampleDataset.table = Table('sample_dataset', metadata,
     Column( "file_path", TEXT ),
     Column( "status", TrimmedString( 255 ), nullable=False ),
     Column( "error_msg", TEXT ),
-    Column( "size", TrimmedString( 255 ) ) )
+    Column( "size", TrimmedString( 255 ) ),
+    Column( "external_service_id", Integer, ForeignKey( "external_service.id" ), index=True ) ) 
 
 Run.table = Table( 'run', metadata,
     Column( "id", Integer, primary_key=True ),
@@ -973,11 +978,11 @@ assign_mapper( context, Request, Request.table,
 assign_mapper( context, RequestEvent, RequestEvent.table,
                properties=None )
 
-assign_mapper( context, Sequencer, Sequencer.table,
+assign_mapper( context, ExternalService, ExternalService.table,
                properties=dict( form_definition=relation( FormDefinition,
-                                                       primaryjoin=( Sequencer.table.c.form_definition_id == FormDefinition.table.c.id ) ),
+                                                       primaryjoin=( ExternalService.table.c.form_definition_id == FormDefinition.table.c.id ) ),
                                 form_values=relation( FormValues,
-                                                      primaryjoin=( Sequencer.table.c.form_values_id == FormValues.table.c.id ) ) 
+                                                      primaryjoin=( ExternalService.table.c.form_values_id == FormValues.table.c.id ) ) 
                                 ) )
 
 assign_mapper( context, RequestType, RequestType.table,               
@@ -989,9 +994,17 @@ assign_mapper( context, RequestType, RequestType.table,
                                                        primaryjoin=( RequestType.table.c.request_form_id == FormDefinition.table.c.id ) ),
                                 sample_form=relation( FormDefinition,
                                                       primaryjoin=( RequestType.table.c.sample_form_id == FormDefinition.table.c.id ) ),
-                                sequencer=relation( Sequencer,
-                                                    primaryjoin=( RequestType.table.c.sequencer_id == Sequencer.table.c.id ) )
                               ) )
+
+assign_mapper( context, RequestTypeExternalServiceAssociation, RequestTypeExternalServiceAssociation.table,
+    properties=dict(
+        request_type=relation( RequestType, 
+                               primaryjoin=( ( RequestTypeExternalServiceAssociation.table.c.request_type_id == RequestType.table.c.id ) ), backref="external_service_association" ),
+        external_service=relation( ExternalService,
+                                   primaryjoin=( RequestTypeExternalServiceAssociation.table.c.external_service_id == ExternalService.table.c.id ) )
+    )
+)
+
 
 assign_mapper( context, RequestTypePermissions, RequestTypePermissions.table,
     properties=dict(
@@ -1022,7 +1035,11 @@ assign_mapper( context, SampleState, SampleState.table,
                properties=None )
 
 assign_mapper( context, SampleDataset, SampleDataset.table,
-               properties=None )
+               properties=dict( external_service=relation( ExternalService,
+                                                           primaryjoin=( SampleDataset.table.c.external_service_id == ExternalService.table.c.id ) )
+    ) 
+)
+
 
 assign_mapper( context, SampleRunAssociation, SampleRunAssociation.table,
                properties=dict( sample=relation( Sample, backref="runs", order_by=desc( Run.table.c.update_time ) ),

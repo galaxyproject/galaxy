@@ -9,7 +9,7 @@ import galaxy.datatypes.registry
 import galaxy.security
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
-from galaxy.sample_tracking import sequencer_types
+from galaxy.sample_tracking import external_service_types
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -81,8 +81,8 @@ class UniverseApplication( object ):
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue
-        # Initialize the sequencer types
-        self.sequencer_types = sequencer_types.SequencerTypesCollection( self.config.sequencer_type_config_file, self.config.sequencer_type_path, self )
+        # Initialize the external service types
+        self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
         # Transfer manager client
         if self.config.get_bool( 'enable_deferred_job_queue', False ):
             from jobs import transfer_manager
