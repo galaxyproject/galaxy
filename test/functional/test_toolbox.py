@@ -54,7 +54,6 @@ class ToolTestCase( TwillTestCase ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         all_inputs = {}
-        print '### testdef.inputs', testdef.inputs
         for name, value, _ in testdef.inputs:
             if value:
                 for end in [ '.zip', '.gz' ]:
