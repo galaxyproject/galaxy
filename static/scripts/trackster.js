@@ -1681,6 +1681,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         return highest_slot;
         
     },
+    // Right now this function is used only for rendering BAM reads.
     rect_or_text: function( ctx, w_scale, tile_low, tile_high, feature_start, orig_seq, cigar, y_center ) {
         ctx.textAlign = "center";
         var cur_offset = 0,
@@ -1716,7 +1717,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         }
                     } else {
                         ctx.fillStyle = this.prefs.block_color;
-                        ctx.fillRect(s_start + this.left_offset, y_center + 4, s_end - s_start, 3);
+                        // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
+                        ctx.fillRect(s_start + this.left_offset, y_center + (this.mode != "Dense" ? 4 : 5), s_end - s_start, (this.mode != "Dense" ? 3 : 1) );
                     }
                     break;
                 case "N": // Skipped bases
@@ -1799,6 +1801,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.textAlign = "right";
         this.container_div.find(".yaxislabel").remove();
         
+        //
+        // Draw summary tree. If tree is drawn, canvas is returned.
+        //
         if (result.dataset_type == "summary_tree") {            
             var points = result.data,
                 max = result.max,
@@ -1830,6 +1835,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             return canvas;
         }
         
+        //
+        // Show message. If there is a message, return canvas.
+        //
         if (result.message) {
             canvas.css({
                 border: "solid red",
@@ -1838,27 +1846,22 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             ctx.fillStyle = "red";
             ctx.textAlign = "left";
             ctx.fillText(result.message, 100 + left_offset, y_scale);
+            return canvas;
         }
         
+        //        
+        // If tile is filterable, add class to canvas.
         //
-        // We're now working at the level of individual data points.
-        //
-        
-        // See if tile is filterable. If so, add class.
-        var filterable = false;
-        if (result.data) {
-            filterable = true;
-            for (var f = 0; f < this.filters.length; f++) {
-                if ( !this.filters[f].applies_to( result.data[0] ) ) {
-                    filterable = false;
-                }
+        for (var f = 0; f < this.filters.length; f++) {
+            if (this.filters[f].applies_to(result.data[0])) {
+                canvas.addClass(FILTERABLE_CLASS);
+                break;
             }
         }
-        if (filterable) {
-            canvas.addClass(FILTERABLE_CLASS);
-        }
         
+        //
         // Draw data points.
+        //
         var data = result.data;
         var j = 0;
         for (var i = 0, len = data.length; i < len; i++) {
@@ -1868,7 +1871,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 feature_end = feature[2],
                 feature_name = feature[3];
             
-            if (slots[feature_uid] === undefined) {
+            // TODO: why is this necessary? Without explicitly short-circuiting it, it prevents dense mode from rendering.
+            if (this.mode != "Dense" && slots[feature_uid] === undefined) {
                 continue;
             }
                 
@@ -1888,32 +1892,39 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             }
                 
             if (feature_start <= tile_high && feature_end >= tile_low) {
+                // All features need a start, end, and vertical center.
                 var f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
                     y_center = (mode === "Dense" ? 1 : (1 + slots[feature_uid])) * y_scale;
                 
                 var thickness, y_start, thick_start = null, thick_end = null;
                 
+                // BAM/read drawing.
                 if (result.dataset_type === "bai") {
                     var cigar = feature[4];
                     ctx.fillStyle = block_color;
                     if (feature[5] instanceof Array) {
+                        // Read is paired.
                         var b1_start = Math.floor( Math.max(0, (feature[5][0] - tile_low) * w_scale) ),
                             b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) ),
                             b2_start = Math.floor( Math.max(0, (feature[6][0] - tile_low) * w_scale) ),
                             b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[6][1] - tile_low) * w_scale)) );
                         
+                        // Draw left/forward read.
                         if (feature[5][1] >= tile_low && feature[5][0] <= tile_high) {
                             this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], cigar, y_center);
                         }
+                        // Draw right/reverse read.
                         if (feature[6][1] >= tile_low && feature[6][0] <= tile_high) {
                             this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[6][0], feature[6][2], cigar, y_center);
                         }
+                        // Draw connector.
                         if (b2_start > b1_end) {
                             ctx.fillStyle = CONNECTOR_COLOR;
                             ctx.fillRect(b1_end + left_offset, y_center + 5, b2_start - b1_end, 1);
                         }
                     } else {
+                        // Read is single.
                         ctx.fillStyle = block_color;
                         this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature_start, feature_name, cigar, y_center);
                     }
@@ -1930,8 +1941,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         ctx.fillStyle = block_color;
                     }
                         
-                } else if (result.dataset_type === "interval_index") {
-                    
+                }
+                // Interval index drawing.
+                else if (result.dataset_type === "interval_index") {
                     // console.log(feature_uid, feature_start, feature_end, f_start, f_end, y_center);
                     if (no_detail) {
                         ctx.fillStyle = block_color;
