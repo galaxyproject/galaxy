@@ -193,28 +193,38 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             // Use a popup grid to add more tracks
             $("#add-track").bind( "click", function(e) {
                 $.ajax({
-                    url: "${h.url_for( action='list_datasets' )}",
+                    url: "${h.url_for( action='list_histories' )}",
                     data: { "f-dbkey": view.dbkey },
-                    error: function() { alert( "Grid refresh failed" ); },
+                    error: function() { alert( "Grid failed" ); },
                     success: function(table_html) {
-                        show_modal("Add Track &mdash; Select Dataset(s)", table_html, {
-                            "Cancel": function() {
-                                hide_modal();
-                            },
-                            "Insert": function() {
-                                $('input[name=id]:checked').each(function() {
-                                    var item_id = $(this).val();
-                                    $.ajax( {
-                                        url: "${h.url_for( action='add_track_async' )}",
-                                        data: { id: item_id },
-                                        dataType: "json",
-                                        success: add_async_success
-                                    });
+                        show_modal(
+                            "Add Track &mdash; Select History, then Dataset(s)", 
+                            table_html, 
+                            {
+                                "Cancel": function() {
+                                    hide_modal();
+                                },
+                                "Insert": function() {
+                                    $('input[name=id]:checked').each(function() {
+                                        var item_id = $(this).val();
+                                        $.ajax( {
+                                            url: "${h.url_for( action='add_track_async' )}",
+                                            data: { id: item_id },
+                                            dataType: "json",
+                                            success: add_async_success
+                                        });
 
-                                });
-                                hide_modal();
+                                    });
+                                    hide_modal();
+                                }
+                            },
+                            {},
+                            // Keep minimum size for dialog box.
+                            function() { 
+                                var body = $(".dialog-box").find(".body"); 
+                                body.css("min-width", body.width()); 
                             }
-                        });
+                        );
                     }
                 });
             });

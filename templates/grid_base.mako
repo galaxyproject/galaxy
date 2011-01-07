@@ -565,6 +565,10 @@
                     init_grid_elements();
                     make_popup_menus();
                     
+                    // Trigger custom event to indicate grid body has changed.
+                    $('#grid-table-body').trigger('update');
+                    
+                    
                     // Update number of pages.
                     var num_pages = parseInt( parsed_response_text[1] );
                     
@@ -747,14 +751,18 @@
         </tr>
     </table>
 
-    ${self.render_grid_table( grid )}
+    ${self.render_grid_table( grid, show_item_checkboxes )}
+</%def>
+
+<%def name="grid_title()">
+    <h2>${grid.title}</h2>
 </%def>
 
 ## Render grid header.
 <%def name="render_grid_header( grid, render_title=True)">
     <div class="grid-header">
         %if render_title:
-            <h2>${grid.title}</h2>
+            ${self.grid_title()}
         %endif
     
         %if grid.global_actions:

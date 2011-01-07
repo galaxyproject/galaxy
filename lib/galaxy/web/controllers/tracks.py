@@ -10,7 +10,7 @@ from galaxy import model
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
-from galaxy.web.framework.helpers import grids
+from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
 from galaxy import util
 from galaxy.datatypes.interval import Gff
@@ -29,13 +29,92 @@ messages = Bunch(
     ERROR = "error"
 )
 
+class NameColumn( grids.TextColumn ):
+    def get_value( self, trans, grid, history ):
+        return history.get_display_name()
+    def get_link( self, trans, grid, history ):
+        # Provide link to list all datasets in history that have a given dbkey.
+        # Right now, only dbkey needs to be passed through, but pass through 
+        # all for now since it's cleaner.
+        d = dict( action='list_history_datasets', show_item_checkboxes=True )
+        d[ "f-history" ] = history.id
+        for filter, value in grid.cur_filter_dict.iteritems():
+            d[ "f-" + filter ] = value
+        return d
+        
+class DbKeyPlaceholderColumn( grids.GridColumn ):
+    """ Placeholder to keep track of dbkey. """
+    def filter( self, trans, user, query, dbkey ):
+        return query
+
+class HistorySelectionGrid( grids.Grid ):
+    """
+    Grid enables user to select a history, which is then used to display 
+    datasets from the history.
+    """
+    title = "Add Track: Select History"
+    model_class = model.History
+    template='/tracks/history_select_grid.mako'
+    default_sort_key = "-update_time"
+    columns = [
+        NameColumn( "History Name", key="name", filterable="standard" ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
+    ]
+    num_rows_per_page = 15
+    use_async = True
+    use_paging = True
+    def apply_query_filter( self, trans, query, **kwargs ):
+        return query.filter_by( user=trans.user, purged=False, importing=False )
+        
+class DbKeyColumn( grids.GridColumn ):
+    """ Column for filtering by and displaying dataset dbkey. """
+    def filter( self, trans, user, query, dbkey ):
+        """ Filter by dbkey. """
+        # use raw SQL b/c metadata is a BLOB
+        dbkey = dbkey.replace("'", "\\'")
+        return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+                    
+class HistoryColumn( grids.GridColumn ):
+    """ Column for filtering by history id. """
+    def filter( self, trans, user, query, history_id ):
+        return query.filter( model.History.id==history_id )
+
+class HistoryDatasetsSelectionGrid( grids.Grid ):
+    # Grid definition.
+    available_tracks = None
+    title = "Add Datasets"
+    template = "tracks/history_datasets_select_grid.mako"
+    async_template = "/page/select_items_grid_async.mako"
+    model_class = model.HistoryDatasetAssociation
+    default_filter = { "deleted" : "False" , "shared" : "All" }
+    default_sort_key = "name"
+    use_async = True
+    use_paging = False
+    columns = [
+        grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
+        grids.TextColumn( "Filetype", key="extension", model_class=model.HistoryDatasetAssociation ),
+        HistoryColumn( "History", key="history", visible=False ),
+        DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
+    ]
+    columns.append( 
+        grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0], columns[1] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+    )
+
+    def build_initial_query( self, trans, **kwargs ):
+        return trans.sa_session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
+    def apply_query_filter( self, trans, query, **kwargs ):
+        if self.available_tracks is None:
+             self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
+        return query.filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) ) \
+                    .filter( model.Dataset.state == model.Dataset.states.OK ) \
+                    .filter( model.HistoryDatasetAssociation.deleted == False ) \
+                    .filter( model.HistoryDatasetAssociation.visible == True )
+
+# TODO: not currently used. Do we want to keep this?
 class DatasetSelectionGrid( grids.Grid ):
-    class DbKeyColumn( grids.GridColumn ):
-        def filter( self, trans, user, query, dbkey ):
-            """ Filter by dbkey. """
-            # use raw SQL b/c metadata is a BLOB
-            dbkey = dbkey.replace("'", "\\'")
-            return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+    """ Lists all user datasets that can be added to a visualization. """
     
     # Grid definition.
     available_tracks = None
@@ -56,7 +135,7 @@ class DatasetSelectionGrid( grids.Grid ):
         grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0], columns[1] ], 
         key="free-text-search", visible=False, filterable="standard" )
     )
-    
+
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
     def apply_query_filter( self, trans, query, **kwargs ):
@@ -67,8 +146,8 @@ class DatasetSelectionGrid( grids.Grid ):
                     .filter( model.Dataset.state == model.Dataset.states.OK ) \
                     .filter( model.History.deleted == False ) \
                     .filter( model.HistoryDatasetAssociation.deleted == False ) \
-                    .filter( model.HistoryDatasetAssociation.visible == True )
-                    
+                    .filter( model.HistoryDatasetAssociation.visible == True )   
+                                     
 class TracksterSelectionGrid( grids.Grid ):
     # Grid definition.
     title = "Insert into visualization"
@@ -98,6 +177,11 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     Controller for track browser interface. Handles building a new browser from
     datasets in the current history, and display of the resulting browser.
     """
+    
+    histories_grid = HistorySelectionGrid()
+    history_datasets_grid = HistoryDatasetsSelectionGrid()
+    data_grid = DatasetSelectionGrid()
+    tracks_grid = TracksterSelectionGrid()
     
     #
     # TODO: need to encode dataset id and use 
@@ -379,9 +463,22 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         session.add( vis_rev )
         session.flush()
         return trans.security.encode_id(vis.id)
-    
-    data_grid = DatasetSelectionGrid()
-    tracks_grid = TracksterSelectionGrid()
+        
+    @web.expose
+    @web.require_login( "see all available histories" )
+    def list_histories( self, trans, **kwargs ):
+        """List all histories that can be used for selecting datasets."""
+        
+        # Render the list view
+        return self.histories_grid( trans, **kwargs )
+        
+    @web.expose
+    @web.require_login( "see a history's datasets that can added to this visualization" )
+    def list_history_datasets( self, trans, **kwargs ):
+        """List a history's datasets that can be added to a visualization."""
+
+        # Render the list view
+        return self.history_datasets_grid( trans, **kwargs )
     
     @web.expose
     @web.require_login( "see all available datasets" )

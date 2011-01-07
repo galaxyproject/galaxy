@@ -207,6 +207,11 @@ class Grid( object ):
             # Defaults.
             page_num = 1
             num_pages = 1
+            
+        # There are some places in grid templates where it's useful for a grid 
+        # to have its current filter.
+        self.cur_filter_dict = cur_filter_dict
+            
         # Preserve grid state: save current filter and sort key.
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
@@ -264,6 +269,7 @@ class Grid( object ):
                                     message = message,
                                     use_panels=use_panels,
                                     webapp=webapp,
+                                    show_item_checkboxes = kwargs.get( "show_item_checkboxes", False ),
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )
