@@ -30,7 +30,7 @@
     <data format="txt" name="out_file1" metadata_source="input1"/>
   </outputs>
   <requirements>
-     <requirement type="binary">bx-sputnik</requirement>
+     <requirement type="binary">sputnik</requirement>
   </requirements>
   <tests>
     <test>

@@ -18,7 +18,7 @@ if (!$mafile or !$orthfile or !$threshold_array or !$separation or !$tree_defini
 #-------------------------------------------------------------------------------
 # WHICH SPUTNIK USED?
 my $sputnikpath = ();
-$sputnikpath = "bx-sputnik" ;
+$sputnikpath = "sputnik" ;
 #-------------------------------------------------------------------------------
 # RUNFILE
 #-------------------------------------------------------------------------------
