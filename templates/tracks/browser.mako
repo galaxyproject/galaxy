@@ -217,12 +217,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                                     });
                                     hide_modal();
                                 }
-                            },
-                            {},
-                            // Keep minimum size for dialog box.
-                            function() { 
-                                var body = $(".dialog-box").find(".body"); 
-                                body.css("min-width", body.width()); 
                             }
                         );
                     }

@@ -1,6 +1,6 @@
 <%inherit file="/tracks/history_select_grid.mako"/>
 
-<%def name="grid_title()">
+<%def name="title()">
     ##
     ## Provide link to go back to histories grid.
     ##
@@ -10,6 +10,6 @@
             url_dict[ "f-" + filter ] = value
     %>
     ## Use class 'label' to piggyback on URL functionality in parent template.
-    <a class="label" href="${h.url_for( **url_dict )}">Back to histories</a><br/><br/>
-    <h2>${grid.title}</h2>
+    <a class="label" href="${h.url_for( **url_dict )}">Back to histories</a><br/>
+    ${parent.title()}
 </%def>

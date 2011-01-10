@@ -195,11 +195,17 @@ function show_modal( title, body, buttons, extra_buttons, init_fn ) {
     if ( body == "progress" ) {
         body = $("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif");
     }
+    var body_elt = $( ".dialog-box" ).find( ".body" );
+    // Clear min-width to allow for modal to take size of new body.
+    body_elt.css("min-width", "");
     $( ".dialog-box" ).find( ".body" ).html( body );
     if ( ! $(".dialog-box-container").is( ":visible" ) ) {
         $("#overlay").show();
         $(".dialog-box-container").fadeIn()
     }
+    // Fix min-width so that modal cannot shrink considerably if 
+    // new content is loaded.
+    body_elt.css("min-width", body_elt.width());
     if ( init_fn ) {
         init_fn();
     }

@@ -61,7 +61,7 @@ class HistorySelectionGrid( grids.Grid ):
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
-    num_rows_per_page = 15
+    num_rows_per_page = 10
     use_async = True
     use_paging = True
     def apply_query_filter( self, trans, query, **kwargs ):
