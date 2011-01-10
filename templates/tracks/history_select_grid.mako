@@ -12,12 +12,12 @@ ${self.title()}
 ${stylesheets()}
 ${grid_javascripts()}
 ##
-## Load grid label links within a modal window.
+## Load grid label and page links within a modal window.
 ##
 <script type="text/javascript">
     // Handle all label clicks.
     var f = function() {
-        $("a.label").click(function() {
+        $("a.label,.page-link>a").click(function() {
             var parent_body = $(this).parents("div.body");
             if (parent_body.length != 0) {
                 parent_body.load($(this).attr("href"));

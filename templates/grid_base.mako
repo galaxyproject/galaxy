@@ -157,12 +157,7 @@
                    return false;
                 });
             });
-            
-            $('#show-all-link').click( function() {
-                set_page('all');
-                return false;
-            });
-            
+
             // Initialize categorical filters.
             $('.categorical-filter > a').each( function() {
                 $(this).click( function() {
@@ -557,57 +552,16 @@
                     // response: (1) table body; (2) number of pages in table; and (3) message.
                     var parsed_response_text = response_text.split("*****");
                     
-                    // Update grid body.
-                    var table_body = parsed_response_text[0];
-                    $('#grid-table-body').html(table_body);
-                    
-                    // Process grid body.
-                    init_grid_elements();
-                    make_popup_menus();
+                    // Update grid body and footer.
+                    $('#grid-table-body').html(parsed_response_text[0]);
+                    $('#grid-table-footer').html(parsed_response_text[1]);
                     
                     // Trigger custom event to indicate grid body has changed.
                     $('#grid-table-body').trigger('update');
                     
-                    
-                    // Update number of pages.
-                    var num_pages = parseInt( parsed_response_text[1] );
-                    
-                    // Rebuild page links.
-                    if (!maintain_page_links) {
-                        // Remove page links.
-                        var page_link_container = $('#page-link-container');
-                        page_link_container.children().remove();
-                        
-                        // First page is the current page.
-                        var t = $("<span>1</span>");
-                        t.addClass('page-link');
-                        t.addClass('inactive-link');
-                        t.attr('id', 'page-link-1');
-                        page_link_container.append(t);
-                        
-                        // Show all link is visible only if there are multiple pages.
-                        var elt = $('#show-all-link-span');
-                        if (num_pages > 1) {
-                            elt.show();
-                        } else {
-                            elt.hide();
-                        }
-        
-                        // Subsequent pages are navigable.
-                        for (var i = 2; i <= num_pages; i++) {
-                            var span = $("<span></span>");
-                            span.addClass('page-link');
-                            span.attr('id', 'page-link-' + i);
-                            var t = $("<a href='#'>" + i + "</a>");
-                            t.attr('page', i);
-                            t.click(function() {
-                                var page = $(this).attr('page');
-                                set_page(page);
-                            });
-                            span.append(t);
-                            page_link_container.append(span);
-                        }
-                    }
+                    // Init grid.
+                    init_grid_elements();
+                    make_popup_menus();
                     
                     // Hide loading overlay.
                     $('.loading-elt-overlay').hide();
@@ -849,7 +803,7 @@
             <tbody id="grid-table-body">
                 ${render_grid_table_body_contents( grid, show_item_checkboxes )}
             </tbody>
-            <tfoot>
+            <tfoot id="grid-table-footer">
                 ${render_grid_table_footer_contents( grid, show_item_checkboxes )}
             </tfoot>
         </table>
@@ -967,9 +921,44 @@
             %endif
             <td colspan="100">
                 <span id='page-link-container'>
-                    ## Page links.
+                    ## Page links. Show 10 pages around current page.
+                    <%
+                        #
+                        # Set minimum & maximum page.
+                        # 
+                        page_link_range = num_page_links/2
+                        
+                        # First pass on min page.
+                        min_page = cur_page_num - page_link_range
+                        if min_page >= 1:
+                            # Min page is fine.
+                            min_offset = 0
+                        else:
+                            # Min page is too low.
+                            min_page = 1
+                            min_offset = page_link_range - ( cur_page_num - min_page )
+                        
+                        # Set max page.
+                        max_range = page_link_range + min_offset
+                        max_page = cur_page_num + max_range
+                        if max_page <= num_pages:
+                            # Max page is fine.
+                            max_offset = 0
+                        else:
+                            # Max page is too high.
+                            max_page = num_pages
+                            # +1 to account for the +1 in the loop below.
+                            max_offset = max_range - ( max_page + 1 - cur_page_num )
+                        
+                        # Second and final pass on min page to add any unused 
+                        # offset from max to min.
+                        if max_offset != 0:
+                            min_page -= max_offset
+                            if min_page < 1:
+                                min_page = 1
+                    %>
                     Page:
-                    %for page_index in range(1, num_pages + 1):
+                    %for page_index in range(min_page, max_page + 1):
                         %if page_index == cur_page_num:
                             <span class='page-link inactive-link' id="page-link-${page_index}">${page_index}</span>
                         %else:
@@ -977,11 +966,16 @@
                             <span class='page-link' id="page-link-${page_index}"><a href="${url( args )}" page_num='${page_index}'>${page_index}</a></span>
                         %endif
                     %endfor
+                    %if max_page != num_pages:
+                        ...
+                    %endif
                 </span>
                 
-                ## Show all link.
-                <% args = { "page" : "all" } %>
-                <span id='show-all-link-span'>| <a href="${url( args )}" id="show-all-link">Show all ${items_plural} on one page</a></span>
+                ## First, last, all links.
+                |
+                <span class='page-link'><a href="${url( page=1 )}" page_num="1">First</a></span>
+                <span class='page-link'><a href="${url( page=num_pages )}" page_num="${num_pages}">Last</a></span>
+                <span class='page-link' id='show-all-link-span'><a href="${url( page='all' )}" page_num="all">All</a></span>
             </td>
         </tr>    
     %endif

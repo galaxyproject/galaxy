@@ -65,7 +65,7 @@ class HistorySelectionGrid( grids.Grid ):
     use_async = True
     use_paging = True
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter_by( user=trans.user, purged=False, importing=False )
+        return query.filter_by( user=trans.user, purged=False, deleted=False, importing=False )
         
 class DbKeyColumn( grids.GridColumn ):
     """ Column for filtering by and displaying dataset dbkey. """
