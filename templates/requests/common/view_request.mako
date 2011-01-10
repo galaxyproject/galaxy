@@ -59,7 +59,7 @@
 
 %if is_admin and is_submitted and request.samples_without_library_destinations:
     <p>
-        <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer</i></b></font>
+        <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the external service.</i></b></font>
     </p>
 %endif
 

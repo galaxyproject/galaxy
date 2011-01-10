@@ -43,7 +43,7 @@
                 ${sample_dataset.file_path}
             </div>
             <div class="toolParamHelp" style="clear: both;">
-                This file is contained in a sub-directory of the data directory configured for the sequencer.
+                This file is contained in a sub-directory of the data directory configured for the external service.
             </div>
             <div style="clear: both"></div>
         </div>

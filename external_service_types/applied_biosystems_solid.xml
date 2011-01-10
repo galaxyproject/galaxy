@@ -15,7 +15,7 @@
         </results>
     </run_details>
  
-    <form type="sequencer" name="Applied Biosystems SOLiD Form" description="">
+    <form type="external_service" name="Applied Biosystems SOLiD Form" description="">
         <fields>
             <field name="host" type="text" label="Hostname or IP address" description="" value="" required="True" />
             <field name="user_name" type="text" label="User name" description="User name to log into the sequencer." value="" required="True" />

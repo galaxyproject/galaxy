@@ -9,7 +9,7 @@ This is only for backward compatibility
     <data_transfer_settings>
         <data_transfer type='scp' host='host' user_name='user_name' password='password' data_location='data_location' rename_dataset='rename_dataset' />
     </data_transfer_settings>
-    <form type="sequencer" name="Simple unknown sequencer form" description="">
+    <form type="external_service" name="Simple unknown sequencer form" description="">
         <fields>
             <field name="host" type="text" label="Hostname or IP address" description="" value="" required="True" />
             <field name="user_name" type="text" label="User name" description="User name to log into the sequencer." value="" required="True" />

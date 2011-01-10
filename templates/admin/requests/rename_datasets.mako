@@ -22,7 +22,7 @@
 	            <tr>
 	                <th>Prepend directory name</th>
 	                <th>Name</th>
-	                <th>Path on sequencer</th>
+	                <th>Path on external service</th>
 	            </tr>
 	        <thead>
 	        <tbody>

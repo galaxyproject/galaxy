@@ -316,16 +316,28 @@ class ExternalService( BaseController, UsesFormDefinitions ):
                                   widget=self.__build_external_service_type_select_field( trans, seq_type ),
                                   helptext='') )
         return widgets
-    def __build_external_service_type_select_field( self, trans, selected_value, refresh_on_change=True, visible_external_service_types_only=True ):
+    def __build_external_service_type_select_field( self, trans, selected_value, refresh_on_change=True, visible_external_service_types_only=False ):
         external_service_types = trans.app.external_service_types.all_external_service_types
         if visible_external_service_types_only:
             objs_list = [ external_service_types[ seq_type_id ] for seq_type_id in trans.app.external_service_types.visible_external_service_types ]
         else:
             objs_list = external_service_types.values()
-        return build_select_field( trans,
-                                   objs=objs_list,
-                                   label_attr='do_not_encode',
-                                   select_field_name='external_service_type_id',
-                                   initial_value='none',
-                                   selected_value=selected_value,
-                                   refresh_on_change=refresh_on_change )
+        refresh_on_change_values = [ 'none' ] 
+        refresh_on_change_values.extend( [ trans.security.encode_id( obj.id ) for obj in objs_list] )
+        select_external_service_type = SelectField( 'external_service_type_id', 
+                                                     refresh_on_change=refresh_on_change, 
+                                                     refresh_on_change_values=refresh_on_change_values )
+        if selected_value == 'none':
+            select_external_service_type.add_option( 'Select one', 'none', selected=True )
+        else:
+            select_external_service_type.add_option( 'Select one', 'none' )
+        for seq_type in objs_list:
+            if seq_type.version:
+                option_name = " ".join( [ seq_type.name, "version", seq_type.version ] )
+            else:
+                option_name = seq_type.name
+            if selected_value == seq_type.id:
+                select_external_service_type.add_option( option_name, seq_type.id, selected=True )
+            else:
+                select_external_service_type.add_option( option_name, seq_type.id )
+        return select_external_service_type

@@ -123,7 +123,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
             <input id="selected_datasets_to_transfer" name="selected_datasets_to_transfer" type="hidden" size=40"/>
             <div class="toolParamHelp" style="clear: both;">
                 <ul>
-                    <li>Click the <b>Sequencer configuration</b> button and change the <b>Data directory</b> setting to redefine the source data location.</li>
+                    <li>Click the <b>external service configuration</b> button and change the <b>Data directory</b> setting to redefine the source data location.</li>
                     <li>Select a folder to select all of the individual files within that folder.</li>
                     <li>Click the <b>Select datasets</b> button when desired dataset check boxes are checked.</li>
                 </ul>

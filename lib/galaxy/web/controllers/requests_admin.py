@@ -467,7 +467,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_types.SCP ]
         if not scp_configs[ 'host' ] or not scp_configs[ 'user_name' ] or not scp_configs[ 'password' ]:
             status = 'error'
-            message = "Error in sequencer login information."
+            message = "Error in external service login information."
             ok = False
         def print_ticks( d ):
             pass
@@ -477,7 +477,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                               timeout=10 )
         if 'No such file or directory' in output:
             status = 'error'
-            message = "No folder named (%s) exists on the sequencer." % folder_path
+            message = "No folder named (%s) exists on the external service." % folder_path
             ok = False
         if ok:
             return output.splitlines()
@@ -608,13 +608,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         return messages
     def __validate_data_transfer_settings( self, trans, request_type, scp_configs ):
         err_msg = ''
-#        if not request_type.sequencer:
-#            return "Assign a sequencer to this request's request type '%s' before selecting datasets." % request_type.name
-        # check the sequencer login info
+        # check the external service login info
         if not scp_configs.get( 'host', '' ) \
             or not scp_configs.get( 'user_name', '' ) \
             or not scp_configs.get( 'password', '' ):
-            err_msg += "Error in sequencer login information. "
+            err_msg += "Error in external service login information. "
         # Make sure web API is enabled and API key exists
         if not trans.app.config.enable_api:
             err_msg += "The 'enable_api = True' setting is not correctly set in the Galaxy config file. "
@@ -633,7 +631,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
     @web.require_admin
     def initiate_data_transfer( self, trans, sample_id, sample_datasets=[], sample_dataset_id='' ):
         '''
-        Initiate the transfer of the datasets from the sequencer to the target Galaxy data library:
+        Initiate the transfer of the datasets from the external service to the target Galaxy data library:
         - The admin user must have LIBRARY_ADD permission for the target library and folder
         - Create an XML message encapsulating all the data transfer information and send it
           to the message queue (RabbitMQ broker).
@@ -677,7 +675,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
             except Exception, e:
                 err_msg = "Error sending the data transfer message to the Galaxy AMQP message queue:<br/>%s" % str(e)
         if not err_msg:
-            err_msg = "%i datasets have been queued for transfer from the sequencer." % len( sample_datasets )
+            err_msg = "%i datasets have been queued for transfer from the external service." % len( sample_datasets )
             status = "done"
         else:
             status = 'error'

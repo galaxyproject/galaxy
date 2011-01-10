@@ -1518,7 +1518,7 @@ class FormDefinition( object, APIItem ):
     supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, HistoryField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
                    SAMPLE = 'Sequencing Sample Form',
-                   SEQUENCER = 'Sequencer Information Form',
+                   EXTERNAL_SERVICE = 'External Service Information Form',
                    RUN_DETAILS_TEMPLATE = 'Sample run details template',
                    LIBRARY_INFO_TEMPLATE = 'Library information template',
                    USER_INFO = 'User Information' )

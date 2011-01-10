@@ -48,7 +48,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Manage access permissions on sequencer interface "${request_type.name}"</div>
+    <div class="toolFormTitle">Manage access permissions on request type "${request_type.name}"</div>
     <div class="toolFormBody">
         <form name="request_type_permissions" id="request_type_permissions" action="${h.url_for( controller='request_type', action='request_type_permissions', id=trans.security.encode_id( request_type.id ) )}" method="post">
             <div class="form-row">

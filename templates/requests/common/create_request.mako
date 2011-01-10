@@ -28,12 +28,12 @@
         <div class="toolFormBody">
             <form name="create_request" id="create_request" action="${h.url_for( controller='requests_common', action='create_request', cntrller=cntrller )}" method="post" >
                 <div class="form-row">
-                    <label>Select a sequencer configuration:</label>
+                    <label>Select a request type configuration:</label>
                     ## The request_type_select_field is a SelectField named request_type_id
                     ${request_type_select_field.get_html()}
                     %if cntrller != 'requests_admin':
 		                <div class="toolParamHelp" style="clear: both;">
-		                    Contact the lab manager if you are not sure about the sequencer configuration.
+		                    Contact the lab manager if you are not sure about the request type configuration.
 		                </div>
 	                %endif
                 </div>
