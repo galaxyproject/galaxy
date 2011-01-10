@@ -33,8 +33,8 @@ def nextval( table, col='id' ):
         return "null"
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
-
-
+    
+    
 def upgrade():
     print __doc__
     # Load existing tables
@@ -82,7 +82,6 @@ def upgrade():
         sequencer_id = int(r[1])
         cmd = "UPDATE sample_dataset SET external_service_id='%i' where id=%i" % ( sequencer_id, sample_dataset_id )
         db_session.execute( cmd )
-
     # load request_type table
     try:
         RequestType_table = Table( "request_type", metadata, autoload=True )
@@ -146,20 +145,57 @@ def upgrade():
         for row in results_list:
             request_type_id = row[0]
             sequencer_id = row[1]
-            sequencer_id = row[1]
             if not sequencer_id:
-                sequencer_id = 'null'   
+                sequencer_id = 'null'
             cmd = "INSERT INTO request_type_external_service_association VALUES ( %s, %s, %s )"
             cmd = cmd % ( nextval( 'request_type_external_service_association' ),
                           request_type_id,
                           sequencer_id )
             db_session.execute( cmd )
     # drop the 'sequencer_id' column in the 'request_type' table
-    try:
-        RequestType_table.c.sequencer_id.drop()
-    except Exception, e:
-        log.debug( "Deleting column 'sequencer_id' from the 'request_type' table failed: %s" % ( str( e ) ) )
-        
+    # sqlite does not support dropping columns
+    if migrate_engine.name == 'sqlite':
+        # In sqlite, create a temp table without the column that needs to be removed.
+        # then copy all the rows from the original table and finally rename the temp table
+        RequestTypeTemp_table = Table( 'request_type_temp', metadata,
+                                        Column( "id", Integer, primary_key=True),
+                                        Column( "create_time", DateTime, default=now ),
+                                        Column( "update_time", DateTime, default=now, onupdate=now ),
+                                        Column( "name", TrimmedString( 255 ), nullable=False ),
+                                        Column( "desc", TEXT ),
+                                        Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+                                        Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+                                        Column( "deleted", Boolean, index=True, default=False ) )
+        try:
+            RequestTypeTemp_table.create()
+        except Exception, e:
+            log.debug( "Creating request_type_temp table failed: %s" % str( e ) )  
+        # insert all the rows from the request table to the request_temp table
+        cmd = \
+            "INSERT INTO request_type_temp " + \
+            "SELECT id," + \
+                "create_time," + \
+                "update_time," + \
+                "name," + \
+                "desc," + \
+                "request_form_id," + \
+                "sample_form_id," + \
+                "deleted " + \
+            "FROM request_type;" 
+        db_session.execute( cmd )
+        # delete the 'request_type' table
+        try:
+            RequestType_table.drop()
+        except Exception, e:
+            log.debug( "Dropping request_type table failed: %s" % str( e ) )
+        # rename table request_temp to request
+        cmd = "ALTER TABLE request_type_temp RENAME TO request_type" 
+        db_session.execute( cmd )
+    else:
+        try:
+            RequestType_table.c.sequencer_id.drop()
+        except Exception, e:
+            log.debug( "Deleting column 'sequencer_id' from the 'request_type' table failed: %s" % ( str( e ) ) )
 
 
 def downgrade():
