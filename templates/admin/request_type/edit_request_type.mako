@@ -7,7 +7,7 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    <li><a class="action-button" id="request_type-${request_type.id}-popup" class="menubutton">Configuration Actions</a></li>
+    <li><a class="action-button" id="request_type-${request_type.id}-popup" class="menubutton">Request type actions</a></li>
     <div popupmenu="request_type-${request_type.id}-popup">
         <li><a class="action-button" href="${h.url_for( controller='request_type', action='view_request_type', id=trans.security.encode_id( request_type.id ) )}">Browse request type</a></li>
         %if not request_type.deleted:
