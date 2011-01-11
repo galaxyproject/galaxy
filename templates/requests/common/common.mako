@@ -257,23 +257,6 @@
     %endif
 </%def>
 
-<%def name="render_external_service_action_group( external_service_group )">
-    <li>${external_service_group.label}<div class="action-button" name="${external_service_group.name}" > 
-    ##<% print 'external_service_group', external_service_group.name, external_service_group %>
-    %for item in external_service_group:
-        %if isinstance( item, list ):
-            ${ render_external_service_action_group( item ) }
-        %else:
-            ${ render_external_service_action( item ) }
-        %endif
-    %endfor
-    </div></li>
-</%def>
-
-<%def name="render_external_service_action( external_service_action )">
-    <li><a class="action-button" name="${ external_service_action.name }" href="${ external_service_action.get_action_access_link( trans ) }">${ external_service_action.label }</a></li>
-</%def>
-
 <%def name="render_samples_grid( cntrller, request, displayable_sample_widgets, action, adding_new_samples=False, encoded_selected_sample_ids=[], render_buttons=False, grid_header='<h3>Samples</h3>' )">
     ## Displays the "Samples" grid
     <%

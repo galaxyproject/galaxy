@@ -29,7 +29,7 @@
                     </div>
                     <div class="toolSectionBody">
                         <div class="toolSectionBg">
-    %endif
+        %endif
                         %for item in external_service_group:
                             %if isinstance( item, list ):
                                 ${ render_external_service_action_group( item ) }
@@ -37,7 +37,7 @@
                                 ${ render_external_service_action( item ) }
                             %endif
                         %endfor
-    %if external_service_group.label:
+        %if external_service_group.label:
                         </div>
                     </div>
                 </div>
