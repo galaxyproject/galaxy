@@ -16,26 +16,12 @@
    </div>
 </%def>
 
-
 <%def name="render_external_services( element_count, external_service_select_field )">
     <div class="repeat-group-item">
         <div class="form-row">
             <label>${1+element_count}. External service:</label>
             ${external_service_select_field.get_html()}
         </div>
-##        <%  
-##            selected_external_service_id = external_service_select_field.get_selected( return_value=True )
-##            if selected_external_service_id != 'none':
-##                external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( selected_external_service_id ) )
-##                external_service_type = external_service.get_type( trans )
-##            else:
-##                external_service = None
-##        %>
-##        %if external_service:
-##	        <div class="form-row">
-##                ${external_service_type.name}
-##	        </div>
-##        %endif
         <div class="form-row">
             <input type="submit" name="remove_external_service_button" value="Remove external service ${1+element_count}"/>
         </div>

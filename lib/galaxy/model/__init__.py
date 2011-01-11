@@ -1796,6 +1796,7 @@ class ExternalService( object ):
         self.deleted = deleted 
         self.type = self.external_service_type_id or ''
     def get_type( self, trans ):
+        # TODO: RC: fix this method.
         self.type = trans.app.external_service_types.all_external_service_types[ self.external_service_type_id ]
         return self.type
     @property

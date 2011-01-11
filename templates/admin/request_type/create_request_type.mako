@@ -43,10 +43,10 @@
         </div>
         <p/>
         <div class="toolForm">
-            <div class="toolFormTitle">External services information</div>
+            <div class="toolFormTitle">External services</div>
             <div class="form-row">
-                This information is needed only if you will transfer datasets from the sequencer or any other external service to a target Galaxy data library.
-                A request type can be associated with multiple external services. Click on 'Add' button below to add an external service to this request type.
+                An external service can be a sequencer or any application that is web accessible.  A request type can be associated with 
+                multiple external services.
             </div>
             %for index, external_service_select_field in enumerate( external_service_select_fields_list ):
                 ${render_external_services( index, external_service_select_field )}

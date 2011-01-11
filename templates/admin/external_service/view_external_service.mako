@@ -20,7 +20,4 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">External service information</div>
-    ${render_external_service( external_service )}
-</div>
+${render_external_service( external_service )}

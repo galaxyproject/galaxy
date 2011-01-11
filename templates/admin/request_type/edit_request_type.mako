@@ -2,7 +2,6 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/request_type/common.mako" import="*" />
 <%namespace file="/common/template_common.mako" import="render_template_fields" />
-<%namespace file="/admin/external_service/common.mako" import="render_external_service" />
 
 <% form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE %>
 
@@ -79,7 +78,7 @@
     </div>
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">External services information</div>
+        <div class="toolFormTitle">External services</div>
         <div class="form-row">
             This information is needed only if you will transfer datasets from the sequencer or any other external service to a target Galaxy data library.
             A request type can be associated with multiple external services. Click on 'Add' button below to add an external service to this request type.

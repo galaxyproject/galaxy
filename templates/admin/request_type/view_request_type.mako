@@ -1,7 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/common/template_common.mako" import="render_template_fields" />
-<%namespace file="/admin/external_service/common.mako" import="render_external_service" />
 
 <% form_type = trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE %>
 
@@ -64,7 +63,7 @@
 </div>
 <p/>
 <div class="toolForm">
-    <div class="toolFormTitle">External service information</div>
+    <div class="toolFormTitle">External services</div>
     %if request_type.external_services:
         %for index, external_service in enumerate( request_type.external_services ):
             <div class="form-row">
@@ -74,7 +73,7 @@
         %endfor
     %else:
         <div class="form-row">
-            External service login information is not set, select the <b>Edit request type</b> option in the <b>Configuration options</b> menu.
+            External service login information is not set.  Select the <b>Edit request type</b> option in the <b>Configuration options</b> menu.
         </div>
     %endif
 </div>
