@@ -623,7 +623,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         
     def _get_datasources( self, trans, dataset ):
         """
-        Returns datasources for dataset; if datasources are not avaiable
+        Returns datasources for dataset; if datasources are not available
         due to indexing, indexing is started. Return value is a dictionary
         with entries of type 
         (<datasource_type> : {<datasource_name>, <indexing_message>}).
@@ -679,7 +679,7 @@ def _get_highest_priority_msg( message_list ):
     # For now, priority is: job error (dict), no converter, pending.
     for message in message_list:
         if message is not None:
-            if message is dict:
+            if isinstance(message, dict):
                 return_message = message
                 break
             elif message == messages.NO_CONVERTER:
