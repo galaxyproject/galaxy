@@ -189,27 +189,33 @@ class ExternalService( BaseController, UsesFormDefinitions ):
     def edit_external_service_form_definition( self, trans, **kwd ):
         params = util.Params( kwd )
         external_service_id = kwd.get( 'id', None )
-        edited = util.string_as_bool( params.get( 'edited', False ) )
         try:
             external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
         except:
             return invalid_id_redirect( trans, 'external_service', external_service_id, 'external_service', action='browse_external_services' )
-        if edited:
-            external_service.form_definition = external_service.form_definition.current.latest_form
-            trans.sa_session.add( external_service )
-            trans.sa_session.flush()
-            message = "The form definition for the '%s' external service has been updated with your changes." % external_service.name
-            return trans.response.send_redirect( web.url_for( controller='external_service',
-                                                              action='edit_external_service',
-                                                              message=message,
-                                                              status='done',
-                                                              **kwd ) )
         vars = dict( id=trans.security.encode_id( external_service.form_definition.form_definition_current_id ),
                      response_redirect=web.url_for( controller='external_service',
-                                                    action='edit_external_service_form_definition',
-                                                    edited=True,
+                                                    action='update_external_service_form_definition',
                                                     **kwd ) )
         return trans.response.send_redirect( web.url_for( controller='forms', action='edit_form_definition', **vars ) )
+    @web.expose
+    @web.require_admin
+    def update_external_service_form_definition( self, trans, **kwd ):
+        params = util.Params( kwd )
+        external_service_id = kwd.get( 'id', None )
+        try:
+            external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
+        except:
+            return invalid_id_redirect( trans, 'external_service', external_service_id, 'external_service', action='browse_external_services' )
+        external_service.form_definition = external_service.form_definition.current.latest_form
+        trans.sa_session.add( external_service )
+        trans.sa_session.flush()
+        message = "The form definition for the '%s' external service has been updated with your changes." % external_service.name
+        return trans.response.send_redirect( web.url_for( controller='external_service',
+                                                          action='edit_external_service',
+                                                          message=message,
+                                                          status='done',
+                                                          **kwd ) )
     @web.expose
     @web.require_admin
     def delete_external_service( self, trans, **kwd ):
