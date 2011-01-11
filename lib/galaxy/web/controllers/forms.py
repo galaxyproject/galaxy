@@ -305,6 +305,9 @@ class Forms( BaseController ):
                 return None, "Each field name must be unique in the form definition. '%s' is not unique." % field[ 'name' ]
             else:
                 field_names_dict[ field[ 'name' ] ] = 1
+        # if type is sample form, it should have at least one layout grid
+        if current_form[ 'type' ] == trans.app.model.FormDefinition.types.SAMPLE and not len( current_form[ 'layout' ] ):
+            current_form[ 'layout' ] = [ 'Layout1' ]
         # create a new form definition
         form_definition = trans.app.model.FormDefinition( name=current_form[ 'name' ], 
                                                           desc=current_form[ 'desc' ], 
@@ -559,7 +562,7 @@ class Forms( BaseController ):
         helptext = util.restore_text( params.get( 'field_helptext_%i' % index, '' ) )
         required =  params.get( 'field_required_%i' % index, False )
         field_type = util.restore_text( params.get( 'field_type_%i' % index, '' ) )
-        layout = params.get( 'field_layout_%i' % index, '' )
+        layout = params.get( 'field_layout_%i' % index, '0' )
         default = util.restore_text( params.get( 'field_default_%i' % index, '' ) )
         if not name.strip():
             name = '%i_field_name' % index
