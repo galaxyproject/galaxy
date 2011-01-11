@@ -26,7 +26,7 @@ class Tabular( data.Text ):
 
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
-    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = None, **kwd ):
+    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, **kwd ):
         """
         Tries to determine the number of columns as well as those columns
         that contain numerical values in the dataset.  A skip parameter is
