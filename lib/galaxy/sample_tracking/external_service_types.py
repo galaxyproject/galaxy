@@ -3,6 +3,7 @@ from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy import util, jobs, model
 from galaxy.forms.forms import form_factory
+from galaxy.external_services.service import ExternalServiceActionsGroup
 from elementtree.ElementTree import XML
 from galaxy.sample_tracking.data_transfer import data_transfer_factories
 log = logging.getLogger( __name__ )
@@ -79,6 +80,8 @@ class ExternalServiceType( object ):
         self.form_definition = form_factory.from_elem( root.find( 'form' ) )
         self.parse_data_transfer_settings( root )
         self.parse_run_details( root )
+        #external services actions
+        self.actions = ExternalServiceActionsGroup.from_elem( root.find( 'actions' ), parent=self )
     def parse_data_transfer_settings( self, root ):
         self.data_transfer = {}
         data_transfer_settings_elem = root.find( 'data_transfer_settings' )

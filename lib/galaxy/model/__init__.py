@@ -1813,6 +1813,10 @@ class ExternalService( object ):
                 scp_configs[ 'data_location' ] = self.form_values.content.get( data_transfer.config.get( 'data_location', '' ), '' )
                 scp_configs[ 'rename_dataset' ] = self.form_values.content.get( data_transfer.config.get( 'rename_dataset', '' ), '' )
                 self.data_transfer[ self.data_transfer_types.SCP ] = scp_configs
+    def populate_actions(self, item, param_dict = None, trans = None ):
+        if trans is None:
+            raise ValueError( 'trans needed to get service type' )
+        return self.get_type( trans ).actions.populate( self, item, param_dict = param_dict )
                 
 class RequestType( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'name', 'desc' )
@@ -2020,6 +2024,9 @@ class Sample( object, APIItem ):
                     return template.get_widgets( trans.user, contents=info.content )
             return template.get_widgets( trans.user )
         return []
+    def populate_external_services( self, param_dict = None, trans = None ):
+        if self.request and self.request.type:
+            return [ service.populate_actions( item = self, param_dict = param_dict, trans = trans ) for service in self.request.type.external_services ]
 
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):

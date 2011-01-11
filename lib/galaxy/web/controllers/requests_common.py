@@ -892,13 +892,18 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         # See if we have any associated templates
         widgets = sample.get_template_widgets( trans )
         widget_fields_have_contents = self.widget_fields_have_contents( widgets )
+        if is_admin:
+            external_services = sample.populate_external_services( trans = trans )
+        else:
+            external_services = None
         return trans.fill_template( '/requests/common/view_sample.mako',
                                     cntrller=cntrller, 
                                     sample=sample,
                                     widgets=widgets,
                                     widget_fields_have_contents=widget_fields_have_contents,
                                     status=status,
-                                    message=message )
+                                    message=message,
+                                    external_services=external_services )
     @web.expose
     @web.require_login( "delete sample from sequencing request" )
     def delete_sample( self, trans, cntrller, **kwd ):
