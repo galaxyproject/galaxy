@@ -1149,6 +1149,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 tool = trans.app.toolbox.tools_by_id[ job.tool_id ]
                 param_values = job.get_param_values( trans.app )
                 associations = cleanup_param_values( tool.inputs, param_values )
+                def extract_callback( input, value, prefixed_name, prefixed_label ):
+                    if isinstance( value, UnvalidatedValue ):
+                        return str( value )
+                visit_input_values( tool.inputs, param_values, extract_callback )
                 step = model.WorkflowStep()
                 step.type = 'tool'
                 step.tool_id = job.tool_id
