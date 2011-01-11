@@ -319,7 +319,7 @@ class ExternalService( BaseController, UsesFormDefinitions ):
         # Do not show the external_service_type selectfield when editing a external_service
         if not external_service:
             widgets.append( dict( label='External service type',
-                                  widget=self.__build_external_service_type_select_field( trans, seq_type ),
+                                  widget=self.__build_external_service_type_select_field( trans, seq_type, visible_external_service_types_only=True ),
                                   helptext='') )
         return widgets
     def __build_external_service_type_select_field( self, trans, selected_value, refresh_on_change=True, visible_external_service_types_only=False ):
