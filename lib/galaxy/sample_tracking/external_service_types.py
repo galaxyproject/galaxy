@@ -98,10 +98,12 @@ class ExternalServiceType( object ):
             results_elem = run_details_elem.find( 'results' )
             if results_elem:
                 # get the list of resulting datatypes
-                self.run_details[ 'results' ] = self.parse_run_details_results( results_elem )
+                self.run_details[ 'results' ], self.run_details[ 'results_urls' ] = self.parse_run_details_results( results_elem )
     def parse_run_details_results( self, root ):
         datatypes_dict = {}
+        urls_dict = {}
         for datatype_elem in root.findall( "dataset" ):
             name = datatype_elem.get( 'name' )
             datatypes_dict[ name ] = datatype_elem.get( 'datatype' )
-        return datatypes_dict
+            urls_dict[ name ] = datatype_elem.get( 'url', None )
+        return datatypes_dict, urls_dict

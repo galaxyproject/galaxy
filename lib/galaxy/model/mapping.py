@@ -444,6 +444,7 @@ TransferJob.table = Table( "transfer_job", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "state", String( 64 ), index=True ),
     Column( "path", String( 1024 ) ),
+    Column( "info", TEXT ),
     Column( "params", JSONType ) )
 
 Event.table = Table( "event", metadata, 

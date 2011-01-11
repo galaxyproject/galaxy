@@ -69,12 +69,18 @@ class SamplesAPIController( BaseController ):
             sample = None
         if not sample:
             trans.response.status = 400
-            return "Invalid request id ( %s ) specified." % str( request_id )
+            return "Invalid sample id ( %s ) specified." % str( sample_id )
         if not trans.user_is_admin():
             trans.response.status = 403
             return "You are not authorized to update samples."
         requests_admin_controller = trans.webapp.controllers[ 'requests_admin' ]
         if update_type == 'run_details':
+            deferred_plugin = payload.pop( 'deferred_plugin', None )
+            if deferred_plugin:
+                try:
+                    trans.app.job_manager.deferred_job_queue.plugins[deferred_plugin].create_job( trans, sample=sample, **payload )
+                except:
+                    log.exception( 'update() called with a deferred job plugin (%s) but creating the deferred job failed:' % deferred_plugin )
             status, output = requests_admin_controller.edit_template_info( trans,
                                                                            cntrller='api',
                                                                            item_type='sample',

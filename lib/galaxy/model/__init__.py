@@ -2160,9 +2160,10 @@ class TransferJob( object ):
                     RUNNING = 'running',
                     ERROR = 'error',
                     DONE = 'done' )
-    def __init__( self, state=None, path=None, params=None ):
+    def __init__( self, state=None, path=None, info=None, params=None ):
         self.state = state
         self.path = path
+        self.info = info
         self.params = params
 
 class Tag ( object ):
