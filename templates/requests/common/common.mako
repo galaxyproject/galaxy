@@ -498,7 +498,7 @@
 <%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, displayable_sample_widgets, adding_new_samples )">
     <%
         if not grid_name:
-            grid_name = "Sample form layout " + grid_index
+            grid_name = "Sample form layout %s" % str( grid_index )
     %>
     <h4><img src="/static/images/fugue/toggle-expand.png" alt="Hide" onclick="showContent(this);" style="cursor:pointer;"/> ${grid_name}</h4>
     <div style="display:none;">

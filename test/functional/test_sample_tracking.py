@@ -707,7 +707,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                               '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
         # Submit the request
-        select_target_library_message = "Select a target data library and folder for a sample before selecting it's datasets to transfer from the sequencer"
+        select_target_library_message = "Select a target data library and folder for a sample before selecting it's datasets to transfer from the external service"
         self.submit_request( cntrller='requests_admin',
                              request_id=self.security.encode_id( request2.id ),
                              request_name=request2.name,

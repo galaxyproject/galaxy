@@ -1229,7 +1229,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         else:
             folder = None
         return library, folder
-    def __get_active_folders( self, folder, active_folders_list=[] ):
+    def __get_active_folders( self, folder, active_folders_list ):
         """Return all of the active folders for the received library"""
         active_folders_list.extend( folder.active_folders )
         for sub_folder in folder.active_folders:
@@ -1431,7 +1431,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                    refresh_on_change=True )
         # Get all folders for the selected library, if one is indeed selected
         if selected_library:
-            folders = self.__get_active_folders( selected_library.root_folder, active_folders_list=[] )
+            folders = self.__get_active_folders( selected_library.root_folder, active_folders_list=[ selected_library.root_folder ] )
             if folder_id:
                 selected_folder_id = folder_id
             elif sample and sample.folder:
