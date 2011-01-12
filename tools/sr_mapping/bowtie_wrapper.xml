@@ -1,4 +1,4 @@
-<tool id="bowtie_wrapper" name="Map with Bowtie for Illumina" version="1.1.0">
+<tool id="bowtie_wrapper" name="Map with Bowtie for Illumina" version="1.1.1">
   <requirements><requirement type='package'>bowtie</requirement></requirements>
   <description></description>
   <parallelism method="basic"></parallelism>
@@ -319,7 +319,7 @@
     <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="True" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information by default" />
   </inputs>
   <outputs>
-    <data format="sam" name="output" label="Mapped Reads">
+    <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
       <actions>
         <conditional name="refGenomeSource.genomeSource">
           <when value="indexed">
@@ -333,7 +333,7 @@
         </conditional>
       </actions>
     </data>
-    <data format="fastqsanger" name="output_suppressed_reads_l" label="Suppressed Reads">
+    <data format="fastqsanger" name="output_suppressed_reads_l" label="${tool.name} on ${on_string}: suppressed reads (L)">
       <filter>((
           singlePaired['sPaired'] == "single" and
           singlePaired['sParams']['sSettingsType'] == "full" and
@@ -345,12 +345,12 @@
         ))
       </filter>
     </data>
-    <data format="fastqsanger" name="output_suppressed_reads_r" label="Suppressed Reads (R)">
+    <data format="fastqsanger" name="output_suppressed_reads_r" label="${tool.name} on ${on_string}: suppressed reads (R)">
       <filter>singlePaired['sPaired'] == "paired"</filter>
       <filter>singlePaired['pParams']['pSettingsType'] == "full"</filter>
       <filter>singlePaired['pParams']['pMaxFile'] is True</filter>
     </data>
-    <data format="fastqsanger" name="output_unmapped_reads_l" label="Unmapped Reads (L)">
+    <data format="fastqsanger" name="output_unmapped_reads_l" label="${tool.name} on ${on_string}: unmapped reads (L)">
       <filter>
         ((
           singlePaired['sPaired'] == "single" and
@@ -363,7 +363,7 @@
         ))
       </filter>
     </data>
-    <data format="fastqsanger" name="output_unmapped_reads_r" label="Unmapped Reads (R)">
+    <data format="fastqsanger" name="output_unmapped_reads_r" label="${tool.name} on ${on_string}: unmapped reads (R)">
       <filter>singlePaired['sPaired'] == "paired"</filter>
       <filter>singlePaired['pParams']['pSettingsType'] == "full"</filter>
       <filter>singlePaired['pParams']['pUnmappedFile'] is True</filter>

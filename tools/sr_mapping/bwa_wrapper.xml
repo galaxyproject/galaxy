@@ -1,4 +1,4 @@
-<tool id="bwa_wrapper" name="Map with BWA" version="1.2.0">
+<tool id="bwa_wrapper" name="Map with BWA" version="1.2.1">
   <description></description>
   <parallelism method="basic"></parallelism>
   <command interpreter="python">
@@ -113,7 +113,7 @@
     <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="BWA produces SAM with several lines of header information" />
   </inputs>
   <outputs>
-    <data format="sam" name="output" label="Mapped Reads">
+    <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
       <actions>
         <conditional name="genomeSource.refGenomeSource">
           <when value="indexed">

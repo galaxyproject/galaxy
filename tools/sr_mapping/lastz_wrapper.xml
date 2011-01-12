@@ -1,4 +1,4 @@
-<tool id="lastz_wrapper_2" name="Lastz" version="1.2.1">
+<tool id="lastz_wrapper_2" name="Lastz" version="1.2.2">
     <description> map short reads against reference sequence</description>
     <command interpreter="python">lastz_wrapper.py
       #if $seq_name.how_to_name=="yes":
@@ -129,7 +129,7 @@
         </param>
     </inputs>
     <outputs>
-        <data format="tabular" name="output1" label="Mapped Reads">
+        <data format="tabular" name="output1" label="${tool.name} on ${on_string}: mapped reads">
             <change_format>
                 <when input="out_format" value="sam" format="sam" />
             </change_format>

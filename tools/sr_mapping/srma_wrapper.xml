@@ -1,4 +1,4 @@
-<tool id="srma_wrapper" name="Re-align with SRMA" version="0.2.0">
+<tool id="srma_wrapper" name="Re-align with SRMA" version="0.2.1">
   <description></description>
   <command interpreter="python">srma_wrapper.py 
     #if $refGenomeSource.refGenomeSource_type == "history":
@@ -61,7 +61,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="bam" name="output" label="Re-aligned Reads">
+    <data format="bam" name="output" label="${tool.name} on ${on_string}: re-aligned reads">
       <actions>
         <conditional name="refGenomeSource.refGenomeSource_type">
           <when value="built-in">

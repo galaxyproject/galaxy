@@ -1,4 +1,4 @@
-<tool id="bam_to_sam" name="BAM-to-SAM" version="1.0.0">
+<tool id="bam_to_sam" name="BAM-to-SAM" version="1.0.1">
   <requirements>
     <requirement type="package">samtools</requirement>
   </requirements>
@@ -12,7 +12,7 @@
     <param name="input1" type="data" format="bam" label="BAM File to Convert" />
   </inputs>
   <outputs>
-    <data name="output1" format="sam" label="Converted SAM" />
+    <data format="sam" name="output1" label="${tool.name} on ${on_string}: converted SAM" />
   </outputs>
   <tests>
     <test>

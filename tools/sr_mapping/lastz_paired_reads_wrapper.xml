@@ -1,4 +1,4 @@
-<tool id="lastz_paired_reads_wrapper" name="Lastz paired reads" version="1.1.0">
+<tool id="lastz_paired_reads_wrapper" name="Lastz paired reads" version="1.1.1">
     <description> map short paired reads against reference sequence</description>
     <command interpreter="python">lastz_paired_reads_wrapper.py
       #if $seq_name.how_to_name=="yes":
@@ -47,7 +47,7 @@
         </conditional>
     </inputs>
     <outputs>
-        <data format="sam" name="output1" label="Mapped Reads" />
+        <data format="sam" name="output1" label="${tool.name} on ${on_string}: mapped reads" />
     </outputs>
     <requirements>
         <requirement type="package">lastz</requirement>

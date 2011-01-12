@@ -1,4 +1,4 @@
-<tool id="PerM" name="Map with PerM" version="1.1.1">
+<tool id="PerM" name="Map with PerM" version="1.1.2">
   <description>for SOLiD and Illumina</description>
   <!-- works with PerM version 0.2.6 -->
   <requirements>
@@ -159,11 +159,11 @@
     </param>
   </inputs>
   <outputs>
-    <data name="output" format="sam" label="Mapped Reads" /> 
-    <data name="unmappedReadOut" format="fastqsanger" label="Unmapped Reads">
+    <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads" />
+    <data format="fastqsanger" name="unmappedReadOut" label="${tool.name} on ${on_string}: unmapped reads">
       <filter>bUnmappedRead == "true" and s["space"] == "base"</filter>
     </data>
-    <data name="unmappedReadOutCS" format="fastqcssanger" label="Unmapped Reads">
+    <data format="fastqcssanger" name="unmappedReadOutCS" label="${tool.name} on ${on_string}: unmapped reads">
       <filter>bUnmappedRead == "true" and s["space"] == "color"</filter>
     </data>
   </outputs>

@@ -1,4 +1,4 @@
-<tool id="sam_merge" name="Merge BAM Files" version="1.1.0">
+<tool id="sam_merge" name="Merge BAM Files" version="1.1.1">
   <description>merges BAM files together</description>
   <requirements>
     <requirement type="package">samtools</requirement>
@@ -20,7 +20,7 @@
     </repeat>
   </inputs>
   <outputs>
-    <data name="output1" format="bam" label="Merged BAM" />
+    <data format="bam" name="output1" label="${tool.name} on ${on_string}: merged BAM" />
   </outputs>
   <tests>
     <!-- TODO: add ability to test framework to test without at least 

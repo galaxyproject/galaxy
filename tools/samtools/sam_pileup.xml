@@ -1,4 +1,4 @@
-<tool id="sam_pileup" name="Generate pileup" version="1.1.0">
+<tool id="sam_pileup" name="Generate pileup" version="1.1.1">
   <description>from BAM dataset</description>
   <requirements>
     <requirement type="package">samtools</requirement>
@@ -73,7 +73,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="tabular" name="output1" label="Converted Pileup" />
+    <data format="tabular" name="output1" label="${tool.name} on ${on_string}: converted pileup" />
   </outputs>
   <tests>
     <test>
