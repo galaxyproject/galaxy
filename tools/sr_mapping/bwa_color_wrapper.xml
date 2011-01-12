@@ -1,5 +1,5 @@
 <tool id="bwa_color_wrapper" name="Map with BWA" version="1.0.0">
-  <description></description>
+  <description>for SOLiD</description>
   <parallelism method="basic"></parallelism>
   <command interpreter="python">
     bwa_wrapper.py 
