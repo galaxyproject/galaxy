@@ -1,7 +1,7 @@
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago
 from galaxy import util
-import time, socket, urllib, urllib2, base64
+import time, socket, urllib, urllib2, base64, copy
 from galaxy.util.json import *
 from urllib import quote_plus, unquote_plus
 
@@ -17,9 +17,9 @@ class CommonController( BaseController ):
         sample_id = util.restore_text( kwd.get( 'sample_id', '' ) )
         message = util.restore_text( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        redirect_delay = trans.app.sequencer_actions_registry.redirect_delay   
-        sequencer_redirects = trans.app.sequencer_actions_registry.sequencer_redirects
-        sequencer_requests = trans.app.sequencer_actions_registry.sequencer_requests
+        redirect_delay = trans.app.sequencer_actions_registry.redirect_delay
+        sequencer_redirects = copy.deepcopy( trans.app.sequencer_actions_registry.sequencer_redirects )
+        sequencer_requests = copy.deepcopy( trans.app.sequencer_actions_registry.sequencer_requests )
         requests = []
         if redirect_action == 'stop':
             # Handle any additional requests
@@ -44,6 +44,7 @@ class CommonController( BaseController ):
             # Exit if we have no redirection
             redirect_action = 'exit'
         elif not redirect_action:
+            # Specially handle the initial request to the demo sequencer by starting with the first defined redirect.
             redirect_action, action_dict = sequencer_redirects.items()[0]
             title = action_dict[ 'title' ]
             if 'requests' in action_dict:
