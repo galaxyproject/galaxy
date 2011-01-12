@@ -146,7 +146,7 @@ if wf_parms:
                     <span class="p_text_wrapper">${p_text}</span>
                     <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
                 %else:
-                    ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                    ${param.value_to_display_text( value, app )}
                 %endif
             %endif
         </div>
