@@ -409,12 +409,12 @@ class Text( Data ):
                     # needed to set metadata
                     # This can happen when the file is larger than max_optional_metadata_filesize.
                     # Perform a rough estimate by extrapolating number of lines from a small read.
-                    sample_size = min(self.max_optional_metadata_filesize, 1048576)
+                    sample_size = 1048576
                     dataset_fh = open( dataset.file_name )
                     dataset_read = dataset_fh.read(sample_size)
                     dataset_fh.close()
                     sample_lines = dataset_read.count('\n')
-                    est_lines = int(sample_lines * (dataset.get_size() / float(sample_size)))
+                    est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
                     dataset.blurb = "~%s lines" % util.commaify(str(est_lines))
             else:
                 dataset.blurb = "%s lines" % util.commaify( str( line_count ) )
