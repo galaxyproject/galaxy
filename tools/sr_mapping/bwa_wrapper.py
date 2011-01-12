@@ -41,13 +41,29 @@ def stop_err( msg ):
     sys.stderr.write( '%s\n' % msg )
     sys.exit()
 
+def check_is_double_encoded( fastq ):
+    # check that first read is bases, not one base followed by numbers
+    bases = [ 'A', 'C', 'G', 'T', 'a', 'c', 'g', 't', 'N' ]
+    nums = [ '0', '1', '2', '3' ]
+    for line in file( fastq, 'rb'):
+        if not line.strip() or line.startswith( '@' ):
+            continue
+        if len( [ b for b in line.strip() if b in nums ] ) > 0:
+            return False
+        elif line.strip()[0] in bases and len( [ b for b in line.strip() if b in bases ] ) == len( line.strip() ):
+            return True
+        else:
+            raise Exception, 'First line in first read does not appear to be a valid FASTQ read in either base-space or color-space'
+    raise Exception, 'There is no non-comment and non-blank line in your FASTQ file'
+
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option( '-t', '--threads', dest='threads', help='The number of threads to use' )
+    parser.add_option( '-c', '--color-space', dest='color_space', action='store_true', help='If the input files are SOLiD format' )
     parser.add_option( '-r', '--ref', dest='ref', help='The reference genome to use or index' )
-    parser.add_option( '-f', '--fastq', dest='fastq', help='The (forward) fastq file to use for the mapping' )
-    parser.add_option( '-F', '--rfastq', dest='rfastq', help='The reverse fastq file to use for mapping if paired-end data' )
+    parser.add_option( '-f', '--input1', dest='fastq', help='The (forward) fastq file to use for the mapping' )
+    parser.add_option( '-F', '--input2', dest='rfastq', help='The reverse fastq file to use for mapping if paired-end data' )
     parser.add_option( '-u', '--output', dest='output', help='The file to save the output (SAM format)' )
     parser.add_option( '-g', '--genAlignType', dest='genAlignType', help='The type of pairing (single or paired)' )
     parser.add_option( '-p', '--params', dest='params', help='Parameter setting to use (pre_set or full)' )
@@ -69,7 +85,7 @@ def __main__():
     parser.add_option( '-S', '--maxInsertSize', dest='maxInsertSize', help='Maximum insert size for a read pair to be considered mapped good' )
     parser.add_option( '-P', '--maxOccurPairing', dest='maxOccurPairing', help='Maximum occurrences of a read for pairings' )
     parser.add_option( '-D', '--dbkey', dest='dbkey', help='Dbkey for reference genome' )
-    parser.add_option( '-X', '--do_not_build_index', dest='do_not_build_index', help="Don't build index" )
+    parser.add_option( '-X', '--do_not_build_index', dest='do_not_build_index', action='store_true', help="Don't build index" )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
     (options, args) = parser.parse_args()
 
@@ -92,6 +108,24 @@ def __main__():
     except:
         sys.stdout.write( 'Could not determine BWA version\n' )
 
+    # check for color space fastq that's not double-encoded and exit if appropriate
+    if options.color_space:
+        if not check_is_double_encoded( options.fastq ):
+            stop_err( 'Your file must be double-encoded (it must be converted from "numbers" to "bases"). See the help section for details' )
+        if options.genAlignType == 'paired':
+            if not check_is_double_encoded( options.rfastq ):
+                stop_err( 'Your reverse reads file must also be double-encoded (it must be converted from "numbers" to "bases"). See the help section for details' )
+
+    fastq = options.fastq
+    if options.rfastq:
+         rfastq = options.rfastq
+
+    # set color space variable
+    if options.color_space:
+        color_space = '-c'
+    else:
+        color_space = ''
+
     # make temp directory for placement of indices
     tmp_index_dir = tempfile.mkdtemp()
     tmp_dir = tempfile.mkdtemp()
@@ -110,7 +144,7 @@ def __main__():
                 indexingAlg = 'bwtsw'
         except:
             indexingAlg = 'is'
-        indexing_cmds = '-a %s' % indexingAlg
+        indexing_cmds = '%s -a %s' % ( color_space, indexingAlg )
         cmd1 = 'bwa index %s %s' % ( indexing_cmds, ref_file_name )
         try:
             tmp = tempfile.NamedTemporaryFile( dir=tmp_index_dir ).name
@@ -141,9 +175,10 @@ def __main__():
             stop_err( 'Error indexing reference sequence. ' + str( e ) )
     else:
         ref_file_name = options.ref
+
     # set up aligning and generate aligning command options
     if options.params == 'pre_set':
-        aligning_cmds = '-t %s' % options.threads
+        aligning_cmds = '-t %s %s' % ( options.threads, color_space )
         gen_alignment_cmds = ''
     else:
         if options.maxEditDist != '0':
@@ -162,13 +197,16 @@ def __main__():
             noIterSearch = '-N'
         else:
             noIterSearch = ''
-        aligning_cmds = '-n %s -o %s -e %s -d %s -i %s %s -k %s -t %s -M %s -O %s -E %s %s %s' % \
+        aligning_cmds = '-n %s -o %s -e %s -d %s -i %s %s -k %s -t %s -M %s -O %s -E %s %s %s %s' % \
                         ( editDist, options.maxGapOpens, options.maxGapExtens, options.disallowLongDel,
                           options.disallowIndel, seed, options.maxEditDistSeed, options.threads,
                           options.mismatchPenalty, options.gapOpenPenalty, options.gapExtensPenalty,
-                          suboptAlign, noIterSearch )
+                          suboptAlign, noIterSearch, color_space )
         if options.genAlignType == 'single':
-            gen_alignment_cmds = '-n %s' % options.outputTopN
+            if options.outputTopN != '-1':
+                gen_alignment_cmds = '-n %s' % options.outputTopN
+            else:
+                gen_alignment_cmds = ''
         elif options.genAlignType == 'paired':
             gen_alignment_cmds = '-a %s -o %s' % ( options.maxInsertSize, options.maxOccurPairing )
     # set up output files
@@ -179,13 +217,13 @@ def __main__():
     tmp_align_out2_name = tmp_align_out2.name
     tmp_align_out2.close()
     # prepare actual aligning and generate aligning commands
-    cmd2 = 'bwa aln %s %s %s > %s' % ( aligning_cmds, ref_file_name, options.fastq, tmp_align_out_name )
+    cmd2 = 'bwa aln %s %s %s > %s' % ( aligning_cmds, ref_file_name, fastq, tmp_align_out_name )
     cmd2b = ''
     if options.genAlignType == 'paired':
-        cmd2b = 'bwa aln %s %s %s > %s' % ( aligning_cmds, ref_file_name, options.rfastq, tmp_align_out2_name )
-        cmd3 = 'bwa sampe %s %s %s %s %s %s >> %s' % ( gen_alignment_cmds, ref_file_name, tmp_align_out_name, tmp_align_out2_name, options.fastq, options.rfastq, options.output )
+        cmd2b = 'bwa aln %s %s %s > %s' % ( aligning_cmds, ref_file_name, rfastq, tmp_align_out2_name )
+        cmd3 = 'bwa sampe %s %s %s %s %s %s >> %s' % ( gen_alignment_cmds, ref_file_name, tmp_align_out_name, tmp_align_out2_name, fastq, rfastq, options.output )
     else:
-        cmd3 = 'bwa samse %s %s %s %s >> %s' % ( gen_alignment_cmds, ref_file_name, tmp_align_out_name, options.fastq, options.output )
+        cmd3 = 'bwa samse %s %s %s %s >> %s' % ( gen_alignment_cmds, ref_file_name, tmp_align_out_name, fastq, options.output )
     # perform alignments
     buffsize = 1048576
     try:

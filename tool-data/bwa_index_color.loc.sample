@@ -1,0 +1,38 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of BWA indexed sequences data files. You will need
+#to create these data files and then create a bwa_index_color.loc file
+#similar to this one (store it in this directory) that points to
+#the directories in which those files are stored. The bwa_index_color.loc
+#file has this format (longer white space characters are TAB characters):
+#
+#<unique_build_id>   <dbkey>   <display_name>   <file_path>
+#
+#So, for example, if you had phiX indexed stored in 
+#/depot/data2/galaxy/phiX/color/, 
+#then the bwa_index.loc entry would look like this:
+#
+#phiX174   phiX   phiX Pretty   /depot/data2/galaxy/phiX/color/phiX.fa
+#
+#and your /depot/data2/galaxy/phiX/color/ directory
+#would contain phiX.fa.* files:
+#
+#-rw-r--r--  1 james    universe 830134 2005-09-13 10:12 phiX.fa.amb
+#-rw-r--r--  1 james    universe 527388 2005-09-13 10:12 phiX.fa.ann
+#-rw-r--r--  1 james    universe 269808 2005-09-13 10:12 phiX.fa.bwt
+#...etc...
+#
+#Your bwa_index_color.loc file should include an entry per line for each
+#index set you have stored. The "file" in the path does not actually
+#exist, but it is the prefix for the actual index files.  For example:
+#
+#phiX174              phiX   phiX174          /depot/data2/galaxy/phiX/color/phiX.fa
+#hg18canon            hg18   hg18 Canonical   /depot/data2/galaxy/hg18/color/hg18canon.fa
+#hg18full             hg18   hg18 Full        /depot/data2/galaxy/hg18/color/hg18full.fa
+#/orig/path/hg19.fa   hg19   hg19             /depot/data2/galaxy/hg19/color/hg19.fa
+#...etc...
+#
+#Note that for backwards compatibility with workflows, the unique ID of
+#an entry must be the path that was in the original loc file, because that
+#is the value stored in the workflow for that parameter. That is why the
+#hg19 entry above looks odd. New genomes can be better-looking.
+#
