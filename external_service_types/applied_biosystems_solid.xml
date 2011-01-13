@@ -3,7 +3,7 @@
     <version>3</version>
  
     <data_transfer_settings>
-        <data_transfer type='scp' host='host' user_name='user_name' password='password' 
+        <data_transfer type='scp' automatic_transfer='False' host='host' user_name='user_name' password='password' 
                        data_location='data_location' rename_dataset='rename_dataset' />
     </data_transfer_settings>
  

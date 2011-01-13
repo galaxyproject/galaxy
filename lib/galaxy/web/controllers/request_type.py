@@ -294,7 +294,7 @@ class RequestType( BaseController, UsesFormDefinitions ):
                 else:
                     break
         # delete existing associations
-        request_type.delete_external_service_association( trans, 'All' )
+        request_type.delete_external_service_associations( trans )
         # save the external services associated with this request_type
         external_services_list = self.__get_external_services( trans, **kwd )
         for external_service in external_services_list:
@@ -448,7 +448,7 @@ class RequestType( BaseController, UsesFormDefinitions ):
             selected_value = 'none'
         all_external_services = trans.sa_session.query( trans.model.ExternalService ).filter( trans.model.ExternalService.table.c.deleted==False ).all()
         for e in all_external_services:
-            e.get_type( trans )
+            e.get_external_service_type( trans )
         return build_select_field( trans,
                                    objs=all_external_services,
                                    label_attr='label',

@@ -101,9 +101,7 @@ class Forms( BaseController ):
     @web.expose
     @web.require_admin
     def view_latest_form_definition( self, trans, **kwd ):
-        '''
-        Displays the layout of the latest version of the form definition 
-        '''
+        '''Displays the layout of the latest version of the form definition'''
         form_definition_current_id = kwd.get( 'id', None )
         try:
             form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ) \

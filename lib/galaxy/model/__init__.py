@@ -1755,7 +1755,13 @@ All samples in state:     %(sample_state)s
             if final_state:
                 txt = "Sample Name -> Data Library/Folder\r\n"
                 for s in self.samples:
-                    txt = txt + "%s -> %s/%s\r\n" % ( s.name, s.library.name, s.folder.name )
+                    if s.library:
+                        library_name = s.library.name
+                        folder_name = s.folder.name
+                    else:
+                        library_name = 'No target data library'
+                        folder_name = 'No target data library folder'
+                    txt = txt + "%s -> %s/%s\r\n" % ( s.name, library_name, folder_name )
                 body = body + txt
             to = self.notification['email']
             frm = 'galaxy-no-reply@' + host
@@ -1794,30 +1800,27 @@ class ExternalService( object ):
         self.form_definition_id = form_definition_id
         self.form_values_id = form_values_id
         self.deleted = deleted 
-        self.type = self.external_service_type_id or ''
-    def get_type( self, trans ):
-        # TODO: RC: fix this method.
-        self.type = trans.app.external_service_types.all_external_service_types[ self.external_service_type_id ]
-        return self.type
+    def get_external_service_type( self, trans ):
+        return trans.app.external_service_types.all_external_service_types[ self.external_service_type_id ]
     @property
     def label(self):
         return self.name + " ( " +self.type.name + " )"
     def load_data_transfer_settings( self, trans ):
         self.data_transfer = {}
-        external_service_type = self.get_type( trans )
+        external_service_type = self.get_external_service_type( trans )
         for data_transfer_type, data_transfer in external_service_type.data_transfer.items():
             if data_transfer_type == self.data_transfer_types.SCP:
                 scp_configs = {}
+                automatic_transfer = self.form_values.content.get( data_transfer.config.get( 'automatic_transfer', 'false' ), 'false' )
+                scp_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
                 scp_configs[ 'host' ] = self.form_values.content.get( data_transfer.config.get( 'host', '' ), '' )
                 scp_configs[ 'user_name' ] = self.form_values.content.get( data_transfer.config.get( 'user_name', '' ), '' )
                 scp_configs[ 'password' ] = self.form_values.content.get( data_transfer.config.get( 'password', '' ), '' )
                 scp_configs[ 'data_location' ] = self.form_values.content.get( data_transfer.config.get( 'data_location', '' ), '' )
                 scp_configs[ 'rename_dataset' ] = self.form_values.content.get( data_transfer.config.get( 'rename_dataset', '' ), '' )
                 self.data_transfer[ self.data_transfer_types.SCP ] = scp_configs
-    def populate_actions(self, item, param_dict = None, trans = None ):
-        if trans is None:
-            raise ValueError( 'trans needed to get service type' )
-        return self.get_type( trans ).actions.populate( self, item, param_dict = param_dict )
+    def populate_actions( self, trans, item, param_dict=None ):
+        return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
                 
 class RequestType( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'name', 'desc' )
@@ -1834,30 +1837,35 @@ class RequestType( object, APIItem ):
         self.sample_form = sample_form
     @property
     def external_services( self ):
-        external_services_list = []
-        for assoc in self.external_service_association:
-            external_services_list.append( assoc.external_service )
-        return external_services_list
-    def external_services_for_data_transfer( self, trans ):
-        external_services_list = []
-        for assoc in self.external_service_association:
-            external_service = assoc.external_service
+        external_services = []
+        for rtesa in self.external_service_associations:
+            external_services.append( rtesa.external_service )
+        return external_services
+    def get_external_service( self, external_service_type_id ):
+        for rtesa in self.external_service_associations:
+            if rtesa.external_service.external_service_type_id == external_service_type_id:
+                return rtesa.external_service
+        return None
+    def get_external_services_for_data_transfer( self, trans ):
+        external_services = []
+        for rtesa in self.external_service_associations:
+            external_service = rtesa.external_service
             # load data transfer settings
             external_service.load_data_transfer_settings( trans )
             if external_service.data_transfer:
-                external_services_list.append( external_service )
-        return external_services_list
-    def delete_external_service_association( self, trans, index='All' ):
-        '''Removes the given external service association. Removes all if index=All'''
-        if type( index ) == int and index < len( self.external_service_association ):
-            trans.sa_session.delete( self.external_service_association[index] )
-        elif index == 'All':
-            for assoc in self.external_service_association:
-                trans.sa_session.delete( assoc )
-        trans.sa_session.flush()
+                external_services.append( external_service )
+        return external_services
+    def delete_external_service_associations( self, trans ):
+        '''Deletes all external service associations.'''
+        flush_needed = False
+        for rtesa in self.external_service_associations:
+            trans.sa_session.delete( rtesa )
+            flush_needed = True
+        if flush_needed:
+            trans.sa_session.flush()
     def add_external_service_association( self, trans, external_service ):
-        assoc = trans.model.RequestTypeExternalServiceAssociation( self, external_service )
-        trans.sa_session.add( assoc )
+        rtesa = trans.model.RequestTypeExternalServiceAssociation( self, external_service )
+        trans.sa_session.add( rtesa )
         trans.sa_session.flush()
     @property
     def final_sample_state( self ):

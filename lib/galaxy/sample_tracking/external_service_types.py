@@ -21,7 +21,6 @@ class ExternalServiceTypesCollection( object ):
             self.load_all( config_filename )
         except:
             log.exception( "ExternalServiceTypesCollection error reading %s", config_filename )
-
     def load_all( self, config_filename ):
         self.visible_external_service_types = []
         tree = util.parse_xml( config_filename )
@@ -43,7 +42,6 @@ class ExternalServiceTypesCollection( object ):
         tree = util.parse_xml( config_file )
         root = tree.getroot()
         return ExternalServiceType( config_file, root, visible )
-    
     def reload( self, external_service_type_id ):
         """
         Attempt to reload the external_service_type identified by 'external_service_type_id', if successful
@@ -85,7 +83,7 @@ class ExternalServiceType( object ):
     def parse_data_transfer_settings( self, root ):
         self.data_transfer = {}
         data_transfer_settings_elem = root.find( 'data_transfer_settings' )
-        # till now only data transfer using scp is supported.
+        # Currently only data transfer using scp is supported.
         for data_transfer_elem in data_transfer_settings_elem.findall( "data_transfer" ):
             if data_transfer_elem.get( 'type' ) == model.ExternalService.data_transfer_types.SCP:
                 scp_data_transfer = data_transfer_factories[ model.ExternalService.data_transfer_types.SCP ]

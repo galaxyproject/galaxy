@@ -11,11 +11,15 @@ class ScpDataTransferFactory( DataTransferFactory ):
     def __init__( self ):
         pass
     def parse( self, config_file, elem ):
-        self.config['host'] = elem.get( 'host' ) 
-        self.config['user_name'] = elem.get( 'user_name' )
-        self.config['password'] = elem.get( 'password' ) 
-        self.config['data_location'] = elem.get( 'data_location' )
-        # validate 
+        # TODO: The 'automatic_transfer' setting is for future use.  If set to True, we will need to 
+        # ensure the sample has an associated destination data library before it moves to a certain state
+        # ( e.g., Run started ).
+        self.config[ 'automatic_transfer' ] = elem.get( 'automatic_transfer' )
+        self.config[ 'host' ] = elem.get( 'host' ) 
+        self.config[ 'user_name' ] = elem.get( 'user_name' )
+        self.config[ 'password' ] = elem.get( 'password' ) 
+        self.config[ 'data_location' ] = elem.get( 'data_location' )
+        # Validate 
         for name, value in self.config.items():
             assert value, "'%s' attribute missing in 'data_transfer' element of type 'scp' in external_service_type xml config file: '%s'." % ( name, config_file )
         
@@ -27,9 +31,3 @@ class FtpDataTransferFactory( DataTransferFactory ):
         pass
     
 data_transfer_factories = dict( [ ( data_transfer.type, data_transfer() ) for data_transfer in [ ScpDataTransferFactory, FtpDataTransferFactory ] ] )
-
-    
-    
-
-
-

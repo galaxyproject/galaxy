@@ -68,7 +68,7 @@
         %for index, external_service in enumerate( request_type.external_services ):
             <div class="form-row">
                 <label><a href="${h.url_for( controller='external_service', action='view_external_service', id=trans.security.encode_id( external_service.id ) )}">${external_service.name}</a></label> 
-                ${external_service.get_type(trans).name}
+                ${external_service.get_external_service_type( trans ).name}
             </div>
         %endfor
     %else:

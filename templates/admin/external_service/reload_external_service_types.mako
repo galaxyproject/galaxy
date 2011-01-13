@@ -7,7 +7,7 @@
 %if message:
     ${render_msg( message, status )}
 %endif
-<form name="create_external_service" action="${h.url_for( controller='external_service', action='reload_external_service_types' )}" method="post">
+<form name="reload_external_service_types" action="${h.url_for( controller='external_service', action='reload_external_service_types' )}" method="post">
 	<div class="toolForm">
 	    <div class="toolFormTitle">Reload external service types</div>
 	    <div class="form-row">

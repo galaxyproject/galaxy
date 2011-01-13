@@ -33,7 +33,7 @@
         <div class="form-row">
             <label>External service:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
-                ${sample_dataset.external_service.name} (${sample_dataset.external_service.get_type(trans).name})
+                ${sample_dataset.external_service.name} (${sample_dataset.external_service.get_external_service_type( trans ).name})
             </div>
             <div style="clear: both"></div>
         </div>

@@ -12,15 +12,11 @@ class RequestTypeFactory( object ):
         self.sample_state_factory = sample_state_factory
         self.rename_dataset_options = rename_dataset_options
     def new( self, name, request_form, sample_form, external_service, description=None, sample_states = None ):
-        """
-        Return new RequestType.
-        """
+        """Return new RequestType."""
         assert name, 'RequestType requires a name'        
         return RequestType( name=name, desc=description, request_form=request_form, sample_form=sample_form, external_service=external_service )
     def from_elem( self, elem, request_form, sample_form, external_service ):
-        """
-        Return RequestType created from an xml string.
-        """
+        """Return RequestType created from an xml string."""
         name = elem.get( 'name', '' )
         description = elem.get( 'description', '' )
         rval = self.new( name, request_form, sample_form, external_service=external_service, description=description )

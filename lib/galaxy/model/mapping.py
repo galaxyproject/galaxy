@@ -1000,7 +1000,7 @@ assign_mapper( context, RequestType, RequestType.table,
 assign_mapper( context, RequestTypeExternalServiceAssociation, RequestTypeExternalServiceAssociation.table,
     properties=dict(
         request_type=relation( RequestType, 
-                               primaryjoin=( ( RequestTypeExternalServiceAssociation.table.c.request_type_id == RequestType.table.c.id ) ), backref="external_service_association" ),
+                               primaryjoin=( ( RequestTypeExternalServiceAssociation.table.c.request_type_id == RequestType.table.c.id ) ), backref="external_service_associations" ),
         external_service=relation( ExternalService,
                                    primaryjoin=( RequestTypeExternalServiceAssociation.table.c.external_service_id == ExternalService.table.c.id ) )
     )

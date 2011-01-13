@@ -487,6 +487,8 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                     return "Invalid sample id ( %s ) specified, unable to decode." % str( sample_id )
                 else:
                     return invalid_id_redirect( trans, cntrller, sample_id, 'sample' )
+            if comment is None:
+                comment = 'Sample state set to %s' % str( new_state )
             event = trans.model.SampleEvent( sample, new_state, comment )
             trans.sa_session.add( event )
             trans.sa_session.flush()
@@ -675,8 +677,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             event = trans.model.RequestEvent( request, state, comment )
             trans.sa_session.add( event )
             trans.sa_session.flush()
-            # See if an email notification is configured to be sent when the samples 
-            # are in this state.
+            # See if an email notification is configured to be sent when the samples are in this state.
             retval = request.send_email_notification( trans, common_state, final_state )
             if retval:
                 message = comment + retval

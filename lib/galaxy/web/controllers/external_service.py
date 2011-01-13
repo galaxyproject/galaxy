@@ -62,8 +62,6 @@ class ExternalServiceGrid( grids.Grid ):
         grids.GridAction( "Reload external service types", dict( controller='external_service', action='reload_external_service_types' ) ),
         grids.GridAction( "Create new external service", dict( controller='external_service', action='create_external_service' ) )
     ]
-    
-
 
 class ExternalService( BaseController, UsesFormDefinitions ):
     external_service_grid = ExternalServiceGrid()
@@ -93,24 +91,26 @@ class ExternalService( BaseController, UsesFormDefinitions ):
         external_service_type_id = params.get( 'external_service_type_id', 'none' )
         widgets = self.__build_external_service_widgets( trans, external_service=None, **kwd )
         external_service_type = None
-        if params.get( 'create_external_service_button', False ):
-            self.__save_external_service( trans, **kwd )
-            message = 'The external_service has been created.'
-            return trans.response.send_redirect( web.url_for( controller='external_service',
-                                                              action='browse_external_services',
-                                                              message=message,
-                                                              status=status ) )
-        elif external_service_type_id != 'none':
-            trans.app.external_service_types.reload( external_service_type_id )
-            external_service_type = self.get_external_service_type( trans, external_service_type_id )
-            widgets.extend( external_service_type.form_definition.get_widgets( trans.user, **kwd ) )
+        error = False
         if not trans.app.external_service_types.visible_external_service_types:
+            error = True
             message = 'There are no visible external_service types in the external_service types config file'
-            status = 'error'
+        elif params.get( 'create_external_service_button', False ):
+            if external_service_type_id == 'none':
+                error = True
+                message = 'Provide an external_service_type_id to create a new external service.'
+            else:
+                self.__save_external_service( trans, **kwd )
+                message = 'The external_service has been created.'
+                return trans.response.send_redirect( web.url_for( controller='external_service',
+                                                                  action='browse_external_services',
+                                                                  message=message,
+                                                                  status=status ) )
+        if error:
             return trans.response.send_redirect( web.url_for( controller='external_service',
                                                               action='browse_external_services',
                                                               message=message,
-                                                              status=status ) )
+                                                              status='error' ) )
         return trans.fill_template( '/admin/external_service/create_external_service.mako',
                                     widgets=widgets,
                                     message=message,
@@ -177,7 +177,11 @@ class ExternalService( BaseController, UsesFormDefinitions ):
             external_service_type = self.get_external_service_type( trans, external_service_type_id )
             external_service = trans.model.ExternalService( name, description, external_service_type_id, version )
             external_service.form_definition = external_service_type.form_definition
-            values = self.get_form_values( trans, trans.user, external_service.form_definition, **kwd )
+            values = {}
+            for index, field in enumerate( external_service_type.form_definition.fields ):
+                field_name = field[ 'name' ]
+                field_value = field[ 'default' ]
+                values[ field_name ] = field_value
             external_service.form_values = trans.model.FormValues( external_service.form_definition, values )
             trans.sa_session.add( external_service )
             trans.sa_session.add( external_service.form_definition )
