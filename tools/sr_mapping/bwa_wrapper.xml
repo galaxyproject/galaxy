@@ -131,10 +131,12 @@
     <test>
       <!--
       BWA commands:
-      bwa aln -t 4 phiX test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out1.sai
-      bwa samse phiX bwa_wrapper_out1.sai test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out1.sam
-      phiX.fa is the prefix for the reference files (phiX.fa.amb, phiX.fa.ann, phiX.fa.bwt, ...)
+      bwa aln -t 4 phiX.fasta test-data/bwa_wrapper_in1.fastqsanger > bwa_wrapper_out1.sai
+      bwa samse phiX.fasta bwa_wrapper_out1.sai test-data/bwa_wrapper_in1.fastqsanger > bwa_wrapper_out1.sam
+      phiX.fasta is the prefix for the reference files (phiX.fasta.amb, phiX.fasta.ann, phiX.fasta.bwt, ...)
       remove the comment lines (beginning with '@') from the resulting sam file
+      plain old sort doesn't handle underscores like python:
+      python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out1.u.sam bwa_wrapper_out1.sam
       -->
       <param name="refGenomeSource" value="indexed" />
       <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
@@ -150,10 +152,12 @@
       BWA commands:
       cp test-data/phiX.fasta phiX.fasta
       bwa index -a is phiX.fasta
-      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out2.sai
-      bwa samse phiX.fasta bwa_wrapper_out2.sai test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out2.sam
-      phiX.fa is the prefix for the reference files (phiX.fa.amb, phiX.fa.ann, phiX.fa.bwt, ...)
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in1.fastqsanger > bwa_wrapper_out2.sai
+      bwa samse phiX.fasta bwa_wrapper_out2.sai test-data/bwa_wrapper_in1.fastqsanger > bwa_wrapper_out2.u.sam
+      phiX.fasta is the prefix for the reference files (phiX.fasta.amb, phiX.fasta.ann, phiX.fasta.bwt, ...)
       remove the comment lines (beginning with '@') from the resulting sam file
+      plain old sort doesn't handle underscores like python:
+      python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out2.u.sam bwa_wrapper_out2.sam
       -->
       <param name="refGenomeSource" value="history" />
       <param name="ownFile" value="phiX.fasta" />
@@ -182,11 +186,13 @@
     <test>
       <!--
       BWA commands:
-      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fa test-data/bwa_wrapper_in2.fastq > bwa_wrapper_out3a.sai
-      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fa test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3b.sai
-      bwa sampe -a 500 -o 100000 phiX.fa bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastq test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3.sam
-      phiX.fa is the prefix for the reference
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in2.fastqsanger > bwa_wrapper_out3a.sai
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in3.fastqsanger > bwa_wrapper_out3b.sai
+      bwa sampe -a 500 -o 100000 phiX.fasta bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastqsanger test-data/bwa_wrapper_in3.fastqsanger > bwa_wrapper_out3.u.sam
+      phiX.fasta is the prefix for the reference
       remove the comment lines (beginning with '@') from the resulting sam file
+      plain old sort doesn't handle underscores like python:
+      python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out3.u.sam bwa_wrapper_out3.sam
       -->
       <param name="refGenomeSource" value="indexed" />
       <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
@@ -213,6 +219,28 @@
       <param name="maxOccurPairing" value="100000" />
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" sort="True" />
+    </test>
+    <test>
+      <!--
+      BWA commands:
+      cp test-data/phiX.fasta phiX.fasta
+      bwa index -a is phiX.fasta
+      bwa aln -t 4 phiX.fasta test-data/bwa_wrapper_in2.fastqsanger > bwa_wrapper_out8a.sai
+      bwa aln -t 4 phiX.fasta test-data/bwa_wrapper_in3.fastqsanger > bwa_wrapper_out8b.sai
+      bwa sampe -a 500 -o 100000 phiX.fasta bwa_wrapper_out8a.sai bwa_wrapper_out8b.sai test-data/bwa_wrapper_in2.fastqsanger test-data/bwa_wrapper_in3.fastqsanger > bwa_wrapper_out8.u.sam
+      phiX.fa is the prefix for the reference
+      remove the comment lines (beginning with '@') from the resulting sam file
+      python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out8.u.sam bwa_wrapper_out8.sam
+      -->
+      <param name="refGenomeSource" value="history" />
+      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
+      <param name="ownFile" value="phiX.fasta" />
+      <param name="sPaired" value="paired" />
+      <param name="input1" value="bwa_wrapper_in2.fastqsanger" ftype="fastqsanger" />
+      <param name="input2" value="bwa_wrapper_in3.fastqsanger" ftype="fastqsanger" />
+      <param name="source_select" value="preSet" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" file="bwa_wrapper_out8.sam" ftype="sam" sort="True" />
     </test>
   </tests> 
   <help>

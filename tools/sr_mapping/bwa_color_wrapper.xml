@@ -110,7 +110,7 @@
         <param name="mismatchPenalty" type="integer" value="3" label="Mismatch penalty (-M)" help="BWA will not search for suboptimal hits with a score lower than [value]" />
         <param name="gapOpenPenalty" type="integer" value="11" label="Gap open penalty (-O)" />
         <param name="gapExtensPenalty" type="integer" value="4" label="Gap extension penalty (-E)" />
-        <param name="suboptAlign" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Proceed with suboptimal alignments even if the top hit is a repeat" help="By default, BWA only searches for suboptimal alignments if the top hit is unique. Using this option has no effect on accuracy for single-end reads. It is mainly designed for improving the alignment accuracy of paired-end reads. However, the pairing procedure will be slowed down, especially for very short reads (~32bp) (-R)" />
+        <param name="suboptAlign" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Proceed with suboptimal alignments even if the top hit is a repeat" help="For paired-end reads only. By default, BWA only searches for suboptimal alignments if the top hit is unique. Using this option has no effect on accuracy for single-end reads. It is mainly designed for improving the alignment accuracy of paired-end reads. However, the pairing procedure will be slowed down, especially for very short reads (~32bp) (-R)" />
         <param name="noIterSearch" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Disable iterative search" help="All hits with no more than maxDiff differences will be found. This mode is much slower than the default (-N)" />
         <param name="outputTopN" type="integer" value="-1" label="Output top [value] hits" help="For single-end reads only. Enter -1 to disable outputting multiple hits. NOTE: If you put in a positive value here, your output will NOT be in SAM format (-n)" />
         <param name="maxInsertSize" type="integer" value="500" label="Maximum insert size for a read pair to be considered as being mapped properly" help="For paired-end reads only. Only used when there are not enough good alignments to infer the distribution of insert sizes (-a)" />
@@ -137,16 +137,16 @@
   <tests>
     <test>
       <!--
-      Tests input of fastqsanger, which has already been converted to nucleotide coding
       BWA commands:
       cp test-data/hg19chrX_midpart.fasta hg19chrX_midpart.fasta
       bwa index -c -a is hg19chrX_midpart.fasta
       bwa aln -t 4 -c hg19chrX_midpart.fasta test-data/bwa_wrapper_in4.fastqcssanger > bwa_wrapper_out4.sai
       bwa samse hg19chrX_midpart.fasta bwa_wrapper_out4.sai test-data/bwa_wrapper_in4.fastqcssanger > bwa_wrapper_out4.u.sam
+      hg19chrX_midpart.fasta is the prefix for the reference files (hg19chrX_midpart.fasta.amb, hg19chrX_midpart.fasta.ann, hg19chrX_midpart.fasta.bwt, ...)
+      It's just part of hg19 chrX, from the middle of the chromosome
       remove the comment lines (beginning with '@') from the resulting sam file
       plain old sort doesn't handle underscores like python:
       python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out4.u.sam bwa_wrapper_out4.sam
-      hg19chrX_midpart.fasta is the prefix for the reference files (hg19chrX_midpart.fasta.amb, hg19chrX_midpart.fasta.ann, hg19chrX_midpart.fasta.bwt, ...)
       -->
       <param name="refGenomeSource" value="history" />
       <param name="ownFile" value="hg19chrX_midpart.fasta" />
@@ -156,20 +156,17 @@
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out4.sam" ftype="sam" sort="True" />
     </test>
-<!-- Commented out while test data still being prepared
     <test>
--->
       <!--
       BWA commands:
-      bwa aln -t 4 -c hg19chrX_midpart_cs.fa test-data/bwa_wrapper_in5.fastqcssanger > bwa_wrapper_out5a.sai
-      bwa aln -t 4 -c hg19chrX_midpart_cs.fa test-data/bwa_wrapper_in6.fastqcssanger > bwa_wrapper_out5b.sai
-      bwa sampe hg19chrX_midpart_cs.fa bwa_wrapper_out5a.sai bwa_wrapper_out5b.sai test-data/bwa_wrapper_in5.fastqcssanger test-data/bwa_wrapper_in6.fastqcssanger > bwa_wrapper_out5.u.sam
+      bwa aln -t 4 -c equCab2chrM_cs.fa test-data/bwa_wrapper_in5.fastqcssanger > bwa_wrapper_out5a.sai
+      bwa aln -t 4 -c equCab2chrM_cs.fa test-data/bwa_wrapper_in6.fastqcssanger > bwa_wrapper_out5b.sai
+      bwa sampe equCab2chrM_cs.fa bwa_wrapper_out5a.sai bwa_wrapper_out5b.sai test-data/bwa_wrapper_in5.fastqcssanger test-data/bwa_wrapper_in6.fastqcssanger > bwa_wrapper_out5.u.sam
+      equCab2chrM_cs.fa is the prefix of the index files (equCab2chrM_cs.fa.amb, equCab2chrM_cs.fa.ann, ...)
       remove the comment lines (beginning with '@') from the resulting sam file
       plain old sort doesn't handle underscores like python:
       python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out5.u.sam bwa_wrapper_out5.sam
-      equCab2chrM_cs.fa is the prefix of the index files (equCab2chrM_cs.fa.amb, equCab2chrM_cs.fa.ann, ...)
       -->
-<!--
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="equCab2chrM_cs" />
       <param name="sPaired" value="paired" />
@@ -179,16 +176,16 @@
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out5.sam" ftype="sam" sort="True" />
     </test>
--->
     <test>
       <!--
       BWA commands:
       bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N -c hg19chrX_midpart.fasta test-data/bwa_wrapper_in4.fastqcssanger > bwa_wrapper_out6.sai
       bwa samse hg19chrX_midpart.fasta bwa_wrapper_out6.sai test-data/bwa_wrapper_in4.fastqcssanger > bwa_wrapper_out6.u.sam
+      hg19chrX_midpart_cs.fa is the prefix of the index files (hg19chrX_midpart.fa.amb, hg19chrX_midpart.fa.ann, ...)
+      (It's just part of hg19 chrX, from the middle of the chromosome)
       remove the comment lines (beginning with '@') from the resulting sam file
       plain old sort doesn't handle underscores like python:
       python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out6.u.sam bwa_wrapper_out6.sam
-      hg19chrX_midpart_cs.fa is the prefix of the index files (hg19chrX_midpart.fa.amb, hg19chrX_midpart.fa.ann, ...)
       -->
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="hg19chrX_midpart_cs" />
@@ -214,6 +211,46 @@
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out6.sam" ftype="sam" sort="True" />
     </test>
+    <test>
+      <!--
+      BWA commands:
+      cp test-data/chr_m.fasta chr_m.fasta
+      bwa index -c -a is chr_m.fasta
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N -c chr_m.fasta test-data/bwa_wrapper_in5.fastqcssanger > bwa_wrapper_out7a.sai
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N -c chr_m.fasta test-data/bwa_wrapper_in6.fastqcssanger > bwa_wrapper_out7b.sai
+      bwa sampe -a 100 -o 2 chr_m.fasta bwa_wrapper_out7a.sai bwa_wrapper_out7b.sai test-data/bwa_wrapper_in5.fastqcssanger test-data/bwa_wrapper_in6.fastqcssanger > bwa_wrapper_out7.u.sam
+      chr_m.fasta is the prefix of the index files (chr_m.fasta.amb, chr_m.fasta.ann, ...)
+      remove the comment lines (beginning with '@') from the resulting sam file
+      plain old sort doesn't handle underscores like python:
+      python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out7.u.sam bwa_wrapper_out7.sam
+      -->
+      <param name="refGenomeSource" value="history" />
+      <param name="ownFile" value="chr_m.fasta" />
+      <param name="sPaired" value="paired" />
+      <param name="input1" value="bwa_wrapper_in5.fastqcssanger" ftype="fastqcssanger" />
+      <param name="input2" value="bwa_wrapper_in6.fastqcssanger" ftype="fastqcssanger" />
+      <param name="source_select" value="full" />
+      <param name="maxEditDist" value="0" />  
+      <param name="fracMissingAligns" value="0.04" />
+      <param name="maxGapOpens" value="1" />
+      <param name="maxGapExtens" value="-1" />
+      <param name="disallowLongDel" value="16" />
+      <param name="disallowIndel" value="5" />
+      <param name="seed" value="-1" />
+      <param name="maxEditDistSeed" value="2" />
+      <param name="mismatchPenalty" value="3" />
+      <param name="gapOpenPenalty" value="11" />
+      <param name="gapExtensPenalty" value="4" />
+      <param name="suboptAlign" value="true" />
+      <param name="noIterSearch" value="true" />
+      <param name="outputTopN" value="-1" />
+      <param name="maxInsertSize" value="100" />
+      <param name="maxOccurPairing" value="2" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" file="bwa_wrapper_out7.sam" ftype="sam" sort="True" />
+    </test>
+
+
   </tests> 
   <help>
 
