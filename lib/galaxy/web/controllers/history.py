@@ -43,7 +43,7 @@ class HistoryListGrid( grids.Grid ):
         NameColumn( "Name", key="name",
                           link=( lambda history: iff( history.deleted, None, dict( operation="Switch", id=history.id ) ) ),
                           attach_popup=True, filterable="advanced" ),
-        DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
+        DatasetsByStateColumn( "Datasets", key="datasets_by_state", ncells=4 ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, \
                                     filterable="advanced", grid_name="HistoryListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
@@ -103,7 +103,7 @@ class SharedHistoryListGrid( grids.Grid ):
     default_filter = {}
     columns = [
         grids.GridColumn( "Name", key="name", attach_popup=True ), # link=( lambda item: dict( operation="View", id=item.id ) ), attach_popup=True ),
-        DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
+        DatasetsByStateColumn( "Datasets", ncells=4 ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         SharedByColumn( "Shared by", key="user_id" )

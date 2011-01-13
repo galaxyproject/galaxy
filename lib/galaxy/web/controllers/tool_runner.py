@@ -122,7 +122,7 @@ class ToolRunner( BaseController ):
         try:
             params_objects = job.get_param_values( trans.app )
         except:
-            raise Exception( "Failed to get paramemeters for dataset id %d " % data.id )
+            raise Exception( "Failed to get parameters for dataset id %d " % data.id )
         upgrade_messages = tool.check_and_update_param_values( params_objects, trans )
         # Need to remap dataset parameters. Job parameters point to original 
         # dataset used; parameter should be the analygous dataset in the 

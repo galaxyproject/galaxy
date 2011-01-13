@@ -835,6 +835,10 @@
                 %for column in grid.columns:
                     %if column.visible:
                         <%
+                            # Nowrap
+                            nowrap = ""
+                            if column.nowrap:
+                              nowrap = 'style="white-space:nowrap;"'
                             # Link
                             link = column.get_link( trans, grid, item )
                             if link:
@@ -863,7 +867,7 @@
                                     cls = "menubutton split"
 
                             %>
-                            <td>
+                            <td ${nowrap}>
                             %if href:
                                 %if len(grid.operations) != 0:
                                 <div id="${id}" class="${cls}" style="float: left;">

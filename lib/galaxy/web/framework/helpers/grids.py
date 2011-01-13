@@ -303,7 +303,7 @@ class Grid( object ):
     
 class GridColumn( object ):
     def __init__( self, label, key=None, model_class=None, method=None, format=None, \
-                  link=None, attach_popup=False, visible=True, ncells=1, \
+                  link=None, attach_popup=False, visible=True, ncells=1, nowrap=False, \
                   # Valid values for filterable are ['standard', 'advanced', None]
                   filterable=None, sortable=True, label_id_prefix=None ):
         """Create a grid column."""
@@ -313,6 +313,7 @@ class GridColumn( object ):
         self.method = method
         self.format = format
         self.link = link
+        self.nowrap = nowrap
         self.attach_popup = attach_popup
         self.visible = visible
         self.ncells = ncells
@@ -509,7 +510,7 @@ class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
 class CommunityTagsColumn( TextColumn ):
     """ Column that supports community tags. """
     def __init__( self, col_name, key, model_class=None, model_tag_association_class=None, filterable=None, grid_name=None ):
-        GridColumn.__init__( self, col_name, key=key, model_class=model_class, filterable=filterable, sortable=False )
+        GridColumn.__init__( self, col_name, key=key, model_class=model_class, nowrap=True, filterable=filterable, sortable=False )
         self.model_tag_association_class = model_tag_association_class
         # Column-specific attributes.
         self.grid_name = grid_name
