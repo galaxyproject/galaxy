@@ -151,7 +151,7 @@
                         sample_state_updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
                     </script>
                 %endif
-                ## Number of sample state updater
+                ## Number of sample datasets updater
                 %if request.samples and request.is_submitted:
                     <script type="text/javascript">
                         // Updater
