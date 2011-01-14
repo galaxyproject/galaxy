@@ -364,15 +364,6 @@
                                     %elif sample.datasets and len(sample.datasets ) == len( transferred_dataset_files ):
                                         <li><a class="action-button" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ), transfer_status=trans.model.SampleDataset.transfer_status.COMPLETE )}">View transferred datasets</a></li>
                                     %endif
-                                    ### For demo
-                                    %if not sample.library:
-                                        ## Display a menu option to associate the sample with a destination library
-                                        ## since one is requrired for automatic transfer
-                                        <li><a class="action-button" href="${h.url_for( controller='requests_common', action='edit_samples', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Select a target data library</a></li>
-                                    %else:
-                                        <li><a class="action-button" target="demo" href="http://gvk.bx.psu.edu:9011?sample_id=${trans.security.encode_id( sample.id )}&secondary_analysis_job_id={JobId}&key=${trans.user.api_keys[0].key}">Validate sample sheet</a></li>
-                                    %endif
-                                    ###
                                 </div>
                             %else:
                                 ${sample_widget_name}
