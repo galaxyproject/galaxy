@@ -107,10 +107,27 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 sample = trans.sa_session.query( self.app.model.Sample ).get( id )
                 if sample.state.name != state:
                     rval[ id ] = { "state": sample.state.name,
-                                   "datasets": len( sample.datasets ),
                                    "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
                                                                                sample=sample),
                                                                                'utf-8' ) }
+        return rval
+    @web.json
+    def sample_datasets_updates( self, trans, ids=None, datasets=None ):
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        # Create new HTML for any that have changed
+        rval = {}
+        if ids is not None and datasets is not None:
+            ids = map( int, ids.split( "," ) )
+            number_of_datasets_list = map(int, datasets.split( "," ) )
+            for id, number_of_datasets in zip( ids, number_of_datasets_list ):
+                sample = trans.sa_session.query( self.app.model.Sample ).get( id )
+                if len(sample.datasets) != number_of_datasets:
+                    rval[ id ] = { "datasets": len( sample.datasets ),
+                                   "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
+                                                                                  sample=sample),
+                                                                                  'utf-8' ) }
         return rval
     @web.json
     def dataset_transfer_status_updates( self, trans, ids=None, transfer_status_list=None ):

@@ -387,7 +387,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                 kwd[ 'message' ] = message
                 del kwd[ 'select_datasets_to_transfer_button' ]
                 handle_error( **kwd )
-            if sample in sample.request.samples_without_library_destinations:
+            if not sample.library:
                 # Display an error if a sample has been selected that
                 # has not yet been associated with a destination library.
                 message = 'Select a target data library and folder for the sample before selecting the datasets.'
@@ -487,6 +487,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                                                           status=status,
                                                           message=message ) )
     def __save_sample_datasets( self, trans, sample, selected_datasets_to_transfer, external_service ):
+        external_service.load_data_transfer_settings( trans )
         scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_types.SCP ]
         sample_dataset_file_names = []
         if selected_datasets_to_transfer:

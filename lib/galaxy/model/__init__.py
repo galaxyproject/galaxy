@@ -1717,6 +1717,14 @@ class Request( object, APIItem ):
             if not sample.library:
                 samples.append( sample )
         return samples
+    @property
+    def samples_with_bar_code( self ):
+        # Return all samples that have associated bar code
+        samples = []
+        for sample in self.samples:
+            if sample.bar_code:
+                samples.append( sample )
+        return samples    
     def send_email_notification( self, trans, common_state, final_state=False ):
         # Check if an email notification is configured to be sent when the samples 
         # are in this state
@@ -1804,18 +1812,19 @@ class ExternalService( object ):
     def get_external_service_type( self, trans ):
         return trans.app.external_service_types.all_external_service_types[ self.external_service_type_id ]
     def load_data_transfer_settings( self, trans ):
+        trans.app.external_service_types.reload( self.external_service_type_id )
         self.data_transfer = {}
         external_service_type = self.get_external_service_type( trans )
-        for data_transfer_type, data_transfer in external_service_type.data_transfer.items():
+        for data_transfer_type, data_transfer_obj in external_service_type.data_transfer.items():
             if data_transfer_type == self.data_transfer_types.SCP:
                 scp_configs = {}
-                automatic_transfer = self.form_values.content.get( data_transfer.config.get( 'automatic_transfer', 'false' ), 'false' )
+                automatic_transfer = self.form_values.content.get( data_transfer_obj.config.get( 'automatic_transfer', 'false' ), 'false' )
                 scp_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
-                scp_configs[ 'host' ] = self.form_values.content.get( data_transfer.config.get( 'host', '' ), '' )
-                scp_configs[ 'user_name' ] = self.form_values.content.get( data_transfer.config.get( 'user_name', '' ), '' )
-                scp_configs[ 'password' ] = self.form_values.content.get( data_transfer.config.get( 'password', '' ), '' )
-                scp_configs[ 'data_location' ] = self.form_values.content.get( data_transfer.config.get( 'data_location', '' ), '' )
-                scp_configs[ 'rename_dataset' ] = self.form_values.content.get( data_transfer.config.get( 'rename_dataset', '' ), '' )
+                scp_configs[ 'host' ] = self.form_values.content.get( data_transfer_obj.config.get( 'host', '' ), '' )
+                scp_configs[ 'user_name' ] = self.form_values.content.get( data_transfer_obj.config.get( 'user_name', '' ), '' )
+                scp_configs[ 'password' ] = self.form_values.content.get( data_transfer_obj.config.get( 'password', '' ), '' )
+                scp_configs[ 'data_location' ] = self.form_values.content.get( data_transfer_obj.config.get( 'data_location', '' ), '' )
+                scp_configs[ 'rename_dataset' ] = self.form_values.content.get( data_transfer_obj.config.get( 'rename_dataset', '' ), '' )
                 self.data_transfer[ self.data_transfer_types.SCP ] = scp_configs
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )

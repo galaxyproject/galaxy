@@ -60,6 +60,7 @@ class ExternalServiceType( object ):
         self.config_file = external_service_type_xml_config
         self.parse( root )
         self.visible = visible
+        root.clear()
     def parse( self, root ):
         # Get the name 
         self.name = root.get( "name" )

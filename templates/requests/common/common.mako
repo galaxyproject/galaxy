@@ -98,7 +98,7 @@
                 data: { ids: ids.join( "," ), states: states.join( "," ) },
                 success : function ( data ) {
                     $.each( data, function( id, val ) {
-                        // Replace HTML
+                        // Replace sample state HTML
                         var cell1 = $("#sampleState-" + id);
                         cell1.html( val.html_state );
                         sample_states[ parseInt( id ) ] = val.state;
@@ -108,6 +108,54 @@
                 error: function() {
                     // Just retry, like the old method, should try to be smarter
                     sample_state_updater( sample_states );
+                }
+            });
+        };
+        
+        
+        // Sample Datasets Updater
+        // 
+        // Looks for changes in the number sample datasets using an async request. Keeps
+        // calling itself (via setTimeout) until all samples are in a terminal
+        // state.
+        var sample_datasets_updater = function ( sample_datasets ) {
+            // Check if there are any items left to track
+            var empty = true;
+            for ( i in sample_datasets ) {
+                empty = false;
+                break;
+            }
+            if ( ! empty ) {
+                setTimeout( function() { sample_datasets_updater_callback( sample_datasets ) }, 1000 );
+            }
+        };
+        var sample_datasets_updater_callback = function ( sample_datasets ) {
+            // Build request data
+            var ids = []
+            var datasets = []
+            $.each( sample_datasets, function ( id, num_of_datasets ) {
+                ids.push( id );
+                datasets.push( num_of_datasets );
+            });
+            // Make ajax call
+            $.ajax( {
+                type: "POST",
+                url: "${h.url_for( controller='requests_common', action='sample_datasets_updates' )}",
+                dataType: "json",
+                data: { ids: ids.join( "," ), datasets: datasets.join( "," ) },
+                success : function ( data ) {
+                    $.each( data, function( id, val ) {
+                        // Replace sample datasets HTML
+                        var cell2 = $("#sampleDatasets-" + id);
+                        cell2.html( val.html_datasets );
+                        sample_datasets[ parseInt( id ) ] = val.datasets;
+
+                    });
+                    sample_datasets_updater( sample_datasets ); 
+                },
+                error: function() {
+                    // Just retry, like the old method, should try to be smarter
+                    sample_datasets_updater( sample_datasets ); 
                 }
             });
         };
@@ -392,7 +440,7 @@
                                 ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
                                 %if is_admin:
                                     ## This link will direct the admin to a page allowing them to manage datasets.
-                                    <a href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                                    <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
                                 %elif sample.datasets:
                                     ## Since this is a regular user, only display a link if there is at least 1
                                     ## selected dataset for the sample.

@@ -144,10 +144,18 @@
                     ${states}
                     <div style="clear: both"></div>
                 </div>
-                %if request.samples and request.is_submitted:
+                ## Sample state updater
+                %if request.samples and request.is_submitted and request.samples_with_bar_code:
                     <script type="text/javascript">
                         // Updater
                         sample_state_updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, s.state.name ) for s in request.samples ] ) }});
+                    </script>
+                %endif
+                ## Number of sample state updater
+                %if request.samples and request.is_submitted:
+                    <script type="text/javascript">
+                        // Updater
+                        sample_datasets_updater( {${ ",".join( [ '"%s" : "%s"' % ( s.id, len(s.datasets) ) for s in request.samples ] ) }});
                     </script>
                 %endif
             </div>
