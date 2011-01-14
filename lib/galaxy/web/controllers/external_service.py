@@ -107,6 +107,7 @@ class ExternalService( BaseController, UsesFormDefinitions ):
                                                                   message=message,
                                                                   status=status ) )
         elif external_service_type_id != 'none':
+            # Form submission via refresh_on_change
             trans.app.external_service_types.reload( external_service_type_id )
             external_service_type = self.get_external_service_type( trans, external_service_type_id )
             widgets.extend( external_service_type.form_definition.get_widgets( trans.user, **kwd ) )
@@ -181,11 +182,9 @@ class ExternalService( BaseController, UsesFormDefinitions ):
             external_service_type = self.get_external_service_type( trans, external_service_type_id )
             external_service = trans.model.ExternalService( name, description, external_service_type_id, version )
             external_service.form_definition = external_service_type.form_definition
-            values = {}
-            for index, field in enumerate( external_service_type.form_definition.fields ):
-                field_name = field[ 'name' ]
-                field_value = field[ 'default' ]
-                values[ field_name ] = field_value
+            # Get the form values from kwd, some of which may be different than the defaults in the external service
+            # type config because the user could have overwritten them.
+            values = self.get_form_values( trans, trans.user, external_service.form_definition, **kwd )
             external_service.form_values = trans.model.FormValues( external_service.form_definition, values )
             trans.sa_session.add( external_service )
             trans.sa_session.add( external_service.form_definition )

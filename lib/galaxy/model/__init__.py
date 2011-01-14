@@ -1800,6 +1800,7 @@ class ExternalService( object ):
         self.form_definition_id = form_definition_id
         self.form_values_id = form_values_id
         self.deleted = deleted
+        self.label = None # Used in the request_type controller's __build_external_service_select_field() method
     def get_external_service_type( self, trans ):
         return trans.app.external_service_types.all_external_service_types[ self.external_service_type_id ]
     def load_data_transfer_settings( self, trans ):

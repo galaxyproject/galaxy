@@ -448,10 +448,11 @@ class RequestType( BaseController, UsesFormDefinitions ):
             selected_value = 'none'
         all_external_services = trans.sa_session.query( trans.model.ExternalService ).filter( trans.model.ExternalService.table.c.deleted==False ).all()
         for e in all_external_services:
-            e.get_external_service_type( trans )
+            external_service_type = e.get_external_service_type( trans )
+            e.label = '%s - %s' % ( e.name, external_service_type.name )
         return build_select_field( trans,
                                    objs=all_external_services,
-                                   label_attr='name',
+                                   label_attr='label',
                                    select_field_name=select_field_name,
                                    selected_value=selected_value,
                                    refresh_on_change=False )
