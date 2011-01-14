@@ -991,7 +991,7 @@ class UsesFormDefinitions:
             except:
                 item = None
             item_desc = 'request type'
-            action = 'view_edittable_request_type'
+            action = 'view_editable_request_type'
         elif item_type == 'sample':
             sample_id = kwd.get( 'sample_id', None )
             id = sample_id

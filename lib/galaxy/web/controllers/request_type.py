@@ -93,7 +93,7 @@ class RequestType( BaseController, UsesFormDefinitions ):
                                                                   form_type=trans.model.FormDefinition.types.RUN_DETAILS_TEMPLATE,
                                                                   request_type_id=obj_id ) )
             elif operation == "edit request type":
-                return self.view_edittable_request_type( trans, **kwd )
+                return self.view_editable_request_type( trans, **kwd )
             elif operation == "delete":
                 return self.delete_request_type( trans, **kwd )
             elif operation == "undelete":
@@ -167,7 +167,7 @@ class RequestType( BaseController, UsesFormDefinitions ):
         return external_services_list
     @web.expose
     @web.require_admin
-    def view_edittable_request_type( self, trans, **kwd ):
+    def view_editable_request_type( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -451,7 +451,7 @@ class RequestType( BaseController, UsesFormDefinitions ):
             e.get_external_service_type( trans )
         return build_select_field( trans,
                                    objs=all_external_services,
-                                   label_attr='label',
+                                   label_attr='name',
                                    select_field_name=select_field_name,
                                    selected_value=selected_value,
                                    refresh_on_change=False )

@@ -1799,12 +1799,9 @@ class ExternalService( object ):
         self.version = version
         self.form_definition_id = form_definition_id
         self.form_values_id = form_values_id
-        self.deleted = deleted 
+        self.deleted = deleted
     def get_external_service_type( self, trans ):
         return trans.app.external_service_types.all_external_service_types[ self.external_service_type_id ]
-    @property
-    def label(self):
-        return self.name + " ( " +self.type.name + " )"
     def load_data_transfer_settings( self, trans ):
         self.data_transfer = {}
         external_service_type = self.get_external_service_type( trans )
