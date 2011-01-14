@@ -106,6 +106,10 @@ class ExternalService( BaseController, UsesFormDefinitions ):
                                                                   action='browse_external_services',
                                                                   message=message,
                                                                   status=status ) )
+        elif external_service_type_id != 'none':
+            trans.app.external_service_types.reload( external_service_type_id )
+            external_service_type = self.get_external_service_type( trans, external_service_type_id )
+            widgets.extend( external_service_type.form_definition.get_widgets( trans.user, **kwd ) )
         if error:
             return trans.response.send_redirect( web.url_for( controller='external_service',
                                                               action='browse_external_services',
