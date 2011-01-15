@@ -194,7 +194,7 @@ class ldPlot:
             rslist = [x[2] for x in markers] # drop decoration
             rsdict = dict(zip(rslist,rslist))
             if len(rslist) == 0:
-                s = '##! %s found no rs numbers in %s' % (progname,argv[1:3])
+                s = '##! %s: Found no rs numbers matching %s' % (progname,self.args[1:3])
                 self.lf.write(s)
                 self.lf.write('\n')
                 self.lf.close()
