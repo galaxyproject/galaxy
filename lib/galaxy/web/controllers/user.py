@@ -1298,7 +1298,8 @@ class User( BaseController, UsesFormDefinitions ):
                                     user=user,
                                     dbkeys=dbkeys,
                                     message=message,
-                                    lines_skipped=lines_skipped )          
+                                    lines_skipped=lines_skipped,
+                                    use_panels=kwds.get( 'use_panels', None ) )          
     @web.expose
     @web.require_login()
     def api_keys( self, trans, **kwd ):

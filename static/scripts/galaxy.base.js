@@ -616,4 +616,24 @@ $(document).ready( function() {
     
     // Replace big selects.
     replace_big_select_inputs(20, 1500);
+    
+    // If galaxy_main frame does not exist and link targets galaxy_main, 
+    // add use_panels=True and set target to self.
+    $("a").click( function() {
+        var anchor = $(this);
+        var galaxy_main_exists = $("#galaxy_main").length;
+        if ( ( anchor.attr( "target" ) == "galaxy_main" ) && ( !galaxy_main_exists ) ) {
+            var href = anchor.attr("href");
+            if (href.indexOf("?") == -1) {
+                href += "?";
+            }
+            else {
+                href += "&";
+            }
+            href += "use_panels=True";
+            anchor.attr("href", href);
+            anchor.attr("target", "_self");
+        }
+        return anchor;
+    });
 });

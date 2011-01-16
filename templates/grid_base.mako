@@ -68,7 +68,7 @@
                 $(this).click( function() { $(this).attr('value', ''); } );
             });
         });
-        ## Can this be moved into base.mako?
+        ## TODO: Can this be moved into base.mako? Also, this is history-specific grid code.
         %if refresh_frames:
             %if 'masthead' in refresh_frames:            
                 ## Refresh masthead == user changes (backward compatibility)
@@ -86,6 +86,13 @@
                     if ( parent.force_right_panel ) {
                         parent.force_right_panel( 'show' );
                     }
+                }
+                else {
+                    // TODO: redirecting to root should be done on the server side so that page
+                    // doesn't have to load.
+                     
+                    // No history frame, so refresh to root to see history.
+                    window.top.location.href = "${h.url_for( controller='root' )}";
                 }
             %endif
             %if 'tools' in refresh_frames:
@@ -682,6 +689,12 @@
             position : absolute;
             display: none;
         }
+        ## If page is displayed in panels, pad from edges for readability.
+        %if context.get('use_panels'):
+        div#center {
+            padding: 10px;
+        }
+        %endif
     </style>
 </%def>
 
