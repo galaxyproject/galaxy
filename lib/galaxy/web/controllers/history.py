@@ -33,6 +33,12 @@ class HistoryListGrid( grids.Grid ):
                 else:
                     rval.append( '' )
             return rval
+    class HistoryListNameColumn( NameColumn ):
+        def get_link( self, trans, grid, history ):
+            link = None
+            if not history.deleted:
+                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
+            return link
 
     # Grid definition
     title = "Saved Histories"
@@ -40,9 +46,7 @@ class HistoryListGrid( grids.Grid ):
     template='/history/grid.mako'
     default_sort_key = "-update_time"
     columns = [
-        NameColumn( "Name", key="name",
-                          link=( lambda history: iff( history.deleted, None, dict( operation="Switch", id=history.id ) ) ),
-                          attach_popup=True, filterable="advanced" ),
+        HistoryListNameColumn( "Name", key="name", attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets", key="datasets_by_state", ncells=4 ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, \
                                     filterable="advanced", grid_name="HistoryListGrid" ),
@@ -205,8 +209,16 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
             if histories:            
                 if operation == "switch":
                     status, message = self._list_switch( trans, histories )
-                    # Current history changed, refresh history frame
-                    trans.template_context['refresh_frames'] = ['history']
+                    # Take action to update UI to reflect history switch. If 
+                    # grid is using panels, it is standalone and hence a redirect
+                    # to root is needed; if grid is not using panels, it is nested
+                    # in the main Galaxy UI and refreshing the history frame 
+                    # is sufficient.
+                    use_panels = kwargs.get('use_panels', False) == 'True'
+                    if use_panels:
+                        return trans.response.send_redirect( url_for( "/" ) )
+                    else:    
+                        trans.template_context['refresh_frames'] = ['history']
                 elif operation == "delete":
                     status, message = self._list_delete( trans, histories )
                     if current_history in histories:
