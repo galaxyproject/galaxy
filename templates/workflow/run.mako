@@ -264,5 +264,6 @@ for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
       </div>
     %endif
 %endfor
+<div class="workflow-annotation"> <input type="checkbox" name='new_history' value="true"/> Place the results of this workflow in a new history named 'History from ${h.to_unicode( workflow.name )} workflow'.</div>
 <input type="submit" name="run_workflow" value="Run workflow" />
 </form>

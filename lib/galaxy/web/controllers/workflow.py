@@ -1262,6 +1262,11 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 if step_errors:
                     errors[step.id] = state.inputs["__errors__"] = step_errors   
             if 'run_workflow' in kwargs and not errors:
+                new_history = None
+                if 'new_history' in kwargs:
+                    new_history = trans.app.model.History( user=trans.user, name="History from %s workflow" % workflow.name )
+                    trans.sa_session.add( new_history )
+                    # trans.sa_session.flush()
                 # Run each step, connecting outputs to inputs
                 workflow_invocation = model.WorkflowInvocation()
                 workflow_invocation.workflow = workflow
@@ -1280,7 +1285,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                                     return outputs[ conn.output_step.id ][ conn.output_name ]
                         visit_input_values( tool.inputs, step.state.inputs, callback )
                         # Execute it
-                        job, out_data = tool.execute( trans, step.state.inputs )
+                        job, out_data = tool.execute( trans, step.state.inputs, history=new_history)
                         outputs[ step.id ] = out_data
                         # Create new PJA associations with the created job, to be run on completion.
                         # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
