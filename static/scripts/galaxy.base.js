@@ -621,7 +621,7 @@ $(document).ready( function() {
     // add use_panels=True and set target to self.
     $("a").click( function() {
         var anchor = $(this);
-        var galaxy_main_exists = (parent.frames && parent.frames.galaxy_history)
+        var galaxy_main_exists = (parent.frames && parent.frames.galaxy_main)
         if ( ( anchor.attr( "target" ) == "galaxy_main" ) && ( !galaxy_main_exists ) ) {
             var href = anchor.attr("href");
             if (href.indexOf("?") == -1) {
