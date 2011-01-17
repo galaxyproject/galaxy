@@ -1,0 +1,64 @@
+<tool id="microsatellite_birthdeath" name="Identify microsatellite births and deaths" version="1.0.0">
+  <description> and causal mutational mechanisms from previously identified orthologous microsatellite sets</description>
+  <command interpreter="perl">
+      microsatellite_birthdeath.pl 
+      $alignment 
+      $orthfile 
+      $outfile 
+      ${alignment.metadata.species} 
+      "$tree_definition" 
+      $thresholds
+      $separation 
+      $simthresh
+	
+  </command>
+  <inputs>
+    <page>
+        <param format="maf" name="alignment" type="data" label="Select MAF alignments"/>
+        
+        <param format="txt" name="orthfile" type="data" label="Select raw microsatellite data"/>
+
+    	<param name="tree_definition" size="20" type="text" label="Tree definition of all species above whether or not selected for microsatellite extraction" 
+    	help="For example: ((hg18,panTro2),rheMac2)"/>
+      	
+      	<param name="separation" size="10" type="integer" value="40" label="Total length of flanking DNA used for sequence-similarity comparisons among species"
+    	help="A value of 40 means: 20 bp upstream and 20 bp downstream DNA will be used for similarity comparisons."/>
+ 
+     	<param name="thresholds" size="15" type="text" value="9,10,12,12" label="Minimum Threshold for the number of repeats for microsatellites"
+    	help="A value of 9,10,12,12 means: All monos having fewer than 9 repeats, dis having fewer than 5 repeats, tris having fewer than 4 repeats, tetras having fewer than 3 repeats will be excluded from the output."/>
+
+     	<param name="simthresh" size="10" type="integer" value="80" label="Percent sequence similarity of flanking regions (of length same as  the above separation distance"
+    	help="Enter a value from 0 to 100"/>
+
+
+     </page>
+  </inputs>
+  <outputs>
+    <data format="txt" name="outfile" metadata_source="orthfile"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="alignment" value="chr22_5sp.maf"/>
+      <param name="orthfile" value="chr22_5sp.microraw.tabular"/>
+      <param name="thresholds" value="9,10,12,12"/>
+      <param name="species" value="hg18,panTro2,ponAbe2,rheMac2,calJac1"/>
+      <param name="tree_definition" value="((((hg18, panTro2), ponAbe2), rheMac2), calJac1)"/>
+      <param name="separation" value="40"/>
+      <param name="simthresh" value="80"/>
+      <output name="outfile" file="chr22_5sp.microtab.tabular"/>
+    </test>
+  </tests>
+
+
+ <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This tool uses raw orthologous microsatellite clusters (identified by the tool "Extract orthologous microsatellites") to identify microsatellite births and deaths along individual lineages of a phylogenetic tree.
+
+</help>  
+
+
+</tool>
