@@ -663,7 +663,9 @@ Sample.table = Table('sample', metadata,
     Column( "bar_code", TrimmedString( 255 ), index=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "workflow", JSONType, nullable=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), nullable=True) )
 
 SampleState.table = Table('sample_state', metadata,
     Column( "id", Integer, primary_key=True ),
@@ -953,6 +955,8 @@ assign_mapper( context, Sample, Sample.table,
                         primaryjoin=( Sample.table.c.folder_id == LibraryFolder.table.c.id ) ),                 
                     library=relation( Library,
                         primaryjoin=( Sample.table.c.library_id == Library.table.c.id ) ),
+                    history=relation( History,
+                        primaryjoin=( Sample.table.c.history_id == History.table.c.id ) ),
             ) )
 
 assign_mapper( context, FormValues, FormValues.table,

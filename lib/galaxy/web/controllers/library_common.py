@@ -7,7 +7,7 @@ from galaxy.util.json import to_json_string
 from galaxy.tools.actions import upload_common
 from galaxy.model.orm import *
 from galaxy.util.streamball import StreamBall
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
 import logging, tempfile, zipfile, tarfile, os, sys
 
 if sys.version_info[:2] < ( 2, 6 ):

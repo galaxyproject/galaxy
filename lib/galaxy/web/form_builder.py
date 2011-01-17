@@ -575,6 +575,44 @@ class WorkflowField( BaseField ):
                         self.select_workflow.add_option( a.name, str( a.id ) )
         return self.select_workflow.get_html( disabled=disabled )
 
+class WorkflowMappingField( BaseField):
+    def __init__( self, name, user=None, value=None, params=None, **kwd ):
+        # DBTODO integrate this with the new __build_workflow approach in requests_common.  As it is, not particularly useful.
+        self.name = name
+        self.user = user
+        self.value = value
+        self.select_workflow = None
+        self.params = params
+        self.workflow_inputs = []
+    def get_html( self, disabled=False ):
+        self.select_workflow = SelectField( self.name, refresh_on_change = True )
+        workflow_inputs = []
+        if self.value == 'none':
+            self.select_workflow.add_option( 'Select one', 'none', selected=True )
+        else:
+            self.select_workflow.add_option( 'Select one', 'none' )
+        if self.user:
+            for a in self.user.stored_workflows:
+                if not a.deleted:
+                    if str( self.value ) == str( a.id ):
+                        self.select_workflow.add_option( a.name, str( a.id ), selected=True )
+                    else:
+                        self.select_workflow.add_option( a.name, str( a.id ) )
+            if self.value and self.value != 'none':
+                # Workflow selected.  Find all inputs.
+                for workflow in self.user.stored_workflows:
+                    if workflow.id == int(self.value):
+                        for step in workflow.latest_workflow.steps:
+                            if step.type == 'data_input':
+                                if step.tool_inputs and "name" in step.tool_inputs:
+                                    workflow_inputs.append((step.tool_inputs['name'], TextField( '%s_%s' % (self.name, step.id), 20)))
+        # Do something more appropriate here and allow selection of inputs
+        return self.select_workflow.get_html( disabled=disabled ) + ''.join(['<div class="form-row"><label>%s</label>%s</div>' % (s[0], s[1].get_html()) for s in workflow_inputs])
+    def get_display_text(self):
+        if self.value:
+            return self.value
+        else:
+            return '-'
 class HistoryField( BaseField ):
     def __init__( self, name, user=None, value=None, params=None ):
         self.name = name
@@ -585,9 +623,14 @@ class HistoryField( BaseField ):
     def get_html( self, disabled=False ):
         self.select_history = SelectField( self.name )
         if self.value == 'none':
-            self.select_history.add_option( 'Select one', 'none', selected=True )
+            self.select_history.add_option( 'No Import', 'none', selected=True )
+            self.select_history.add_option( 'New History', 'new' )
         else:
-            self.select_history.add_option( 'Select one', 'none' )
+            self.select_history.add_option( 'No Import', 'none' )
+            if self.value == 'new':
+                self.select_history.add_option( 'New History', 'new', selected=True )
+            else:
+                self.select_history.add_option( 'New History', 'new')
         if self.user:
             for a in self.user.histories:
                 if not a.deleted:
@@ -596,6 +639,11 @@ class HistoryField( BaseField ):
                     else:
                         self.select_history.add_option( a.name, str( a.id ) )
         return self.select_history.get_html( disabled=disabled )
+    def get_display_text(self):
+        if self.value:
+            return self.value
+        else:
+            return '-'
 
 def get_suite():
     """Get unittest suite for this module"""

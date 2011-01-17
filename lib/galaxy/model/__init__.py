@@ -1515,7 +1515,7 @@ class MetadataFile( object ):
 
 class FormDefinition( object, APIItem ):
     # The following form_builder classes are supported by the FormDefinition class.
-    supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, HistoryField ]
+    supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
                    SAMPLE = 'Sequencing Sample Form',
                    EXTERNAL_SERVICE = 'External Service Information Form',
@@ -1594,7 +1594,7 @@ class FormDefinition( object, APIItem ):
             elif field_type == 'TextArea':
                 field_widget.set_size( 3, 40 )
                 field_widget.value = value
-            elif field_type in ['AddressField', 'WorkflowField', 'HistoryField']:
+            elif field_type in ['AddressField', 'WorkflowField', 'WorkflowMappingField', 'HistoryField']:
                 field_widget.user = user
                 field_widget.value = value
                 field_widget.params = params
@@ -1914,11 +1914,11 @@ class RequestTypePermissions( object ):
     
 class Sample( object, APIItem ):
     # The following form_builder classes are supported by the Sample class.
-    supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, HistoryField ]
+    supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     bulk_operations = Bunch( CHANGE_STATE = 'Change state', 
                              SELECT_LIBRARY = 'Select data library and folder' )
     api_collection_visible_keys = ( 'id', 'name' )
-    def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None):
+    def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
         self.name = name
         self.desc = desc
         self.request = request
@@ -1926,6 +1926,8 @@ class Sample( object, APIItem ):
         self.bar_code = bar_code
         self.library = library
         self.folder = folder
+        self.history = history
+        self.workflow = workflow
     @property
     def state( self ):
         latest_event = self.latest_event

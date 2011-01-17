@@ -183,6 +183,25 @@ class FormDefinitionWorkflowFieldFactory( FormDefinitionFieldFactory ):
         rval['type'] = self.__get_stored_field_type( area )
         return rval
 
+class FormDefinitionWorkflowMappingFieldFactory( FormDefinitionFieldFactory ):
+    type = 'workflowmapping'
+    def __get_stored_field_type( self ):
+        return 'WorkflowMappingField'
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
+        """
+        Return new FormDefinition field.
+        """
+        rval = super( FormDefinitionWorkflowMappingFieldFactory, self ).new( name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=layout )
+        rval['type'] = self.__get_stored_field_type()
+        return rval
+    def from_elem( self, elem, layout=None ):
+        """
+        Return FormDefinition field created from an xml element.
+        """
+        rval = super( FormDefinitionWorkflowMappingFieldFactory, self ).from_elem( elem, layout=layout )
+        rval['type'] = self.__get_stored_field_type( area )
+        return rval
+
 class FormDefinitionHistoryFieldFactory( FormDefinitionFieldFactory ):
     type = 'history'
     def __get_stored_field_type( self ):
@@ -233,6 +252,6 @@ class FormDefinitionSelectFieldFactory( FormDefinitionFieldFactory ):
             rval['selectlist'].append( value )
         return rval
 
-field_type_factories = dict( [ ( field.type, field() ) for field in ( FormDefinitionTextFieldFactory, FormDefinitionPasswordFieldFactory, FormDefinitionAddressFieldFactory, FormDefinitionSelectFieldFactory, FormDefinitionWorkflowFieldFactory, FormDefinitionHistoryFieldFactory ) ] )
+field_type_factories = dict( [ ( field.type, field() ) for field in ( FormDefinitionTextFieldFactory, FormDefinitionPasswordFieldFactory, FormDefinitionAddressFieldFactory, FormDefinitionSelectFieldFactory, FormDefinitionWorkflowFieldFactory, FormDefinitionWorkflowMappingFieldFactory, FormDefinitionHistoryFieldFactory ) ] )
 
 form_factory = FormDefinitionFactory( FORM_TYPES, field_type_factories )

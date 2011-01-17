@@ -222,11 +222,11 @@
             can_update = ( is_complete or is_submitted ) and sample.inprogress_dataset_files
     %>
     %if can_update:
-		<script type="text/javascript">
-		    // Sample dataset transfer status updater
-		    dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( sd.id ), sd.status ) for sd in query ] ) }});
-		</script>
-	%endif
+        <script type="text/javascript">
+            // Sample dataset transfer status updater
+            dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( sd.id ), sd.status ) for sd in query ] ) }});
+        </script>
+    %endif
 </%def>
 
 <%def name="render_editable_sample_row( cntrller, request, sample, sample_widget_index, sample_widget, encoded_selected_sample_ids, adding_new_samples=False )">
@@ -271,18 +271,26 @@
                 <input type="hidden" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code']}"/>
             %endif
         </td>
-    %endif 
+    %endif
     %if sample:
         %if is_unsubmitted:
             <td>Unsubmitted</td>
         %else:
             <td valign="top"><a href="${h.url_for( controller='requests_common', action='view_sample_history', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${sample.state.name}</a></td>
-        %endif    
+        %endif
     %else:
         <td></td>
     %endif
     <td valign="top">${sample_widget['library_select_field'].get_html()}</td>
     <td valign="top">${sample_widget['folder_select_field'].get_html()}</td>
+    <td valign="top">${sample_widget['history_select_field'].get_html()}</td>
+    <td valign="top">
+    ${sample_widget['workflow_select_field'][0].get_html()}
+    %if len(sample_widget['workflow_select_field']) > 1:
+        <br/>
+        ${'<br/>'.join(["%s:<br/>%s" % (w_l, w_i.get_html()) for w_l, w_i in sample_widget['workflow_select_field'][1:]])}
+    %endif
+    </td>
     %if display_datasets:
         <td valign="top">
             ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
@@ -347,6 +355,8 @@
                 <th>State</th>
                 <th>Data Library</th>
                 <th>Folder</th>
+                <th>History</th>
+                <th>Processing</th>
                 %if display_datasets:
                     <th>Run Datasets</th>
                 %endif
@@ -369,6 +379,8 @@
                     sample_widget_name = sample_widget[ 'name' ]
                     sample_widget_bar_code = sample_widget[ 'bar_code' ]
                     sample_widget_library = sample_widget[ 'library' ]
+                    sample_widget_history = sample_widget[ 'history' ]
+                    sample_widget_workflow = sample_widget[ 'workflow' ]
                     if sample_widget_library:
                         if cntrller == 'requests':
                             library_cntrller = 'library'
@@ -435,6 +447,16 @@
                         %else:
                             <td></td>
                         %endif
+                        %if sample_widget_history:
+                            <td>${sample_widget_history.name}</td>
+                        %else:
+                            <td></td>
+                        %endif
+                        %if sample_widget_workflow:
+                            <td>${sample_widget_workflow.name}</td>
+                        %else:
+                            <td></td>
+                        %endif
                         %if is_submitted or is_complete:
                             <td>
                                 ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
@@ -498,6 +520,24 @@
                             %endfor
                         </select>
                     %elif field_type == 'WorkflowField':
+                        <select name="sample_${index}_field_${field_index}">
+                            %if str( field_value ) == 'none':
+                                <option value="none" selected>Select one</option>
+                            %else:
+                                <option value="none">Select one</option>
+                            %endif
+                            %for option_index, option in enumerate(request.user.stored_workflows):
+                                %if not option.deleted:
+                                    %if str( option.id ) == str( field_value ):
+                                        <option value="${option.id}" selected>${option.name}</option>
+                                    %else:
+                                        <option value="${option.id}">${option.name}</option>
+                                    %endif
+                                %endif
+                            %endfor
+                        </select>
+                    %elif field_type == 'WorkflowMappingField':
+                        ##DBTODO Make this useful, use form_builder approach to displaying this stuff.
                         <select name="sample_${index}_field_${field_index}">
                             %if str( field_value ) == 'none':
                                 <option value="none" selected>Select one</option>
@@ -593,11 +633,11 @@
         ## The transfer status should update only when the request has been submitted or complete
         ## and when the sample has in-progress datasets.
         %if ( is_complete or is_submitted ) and sample.inprogress_dataset_files: 
-		    <script type="text/javascript">
-		        // Sample dataset transfer status updater
-		        dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( sd.id ), sd.status ) for sd in sample_datasets ] ) }});
-		    </script>
-	    %endif
+            <script type="text/javascript">
+                // Sample dataset transfer status updater
+                dataset_transfer_status_updater( {${ ",".join( [ '"%s" : "%s"' % ( trans.security.encode_id( sd.id ), sd.status ) for sd in sample_datasets ] ) }});
+            </script>
+        %endif
         <h3>${title}</h3>
         <table class="grid">
             <thead>

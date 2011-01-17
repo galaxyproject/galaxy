@@ -1,6 +1,6 @@
 <%def name="render_template_field( field, render_as_hidden=False )">
     <%
-        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, HistoryField
+        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
 
         widget = field[ 'widget' ]
         has_contents = False
@@ -27,6 +27,20 @@
             else:
                 value = 'checked'
         elif isinstance( widget, WorkflowField ) and str( widget.value ).lower() not in [ 'none' ]:
+            has_contents = True
+            if render_as_hidden:
+                value = widget.value
+            else:
+                workflow_user = widget.user
+                if workflow_user:
+                    for workflow in workflow_user.stored_workflows:
+                        if not workflow.deleted and str( widget.value ) == str( workflow.id ):
+                            value = workflow.name
+                            break
+                else:
+                    # If we didn't find the selected workflow option above, we'll just print the value
+                    value = widget.value
+        elif isinstance( widget, WorkflowMappingField ) and str( widget.value ).lower() not in [ 'none' ]:
             has_contents = True
             if render_as_hidden:
                 value = widget.value

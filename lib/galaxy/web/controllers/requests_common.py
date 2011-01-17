@@ -857,12 +857,17 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                     library_id = displayable_sample_widgets[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
                     folder_id = displayable_sample_widgets[ copy_sample_index ][ 'folder_select_field' ].get_selected( return_value=True )
                     name = displayable_sample_widgets[ copy_sample_index ][ 'name' ] + '_%i' % ( len( displayable_sample_widgets ) + 1 )
+                    history_id = displayable_sample_widgets[ copy_sample_index ][ 'history_select_field' ].get_selected( return_value=True )
+                    workflow_id = displayable_sample_widgets[ copy_sample_index ][ 'workflow_select_field' ][0].get_selected( return_value=True )
+                    # DBTODO Do something nicer with the workflow fieldset.  Remove [0] indexing and copy mappings as well.
                     for field_name in displayable_sample_widgets[ copy_sample_index ][ 'field_values' ]:
                         field_values[ field_name ] = ''
                 else:
                     # The user has not selected a sample to copy, just adding a new generic sample.
                     library_id = None
                     folder_id = None
+                    history_id = None
+                    workflow_id = None
                     name = 'Sample_%i' % ( len( displayable_sample_widgets ) + 1 )
                     for field in request.type.sample_form.fields:
                         field_values[ field[ 'name' ] ] = ''
@@ -875,12 +880,27 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                                                                            library_id=library_id,
                                                                                                            folder_id=folder_id,
                                                                                                            **kwd )
+                history_select_field = self.__build_history_select_field( trans=trans,
+                                                           user=request.user,
+                                                           sample_index=len( displayable_sample_widgets ),
+                                                           history_id=history_id,
+                                                           **kwd)
+                workflow_select_field = self.__build_workflow_select_field( trans=trans,
+                                                             user=request.user,
+                                                             request=request,
+                                                             sample_index=len( displayable_sample_widgets ),
+                                                             workflow_id=workflow_id,
+                                                             **kwd)
                 # Append the new sample to the current list of samples for the request
                 displayable_sample_widgets.append( dict( id=None,
                                                          name=name,
                                                          bar_code='',
                                                          library=None,
                                                          library_id=library_id,
+                                                         history=None,
+                                                         workflow=None,
+                                                         history_select_field=history_select_field,
+                                                         workflow_select_field=workflow_select_field,
                                                          folder=None,
                                                          folder_id=folder_id,
                                                          field_values=field_values,
@@ -1160,14 +1180,16 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 sample_widget = samples[ sample_index ]
                 form_values = trans.model.FormValues( request.type.sample_form, sample_widget[ 'field_values' ] )
                 trans.sa_session.add( form_values )
-                trans.sa_session.flush()                    
+                trans.sa_session.flush()
                 s = trans.model.Sample( name=sample_widget[ 'name' ],
                                         desc='', 
                                         request=request,
                                         form_values=form_values, 
                                         bar_code='',
                                         library=sample_widget[ 'library' ],
-                                        folder=sample_widget[ 'folder' ] )
+                                        folder=sample_widget[ 'folder' ],
+                                        history=sample_widget['history'],
+                                        workflow=sample_widget['workflow_dict'] )
                 trans.sa_session.add( s )
                 trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_common',
@@ -1201,6 +1223,8 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                     sample.bar_code != sample_widget[ 'bar_code' ] or \
                     sample.library != sample_widget[ 'library' ] or \
                     sample.folder != sample_widget[ 'folder' ] or \
+                    sample.history != sample_widget[ 'history' ] or \
+                    sample.workflow != sample_widget[ 'workflow_dict' ] or \
                     form_values.content != sample_widget[ 'field_values' ]:
                     # Information about this sample has been changed.
                     sample.name = sample_widget[ 'name' ]
@@ -1226,6 +1250,8 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                     sample.bar_code = bar_code
                     sample.library = sample_widget[ 'library' ]
                     sample.folder = sample_widget[ 'folder' ]
+                    sample.history = sample_widget[ 'history' ]
+                    sample.workflow = sample_widget[ 'workflow_dict' ]
                     form_values.content = sample_widget[ 'field_values' ]
                     trans.sa_session.add_all( ( sample, form_values ) )
                     trans.sa_session.flush()           
@@ -1247,6 +1273,18 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         else:
             folder = None
         return library, folder
+    def __get_history( self, trans, history_id):
+        try:
+            history = trans.sa_session.query( trans.model.History).get(trans.security.decode_id( history_id))
+            return history
+        except:
+            return None
+    def __get_workflow( self, trans, workflow_id):
+        try:
+            workflow = trans.sa_session.query( trans.model.Workflow).get(trans.security.decode_id( workflow_id))
+            return workflow
+        except:
+            return None
     def __get_active_folders( self, folder, active_folders_list ):
         """Return all of the active folders for the received library"""
         active_folders_list.extend( folder.active_folders )
@@ -1309,6 +1347,8 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 bar_code = sample.bar_code
                 library = sample.library
                 folder = sample.folder
+                history = sample.history
+                workflow = sample.workflow
                 field_values = sample.values.content
             else:
                 # Update the sample attributes from kwd
@@ -1322,6 +1362,28 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 if not folder_id and sample.folder:
                     folder_id = trans.security.encode_id( sample.folder.id )
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
+                history_id = util.restore_text( params.get( 'sample_%i_history_id' % index, '' ))
+                if not history_id and sample.history:
+                    history_id = trans.security.encode_id( sample.history.id )
+                history = self.__get_history(trans, history_id)
+                wf_tag = 'sample_%i_workflow_id' % index
+                workflow_id = util.restore_text( params.get( wf_tag , '' ) )
+                if not workflow_id and sample.workflow:
+                    workflow_id = trans.security.encode_id( sample.workflow['id'] )
+                    workflow_dict = sample.workflow
+                    workflow = self.__get_workflow(trans, workflow_id)
+                else:
+                    workflow_dict = None
+                    workflow = self.__get_workflow(trans, workflow_id)
+                    if workflow:
+                        workflow_dict = {'id': workflow.id,
+                                         'name' : workflow.name,
+                                         'mappings': {}}
+                        for k, v in kwd.iteritems():
+                            kwd_tag = "%s_" % wf_tag
+                            if k.startswith(kwd_tag):
+                                # DBTODO Don't need to store the whole mapping word in the dict, only the step.
+                                workflow_dict['mappings'][int(k[len(kwd_tag):])] = {'ds_name':v}
                 field_values = {}
                 for field_index, field in enumerate( request.type.sample_form.fields ):
                     field_name = field['name']
@@ -1335,14 +1397,32 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                                                                        library_id=library_id,
                                                                                                        folder_id=folder_id,
                                                                                                        **kwd )
+            history_select_field = self.__build_history_select_field( trans=trans,
+                                                        user=request.user,
+                                                        sample_index=index,
+                                                        sample=sample,
+                                                        history_id=history_id,
+                                                        **kwd)
+            workflow_select_field = self.__build_workflow_select_field( trans=trans,
+                                                          user=request.user,
+                                                          request=request,
+                                                          sample_index=index,
+                                                          sample=sample,
+                                                          workflow_dict=workflow_dict,
+                                                          **kwd)
             sample_widgets.append( dict( id=sample_id,
                                          name=name,
                                          bar_code=bar_code,
                                          library=library,
                                          folder=folder,
+                                         history=history,
+                                         workflow=workflow,
+                                         workflow_dict=workflow_dict,
                                          field_values=field_values,
                                          library_select_field=library_select_field,
-                                         folder_select_field=folder_select_field ) )
+                                         folder_select_field=folder_select_field,
+                                         history_select_field=history_select_field,
+                                         workflow_select_field=workflow_select_field, ) )
         # There may be additional new samples on the form that have not yet been associated with the request.
         # TODO: factor this code so it is not duplicating what's above.
         index = len( samples )
@@ -1354,6 +1434,28 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             library_id = util.restore_text( params.get( 'sample_%i_library_id' % index, '' ) )
             folder_id = util.restore_text( params.get( 'sample_%i_folder_id' % index, '' ) )
             library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
+            history_id = util.restore_text( params.get( 'sample_%i_history_id' % index, '' ))
+            if not history_id and sample.history:
+                history_id = trans.security.encode_id( sample.history.id )
+            history = self.__get_history(trans, history_id)
+            wf_tag = 'sample_%i_workflow_id' % index
+            workflow_id = util.restore_text( params.get( wf_tag , '' ) )
+            if not workflow_id and sample.workflow:
+                workflow_id = trans.security.encode_id( sample.workflow['id'] )
+                workflow_dict = sample.workflow
+                workflow = self.__get_workflow(trans, workflow_id)
+            else:
+                workflow_dict = None
+                workflow = self.__get_workflow(trans, workflow_id)
+                if workflow:
+                    workflow_dict = {'id': workflow.id,
+                                     'name' : workflow.name,
+                                     'mappings': {}}
+                    for k, v in kwd.iteritems():
+                        kwd_tag = "%s_" % wf_tag
+                        if k.startswith(kwd_tag):
+                            # DBTODO Change the key to include the dataset tag, not just the names.
+                            workflow_dict['mappings'][int(k[len(kwd_tag):])] = {'ds_name':v}
             field_values = {}
             for field_index, field in enumerate( request.type.sample_form.fields ):
                 field_name = field['name']
@@ -1366,12 +1468,31 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                                                                        library_id=library_id,
                                                                                                        folder_id=folder_id,
                                                                                                        **kwd )
+            history_select_field = self.__build_history_select_field( trans=trans,
+                                                       user=request.user,
+                                                       sample_index=index,
+                                                       sample=None,
+                                                       history_id=history_id,
+                                                       **kwd)
+
+            workflow_select_field = self.__build_workflow_select_field( trans=trans,
+                                                         user=request.user,
+                                                         request=request,
+                                                         sample_index=index,
+                                                         sample=None,
+                                                         workflow_dict=workflow_dict,
+                                                         **kwd)
             sample_widgets.append( dict( id=None,
                                          name=name,
                                          bar_code=bar_code,
                                          library=library,
                                          folder=folder,
                                          field_values=field_values,
+                                         history=history,
+                                         workflow=workflow,
+                                         workflow_dict=workflow_dict,
+                                         history_select_field=history_select_field,
+                                         workflow_select_field=workflow_select_field,
                                          library_select_field=library_select_field,
                                          folder_select_field=folder_select_field ) )
             index += 1
@@ -1469,6 +1590,87 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                   initial_value='none',
                                                   selected_value=selected_folder_id )
         return library_select_field, folder_select_field
+    
+    def __build_history_select_field(self, trans, user, sample_index, sample = None, history_id=None, **kwd):
+        #DBTODO Explicit "New History"?  Or is that implied if you don't select one but do select a processing workflow?
+        params = util.Params( kwd )
+        history_select_field_name= "sample_%i_history_id" % sample_index
+        if not history_id:
+            history_id = params.get( history_select_field_name, None )
+        selected_history = None
+        if history_id not in [ None, 'none' ]:
+            for history in user.histories:
+                if not history.deleted:
+                    encoded_id = trans.security.encode_id(history.id)
+                    if encoded_id == str(history_id):
+                        selected_history = history
+                        break
+        elif sample and sample.history and history_id == 'none':
+            # The user previously selected a history but is now resetting the selection to 'none'
+            selected_history = None
+        elif sample and sample.history:
+            history_id = trans.security.encode_id( sample.history.id )
+            selected_history = sample.history
+        # Build the sample_%i_history_id SelectField with refresh on change disabled
+        return build_select_field( trans,
+                                   [h for h in user.histories if not h.deleted],
+                                   'name',
+                                   history_select_field_name,
+                                   initial_value='none',
+                                   selected_value=str( history_id ).lower(),
+                                   refresh_on_change=False )
+
+    def __build_workflow_select_field(self, trans, user, request, sample_index, sample=None, workflow_id=None, workflow_dict=None, **kwd ):
+        params = util.Params( kwd )
+        workflow_select_field_name= "sample_%i_workflow_id" % sample_index
+        selected_workflow = None
+        if not workflow_id:
+            workflow_id = params.get( workflow_select_field_name, None )
+        if workflow_id not in [ None, 'none' ]:
+            selected_workflow = trans.sa_session.query( trans.model.Workflow ).get(trans.security.decode_id(workflow_id))
+        elif sample and sample.workflow and workflow_id == 'none':
+            selected_workflow = None
+        elif sample and sample.workflow:
+            workflow_id = sample.workflow['id']
+            selected_workflow = trans.sa_session.query( trans.model.Workflow ).get(sample.workflow['id'])
+        s_list = [w.latest_workflow for w in user.stored_workflows]
+        if selected_workflow and selected_workflow not in s_list:
+            s_list.append(selected_workflow)
+        workflow_select_field = build_select_field(trans,
+                                                   s_list,
+                                                   'name',
+                                                   workflow_select_field_name,
+                                                   initial_value='none',
+                                                   selected_value=str( workflow_id ).lower(),
+                                                   refresh_on_change=True )
+        wf_fieldset = [workflow_select_field]
+        if selected_workflow and request.type.external_services:
+            # DBTODO This will work for now, but should be handled more rigorously.
+            ds_list = []
+            external_service = request.type.external_services[0]
+            dataset_name_re = re.compile( '(dataset\d+)_(name)' )
+            for k, v in external_service.form_values.content.items():
+                match = dataset_name_re.match( k )
+                if match:
+                    ds_list.append((k, v))
+            for step in selected_workflow.steps:
+                if step.type == 'data_input':
+                    if step.tool_inputs and "name" in step.tool_inputs:
+                        sf_name = '%s_%s' % (workflow_select_field_name, step.id)
+                        select_field = SelectField( name=sf_name )
+                        sf = params.get( sf_name, None )
+                        if not sf and sample and sample.workflow:
+                            # DBTODO Those should not need to be str() below.
+                            if sample.workflow['mappings'].has_key(str(step.id)):
+                                sf = sample.workflow['mappings'][str(step.id)]['ds_name']
+                        for k, v in ds_list:
+                            if v == sf:
+                                select_field.add_option( v, v, selected=True)
+                            else:
+                                select_field.add_option( v, v )
+                        wf_fieldset.append((step.tool_inputs['name'], select_field))
+        return wf_fieldset
+        
     def __build_sample_state_id_select_field( self, trans, request, selected_value ):
         if selected_value == 'none':
             if request.samples:
