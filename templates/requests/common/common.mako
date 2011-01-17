@@ -79,7 +79,7 @@
                 break;
             }
             if ( ! empty ) {
-                setTimeout( function() { sample_state_updater_callback( sample_states ) }, 1000 );
+                setTimeout( function() { sample_state_updater_callback( sample_states ) }, 3000 );
             }
         };
         var sample_state_updater_callback = function ( sample_states ) {
@@ -126,7 +126,7 @@
                 break;
             }
             if ( ! empty ) {
-                setTimeout( function() { sample_datasets_updater_callback( sample_datasets ) }, 1000 );
+                setTimeout( function() { sample_datasets_updater_callback( sample_datasets ) }, 3000 );
             }
         };
         var sample_datasets_updater_callback = function ( sample_datasets ) {
@@ -175,7 +175,7 @@
                 break;
             }
             if ( ! empty ) {
-                setTimeout( function() { dataset_transfer_status_updater_callback( dataset_transfer_status_list ) }, 1000 );
+                setTimeout( function() { dataset_transfer_status_updater_callback( dataset_transfer_status_list ) }, 3000 );
             }
         };
         var dataset_transfer_status_updater_callback = function ( dataset_transfer_status_list ) {
@@ -219,7 +219,7 @@
             sample = sample_dataset.sample
             is_complete = sample.request.is_complete
             is_submitted = sample.request.is_submitted
-            can_update = ( is_complete or is_submitted ) and sample.inprogress_dataset_files
+            can_update = is_complete or is_submitted and sample.untransferred_dataset_files
     %>
     %if can_update:
         <script type="text/javascript">
@@ -296,14 +296,14 @@
             ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
             %if is_admin:
                 ## This link will direct the admin to a page allowing them to manage datasets.
-                <a href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
+                <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
             %elif sample.datasets:
                 ## Since this is a regular user, only display a link if there is at least 1
                 ## selected dataset for the sample.
                 <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
             %else:
                 ## Since this is a regular user, do not display a link if there are no datasets.
-                ${len( sample.datasets )}
+                <a id="sampleDatasets-${sample.id}">${len( sample.datasets )}</a>
             %endif
         </td>
     %endif
@@ -469,7 +469,7 @@
                                     <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
                                 %else:
                                     ## Since this is a regular user, do not display a link if there are no datasets.
-                                    ${len( sample.datasets )}
+                                    <a id="sampleDatasets-${sample.id}">${len( sample.datasets )}</a>
                                 %endif
                             </td>
                         %endif
