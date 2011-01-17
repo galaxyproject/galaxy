@@ -80,6 +80,9 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        # If use_panels is True, the library is being accessed via an external link
+        # which did not originate from within the Galaxy instance, and the library will
+        # be displayed correctly with the mast head.
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         library_id = params.get( 'id', None )
         if not library_id:
@@ -98,9 +101,6 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             message = "Invalid library id ( %s ) specified." % str( library_id )
             status = 'error'
         else:
-            # If use_panels is True, the library is being accessed via an external link
-            # which did not originate from within the Galaxy instance, and the library will
-            # be displayed correctly with the mast head.
             show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
             created_ldda_ids = params.get( 'created_ldda_ids', '' )
             hidden_folder_ids = util.listify( params.get( 'hidden_folder_ids', '' ) )
@@ -120,17 +120,21 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     comptypes_t.remove( comptype )
                 except:
                     pass
-            return trans.fill_template( '/library/common/browse_library.mako',
-                                        cntrller=cntrller,
-                                        use_panels=use_panels,
-                                        library=library,
-                                        created_ldda_ids=created_ldda_ids,
-                                        hidden_folder_ids=hidden_folder_ids,
-                                        show_deleted=show_deleted,
-                                        comptypes=comptypes_t,
-                                        current_user_roles=current_user_roles,
-                                        message=message,
-                                        status=status )
+            try:
+                return trans.fill_template( '/library/common/browse_library.mako',
+                                            cntrller=cntrller,
+                                            use_panels=use_panels,
+                                            library=library,
+                                            created_ldda_ids=created_ldda_ids,
+                                            hidden_folder_ids=hidden_folder_ids,
+                                            show_deleted=show_deleted,
+                                            comptypes=comptypes_t,
+                                            current_user_roles=current_user_roles,
+                                            message=message,
+                                            status=status )
+            except Exception, e:
+                message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
+                status = 'error'
         return trans.response.send_redirect( web.url_for( use_panels=use_panels,
                                                           controller=cntrller,
                                                           action='browse_libraries',

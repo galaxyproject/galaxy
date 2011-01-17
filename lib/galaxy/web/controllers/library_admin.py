@@ -84,6 +84,43 @@ class LibraryAdmin( BaseController ):
                                                                   action='browse_library',
                                                                   cntrller='library_admin',
                                                                   **kwd ) )
+            elif operation == "delete":
+                return self.delete_library( trans, **kwd )
+            elif operation == "undelete":
+                return self.undelete_library( trans, **kwd )
+        self.library_list_grid.operations = []
+        if 'f-deleted' in kwd:
+            if kwd[ 'f-deleted' ] != 'All':
+                if util.string_as_bool( kwd[ 'f-deleted' ] ):
+                    # We're viewing deleted data libraries, so add a GridOperation
+                    # enabling one or more of them to be undeleted.
+                    self.library_list_grid.operations = [
+                        grids.GridOperation( "Undelete",
+                                             condition=( lambda item: item.deleted ),
+                                             allow_multiple=True,
+                                             allow_popup=False,
+                                             url_args=dict( webapp="galaxy" ) )
+                    ]
+                else:
+                    # We're viewing active data libraries, so add a GridOperation
+                    # enabling one or more of them to be deleted.
+                    self.library_list_grid.operations = [
+                        grids.GridOperation( "Delete",
+                                             condition=( lambda item: not item.deleted ),
+                                             allow_multiple=True,
+                                             allow_popup=False,
+                                             url_args=dict( webapp="galaxy" ) )
+                    ]
+        else:
+            # We're viewing active data libraries, so add a GridOperation
+            # enabling one or more of them to be deleted.
+            self.library_list_grid.operations = [
+                grids.GridOperation( "Delete",
+                                     condition=( lambda item: not item.deleted ),
+                                     allow_multiple=True,
+                                     allow_popup=False,
+                                     url_args=dict( webapp="galaxy" ) )
+            ]  
         # Render the list view
         return self.library_list_grid( trans, **kwd )
     @web.expose
@@ -111,6 +148,26 @@ class LibraryAdmin( BaseController ):
                                                               message=util.sanitize_text( message ),
                                                               status='done' ) )
         return trans.fill_template( '/admin/library/new_library.mako', message=message, status=status )
+    @web.expose
+    @web.require_admin
+    def delete_library( self, trans, id, **kwd  ):
+        # Used by the Delete grid operation in the LibrarylistGrid.
+        return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                          action='delete_library_item',
+                                                          cntrller='library_admin',
+                                                          library_id=id,
+                                                          item_id=id,
+                                                          item_type='library' ) )
+    @web.expose
+    @web.require_admin
+    def undelete_library( self, trans, id, **kwd  ):
+        # Used by the Undelete grid operation in the LibrarylistGrid.
+        return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                          action='undelete_library_item',
+                                                          cntrller='library_admin',
+                                                          library_id=id,
+                                                          item_id=id,
+                                                          item_type='library' ) )
     @web.expose
     @web.require_admin
     def purge_library( self, trans, **kwd ):
