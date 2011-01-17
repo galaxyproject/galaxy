@@ -1266,7 +1266,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 if 'new_history' in kwargs:
                     new_history = trans.app.model.History( user=trans.user, name="History from %s workflow" % workflow.name )
                     trans.sa_session.add( new_history )
-                    # trans.sa_session.flush()
                 # Run each step, connecting outputs to inputs
                 workflow_invocation = model.WorkflowInvocation()
                 workflow_invocation.workflow = workflow
