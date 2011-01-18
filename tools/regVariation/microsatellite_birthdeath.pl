@@ -49,8 +49,8 @@ my $info = $rando.$1.$2.$3;
 
 
 my @thresharr = (0, split(/,/,$thresholds));
-
-my $megamatch = $orth.".megamatch.net.axt"; #"/gpfs/home/ydk104/work/rhesus_microsat/axtNet/hg18.panTro2.ponAbe2.rheMac2.calJac1/chr1.hg18.panTro2.ponAbe2.rheMac2.calJac1.net.axt";
+my $randno=int(rand(100000));
+my $megamatch = $randno.".megamatch.net.axt"; #"/gpfs/home/ydk104/work/rhesus_microsat/axtNet/hg18.panTro2.ponAbe2.rheMac2.calJac1/chr1.hg18.panTro2.ponAbe2.rheMac2.calJac1.net.axt";
 my $megamatchlck = $megamatch.".lck";
 unlink $megamatchlck;
 
