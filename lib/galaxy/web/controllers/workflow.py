@@ -1670,7 +1670,12 @@ def order_workflow_steps( steps ):
     """
     Perform topological sort of the steps, return ordered or None
     """
-    steps.sort(cmp=lambda s1,s2: cmp( math.sqrt(s1.position['left']**2 + s1.position['top']**2), math.sqrt(s2.position['left']**2 + s2.position['top']**2)))
+    position_data_available = True
+    for step in steps:
+        if not step.position or not 'left' in step.position or not 'top' in step.position:
+            position_data_available = False
+    if position_data_available:
+        steps.sort(cmp=lambda s1,s2: cmp( math.sqrt(s1.position['left']**2 + s1.position['top']**2), math.sqrt(s2.position['left']**2 + s2.position['top']**2)))
     try:
         edges = edgelist_for_workflow_steps( steps )
         node_order = topsort( edges )

@@ -8,7 +8,7 @@
 var 
     DENSITY = 200,
     FEATURE_LEVELS = 10,
-    MAX_FEATURE_DEPTH = 50,
+    MAX_FEATURE_DEPTH = 100,
     DEFAULT_DATA_QUERY_WAIT = 5000,
     CONNECTOR_COLOR = "#ccc",
     DATA_ERROR = "There was an error in indexing this dataset.",
@@ -1600,68 +1600,65 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             });
         }
     },
-    incremental_slots: function( level, features, no_detail, mode ) {
-        if (!this.inc_slots[level]) {
-            this.inc_slots[level] = {};
-            this.inc_slots[level].w_scale = level;
-            this.inc_slots[level].mode = mode;
+    //
+    // Place features in slots for drawing (i.e. pack features).
+    // this.inc_slots[level] is created in this method. this.inc_slots[level]
+    // is a dictionary of slotted features; key is feature uid, value is a dictionary
+    // with keys 'slot' and 'text'.
+    // Returns the number of slots used to pack features.
+    //
+    incremental_slots: function(level, features, no_detail, mode) {
+        //
+        // Get/create incremental slots for level. If display mode changed,
+        // need to create new slots.
+        //
+        var inc_slots = this.inc_slots[level];
+        if (!inc_slots || (inc_slots.mode !== mode)) {
+            inc_slots = {};
+            inc_slots.w_scale = level;
+            inc_slots.mode = mode;
+            this.inc_slots[level] = inc_slots;
             this.s_e_by_tile[level] = {};
         }
+        
+        //
+        // If feature already exists in slots (from previously seen tiles), use the same slot,
+        // otherwise if not seen, add to "undone" list for slot calculation.
+        //
+        var w_scale = inc_slots.w_scale,
+            undone = [], slotted = [],
+            highest_slot = 0, // To measure how big to draw canvas
+            max_low = this.view.max_low;
         // TODO: Should calculate zoom tile index, which will improve performance
         // by only having to look at a smaller subset
         // if (this.s_e_by_tile[0] === undefined) { this.s_e_by_tile[0] = []; }
-        var w_scale = this.inc_slots[level].w_scale,
-            undone = [],
-            highest_slot = 0, // To measure how big to draw canvas
-            max_low = this.view.max_low;
-            
-        var slotted = [];
-        // Reset packing when we change display mode
-        if (this.inc_slots[level].mode !== mode) {
-            delete this.inc_slots[level];
-            this.inc_slots[level] = { "mode": mode, "w_scale": w_scale };
-            delete this.s_e_by_tile[level];
-            this.s_e_by_tile[level] = {};
-        }
-        // If feature already exists in slots (from previously seen tiles), use the same slot,
-        // otherwise if not seen, add to "undone" list for slot calculation
         for (var i = 0, len = features.length; i < len; i++) {
             var feature = features[i],
                 feature_uid = feature[0];
-            if (this.inc_slots[level][feature_uid] !== undefined) {
-                highest_slot = Math.max(highest_slot, this.inc_slots[level][feature_uid]);
-                slotted.push(this.inc_slots[level][feature_uid]);
+            if (inc_slots[feature_uid] !== undefined) {
+                highest_slot = Math.max(highest_slot, inc_slots[feature_uid]);
+                slotted.push(inc_slots[feature_uid]);
             } else {
                 undone.push(i);
             }
         }
         
-        // console.log("Slotted: ", features.length - undone.length, "/", features.length, slotted);
-        for (var i = 0, len = undone.length; i < len; i++) {
-            var feature = features[undone[i]],
-                feature_uid = feature[0],
-                feature_start = feature[1],
-                feature_end = feature[2],
-                feature_name = feature[3],
-                f_start = Math.floor( (feature_start - max_low) * w_scale ),
-                f_end = Math.ceil( (feature_end - max_low) * w_scale );
-                        
-            if (feature_name !== undefined && !no_detail) {
-                var text_len = CONTEXT.measureText(feature_name).width;
-                if (f_start - text_len < 0) {
-                    f_end += text_len;
-                } else {
-                    f_start -= text_len;
-                }
-            }
-            
-            var j = 0;
-            // Try to fit the feature to the first slot that doesn't overlap any other features in that slot
-            while (j <= MAX_FEATURE_DEPTH) {
-                var found = true;
-                if (this.s_e_by_tile[level][j] !== undefined) {
-                    for (var k = 0, k_len = this.s_e_by_tile[level][j].length; k < k_len; k++) {
-                        var s_e = this.s_e_by_tile[level][j][k];
+        //
+        // Slot unslotted features.
+        //
+        var s_e_by_tile = this.s_e_by_tile[level];
+        
+        // Find the first slot s/t current feature doesn't overlap any other features in that slot.
+        // Returns -1 if no slot was found.
+        var find_slot = function(f_start, f_end) {
+            var found;
+            for (var slot_num = 0, slot = undefined; slot_num <= MAX_FEATURE_DEPTH; slot_num++) {
+                found = true;
+                slot = s_e_by_tile[slot_num];
+                if (slot !== undefined) {
+                    // Iterate through features already in slot to see if current feature will fit.
+                    for (var k = 0, k_len = slot.length; k < k_len; k++) {
+                        var s_e = slot[k];
                         if (f_end > s_e[0] && f_start < s_e[1]) {
                             found = false;
                             break;
@@ -1669,20 +1666,99 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     }
                 }
                 if (found) {
-                    if (this.s_e_by_tile[level][j] === undefined) { this.s_e_by_tile[level][j] = []; }
-                    this.s_e_by_tile[level][j].push([f_start, f_end]);
-                    this.inc_slots[level][feature_uid] = j;
-                    highest_slot = Math.max(highest_slot, j);
                     break;
                 }
-                j++;
+            }
+            
+            if (found) {
+                return slot_num;
+            }
+            else {
+                return -1;
+            }
+        };
+        
+        // Do slotting.
+        for (var i = 0, len = undone.length; i < len; i++) {
+            var feature = features[undone[i]],
+                feature_uid = feature[0],
+                feature_start = feature[1],
+                feature_end = feature[2],
+                feature_name = feature[3],
+                // Where to start, end drawing on screen.
+                f_start = Math.floor( (feature_start - max_low) * w_scale ),
+                f_end = Math.ceil( (feature_end - max_low) * w_scale ),
+                text_len = CONTEXT.measureText(feature_name).width,
+                text_align;
+            
+            // Update start, end drawing locations to include feature name.
+            // Try to put the name on the left, if not, put on right.
+            if (feature_name !== undefined && !no_detail) {
+                if (f_start - text_len < 0) {
+                    f_end += text_len;
+                    text_align = "left";
+                } else {
+                    f_start -= text_len;
+                    text_align = "right";
+                }
+            }
+                        
+            // Find slot.
+            var slot_num = find_slot(f_start, f_end);
+            if (slot_num < 0) {
+                /*
+                TODO: this is not yet working --
+                console.log(feature_uid, "looking for slot with text on the right");
+                // Slot not found. If text was on left, try on right and see
+                // if slot can be found.
+                // TODO: are there any checks we need to do to ensure that text
+                // will fit on tile?
+                if (text_align == "left") {
+                    f_start -= text_len;
+                    f_end -= text_len;
+                    text_align = "right";
+                    slot_num = find_slot(f_start, f_end);
+                }
+                if (slot_num >= 0) {
+                    console.log(feature_uid, "found slot with text on the right");
+                }
+                */
+            }
+            
+            // Do slotting.
+            if (slot_num >= 0) {
+                // Add current feature to slot.
+                slot = s_e_by_tile[slot_num];
+                if (slot === undefined) { 
+                    slot = s_e_by_tile[slot_num] = [];
+                }
+                slot.push([f_start, f_end]);
+                inc_slots[feature_uid] = slot_num;
+                highest_slot = Math.max(highest_slot, slot_num);
+            }
+            else {
+                // TODO: remove this warning when skipped features are handled.
+                // Show warning for skipped feature.
+                console.log("WARNING: not displaying feature"); // , feature_uid, f_start, f_end);
             }
         }
-        return highest_slot;
         
+        // Debugging: view slots data.
+        /*
+        for (var i = 0; i < MAX_FEATURE_DEPTH; i++) {
+            var slot = s_e_by_tile[i];
+            if (slot !== undefined) {
+                console.log(i, "*************");
+                for (var k = 0, k_len = slot.length; k < k_len; k++) {
+                    console.log("\t", slot[k][0], slot[k][1]);
+                }
+            }
+        }
+        */
+        return highest_slot;
     },
     // Right now this function is used only for rendering BAM reads.
-    rect_or_text: function( ctx, w_scale, tile_low, tile_high, feature_start, orig_seq, cigar, y_center ) {
+    rect_or_text: function( ctx, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center ) {
         ctx.textAlign = "center";
         var cur_offset = 0,
             gap = Math.round(w_scale / 2);
@@ -1895,28 +1971,26 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 // All features need a start, end, and vertical center.
                 var f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-                    y_center = (mode === "Dense" ? 1 : (1 + slots[feature_uid])) * y_scale;
-                
+                    y_center = (mode === "Dense" ? 1 : (1 + slots[feature_uid])) * y_scale;                
                 var thickness, y_start, thick_start = null, thick_end = null;
                 
                 // BAM/read drawing.
                 if (result.dataset_type === "bai") {
-                    var cigar = feature[4];
                     ctx.fillStyle = block_color;
                     if (feature[5] instanceof Array) {
                         // Read is paired.
-                        var b1_start = Math.floor( Math.max(0, (feature[5][0] - tile_low) * w_scale) ),
-                            b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) ),
-                            b2_start = Math.floor( Math.max(0, (feature[6][0] - tile_low) * w_scale) ),
-                            b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[6][1] - tile_low) * w_scale)) );
-                        
+                        var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
+                            b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[4][1] - tile_low) * w_scale)) ),
+                            b2_start = Math.floor( Math.max(0, (feature[5][0] - tile_low) * w_scale) ),
+                            b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
+
                         // Draw left/forward read.
-                        if (feature[5][1] >= tile_low && feature[5][0] <= tile_high) {
-                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], cigar, y_center);
+                        if (feature[4][1] >= tile_low && feature[4][0] <= tile_high) {
+                                this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center);
                         }
                         // Draw right/reverse read.
-                        if (feature[6][1] >= tile_low && feature[6][0] <= tile_high) {
-                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[6][0], feature[6][2], cigar, y_center);
+                        if (feature[5][1] >= tile_low && feature[5][0] <= tile_high) {
+                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], y_center);
                         }
                         // Draw connector.
                         if (b2_start > b1_end) {
@@ -1926,21 +2000,20 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     } else {
                         // Read is single.
                         ctx.fillStyle = block_color;
-                        this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature_start, feature_name, cigar, y_center);
+                        this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center);
                     }
                     if (mode !== "Dense" && !no_detail && feature_start > tile_low) {
-                        // Draw label
+                        // Draw label.
                         ctx.fillStyle = this.prefs.label_color;
                         if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                             ctx.textAlign = "left";
-                            ctx.fillText(feature_uid, f_end + 2 + left_offset, y_center + 8);
+                            ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
                         } else {
                             ctx.textAlign = "right";
-                            ctx.fillText(feature_uid, f_start - 2 + left_offset, y_center + 8);
+                            ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
                         }
                         ctx.fillStyle = block_color;
                     }
-                        
                 }
                 // Interval index drawing.
                 else if (result.dataset_type === "interval_index") {
