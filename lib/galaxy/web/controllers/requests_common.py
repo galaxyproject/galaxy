@@ -1633,7 +1633,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         elif sample and sample.workflow:
             workflow_id = sample.workflow['id']
             selected_workflow = trans.sa_session.query( trans.model.Workflow ).get(sample.workflow['id'])
-        s_list = [w.latest_workflow for w in user.stored_workflows]
+        s_list = [w.latest_workflow for w in user.stored_workflows if not w.deleted]
         if selected_workflow and selected_workflow not in s_list:
             s_list.append(selected_workflow)
         workflow_select_field = build_select_field(trans,
