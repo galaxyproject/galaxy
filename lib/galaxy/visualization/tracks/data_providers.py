@@ -235,11 +235,13 @@ class BamDataProvider( TracksDataProvider ):
             else:
                 return None
         # Encode reads as list of lists; each read is a list with the format 
-        #   [<name>, <start>, <end>, <read_1_seq>, <cigar>, <read_1>, <read_2>] 
+        #   [<guid>, <start>, <end>, <name>, <read_1>, <read_2>] 
         # where <read_1> has the format
-        #   [<start>, <end>, ?<read_seq>?]
+        #   [<start>, <end>, <cigar>, ?<read_seq>?]
         # and <read_2> has the format
-        #   [<start>, <end>, ?<read_seq>?]
+        #   [<start>, <end>, <cigar>, ?<read_seq>?]
+        # For single-end reads, read has format:
+        #   [<guid>, <start>, <end>, <name>, cigar, seq] 
         # NOTE: read end and sequence data are not valid for reads outside of
         # requested region and should not be used.
         results = []
@@ -258,32 +260,38 @@ class BamDataProvider( TracksDataProvider ):
             if read.is_proper_pair:
                 if qname in paired_pending: # one in dict is always first
                     pair = paired_pending[qname]
-                    results.append( [ qname, pair['start'], read.pos + read_len, seq, read.cigar, [pair['start'], pair['end'], pair['seq']], [read.pos, read.pos + read_len, seq] ] )
+                    results.append( [ "%i_%s" % ( read.pos-start, qname ), 
+                                      pair['start'], 
+                                      read.pos + read_len, 
+                                      qname, 
+                                      [ pair['start'], pair['end'], pair['cigar'], pair['seq'] ], 
+                                      [ read.pos, read.pos + read_len, read.cigar, seq] 
+                                     ] )
                     del paired_pending[qname]
                 else:
                     paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos, 'rlen': read_len, 'cigar': read.cigar }
             else:
-                results.append( [qname, read.pos, read.pos + read_len, seq, read.cigar] )
+                results.append( [ "%i_%s" % ( read.pos-start, qname ), read.pos, read.pos + read_len, qname, read.cigar, read.seq] )
         # Take care of reads whose mates are out of range.
         for qname, read in paired_pending.iteritems():
             if read['mate_start'] < read['start']:
                 # Mate is before read.
-                start = read['mate_start']
-                end = read['end']
+                read_start = read['mate_start']
+                read_end = read['end']
                 # Make read_1 start=end so that length is 0 b/c we don't know
                 # read length.
-                r1 = [read['mate_start'], read['mate_start']]
-                r2 = [read['start'], read['end'], read['seq']]
+                r1 = [ read['mate_start'], read['mate_start'] ]
+                r2 = [ read['start'], read['end'], read['cigar'], read['seq'] ]
             else:
                 # Mate is after read.
-                start = read['start']
+                read_start = read['start']
                 # Make read_2 start=end so that length is 0 b/c we don't know
                 # read length. Hence, end of read is start of read_2.
-                end = read['mate_start']
-                r1 = [read['start'], read['end'], read['seq']]
-                r2 = [read['mate_start'], read['mate_start']]
+                read_end = read['mate_start']
+                r1 = [ read['start'], read['end'], read['cigar'], read['seq'] ]
+                r2 = [ read['mate_start'], read['mate_start'] ]
 
-            results.append( [ qname, start, end, read['seq'], read['cigar'], r1, r2 ] )
+            results.append( [ "%i_%s" % ( read_start-start, qname ), read_start, read_end, qname, r1, r2 ] )
 
         bamfile.close()
         return { 'data': results, 'message': message }
@@ -437,6 +445,11 @@ class IntervalIndexDataProvider( TracksDataProvider ):
         if chrom not in index.indexes and chrom[3:] in index.indexes:
             chrom = chrom[3:]
 
+        #
+        # Build data to return. Payload format is:
+        # [ <guid/offset>, <start>, <end>, <name>, <strand>, <blocks>]
+        # 
+        no_detail = ( "no_detail" in kwargs )
         for start, end, offset in index.find(chrom, start, end):
             if count >= MAX_VALS:
                 message = "Only the first %s features are being displayed." % MAX_VALS
@@ -445,16 +458,16 @@ class IntervalIndexDataProvider( TracksDataProvider ):
             source.seek( offset )
             # TODO: can we use column metadata to fill out payload?
             # TODO: use function to set payload data
-            if "no_detail" not in kwargs:
-                if isinstance( self.original_dataset.datatype, Gff ):
-                    # GFF dataset.
-                    reader = GFFReaderWrapper( source, fix_strand=True )
-                    feature = reader.next()
-                    payload = package_gff_feature( feature )
-                    payload.insert( 0, offset )
-                elif isinstance( self.original_dataset.datatype, Bed ):
-                    # BED dataset.
-                    payload = [ offset, start, end ]
+            if isinstance( self.original_dataset.datatype, Gff ):
+                # GFF dataset.
+                reader = GFFReaderWrapper( source, fix_strand=True )
+                feature = reader.next()
+                payload = package_gff_feature( feature, no_detail )
+                payload.insert( 0, offset )
+            elif isinstance( self.original_dataset.datatype, Bed ):
+                # BED dataset.
+                payload = [ offset, start, end ]
+                if not no_detail:
                     feature = source.readline().split()
                     length = len(feature)
                     if length >= 4:
@@ -472,7 +485,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                         block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
                         blocks = zip( block_sizes, block_starts )
                         payload.append( [ ( start + block[1], start + block[1] + block[0] ) for block in blocks ] )
-                        
+                    
                     if length >= 5:
                         payload.append( int(feature[4]) ) # score
 
@@ -564,9 +577,15 @@ def get_data_provider( name=None, original_dataset=None ):
                 pass
     return data_provider
 
-def package_gff_feature( feature ):
+def package_gff_feature( feature, no_detail=False ):
     """ Package a GFF feature in an array for data providers. """
     feature = convert_gff_coords_to_bed( feature )
+    
+    # No detail means only start, end.
+    if no_detail:
+        return [ feature.start, feature.end ]
+    
+    # Return full feature.
     payload = [ feature.start, 
                 feature.end, 
                 feature.name(), 
