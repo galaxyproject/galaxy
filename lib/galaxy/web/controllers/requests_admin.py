@@ -67,7 +67,7 @@ class DataTransferGrid( grids.Grid ):
                           format=time_ago ),
         ExternalServiceColumn( 'External service',
                                link=( lambda item: dict( operation="view_external_service", id=item.external_service.id ) ), ),
-        StatusColumn( "Status",
+        StatusColumn( "Transfer Status",
                       filterable="advanced",
                       label_id_prefix='datasetTransferStatus-' ),
     ]
