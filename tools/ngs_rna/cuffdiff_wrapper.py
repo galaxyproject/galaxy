@@ -43,11 +43,15 @@ def __main__():
     parser.add_option( '-1', '--input1', dest='input1', help='File of RNA-Seq read alignments in the SAM format. SAM is a standard short read alignment, that allows aligners to attach custom tags to individual alignments, and Cufflinks requires that the alignments you supply have some of these tags. Please see Input formats for more details.' )
     parser.add_option( '-2', '--input2', dest='input2', help='File of RNA-Seq read alignments in the SAM format. SAM is a standard short read alignment, that allows aligners to attach custom tags to individual alignments, and Cufflinks requires that the alignments you supply have some of these tags. Please see Input formats for more details.' )
     
+	# Normalization options.
+    parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
+
     # Bias correction options.
     parser.add_option( '-r', dest='do_bias_correction', action="store_true", help='Providing Cufflinks with a multifasta file via this option instructs it to run our new bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates.')
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
     parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
     parser.add_option( '', '--ref_file', dest='ref_file', help='The reference dataset from the history' )
+
 
     # Outputs.
     parser.add_option( "--isoforms_fpkm_tracking_output", dest="isoforms_fpkm_tracking_output" )
@@ -121,8 +125,11 @@ def __main__():
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
         cmd += ( " --max-mle-iterations %i" % int ( options.max_mle_iterations ) )
+    if options.do_normalization:
+        cmd += ( " -N" )
     if options.do_bias_correction:
         cmd += ( " -r %s" % seq_path )
+
         
     # Debugging.
     print cmd

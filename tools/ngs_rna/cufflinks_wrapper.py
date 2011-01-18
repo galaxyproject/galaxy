@@ -19,7 +19,7 @@ def check_seq_file( dbkey, cached_seqs_pointer_file ):
                 seq_path = fields[2].strip()
                 break
     return seq_path
-
+	
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
@@ -44,6 +44,9 @@ def __main__():
     parser.add_option( '-T', '--transcripts-expression-output', dest='transcripts_expression_output_file', help='TODO' )
     parser.add_option( '-Z', '--genes-expression-output', dest='genes_expression_output_file', help='TODO' )
     
+	# Normalization options.
+    parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
+
     # Bias correction options.
     parser.add_option( '-r', dest='do_bias_correction', action="store_true", help='Providing Cufflinks with a multifasta file via this option instructs it to run our new bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates.')
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
@@ -113,6 +116,8 @@ def __main__():
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
         cmd += ( " --max-mle-iterations %i" % int ( options.max_mle_iterations ) )
+    if options.do_normalization:
+        cmd += ( " -N" )
     if options.do_bias_correction:
         cmd += ( " -r %s" % seq_path )
         
