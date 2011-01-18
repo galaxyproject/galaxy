@@ -16,12 +16,19 @@ if ( parent.frames && parent.frames.galaxy_history ) {
         <p>
             Successfully ran workflow "${workflow.name}", the following datasets have
             been added to the queue.
+            %if new_history:
+                These datasets will appear in a new history:
+                <a target='galaxy_history' href="${h.url_for( controller='history', action='list', operation="Switch", id=trans.security.encode_id(new_history.id), use_panels=False, show_deleted=False )}">
+                    '${h.to_unicode(new_history.name)}'.
+                </a>
+            %endif
         </p>
-    
         <div style="padding-left: 10px;">
             %for step_outputs in outputs.itervalues():
                 %for data in step_outputs.itervalues():
-                    <p><b>${data.hid}</b>: ${data.name}</p>
+                    %if not new_history or data.history == new_history:
+                        <p><b>${data.hid}</b>: ${data.name}</p>
+                    %endif
                 %endfor
             %endfor
         </div>

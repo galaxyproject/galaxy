@@ -1264,7 +1264,11 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             if 'run_workflow' in kwargs and not errors:
                 new_history = None
                 if 'new_history' in kwargs:
-                    new_history = trans.app.model.History( user=trans.user, name="History from %s workflow" % workflow.name )
+                    if 'new_history_name' in kwargs and kwargs['new_history_name'] != '':
+                        nh_name = kwargs['new_history_name']
+                    else:
+                        nh_name = "History from %s workflow" % workflow.name
+                    new_history = trans.app.model.History( user=trans.user, name=nh_name )
                     trans.sa_session.add( new_history )
                 # Run each step, connecting outputs to inputs
                 workflow_invocation = model.WorkflowInvocation()
@@ -1311,7 +1315,8 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 trans.sa_session.flush()
                 return trans.fill_template( "workflow/run_complete.mako",
                                             workflow=stored,
-                                            outputs=outputs )
+                                            outputs=outputs,
+                                            new_history=new_history )
         else:
             # Prepare each step
             for step in workflow.steps:
