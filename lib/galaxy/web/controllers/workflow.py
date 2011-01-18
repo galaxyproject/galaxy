@@ -5,7 +5,7 @@ pkg_resources.require( "simplejson" )
 pkg_resources.require( "SVGFig" )
 import simplejson
 import base64, httplib, urllib2, sgmllib, svgfig
-
+import math
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.tools.parameters import *
 from galaxy.tools import DefaultToolState
@@ -1670,6 +1670,7 @@ def order_workflow_steps( steps ):
     """
     Perform topological sort of the steps, return ordered or None
     """
+    steps.sort(cmp=lambda s1,s2: cmp( math.sqrt(s1.position['left']**2 + s1.position['top']**2), math.sqrt(s2.position['left']**2 + s2.position['top']**2)))
     try:
         edges = edgelist_for_workflow_steps( steps )
         node_order = topsort( edges )
