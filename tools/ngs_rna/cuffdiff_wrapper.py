@@ -178,7 +178,6 @@ def __main__():
             for filename in group:
                 cmd += filename + ","
             cmd = cmd[:-1] + " "
-        print cmd
     else: 
         cmd += " " + options.inputA + " " + options.input1 + " " + options.input2
 

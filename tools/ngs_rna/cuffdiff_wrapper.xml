@@ -73,9 +73,9 @@
                 <option value="Yes">Yes</option>
             </param>
             <when value="Yes">
-                <repeat name="groups" title="Input group">
+                <repeat name="groups" title="Group">
                     <param name="group" title="Group name" type="text" label="Group name (no spaces or commas)"/>
-                    <repeat name="files" title="Input file">
+                    <repeat name="files" title="Replicate">
                         <param name="file" label="Add file" type="data" format="sam,bam"/>
                     </repeat>
                 </repeat>
