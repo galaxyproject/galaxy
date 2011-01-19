@@ -76,6 +76,10 @@ class UniverseApplication( object ):
             from galaxy.util import memdump
             if memdump.Memdump:
                 self.memdump = memdump.Memdump()
+        # Transfer manager client
+        if self.config.get_bool( 'enable_beta_job_managers', False ):
+            from jobs import transfer_manager
+            self.transfer_manager = transfer_manager.TransferManager( self )
         # Start the job queue
         self.job_manager = jobs.JobManager( self )
         # FIXME: These are exposed directly for backward compatibility
@@ -83,10 +87,6 @@ class UniverseApplication( object ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
-        # Transfer manager client
-        if self.config.get_bool( 'enable_deferred_job_queue', False ):
-            from jobs import transfer_manager
-            self.transfer_manager = transfer_manager.TransferManager( self )
         
     def shutdown( self ):
         self.job_manager.shutdown()

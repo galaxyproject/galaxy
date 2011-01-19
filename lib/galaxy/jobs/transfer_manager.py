@@ -1,8 +1,8 @@
 """
-Client interface to the Galaxy Transfer Manager, which is a standalone,
-lightweight on-demand daemon.
+Manage transfers from arbitrary URLs to temporary files.  Socket interface for
+IPC with multiple process configurations.
 """
-import subprocess, socket, logging
+import os, subprocess, socket, logging, threading
 
 from galaxy import eggs
 from galaxy.util import listify, json
@@ -10,12 +10,19 @@ from galaxy.util import listify, json
 log = logging.getLogger( __name__ )
 
 class TransferManager( object ):
+    """
+    Manage simple data transfers from URLs to temporary locations.
+    """
     def __init__( self, app ):
         self.app = app
         self.sa_session = app.model.context.current
-        self.tm_port = app.config.transfer_manager_port
-        self.tm_command = 'python transfer_manager.py'
-        self.tm_transfer_job_id_flag = '-i'
+        self.command = 'python %s' % os.path.abspath( os.path.join( os.getcwd(), 'scripts', 'transfer.py' ) )
+        if app.config.get_bool( 'enable_job_recovery', True ):
+            # Only one Galaxy server process should be able to recover jobs! (otherwise you'll have nasty race conditions)
+            self.running = True
+            self.sleeper = Sleeper()
+            self.restarter = threading.Thread( target=self.__restarter )
+            self.restarter.start()
     def new( self, path=None, **kwd ):
         if 'url' not in kwd:
             raise Exception( 'Missing required parameter "url".' )
@@ -32,48 +39,117 @@ class TransferManager( object ):
         transfer_manager will either daemonize or return after submitting to a
         running daemon, so it should be fairly quick to return.
         """
-        spaced_flag = ' %s ' % self.tm_transfer_job_id_flag
-        cmd = '%s %s %s' % ( self.tm_command, self.tm_transfer_job_id_flag, spaced_flag.join( [ str( tj.id ) for tj in transfer_jobs ] ) )
-        log.debug( 'Initiating Transfer Job(s): %s' % ', '.join( [ str( tj.id ) for tj in transfer_jobs ] ) )
-        p = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
-        p.wait()
-        return p.stdout.read()
-    def status( self, transfer_jobs ):
+        transfer_jobs = listify( transfer_jobs )
+        printable_tj_ids = ', '.join( [ str( tj.id ) for tj in transfer_jobs ] )
+        log.debug( 'Initiating transfer job(s): %s' % printable_tj_ids )
+        # Set all jobs running before spawning, or else updating the state may
+        # clobber a state change performed by the worker.
+        [ tj.__setattr__( 'state', tj.states.RUNNING ) for tj in transfer_jobs ]
+        self.sa_session.add_all( transfer_jobs )
+        self.sa_session.flush()
+        for tj in transfer_jobs:
+            # The transfer script should daemonize fairly quickly - if this is
+            # not the case, this process will need to be moved to a
+            # non-blocking method.
+            cmd = '%s %s' % ( self.command, tj.id )
+            log.debug( 'Transfer command is: %s' % cmd )
+            p = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
+            p.wait()
+            output = p.stdout.read( 32768 )
+            if p.returncode != 0:
+                log.error( 'Spawning transfer job failed: %s: %s' % ( tj.id, output ) )
+                tj.state = tj.states.ERROR
+                tj.info = 'Spawning transfer job failed: %s' % output.splitlines()[-1]
+                self.sa_session.add( tj )
+                self.sa_session.flush()
+    def get_state( self, transfer_jobs, via_socket=False ):
         transfer_jobs = listify( transfer_jobs )
         rval = []
-        sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
-        sock.settimeout( 10 )
-        try:
-            sock.connect( ( 'localhost', self.tm_port ) )
-        except Exception, e:
-            log.warning( 'sock.connect for status update of Transfer Jobs %s failed (this is okay if all jobs have finished): %s' % ( ', '.join( [ str( tj.id ) for tj in transfer_jobs ] ), str( e ) ) )
-            [ self.sa_session.refresh( tj ) for tj in transfer_jobs ]
-            new_jobs = filter( lambda x: x.state == self.app.model.TransferJob.states.NEW, transfer_jobs )
-            #terminal_jobs = filter( lambda x: x.state in [ self.app.model.TransferJob.states.DONE, \
-            #                                               self.app.model.TransferJob.states.ERROR ], transfer_jobs )
-            if new_jobs:
-                # This could be a bad idea if the transfer manager daemon is misbehaving.
-                output = self.run( new_jobs )
-            for tj in transfer_jobs:
-                if tj.state == tj.states.DONE:
-                    log.debug( 'Transfer Job %s is complete' % tj.id )
-                rval.append( dict( transfer_job_id=tj.id, state=tj.state ) )
-            if len( rval ) == 1:
-                return rval[0]
-            return rval
-        sock.send( json.to_json_string( dict( state_transfer_job_ids=[ t.id for t in transfer_jobs ] ) ) + '\n' )
-        resp = sock.recv( 8192 )
-        for line in resp.splitlines():
-            status = json.from_json_string( line )
-            # TODO: need a bunch for this
-            if status['state'] == 'unknown':
-                transfer_job = [ tj for tj in transfer_jobs if tj.id == int( status['transfer_job_id'] ) ][0]
-                self.sa_session.refresh( tj )
-                rval.append( dict( transfer_job_id=tj.id, state=tj.state ) )
+        for tj in transfer_jobs:
+            if via_socket and tj.state not in tj.terminal_states and tj.socket:
+                try:
+                    request = json.jsonrpc_request( method='get_state', id=True )
+                    sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
+                    sock.settimeout( 5 )
+                    sock.connect( ( 'localhost', tj.socket ) )
+                    sock.send( json.to_json_string( request ) )
+                    response = sock.recv( 8192 )
+                    valid, response = json.validate_jsonrpc_response( response, id=request['id'] )
+                    if not valid:
+                        # No valid response received, make some pseudo-json-rpc
+                        raise Exception( dict( code=128, message='Did not receive valid response from transfer daemon for state' ) )
+                    if 'error' in response:
+                        # Response was valid but Request resulted in an error
+                        raise Exception( error )
+                    else:
+                        # Request was valid
+                        response['result']['transfer_job_id'] = tj.id
+                        rval.append( response['result'] )
+                except Exception, e:
+                    # State checking via the transfer daemon failed, just
+                    # return the state from the database instead.  Callers can
+                    # look for the 'error' member of the response to see why
+                    # the check failed.
+                    self.sa_session.refresh( tj )
+                    error = e.args
+                    if type( error ) != dict:
+                        error = dict( code=256, message='Error connecting to transfer daemon', data=str( e ) )
+                    rval.append( dict( transfer_job_id=tj.id, state=tj.state, error=error ) )
             else:
-                if status['state'] == 'progress' and 'percent' in status:
-                    log.debug( 'Transfer Job %s is %s complete' % ( status['transfer_job_id'], status['percent'] ) )
-                rval.append( status )
+                rval.append( dict( transfer_job_id=tj.id, state=tj.state ) )
+        for tj_state in rval:
+            if tj_state['state'] in self.app.model.TransferJob.terminal_states:
+                log.debug( 'Transfer job %s is in terminal state: %s' % ( tj_state['transfer_job_id'], tj_state['state'] ) )
+            elif tj_state['state'] == self.app.model.TransferJob.states.PROGRESS and 'percent' in tj_state:
+                log.debug( 'Transfer job %s is %s%% complete' % ( tj_state['transfer_job_id'], tj_state['percent'] ) )
         if len( rval ) == 1:
             return rval[0]
         return rval
+    def __restarter( self ):
+        log.info( 'Transfer job restarter starting up...' )
+        while self.running:
+            dead = []
+            self.sa_session.expunge_all() # our session is threadlocal so this is safe.
+            for tj in self.sa_session.query( self.app.model.TransferJob ) \
+                          .filter( self.app.model.TransferJob.state == self.app.model.TransferJob.states.RUNNING ):
+                if not tj.pid:
+                    continue
+                # This will only succeed if the process exists and is owned by the
+                # user running Galaxy (unless that user is root, in which case it
+                # can be owned by anyone - but you're not running Galaxy as root,
+                # right?).  This is not guaranteed proof that the transfer is alive
+                # since another process may have assumed the original process' PID.
+                # But that will only cause the transfer to not restart until that
+                # process dies, which hopefully won't be too long from now...  If
+                # it becomes a problem, try to talk to the socket a few times and
+                # restart the transfer if socket communication fails repeatedly.
+                try:
+                    os.kill( tj.pid, 0 )
+                except:
+                    self.sa_session.refresh( tj )
+                    if tj.state == tj.states.RUNNING:
+                        log.error( 'Transfer job %s is marked as running but pid %s appears to be dead.' % ( tj.id, tj.pid ) )
+                        dead.append( tj )
+            if dead:
+                self.run( dead )
+            self.sleeper.sleep( 30 )
+        log.info( 'Transfer job restarter shutting down...' )
+    def shutdown( self ):
+        self.running = False
+        self.sleeper.wake()
+
+class Sleeper( object ):
+    """
+    Provides a 'sleep' method that sleeps for a number of seconds *unless*
+    the notify method is called (from a different thread).
+    """
+    def __init__( self ):
+        self.condition = threading.Condition()
+    def sleep( self, seconds ):
+        self.condition.acquire()
+        self.condition.wait( seconds )
+        self.condition.release()
+    def wake( self ):
+        self.condition.acquire()
+        self.condition.notify()
+        self.condition.release()

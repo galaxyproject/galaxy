@@ -15,7 +15,7 @@ class DeferredJobQueue( object ):
                         INVALID = 'invalid' )
     def __init__( self, app ):
         self.app = app
-        self.sa_session = app.model.context
+        self.sa_session = app.model.context.current
         self.queue = Queue()
         self.plugins = {}
         self._load_plugins()
@@ -63,7 +63,9 @@ class DeferredJobQueue( object ):
             if 'check_interval' in dir( self.plugins[job.plugin] ):
                 job.check_interval = self.plugins[job.plugin].check_interval
             log.info( 'Recovered deferred job (id: %s) at startup' % job.id )
-            self.waiting_jobs.append( job )
+            # Pass the job ID as opposed to the job, since the monitor thread
+            # needs to load it in its own threadlocal scoped session.
+            self.waiting_jobs.append( job.id )
 
     def __monitor( self ):
         while self.running:
@@ -89,19 +91,30 @@ class DeferredJobQueue( object ):
             self.waiting_jobs.append( job )
         new_waiting = []
         for job in self.waiting_jobs:
+            try:
+                # Recovered jobs are passed in by ID
+                assert type( job ) is int
+                job = self.sa_session.query( model.DeferredJob ).get( job )
+            except:
+                pass
             if job.is_check_time:
                 try:
                     job_state = self.plugins[job.plugin].check_job( job )
-                except:
-                    raise # TODO: fail
+                except Exception, e:
+                    self.__fail_job( job )
+                    log.error( 'Set deferred job %s to error because of an exception in check_job(): %s' % ( job.id, str( e ) ) )
+                    continue
                 if job_state == self.job_states.READY:
                     try:
                         self.plugins[job.plugin].run_job( job )
-                    except:
-                        raise # TODO: fail
+                    except Exception, e:
+                        self.__fail_job( job )
+                        log.error( 'Set deferred job %s to error because of an exception in run_job(): %s' % ( job.id, str( e ) ) )
+                        continue
                 elif job_state == self.job_states.INVALID:
-                    # TODO: fail
+                    self.__fail_job( job )
                     log.error( 'Unable to run deferred job (id: %s): Plugin "%s" marked it as invalid' % ( job.id, job.plugin ) )
+                    continue
                 else:
                     new_waiting.append( job )
                 job.last_check = 'now'
@@ -113,7 +126,6 @@ class DeferredJobQueue( object ):
         if job.plugin not in self.plugins:
             log.error( 'Invalid deferred job plugin: %s' ) % job.plugin
             job.state = model.DeferredJob.states.ERROR
-            job.info = 'Invalid deferred job plugin: %s' % job.plugin
             self.sa_session.add( job )
             self.sa_session.flush()
             return False
@@ -121,6 +133,11 @@ class DeferredJobQueue( object ):
 
     def __check_if_ready_to_run( self, job ):
         return self.plugins[job.plugin].check_job( job )
+
+    def __fail_job( self, job ):
+        job.state = model.DeferredJob.states.ERROR
+        self.sa_session.add( job )
+        self.sa_session.flush()
 
     def shutdown( self ):
         self.running = False
