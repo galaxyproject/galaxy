@@ -8,7 +8,11 @@
             top.location.href = "${h.url_for( controller='common', action='index', redirect_action=redirect_action, JobId=JobId, sample_id=sample_id )}";
         }
         function set_redirect(){
-            setTimeout("redirect()", 2000)
+            %if redirect_delay:
+                setTimeout("redirect()", ${int(redirect_delay)*1000});
+            %else:
+                setTimeout("redirect()", 2000);
+            %endif
         }
     </script>
     %endif
