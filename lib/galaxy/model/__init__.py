@@ -2173,14 +2173,22 @@ class VisualizationUserShareAssociation( object ):
         self.user = None
         
 class TransferJob( object ):
+    # These states are used both by the transfer manager's IPC and the object
+    # state in the database.  Not all states are used by both.
     states = Bunch( NEW = 'new',
+                    UNKNOWN = 'unknown',
+                    PROGRESS = 'progress',
                     RUNNING = 'running',
                     ERROR = 'error',
                     DONE = 'done' )
-    def __init__( self, state=None, path=None, info=None, params=None ):
+    terminal_states = [ states.ERROR,
+                        states.DONE ]
+    def __init__( self, state=None, path=None, info=None, pid=None, socket=None, params=None ):
         self.state = state
         self.path = path
         self.info = info
+        self.pid = pid
+        self.socket = socket
         self.params = params
 
 class Tag ( object ):

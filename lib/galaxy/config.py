@@ -80,6 +80,8 @@ class Configuration( object ):
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
+        # The transfer manager and deferred job queue
+        self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         self.default_cluster_job_runner = kwargs.get( 'default_cluster_job_runner', 'local:///' )
         self.pbs_application_server = kwargs.get('pbs_application_server', "" )
@@ -104,7 +106,6 @@ class Configuration( object ):
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
-        self.transfer_manager_port = int( kwargs.get( 'transfer_manager_port', 8163 ) )
         # Location for dependencies
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )

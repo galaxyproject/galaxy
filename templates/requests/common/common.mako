@@ -1,4 +1,5 @@
 <%namespace file="/requests/common/sample_state.mako" import="render_sample_state" />
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="javascripts()">
    ${self.common_javascripts()}
@@ -355,7 +356,7 @@
                 <th>Data Library</th>
                 <th>Folder</th>
                 <th>History</th>
-                <th>Processing</th>
+                <th>Workflow</th>
                 %if display_datasets:
                     <th>Run Datasets</th>
                 %endif
@@ -447,12 +448,28 @@
                             <td></td>
                         %endif
                         %if sample_widget_history:
-                            <td>${sample_widget_history.name}</td>
+                            %if trans.user == sample_widget_history.user:
+                                <td>
+                                    <a target='_parent' href="${h.url_for( controller='history', action='list', operation="Switch", id=trans.security.encode_id(sample_widget_history.id), use_panels=False )}">
+                                    ${sample_widget_history.name}
+                                    </a>
+                                </td>
+                            %else:
+                                <td>${sample_widget_history.name}</td>
+                            %endif
                         %else:
                             <td></td>
                         %endif
                         %if sample_widget_workflow:
-                            <td>${sample_widget_workflow.name}</td>
+                            %if trans.user == sample_widget_workflow.stored_workflow.user:
+                                <td>
+                                    <a target='_parent' href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id(sample_widget_workflow.stored_workflow.id) )}">
+                                    ${sample_widget_workflow.name}
+                                    </a>
+                                </td>
+                            %else:
+                                <td>${sample_widget_workflow.name}</td>
+                            %endif
                         %else:
                             <td></td>
                         %endif
@@ -678,5 +695,25 @@
         </table>
     %else:
         No datasets for this sample.
+    %endif
+</%def>
+
+<%def name="render_samples_messages( request, is_admin=False, is_submitted=False, message=None, status=None)">
+    %if request.is_rejected:
+    <p>
+        <div class='errormessage'>
+            ${request.last_comment}
+        </div>
+    </p>
+    %endif
+    %if is_admin and is_submitted and request.samples_without_library_destinations:
+    <p>
+        <div class='infomessage'>
+            Select a target data library and folder for a sample before selecting its datasets to transfer from the external service.
+        </div>
+    </p>
+    %endif
+    %if message:
+        ${render_msg( message, status )}
     %endif
 </%def>

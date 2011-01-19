@@ -3,6 +3,7 @@
 <%namespace file="/requests/common/common.mako" import="common_javascripts" />
 <%namespace file="/requests/common/common.mako" import="render_samples_grid" />
 <%namespace file="/requests/common/common.mako" import="render_request_type_sample_form_grids" />
+<%namespace file="/requests/common/common.mako" import="render_samples_messages" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -51,21 +52,7 @@
     </div>
 </ul>
 
-%if request.is_rejected:
-    <p>
-        <font color="red"><b>${request.last_comment}</b></font>
-    </p>
-%endif
-
-%if is_admin and is_submitted and request.samples_without_library_destinations:
-    <p>
-        <font color="red"><b><i>Select a target data library and folder for a sample before selecting it's datasets to transfer from the external service.</i></b></font>
-    </p>
-%endif
-
-%if message:
-    ${render_msg( message, status )}
-%endif
+${render_samples_messages(request, is_admin, is_submitted, message, status)}
 
 <div class="toolForm">
     <div class="toolFormTitle">Sequencing request "${request.name}"</div>

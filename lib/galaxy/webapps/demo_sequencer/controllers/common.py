@@ -125,9 +125,9 @@ class CommonController( BaseController ):
                 if 'JobId' in response:
                     JobId = str( response[ 'JobId' ] )
                     kwd[ 'JobId' ] = JobId
-        time.sleep( redirect_delay )
         return trans.fill_template( "webapps/demo_sequencer/index.mako",
                                     redirect_action=redirect_action,
+                                    redirect_delay=redirect_delay,
                                     title=title,
                                     sample_id=sample_id,
                                     JobId=JobId,

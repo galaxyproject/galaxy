@@ -42,7 +42,7 @@ class JobManager( object ):
             # Queues for starting and stopping jobs
             self.job_queue = JobQueue( app, self.dispatcher )
             self.job_stop_queue = JobStopQueue( app, self.dispatcher )
-            if self.app.config.get_bool( 'enable_deferred_job_queue', False ):
+            if self.app.config.enable_beta_job_managers:
                 from galaxy.jobs.deferred import DeferredJobQueue
                 self.deferred_job_queue = DeferredJobQueue( app )
         else:

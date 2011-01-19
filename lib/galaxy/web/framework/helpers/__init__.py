@@ -16,7 +16,7 @@ def time_ago( x ):
     if (datetime.utcnow() - x) > delta: # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:   
-        return date.time_ago_in_words(from_time=x).replace("about", "~") + " ago"
+        return date.distance_of_time_in_words( x, datetime.utcnow() ).replace("about", "~") + " ago"
     
 def iff( a, b, c ):
     if a:
