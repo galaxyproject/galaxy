@@ -355,7 +355,7 @@
                 <th>Data Library</th>
                 <th>Folder</th>
                 <th>History</th>
-                <th>Processing</th>
+                <th>Workflow</th>
                 %if display_datasets:
                     <th>Run Datasets</th>
                 %endif
@@ -447,12 +447,28 @@
                             <td></td>
                         %endif
                         %if sample_widget_history:
-                            <td>${sample_widget_history.name}</td>
+                            %if trans.user == sample_widget_history.user:
+                                <td>
+                                    <a target='_parent' href="${h.url_for( controller='history', action='list', operation="Switch", id=trans.security.encode_id(sample_widget_history.id), use_panels=False )}">
+                                    ${sample_widget_history.name}
+                                    </a>
+                                </td>
+                            %else:
+                                <td>${sample_widget_history.name}</td>
+                            %endif
                         %else:
                             <td></td>
                         %endif
                         %if sample_widget_workflow:
-                            <td>${sample_widget_workflow.name}</td>
+                            %if trans.user == sample_widget_workflow.stored_workflow.user:
+                                <td>
+                                    <a target='_parent' href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id(sample_widget_workflow.stored_workflow.id) )}">
+                                    ${sample_widget_workflow.name}
+                                    </a>
+                                </td>
+                            %else:
+                                <td>${sample_widget_workflow.name}</td>
+                            %endif
                         %else:
                             <td></td>
                         %endif
