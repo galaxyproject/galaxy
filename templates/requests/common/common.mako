@@ -1,4 +1,5 @@
 <%namespace file="/requests/common/sample_state.mako" import="render_sample_state" />
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="javascripts()">
    ${self.common_javascripts()}
@@ -694,5 +695,25 @@
         </table>
     %else:
         No datasets for this sample.
+    %endif
+</%def>
+
+<%def name="render_samples_messages( request, is_admin=False, is_submitted=False, message=None, status=None)">
+    %if request.is_rejected:
+    <p>
+        <div class='errormessage'>
+            ${request.last_comment}
+        </div>
+    </p>
+    %endif
+    %if is_admin and is_submitted and request.samples_without_library_destinations:
+    <p>
+        <div class='infomessage'>
+            Select a target data library and folder for a sample before selecting its datasets to transfer from the external service.
+        </div>
+    </p>
+    %endif
+    %if message:
+        ${render_msg( message, status )}
     %endif
 </%def>
