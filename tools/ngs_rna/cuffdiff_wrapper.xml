@@ -22,10 +22,6 @@
             --cds_diff_output=$cds_diff
             --promoters_diff_output=$promoters_diff
             
-            --inputA=$gtf_input
-            --input1=$aligned_reads1
-            --input2=$aligned_reads2
-            
             ## Set paired-end data parameters?
             #if $singlePaired.sPaired == "Yes":
                 -m $singlePaired.mean_inner_distance
@@ -48,13 +44,48 @@
                 #end if
                 --dbkey=${gtf_input.metadata.dbkey} 
                 --index_dir=${GALAXY_DATA_INDEX_DIR}
+                #end if
+
+                --inputA=$gtf_input
+            #if $group_analysis.do_groups == "No":
+                --input1=$aligned_reads1
+                --input2=$aligned_reads2
+            #else:
+                --labels
+                #for $group in $group_analysis.groups
+                    ${group.group}
+                #end for
+                --files
+                #for $group in $group_analysis.groups
+                    #for $file in $group.files:
+                        ${file.file}
+                    #end for
+                    ,
+                #end for
             #end if
 
     </command>
     <inputs>
         <param format="gtf" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source."/>
-        <param format="sam,bam" name="aligned_reads1" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
-        <param format="sam,bam" name="aligned_reads2" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
+        <conditional name="group_analysis"> 
+            <param name="do_groups" type="select" label="Perform replicate analysis" help="Perform cuffdiff with replicates in each group.">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="Yes">
+                <repeat name="groups" title="Input group">
+                    <param name="group" title="Group name" type="text" label="Group name (no spaces or commas)"/>
+                    <repeat name="files" title="Input file">
+                        <param name="file" label="Add file" type="data" format="sam,bam"/>
+                    </repeat>
+                </repeat>
+            </when>
+            <when value="No">
+                <param format="sam,bam" name="aligned_reads1" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
+                <param format="sam,bam" name="aligned_reads2" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
+            </when>
+        </conditional>
+
         <param name="fdr" type="float" value="0.05" label="False Discovery Rate" help="The allowed false discovery rate."/>
         <param name="min_mapqual" type="integer" value="0" label="Min SAM Mapping Quality" help="Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number."/>
         <param name="min_alignment_count" type="integer" value="0" label="Min Alignment Count" help="The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples."/>
