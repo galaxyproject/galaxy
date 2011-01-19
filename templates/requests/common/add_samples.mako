@@ -106,7 +106,7 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
     <p/>
     ##<div class="toolForm">
         ##<div class="toolFormTitle">Import samples from csv file</div>
-        <h4><img src="/static/images/fugue/toggle-expand.png" alt="Hide" onclick="showContent(this);" style="cursor:pointer;"/> Import samples from csv file</h4>
+        <h4><img src="/static/images/silk/resultset_next.png" alt="Hide" onclick="showContent(this);" style="cursor:pointer;"/> Import samples from csv file</h4>
         <div style="display:none;">
             <div class="toolFormBody">
                 <form id="import" name="import" action="${h.url_for( controller='requests_common', action='add_samples', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}" enctype="multipart/form-data" method="post" >

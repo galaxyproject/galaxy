@@ -82,7 +82,7 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <h4><img src="/static/images/fugue/toggle-expand.png" alt="Show" onclick="showContent(this);" style="cursor:pointer;"/> More</h4>
+            <h4><img src="/static/images/silk/resultset_next.png" alt="Show" onclick="showContent(this);" style="cursor:pointer;"/> More</h4>
             <div style="display:none;">
                 %for index, rd in enumerate( request_widgets ):
                     <%

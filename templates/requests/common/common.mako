@@ -19,12 +19,12 @@
             };
             if(vSibling.style.display == "none")
             {
-                vThis.src="/static/images/fugue/toggle.png";
+                vThis.src="/static/images/silk/resultset_bottom.png";
                 vThis.alt = "Hide";
                 vSibling.style.display = "block";
             } else {
                 vSibling.style.display = "none";
-                vThis.src="/static/images/fugue/toggle-expand.png";
+                vThis.src="/static/images/silk/resultset_next.png";
                 vThis.alt = "Show";
             }
             return;
@@ -604,7 +604,7 @@
         if not grid_name:
             grid_name = "Sample form layout %s" % str( grid_index )
     %>
-    <h4><img src="/static/images/fugue/toggle-expand.png" alt="Hide" onclick="showContent(this);" style="cursor:pointer;"/> ${grid_name}</h4>
+    <h4><img src="/static/images/silk/resultset_next.png" alt="Hide" onclick="showContent(this);" style="cursor:pointer;"/> ${grid_name}</h4>
     <div style="display:none;">
         <table class="grid">
             <thead>
@@ -700,18 +700,14 @@
 
 <%def name="render_samples_messages( request, is_admin=False, is_submitted=False, message=None, status=None)">
     %if request.is_rejected:
-    <p>
         <div class='errormessage'>
             ${request.last_comment}
-        </div>
-    </p>
+        </div><br/>
     %endif
     %if is_admin and is_submitted and request.samples_without_library_destinations:
-    <p>
         <div class='infomessage'>
             Select a target data library and folder for a sample before selecting its datasets to transfer from the external service.
-        </div>
-    </p>
+        </div><br/>
     %endif
     %if message:
         ${render_msg( message, status )}
