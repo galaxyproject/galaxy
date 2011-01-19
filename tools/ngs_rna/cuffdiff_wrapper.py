@@ -162,7 +162,7 @@ def __main__():
 
         
     # Debugging.
-    # print cmd
+    print cmd
             
     # Add inputs.
     # For replicate analysis: group1_rep1,group1_rep2 groupN_rep1,groupN_rep2
