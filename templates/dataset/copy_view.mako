@@ -38,30 +38,40 @@ ${h.js( "jquery", "galaxy.base" )}
     <form method="post">
         <div class="toolForm" style="float: left; width: 45%; padding: 0px;">
             <div class="toolFormTitle">Source History:<br />
-                <select id="source_history" name="source_history" refresh_on_change="true">
-                    %for hist in target_histories:
+                <select id="source_history" name="source_history" refresh_on_change="true" style="font-weight: normal;">
+                    %for i, hist in enumerate(target_histories):
                         <%
                             selected = ""
+                            current_history_text = ""
                             if hist == source_history:
                                 selected = "selected='selected'"
+                            if hist == current_history:
+                                current_history_text = " (current history)"
+                            
                         %>
-                        <option value="${trans.security.encode_id(hist.id)}" ${selected}>${hist.name}</option>
+                        <option value="${trans.security.encode_id(hist.id)}" ${selected}>
+                            ${i + 1}: ${h.truncate(hist.name, 30)}${current_history_text}
+                        </option>
                     %endfor
                 </select>
             </div>
             <div class="toolFormBody">
-                %for data in source_datasets:
-                    <%
-                        checked = ""
-                        encoded_id = trans.security.encode_id(data.id)
-                        if data.id in source_dataset_ids:
-                            checked = " checked='checked'"
-                    %>
-                    <div class="form-row">
-                        <input type="checkbox" name="source_dataset_ids" id="dataset_${encoded_id}" value="${encoded_id}"${checked}/>
-                        <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${data.name}</label>
-                    </div>
-                %endfor 
+                %if len(source_datasets) > 0:
+                    %for data in source_datasets:
+                        <%
+                            checked = ""
+                            encoded_id = trans.security.encode_id(data.id)
+                            if data.id in source_dataset_ids:
+                                checked = " checked='checked'"
+                        %>
+                        <div class="form-row">
+                            <input type="checkbox" name="source_dataset_ids" id="dataset_${encoded_id}" value="${encoded_id}"${checked}/>
+                            <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${data.name}</label>
+                        </div>
+                    %endfor
+                %else:
+                    <div class="form-row">This history has no datasets.</div>
+                %endif
             </div>
         </div>
         <div style="float: left; padding-left: 10px; font-size: 36px;">&rarr;</div>
@@ -71,14 +81,14 @@ ${h.js( "jquery", "galaxy.base" )}
                 <div class="form-row" id="single-destination">
                     <select id="single-dest-select" name="target_history_ids">
                         <option value=""></option>
-                        %for i, hist in enumerate( target_histories ):
+                        %for i, hist in enumerate(target_histories):
                             <%
                                 encoded_id = trans.security.encode_id(hist.id)
-                                cur_history_text = ""
+                                source_history_text = ""
                                 if hist == source_history:
-                                    cur_history_text = " (source history)"
+                                    source_history_text = " (source history)"
                             %>
-                            <option value="${encoded_id}">${i + 1}: ${hist.name}${cur_history_text}</option>
+                            <option value="${encoded_id}">${i + 1}: ${h.truncate(hist.name, 30)}${source_history_text}</option>
                         %endfor
                     </select><br /><br />
                     <a style="margin-left: 10px;" href="javascript:void(0);" id="select-multiple">Choose multiple histories</a>

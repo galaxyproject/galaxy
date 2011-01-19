@@ -777,6 +777,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
            target_histories = user.active_histories 
         return trans.fill_template( "/dataset/copy_view.mako",
                                     source_history = history,
+                                    current_history = trans.get_history(),
                                     source_dataset_ids = source_dataset_ids,
                                     target_history_ids = target_history_ids,
                                     source_datasets = source_datasets,
