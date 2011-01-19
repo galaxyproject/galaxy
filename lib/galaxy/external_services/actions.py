@@ -55,7 +55,11 @@ class ExternalServiceAction( object ):
         rval = "%s|%s" % ( param_dict['service_instance'].id, rval )
         return rval
     def get_action_access_link( self, trans, param_dict ):
-        return url_for( controller = '/external_services', action = "access_action", external_service_action=self.__action_url_id( param_dict ), item = param_dict['item'].id, item_type= param_dict['item'].__class__.__name__ )
+        return url_for( controller = '/external_services',
+                        action = "access_action",
+                        external_service_action=self.__action_url_id( param_dict ),
+                        item = param_dict['item'].id,
+                        item_type= param_dict['item'].__class__.__name__ )
     def populate_action( self, param_dict ):
         return PopulatedExternalServiceAction( self, param_dict )
     def handle_action( self, completed_action, param_dict, trans ):
@@ -120,6 +124,21 @@ class ExternalServiceWebAPIAction( ExternalServiceAction ):
     def perform_action( self, param_dict ):
         return self.web_api_request.get_web_api_action( param_dict )
 
+class ExternalServiceWebAction( ExternalServiceAction ):
+    """ Action that accesses an external web application  """
+
+    type = 'web'
+
+    def __init__( self, elem, parent ):
+        ExternalServiceAction.__init__( self, elem, parent )
+        self.request_elem = elem.find( 'request' )
+        self.url = Template( self.request_elem.find( 'url' ), parent )
+        self.target = self.request_elem.get( 'target', '_blank' )
+        self.method = self.request_elem.get( 'method', 'get' )
+    def get_action_access_link( self, trans, param_dict ):
+        url = self.url.build_template( param_dict ).strip()
+        return url
+
 class ExternalServiceTemplateAction( ExternalServiceAction ):
     """ Action that redirects to an external URL """
     
@@ -131,7 +150,7 @@ class ExternalServiceTemplateAction( ExternalServiceAction ):
     def perform_action( self, param_dict ):
         return ExternalServiceValueResult( self.name, param_dict, self.template.build_template( param_dict ) )
 
-action_type_to_class = { ExternalServiceWebAPIAction.type:ExternalServiceWebAPIAction, ExternalServiceTemplateAction.type:ExternalServiceTemplateAction }
+action_type_to_class = { ExternalServiceWebAction.type:ExternalServiceWebAction, ExternalServiceWebAPIAction.type:ExternalServiceWebAPIAction, ExternalServiceTemplateAction.type:ExternalServiceTemplateAction }
 
 #utility classes
 class Template( object ):

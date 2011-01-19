@@ -1,6 +1,8 @@
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.util.template import fill_template
-#from galaxy.web.framework.helpers import grids
+import logging
+
+log = logging.getLogger( __name__ )
 
 
 class ExternalServiceActionResultHandler( object ):
@@ -21,7 +23,6 @@ class ExternalServiceActionResultHandler( object ):
         #both as specified in xml and also as set by an action,
         #    e.g. mimetype returned from web_api action should be reused here...
 
-
 class ExternalServiceActionURLRedirectResultHandler( ExternalServiceActionResultHandler ):
     """ Basic Class for External Service Actions Result Handlers"""
     
@@ -34,9 +35,8 @@ class ExternalServiceActionURLRedirectResultHandler( ExternalServiceActionResult
         return result_type_to_class[ result_type ]( elem, parent )
     def __init__( self, elem, parent ):
         self.parent = parent
-    def handle_result( self, result, param_dict, trans):
+    def handle_result( self, result, param_dict, trans ):
         return trans.response.send_redirect( result.content )
-
 
 class ExternalServiceActionJSONResultHandler( ExternalServiceActionResultHandler ):
     """Class for External Service Actions JQuery Result Handler"""
