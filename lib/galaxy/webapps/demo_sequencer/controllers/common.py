@@ -12,7 +12,8 @@ class CommonController( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
         redirect_action = util.restore_text( kwd.get( 'redirect_action', '' ) )
-        title = util.restore_text( kwd.get( 'title', '' ) )
+        titles = util.restore_text( kwd.get( 'titles', '' ) )
+        titles = util.listify( titles )
         JobId = util.restore_text( kwd.get( 'JobId', '' ) )
         sample_id = util.restore_text( kwd.get( 'sample_id', '' ) )
         message = util.restore_text( kwd.get( 'message', '' ) )
@@ -46,7 +47,7 @@ class CommonController( BaseController ):
         elif not redirect_action:
             # Specially handle the initial request to the demo sequencer by starting with the first defined redirect.
             redirect_action, action_dict = sequencer_redirects.items()[0]
-            title = action_dict[ 'title' ]
+            titles = [ action_dict[ 'title' ] ]
             if 'requests' in action_dict:
                 requests = action_dict[ 'requests' ]
         else:
@@ -56,22 +57,23 @@ class CommonController( BaseController ):
                         # Move to the next action, if there is one.
                         redirect_action = sequencer_redirects.keys()[ index + 1 ]
                         action_dict = sequencer_redirects[ redirect_action ]
-                        title = action_dict[ 'title' ]
+                        titles.append( action_dict[ 'title' ] )
                     except:
-                        # Keep displaying the same title on the page until we redirect ( if we do ).
-                        action_dict = sequencer_redirects[ redirect_action ]
-                        title = action_dict[ 'title' ]
                         # If we're done redirecting, stop.
                         redirect_action = 'stop'
                     break
         if not trans.app.sequencer_actions_registry.authenticated:
             # Support various types of authentication
-            trans.app.sequencer_actions_registry.authenticated = True
             if trans.app.sequencer_actions_registry.browser_login:
                 # We'll just build the URL here since authentication will be handled in the browser
                 url = trans.app.sequencer_actions_registry.browser_login[ 'url' ]
                 params = trans.app.sequencer_actions_registry.browser_login[ 'params' ]
                 trans.app.sequencer_actions_registry.browser_login = '%s?%s' %( url, urllib.urlencode( params ) )
+                if not trans.app.sequencer_actions_registry.final_redirect:
+                    # If we don't have a final_redirect tag, but we want our browser to authenticate,
+                    # do it ow.  If we have a final_redirect tag, browser authentication will happen there.
+                    url = web.url_for( controller='common', action='index', **kwd )
+                    return trans.fill_template( 'webapps/demo_sequencer/redirect.mako', redirect_url=url )
             if trans.app.sequencer_actions_registry.basic_http_authentication:
                 # Example tag:
                 # <basic_http_authentication user="administrator" password="galaxy" url="http://127.0.0.1" realm="" />
@@ -87,12 +89,14 @@ class CommonController( BaseController ):
                 opener = urllib2.build_opener( handler )
                 # Install the opener, now all calls to urllib2.urlopen use our opener.
                 urllib2.install_opener( opener )
+                trans.app.sequencer_actions_registry.authenticated = True
             if trans.app.sequencer_actions_registry.http_headers_authorization:
                 # Example tag:
                 # <http_headers_authorization credentials="administrator:galaxy" url="http://127.0.0.1" />
                 url, credentials = trans.app.sequencer_actions_registry.http_headers_authorization
                 req = urllib2.Request( url )
                 req.add_header( 'Authorization', 'Basic %s' % base64.b64encode( credentials ) )
+                trans.app.sequencer_actions_registry.authenticated = True
             if trans.app.sequencer_actions_registry.http_cookie_processor_authentication:
                 # Example tag:
                 # <http_cookie_processor_authentication url="http://127.0.0.1/login">
@@ -110,6 +114,7 @@ class CommonController( BaseController ):
                 page.close()
                 # Any additional requests should automatically pass back any
                 # cookies received during login, thanks to the HTTPCookieProcessor
+                trans.app.sequencer_actions_registry.authenticated = True
         # Handle requests, if there are any
         for request_tup in requests:
             url, http_method, request_params, response_type = self.parse_request_tup( request_tup, **kwd )
@@ -125,17 +130,18 @@ class CommonController( BaseController ):
                 if 'JobId' in response:
                     JobId = str( response[ 'JobId' ] )
                     kwd[ 'JobId' ] = JobId
+        titles = ','.join( titles )
         return trans.fill_template( "webapps/demo_sequencer/index.mako",
                                     redirect_action=redirect_action,
                                     redirect_delay=redirect_delay,
-                                    title=title,
+                                    titles=titles,
                                     sample_id=sample_id,
                                     JobId=JobId,
                                     message=message,
                                     status=status )
     def parse_request_tup( self, request_tup, **kwd ):
         redirect_action = util.restore_text( kwd.get( 'redirect_action', '' ) )
-        title = util.restore_text( kwd.get( 'title', '' ) )
+        titles = util.restore_text( kwd.get( 'titles', '' ) )
         JobId = util.restore_text( kwd.get( 'JobId', '' ) )
         sample_id = util.restore_text( kwd.get( 'sample_id', '' ) )
         message = util.restore_text( kwd.get( 'message', '' ) )
@@ -199,7 +205,7 @@ class CommonController( BaseController ):
         params = dict( message = message,
                        status = 'error',
                        redirect_action = 'exit',
-                       title = 'Error' )
+                       titles = 'Error' )
         return trans.response.send_redirect( web.url_for( controller='common',
                                                           action='index',
                                                           **params ) )
@@ -213,6 +219,7 @@ class CommonController( BaseController ):
         return from_json_string( output )
     @web.expose
     def login( self, trans, **kwd ):
+        trans.app.sequencer_actions_registry.authenticated = True
         return trans.fill_template( "webapps/demo_sequencer/login.mako" )
     @web.expose
     def empty_page( self, trans, **kwd ):

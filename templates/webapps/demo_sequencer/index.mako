@@ -1,11 +1,16 @@
 <%inherit file="/base.mako"/>
 
+<%
+    import galaxy.util
+    titles_list = util.listify( titles )
+%>
+
 <%def name="javascripts()">
     ${parent.javascripts()}
     %if redirect_action != 'exit':
     <script type="text/javascript">
         function redirect(){
-            top.location.href = "${h.url_for( controller='common', action='index', redirect_action=redirect_action, JobId=JobId, sample_id=sample_id )}";
+            top.location.href = "${h.url_for( controller='common', action='index', redirect_action=redirect_action, titles=titles, JobId=JobId, sample_id=sample_id )}";
         }
         function set_redirect(){
             %if redirect_delay:
@@ -33,12 +38,17 @@
         <tr><td><img src='static/images/sequencer.png' alt="Sequencer" /></td></tr>
         <tr>
             <td align="center">
-                %if title:
-                    <h2>${title}</h2>
+                %if titles_list:
+                    %for title in titles_list:
+                        <h2>${title}</h2>
+                    %endfor
                 %else:
                     <h2>&nbsp;</h2>
                 %endif
             </td>
         </tr>
     </table>
+    %if not trans.app.sequencer_actions_registry.authenticated and trans.app.sequencer_actions_registry.browser_login:
+        <iframe name="login" id="login" frameborder="0" style="position: absolute; width: 0%; height: 0%;" src="${h.url_for( controller="common", action="login" )}"></iframe>
+    %endif
 </body>
