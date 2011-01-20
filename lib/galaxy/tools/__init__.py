@@ -564,6 +564,7 @@ class Tool:
             output.label = util.xml_text( data_elem, "label" )
             output.count = int( data_elem.get("count", 1) )
             output.filters = data_elem.findall( 'filter' )
+            output.from_work_dir = data_elem.get("from_work_dir", None)
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
             self.outputs[ output.name ] = output

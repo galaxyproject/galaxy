@@ -504,10 +504,35 @@ class JobWrapper( object ):
                         self.fail( "Job %s's output dataset(s) could not be read" % job.id )
                         return
         job_context = ExpressionContext( dict( stdout = stdout, stderr = stderr ) )
+        job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
+        def file_in_dir( file_path, a_dir ):
+            """ Returns true if file is in directory. """
+            abs_file_path = os.path.abspath( file_path )
+            return os.path.split( abs_file_path )[0] == os.path.abspath( a_dir )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                #
+                # If HDA is to be copied from the working directory, do it now so that other attributes are correctly set.
+                #
+                if isinstance( dataset, model.HistoryDatasetAssociation ):
+                    joda = self.sa_session.query( model.JobToOutputDatasetAssociation ).filter_by( job=job, dataset=dataset ).first()
+                    if job_tool:
+                        hda_tool_output = job_tool.outputs.get( joda.name, None )
+                        if hda_tool_output and hda_tool_output.from_work_dir:
+                            # Copy from working dir to HDA.
+                            source_file = os.path.join( os.path.abspath( self.working_directory ), hda_tool_output.from_work_dir )
+                            if file_in_dir( source_file, self.working_directory ):
+                                try:
+                                    shutil.move( source_file, dataset.file_name )
+                                    log.debug( "finish(): Moved %s to %s as directed by from_work_dir" % ( source_file, dataset.file_name ) )
+                                except ( IOError, OSError ):
+                                    log.debug( "finish(): Could not move %s to %s as directed by from_work_dir" % ( source_file, dataset.file_name ) )
+                            else:
+                                # Security violation.
+                                log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, self.working_directory ) )
+            
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
                 dataset.info  = context['stdout'] + context['stderr']

@@ -5,18 +5,6 @@
     </requirements>
     <command interpreter="python">
         cuffcompare_wrapper.py 
-            ## Set outputs.
-            --transcripts-accuracy-output=$transcripts_accuracy
-            --input1-tmap-output=$input1_tmap
-            --input1-refmap-output=$input1_refmap
-            --transcripts-combined-output=$transcripts_combined
-            
-            ## More outputs if second GTF is used.
-            #if $second_gtf.use_second_gtf == "Yes":
-                --transcripts-tracking-output=$transcripts_tracking
-                --input2-tmap-output=$input2_tmap
-                --input2-refmap-output=$input2_refmap
-            #end if
             
             ## Use annotation reference?
             #if $annotation.use_ref_annotation == "Yes":
@@ -91,19 +79,19 @@
     </inputs>
 
     <outputs>
-        <data format="txt" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy"/>
-        <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: data ${input1.hid} tmap file"/>
-        <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${input1.hid} refmap file"/>
-        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} tmap file">
+        <data format="txt" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy" from_work_dir="cc_output" />
+        <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: data ${input1.hid} tmap file" from_work_dir="input1.tmap" />
+        <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${input1.hid} refmap file" from_work_dir="input1.refmap"/>
+        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} tmap file" from_work_dir="input2.tmap">
             <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
         </data>
-        <data format="tabular" name="input2_refmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} refmap file">
+        <data format="tabular" name="input2_refmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} refmap file" from_work_dir="input2.refmap">
             <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
         </data>
-        <data format="tabular" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking">
+        <data format="tabular" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking" from_work_dir="cc_output.tracking">
             <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
         </data>
-        <data format="gtf" name="transcripts_combined" label="${tool.name} on ${on_string}: combined transcripts"/>
+        <data format="gtf" name="transcripts_combined" label="${tool.name} on ${on_string}: combined transcripts" from_work_dir="cc_output.combined.gtf"/>
     </outputs>
 
     <tests>
