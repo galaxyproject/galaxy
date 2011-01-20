@@ -890,6 +890,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                              request=request,
                                                              sample_index=len( displayable_sample_widgets ),
                                                              workflow_id=workflow_id,
+                                                             history_id=history_id,
                                                              **kwd)
                 # Append the new sample to the current list of samples for the request
                 displayable_sample_widgets.append( dict( id=None,
@@ -1383,7 +1384,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                             kwd_tag = "%s_" % wf_tag
                             if k.startswith(kwd_tag):
                                 # DBTODO Don't need to store the whole mapping word in the dict, only the step.
-                                workflow_dict['mappings'][int(k[len(kwd_tag):])] = {'ds_name':v}
+                                workflow_dict['mappings'][int(k[len(kwd_tag):])] = {'ds_tag':v}
                 field_values = {}
                 for field_index, field in enumerate( request.type.sample_form.fields ):
                     field_name = field['name']
@@ -1409,6 +1410,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                           sample_index=index,
                                                           sample=sample,
                                                           workflow_dict=workflow_dict,
+                                                          history_id=history_id,
                                                           **kwd)
             sample_widgets.append( dict( id=sample_id,
                                          name=name,
@@ -1455,7 +1457,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                         kwd_tag = "%s_" % wf_tag
                         if k.startswith(kwd_tag):
                             # DBTODO Change the key to include the dataset tag, not just the names.
-                            workflow_dict['mappings'][int(k[len(kwd_tag):])] = {'ds_name':v}
+                            workflow_dict['mappings'][int(k[len(kwd_tag):])] = {'ds_tag':v}
             field_values = {}
             for field_index, field in enumerate( request.type.sample_form.fields ):
                 field_name = field['name']
@@ -1481,6 +1483,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                          sample_index=index,
                                                          sample=None,
                                                          workflow_dict=workflow_dict,
+                                                         history_id=history_id,
                                                          **kwd)
             sample_widgets.append( dict( id=None,
                                          name=name,
@@ -1592,35 +1595,38 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         return library_select_field, folder_select_field
     
     def __build_history_select_field(self, trans, user, sample_index, sample = None, history_id=None, **kwd):
-        #DBTODO Explicit "New History"?  Or is that implied if you don't select one but do select a processing workflow?
         params = util.Params( kwd )
         history_select_field_name= "sample_%i_history_id" % sample_index
         if not history_id:
             history_id = params.get( history_select_field_name, None )
         selected_history = None
-        if history_id not in [ None, 'none' ]:
+        if history_id not in [ None, 'none', 'new']:
             for history in user.histories:
                 if not history.deleted:
                     encoded_id = trans.security.encode_id(history.id)
                     if encoded_id == str(history_id):
                         selected_history = history
                         break
-        elif sample and sample.history and history_id == 'none':
+        elif sample and sample.history and history_id == 'none' or history_id == 'new':
             # The user previously selected a history but is now resetting the selection to 'none'
             selected_history = None
         elif sample and sample.history:
             history_id = trans.security.encode_id( sample.history.id )
             selected_history = sample.history
         # Build the sample_%i_history_id SelectField with refresh on change disabled
-        return build_select_field( trans,
+        hsf = build_select_field( trans,
                                    [h for h in user.histories if not h.deleted],
                                    'name',
                                    history_select_field_name,
                                    initial_value='none',
                                    selected_value=str( history_id ).lower(),
-                                   refresh_on_change=False )
+                                   refresh_on_change=True )
+        # This is ugly, but allows for an explicit "New History", while still using build_select_field.
+        # hsf.options = hsf.options[:1] + [( "Create a New History", 'new', 'new'==str( history_id ).lower() )] + hsf.options[1:]
+        hsf.options = [( "Create a New History", 'none', 'none'==str( history_id ).lower() )] + hsf.options[1:]
+        return hsf
 
-    def __build_workflow_select_field(self, trans, user, request, sample_index, sample=None, workflow_id=None, workflow_dict=None, **kwd ):
+    def __build_workflow_select_field(self, trans, user, request, sample_index, sample=None, workflow_id=None, workflow_dict=None, history_id=None, **kwd ):
         params = util.Params( kwd )
         workflow_select_field_name= "sample_%i_workflow_id" % sample_index
         selected_workflow = None
@@ -1643,6 +1649,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                    initial_value='none',
                                                    selected_value=str( workflow_id ).lower(),
                                                    refresh_on_change=True )
+        workflow_select_field.options = [( "No Workflow", 'none', 'none'==str( workflow_id ).lower() )] + workflow_select_field.options[1:]
         wf_fieldset = [workflow_select_field]
         if selected_workflow and request.type.external_services:
             # DBTODO This will work for now, but should be handled more rigorously.
@@ -1652,7 +1659,11 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             for k, v in external_service.form_values.content.items():
                 match = dataset_name_re.match( k )
                 if match:
-                    ds_list.append((k, v))
+                    ds_list.append(("ds|%s" % k[:-5], v))
+            if history_id not in [None, 'none', 'new', '']:
+                hist = trans.sa_session.query( trans.model.History ).get(trans.security.decode_id(history_id))
+                h_inputs = [("hi|%s" % trans.security.encode_id(ds.id), ds.name) for ds in hist.datasets if not ds.deleted]
+                ds_list += h_inputs
             for step in selected_workflow.steps:
                 if step.type == 'data_input':
                     if step.tool_inputs and "name" in step.tool_inputs:
@@ -1660,14 +1671,13 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                         select_field = SelectField( name=sf_name )
                         sf = params.get( sf_name, None )
                         if not sf and sample and sample.workflow:
-                            # DBTODO Those should not need to be str() below.
                             if sample.workflow['mappings'].has_key(str(step.id)):
-                                sf = sample.workflow['mappings'][str(step.id)]['ds_name']
-                        for k, v in ds_list:
-                            if v == sf:
-                                select_field.add_option( v, v, selected=True)
+                                sf = sample.workflow['mappings'][str(step.id)]['ds_tag']
+                        for value, label in ds_list:
+                            if value == sf:
+                                select_field.add_option( label, value, selected=True)
                             else:
-                                select_field.add_option( v, v )
+                                select_field.add_option( label, value )
                         wf_fieldset.append((step.tool_inputs['name'], select_field))
         return wf_fieldset
         
