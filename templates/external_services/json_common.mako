@@ -1,21 +1,19 @@
 
 <%def name="display_dict( result_dict )">
-    <div class="form-row">
     %for key, value in result_dict.items():
-            <label>
-                ${key}
-            </label>
+        <div class="form-row">
+            <label>${key}</label>
             ${display_item( value )}
+            <div style="clear: both"></div>
+        </div>
     %endfor
-    </div>
 </%def>
-
 
 <%def name="display_list( items )">
     <ul>
-    %for item in items:
-        <li>${display_item( item ) }</li>
-    %endfor
+        %for item in items:
+            <li>${display_item( item ) }</li>
+        %endfor
     </ul>
 </%def>
 
@@ -25,7 +23,6 @@
     %elif isinstance( item, dict ):
         ${display_dict( item )}
     %else:
-        <div class="form-row-input">${item}</div>
-        <div style="clear: both"></div>
+        ${item}
     %endif
 </%def>
