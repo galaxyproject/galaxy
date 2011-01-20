@@ -2,6 +2,7 @@ import logging, os, sys, time, tempfile
 from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
+from galaxy.util import inflector
 from cgi import escape
 import metadata
 import zipfile
@@ -403,7 +404,7 @@ class Text( Data ):
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
-                    dataset.blurb = "%s lines" % util.commaify( str( dataset.metadata.data_lines ) )
+                    dataset.blurb = "%s %s" % ( util.commaify( str(dataset.metadata.data_lines) ), inflector.cond_plural(dataset.metadata.data_lines, "line") )
                 else:
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
@@ -415,9 +416,9 @@ class Text( Data ):
                     dataset_fh.close()
                     sample_lines = dataset_read.count('\n')
                     est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
-                    dataset.blurb = "~%s lines" % util.commaify(str(est_lines))
+                    dataset.blurb = "~%s %s" % ( util.commaify(str(est_lines)), inflector.cond_plural(est_lines, "line") )
             else:
-                dataset.blurb = "%s lines" % util.commaify( str( line_count ) )
+                dataset.blurb = "%s %s" % util.commaify( str(line_count) ), inflector.cond_plural(line_count, "line")
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
