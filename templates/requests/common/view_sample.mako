@@ -47,7 +47,15 @@
 </%def>
 
 <%def name="render_external_service_action( external_service_action )">
-    <div class="toolTitle"><a href="${external_service_action.get_action_access_link( trans )}" target="galaxy_main">${external_service_action.label}</a></div>
+    <%
+        if hasattr( external_service_action.action, 'target' ):
+            target = external_service_action.action.target
+        else:
+            target = 'galaxy_main'
+    %>
+    <div class="toolTitle">
+        <a href="${external_service_action.get_action_access_link( trans )}" target="${target}">${external_service_action.label}</a>
+    </div>
 </%def>
 
 <br/><br/>

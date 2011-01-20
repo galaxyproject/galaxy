@@ -1149,8 +1149,8 @@ class LibraryDataset( object ):
             template = temp_info.template
             content = temp_info.info.content
             tmp_dict = {}
-            for i, field in enumerate(template.fields):
-                tmp_dict[field['label']] = content[i]
+            for field in template.fields:
+                tmp_dict[field['label']] = content[field['name']]
             template_data[template.name] = tmp_dict
         
         rval = dict( name = ldda.name,
@@ -1169,7 +1169,7 @@ class LibraryDataset( object ):
             if isinstance( val, MetadataFile ):
                 val = val.file_name
             elif isinstance( val, list ):
-                val = ', '.join( val )
+                val = ', '.join( [str(v) for v in val] )
             rval['metadata_' + name] = val
         return rval
 

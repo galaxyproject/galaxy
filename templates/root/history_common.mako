@@ -108,7 +108,7 @@
                 </div>
             %endif
             <div>
-                ${data.blurb},
+                ${data.blurb}<br />
                 format: <span class="${data.ext}">${data.ext}</span>, 
                 database:
                 %if data.dbkey == '?':
@@ -117,7 +117,9 @@
                     <span class="${data.dbkey}">${_(data.dbkey)}</span>
                 %endif
             </div>
-            <div class="info">${_('Info: ')}${data.display_info()}</div>
+            %if data.display_info():
+                <div class="info">${_('Info: ')}${data.display_info()}</div>
+            %endif
             <div>
                 %if data.has_data():
                     
@@ -172,17 +174,18 @@
                     %for display_app in data.datatype.get_display_types():
                         <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                         %if len( display_links ) > 0:
-                            | ${data.datatype.get_display_label(display_app)}
+                            ${data.datatype.get_display_label(display_app)}
                             %for display_name, display_link in display_links:
                                 <a target="${target_frame}" href="${display_link}">${_(display_name)}</a> 
                             %endfor
                         %endif
                     %endfor
                     %for display_app in data.get_display_applications( trans ).itervalues():
-                        | ${display_app.name} 
+                        ${display_app.name} 
                         %for link_app in display_app.links.itervalues():
                             <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
                         %endfor
+                        <br />
                     %endfor
                 %elif for_editing:
                     <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
