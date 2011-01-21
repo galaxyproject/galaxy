@@ -61,6 +61,10 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
                 grid_header = '<h3>Add Samples to Sequencing Request "%s"</h3>' % request.name
             %>
             ${render_samples_grid( cntrller, request, displayable_sample_widgets, action='edit_samples', adding_new_samples=True, encoded_selected_sample_ids=[], render_buttons=False, grid_header=grid_header )}
+            <div class="toolParamHelp" style="clear: both;">
+                For each sample, select the data library and folder in which you would like the run datasets deposited.
+                To automatically run a workflow on run datastets, select a history first and then the desired workflow. 
+            </div>
             ## Render the other grids
             <% trans.sa_session.refresh( request.type.sample_form ) %>
             %for grid_index, grid_name in enumerate( request.type.sample_form.layout ):

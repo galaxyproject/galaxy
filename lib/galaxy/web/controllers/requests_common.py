@@ -1623,7 +1623,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                    refresh_on_change=True )
         # This is ugly, but allows for an explicit "New History", while still using build_select_field.
         # hsf.options = hsf.options[:1] + [( "Create a New History", 'new', 'new'==str( history_id ).lower() )] + hsf.options[1:]
-        hsf.options = [( "Create a New History", 'none', 'none'==str( history_id ).lower() )] + hsf.options[1:]
+        hsf.options = [( "Select one", 'none', 'none'==str( history_id ).lower() )] + hsf.options[1:]
         return hsf
 
     def __build_workflow_select_field(self, trans, user, request, sample_index, sample=None, workflow_id=None, workflow_dict=None, history_id=None, **kwd ):
@@ -1649,7 +1649,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                    initial_value='none',
                                                    selected_value=str( workflow_id ).lower(),
                                                    refresh_on_change=True )
-        workflow_select_field.options = [( "No Workflow", 'none', 'none'==str( workflow_id ).lower() )] + workflow_select_field.options[1:]
+        workflow_select_field.options = [( "Select one", 'none', 'none'==str( workflow_id ).lower() )] + workflow_select_field.options[1:]
         wf_fieldset = [workflow_select_field]
         if selected_workflow and request.type.external_services:
             # DBTODO This will work for now, but should be handled more rigorously.

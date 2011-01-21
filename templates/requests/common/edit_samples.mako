@@ -110,6 +110,10 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
                     </div>
                 %endif
             %endif
+            <div class="toolParamHelp" style="clear: both;">
+                For each sample, select the data library and folder in which you would like the run datasets deposited.
+                To automatically run a workflow on run datastets, select a history first and then the desired workflow. 
+            </div>
             ## Render the other grids
             <% trans.sa_session.refresh( request.type.sample_form ) %>
             %for grid_index, grid_name in enumerate( request.type.sample_form.layout ):
