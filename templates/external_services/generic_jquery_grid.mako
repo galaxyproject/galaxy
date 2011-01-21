@@ -28,31 +28,31 @@
         total = None
         page = None
     headers = rows[0].keys()
-    if records:
-        records_label = '<b>records:</b> %s' % str( records )
-    else:
-        records_label = ''
-    if total:
-        total_label = '<b>total:</b> %s' % str( total )
-    else:
-        total_label = ''
-    if page:
-        page_label = '<b>page:</b> %s' % str( page )
-    else:
-        page_label = ''
 %>
 
 <div class="toolForm">
     <div class="toolFormTitle">${action.label} of ${param_dict['service_instance'].name} (${param_dict['service'].name}) on ${param_dict['item'].name}</div>
     <div class="toolFormBody">
-        %if records_label:
-            ${records_label}
+        %if records:
+            <div class="form-row">
+                <label>Records</label>
+                ${records}
+                <div style="clear: both"></div>
+            </div>
         %endif
-        %if total_label:
-            ${total_label}
+        %if total:
+            <div class="form-row">
+                <label>Total</label>
+                ${total}
+                <div style="clear: both"></div>
+            </div>
         %endif
-        %if page_label:
-            ${page_label}
+        %if page:
+            <div class="form-row">
+                <label>Page</label>
+                ${page}
+                <div style="clear: both"></div>
+            </div>
         %endif
         ${display_json_grid_result( headers, rows )}
     </div>

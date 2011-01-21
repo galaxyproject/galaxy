@@ -412,7 +412,7 @@
                                 </div>
                                 <div popupmenu="sample-${sample.id}-popup">
                                     %if can_select_datasets:
-                                        %for external_service in sample.request.type.get_external_services_for_data_transfer( trans ):
+                                        %for external_service in sample.request.type.get_external_services_for_manual_data_transfer( trans ):
                                             <%
                                                 menu_item_label = "Select datasets to transfer using %s" % external_service.name
                                             %>

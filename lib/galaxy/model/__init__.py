@@ -1818,7 +1818,7 @@ class ExternalService( object ):
         for data_transfer_type, data_transfer_obj in external_service_type.data_transfer.items():
             if data_transfer_type == self.data_transfer_types.SCP:
                 scp_configs = {}
-                automatic_transfer = self.form_values.content.get( data_transfer_obj.config.get( 'automatic_transfer', 'false' ), 'false' )
+                automatic_transfer = data_transfer_obj.config.get( 'automatic_transfer', 'false' )
                 scp_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
                 scp_configs[ 'host' ] = self.form_values.content.get( data_transfer_obj.config.get( 'host', '' ), '' )
                 scp_configs[ 'user_name' ] = self.form_values.content.get( data_transfer_obj.config.get( 'user_name', '' ), '' )
@@ -1853,14 +1853,17 @@ class RequestType( object, APIItem ):
             if rtesa.external_service.external_service_type_id == external_service_type_id:
                 return rtesa.external_service
         return None
-    def get_external_services_for_data_transfer( self, trans ):
+    def get_external_services_for_manual_data_transfer( self, trans ):
+        '''Returns all external services that use manual data transfer'''
         external_services = []
         for rtesa in self.external_service_associations:
             external_service = rtesa.external_service
             # load data transfer settings
             external_service.load_data_transfer_settings( trans )
             if external_service.data_transfer:
-                external_services.append( external_service )
+                for transfer_type, transfer_type_settings in external_service.data_transfer.items():
+                    if not transfer_type_settings[ 'automatic_transfer' ]:
+                        external_services.append( external_service )
         return external_services
     def delete_external_service_associations( self, trans ):
         '''Deletes all external service associations.'''
