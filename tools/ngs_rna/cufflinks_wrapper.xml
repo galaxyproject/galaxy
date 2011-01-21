@@ -21,6 +21,11 @@
             #if $singlePaired.sPaired == "Yes":
                 -m $singlePaired.mean_inner_distance
                 -s $singlePaired.inner_distance_std_dev
+                #end if
+
+            ## Normalization?
+            #if str($do_normalization) == "Yes":
+            -N
             #end if
             
             ## Bias correction?
@@ -41,6 +46,10 @@
         <param name="min_isoform_fraction" type="float" value="0.05" min="0" max="1" label="Min Isoform Fraction" help=""/>
         <param name="pre_mrna_fraction" type="float" value="0.05" min="0" max="1" label="Pre MRNA Fraction" help=""/>
         <param name="min_map_quality" type="integer" value="0" min="0" max="255" label="Min SAM Map Quality" help=""/>
+        <param name="do_normalization" type="select" label="Perform quartile normalization" help="Removes top 25% of genes from FPKM denominator to improve accuracy of differential expression calls for low abundance transcripts.">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+        </param>
         <conditional name="reference_annotation">
             <param name="use_ref" type="select" label="Use Reference Annotation">
                 <option value="No">No</option>
@@ -102,6 +111,7 @@
             <param name="pre_mrna_fraction" value="0.05"/>
             <param name="min_map_quality" value="0"/>
             <param name="use_ref" value="No"/>
+            <param name="do_normalization" value="No" />
             <param name="do_bias_correction" value="No"/>
             <output name="genes_expression" format="tabular" file="cufflinks_out3.expr"/>
             <output name="transcripts_expression" format="tabular" file="cufflinks_out2.expr"/>
@@ -202,5 +212,6 @@ This is a list of implemented Cufflinks options::
   -j        Some RNA-Seq protocols produce a significant amount of reads that originate from incompletely spliced transcripts, and these reads can confound the assembly of fully spliced mRNAs. Cufflinks uses this parameter to filter out alignments that lie within the intronic intervals implied by the spliced alignments. The minimum depth of coverage in the intronic region covered by the alignment is divided by the number of spliced reads, and if the result is lower than this parameter value, the intronic alignments are ignored. The default is 5%.
   -Q	    Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number. The default is 0.
   -G	    Tells Cufflinks to use the supplied reference annotation to estimate isoform expression. It will not assemble novel transcripts, and the program will ignore alignments not structurally compatible with any reference transcript.  
+  -N        With this option, Cufflinks excludes the contribution of the top 25 percent most highly expressed genes from the number of mapped fragments used in the FPKM denominator. This can improve robustness of differential expression calls for less abundant genes and transcripts.
     </help>
 </tool>

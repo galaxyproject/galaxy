@@ -19,7 +19,7 @@ def check_seq_file( dbkey, cached_seqs_pointer_file ):
                 seq_path = fields[2].strip()
                 break
     return seq_path
-
+	
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
@@ -34,11 +34,14 @@ def __main__():
                                                                                 where each end is 50bp, you should set -r to be 200. The default is 45bp.')
     parser.add_option( '-Q', '--min-mapqual', dest='min_mapqual', help='Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number. The default is 0.' )
     parser.add_option( '-G', '--GTF', dest='GTF', help='Tells Cufflinks to use the supplied reference annotation to estimate isoform expression. It will not assemble novel transcripts, and the program will ignore alignments not structurally compatible with any reference transcript.' )
+    
+	# Normalization options.
+    parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
 
     # Advanced Options:	
     parser.add_option( '--num-importance-samples', dest='num_importance_samples', help='Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000' )
     parser.add_option( '--max-mle-iterations', dest='max_mle_iterations', help='Sets the number of iterations allowed during maximum likelihood estimation of abundances. Default: 5000' )
-    
+
     # Bias correction options.
     parser.add_option( '-r', dest='do_bias_correction', action="store_true", help='Providing Cufflinks with a multifasta file via this option instructs it to run our new bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates.')
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
@@ -105,6 +108,8 @@ def __main__():
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
         cmd += ( " --max-mle-iterations %i" % int ( options.max_mle_iterations ) )
+    if options.do_normalization:
+        cmd += ( " -N" )
     if options.do_bias_correction:
         cmd += ( " -r %s" % seq_path )
         

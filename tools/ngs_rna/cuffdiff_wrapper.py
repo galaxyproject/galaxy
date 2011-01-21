@@ -2,6 +2,33 @@
 
 import optparse, os, shutil, subprocess, sys, tempfile
 
+def group_callback( option, op_str, value, parser ):
+    groups = []
+    flist = []
+    for arg in parser.rargs:
+        arg = arg.strip()
+        if arg[0] is "-":
+            break
+        elif arg[0] is ",":
+            groups.append(flist)
+            flist = []
+        else:
+            flist.append(arg)
+    groups.append(flist)
+
+    setattr(parser.values, option.dest, groups)
+    
+def label_callback( option, op_str, value, parser ):
+    labels = []
+    for arg in parser.rargs:
+        arg = arg.strip()
+        if arg[0] is "-":
+            break
+        else:
+            labels.append(arg)
+
+    setattr(parser.values, option.dest, labels)
+
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
@@ -39,10 +66,17 @@ def __main__():
     parser.add_option( '--max-mle-iterations', dest='max_mle_iterations', help='Sets the number of iterations allowed during maximum likelihood estimation of abundances. Default: 5000' )
     
     # Wrapper / Galaxy options.
+    parser.add_option( '-f', '--files', dest='groups', action="callback", callback=group_callback, help="Groups to be processed, groups are separated by spaces, replicates in a group comma separated. group1_rep1,group1_rep2 group2_rep1,group2_rep2, ..., groupN_rep1, groupN_rep2" )
     parser.add_option( '-A', '--inputA', dest='inputA', help='A transcript GTF file produced by cufflinks, cuffcompare, or other source.')
     parser.add_option( '-1', '--input1', dest='input1', help='File of RNA-Seq read alignments in the SAM format. SAM is a standard short read alignment, that allows aligners to attach custom tags to individual alignments, and Cufflinks requires that the alignments you supply have some of these tags. Please see Input formats for more details.' )
     parser.add_option( '-2', '--input2', dest='input2', help='File of RNA-Seq read alignments in the SAM format. SAM is a standard short read alignment, that allows aligners to attach custom tags to individual alignments, and Cufflinks requires that the alignments you supply have some of these tags. Please see Input formats for more details.' )
+
+    # Label options
+    parser.add_option('-L', '--labels', dest='labels', action="callback", callback=label_callback, help="Labels for the groups the replicates are in.")
     
+	# Normalization options.
+    parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
+
     # Bias correction options.
     parser.add_option( '-r', dest='do_bias_correction', action="store_true", help='Providing Cufflinks with a multifasta file via this option instructs it to run our new bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates.')
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
@@ -121,14 +155,30 @@ def __main__():
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
         cmd += ( " --max-mle-iterations %i" % int ( options.max_mle_iterations ) )
+    if options.do_normalization:
+        cmd += ( " -N" )
     if options.do_bias_correction:
         cmd += ( " -r %s" % seq_path )
+            
+    # Add inputs.
+    # For replicate analysis: group1_rep1,group1_rep2 groupN_rep1,groupN_rep2
+    if options.groups:
+        cmd += " --labels "
+        for label in options.labels:
+            cmd += label + ","
+        cmd = cmd[:-1]
+
+        cmd += " " + options.inputA + " "
+
+        for group in options.groups:
+            for filename in group:
+                cmd += filename + ","
+            cmd = cmd[:-1] + " "
+    else: 
+        cmd += " " + options.inputA + " " + options.input1 + " " + options.input2
         
     # Debugging.
     print cmd
-            
-    # Add inputs.
-    cmd += " " + options.inputA + " " + options.input1 + " " + options.input2
 
     # Run command.
     try:
