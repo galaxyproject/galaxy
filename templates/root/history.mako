@@ -299,9 +299,11 @@ div.form-row {
     margin-bottom: 15px;
 }
 #history-name-container {
-    display: inline-block;
     color: gray;
     font-weight: bold;
+}
+#history-name {
+    word-wrap: break-word;
 }
 .editable-text {
     border: solid transparent 1px;
