@@ -165,7 +165,7 @@
                   <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
-                  <param name="seg_mismatches" type="integer" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
+                  <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
                   <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
                   
                   <!-- Options for supplying own junctions. -->
@@ -256,7 +256,7 @@
                   <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
-                  <param name="seg_mismatches" type="integer" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
+                  <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
                   <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
                   <!-- Options for supplying own junctions. -->
                   <conditional name="own_junctions">
