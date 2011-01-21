@@ -178,8 +178,8 @@ class UsesVisualization( SharableItemSecurity ):
                     
                     tracks.append( {
                         "track_type": track_type,
-                        "name": dataset.name,
-                        "dataset_id": dataset.id,
+                        "name": t['name'],
+                        "dataset_id": trans.security.encode_id( dataset.id ),
                         "prefs": simplejson.dumps(prefs),
                         "filters": track_data_provider.get_filters(),
                         "tool": get_tool_def( trans, dataset )

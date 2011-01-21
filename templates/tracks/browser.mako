@@ -121,7 +121,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             view.editor = true;
             %for track in config.get('tracks'):
                 view.add_track(
-                    new ${track["track_type"]}( "${track['name'] | h}", view, ${track['dataset_id']},  ${track['prefs']}, 
+                    new ${track["track_type"]}( "${track['name'] | h}", view, "${track['dataset_id']}",  ${track['prefs']}, 
                                                                               ${track['filters']}, ${track['tool']} )
                 );
             %endfor

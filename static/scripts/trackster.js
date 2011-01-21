@@ -2,6 +2,26 @@
     2010, James Taylor, Kanwei Li
 */
 
+// Draw a dashed line on a canvas using filled rectangles. This function is based on what is found here:
+// http://vetruvet.blogspot.com/2010/10/drawing-dashed-lines-on-html5-canvas.html
+// However, that approach uses lines, which don't seem to render as well.
+CanvasRenderingContext2D.prototype.dashedLine = function(x1, y1, x2, y2, dashLen) {
+    if (dashLen == undefined) { dashLen = 2; }
+    var dX = x2 - x1;
+    var dY = y2 - y1;
+    var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
+    var dashX = dX / dashes;
+    var dashY = dY / dashes;
+    
+    for (var q= 0; q < dashes; q++, x1 += dashX, y1 += dashY) {
+        if (q % 2 != 0) {
+            continue;
+        }
+        this.fillRect(x1, y1, dashLen, 1);
+    }
+    
+};
+
 /**
  * Init constants & functions used throughout trackster.
  */
@@ -1986,7 +2006,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 
                         // Draw left/forward read.
                         if (feature[4][1] >= tile_low && feature[4][0] <= tile_high) {
-                                this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center);
+                            this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center);
                         }
                         // Draw right/reverse read.
                         if (feature[5][1] >= tile_low && feature[5][0] <= tile_high) {
@@ -1995,7 +2015,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         // Draw connector.
                         if (b2_start > b1_end) {
                             ctx.fillStyle = CONNECTOR_COLOR;
-                            ctx.fillRect(b1_end + left_offset, y_center + 5, b2_start - b1_end, 1);
+                            ctx.dashedLine(b1_end + left_offset, y_center + 5, left_offset + b2_start, y_center + 5);
                         }
                     } else {
                         // Read is single.

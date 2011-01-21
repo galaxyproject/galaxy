@@ -225,7 +225,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         track = {
             "track_type": track_type,
             "name": dataset.name,
-            "dataset_id": dataset.id,
+            "dataset_id": trans.security.encode_id( dataset.id ),
             "prefs": {},
             "filters": track_data_provider.get_filters(),
             "tool": get_tool_def( trans, dataset )
@@ -367,7 +367,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return messages.NO_DATA
         
         # Dataset check.
-        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+        dataset = self.get_dataset( trans, dataset_id )
         msg = self._check_dataset_state( trans, dataset )
         if msg:
             return msg
@@ -446,7 +446,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Tracks from payload
         tracks = []
         for track in decoded_payload['tracks']:
-            tracks.append( {    "dataset_id": str(track['dataset_id']),
+            tracks.append( {    "dataset_id": str( trans.security.decode_id( track['dataset_id']) ),
                                 "name": track['name'],
                                 "track_type": track['track_type'],
                                 "prefs": track['prefs']
