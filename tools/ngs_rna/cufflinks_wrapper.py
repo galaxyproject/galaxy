@@ -39,11 +39,6 @@ def __main__():
     parser.add_option( '--num-importance-samples', dest='num_importance_samples', help='Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000' )
     parser.add_option( '--max-mle-iterations', dest='max_mle_iterations', help='Sets the number of iterations allowed during maximum likelihood estimation of abundances. Default: 5000' )
     
-    # Wrapper / Galaxy options.
-    parser.add_option( '-A', '--assembled-isoforms-output', dest='assembled_isoforms_output_file', help='Assembled isoforms output file; formate is GTF.' )
-    parser.add_option( '-T', '--transcripts-expression-output', dest='transcripts_expression_output_file', help='TODO' )
-    parser.add_option( '-Z', '--genes-expression-output', dest='genes_expression_output_file', help='TODO' )
-    
     # Bias correction options.
     parser.add_option( '-r', dest='do_bias_correction', action="store_true", help='Providing Cufflinks with a multifasta file via this option instructs it to run our new bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates.')
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
@@ -70,9 +65,6 @@ def __main__():
             raise Exception
     except:
         sys.stdout.write( 'Could not determine Cufflinks version\n' )
-
-    # Make temp directory for output.
-    tmp_output_dir = tempfile.mkdtemp()
     
     # If doing bias correction, set/link to sequence file.
     if options.do_bias_correction:
@@ -84,7 +76,7 @@ def __main__():
         seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
         if options.ref_file != 'None':
             # Create symbolic link to ref_file so that index will be created in working directory.
-            seq_path = os.path.join( tmp_output_dir, "ref.fa" )
+            seq_path = "ref.fa"
             os.symlink( options.ref_file, seq_path  )
     
     # Build command.
@@ -124,9 +116,9 @@ def __main__():
     
     # Run command.
     try:
-        tmp_name = tempfile.NamedTemporaryFile( dir=tmp_output_dir ).name
+        tmp_name = tempfile.NamedTemporaryFile( dir="." ).name
         tmp_stderr = open( tmp_name, 'wb' )
-        proc = subprocess.Popen( args=cmd, shell=True, cwd=tmp_output_dir, stderr=tmp_stderr.fileno() )
+        proc = subprocess.Popen( args=cmd, shell=True, stderr=tmp_stderr.fileno() )
         returncode = proc.wait()
         tmp_stderr.close()
         
@@ -148,18 +140,5 @@ def __main__():
             raise Exception, stderr            
     except Exception, e:
         stop_err( 'Error running cufflinks. ' + str( e ) )
-        
-    # Copy output files from tmp directory to specified files.
-    try:
-        try:
-            shutil.copyfile( os.path.join( tmp_output_dir, "transcripts.gtf" ), options.assembled_isoforms_output_file )
-            shutil.copyfile( os.path.join( tmp_output_dir, "transcripts.expr" ), options.transcripts_expression_output_file )
-            shutil.copyfile( os.path.join( tmp_output_dir, "genes.expr" ), options.genes_expression_output_file )
-        except Exception, e:
-            stop_err( 'Error in tophat:\n' + str( e ) ) 
-    finally:
-        # Clean up temp dirs
-        if os.path.exists( tmp_output_dir ):
-            shutil.rmtree( tmp_output_dir )
 
 if __name__=="__main__": __main__()
