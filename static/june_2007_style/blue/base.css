@@ -116,10 +116,11 @@ div.permissionContainer{padding-left:20px;}
 .grid-header h2{margin:0;margin-bottom:0.5em;}
 .grid-header .title{font-weight:bold;}
 .grid{padding-top:1em;border-collapse:collapse;width:100%;}
-.grid tbody td{border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:0.3em;}
+.grid tbody td{border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:0.3em 0.5em;}
 .grid tbody td:empty{padding:0;}
-.grid thead th{background:#ebd9b2;background-repeat:repeat-x;background-position:top;border-top:solid #d8b365 1px;border-bottom:solid #d8b365 1px;padding:0.3em;text-align:left;white-space:nowrap;}
-.grid tfoot td{background-color:#F8F8F8;border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:0.3em;}
+.grid thead tr{height:2em;}
+.grid thead th{background:#ebd9b2;background-repeat:repeat-x;background-position:top;border-top:solid #d8b365 1px;border-bottom:solid #d8b365 1px;padding:0.3em 0.5em;text-align:left;white-space:nowrap;}
+.grid tfoot td{background-color:#F8F8F8;border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:0.3em 0.5em;}
 .grid .current{background-color:#EEEEFF;}
 .text-content{}
 .text-content hr{display:block;background:black;color:black;width:100%;height:1px;border:none;background:#aaa;color:#aaa;}
