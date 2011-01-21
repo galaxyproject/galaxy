@@ -52,7 +52,7 @@ class DeferredJobQueue( object ):
                     else:
                         self.plugins[obj] = plugin( self.app )
                         self.plugins[obj].job_states = self.job_states
-                        log.debug( 'Loaded deffered job plugin: %s' % display_name )
+                        log.debug( 'Loaded deferred job plugin: %s' % display_name )
 
     def __check_jobs_at_startup( self ):
         waiting_jobs = self.sa_session.query( model.DeferredJob ) \
