@@ -189,17 +189,20 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def from_workflow_step( Class, trans, step ):
         tool_id = step.tool_id
-        module = Class( trans, tool_id )
-        module.state = DefaultToolState()
-        module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
-        module.errors = step.tool_errors
-        # module.post_job_actions = step.post_job_actions
-        module.workflow_outputs = step.workflow_outputs
-        pjadict = {}
-        for pja in step.post_job_actions:
-            pjadict[pja.action_type] = pja
-        module.post_job_actions = pjadict
-        return module
+        if tool_id not in trans.app.toolbox.tools_by_id:
+            return None
+        else:
+            module = Class( trans, tool_id )
+            module.state = DefaultToolState()
+            module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
+            module.errors = step.tool_errors
+            # module.post_job_actions = step.post_job_actions
+            module.workflow_outputs = step.workflow_outputs
+            pjadict = {}
+            for pja in step.post_job_actions:
+                pjadict[pja.action_type] = pja
+            module.post_job_actions = pjadict
+            return module
 
     def save_to_step( self, step ):
         step.type = self.type

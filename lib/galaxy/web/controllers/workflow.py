@@ -754,6 +754,35 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
+            if not module:
+                step_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, step )
+                annotation_str = ""
+                if step_annotation:
+                    annotation_str = step_annotation.annotation
+                invalid_tool_form_html = """<div class="toolForm tool-node-error"><div class="toolFormTitle form-row-error">Unrecognized Tool: %s</div><div class="toolFormBody"><div class="form-row">
+                                            The tool id '%s' for this tool is unrecognized.<br/><br/>To save this workflow, you will need to delete this step or enable the tool.
+                                            </div></div></div>""" % (step.tool_id, step.tool_id)
+                step_dict = {
+                    'id': step.order_index,
+                    'type': 'invalid',
+                    'tool_id': step.tool_id,
+                    'name': 'Unrecognized Tool: %s' % step.tool_id,
+                    'tool_state': None,
+                    'tooltip': None,
+                    'tool_errors': ["Unrecognized Tool Id: %s" % step.tool_id],
+                    'data_inputs': [],
+                    'data_outputs': [],
+                    'form_html': invalid_tool_form_html,
+                    'annotation' : annotation_str,
+                    'post_job_actions' : {},
+                    'workflow_outputs' : []
+                }
+                step_dict['input_connections'] = input_conn_dict
+                # Position
+                step_dict['position'] = step.position
+                # Add to return value
+                data['steps'][step.order_index] = step_dict
+                continue
             # Fix any missing parameters
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
@@ -839,6 +868,14 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # The editor will provide ids for each step that we don't need to save,
         # but do need to use to make connections
         steps_by_external_id = {}
+        errors = []
+        for key, step_dict in data['steps'].iteritems():
+            if step_dict['type'] != 'data_input' and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
+                errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
+        if errors:
+            return dict( name=workflow.name,
+                             message="This workflow includes missing or invalid tools. It cannot be saved until the following steps are removed or the missing tools are enabled.",
+                             errors=errors)
         # First pass to build step objects and populate basic values
         for key, step_dict in data['steps'].iteritems():
             # Create the model class for the step
