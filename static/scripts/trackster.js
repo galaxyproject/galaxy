@@ -1306,7 +1306,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 		        new_track = new ToolDataFeatureTrack(track_name, view, undefined, {}, {}, {}, current_track);    
 		    }
 		view.add_track(new_track);
-		this.has_changes = true;
+		view.has_changes = true;
 		
 		// Run tool.
 		var json_run_tool = function() {
@@ -1862,27 +1862,32 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     // Right now this function is used only for rendering BAM reads.
     rect_or_text: function( ctx, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center ) {
         ctx.textAlign = "center";
-        var cur_offset = 0,
+        var draw_offset = 0, 
+            seq_offset = 0,
             gap = Math.round(w_scale / 2);
         
         for (var cig_id = 0, len = cigar.length; cig_id < len; cig_id++) {
             var cig = cigar[cig_id],
-                cig_op = "MIDNSHP"[cig[0]],
+                cig_op = "MIDNSHP=X"[cig[0]],
                 cig_len = cig[1];
             
             if (cig_op === "H" || cig_op === "S") {
                 // Go left if it clips
-                cur_offset -= cig_len;
+                draw_offset -= cig_len;
             }
-            var seq_start = feature_start + cur_offset,
+            var seq_start = feature_start + draw_offset,
                 s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
                 
             switch (cig_op) {
-                case "S": // Soft clipping
                 case "H": // Hard clipping
+                    // TODO: draw anything?
+                    // Sequence not present, so do not increment seq_offset.
+                    break;
+                case "S": // Soft clipping
                 case "M": // Match
-                    var seq = orig_seq.slice(cur_offset, cig_len);
+                case "=":
+                    var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                     if ( (this.mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > PX_PER_CHAR) {
                         ctx.fillStyle = this.prefs.block_color;
                         ctx.fillRect(s_start + this.left_offset, y_center + 1, s_end - s_start, 9);
@@ -1898,6 +1903,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
                         ctx.fillRect(s_start + this.left_offset, y_center + (this.mode != "Dense" ? 4 : 5), s_end - s_start, (this.mode != "Dense" ? 3 : 1) );
                     }
+                    seq_offset += cig_len;
                     break;
                 case "N": // Skipped bases
                     ctx.fillStyle = CONNECTOR_COLOR;
@@ -1909,10 +1915,17 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     ctx.fillRect(s_start + this.left_offset, y_center + 4, s_end - s_start, 3);
                     break;
                 case "P": // TODO: No good way to draw insertions/padding right now, so ignore
+                    // Sequences not present, so do not increment seq_offset.
+                    break;
                 case "I":
+                    seq_offset += cig_len;
+                    break;
+                case "X":
+                    // TODO: draw something?
+                    seq_offset += cig_len;
                     break;
             }
-            cur_offset += cig_len;
+            draw_offset += cig_len;
         }
     },
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
@@ -2085,11 +2098,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
 
                         // Draw left/forward read.
-                        if (feature[4][1] >= tile_low && feature[4][0] <= tile_high) {
+                        if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {
                             this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center);
                         }
                         // Draw right/reverse read.
-                        if (feature[5][1] >= tile_low && feature[5][0] <= tile_high) {
+                        if (feature[5][1] >= tile_low && feature[5][0] <= tile_high && feature[5][2]) {
                             this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], y_center);
                         }
                         // Draw connector.

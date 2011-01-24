@@ -3,7 +3,7 @@
 .content{font:10px verdana;}
 .nav-controls{text-align:center;padding:1px 0;}
 .nav-controls input{margin:0 5px;}
-#zoom-in,#zoom-out{display:inline-block;height:16px;width:16px;margin-bottom:-3px;}
+#zoom-in,#zoom-out{display:inline-block;height:16px;width:16px;margin-bottom:-3px;cursor:pointer;}
 #zoom-out{background:transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat;}
 #zoom-in{margin-left:10px;background:transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat;}
 .nav-input{font-size:12px;width:30em;z-index:1000;}
