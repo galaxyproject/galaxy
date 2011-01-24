@@ -2,11 +2,14 @@
     2010, James Taylor, Kanwei Li
 */
 
-// Draw a dashed line on a canvas using filled rectangles. This function is based on what is found here:
-// http://vetruvet.blogspot.com/2010/10/drawing-dashed-lines-on-html5-canvas.html
-// However, that approach uses lines, which don't seem to render as well.
+/**
+ * Draw a dashed line on a canvas using filled rectangles. This function is based on:
+ * http://vetruvet.blogspot.com/2010/10/drawing-dashed-lines-on-html5-canvas.html
+ * However, that approach uses lines, which don't seem to render as well, so use
+ * rectangles instead.
+ */
 CanvasRenderingContext2D.prototype.dashedLine = function(x1, y1, x2, y2, dashLen) {
-    if (dashLen == undefined) { dashLen = 2; }
+    if (dashLen == undefined) { dashLen = 4; }
     var dX = x2 - x1;
     var dY = y2 - y1;
     var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
@@ -19,7 +22,6 @@ CanvasRenderingContext2D.prototype.dashedLine = function(x1, y1, x2, y2, dashLen
         }
         this.fillRect(x1, y1, dashLen, 1);
     }
-    
 };
 
 /**
@@ -82,17 +84,15 @@ var Cache = function( num_elements ) {
     this.num_elements = num_elements;
     this.clear();
 };
-$.extend( Cache.prototype, {
-    get: function( key ) {
+$.extend(Cache.prototype, {
+    get: function(key) {
         var index = this.key_ary.indexOf(key);
         if (index != -1) {
-            // Move to the end
-            this.key_ary.splice(index, 1);
-            this.key_ary.push(key);
+            this.move_key_to_end(key, index)
         }
         return this.obj_cache[key];
     },
-    set: function( key, value ) {
+    set: function(key, value) {
         if (!this.obj_cache[key]) {
             if (this.key_ary.length >= this.num_elements) {
                 // Remove first element
@@ -104,9 +104,90 @@ $.extend( Cache.prototype, {
         this.obj_cache[key] = value;
         return value;
     },
+    // Move key to end of cache. Keys are removed from the front, so moving a key to the end 
+    // delays the key's removal.
+    move_key_to_end: function(key, index) {
+        this.key_ary.splice(index, 1);
+        this.key_ary.push(key);
+    },
     clear: function() {
         this.obj_cache = {};
         this.key_ary = [];
+    },
+    // Returns the number of elements in the cache.
+    size: function() {
+        return this.key_ary.length;
+    }
+});
+
+/**
+ * Data-specific cache.
+ */
+var DataCache = function(num_elements) {
+    Cache.call(this, num_elements);  
+};
+$.extend(DataCache.prototype, Cache.prototype, {
+    get_data: function(low, high, mode) {
+        // Debugging:
+        //console.log("get_data", low, high, mode);
+        /*
+        console.log("cache contents:")
+        for (var i = 0; i < this.key_ary.length; i++) {
+            console.log("\t", this.key_ary[i], this.obj_cache[this.key_ary[i]]);
+        }
+        */
+        
+        // Look for key in cache and, if found, return it.
+        var entry = this.get(this.gen_key(low, high, mode));
+        if (entry) {
+            return entry;
+        }
+
+        //
+        // Look in cache for data that can be used. Data can be reused if it
+        // has the requested data and is not summary tree and has details.
+        // TODO: this logic could be improved if the visualization knew whether
+        // the data was "index" or "data." Also could slice the data so that
+        // only data points in request are returned.
+        //
+        var key, split_key, entry_low, entry_high, mode, entry;
+        for (var i = 0; i < this.key_ary.length; i++) {
+            key = this.key_ary[i]
+            split_key = this.split_key(key);
+            entry_low = split_key[0];
+            entry_high = split_key[1];
+            
+            if (low >= entry_low && high <= entry_high) {
+                // This track has the range of data needed; check other attributes.
+                entry = this.obj_cache[key];
+                if (entry.dataset_type !== "summary_tree" && entry.extra_info !== "no_detail") {
+                    // Data is usable.
+                    this.move_key_to_end(key, i);
+                    return entry;
+                }
+            }
+        }
+        
+        return undefined;
+    },
+    set_data: function(low, high, mode, result) {
+        //console.log("set_data", low, high, mode, result);
+        return this.set(this.gen_key(low, high, mode), result);
+    },
+    // Generate key for cache.
+    gen_key: function(low, high, mode) {
+        // TODO: use mode to generate key?
+        var key = low + "_" + high;
+        /*
+        if (no_detail) {
+            key += "_" + no_detail
+        }
+        */
+        return key;
+    },
+    // Split key from cache into array with format [low, high, mode]
+    split_key: function(key) {
+        return key.split("_");
     }
 });
 
@@ -673,38 +754,43 @@ var get_filters_from_dict = function(filters_dict) {
  * -------> ToolDataFeatureTrack
  */
 var Track = function(name, view, parent_element, data_url, data_query_wait) {
+    //
+    // Attribute init.
+    //
     this.name = name;
     this.view = view;    
     this.parent_element = parent_element;
     this.data_url = (data_url ? data_url : default_data_url);
     this.data_query_wait = (data_query_wait ? data_query_wait : DEFAULT_DATA_QUERY_WAIT);
-    this.init_global();
+    this.dataset_check_url = converted_datasets_state_url;
+    
+    //
+    // Create HTML element structure for track.
+    //
+    this.container_div = $("<div />").addClass('track').css("position", "relative");
+    if (!this.hidden) {
+        this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
+        if (this.view.editor) { this.drag_div = $("<div class='draghandle' />").appendTo(this.header_div); }
+        this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
+        this.name_div.text(this.name);
+        this.name_div.attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
+    }
+    
+    //
+    // Create content div, which is where track is displayed.
+    //
+    this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
+    this.parent_element.append(this.container_div);
 };
 $.extend( Track.prototype, {
-    init_global: function () {
-        //
-        // Create HTML element structure for track.
-        //
-        this.container_div = $("<div />").addClass('track').css("position", "relative");
-        if (!this.hidden) {
-            this.header_div = $("<div class='track-header' />").appendTo(this.container_div);
-            if (this.view.editor) { this.drag_div = $("<div class='draghandle' />").appendTo(this.header_div); }
-            this.name_div = $("<div class='menubutton popup' />").appendTo(this.header_div);
-            this.name_div.text(this.name);
-            this.name_div.attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
-        }
-        
-        //
-        // Create content div, which is where track is displayed.
-        //
-        this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
-        this.parent_element.append(this.container_div);
-    },
-    init_each: function(params, success_fn) {
+    /**
+     * Initialize and draw the track.
+     */
+    init: function() {
         var track = this;
         track.enabled = false;
         track.data_queue = {};
-        track.tile_cache.clear();
+        track.tile_cache.clear();    
         track.data_cache.clear();
         track.initial_canvas = undefined;
         track.content_div.css("height", "auto");
@@ -713,47 +799,54 @@ $.extend( Track.prototype, {
         }
         track.container_div.removeClass("nodata error pending");
         
+        //
+        // Tracks with no dataset id are handled differently.
+        //
         if (!track.dataset_id) {
             return;
         }
         
-        if (track.view.chrom) {
-            $.getJSON( track.data_url, params, function (result) {
-                if (!result || result === "error" || result.kind === "error") {
-                    track.container_div.addClass("error");
-                    track.content_div.text(DATA_ERROR);
-                    if (result.message) {
-                        var track_id = track.view.tracks.indexOf(track);
-                        var error_link = $(" <a href='javascript:void(0);'></a>").attr("id", track_id + "_error");
-                        error_link.text("View error");
-                        $("#" + track_id + "_error").live("click", function() {                        
-                            show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
-                        });
-                        track.content_div.append(error_link);
-                    }
-                } else if (result === "no converter") {
-                    track.container_div.addClass("error");
-                    track.content_div.text(DATA_NOCONVERTER);
-                } else if (result.data !== undefined && (result.data === null || result.data.length === 0)) {
-                    track.container_div.addClass("nodata");
-                    track.content_div.text(DATA_NONE);
-                } else if (result === "pending") {
-                    track.container_div.addClass("pending");
-                    track.content_div.text(DATA_PENDING);
-                    setTimeout(function() { track.init(); }, track.data_query_wait);
-                } else {
+        // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
+        // about track status.
+        $.getJSON(this.dataset_check_url, {dataset_id : track.dataset_id}, function (result) {
+            if (!result || result === "error" || result.kind === "error") {
+                track.container_div.addClass("error");
+                track.content_div.text(DATA_ERROR);
+                if (result.message) {
+                    var track_id = track.view.tracks.indexOf(track);
+                    var error_link = $(" <a href='javascript:void(0);'></a>").attr("id", track_id + "_error");
+                    error_link.text("View error");
+                    $("#" + track_id + "_error").live("click", function() {                        
+                        show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
+                    });
+                    track.content_div.append(error_link);
+                }
+            } else if (result === "no converter") {
+                track.container_div.addClass("error");
+                track.content_div.text(DATA_NOCONVERTER);
+            } else if (result.data !== undefined && (result.data === null || result.data.length === 0)) {
+                track.container_div.addClass("nodata");
+                track.content_div.text(DATA_NONE);
+            } else if (result === "pending") {
+                track.container_div.addClass("pending");
+                track.content_div.text(DATA_PENDING);
+                setTimeout(function() { track.init(); }, track.data_query_wait);
+            } else if (result === "ok") {
+                // Only draw in user has selected a chromosome.
+                if (track.view.chrom) {
                     track.content_div.text("");
                     track.content_div.css( "height", track.height_px + "px" );
                     track.enabled = true;
-                    success_fn(result);
+                    track.predraw_init();
                     track.draw();
                 }
-            });
-        } else {
-            track.container_div.addClass("nodata");
-            track.content_div.text(DATA_NONE);
-        }
+            }
+        });
     },
+    /**
+     * Additional initialization required before drawing track for the first time.
+     */
+    predraw_init: function() {},
     restore_prefs: function(prefs) {
         var that = this;
         $.each(prefs, function(pref, val) {
@@ -1213,6 +1306,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 		        new_track = new ToolDataFeatureTrack(track_name, view, undefined, {}, {}, {}, current_track);    
 		    }
 		view.add_track(new_track);
+		this.has_changes = true;
 		
 		// Run tool.
 		var json_run_tool = function() {
@@ -1287,7 +1381,7 @@ var ReferenceTrack = function (view) {
     this.height_px = 12;
     this.container_div.addClass( "reference-track" );
     this.data_queue = {};
-    this.data_cache = new Cache(CACHED_DATA);
+    this.data_cache = new DataCache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
@@ -1365,20 +1459,19 @@ var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.height_px = 80;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.data_cache = new Cache(CACHED_DATA);
+    this.data_cache = new DataCache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.prefs = { 'color': 'black', 'min_value': undefined, 'max_value': undefined, 'mode': this.mode };
     this.restore_prefs(prefs);
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
-    init: function() {
+    predraw_init: function() {
         var track = this,
             track_id = track.view.tracks.indexOf(track);
         
         track.vertical_range = undefined;
-        this.init_each({  stats: true, chrom: track.view.chrom, low: null, high: null,
-                                dataset_id: track.dataset_id }, function(result) {
-            
+        $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: null, high: null,
+                                        dataset_id: track.dataset_id }, function(result) {
             track.container_div.addClass( "line-track" );
             var data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
@@ -1586,24 +1679,13 @@ var FeatureTrack = function (name, view, dataset_id, prefs, filters, tool, paren
     this.data_queue = {};
     this.s_e_by_tile = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
-    this.data_cache = new Cache(20);
+    this.data_cache = new DataCache(20);
     this.left_offset = 200;
     
     this.prefs = { 'block_color': '#444', 'label_color': 'black', 'show_counts': true };
     this.restore_prefs(prefs);
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
-    init: function() {
-        var track = this,
-            key = "initial";
-            
-        this.init_each({    low: track.view.max_low, high: track.view.max_high, dataset_id: track.dataset_id,
-                            chrom: track.view.chrom, resolution: this.view.resolution, mode: track.mode }, function (result) {
-            track.mode_div.show();
-            track.data_cache.set(key, result);
-            track.draw();
-        });
-    },
     get_data: function( low, high ) {
         var track = this,
             key = low + '_' + high;
@@ -1613,7 +1695,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             $.getJSON( track.data_url, {  chrom: track.view.chrom, 
                                           low: low, high: high, dataset_id: track.dataset_id,
                                           resolution: this.view.resolution, mode: this.mode }, function (result) {
-                track.data_cache.set(key, result);
+                track.data_cache.set_data(low, high, track.mode, result);
                 // console.log("datacache", track.data_cache.get(key));
                 delete track.data_queue[key];
                 track.draw();
@@ -1820,6 +1902,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 case "N": // Skipped bases
                     ctx.fillStyle = CONNECTOR_COLOR;
                     ctx.fillRect(s_start + this.left_offset, y_center + 5, s_end - s_start, 1);
+                    //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
                     break;
                 case "D": // Deletion
                     ctx.fillStyle = "red";
@@ -1845,9 +1928,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 break;
             }
         }*/
-        var k = (!this.initial_canvas ? "initial" : tile_low + '_' + tile_high);
-        var result = this.data_cache.get(k);
-        var cur_mode;
+        var result = this.data_cache.get_data(tile_low, tile_high, this.mode);
         
         if (result === undefined || result === "pending" || 
             (this.mode !== "Auto" && result.dataset_type === "summary_tree")) {
@@ -1926,7 +2007,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     ctx.fillText(y, x + left_offset + (delta_x_px/2), this.summary_draw_height - 5);
                 }
             }
-            cur_mode = "Summary";
             parent_element.append( canvas );
             return canvas;
         }
@@ -2015,6 +2095,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         // Draw connector.
                         if (b2_start > b1_end) {
                             ctx.fillStyle = CONNECTOR_COLOR;
+                            //ctx.fillRect(b1_end + left_offset, y_center + 5, b2_start - b1_end, 1);
                             ctx.dashedLine(b1_end + left_offset, y_center + 5, left_offset + b2_start, y_center + 5);
                         }
                     } else {
@@ -2184,60 +2265,48 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var ReadTrack = function ( name, view, dataset_id, prefs, filters ) {
-    FeatureTrack.call( this, name, view, dataset_id, prefs, filters );
+var ReadTrack = function (name, view, dataset_id, prefs, filters) {
+    FeatureTrack.call(this, name, view, dataset_id, prefs, filters);
     this.track_type = "ReadTrack";
     this.vertical_detail_px = 10;
     this.vertical_nodetail_px = 5;
-    
 };
-$.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-});
+$.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {});
 
 // Feature track that displays data generated from tool.
 var ToolDataFeatureTrack = function(name, view, dataset_id, prefs, filters) {
     FeatureTrack.call( this, name, view, dataset_id, prefs, filters );
-    this.track_type = "ToolDataFeatureTrack";    
+    this.track_type = "ToolDataFeatureTrack";
+    
+    // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
+    // is ready.
+    this.data_url = raw_data_url;
+    this.data_query_wait = 1000;
+    this.dataset_check_url = dataset_state_url;
 };
 
 $.extend( ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    init: function() {
-        var track = this,
-            key = "initial";
-        
-        // For tool data tracks, fetch initial data from raw data URL, then fetch additional data
-        // from default data URL.
-        track.data_url = raw_data_url;
-        track.data_query_wait = 1000;
-        var data_request_dict = { low: track.view.max_low, high: track.view.max_high, dataset_id: track.dataset_id,
-                                  chrom: track.view.chrom, resolution: this.view.resolution, mode: track.mode };
-        this.init_each(data_request_dict, function (result) {
-            // Feature track init.
-            track.mode_div.show();
-            track.data_cache.set(key, result);
-            track.draw();
-            
-            // Additional track-specific init.
-            // TODO: revisit this function. It seems that trackster makes two initial requests: one for the 
-            // current view and another for a (larger?) slot. So perhaps it's best to wait for the data cache
-            // to have 2 elements; otherwise, there may be a better way to determine if track is drawn.
-            //
-            // Also, the fetch to start the indexing is dependent on the number of times that trackster 
-            // fetchs as well.
-            var success_fn = function() {
-                if (track.data_cache.num_elements == 0) {
-                    // Track still drawing initial data.
-                    setTimeout(success_fn, 300);
-                }
-                else {
-                    // Track drawing done: set data URL and start indexing.
-                    track.data_url = default_data_url;
-                    // Call twice to start indexing for both overview and detail datasets.
-                    //$.getJSON(default_data_url, data_request_dict, function(track_data) {});
-                }
-            };
-            success_fn();
-        });
+    /**
+     * For this track, the predraw init simply sets up the postdraw init. 
+     */
+    predraw_init: function() {        
+        // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
+        var track = this; 
+        var post_init = function() {
+            if (track.data_cache.size() == 0) {
+                // Track still drawing initial data, so do nothing.
+                setTimeout(post_init, 300);
+            }
+            else {
+                // Track drawing done: reset dataset check, data URL, wait time and get dataset state to start
+                // indexing.
+                track.data_url = default_data_url;
+                track.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+                track.dataset_state_url = converted_datasets_state_url;
+                $.getJSON(track.dataset_state_url, { dataset_id : track.dataset_id }, function(track_data) {});
+            }
+        };
+        post_init();
     }
 });
 

@@ -357,6 +357,39 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return data
         
     @web.json
+    def dataset_state( self, trans, dataset_id, **kwargs ):
+        """ Returns state of dataset. """
+        # TODO: this code is copied from data() -- should refactor.
+
+        # Dataset check.
+        dataset = self.get_dataset( trans, dataset_id )
+        msg = self._check_dataset_state( trans, dataset )
+        if not msg:
+            msg = "ok"
+
+        return msg
+        
+    @web.json
+    def converted_datasets_state( self, trans, dataset_id, **kwargs ):
+        """ Returns state of dataset's converted datasets. """
+        # TODO: this code is copied from data() -- should refactor.
+        
+        # Dataset check.
+        dataset = self.get_dataset( trans, dataset_id )
+        msg = self._check_dataset_state( trans, dataset )
+        if msg:
+            return msg
+            
+        # Get datasources and check for messages.
+        data_sources = self._get_datasources( trans, dataset )
+        messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
+        msg = _get_highest_priority_msg( messages_list )
+        if msg:
+            return msg
+            
+        return "ok"
+        
+    @web.json
     def data( self, trans, dataset_id, chrom, low, high, **kwargs ):
         """
         Called by the browser to request a block of data
@@ -650,16 +683,16 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         status of the conversion. None is returned to indicate that dataset
         was converted successfully. 
         """
-        msg = None
-        
+                
         # Get converted dataset; this will start the conversion if 
         # necessary.
         try:
             converted_dataset = dataset.get_converted_dataset( trans, target_type )
         except ValueError:
-            msg = messages.NO_CONVERTER
+            return messages.NO_CONVERTER
 
         # Check dataset state and return any messages.
+        msg = None
         if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
             job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
                         .filter_by( dataset_id=converted_dataset.id ).first().job_id

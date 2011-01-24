@@ -102,11 +102,16 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
 
 <script type="text/javascript">
 
+    //
+    // Place URLs here so that url_for can be used to generate them.
+    // 
     var default_data_url = "${h.url_for( action='data' )}",
         raw_data_url = "${h.url_for( action='raw_data' )}",
         run_tool_url = "${h.url_for( action='run_tool' )}",
         reference_url = "${h.url_for( action='reference' )}",
         chrom_url = "${h.url_for( action='chroms' )}",
+        dataset_state_url = "${h.url_for( action='dataset_state' )}",
+        converted_datasets_state_url = "${h.url_for( action='converted_datasets_state' )}",
         addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
         view;
     
