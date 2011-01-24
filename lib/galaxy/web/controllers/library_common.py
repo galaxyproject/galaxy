@@ -96,8 +96,12 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         except:
             # Protect against attempts to phish for valid keys that return libraries
             library = None
+        freetext_search = self._get_free_text_search(trans, library_id)
         # Most security for browsing libraries is handled in the template, but do a basic check here.
-        if not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
+        extra_params = {}
+        if freetext_search:
+            extra_params["f-free-text-search"] = freetext_search
+        elif not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             message = "Invalid library id ( %s ) specified." % str( library_id )
             status = 'error'
         else:
@@ -135,12 +139,30 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             except Exception, e:
                 message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
                 status = 'error'
+
+        # redirect library search items from grid back to library controller
+        if cntrller == "library_search":
+            cntrller = "library"
         return trans.response.send_redirect( web.url_for( use_panels=use_panels,
                                                           controller=cntrller,
                                                           action='browse_libraries',
                                                           default_action=params.get( 'default_action', None ),
                                                           message=util.sanitize_text( message ),
-                                                          status=status ) )
+                                                          status=status,
+                                                          **extra_params ) )
+
+    def _get_free_text_search(self, trans, library_id):
+        """Check if the library id is a mixed library from free text search.
+        """
+        try:
+            library_id = trans.security.decode_string_id(library_id)
+        except:
+            library_id = ""
+        if library_id.startswith("f-free-text-search="):
+            return library_id.replace("f-free-text-search=", "")
+        else:
+            return None
+
     @web.expose
     def library_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -1705,8 +1727,14 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                             message = "Unable to create archive for download, please report this error"
                             status = 'error'                            
                 if not error:
-                    lname = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) ).name
-                    fname = lname.replace( ' ', '_' ) + '_files'
+                    library_id = trans.security.decode_string_id(library_id)
+                    if library_id.startswith("f-free-text-search"):
+                        fname = library_id.replace("f-free-text-search=", "")
+                    else:
+                        fname = trans.sa_session.query( trans.app.model.Library ).get( library_id ).name
+                    for fix in [" ", "*", "?"]:
+                        fname = fname.replace( fix, '_' )
+                    fname += '_files'
                     if action == 'zip':
                         archive.close()
                         tmpfh = open( tmpf )

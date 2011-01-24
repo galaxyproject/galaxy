@@ -185,11 +185,14 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # -- Library search functionality
 
-# maxiumum file size to index for searching, in Gb
-fulltext_max_size = 0.5
+use_fulltext = False
+# maxiumum file size to index for searching, in MB
+fulltext_max_size = 500
+fulltext_noindex_filetypes=bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
 # base URL of server providing search functionality. See
 # https://github.com/chapmanb/kwd-doc-find for Lucene-based search.
-fulltext_search_url = http://localhost:8081/
+fulltext_index_url = http://localhost:8081/index
+fulltext_find_url = http://localhost:8081/find
 
 # -- Next gen LIMS interface on top of existing Galaxy Sample/Request management code.
 

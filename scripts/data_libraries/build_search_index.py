@@ -27,11 +27,12 @@ pkg_resources.require( "SQLAlchemy >= 0.4" )
 
 def main(ini_file):
     sa_session, gconfig = get_sa_session(ini_file)
-    max_size = float(gconfig.get("fulltext_max_size", 0.5)) * 1073741824
+    max_size = float(gconfig.get("fulltext_max_size", 100)) * 1048576
+    ignore_exts = gconfig.get("fulltext_noindex_filetypes", "").split(",")
     search_url = gconfig.get("fulltext_index_url", None)
     if not search_url:
         raise ValueError("Need to specify search functionality in universe_wsgi.ini")
-    dataset_file = create_dataset_file(get_datasets(sa_session, max_size))
+    dataset_file = create_dataset_file(get_datasets(sa_session, max_size, ignore_exts))
     try:
         build_index(search_url, dataset_file)
     finally:
@@ -53,11 +54,37 @@ def create_dataset_file(dataset_iter):
     out_handle.close()
     return dataset_file
 
-def get_datasets(sa_session, max_size):
+def get_datasets(sa_session, max_size, ignore_exts):
     for lds in sa_session.query(model.LibraryDataset).filter_by(deleted=0):
-        ds = lds.library_dataset_dataset_association.dataset
-        if float(ds.get_size()) < max_size:
-            yield lds.id, ds.get_file_name(), lds.get_name()
+        ldda = lds.library_dataset_dataset_association
+        if (float(ldda.dataset.get_size()) > max_size or
+            ldda.extension in ignore_exts):
+            fname = ""
+        else:
+            fname = ldda.dataset.get_file_name()
+        yield lds.id, fname, _get_dataset_metadata(lds)
+
+def _get_dataset_metadata(lds):
+    """Retrieve descriptions and information associated with a dataset.
+    """
+    folder_info = _get_folder_info(lds.folder)
+    lds_info = lds.get_info()
+    if lds_info and not lds_info.startswith("upload"):
+        lds_info = lds_info.replace("no info", "")
+    else:
+        lds_info = ""
+    return "%s %s %s" % (lds.name or "", lds_info, folder_info)
+
+def _get_folder_info(folder):
+    """Get names and descriptions for all parent folders except top level.
+    """
+    folder_info = ""
+    if folder and folder.parent:
+        folder_info = _get_folder_info(folder.parent)
+        folder_info += " %s %s" % (
+            folder.name.replace("Unnamed folder", ""),
+                folder.description or "")
+    return folder_info
 
 def get_sa_session(ini_file):
     conf_parser = ConfigParser.ConfigParser({'here':os.getcwd()})

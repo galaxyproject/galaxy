@@ -257,7 +257,7 @@
                    <span class="libraryItem-error">
                 %endif
                 <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="dataset-${ldda.id}-popup">
-                    <a class="view-info" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">${ldda.name[:50]}</a>
+                    <a class="view-info" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">${ldda.name}</a>
                 </div>
                 %if ldda.library_dataset.deleted:
                     </span>
@@ -314,7 +314,6 @@
 <%def name="render_folder( cntrller, folder, folder_pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=False, parent=None, row_counter=None, root_folder=False )">
     <%
         from galaxy.web.controllers.library_common import active_folders, active_folders_and_lddas, activatable_folders_and_lddas, branch_deleted
-
         if root_folder:
             pad = folder_pad
             expander = h.url_for("/static/images/silk/resultset_bottom.png")
@@ -418,8 +417,13 @@
             row_counter.increment()
         %>
     %endif
-    %if cntrller == 'library':
-        <% sub_folders = active_folders( trans, folder ) %>
+    %if cntrller in ['library', 'library_search']:
+        <%
+           if cntrller == 'library':
+               sub_folders = active_folders( trans, folder )
+           else:
+               sub_folders = []
+        %>
         %for sub_folder in sub_folders:
             ${render_folder( cntrller, sub_folder, pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=my_row, row_counter=row_counter, root_folder=False )}
         %endfor
@@ -430,7 +434,7 @@
                 selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
             %>
             %if can_access:
-                ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
+                ${render_dataset( 'library', ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
             %endif
         %endfor
     %elif trans.user_is_admin() and cntrller == 'library_admin':
@@ -546,8 +550,14 @@
                 </tr>
             </thead>
             <% row_counter = RowCounter() %>
-            %if cntrller in [ 'library', 'requests' ]:
-                ${self.render_folder( 'library', library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
+            %if cntrller in [ 'library', 'requests', 'library_search' ]:
+                <%
+                    if cntrller.startswith("library"):
+                        render_cntrller = cntrller
+                    else:
+                        render_cntrller = 'library'
+                %>
+                ${self.render_folder( render_cntrller, library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
                 %if not library.deleted:
                     ${render_actions_on_multiple_items()}
                 %endif

@@ -1,9 +1,12 @@
+import urllib, urllib2
+
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import model, util
 from galaxy.util.odict import odict
+import library_common
 
 log = logging.getLogger( __name__ )
 
@@ -25,12 +28,10 @@ class LibraryListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     link=( lambda library: dict( operation="browse", id=library.id ) ),
-                    attach_popup=False,
-                    filterable="advanced" ),
+                    attach_popup=False ),
         DescriptionColumn( "Description",
                            key="description",
-                           attach_popup=False,
-                           filterable="advanced" ),
+                           attach_popup=False ),
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
@@ -84,5 +85,49 @@ class Library( BaseController ):
                                                                   action='browse_library',
                                                                   cntrller='library',
                                                                   **kwd ) )
+        if 'f-free-text-search' in kwd:
+            use_fulltext = trans.app.config.config_dict.get("use_fulltext", "False")
+            search_url = trans.app.config.config_dict.get("fulltext_find_url", "")
+            if use_fulltext.lower() not in ["false", "no"] and search_url:
+                return self._fulltext_search(trans, kwd["f-free-text-search"],
+                                             search_url, kwd)
         # Render the list view
         return self.library_list_grid( trans, **kwd )
+
+    def _fulltext_search(self, trans, search_term, search_url, kwd):
+        """Return display of results from a full-text search of data libraries.
+        """
+        full_url = "%s?%s" % (search_url, urllib.urlencode(
+                              {"kwd" : search_term}))
+        response = urllib2.urlopen(full_url)
+        ids = util.json.from_json_string(response.read())["ids"]
+        response.close()
+        datasets = [trans.app.model.LibraryDataset.get(i) for i in ids]
+        roles = trans.get_current_user_roles()
+        library = _FullTextSearchLibrary(search_term, datasets)
+        return trans.fill_template('/library/common/browse_library.mako',
+                                   library=library,
+                                   cntrller='library_search',
+                                   current_user_roles=roles,
+                                   created_ldda_ids=[], hidden_folder_ids=[],
+                                   use_panels=False, show_deleted=False,
+                                   comptypes=library_common.comptypes,
+                                   message=util.restore_text(kwd.get('message', '')),
+                                   status=kwd.get('status', 'done'))
+
+class _FullTextSearchLibrary:
+    """Mimic a library object with results retrieved from full-text search.
+    """
+    def __init__(self, search_term, datasets):
+        self.name = "Full text search: %s" % search_term
+        self.active_library_datasets = datasets
+        self.id = "f-free-text-search=%s" % search_term
+        self.actions = []
+        self.root_folder = self
+        self.parent = None
+        self.deleted = False
+        self.purged = False
+        self.synopsis = None
+
+    def get_info_association(self, restrict=False, inherited=False):
+        return None, False

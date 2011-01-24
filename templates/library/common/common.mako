@@ -328,7 +328,7 @@
                     %if ( trans.user_is_admin() and cntrller=='library_admin' ):
                         <option value="manage_permissions">Edit permissions</option>
                         <option value="delete">Delete</option>
-                    %elif cntrller=='library':
+                    %elif cntrller in ['library', 'library_search']:
                         %if default_action == 'add':
                             <option value="add" selected>Import into your current history</option>
                         %else:
