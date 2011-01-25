@@ -3,10 +3,40 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "jquery.autocomplete" )}
-    <script type="text/javascript">        
+    <script type="text/javascript">
         $( function() {
+            function show_tool_body(title){
+                title.parent().css('border-bottom-width', '1px');
+                title.next().show('fast');
+            }
+            function hide_tool_body(title){
+                title.parent().css('border-bottom-width', '0px');
+                title.next().hide('fast');
+            }
+            function toggle_tool_body(title) {
+                if (title.next().is(':visible')){
+                    hide_tool_body(title);
+                }else{
+                    show_tool_body(title);
+                }
+            }
             $( "select[refresh_on_change='true']").change( function() {
                 $( "#tool_form" ).submit();
+            });
+            $("div.toolFormTitle").click(function(){
+                toggle_tool_body($(this));
+            });
+            // Collapse non-interactive run-workflow panels by default.
+            $("div.toolFormBody:not(:has(select, input[type=text]))").hide().parent().css('border-bottom-width', '0px');
+            $("#show_all_tool_body").click(function(){
+                $("div.toolFormTitle").each(function(){
+                    show_tool_body($(this));
+                });
+            });
+            $("#hide_all_tool_body").click(function(){
+                $("div.toolFormTitle").each(function(){
+                    hide_tool_body($(this));
+                });
             });
         });
     </script>
@@ -19,6 +49,9 @@
     div.toolForm{
         margin-top: 10px;
         margin-bottom: 10px;
+    }
+    div.toolFormTitle{
+        cursor:pointer;
     }
     .step-annotation {
         margin-top: 0.25em;
@@ -87,7 +120,7 @@ if wf_parms:
     %else:
       ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step )}
     %endif
-  %endfor  
+  %endfor
 </%def>
 
 <%def name="row_for_param( param, value, other_values, error_dict, prefix, step )">
@@ -129,7 +162,6 @@ if wf_parms:
                 ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                 <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
             %else:
-                ##DBTEST Hack spans around the substitution text for easy replacement.
                 <%
                 p_text = param.value_to_display_text( value, app )
                 replacements = []
@@ -139,7 +171,6 @@ if wf_parms:
                         p_text = p_text.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
                 %>
                 %if replacements:
-                    ##There are classes for replaceme
                     <span style="display:none" class="parm_wrap ${' '.join(replacements)}">
                     ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                     </span>
@@ -161,6 +192,11 @@ if wf_parms:
         <div style="clear: both"></div>       
     </div>
 </%def>
+
+<div style="float:right">
+    <span class="action-button" id="show_all_tool_body">Expand All</span>
+    <span class="action-button" id="hide_all_tool_body">Collapse All</span>
+</div>
 
 <h2>Running workflow "${h.to_unicode( workflow.name )}"</h2>
 
@@ -236,13 +272,13 @@ if wf_parms:
                 % else:
                     <label>Action:</label>
                 % endif
-<%
-pja_ss_all = []
-for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
-    for rematch in re.findall('\$\{.+?\}', pja_ss):
-        pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
-    pja_ss_all.append(pja_ss)
-%>
+                <%
+                pja_ss_all = []
+                for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
+                    for rematch in re.findall('\$\{.+?\}', pja_ss):
+                        pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
+                    pja_ss_all.append(pja_ss)
+                %>
                 ${'<br/>'.join(pja_ss_all)}
                 </div>
             % endif
@@ -265,7 +301,7 @@ for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
     %endif
 %endfor
 <div class="workflow-annotation">
-    <input type="checkbox" name='new_history' value="true"/> Place the results of this workflow in a new history named <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )} workflow results'/>
+    <input type="checkbox" name='new_history' value="true"/> Place the results of this workflow in a new history named <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/>
 </div>
 <input type="submit" name="run_workflow" value="Run workflow" />
 </form>
