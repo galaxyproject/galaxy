@@ -13,6 +13,7 @@ from galaxy.datatypes import sniff
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util import json, relpath, sanitize_for_filename
+from galaxy.util import inflector
 
 class Group( object ):
     def __init__( self ):
@@ -49,10 +50,7 @@ class Repeat( Group ):
         self.max = None
     @property
     def title_plural( self ):
-        if self.title.endswith( "s" ):
-            return self.title
-        else:
-            return self.title + "s"
+        return inflector.pluralize( self.title )
     def label( self ):
         return "Repeat (%s)" % self.title
     def value_to_basic( self, value, app ):
@@ -137,10 +135,7 @@ class UploadDataset( Group ):
         return trans.app.datatypes_registry.get_datatype_by_extension( ext )
     @property
     def title_plural( self ):
-        if self.title.endswith( "s" ):
-            return self.title
-        else:
-            return self.title + "s"
+        return inflector.pluralize(self.title)
     def group_title( self, context ):
         return "%s (%s)" % ( self.title, context.get( self.file_type_name, self.default_file_type ) )
     def title_by_index( self, trans, index, context ):
