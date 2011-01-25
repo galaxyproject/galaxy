@@ -1,4 +1,4 @@
-<tool id="indels_3way" name="Fetch Indels"  version="1.0.2">
+<tool id="indels_3way" name="Fetch Indels"  version="1.0.3">
   <description> from 3-way alignments</description>
   <command interpreter="perl">
   	parseMAF_smallIndels.pl $input1 $out_file1 $outgroup
