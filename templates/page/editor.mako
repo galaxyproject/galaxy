@@ -15,14 +15,13 @@
         ensure_dd_helper();
         ##make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
         ##make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
-        ensure_popup_helper();
         ## handle_minwidth_hint = rp.handle_minwidth_hint;
     </script>
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "jquery.event.drag", "jquery.event.drop", "jquery.event.hover", "jquery.form", "jquery.jstore-all", "json2", 
+    ${h.js( "jquery.event.drag", "jquery.event.drop", "jquery.event.hover", "jquery.form", "class", "jquery.jstore", "json2", 
             "galaxy.base", "jquery.wymeditor", "jquery.autocomplete", "autocomplete_tagging")}    
     <script type="text/javascript">
             
