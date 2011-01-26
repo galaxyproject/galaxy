@@ -9,7 +9,7 @@
     <param name="input1" type="data" format="bam" label="BAM File to Convert" />
   </inputs>
   <outputs>
-    <data name="output1" format="text" />
+    <data name="output1" format="txt" />
   </outputs>
   <tests>
     <test>
