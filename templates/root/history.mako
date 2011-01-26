@@ -27,7 +27,7 @@ $(function() {
     init_history_items(historywrapper);
     historywrapper.each( function() {
         // Delete link
-        $("div.historyItemButtons > .delete" ).each( function() {
+        $(this).find("div.historyItemButtons > .delete" ).each( function() {
             var data_id = this.id.split( "-" )[1];
             $(this).click( function() {
                 $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
