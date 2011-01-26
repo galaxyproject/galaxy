@@ -58,6 +58,14 @@ select,textarea,input[type="text"],input[type="file"],input[type="password"]{-we
 .warningmark{background-image:url(warn_small.png);}
 .donemark{background-image:url(ok_small.png);}
 .infomark,.ok_bgr{background-image:url(info_small.png);}
+table.simple{font-size:12px;background:#fff;margin:1em;border-collapse:collapse;text-align:left;}
+table.simple th{font-size:14px;font-weight:normal;padding:10px 8px;border-bottom:2px solid #333;}
+table.simple td{padding:10px 8px 0px 8px;}
+table.simple tbody tr:hover td{color:#333;}
+table.tabletip{width:100%;border-collapse:collapse;text-align:left;}
+table.tabletip th{white-space:nowrap;border-bottom:1px solid #444;padding-right:3px;}
+table.tabletip td{border-bottom:1px solid #444;}
+table.tabletip tbody tr:hover td{background-color:#111;}
 table.colored{border-top:solid #d8b365 1px;border-bottom:solid #d8b365 1px;}
 table.colored td,table.colored th{text-align:left;padding:5px;}
 table.colored tr.header{background:#ebd9b2;background-image:url(form_title_bg.png);background-repeat:repeat-x;background-position:top;border-bottom:solid #d8b365 1px;font-weight:bold;}
@@ -148,10 +156,11 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.chevron{background:url(fugue.png) no-repeat 0px -156px;}
 .icon-button.bug{background:url(fugue.png) no-repeat 0px -182px;}
 .icon-button.disk{background:url(fugue.png) no-repeat 0px -208px;}
-.icon-button.annotate{background:url(fugue.png) no-repeat 0px -234px;}
-.icon-button.vis-chart{background:url(fugue.png) no-repeat 0px -260px;}
-.icon-button.go-to-full-screen{background:url(fugue.png) no-repeat 0px -286px;}
-.icon-button.import{background:url(fugue.png) no-repeat 0px -312px;}
+.icon-button.information{background:url(fugue.png) no-repeat 0px -234px;}
+.icon-button.annotate{background:url(fugue.png) no-repeat 0px -260px;}
+.icon-button.vis-chart{background:url(fugue.png) no-repeat 0px -286px;}
+.icon-button.go-to-full-screen{background:url(fugue.png) no-repeat 0px -312px;}
+.icon-button.import{background:url(fugue.png) no-repeat 0px -338px;}
 .tipsy{padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);}
 .tipsy-inner{padding:5px 8px 4px 8px;background-color:black;color:white;max-width:200px;text-align:center;}
 .tipsy-north{background-position:top center;}
@@ -160,4 +169,4 @@ div.permissionContainer{padding-left:20px;}
 .tipsy-west{background-position:left center;}
 .editable-text{cursor:pointer;}
 .editable-text:hover{cursor:text;border:dotted #999999 1px;}
-.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -338px;}
+.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -364px;}

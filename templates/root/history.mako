@@ -27,7 +27,7 @@ $(function() {
     init_history_items(historywrapper);
     historywrapper.each( function() {
         // Delete link
-        $(this).find( "div.historyItemButtons > .delete" ).each( function() {
+        $("div.historyItemButtons > .delete" ).each( function() {
             var data_id = this.id.split( "-" )[1];
             $(this).click( function() {
                 $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
@@ -58,7 +58,7 @@ $(function() {
             });
         });
         // Undelete link
-        $(this).find( "a.historyItemUndelete" ).each( function() {
+        $(this).find("a.historyItemUndelete").each( function() {
             var data_id = this.id.split( "-" )[1];
             $(this).click( function() {
                 $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
@@ -74,9 +74,23 @@ $(function() {
                 return false;
             });
         });
-
+        
+        // Show details icon
+        $(this).find("a.show-details").bind("mouseenter.load-detail", function(e) {
+            var anchor = $(this);
+            $.get($(this).attr("href"), function(data) {
+                anchor.attr("title", data);
+                anchor.tipsy( { html: true, gravity: 's', opacity: 1.0, delayOut: 300 } );
+                anchor.unbind("mouseenter.load-detail");
+                anchor.trigger("mouseenter");
+            });
+            return false;
+        });
+        // Disable clickthrough
+        $(this).find("a.show-details").bind("click", function() { return false; });
+        
         // Tag handling.
-        $(this).find( "a.icon-button.tags").each( function() {
+        $(this).find("a.icon-button.tags").each( function() {
             // Use links parameters but custom URL as ajax URL.
             $(this).click( function() {
                 // Get tag area, tag element.
@@ -112,7 +126,7 @@ $(function() {
         });
 
         // Annotation handling.
-        $(this).find( "a.icon-button.annotate").each( function() {
+        $(this).find("a.icon-button.annotate").each( function() {
             // Use links parameters but custom URL as ajax URL.
             $(this).click( function() {
                 // Get tag area, tag element.

@@ -714,6 +714,45 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         raise "Error undeleting"
     
     @web.expose
+    def show_params( self, trans, dataset_id=None, from_noframe=None, **kwd ):
+        """
+        Show the parameters used for an HDA
+        """
+        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+        if not hda:
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
+        if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+            return trans.show_error_message( "You are not allowed to access this dataset" )
+            
+        # Get the associated job, if any. If this hda was copied from another,
+        # we need to find the job that created the origial hda
+        job_hda = hda
+        while job_hda.copied_from_history_dataset_association:
+            job_hda = job_hda.copied_from_history_dataset_association
+        if not job_hda.creating_job_associations:
+            error( "Could not find the job for this dataset" )
+        # Get the job object
+        job = None
+        for assoc in job_hda.creating_job_associations:
+            job = assoc.job
+            break   
+        if not job:
+            return "Associated job could not be found."
+        # Get the tool object
+        try:
+            # Load the tool
+            toolbox = self.get_toolbox()
+            tool = toolbox.tools_by_id.get( job.tool_id, None )
+            assert tool is not None, 'Requested tool has not been loaded.'
+        except:
+            return "Error: This dataset was created by an obsolete tool (%s)." % job.tool_id
+        try:
+            params_objects = job.get_param_values( trans.app )
+        except:
+            return "Failed to get parameters for this dataset."
+        return trans.fill_template( "show_params.mako", history=trans.get_history(), hda=hda, tool=tool, params_objects=params_objects )
+        
+    @web.expose
     def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_ids="", new_history_name="", do_copy=False, **kwd ):
         params = util.Params( kwd )
         user = trans.get_user()

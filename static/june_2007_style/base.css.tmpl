@@ -325,6 +325,43 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     background-image: url(info_small.png);
 }
 
+table.simple {
+	font-size: 12px;
+	background: #fff;
+	margin: 1em;
+	border-collapse: collapse;
+	text-align: left;
+}
+table.simple th {
+	font-size: 14px;
+	font-weight: normal;
+	padding: 10px 8px;
+	border-bottom: 2px solid #333;
+}
+table.simple td {
+	padding: 10px 8px 0px 8px;
+}
+table.simple tbody tr:hover td {
+	color: #333;
+}
+
+table.tabletip {
+    width: 100%;
+	border-collapse: collapse;
+	text-align: left;
+}
+table.tabletip th {
+    white-space: nowrap;
+	border-bottom: 1px solid #444;
+	padding-right: 3px;
+}
+table.tabletip td {
+    border-bottom: 1px solid #444;
+}
+table.tabletip tbody tr:hover td {
+	background-color: #111;
+}
+
 table.colored {
     border-top: solid $table_border 1px;
     border-bottom: solid $table_border 1px;
@@ -843,6 +880,10 @@ div.permissionContainer {
 .icon-button.disk {
     -sprite-group: fugue;
     -sprite-image: fugue/disk.png;
+}
+.icon-button.information {
+    -sprite-group: fugue;
+    -sprite-image: fugue/information-white.png;
 }
 .icon-button.annotate {
     -sprite-group: fugue;

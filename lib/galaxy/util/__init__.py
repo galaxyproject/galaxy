@@ -507,7 +507,7 @@ def nice_size(size):
     Returns a readably formatted string with the size
 
     >>> nice_size(100)
-    '100.0 bytes'
+    '100 bytes'
     >>> nice_size(10000)
     '9.8 Kb'
     >>> nice_size(1000000)
@@ -524,8 +524,9 @@ def nice_size(size):
         step  = 1024 ** (ind + 1)
         if step > size:
             size = size / float(1024 ** ind)
-            out  = "%.1f %s" % (size, word)
-            return out
+            if word == 'bytes': # No decimals for bytes
+                return "%d bytes" % size
+            return "%.1f %s" % (size, word)
     return '??? bytes'
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")

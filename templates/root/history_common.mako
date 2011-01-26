@@ -122,7 +122,6 @@
             %endif
             <div>
                 %if data.has_data():
-                    
                     ## Check for downloadable metadata files
                     <% meta_files = [ k for k in data.metadata.spec.keys() if isinstance( data.metadata.spec[k].param, FileParameter ) ] %>
                     %if meta_files:
@@ -141,6 +140,8 @@
                     %if meta_files:
                         </div>
                     %endif
+                    
+                    <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information show-details"></a>
                     
                     %if for_editing:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
