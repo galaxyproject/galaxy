@@ -212,7 +212,7 @@
     </script>
 </%def>
 
-<%def name="render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False )">
+<%def name="render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False, render_checkboxes=True )">
     <%
         ## The received ldda must always be a LibraryDatasetDatasetAssociation object.  The object id passed to methods
         ## from the drop down menu should be the ldda id to prevent id collision ( which could happen when displaying
@@ -248,11 +248,13 @@
             %endif
             id="libraryItem-${ldda.id}">
             <td style="padding-left: ${pad+20}px;">
-                <input style="float: left;" type="checkbox" name="ldda_ids" value="${trans.security.encode_id( ldda.id )}"
-                %if selected:
-                    checked="checked"
+                %if render_checkboxes:
+                    <input style="float: left;" type="checkbox" name="ldda_ids" value="${trans.security.encode_id( ldda.id )}"
+                    %if selected:
+                        checked="checked"
+                    %endif
+                    />
                 %endif
-                />
                 %if ldda.library_dataset.deleted:
                    <span class="libraryItem-error">
                 %endif
@@ -417,13 +419,8 @@
             row_counter.increment()
         %>
     %endif
-    %if cntrller in ['library', 'library_search']:
-        <%
-           if cntrller == 'library':
-               sub_folders = active_folders( trans, folder )
-           else:
-               sub_folders = []
-        %>
+    %if cntrller == 'library':
+        <% sub_folders = active_folders( trans, folder ) %>
         %for sub_folder in sub_folders:
             ${render_folder( cntrller, sub_folder, pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=my_row, row_counter=row_counter, root_folder=False )}
         %endfor
@@ -434,7 +431,7 @@
                 selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
             %>
             %if can_access:
-                ${render_dataset( 'library', ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
+                ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
             %endif
         %endfor
     %elif trans.user_is_admin() and cntrller == 'library_admin':
@@ -489,7 +486,7 @@
 
      <ul class="manage-table-actions">
          %if not library.deleted and ( ( trans.user_is_admin() and cntrller == 'library_admin' ) or can_add ):
-             <li><a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}"><span>Add datasets</span></a></li>
+             <li><a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add datasets</a></li>
              <li><a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( library.root_folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add folder</a></li>
          %endif
          %if ( ( not library.deleted ) and ( can_modify or can_manage ) ) or ( can_modify and not library.purged ) or ( library.purged ):
@@ -543,21 +540,15 @@
             <thead>
                 <tr class="libraryTitle">
                     <th>Name</th>        
-                    <th>Information</th>
+                    <th>Message</th>
                     <th>Uploaded By</th>
                     <th>Date</th>
                     <th>File Size</th>
                 </tr>
             </thead>
             <% row_counter = RowCounter() %>
-            %if cntrller in [ 'library', 'requests', 'library_search' ]:
-                <%
-                    if cntrller.startswith("library"):
-                        render_cntrller = cntrller
-                    else:
-                        render_cntrller = 'library'
-                %>
-                ${self.render_folder( render_cntrller, library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
+            %if cntrller in [ 'library', 'requests' ]:
+                ${self.render_folder( 'library', library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
                 %if not library.deleted:
                     ${render_actions_on_multiple_items()}
                 %endif

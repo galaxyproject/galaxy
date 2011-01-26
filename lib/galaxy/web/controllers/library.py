@@ -6,7 +6,7 @@ from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import model, util
 from galaxy.util.odict import odict
-import library_common
+from library_common import lucene_search, whoosh_search
 
 log = logging.getLogger( __name__ )
 
@@ -28,10 +28,12 @@ class LibraryListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     link=( lambda library: dict( operation="browse", id=library.id ) ),
-                    attach_popup=False ),
+                    attach_popup=False,
+                    filterable="advanced" ),
         DescriptionColumn( "Description",
                            key="description",
-                           attach_popup=False ),
+                           attach_popup=False,
+                           filterable="advanced" ),
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
@@ -86,48 +88,25 @@ class Library( BaseController ):
                                                                   cntrller='library',
                                                                   **kwd ) )
         if 'f-free-text-search' in kwd:
-            use_fulltext = trans.app.config.config_dict.get("use_fulltext", "False")
-            search_url = trans.app.config.config_dict.get("fulltext_find_url", "")
-            if use_fulltext.lower() not in ["false", "no"] and search_url:
-                return self._fulltext_search(trans, kwd["f-free-text-search"],
-                                             search_url, kwd)
+            search_term = kwd[ "f-free-text-search" ]
+            if trans.app.config.enable_lucene_library_search:
+                indexed_search_enabled = True
+                search_url = trans.app.config.config_dict.get( "fulltext_find_url", "" )
+                if search_url:
+                    status, message, lddas = lucene_search( trans, 'library', search_term, search_url, **kwd )
+            elif trans.app.config.enable_whoosh_library_search:
+                indexed_search_enabled = True
+                status, message, lddas = whoosh_search( trans, 'library', search_term, **kwd )
+            else:
+                indexed_search_enabled = False
+            if indexed_search_enabled:
+                use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+                return trans.fill_template( '/library/common/library_dataset_search_results.mako',
+                                            cntrller='library',
+                                            search_term=search_term,
+                                            lddas=lddas,
+                                            use_panels=use_panels,
+                                            message=message,
+                                            status=status )
         # Render the list view
         return self.library_list_grid( trans, **kwd )
-
-    def _fulltext_search(self, trans, search_term, search_url, kwd):
-        """Return display of results from a full-text search of data libraries.
-        """
-        full_url = "%s?%s" % (search_url, urllib.urlencode(
-                              {"kwd" : search_term}))
-        response = urllib2.urlopen(full_url)
-        ids = util.json.from_json_string(response.read())["ids"]
-        response.close()
-        datasets = [trans.app.model.LibraryDataset.get(i) for i in ids]
-        roles = trans.get_current_user_roles()
-        library = _FullTextSearchLibrary(search_term, datasets)
-        return trans.fill_template('/library/common/browse_library.mako',
-                                   library=library,
-                                   cntrller='library_search',
-                                   current_user_roles=roles,
-                                   created_ldda_ids=[], hidden_folder_ids=[],
-                                   use_panels=False, show_deleted=False,
-                                   comptypes=library_common.comptypes,
-                                   message=util.restore_text(kwd.get('message', '')),
-                                   status=kwd.get('status', 'done'))
-
-class _FullTextSearchLibrary:
-    """Mimic a library object with results retrieved from full-text search.
-    """
-    def __init__(self, search_term, datasets):
-        self.name = "Full text search: %s" % search_term
-        self.active_library_datasets = datasets
-        self.id = "f-free-text-search=%s" % search_term
-        self.actions = []
-        self.root_folder = self
-        self.parent = None
-        self.deleted = False
-        self.purged = False
-        self.synopsis = None
-
-    def get_info_association(self, restrict=False, inherited=False):
-        return None, False

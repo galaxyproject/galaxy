@@ -183,17 +183,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # GeneTrack servers: tool-data/shared/genetrack/genetrack_sites.txt
 #genetrack_display_sites = main,test
 
-# -- Library search functionality
-
-use_fulltext = False
-# maxiumum file size to index for searching, in MB
-fulltext_max_size = 500
-fulltext_noindex_filetypes=bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
-# base URL of server providing search functionality. See
-# https://github.com/chapmanb/kwd-doc-find for Lucene-based search.
-fulltext_index_url = http://localhost:8081/index
-fulltext_find_url = http://localhost:8081/find
-
 # -- Next gen LIMS interface on top of existing Galaxy Sample/Request management code.
 
 use_nglims = False
@@ -346,6 +335,20 @@ use_interactive = True
 # runs outside of Galaxy (but is spawned by it automatically).  Galaxy will
 # communicate with this manager over the port specified here.
 #transfer_manager_port = 8163
+
+# Search data libraries with whoosh
+enable_whoosh_library_search = True
+# Whoosh indexes are stored in this directory.
+whoosh_index_dir = database/whoosh_indexes
+
+# Search data libraries with lucene
+#enable_lucene_library_search = False
+# maxiumum file size to index for searching, in MB
+#fulltext_max_size = 500
+#fulltext_noindex_filetypes=bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
+# base URL of server providing search functionality using whoosh.
+#fulltext_index_url = http://localhost:8081/index
+#fulltext_find_url = http://localhost:8081/find
 
 # -- Users and Security
 

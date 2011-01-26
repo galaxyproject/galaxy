@@ -70,7 +70,7 @@
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">
-                  <span>Security</span>
+                  Security
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
@@ -81,7 +81,7 @@
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                  <span>Data</span>
+                  Data
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
@@ -90,7 +90,7 @@
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                  <span>Server</span>
+                  Server
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
@@ -101,7 +101,7 @@
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                  <span>Form Definitions</span>
+                  Form Definitions
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
@@ -110,7 +110,7 @@
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                  <span>Sample Tracking</span>
+                  Sample Tracking
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">

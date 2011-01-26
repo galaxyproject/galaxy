@@ -8,7 +8,22 @@ from galaxy.tools.actions import upload_common
 from galaxy.model.orm import *
 from galaxy.util.streamball import StreamBall
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
-import logging, tempfile, zipfile, tarfile, os, sys
+import logging, tempfile, zipfile, tarfile, os, sys, operator
+from galaxy.eggs import require
+# Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
+try:
+    require( "Whoosh" )
+    import whoosh.index
+    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
+    from whoosh.scoring import BM25F
+    from whoosh.qparser import MultifieldParser
+    whoosh_search_enabled = True
+    # The following must be defined exactly like the
+    # schema in ~/scripts/data_libraries/build_whoosh_index.py
+    schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT, state=TEXT )
+except ImportError, e:
+    whoosh_search_enabled = False
+    schema = None
 
 if sys.version_info[:2] < ( 2, 6 ):
     zipfile.BadZipFile = zipfile.error
@@ -96,12 +111,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         except:
             # Protect against attempts to phish for valid keys that return libraries
             library = None
-        freetext_search = self._get_free_text_search(trans, library_id)
         # Most security for browsing libraries is handled in the template, but do a basic check here.
-        extra_params = {}
-        if freetext_search:
-            extra_params["f-free-text-search"] = freetext_search
-        elif not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
+        if not library or not ( is_admin or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             message = "Invalid library id ( %s ) specified." % str( library_id )
             status = 'error'
         else:
@@ -139,30 +150,12 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             except Exception, e:
                 message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
                 status = 'error'
-
-        # redirect library search items from grid back to library controller
-        if cntrller == "library_search":
-            cntrller = "library"
         return trans.response.send_redirect( web.url_for( use_panels=use_panels,
                                                           controller=cntrller,
                                                           action='browse_libraries',
                                                           default_action=params.get( 'default_action', None ),
                                                           message=util.sanitize_text( message ),
-                                                          status=status,
-                                                          **extra_params ) )
-
-    def _get_free_text_search(self, trans, library_id):
-        """Check if the library id is a mixed library from free text search.
-        """
-        try:
-            library_id = trans.security.decode_string_id(library_id)
-        except:
-            library_id = ""
-        if library_id.startswith("f-free-text-search="):
-            return library_id.replace("f-free-text-search=", "")
-        else:
-            return None
-
+                                                          status=status ) )
     @web.expose
     def library_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -1727,14 +1720,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                             message = "Unable to create archive for download, please report this error"
                             status = 'error'                            
                 if not error:
-                    library_id = trans.security.decode_string_id(library_id)
-                    if library_id.startswith("f-free-text-search"):
-                        fname = library_id.replace("f-free-text-search=", "")
-                    else:
-                        fname = trans.sa_session.query( trans.app.model.Library ).get( library_id ).name
-                    for fix in [" ", "*", "?"]:
-                        fname = fname.replace( fix, '_' )
-                    fname += '_files'
+                    lname = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) ).name
+                    fname = lname.replace( ' ', '_' ) + '_files'
                     if action == 'zip':
                         archive.close()
                         tmpfh = open( tmpf )
@@ -2077,3 +2064,76 @@ def get_containing_library_from_library_dataset( trans, library_dataset ):
         if library.root_folder == folder:
             return library
     return None
+def sort_by_attr( seq, attr ):
+    """
+    Sort the sequence of objects by object's attribute
+    Arguments:
+    seq  - the list or any sequence (including immutable one) of objects to sort.
+    attr - the name of attribute to sort by
+    """
+    # Use the "Schwartzian transform"
+    # Create the auxiliary list of tuples where every i-th tuple has form
+    # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
+    # only to provide stable sorting, but mainly to eliminate comparison of objects
+    # (which can be expensive or prohibited) in case of equal attribute values.
+    intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+    intermed.sort()
+    return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
+def get_sorted_accessible_library_items( trans, cntrller, items, sort_attr ):
+    is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+    if is_admin:
+        accessible_items = items
+    else:
+        # Enforce access permission settings
+        current_user_roles = trans.get_current_user_roles()
+        accessible_items = []
+        for item in items:
+            if trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ):
+                accessible_items.append( item )
+    # Sort by name
+    return sort_by_attr( [ item for item in accessible_items ], sort_attr )
+def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
+    """Return display of results from a full-text lucene search of data libraries."""
+    params = util.Params( kwd )
+    message = util.restore_text( params.get( 'message', ''  ) )
+    status = params.get( 'status', 'done' )
+    full_url = "%s?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
+    response = urllib2.urlopen( full_url )
+    ldda_ids = util.json.from_json_string( response.read() )[ "ids" ]
+    response.close()
+    lddas = [ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in ldda_ids ]
+    return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
+def whoosh_search( trans, cntrller, search_term, **kwd ):
+    """Return display of results from a full-text whoosh search of data libraries."""
+    params = util.Params( kwd )
+    message = util.restore_text( params.get( 'message', ''  ) )
+    status = params.get( 'status', 'done' )
+    ok = True
+    if whoosh_search_enabled:
+        whoosh_index_dir = trans.app.config.whoosh_index_dir
+        index_exists = whoosh.index.exists_in( whoosh_index_dir )
+        if index_exists:
+            index = whoosh.index.open_dir( whoosh_index_dir )
+            # Set field boosts for searcher to place equal weight on all search fields.
+            searcher = index.searcher( weighting=BM25F( field_B={ 'name_B' : 3.5,
+                                                                  'info_B' : 2.3,
+                                                                  'dbkey_B' : 3.1,
+                                                                  'message_B' : 2.1,
+                                                                  'state_B' : 1.2 } ) )
+            # Perform search
+            parser = MultifieldParser( [ 'name', 'info', 'dbkey', 'message', 'state' ], schema=schema )
+            # Search term with wildcards may be slow...
+            results = searcher.search( parser.parse( '*' + search_term + '*' ), minscore=1.0 )
+            ldda_ids = [ result[ 'id' ] for result in results ]
+            lddas = [ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in ldda_ids ]
+            lddas = get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
+        else:
+            message = "Tell your Galaxy administrator that the directory %s does not contain valid whoosh indexes" % str( whoosh_index_dir )
+            ok = False
+    else:
+        message = "Whoosh is compatible with Python version 2.5 or greater.  Your Python verison is not compatible."
+        ok = False
+    if not ok:
+        status = 'error'
+        lddas = []
+    return status, message, lddas

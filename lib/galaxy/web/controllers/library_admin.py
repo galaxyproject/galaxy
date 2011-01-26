@@ -3,6 +3,7 @@ from galaxy import model, util
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
+from library_common import lucene_search, whoosh_search
 # Older py compatibility
 try:
     set()
@@ -36,13 +37,11 @@ class LibraryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    model_class=model.Library,
                     link=( lambda library: dict( operation="browse", id=library.id ) ),
                     attach_popup=False,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
                            key="description",
-                           model_class=model.Library,
                            attach_popup=False,
                            filterable="advanced" ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
@@ -120,7 +119,28 @@ class LibraryAdmin( BaseController ):
                                      allow_multiple=True,
                                      allow_popup=False,
                                      url_args=dict( webapp="galaxy" ) )
-            ]  
+            ]
+        if 'f-free-text-search' in kwd:
+            search_term = kwd[ "f-free-text-search" ]
+            if trans.app.config.enable_lucene_library_search:
+                indexed_search_enabled = True
+                search_url = trans.app.config.config_dict.get( "fulltext_find_url", "" )
+                if search_url:
+                    status, message, lddas = lucene_search( trans, 'library_admin', search_term, search_url, **kwd )
+            elif trans.app.config.enable_whoosh_library_search:
+                indexed_search_enabled = True
+                status, message, lddas = whoosh_search( trans, 'library_admin', search_term, **kwd )
+            else:
+                indexed_search_enabled = False
+            if indexed_search_enabled:
+                use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+                return trans.fill_template( '/library/common/library_dataset_search_results.mako',
+                                            cntrller='library_admin',
+                                            search_term=search_term,
+                                            lddas=lddas,
+                                            use_panels=use_panels,
+                                            message=message,
+                                            status=status )
         # Render the list view
         return self.library_list_grid( trans, **kwd )
     @web.expose

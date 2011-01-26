@@ -102,6 +102,10 @@ class Configuration( object ):
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
         self.user_library_import_dir = kwargs.get( 'user_library_import_dir', None )
+        # Searching data libraries
+        self.enable_lucene_library_search = string_as_bool( kwargs.get( 'enable_lucene_library_search', False ) )
+        self.enable_whoosh_library_search = string_as_bool( kwargs.get( 'enable_whoosh_library_search', False ) )
+        self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "database/whoosh_indexes" ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
@@ -174,6 +178,7 @@ class Configuration( object ):
                     self.user_library_import_dir, \
                     self.nginx_upload_store, \
                     './static/genetrack/plots', \
+                    self.whoosh_index_dir, \
                     os.path.join( self.tool_data_path, 'shared', 'jars' ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
