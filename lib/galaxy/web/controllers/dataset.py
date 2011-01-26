@@ -730,14 +730,14 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         while job_hda.copied_from_history_dataset_association:
             job_hda = job_hda.copied_from_history_dataset_association
         if not job_hda.creating_job_associations:
-            error( "Could not find the job for this dataset" )
+            return "Could not find the job for this dataset."
         # Get the job object
         job = None
         for assoc in job_hda.creating_job_associations:
             job = assoc.job
             break   
         if not job:
-            return "Associated job could not be found."
+            return "Could not find the job for this dataset."
         # Get the tool object
         try:
             # Load the tool
