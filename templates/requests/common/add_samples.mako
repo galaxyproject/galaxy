@@ -22,7 +22,10 @@
     is_complete = request.is_complete
     is_submitted = request.is_submitted
     is_unsubmitted = request.is_unsubmitted
-    can_add_samples = is_unsubmitted
+    if is_admin:
+       can_add_samples = not is_complete
+    else:
+       can_add_samples = is_unsubmitted
     can_delete_samples = request.samples and not is_complete
     can_edit_samples = request.samples and ( is_admin or not is_complete )
     can_edit_request = ( is_admin and not request.is_complete ) or request.is_unsubmitted
@@ -73,7 +76,7 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
         %else:
             <label>There are no samples.</label>
         %endif  
-        %if is_unsubmitted:
+        %if can_add_samples:
             ## The user is adding a new sample
             %if displayable_sample_widgets:
                 <p/>

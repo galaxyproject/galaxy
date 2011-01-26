@@ -1176,22 +1176,35 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             # until the request is submitted, at which time all samples of the request will be 
             # set to the first SampleState configured for the request's RequestType configured
             # by the admin ( i.e., the sample's SampleState would be set to request.type.states[0] ).
+            new_samples = []
             for index in range( len( samples ) - len( request.samples ) ):
                 sample_index = len( request.samples )
                 sample_widget = samples[ sample_index ]
                 form_values = trans.model.FormValues( request.type.sample_form, sample_widget[ 'field_values' ] )
                 trans.sa_session.add( form_values )
                 trans.sa_session.flush()
-                s = trans.model.Sample( name=sample_widget[ 'name' ],
-                                        desc='', 
-                                        request=request,
-                                        form_values=form_values, 
-                                        bar_code='',
-                                        library=sample_widget[ 'library' ],
-                                        folder=sample_widget[ 'folder' ],
-                                        history=sample_widget['history'],
-                                        workflow=sample_widget['workflow_dict'] )
-                trans.sa_session.add( s )
+                sample = trans.model.Sample( name=sample_widget[ 'name' ],
+                                             desc='', 
+                                             request=request,
+                                             form_values=form_values, 
+                                             bar_code='',
+                                             library=sample_widget[ 'library' ],
+                                             folder=sample_widget[ 'folder' ],
+                                             history=sample_widget['history'],
+                                             workflow=sample_widget['workflow_dict'] )
+                trans.sa_session.add( sample )
+                trans.sa_session.flush()
+                new_samples.append( sample )
+            # If this sample is added when the request is already submitted then these new samples 
+            # should be in the first sample state when saved
+            if request.is_submitted:
+                initial_sample_state_after_request_submitted = request.type.states[0]
+                for sample in new_samples:
+                    event_comment = 'Sample added and sample state set to %s.' % request.type.states[0].name
+                    event = trans.model.SampleEvent( sample,
+                                                     initial_sample_state_after_request_submitted,
+                                                     event_comment )
+                    trans.sa_session.add( event )
                 trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                           action=redirect_action,
@@ -1351,6 +1364,15 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 history = sample.history
                 workflow = sample.workflow
                 field_values = sample.values.content
+                if not history:
+                    history_id = 'none'
+                else:
+                    history_id = history.id
+                if not workflow:
+                    workflow_id = 'none'
+                else:
+                    workflow_id = workflow.id
+                workflow_dict = sample.workflow
             else:
                 # Update the sample attributes from kwd
                 sample_id = None

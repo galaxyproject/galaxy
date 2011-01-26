@@ -563,11 +563,12 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                  state=request1.states.SUBMITTED,
                                  strings_displayed=[ request1.name ] )
         strings_displayed = [ request1.states.SUBMITTED,
-                              'Reject this request' ]
-        strings_not_displayed = [ 'Add sample' ]
+                              'Reject this request',
+                              'Add sample',
+                              'Edit samples' ]
         self.view_request( cntrller='requests_admin',
                            request_id=self.security.encode_id( request1.id ),
-                           strings_not_displayed=strings_not_displayed )
+                           strings_displayed=strings_displayed )
         # Set bar codes for the samples
         bar_codes = [ '10001', '10002', '10003' ]
         strings_displayed_after_submit = [ 'Changes made to the samples have been saved.' ]

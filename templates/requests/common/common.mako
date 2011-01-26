@@ -315,22 +315,25 @@
 
 <%def name="render_samples_grid( cntrller, request, displayable_sample_widgets, action, adding_new_samples=False, encoded_selected_sample_ids=[], render_buttons=False, grid_header='<h3>Samples</h3>' )">
     ## Displays the "Samples" grid
-    <%
-        trans.sa_session.refresh( request )
-        is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
-        is_complete = request.is_complete
-        is_rejected = request.is_rejected
-        is_submitted = request.is_submitted
-        is_unsubmitted = request.is_unsubmitted
-        can_add_samples = request.is_unsubmitted
-        can_delete_samples = not adding_new_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
-        can_edit_samples = request.samples and ( is_admin or not is_complete )
-        can_select_datasets = is_admin and displayable_sample_widgets and ( is_submitted or is_complete )
-        can_transfer_datasets = is_admin and request.samples and not request.is_rejected
-        display_checkboxes = not adding_new_samples and ( is_complete or is_rejected or is_submitted )
-        display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
-        display_datasets = request.samples and ( is_complete or is_submitted )
-    %>
+<%
+    trans.sa_session.refresh( request )
+    is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
+    is_complete = request.is_complete
+    is_rejected = request.is_rejected
+    is_submitted = request.is_submitted
+    is_unsubmitted = request.is_unsubmitted
+    if is_admin:
+       can_add_samples = not is_complete
+    else:
+       can_add_samples = is_unsubmitted
+    can_delete_samples = not adding_new_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
+    can_edit_samples = request.samples and ( is_admin or not is_complete )
+    can_select_datasets = is_admin and displayable_sample_widgets and ( is_submitted or is_complete )
+    can_transfer_datasets = is_admin and request.samples and not request.is_rejected
+    display_checkboxes = not adding_new_samples and ( is_complete or is_rejected or is_submitted )
+    display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
+    display_datasets = request.samples and ( is_complete or is_submitted )
+%>
     ${grid_header}
     %if render_buttons and ( can_add_samples or can_edit_samples ):
         <ul class="manage-table-actions">
