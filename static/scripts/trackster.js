@@ -33,11 +33,12 @@ var
     MAX_FEATURE_DEPTH = 100,
     DEFAULT_DATA_QUERY_WAIT = 5000,
     CONNECTOR_COLOR = "#ccc",
-    DATA_ERROR = "There was an error in indexing this dataset.",
+    DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
     DATA_LOADING = "Loading data...",
+    DATA_OK = "Ready for display",
     FILTERABLE_CLASS = "filterable",
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 5,
@@ -833,6 +834,7 @@ $.extend( Track.prototype, {
                 setTimeout(function() { track.init(); }, track.data_query_wait);
             } else if (result === "ok") {
                 // Only draw in user has selected a chromosome.
+                track.content_div.text(DATA_OK);
                 if (track.view.chrom) {
                     track.content_div.text("");
                     track.content_div.css( "height", track.height_px + "px" );
@@ -1999,7 +2001,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 max = result.max,
                 delta_x_px = Math.ceil(result.delta * w_scale);
             
-            var max_label = $("<div />").addClass('yaxislabel').text(max);
+            var max_label = $("<div />").addClass('yaxislabel');
+            max_label.text(max);
             
             max_label.css({ position: "absolute", top: "22px", left: "10px" });
             max_label.prependTo(this.container_div);
