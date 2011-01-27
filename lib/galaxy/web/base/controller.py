@@ -183,7 +183,7 @@ class UsesVisualization( SharableItemSecurity ):
                         "prefs": prefs,
                         "filters": track_data_provider.get_filters(),
                         "tool": get_tool_def( trans, dataset ),
-                        "is_child": t['is_child']
+                        "is_child": t.get('is_child', False)
                     } )
             
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 

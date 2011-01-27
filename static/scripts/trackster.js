@@ -810,7 +810,9 @@ $.extend( Track.prototype, {
         
         // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
         // about track status.
-        $.getJSON(this.dataset_check_url, {dataset_id : track.dataset_id}, function (result) {
+        $.getJSON(this.dataset_check_url, 
+                 {dataset_id : track.dataset_id, chrom: track.view.chrom, low: track.view.max_low, high: track.view.max_high}, 
+                 function (result) {
             if (!result || result === "error" || result.kind === "error") {
                 track.container_div.addClass("error");
                 track.content_div.text(DATA_ERROR);
@@ -826,14 +828,14 @@ $.extend( Track.prototype, {
             } else if (result === "no converter") {
                 track.container_div.addClass("error");
                 track.content_div.text(DATA_NOCONVERTER);
-            } else if (result.data !== undefined && (result.data === null || result.data.length === 0)) {
+            } else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
                 track.container_div.addClass("nodata");
                 track.content_div.text(DATA_NONE);
             } else if (result === "pending") {
                 track.container_div.addClass("pending");
                 track.content_div.text(DATA_PENDING);
                 setTimeout(function() { track.init(); }, track.data_query_wait);
-            } else if (result === "ok") {
+            } else if (result === "data") {
                 // Only draw in user has selected a chromosome.
                 track.content_div.text(DATA_OK);
                 if (track.view.chrom) {

@@ -370,8 +370,11 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return msg
         
     @web.json
-    def converted_datasets_state( self, trans, dataset_id, **kwargs ):
-        """ Returns state of dataset's converted datasets. """
+    def converted_datasets_state( self, trans, dataset_id, chrom=None, low=None, high=None ):
+        """ 
+        Returns state of dataset's converted datasets. If a genome window is 
+        specified, method checks whether dataset has data in the window.
+        """
         # TODO: this code is copied from data() -- should refactor.
         
         # Dataset check.
@@ -387,7 +390,15 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if msg:
             return msg
             
-        return "ok"
+        # Check for data in the genome window.
+        # TODO: Not all tracks have an index data source, so need to try alternative data sources to check for data.
+        if chrom and low and high and data_sources.get( 'index' ):
+            tracks_dataset_type = data_sources['index']['name']
+            indexer = get_data_provider( tracks_dataset_type )( dataset.get_converted_dataset( trans, tracks_dataset_type ), dataset )
+            if not indexer.has_data( chrom, low, high ):
+                return messages.NO_DATA
+
+        return messages.DATA
         
     @web.json
     def data( self, trans, dataset_id, chrom, low, high, **kwargs ):

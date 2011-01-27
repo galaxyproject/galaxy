@@ -47,7 +47,14 @@ class TracksDataProvider( object ):
         """
         # Override.
         pass
-
+    
+    def has_data( self, chrom, start, end ):
+        """
+        Returns true if dataset has data in the specified genome window, false
+        otherwise.
+        """
+        # Override.
+        return False
         
     def get_data( self, chrom, start, end, **kwargs ):
         """ Returns data in region defined by chrom, start, and end. """
@@ -128,6 +135,23 @@ class SummaryTreeDataProvider( TracksDataProvider ):
             return results
         else:
             return results, stats[level]["max"], stats[level]["avg"], stats[level]["delta"]
+            
+    def has_data( self, chrom, start, end ):
+        """
+        Returns true if dataset has data in the specified genome window, false
+        otherwise.
+        """
+        
+        # Get summary tree.
+        filename = self.converted_dataset.file_name
+        st = self.CACHE[filename]
+        if st is None:
+            st = summary_tree_from_file( self.converted_dataset.file_name )
+            self.CACHE[filename] = st
+            
+        # Check for data.
+        level = ceil( log( 100000, st.block_size ) ) - 1
+        return ( st.query( chrom, int(start), int(end), level ) is not None )
 
 class VcfDataProvider( TracksDataProvider ):
     """
