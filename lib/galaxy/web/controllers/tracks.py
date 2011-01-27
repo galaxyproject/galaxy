@@ -482,7 +482,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             tracks.append( {    "dataset_id": str( trans.security.decode_id( track['dataset_id']) ),
                                 "name": track['name'],
                                 "track_type": track['track_type'],
-                                "prefs": track['prefs']
+                                "prefs": track['prefs'],
+                                "is_child": track['is_child']
             } )
         # Viewport from payload
         if 'viewport' in decoded_payload:
@@ -621,7 +622,11 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         #        
         # Start tool and handle outputs.
         #
-        subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=original_dataset.history )
+        try:
+            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=original_dataset.history )
+        except e:
+            # Lots of things can go wrong when trying to execute tool.
+            return to_json_string( { "error" : True, "message" : e.str() } )
         for output in subset_job_outputs.values():
             output.visible = False
         trans.sa_session.flush()

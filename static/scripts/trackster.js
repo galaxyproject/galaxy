@@ -37,6 +37,7 @@ var
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
+    DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ",
     DATA_LOADING = "Loading data...",
     DATA_OK = "Ready for display",
     FILTERABLE_CLASS = "filterable",
@@ -193,7 +194,7 @@ $.extend(DataCache.prototype, Cache.prototype, {
 });
 
 /**
- * View object manages complete viz view, including tracks and interactions.
+ * View object manages complete viz view, including tracks and user interactions.
  */
 var View = function( container, title, vis_id, dbkey, callback ) {
     this.container = container;
@@ -876,6 +877,12 @@ var TiledTrack = function(filters, tool, parent_track) {
     // Attribute init.
     this.filters = (filters !== undefined ? get_filters_from_dict( filters ) : []);
     this.tool = (tool !== undefined ? get_tool_from_dict( tool ) : undefined);
+    //
+    // TODO: Right now there is only the notion of a parent track and multiple child tracks. However, 
+    // a more general notion of a 'track group' is probably needed and can be easily created using
+    // the code already in place for parent/child tracks. The view would then manage track groups, and
+    // each track group could be managed on its own.
+    //
     this.parent_track = parent_track;
     this.child_tracks = [];
     
@@ -1045,6 +1052,15 @@ var TiledTrack = function(filters, tool, parent_track) {
         });
     }
     
+    //
+    // Child tracks container setup.
+    //
+    track.child_tracks_container = $("<div/>").addClass("child-tracks-container").hide();
+    track.container_div.append(track.child_tracks_container);
+    
+    //
+    // Create modes control.
+    //
     if (track.display_modes !== undefined) {
         if (track.mode_div === undefined) {
             track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
@@ -1139,10 +1155,18 @@ var TiledTrack = function(filters, tool, parent_track) {
         };
     }
     
+    // Need to either remove track from view or from parent.
+    var parent_obj = view;
+    var no_tracks_fn = function() { $("#no-tracks").show(); };
+    if (this.parent_track) {
+        // Track is child track.
+        parent_obj = this.parent_track
+        no_tracks_fn = function() {};
+    }
     track_dropdown.Remove = function() {
-        view.remove_track(track);
-        if (view.num_tracks === 0) {
-            $("#no-tracks").show();
+        parent_obj.remove_track(track);
+        if (parent_obj.num_tracks === 0) {
+            no_tracks_fn();
         }
     };
     track.popup_menu = make_popupmenu(track.name_div, track_dropdown);
@@ -1166,7 +1190,7 @@ var TiledTrack = function(filters, tool, parent_track) {
     */
 };
 $.extend( TiledTrack.prototype, Track.prototype, {
-    draw: function( force ) {
+    draw: function(force) {
         var low = this.view.low,
             high = this.view.high,
             range = high - low,
@@ -1224,6 +1248,13 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 clearInterval(intervalId);
             }
         }, 50);
+        
+        //
+        // Draw child tracks.
+        //
+        for (var i = 0; i < this.child_tracks.length; i++) {
+            this.child_tracks[i].draw(force);
+        }
     }, delayed_draw: function(track, key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids) {
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
@@ -1296,18 +1327,23 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         };
         $.extend(url_params, this.tool.get_param_values_dict());
         
+        //
         // Create track for tool's output immediately to provide user feedback.
+        //
 		var 
 		    current_track = this,
             // Set name of track to include tool name, parameters, and region used.
 		    track_name = url_params.tool_id +
 		                 current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
 		    new_track;
-		    // TODO: add support for other kinds of tool data tracks.
-		    if (current_track.track_type == 'FeatureTrack') {
-		        new_track = new ToolDataFeatureTrack(track_name, view, undefined, {}, {}, {}, current_track);    
-		    }
-		view.add_track(new_track);
+		    
+		// TODO: add support for other kinds of tool data tracks.
+	    if (current_track.track_type == 'FeatureTrack') {
+	        new_track = new ToolDataFeatureTrack(track_name, view, undefined, {}, {}, current_track);    
+	    }
+		      
+		this.add_track(new_track);
+		new_track.content_div.text("Starting job.");
 		view.has_changes = true;
 		
 		// Run tool.
@@ -1317,6 +1353,11 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     // No converter available for input datasets, so cannot run tool.
                     new_track.container_div.addClass("error");
                     new_track.content_div.text(DATA_NOCONVERTER);
+                }
+                else if (track_data.error) {
+                    // General error.
+                    new_track.container_div.addClass("error");
+                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + track_data.message);
                 }
                 else if (track_data == "pending") {
                     // Converting/indexing input datasets; show message and try again.
@@ -1334,7 +1375,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 		};
 		json_run_tool();
     },
-    // Utility function that creates a label string describing the region and parameters of a track's tool.
+    /**
+     * Utility function that creates a label string describing the region and parameters of a track's tool.
+     */
     tool_region_and_parameters_str: function(chrom, low, high) {
         // Region is chrom:low-high or 'all.'
         var 
@@ -1342,6 +1385,24 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             region = (chrom !== undefined && low !== undefined && high != undefined ? 
                       chrom + ":" + low + "-" + high : "all");
         return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
+    },
+    /**
+     * Add a child track to this track.
+     */
+    add_track: function(child_track) {
+        child_track.track_id = this.track_id + "_" + this.child_tracks.length;
+        child_track.container_div.attr('id', 'track_' + child_track.track_id);
+        this.child_tracks_container.append(child_track.container_div);
+        if (!$(this.child_tracks_container).is(":visible")) {
+            this.child_tracks_container.show();
+        }
+        this.child_tracks.push(child_track);
+    },
+    /**
+     * Remove a child track from this track.
+     */
+    remove_track: function(child_track) {
+        child_track.container_div.fadeOut('slow', function() { $(this).remove(); });
     }
 });
 
@@ -2289,9 +2350,11 @@ var ReadTrack = function (name, view, dataset_id, prefs, filters) {
 };
 $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {});
 
-// Feature track that displays data generated from tool.
-var ToolDataFeatureTrack = function(name, view, dataset_id, prefs, filters) {
-    FeatureTrack.call( this, name, view, dataset_id, prefs, filters );
+/**
+ * Feature track that displays data generated from tool.
+ */
+var ToolDataFeatureTrack = function(name, view, dataset_id, prefs, filters, parent_track) {
+    FeatureTrack.call(this, name, view, dataset_id, prefs, filters, {}, parent_track);
     this.track_type = "ToolDataFeatureTrack";
     
     // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
@@ -2303,7 +2366,7 @@ var ToolDataFeatureTrack = function(name, view, dataset_id, prefs, filters) {
 
 $.extend( ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     /**
-     * For this track, the predraw init simply sets up the postdraw init. 
+     * For this track type, the predraw init sets up postdraw init. 
      */
     predraw_init: function() {        
         // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.

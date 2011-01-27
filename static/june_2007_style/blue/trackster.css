@@ -19,10 +19,10 @@
 .viewport-canvas{width:100%;height:100px;}
 .yaxislabel{color:#777;z-index:100;}
 .line-track .track-content{border-top:1px solid #ddd;border-bottom:1px solid #ddd;}
-.track{background:white;margin-bottom:2px;border-bottom:#eee solid 1px;}
+.track{background:white;}
 .track-header{text-align:left;padding:4px 0px;color:#666;}
 .track-header .menubutton{margin-left:0px;}
-.track-content{overflow:hidden;text-align:center;}
+.track-content{overflow:hidden;text-align:center;margin-bottom:2px;border-bottom:#eee solid 1px;}
 .track.error .track-content{background-color:#ECB4AF;padding:2px 0;}
 .track.nodata .track-content{background-color:#ddd;padding:2px 0;}
 .loading{min-height:100px;}

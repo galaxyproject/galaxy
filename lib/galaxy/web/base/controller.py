@@ -180,9 +180,10 @@ class UsesVisualization( SharableItemSecurity ):
                         "track_type": track_type,
                         "name": t['name'],
                         "dataset_id": trans.security.encode_id( dataset.id ),
-                        "prefs": simplejson.dumps(prefs),
+                        "prefs": prefs,
                         "filters": track_data_provider.get_filters(),
-                        "tool": get_tool_def( trans, dataset )
+                        "tool": get_tool_def( trans, dataset ),
+                        "is_child": t['is_child']
                     } )
             
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 

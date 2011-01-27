@@ -32,7 +32,8 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         width: 100%;
     }
     #
-    # Styles for dynamics tools and filters.
+    # TODO: move these into trackster.css
+    # Styles for tools and filters.
     #
     .filter-name {
         float: left;
@@ -69,8 +70,9 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         font-weight: bold;
     }
     .child-track-icon {
-        background:url(${h.url_for('/static/images/fugue/arrow-000-small-bw.png')}) no-repeat;}
+        background:url(${h.url_for('/static/images/fugue/arrow-000-small-bw.png')}) no-repeat;
         width: 30px;
+        cursor: move;
     }
     .param-value {
         cursor: pointer;
@@ -124,12 +126,29 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             %endif
             view = new View( $("#browser-container"), "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}", callback );
             view.editor = true;
-            %for track in config.get('tracks'):
-                view.add_track(
-                    new ${track["track_type"]}( "${track['name'] | h}", view, "${track['dataset_id']}",  ${track['prefs']}, 
-                                                                              ${track['filters']}, ${track['tool']} )
-                );
-            %endfor
+            ## A little ugly and redundant, but it gets the job done moving the config from python to JS:
+            var tracks_config = JSON.parse('${ h.to_json_string( config.get('tracks') ) }');
+            var track_config, track, parent_track, parent_obj;
+            for (var i = 0; i < tracks_config.length; i++) {
+                track_config = tracks_config[i];
+                track = new addable_track_types[track_config["track_type"]](
+                                track_config['name'], 
+                                view, 
+                                track_config['dataset_id'],
+                                track_config['prefs'], 
+                                track_config['filters'],
+                                track_config['tool'], 
+                                (track_config.is_child ? parent_track : undefined));
+                parent_obj = view;
+                if (track_config.is_child) {
+                    parent_obj = parent_track;
+                }
+                else {
+                    // New parent track is this track.
+                    parent_track = track;
+                }
+                parent_obj.add_track(track);
+            }
             init();
         %else:
             var continue_fn = function() {
@@ -159,6 +178,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 $("#no-tracks").show();
             }
             $("#title").text(view.title + " (" + view.dbkey + ")");
+            
+            // Make main tracks sortable.
             $(".viewport-container").sortable({
                 start: function(e, ui) {
                     view.in_reordering = true;
@@ -166,20 +187,31 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 stop: function(e, ui) {
                     view.in_reordering = false;
                 },
-                handle: ".draghandle",
+                handle: ".draghandle"
+            });
+            
+            // Make child tracks sortable.
+            $(".child-tracks-container").sortable({
+                start: function(e, ui) {
+                    view.in_reordering = true;
+                },
+                stop: function(e, ui) {
+                    view.in_reordering = false;
+                },
+                handle: ".child-track-icon"
             });
             
             window.onbeforeunload = function() {
-                if ( view.has_changes ) {
+                if (view.has_changes) {
                     return "There are unsaved changes to your visualization which will be lost.";
                 }
             };
             
             var add_async_success = function(track_data) {
                 var td = track_data,
-                    new_track = new addable_track_types[track_data.track_type]( track_data.name, view, track_data.dataset_id, track_data.prefs, 
-                                                                                track_data.filters, track_data.tool );
-                    
+                    new_track = new addable_track_types[track_data.track_type]( 
+                                        track_data.name, view, track_data.dataset_id, track_data.prefs, 
+                                        track_data.filters, track_data.tool );
                 view.add_track(new_track);
                 view.has_changes = true;
                 $("#no-tracks").hide();
@@ -196,7 +228,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             %endif
 
             // Use a popup grid to add more tracks
-            $("#add-track").bind( "click", function(e) {
+            $("#add-track").bind("click", function(e) {
                 $.ajax({
                     url: "${h.url_for( action='list_histories' )}",
                     data: { "f-dbkey": view.dbkey },
@@ -229,26 +261,31 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             });
             
             $("#save-button").bind("click", function(e) {
-                var sorted = $(".viewport-container").sortable('toArray'),
-                    tracks = [];
-
                 // Show saving dialog box
                 show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
+                
+                // Save all tracks.
+                var tracks = [];
+                $(".viewport-container .track").each(function () {
+                    // ID has form track_<main_track_id>_<child_track_id>
+                    var 
+                        id_split = $(this).attr("id").split("_"),
+                        track_id = id_split[1],
+                        child_id = id_split[2];
                     
-                $.each( sorted, function(_, id) {
-                    var track_id = parseInt(id.split("track_")[1]),
-                        track = view.tracks[track_id];
-                    
-                    // HACK: do not save child track.
-                    if (track.parent_track !== undefined) {
-                        return;
+                    // Get track.    
+                    var track = view.tracks[track_id];
+                    if (child_id) {
+                        track = track.child_tracks[child_id];
                     }
                     
+                    // Add track.
                     tracks.push( {
                         "track_type": track.track_type,
                         "name": track.name,
                         "dataset_id": track.dataset_id,
-                        "prefs": track.prefs
+                        "prefs": track.prefs,
+                        "is_child": (child_id ? true : false )
                     });
                 });
 
