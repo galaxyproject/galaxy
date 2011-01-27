@@ -5,7 +5,7 @@
 
 	<inputs>
 		<param format="txt" name="BARCODE" type="data" label="Barcodes to use" />
-		<param format="fasta,fastqsolexa" name="input" type="data" label="Library to split" />
+		<param format="fasta,fastqsanger,fastqsolexa,fastqillumina" name="input" type="data" label="Library to split" />
 
 		<param name="EOL" type="select" label="Barcodes found at">
 			<option value="--bol">Start of sequence (5' end)</option>
@@ -22,7 +22,7 @@
 		<test>
 			<!-- Split a FASTQ file -->
 			<param name="BARCODE" value="fastx_barcode_splitter1.txt" />
-			<param name="input" value="fastx_barcode_splitter1.fastq" />
+			<param name="input" value="fastx_barcode_splitter1.fastq" ftype="fastqsolexa" />
 			<param name="EOL" value="Start of sequence (5' end)" />
 			<param name="mismatches" value="2" />
 			<param name="partial" value="0" />

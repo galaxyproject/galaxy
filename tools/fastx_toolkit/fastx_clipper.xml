@@ -9,7 +9,7 @@
   </command>
   
   <inputs>
-    <param format="fasta,fastqsolexa,fastqsanger" name="input" type="data" label="Library to clip" />
+    <param format="fasta,fastqsanger,fastqsolexa,fastqillumina" name="input" type="data" label="Library to clip" />
   
     <param name="minlength" size="4" type="integer" value="15">
       <label>Minimum sequence length (after clipping, sequences shorter than this length will be discarded)</label>
@@ -56,7 +56,7 @@
 	#functional test with param value starting with - fails.	
 	<tests>
 		<test>
-			<param name="input" value="fastx_clipper1.fastq" />
+			<param name="input" value="fastx_clipper1.fastq" ftype="fastqsolexa"/>
 			<param name="maxmismatches" value="2" />
 			<param name="minlength" value="15" />
 			<param name="clip_source_list" value="user" />

@@ -1,10 +1,14 @@
 <tool id="cshl_fastx_artifacts_filter" name="Remove sequencing artifacts">
 	<description></description>
 	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
-	<command>zcat -f '$input' | fastx_artifacts_filter -v -o "$output"</command>
+	<command>zcat -f '$input' | fastx_artifacts_filter -v -o "$output"
+#if $input.ext == "fastqsanger":
+-Q 33
+#end if
+	</command>
 
 	<inputs>
-		<param format="fasta,fastqsanger,fastqsolexa" name="input" type="data" label="Library to filter" />
+		<param format="fasta,fastqsanger,fastqsolexa,fastqillumina" name="input" type="data" label="Library to filter" />
 
 	</inputs>
 

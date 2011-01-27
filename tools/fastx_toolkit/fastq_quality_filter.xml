@@ -2,7 +2,11 @@
 	<description></description>
 	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
 
-	<command>zcat -f '$input' | fastq_quality_filter -q $quality -p $percent -v -o $output</command>
+	<command>zcat -f '$input' | fastq_quality_filter -q $quality -p $percent -v -o $output
+#if $input.ext == "fastqsanger":
+-Q 33
+#end if
+	</command>
 
 	<inputs>
 		<param format="fastqsolexa,fastqsanger" name="input" type="data" label="Library to filter" />
@@ -19,14 +23,14 @@
 	<tests>
 		<test>
 			<!-- Test1:  100% of bases with quality 33 or higher (pretty steep requirement...) -->
-			<param name="input" value="fastq_qual_filter1.fastq" />
+			<param name="input" value="fastq_qual_filter1.fastq" ftype="fastqsolexa" />
 			<param name="quality" value="33"/>
 			<param name="percent" value="100"/>
 			<output name="output" file="fastq_qual_filter1a.out" />
 		</test>
 		<test>
 			<!-- Test2:  80% of bases with quality 20 or higher -->
-			<param name="input" value="fastq_qual_filter1.fastq" />
+			<param name="input" value="fastq_qual_filter1.fastq" ftype="fastqsolexa"/>
 			<param name="quality" value="20"/>
 			<param name="percent" value="80"/>
 			<output name="output" file="fastq_qual_filter1b.out" />

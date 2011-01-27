@@ -1,10 +1,14 @@
 <tool id="cshl_fastx_collapser" name="Collapse">
 	<description>sequences</description>
 	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
-	<command>zcat -f '$input' | fastx_collapser -v -o '$output' </command>
+	<command>zcat -f '$input' | fastx_collapser -v -o '$output' 
+#if $input.ext == "fastqsanger":
+-Q 33
+#end if
+	</command>
 
 	<inputs>
-		<param format="fastqsolexa,fasta" name="input" type="data" label="Library to collapse" />
+		<param format="fasta,fastqsanger,fastqsolexa" name="input" type="data" label="Library to collapse" />
 	</inputs>
 
     <!-- The order of sequences in the test output differ between 32 bit and 64 bit machines. 

@@ -1,9 +1,13 @@
 <tool id="cshl_fastx_reverse_complement" name="Reverse-Complement">
 	<description></description>
 	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
-	<command>zcat -f '$input' | fastx_reverse_complement -v -o $output</command>
+	<command>zcat -f '$input' | fastx_reverse_complement -v -o $output
+#if $input.ext == "fastqsanger":
+-Q 33
+#end if
+	</command>
 	<inputs>
-		<param format="fasta,fastqsolexa" name="input" type="data" label="Library to reverse-complement" />
+		<param format="fasta,fastqsolexa,fastqsanger" name="input" type="data" label="Library to reverse-complement" />
 	</inputs>
 
 	<tests>
@@ -14,7 +18,7 @@
 		</test>
 		<test>
 			<!-- Reverse-complement a FASTQ file -->
-			<param name="input" value="fastx_rev_comp2.fastq" />
+			<param name="input" value="fastx_rev_comp2.fastq" ftype="fastqsolexa"/>
 			<output name="output" file="fastx_reverse_complement2.out" />
 		</test>
 	</tests>

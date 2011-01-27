@@ -1,10 +1,14 @@
 <tool id="cshl_fastx_trimmer" name="Trim sequences">
 	<description></description>
 	<requirements><requirement type="package">fastx_toolkit</requirement></requirements>
-	<command>zcat -f '$input' | fastx_trimmer -v -f $first -l $last -o $output</command>
+	<command>zcat -f '$input' | fastx_trimmer -v -f $first -l $last -o $output
+#if $input.ext == "fastqsanger":
+-Q 33
+#end if
+	</command>
 
 	<inputs>
-		<param format="fasta,fastqsanger" name="input" type="data" label="Library to clip" />
+		<param format="fasta,fastqsolexa,fastqsanger" name="input" type="data" label="Library to clip" />
 
 		<param name="first" size="4" type="integer" value="1">
 			<label>First base to keep</label>
@@ -25,7 +29,7 @@
 		</test>
 		<test>
 			<!-- Trim a FASTQ file - remove last 9 bases (e.g. keep only miRNA length sequences) -->
-			<param name="input" value="fastx_trimmer2.fastq" />
+			<param name="input" value="fastx_trimmer2.fastq" ftype="fastqsolexa"/>
 			<param name="first" value="1"/>
 			<param name="last" value="27"/>
 			<output name="output" file="fastx_trimmer2.out" />

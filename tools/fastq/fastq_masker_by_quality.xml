@@ -21,7 +21,7 @@
       <option value="ge">Greater than</option>
       <option value="gt">Greater than or equal</option>
     </param>
-    <param name="quality_score" type="integer" value="0"/>
+    <param name="quality_score" type="integer" value="0" label="Quality score"/>
   </inputs>
   <outputs>
     <data name="output_file" format="fastqsanger" />
