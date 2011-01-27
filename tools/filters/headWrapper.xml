@@ -1,5 +1,5 @@
 <tool id="Show beginning1" name="Select first">
-  <description>lines from a Query</description>
+  <description>lines from a dataset</description>
   <command interpreter="perl">headWrapper.pl $input $lineNum $out_file1</command>
   <inputs>
     <param name="lineNum" size="5" type="integer" value="10" label="Select first" help="lines"/>

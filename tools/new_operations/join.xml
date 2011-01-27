@@ -1,11 +1,11 @@
 <tool id="gops_join_1" name="Join">
-  <description>the intervals of two queries side-by-side</description>
+  <description>the intervals of two datasets side-by-side</description>
   <command interpreter="python">gops_join.py $input1 $input2 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -2 ${input2.metadata.chromCol},${input2.metadata.startCol},${input2.metadata.endCol},${input2.metadata.strandCol} -m $min -f $fill</command>
   <inputs>
-    <param format="interval" name="input1" type="data" help="First query">
+    <param format="interval" name="input1" type="data" help="First dataset">
       <label>Join</label>
     </param>
-    <param format="interval" name="input2" type="data" help="Second query">
+    <param format="interval" name="input2" type="data" help="Second dataset">
       <label>with</label>
     </param>
     <param name="min" size="4" type="integer" value="1" help="(bp)">
@@ -13,9 +13,9 @@
     </param>
 	<param name="fill" type="select" label="Return">
 		<option value="none">Only records that are joined (INNER JOIN)</option>
-		<option value="right">All records of first query (fill null with ".")</option>
-		<option value="left">All records of second query (fill null with ".")</option>
-		<option value="both">All records of both queries (fill nulls with ".")</option>
+		<option value="right">All records of first dataset (fill null with ".")</option>
+		<option value="left">All records of second dataset (fill null with ".")</option>
+		<option value="both">All records of both datasets (fill nulls with ".")</option>
 	</param>
    </inputs>
   <outputs>
@@ -70,7 +70,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
+**TIP:** If your dataset does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 -----
 
@@ -85,22 +85,22 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 **Syntax**
 
 - **Where overlap** specifies the minimum overlap between intervals that allows them to be joined.
-- **Return only records that are joined** returns only the records of the first query that join to a record in the second query.  This is analogous to an INNER JOIN.
-- **Return all records of first query (fill null with &quot;.&quot;)** returns all intervals of the first query, and any intervals that do not join an interval from the second query are filled in with a period(.).  This is analogous to a LEFT JOIN.
-- **Return all records of second query (fill null with &quot;.&quot;)** returns all intervals of the second query, and any intervals that do not join an interval from the first query are filled in with a period(.).  **Note that this may produce an invalid interval file, since a period(.) is not a valid chrom, start, end or strand.**
-- **Return all records of both queries (fill nulls with &quot;.&quot;)** returns all records from both queries, and fills on either the right or left with periods.  **Note that this may produce an invalid interval file, since a period(.) is not a valid chrom, start, end or strand.**
+- **Return only records that are joined** returns only the records of the first dataset that join to a record in the second dataset.  This is analogous to an INNER JOIN.
+- **Return all records of first dataset (fill null with &quot;.&quot;)** returns all intervals of the first dataset, and any intervals that do not join an interval from the second dataset are filled in with a period(.).  This is analogous to a LEFT JOIN.
+- **Return all records of second dataset (fill null with &quot;.&quot;)** returns all intervals of the second dataset, and any intervals that do not join an interval from the first dataset are filled in with a period(.).  **Note that this may produce an invalid interval file, since a period(.) is not a valid chrom, start, end or strand.**
+- **Return all records of both datasets (fill nulls with &quot;.&quot;)** returns all records from both datasets, and fills on either the right or left with periods.  **Note that this may produce an invalid interval file, since a period(.) is not a valid chrom, start, end or strand.**
 
 -----
 
 **Example**
 
-If **First query** is::
+If **First dataset** is::
 
    chr1 10   100  Query1.1
    chr1 500  1000 Query1.2
    chr1 1100 1250 Query1.3
 
-and **Second query** is::
+and **Second dataset** is::
 
    chr1 20   80   Query2.1
    chr1 2000 2204 Query2.2
@@ -114,19 +114,19 @@ The four return options will generate:
 
    chr1 10 100 Query1.1 chr1 20 80 Query2.1
 
-- **Return all records of first query**::
+- **Return all records of first dataset**::
 
    chr1 10   100  Query1.1 chr1 20 80 Query2.1
    chr1 500  1000 Query1.2 .    .  .  .
    chr1 1100 1250 Query1.3 .    .  .  .
 
-- **Return all records of second query**::
+- **Return all records of second dataset**::
 
    chr1 10 100 Query1.1 chr1 20   80   Query2.1
    .    .  .   .        chr1 2000 2204 Query2.2
    .    .  .   .        chr1 2500 3000 Query2.3
 
-- **Return all records of both queries**::
+- **Return all records of both datasets**::
 
    chr1 10   100  Query1.1 chr1 20   80   Query2.1
    chr1 500  1000 Query1.2 .    .    .    .

@@ -1,4 +1,4 @@
-<tool id="cat1" name="Concatenate queries">
+<tool id="cat1" name="Concatenate datasets">
     <description>tail-to-head</description>
     <command interpreter="python">
         catWrapper.py 
@@ -9,8 +9,8 @@
         #end for
     </command>
     <inputs>
-        <param name="input1" type="data" label="Concatenate Query"/>
-        <repeat name="queries" title="Query">
+        <param name="input1" type="data" label="Concatenate Dataset"/>
+        <repeat name="queries" title="Dataset">
             <param name="input2" type="data" label="Select" />
         </repeat>
     </inputs>
@@ -37,30 +37,30 @@
 
 .. class:: warningmark
 
-**WARNING:** Be careful not to concatenate queries of different kinds (e.g., sequences with intervals). This tool does not check if the queries being concatenated are in the same format. 
+**WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format. 
 
 -----
 
 **What it does**
 
-Concatenates queries
+Concatenates datasets
 
 -----
 
 **Example**
 
-Concatenating Query::
+Concatenating Dataset::
 
     chrX  151087187  151087355  A  0  -
     chrX  151572400  151572481  B  0  +
 
-with Query1::
+with Dataset1::
 
     chr1  151242630  151242955  X  0  +
     chr1  151271715  151271999  Y  0  +
     chr1  151278832  151279227  Z  0  -
     
-and with Query2::
+and with Dataset2::
 
     chr2  100000030  200000955  P  0  +
     chr2  100000015  200000999  Q  0  +

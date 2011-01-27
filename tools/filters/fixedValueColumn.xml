@@ -1,9 +1,9 @@
 <tool id="addValue" name="Add column">
-  <description>to an existing query</description>
+  <description>to an existing dataset</description>
   <command interpreter="perl">fixedValueColumn.pl $input $out_file1 "$exp" $iterate</command>
   <inputs>
      <param name="exp" size="20" type="text" value="1" label="Add this value"/>
-    <param format="tabular" name="input" type="data" label="to Query" help="Query missing? See TIP below" />
+    <param format="tabular" name="input" type="data" label="to Dataset" help="Dataset missing? See TIP below" />
     <param name="iterate" type="select" label="Iterate?">
       <option value="no">NO</option>
       <option value="yes">YES</option>
@@ -30,7 +30,7 @@
 
 **What it does**
 
-You can enter any value and it will be added as a new column to your Query
+You can enter any value and it will be added as a new column to your dataset
 
 -----
 

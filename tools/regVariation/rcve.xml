@@ -9,7 +9,7 @@
       1>/dev/null
   </command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Dataset missing? See TIP below."/>
     <param name="response_col" label="Response column (Y)" type="data_column" data_ref="input1" />
     <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" multiple="true">
         <validator type="no_options" message="Please select at least one column."/>
@@ -35,7 +35,7 @@
 
 .. class:: infomark
 
-**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+**TIP:** If your data is not TAB delimited, use *Edit Datasets-&gt;Convert characters*
 
 -----
 

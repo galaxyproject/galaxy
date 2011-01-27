@@ -1,5 +1,5 @@
 <tool id="gops_complement_1" name="Complement">
-  <description>intervals of a query</description>
+  <description>intervals of a dataset</description>
   <command interpreter="python">gops_complement.py $input1 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -l ${chromInfo} $allchroms</command>
   <inputs>
     <param format="interval" name="input1" type="data">
@@ -33,7 +33,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
+**TIP:** If your dataset does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 This operation complements the regions of a set of intervals.  Regions are returned that represent the empty space in the input interval.
 
@@ -49,7 +49,7 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 **Syntax**
 
-- **Genome-wide complement** will complement all chromosomes of the genome.  Leaving this option unchecked will only complement chromosomes present in the query.
+- **Genome-wide complement** will complement all chromosomes of the genome.  Leaving this option unchecked will only complement chromosomes present in the dataset.
 
 -----
 

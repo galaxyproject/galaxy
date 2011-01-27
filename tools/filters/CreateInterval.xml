@@ -1,5 +1,5 @@
 <tool id="createInterval" name="Create single interval">
-  <description>as a new query</description>
+  <description>as a new dataset</description>
   <command interpreter="perl">CreateInterval.pl $chrom $start $end "$name" $strand $out_file1</command>
   <inputs>
     <param name="chrom" size="20" type="text" value="chr7" label="Chromosome"/>

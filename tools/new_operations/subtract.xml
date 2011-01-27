@@ -1,5 +1,5 @@
 <tool id="gops_subtract_1" name="Subtract">
-  <description>the intervals of two queries</description>
+  <description>the intervals of two datasets</description>
   <command interpreter="python">gops_subtract.py 
       $input1 $input2 $output
 
@@ -18,15 +18,15 @@
       -m $min $returntype
   </command>
   <inputs>
-    <param format="interval,gff" name="input2" type="data" help="Second query">
+    <param format="interval,gff" name="input2" type="data" help="Second dataset">
       <label>Subtract</label>
     </param>
 
-    <param format="interval,gff" name="input1" type="data" help="First query">
+    <param format="interval,gff" name="input1" type="data" help="First dataset">
       <label>from</label>
     </param>
 
-    <param name="returntype" type="select" label="Return" help="of the first query (see figure below)">
+    <param name="returntype" type="select" label="Return" help="of the first dataset (see figure below)">
       <option value="">Intervals with no overlap</option>
       <option value="-p">Non-overlapping pieces of intervals</option>
     </param>
@@ -90,7 +90,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
+**TIP:** If your dataset does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 -----
 
@@ -104,9 +104,9 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 **Syntax**
 
-- **Where overlap is at least** sets the minimum length (in base pairs) of overlap between elements of the two queries.
-- **Intervals with no overlap** returns entire intervals from the first query that do not overlap the second query.  The returned intervals are completely unchanged, and this option only filters out intervals that overlap with the second query.
-- **Non-overlapping pieces of intervals** returns intervals from the first query that have the intervals from the second query removed.  Any overlapping base pairs are removed from the range of the interval.  All fields besides start and end are guaranteed to remain unchanged.
+- **Where overlap is at least** sets the minimum length (in base pairs) of overlap between elements of the two datasets.
+- **Intervals with no overlap** returns entire intervals from the first dataset that do not overlap the second dataset.  The returned intervals are completely unchanged, and this option only filters out intervals that overlap with the second dataset.
+- **Non-overlapping pieces of intervals** returns intervals from the first dataset that have the intervals from the second dataset removed.  Any overlapping base pairs are removed from the range of the interval.  All fields besides start and end are guaranteed to remain unchanged.
 
 -----
 

@@ -40,7 +40,7 @@ Paste preserves column assignments of the first dataset.
 
 **What it does**
 
-This tool merges two datasets side by side. If the first (left) query contains column assignments such as chromosome, start, end and strand, these will be preserved. However, if you would like to change column assignments, click the pencil icon in the history item.
+This tool merges two datasets side by side. If the first (left) dataset contains column assignments such as chromosome, start, end and strand, these will be preserved. However, if you would like to change column assignments, click the pencil icon in the history item.
 
 -----
 

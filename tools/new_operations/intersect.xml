@@ -1,5 +1,5 @@
 <tool id="gops_intersect_1" name="Intersect">
-  <description>the intervals of two queries</description>
+  <description>the intervals of two datastes</description>
   <command interpreter="python">gops_intersect.py 
       $input1 $input2 $output
 
@@ -22,10 +22,10 @@
           <option value="">Overlapping Intervals</option>
           <option value="-p">Overlapping pieces of Intervals</option>
       </param>
-      <param format="interval,gff" name="input1" type="data" help="First query">
+      <param format="interval,gff" name="input1" type="data" help="First dataset">
           <label>of</label>
       </param>
-      <param format="interval,gff" name="input2" type="data" help="Second query">
+      <param format="interval,gff" name="input2" type="data" help="Second dataset">
           <label>that intersect</label>
       </param>
       <param name="min" size="4" type="integer" value="1" help="(bp)">
@@ -110,7 +110,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
+**TIP:** If your dataset does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 -----
 
@@ -124,9 +124,9 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 **Syntax**
 
-- **Where overlap is at least** sets the minimum length (in base pairs) of overlap between elements of the two queries
-- **Overlapping Intervals** returns entire intervals from the first query  that overlap the second query.  The returned intervals are completely unchanged, and this option only filters out intervals that do not overlap with the second query.
-- **Overlapping pieces of Intervals** returns intervals that indicate the exact base pair overlap between the first query and the second query.  The intervals returned are from the first query, and all fields besides start and end are guaranteed to remain unchanged.
+- **Where overlap is at least** sets the minimum length (in base pairs) of overlap between elements of the two datasets
+- **Overlapping Intervals** returns entire intervals from the first dataset  that overlap the second dataset.  The returned intervals are completely unchanged, and this option only filters out intervals that do not overlap with the second dataset.
+- **Overlapping pieces of Intervals** returns intervals that indicate the exact base pair overlap between the first dataset and the second dataset.  The intervals returned are from the first dataset, and all fields besides start and end are guaranteed to remain unchanged.
 
 -----
 

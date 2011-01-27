@@ -5,7 +5,7 @@
   </command>
   <inputs>
     <param name="cond" size="40" type="text" value="c3-c2" label="Add expression"/>
-    <param format="tabular" name="input" type="data" label="as a new column to" help="Query missing? See TIP below"/>
+    <param format="tabular" name="input" type="data" label="as a new column to" help="Dataset missing? See TIP below"/>
     <param name="round" type="select" label="Round result?">
       <option value="no">NO</option>
       <option value="yes">YES</option>
@@ -44,11 +44,11 @@
 
 **What it does**
 
-This tool computes an expression for every row of a query and appends the result as a new column (field).
+This tool computes an expression for every row of a dataset and appends the result as a new column (field).
 
 - Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
 
-- **c3-c2** will add a length column to the query if **c2** and **c3** are start and end position
+- **c3-c2** will add a length column to the dataset if **c2** and **c3** are start and end position
 
 -----
 

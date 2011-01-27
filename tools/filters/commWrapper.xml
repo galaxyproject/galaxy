@@ -1,19 +1,19 @@
 <tool id="Comm1" name="Find Similarities and Differences">
-  <description>between two queries</description>
+  <description>between two datasets</description>
   <command interpreter="perl">commWrapper.pl $input1 $input2 $mode $out_file1</command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="Compare Query1"/>
-    <param format="tabular" name="input2" type="data" label="with Query2"/>
+    <param format="tabular" name="input1" type="data" label="Compare Dataset1"/>
+    <param format="tabular" name="input2" type="data" label="with Dataset2"/>
     <param name="mode" type="select" label="And find">
-      <option value="-23">Lines unique to Query1</option>
-      <option value="-12">Lines shared between Query1 and Query2</option>
+      <option value="-23">Lines unique to Dataset1</option>
+      <option value="-12">Lines shared between Dataset1 and Dataset2</option>
     </param>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input1" />
   </outputs>
   <help>
-This tool is based on UNIX shell command comm. It compares two queries and returns similarities or differences. For example, if you have two queries::
+This tool is based on UNIX shell command comm. It compares two datasets and returns similarities or differences. For example, if you have two datasets::
   
  a  1
  b  2
@@ -25,12 +25,12 @@ and::
  f  6
  h  8
 
-Using this tool with **Lines unique to Query1** option will return::
+Using this tool with **Lines unique to Dataset1** option will return::
 
  b  2
  c  3
 
-If you use **Lines shared between Query1 and Query2** option output will look like this::
+If you use **Lines shared between Dataset1 and Dataset2** option output will look like this::
 
  a  1
 

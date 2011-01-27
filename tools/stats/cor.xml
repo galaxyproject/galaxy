@@ -2,7 +2,7 @@
   <description>for numeric columns</description>
   <command interpreter="python">cor.py $input1 $out_file1 $numeric_columns $method</command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="Dataset" help="Query missing? See TIP below"/>
+    <param format="tabular" name="input1" type="data" label="Dataset" help="Dataset missing? See TIP below"/>
     <param name="numeric_columns" label="Numerical columns" type="data_column" numerical="True" multiple="True" data_ref="input1" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
     <param name="method" type="select" label="Method">
       <option value="pearson">Pearson</option>

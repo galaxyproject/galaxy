@@ -24,7 +24,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
+**TIP:** If your dataset does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 This operation counts the total bases covered by a set of intervals.  Bases that are covered by more than one interval are **not** counted more than once towards the total.
 

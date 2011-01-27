@@ -1,5 +1,5 @@
 <tool id="gops_cluster_1" name="Cluster">
-  <description>the intervals of a query</description>
+  <description>the intervals of a dataset</description>
   <command interpreter="python">gops_cluster.py $input1 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -d $distance -m $minregions -o $returntype</command>
   <inputs>
     <param format="interval" name="input1" type="data">
@@ -59,7 +59,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
+**TIP:** If your dataset does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 -----
 

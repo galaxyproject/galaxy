@@ -4,7 +4,7 @@
     gff_filter_by_attribute.py $input $out_file1 "$attribute_type" "$attribute_name" "$cond"
   </command>
   <inputs>
-    <param format="gff" name="input" type="data" label="Filter" help="Query missing? See TIP below."/>
+    <param format="gff" name="input" type="data" label="Filter" help="Dataset missing? See TIP below."/>
     <param name="attribute_name" type="select" label="Attribute name" help="">
         <options from_dataset="input">
           <column name="name" index="8"/>

@@ -12,7 +12,7 @@
       $out_file2
   </command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Dataset missing? See TIP below."/>
     <param name="x_cols" label="Select columns containing X variables " type="data_column" data_ref="input1" numerical="True" multiple="true" >
         <validator type="no_options" message="Please select at least one column."/>
     </param>
@@ -60,7 +60,7 @@
 
 .. class:: infomark
 
-**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+**TIP:** If your data is not TAB delimited, use *Edit Datasets-&gt;Convert characters*
 
 -----
 

@@ -1,14 +1,14 @@
 <tool id="gops_concat_1" name="Concatenate">
-  <description>two queries into one query</description>
+  <description>two datasets into one dataset</description>
   <command interpreter="python">gops_concat.py $input1 $input2 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -2 ${input2.metadata.chromCol},${input2.metadata.startCol},${input2.metadata.endCol},${input2.metadata.strandCol} $sameformat</command>
   <inputs>
-    <param format="interval" name="input1" type="data" help="First query">
+    <param format="interval" name="input1" type="data" help="First dataset">
       <label>Concatenate</label>
     </param>
-    <param format="interval" name="input2" type="data" help="Second query">
+    <param format="interval" name="input2" type="data" help="Second dataset">
       <label>with</label>
     </param>
-    <param name="sameformat" type="boolean" truevalue="--sameformat" falsevalue="" label="Both queries are same filetype?" checked="true" help="If unchecked Second query will be forced into format of First query">
+    <param name="sameformat" type="boolean" truevalue="--sameformat" falsevalue="" label="Both datasets are same filetype?" checked="true" help="If unchecked Second dataset will be forced into format of First dataset">
     </param>
    </inputs>
   <outputs>
@@ -33,7 +33,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
+**TIP:** If your dataset does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 -----
 
@@ -47,7 +47,7 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 
 **Syntax**
 
-- **Both queries are exactly the same filetype** will preserve all extra fields in both files.  Leaving this unchecked will force the second query to use the same column assignments for chrom, start, end and strand, but will fill extra fields with a period(.).  In both cases, the output fields are truncated or padded with fields of periods to maintain a truly tabular output.
+- **Both datasets are exactly the same filetype** will preserve all extra fields in both files.  Leaving this unchecked will force the second dataset to use the same column assignments for chrom, start, end and strand, but will fill extra fields with a period(.).  In both cases, the output fields are truncated or padded with fields of periods to maintain a truly tabular output.
 
 -----
 

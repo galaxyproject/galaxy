@@ -2,7 +2,7 @@
   <description>of a numeric column</description>
   <command interpreter="python">histogram.py $input $out_file1 $numerical_column "$title" "$xlab" $breaks $density $frequency</command>
   <inputs>
-    <param name="input" type="data" format="tabular" label="Dataset" help="Query missing? See TIP below"/>
+    <param name="input" type="data" format="tabular" label="Dataset" help="Dataset missing? See TIP below"/>
     <param name="numerical_column" type="data_column" data_ref="input" numerical="True" label="Numerical column for x axis" />
     <param name="breaks" type="integer" size="4" value="0" label="Number of breaks (bars)"/>
     <param name="title" type="text" size="30" value="Histogram" label="Plot title"/>
@@ -42,9 +42,9 @@
 
 **Syntax**
 
-This tool computes a histogram of the numerical values in a column of a query.
+This tool computes a histogram of the numerical values in a column of a dataset.
 
-- All invalid, blank and comment lines in the query are skipped.  The number of skipped lines is displayed in the resulting history item.
+- All invalid, blank and comment lines in the dataset are skipped.  The number of skipped lines is displayed in the resulting history item.
 - **Column for x axis** - only numerical columns are possible.
 - **Number of breaks(bars)** - breakpoints between histogram cells. Value of '0' will determine breaks automatically.
 - **Plot title** - the histogram title.

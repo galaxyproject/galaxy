@@ -79,7 +79,7 @@ The additional BED fields (optional) are::
 
 **Example**
 
-- For the following query::
+- For the following dataset::
 
    chr22  1000  4700  NM_174568 0 +
 

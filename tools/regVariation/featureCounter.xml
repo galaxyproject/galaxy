@@ -2,10 +2,10 @@
   <description></description>
   <command interpreter="python">featureCounter.py $input1 $input2 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -2 ${input2.metadata.chromCol},${input2.metadata.startCol},${input2.metadata.endCol},${input2.metadata.strandCol}</command>
   <inputs>
-    <param format="interval" name="input1" type="data" help="First query">
+    <param format="interval" name="input1" type="data" help="First dataset">
       <label>What portion of</label>
     </param>
-    <param format="interval" name="input2" type="data" help="Second query">
+    <param format="interval" name="input2" type="data" help="Second dataset">
       <label>is covered by</label>
     </param>
    </inputs>
@@ -31,20 +31,20 @@
 
 **What it does**
 
-This tool finds the coverage of intervals in the first query on intervals in the second query. The coverage and count are appended as 4 new columns in the resulting dataset.
+This tool finds the coverage of intervals in the first dataset on intervals in the second dataset. The coverage and count are appended as 4 new columns in the resulting dataset.
 
 -----
 
 **Example**
 
-- If **First query** consists of the following windows::
+- If **First dataset** consists of the following windows::
 
     chrX 1     10001 seg 0 -
     chrX 10001 20001 seg 0 -
     chrX 20001 30001 seg 0 -
     chrX 30001 40001 seg 0 -
       
-- and **Second query** consists of the following exons::
+- and **Second dataset** consists of the following exons::
 
     chrX 5000  6000  seg2 0 -
     chrX 5500  7000  seg2 0 -
@@ -52,7 +52,7 @@ This tool finds the coverage of intervals in the first query on intervals in the
     chrX 24000 34000 seg2 0 -
     chrX 36000 38000 seg2 0 -
       
-- the **Result** is the coverage of exons of the second query in each of the windows contained in first query::
+- the **Result** is the coverage of exons of the second dataset in each of the windows contained in first dataset::
 
     chrX 1     10001 seg 0 - 3001  0.3001 2 1
     chrX 10001 20001 seg 0 - 10000 1.0    1 0
@@ -68,8 +68,8 @@ This tool finds the coverage of intervals in the first query on intervals in the
 
   * a: number of nucleotides in this window covered by the features in (c) and (d) - features overlapping with each other will be merged to calculate (a)
   * b: fraction of window size covered by features in (c) and (d) - features overlapping with each other will be merged to calculate (b)
-  * c: number of features in the 2nd query that fall **completely** within this window
-  * d: number of features in the 2nd query that **partially** overlap this window
+  * c: number of features in the 2nd dataset that fall **completely** within this window
+  * d: number of features in the 2nd dataset that **partially** overlap this window
   	 
 </help>
 </tool>

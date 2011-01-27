@@ -1,4 +1,4 @@
-<tool id="comp1" name="Compare two Queries" version="1.0.2">
+<tool id="comp1" name="Compare two Datasets" version="1.0.2">
   <description>to find common or distinct rows</description>
   <command interpreter="python">joinWrapper.py $input1 $input2 $field1 $field2 $mode $out_file1</command>
   <inputs>
@@ -11,8 +11,8 @@
             <validator type="no_options" message="Invalid column choice. Please try again after editing metadata of your input dataset by clicking on the pencil icon next to it."/>
     </param>
     <param name="mode" type="select" label="To find" help="See examples below for explanation of these options">
-      <option value="N">Matching rows of 1st query</option>
-      <option value="V">Non Matching rows of 1st query</option>
+      <option value="N">Matching rows of 1st dataset</option>
+      <option value="V">Non Matching rows of 1st dataset</option>
     </param>
   </inputs>
   <outputs>
@@ -47,31 +47,31 @@
 
 **Syntax**
 
-This tool finds lines in one query that HAVE or DO NOT HAVE a common field with another query.
+This tool finds lines in one dataset that HAVE or DO NOT HAVE a common field with another dataset.
 
 -----
 
 **Example**
 
-If this is **First query**::
+If this is **First dataset**::
 
   chr1 10 20 geneA 
   chr1 50 80 geneB
   chr5 10 40 geneL
 
-and this is **Second query**::
+and this is **Second dataset**::
 
   geneA tumor-suppressor
   geneB Foxp2
   geneC Gnas1
   geneE INK4a
 
-Finding lines of the **First query** whose 4th column matches the 1st column of the **Second query** yields::
+Finding lines of the **First dataset** whose 4th column matches the 1st column of the **Second dataset** yields::
 
   chr1 10 20 geneA 
   chr1 50 80 geneB
 
-Conversely, using option **Non Matching rows of First query** on the same fields will yield::
+Conversely, using option **Non Matching rows of First dataset** on the same fields will yield::
 
   chr5 10 40 geneL
 

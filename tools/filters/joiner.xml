@@ -1,4 +1,4 @@
-<tool id="join1" name="Join two Queries" version="2.0.2">
+<tool id="join1" name="Join two Datasets" version="2.0.2">
   <description>side by side on a specified field</description>
   <command interpreter="python">join.py $input1 $input2 $field1 $field2 $out_file1 $unmatched $partial --index_depth=3 --buffer=50000000 --fill_options_file=$fill_options_file</command>
   <inputs>
@@ -143,7 +143,7 @@ ${simplejson.dumps( __fill_options )}
 
 **Syntax**
 
-This tool joins lines of two queries on a common field. An empty string ("") is not a valid identifier.
+This tool joins lines of two datasets on a common field. An empty string ("") is not a valid identifier.
 You may choose to include lines of your first input that do not join with your second input.
 
 - Columns are referenced with a **number**. For example, **3** refers to the 3rd column of a tab-delimited file.
@@ -152,25 +152,25 @@ You may choose to include lines of your first input that do not join with your s
 
 **Example**
 
-Query1::
+Dataset1::
 
   chr1 10 20 geneA 
   chr1 50 80 geneB
   chr5 10 40 geneL
 
-Query2::
+Dataset2::
 
   geneA tumor-supressor
   geneB Foxp2
   geneC Gnas1
   geneE INK4a
 
-Joining the 4th column of Query1 with the 1st column of Query2 will yield::
+Joining the 4th column of Dataset1 with the 1st column of Dataset2 will yield::
 
   chr1 10 20 geneA geneA tumor-suppressor
   chr1 50 80 geneB geneB Foxp2
 
-Joining the 4th column of Query1 with the 1st column of Query2, while keeping all lines from Query1, will yield::
+Joining the 4th column of Dataset1 with the 1st column of Dataset2, while keeping all lines from Dataset1, will yield::
 
   chr1 10 20 geneA geneA tumor-suppressor
   chr1 50 80 geneB geneB Foxp2

@@ -6,7 +6,7 @@
     #end if
   </command>
   <inputs>
-    <param name="input" type="data" format="tabular" label="Dataset" help="Query missing? See TIP below"/>
+    <param name="input" type="data" format="tabular" label="Dataset" help="Dataset missing? See TIP below"/>
     <conditional name="xtic">
         <param name="userSpecified" type="select" label="Use X Tick labels?" help="see example below">
             <option value="Yes">Yes</option>

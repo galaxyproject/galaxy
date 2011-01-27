@@ -1,11 +1,11 @@
-<tool id="subtract_query1" name="Subtract Whole Query">
-  <description>from another query</description>
+<tool id="subtract_query1" name="Subtract Whole Dataset">
+  <description>from another dataset</description>
   <command interpreter="python">subtract_query.py $input1 $input2 $begin_col $end_col $output</command>
   <inputs>
-    <param format="txt" name="input2" type="data" label="Subtract" help="Second query" />
-    <param format="txt" name="input1" type="data" label="from" help="First query" />
+    <param format="txt" name="input2" type="data" label="Subtract" help="Second dataset" />
+    <param format="txt" name="input1" type="data" label="from" help="First dataset" />
     <param name="begin_col" type="data_column" data_ref="input1" force_select="False" label="Restrict subtraction between 'begin column'" />
-    <param name="end_col" type="data_column" data_ref="input1" force_select="False" label="and 'end column'" help="Specifying columns for restricting subtraction is available only for tabular formatted queries" />
+    <param name="end_col" type="data_column" data_ref="input1" force_select="False" label="and 'end column'" help="Specifying columns for restricting subtraction is available only for tabular formatted datasets" />
   </inputs>
   <outputs>
     <data format="input" name="output" metadata_source="input1" />
@@ -50,27 +50,27 @@
 
 .. class:: infomark
 
-**TIP:** This tool complements the tool in the **Operate on Genomic Intervals** tool set which subtracts the intervals of two queries.
+**TIP:** This tool complements the tool in the **Operate on Genomic Intervals** tool set which subtracts the intervals of two datasets.
 
 
 -----
 
 **Syntax**
 
-This tool subtracts an entire query from another query.  
+This tool subtracts an entire dataset from another dataset.  
 
 - Any text format is valid.
-- If both query formats are tabular, you may restrict the subtraction to specific columns **contained in both queries** and the resulting query will include only the columns specified. 
+- If both dataset formats are tabular, you may restrict the subtraction to specific columns **contained in both datasets** and the resulting dataset will include only the columns specified. 
 - The begin column must be less than or equal to the end column.  If it is not, begin column is switched with end column.
 - If begin column is specified but end column is not, end column will default to begin_column (and vice versa).
-- All blank and comment lines are skipped and not included in the resulting query (comment lines are lines beginning with a # character).
-- Duplicate lines are eliminated from both queries prior to subtraction.  If any duplicate lines were eliminated from the first query, the number is displayed in the resulting history item.
+- All blank and comment lines are skipped and not included in the resulting dataset (comment lines are lines beginning with a # character).
+- Duplicate lines are eliminated from both dataset prior to subtraction.  If any duplicate lines were eliminated from the first dataset, the number is displayed in the resulting history item.
 
 -----
 
 **Example**
 
-If this is the **First query**::
+If this is the **First dataset**::
 
   chr1            4225    19670
   chr10           6       8
@@ -83,7 +83,7 @@ If this is the **First query**::
   chr1            1225979 42287290
   chr10           7       8 
 
-and this is the **Second query**::
+and this is the **Second dataset**::
 
   chr1            4225    19670
   chr10           6       8
@@ -94,14 +94,14 @@ and this is the **Second query**::
   chrY            1       20
   chr1            1225979 42287290
 
-Subtracting the **Second query** from the **First query** (including all columns) will yield::
+Subtracting the **Second dataset** from the **First dataset** (including all columns) will yield::
 
   chr10           7       8 
   chr10           2       10
 
-Conversely, subtracting the **First query** from the **Second query** (including all columns) will result in an empty dataset.
+Conversely, subtracting the **First dataset** from the **Second dataset** (including all columns) will result in an empty dataset.
 
-Subtracting the **Second query** from the **First query** (restricting to columns c1 and c2) will yield::
+Subtracting the **Second dataset** from the **First dataset** (restricting to columns c1 and c2) will yield::
 
   chr10           7
   chr10           2

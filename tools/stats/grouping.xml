@@ -13,7 +13,7 @@
       #end for
   </command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Dataset missing? See TIP below."/>
     <param name="groupcol" label="Group by column" type="data_column" data_ref="input1" />
     <param name="ignorecase" type="boolean" truevalue="1" falsevalue="0">
       <label>Ignore case while grouping?</label>

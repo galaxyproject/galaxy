@@ -1,5 +1,5 @@
 <tool id="Show tail1" name="Select last">
-  <description>lines from a Query</description>
+  <description>lines from a dataset</description>
   <command interpreter="perl">tailWrapper.pl $input $lineNum $out_file1</command>
   <inputs>
     <param name="lineNum" size="5" type="integer" value="10" label="Select last" help="lines"/>

@@ -11,7 +11,7 @@
       #end for
   </command>
   <inputs>
-    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Dataset missing? See TIP below."/>
     <param name="col1" label="Merge column" type="data_column" data_ref="input1" />
     <param name="col2" label="with column" type="data_column" data_ref="input1" help="Need to add more columns? Use controls below."/>
     <repeat name="columns" title="Columns">

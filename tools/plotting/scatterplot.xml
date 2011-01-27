@@ -2,7 +2,7 @@
   <description>of two numeric columns</description>
   <command interpreter="python">scatterplot.py $input $out_file1 $col1 $col2 "$title" "$xlab" "$ylab"</command>
   <inputs>
-    <param name="input" type="data" format="tabular" label="Dataset" help="Query missing? See TIP below"/>
+    <param name="input" type="data" format="tabular" label="Dataset" help="Dataset missing? See TIP below"/>
     <param name="col1" type="data_column" data_ref="input" numerical="True" label="Numerical column for x axis" />
     <param name="col2" type="data_column" data_ref="input" numerical="True" label="Numerical column for y axis" />
     <param name="title" size="30" type="text" value="Scatterplot" label="Plot title"/>
@@ -39,9 +39,9 @@
 
 **Syntax**
 
-This tool creates a simple scatter plot between two variables containing numeric values of a selected query. 
+This tool creates a simple scatter plot between two variables containing numeric values of a selected dataset. 
 
-- All invalid, blank and comment lines in the query are skipped.  The number of skipped lines is displayed in the resulting history item.
+- All invalid, blank and comment lines in the dataset are skipped.  The number of skipped lines is displayed in the resulting history item.
 
 - **Plot title** The scatterplot title
 - **Label for x axis** and **Label for y axis** The labels for x and y axis of the scatterplot.
