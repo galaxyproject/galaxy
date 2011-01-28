@@ -1356,13 +1356,17 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                                             new_history=new_history )
         else:
             # Prepare each step
+            missing_tools = []
             for step in workflow.steps:
                 step.upgrade_messages = {}
                 # Contruct modules
                 if step.type == 'tool' or step.type is None:
                     # Restore the tool state for the step
                     step.module = module_factory.from_workflow_step( trans, step )
-                    # Fix any missing parameters
+                    if not step.module:
+                        if step.tool_id not in missing_tools:
+                            missing_tools.append(step.tool_id)
+                        continue
                     step.upgrade_messages = step.module.check_and_update_state()
                     if step.upgrade_messages:
                         has_upgrade_messages = True
@@ -1381,6 +1385,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                     step.state = step.module.get_runtime_state()
                 # Connections by input name
                 step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+            if missing_tools:
+                stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+                return trans.fill_template("workflow/run.mako", steps=[], workflow=stored, missing_tools = missing_tools)
         # Render the form
         stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
         return trans.fill_template(

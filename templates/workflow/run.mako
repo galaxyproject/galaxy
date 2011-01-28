@@ -320,9 +320,19 @@ if wf_parms:
       </div>
     %endif
 %endfor
+%if missing_tools:
+    <div class='errormessage'>
+    <strong>This workflow utilizes tools which are unavailable, and cannot be run.  Enable the tools listed below, or <a href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">edit the workflow</a> to correct these errors.</strong><br/>
+    <ul>
+    %for i, tool in enumerate( missing_tools ):
+        <li>${tool}</li>
+    %endfor
+    </ul>
+%else:
 <p id='new_history_p'>
     <input type="checkbox" name='new_history' value="true" id='new_history_cbx'/><label for='new_history_cbx'>Send results to a new history </label>
     <span id="new_history_input">named: <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/></span>
 </p>
 <input type="submit" name="run_workflow" value="Run workflow" />
 </form>
+%endif
