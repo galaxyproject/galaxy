@@ -22,29 +22,21 @@
                 #else:
                     --ref_file="None"
                 #end if
-                --dbkey=${input1.metadata.dbkey} 
+                --dbkey=${first_input.input.metadata.dbkey} 
                 --index_dir=${GALAXY_DATA_INDEX_DIR}
             #end if
             
-            ## First input and, optionally, second input.
-            -1 $input1
-            #if $second_gtf.use_second_gtf == "Yes":
-                -2 $second_gtf.input2
-            #end if
+            ## Inputs.
+            ${first_input}
+            #for $input_file in $input_files:
+              ${input_file.additional_input}
+            #end for
     </command>
     <inputs>
-        <param format="gtf" name="input1" type="data" label="GTF file produced by Cufflinks" help=""/>
-        <conditional name="second_gtf">
-            <param name="use_second_gtf" type="select" label="Use Another GTF file producted by Cufflinks?">
-                <option value="No">No</option>
-                <option value="Yes">Yes</option>
-            </param>
-            <when value="Yes">
-                <param format="gtf" name="input2" type="data" label="GTF file produced by Cufflinks" help=""/>
-            </when>
-            <when value="No">
-            </when>
-        </conditional>
+        <param format="gtf" name="first_input" type="data" label="GTF file produced by Cufflinks" help=""/>
+        <repeat name="input_files" title="Additional GTF Input Files">
+            <param format="gtf" name="additional_input" type="data" label="GTF file produced by Cufflinks" help=""/>
+        </repeat>
         <conditional name="annotation">
             <param name="use_ref_annotation" type="select" label="Use Reference Annotation">
                 <option value="No">No</option>
@@ -80,16 +72,16 @@
 
     <outputs>
         <data format="txt" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy" from_work_dir="cc_output" />
-        <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: data ${input1.hid} tmap file" from_work_dir="input1.tmap" />
-        <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${input1.hid} refmap file" from_work_dir="input1.refmap"/>
-        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} tmap file" from_work_dir="input2.tmap">
-            <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
+        <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: ${first_input.hid} data tmap file" from_work_dir="input1.tmap" />
+        <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${first_input.hid} refmap file" from_work_dir="input1.refmap"/>
+        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} tmap file" from_work_dir="input2.tmap">
+            <filter>len( input_files ) > 0</filter>
         </data>
-        <data format="tabular" name="input2_refmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} refmap file" from_work_dir="input2.refmap">
-            <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
+        <data format="tabular" name="input2_refmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} refmap file" from_work_dir="input2.refmap">
+            <filter>len( input_files ) > 0</filter>
         </data>
         <data format="tabular" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking" from_work_dir="cc_output.tracking">
-            <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
+            <filter>len( input_files ) > 0</filter>
         </data>
         <data format="gtf" name="transcripts_combined" label="${tool.name} on ${on_string}: combined transcripts" from_work_dir="cc_output.combined.gtf"/>
     </outputs>
@@ -99,16 +91,15 @@
             cuffcompare -r cuffcompare_in3.gtf -R cuffcompare_in1.gtf cuffcompare_in2.gtf
         -->
         <test>
-            <param name="input1" value="cuffcompare_in1.gtf" ftype="gtf"/>
-            <param name="use_second_gtf" value="Yes"/>
-            <param name="input2" value="cuffcompare_in2.gtf" ftype="gtf"/>
+            <param name="first_input" value="cuffcompare_in1.gtf" ftype="gtf"/>
+            <param name="additional_input" value="cuffcompare_in2.gtf" ftype="gtf"/>
             <param name="use_ref_annotation" value="Yes"/>
             <param name="reference_annotation" value="cuffcompare_in3.gtf" ftype="gtf"/>
             <param name="ignore_nonoverlapping_reference" value="Yes"/>
             <param name="use_seq_data" value="No"/>
             <!-- Line diffs are the result of different locations for input files; this cannot be fixed as cuffcompare outputs
                 full input path for each input. -->
-            <output name="transcripts_accuracy" file="cuffcompare_out7.txt" lines_diff="6"/>
+            <output name="transcripts_accuracy" file="cuffcompare_out7.txt" lines_diff="16"/>
             <output name="input1_tmap" file="cuffcompare_out1.tmap"/>
             <output name="input1_refmap" file="cuffcompare_out2.refmap"/>
             <output name="input2_tmap" file="cuffcompare_out3.tmap"/>

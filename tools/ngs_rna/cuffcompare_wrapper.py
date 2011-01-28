@@ -28,8 +28,6 @@ def __main__():
     parser.add_option( '-s', dest='use_seq_data', action="store_true", help='Causes cuffcompare to look into for fasta files with the underlying genomic sequences (one file per contig) against which your reads were aligned for some optional classification functions. For example, Cufflinks transcripts consisting mostly of lower-case bases are classified as repeats. Note that <seq_dir> must contain one fasta file per reference chromosome, and each file must be named after the chromosome, and have a .fa or .fasta extension.')
     
     # Wrapper / Galaxy options.
-    parser.add_option( '-1', dest='input1')
-    parser.add_option( '-2', dest='input2')
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
     parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
     parser.add_option( '', '--ref_file', dest='ref_file', help='The reference dataset from the history' )
@@ -71,11 +69,11 @@ def __main__():
     # Build command.
     
     # Base.
-    cmd = "cuffcompare -o cc_output"
+    cmd = "cuffcompare -o cc_output "
     
     # Add options.
     if options.ref_annotation:
-        cmd += " -r %s" % options.ref_annotation
+        cmd += " -r %s " % options.ref_annotation
     if options.ignore_nonoverlap:
         cmd += " -R "
     if options.use_seq_data:
@@ -83,18 +81,12 @@ def __main__():
         
     # Add input files.
         
-    # Need to symlink inputs so that output files are written to temp directory. 
-    # Also need an extension for input file names so that cuffcompare produces
-    # output files properly.
-    input1_file_name = "input1"
-    os.symlink( options.input1,  input1_file_name )
-    cmd += " %s" % input1_file_name
-    two_inputs = ( options.input2 != None)
-    if two_inputs:
-        input2_file_name = "input2"
-        os.symlink( options.input2, input2_file_name )
-        cmd += " %s" % input2_file_name
-        
+    # Need to symlink inputs so that output files are written to temp directory.
+    for i, arg in enumerate( args ):
+        input_file_name = "./input%i" % ( i+1 )
+        os.symlink( arg, input_file_name )
+        cmd += "%s " % input_file_name
+
     # Debugging.
     print cmd
     
