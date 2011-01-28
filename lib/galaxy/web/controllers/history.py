@@ -58,7 +58,7 @@ class HistoryListGrid( grids.Grid ):
     ]
     columns.append( 
         grids.MulticolFilterColumn(  
-        "Search", 
+        "search history names and tags", 
         cols_to_filter=[ columns[0], columns[2] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )

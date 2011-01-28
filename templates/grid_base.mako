@@ -63,9 +63,10 @@
             init_grid_elements();
             init_grid_controls();
             
-            // Initialize filter elements.
-            $('input[type=text]').each( function() {
-                $(this).click( function() { $(this).attr('value', ''); } );
+            // Initialize text filters to select text on click and use normal font when user is typing.
+            $('input[type=text]').each(function() {
+                $(this).click(function() { $(this).select(); } )
+                       .keyup(function () { $(this).css("font-style", "normal"); })
             });
         });
         ## TODO: Can this be moved into base.mako? Also, this is history-specific grid code.
@@ -104,10 +105,6 @@
                 }
             %endif
         %endif
-        
-        $(".search-box-input").live("click", function() {
-            $(this).css("font-style", "normal");
-        });
         
         //
         // Code to handle grid operations: filtering, sorting, paging, and operations.
@@ -198,11 +195,12 @@
                                  { selectFirst: false, autoFill: false, highlight: false, mustMatch: false });
             }
             
-            // Initialize advanced search toggles.
+            // Initialize standard, advanced search toggles.
             $('.advanced-search-toggle').each( function() {
                 $(this).click( function() {
-                   $('#more-search-options').slideToggle('fast');
-                   return false;
+                    $("#standard-search").slideToggle('fast');
+                    $('#advanced-search').slideToggle('fast');
+                    return false;
                 });
             });
         }
@@ -362,7 +360,7 @@
         function add_tag_to_grid_filter(tag_name, tag_value) {
             // Put tag name and value together.
             var tag = tag_name + (tag_value !== undefined && tag_value != "" ? ":" + tag_value : "");
-            $('#more-search-options').show('fast');
+            $('#advanced-search').show('fast');
             add_filter_condition("tags", tag, true); 
         }
  
@@ -647,10 +645,10 @@
             display: block;
             float: right;
         }
-        #more-search-options td {
+        #advanced-search td {
             padding: 3px;
         }
-        #more-search-options table {
+        #advanced-search table {
             border-collapse: separate;
         }
         .delete-search-icon {

@@ -62,8 +62,16 @@
                     </span>
                     ## Print input field for column.
                     <span class="search-box">
-                        <% value = iff( column.filterable == "standard", column.label.lower(), "") %>
-                        <input class="search-box-input" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="15"/>
+                        <% 
+                            # Set value, size of search input field. Minimum size is 20 characters.
+                            value = iff( column.filterable == "standard", column.label.lower(), "") 
+                            size = len( value )
+                            if size < 20:
+                                size = 20
+                            # +4 to account for search icon/button.
+                            size = size + 4
+                        %>
+                        <input class="search-box-input" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="${size}"/>
                         <button class="submit-image" type="submit" title='Search'><span style="display: none;"></button>
                     </span>
                 </form>
@@ -96,9 +104,9 @@
 ## Print grid search/filtering UI.
 <%def name="render_grid_filters( grid )">
     ## Standard search.
-    <div>
-        <table><tr>
-            <td style="padding: 0;">
+    <div id="standard-search">
+        <table>
+            <tr><td style="padding: 0;">
                 <table>
                 %for column in grid.columns:
                     %if column.filterable == "standard":
@@ -106,8 +114,8 @@
                     %endif
                 %endfor
                 </table>
-            </td>
-            <td>
+            </td></tr>
+            <tr><td>
                 ## Clear the standard search.
                 ##|
                 ##<% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
@@ -124,10 +132,10 @@
                 %>
                 %if show_advanced_search_link:
                     <% args = { "advanced-search" : True } %>
-                    <a style="margin-left: 10px;" href="${url( args )}" class="advanced-search-toggle">Advanced Search</a>
+                    <a href="${url( args )}" class="advanced-search-toggle">Advanced Search</a>
                 %endif
-            </td>
-        </tr></table>
+            </td></tr>
+        </table>
     </div>
     
     ## Advanced search.
@@ -144,7 +152,7 @@
                     cur_filter_dict[column.key] != default_filter_dict[column.key]:
                         advanced_search_display = "block"
     %>
-    <div id="more-search-options" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;">
+    <div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;">
         <table>
             <tr><td style="text-align: left" colspan="100">
                 <% args = { "advanced-search" : False } %>
@@ -162,7 +170,7 @@
                     %if column.key in cur_filter_dict and column.key in default_filter_dict and \
                         cur_filter_dict[column.key] != default_filter_dict[column.key]:
                         <script type="text/javascript">
-                            $('#more-search-options').css("display", "block");
+                            $('#advanced-search').css("display", "block");
                         </script>
                     %endif
             
