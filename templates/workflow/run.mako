@@ -38,6 +38,9 @@
                     hide_tool_body($(this));
                 });
             });
+            $("#new_history_cbx").click(function(){
+                $("#new_history_input").toggle(this.checked);
+            });
         });
     </script>
 </%def>
@@ -46,12 +49,29 @@
     ${parent.stylesheets()}
     ${h.css( "autocomplete_tagging" )}
     <style type="text/css">
+    #new_history_p{
+        line-height:2.5em;
+        margin:0em 0em .5em 0em;
+    }
+    #new_history_cbx{
+        margin-right:.5em;
+    }
+    #new_history_input{
+        display:none;
+        line-height:1em;
+    }
+    #ec_button_container{
+        float:right;
+    }
     div.toolForm{
         margin-top: 10px;
         margin-bottom: 10px;
     }
     div.toolFormTitle{
         cursor:pointer;
+    }
+    .title_ul_text{
+        text-decoration:underline;
     }
     .step-annotation {
         margin-top: 0.25em;
@@ -193,9 +213,9 @@ if wf_parms:
     </div>
 </%def>
 
-<div style="float:right">
+<div id='ec_button_container'>
     <span class="action-button" id="show_all_tool_body">Expand All</span>
-    <span class="action-button" id="hide_all_tool_body">Collapse All</span>
+    <span class="action-button" id="hide_all_tool_body">Collapse</span>
 </div>
 
 <h2>Running workflow "${h.to_unicode( workflow.name )}"</h2>
@@ -209,7 +229,7 @@ if wf_parms:
 %endif
 
 %if workflow.annotation:
-    <div class="workflow-annotation">Annotation: ${workflow.annotation}</div>
+    <div class="workflow-annotation">${workflow.annotation}</div>
     <hr/>
 %endif
 
@@ -257,9 +277,9 @@ if wf_parms:
       <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
       <div class="toolForm">
           <div class="toolFormTitle">
-              Step ${int(step.order_index)+1}: ${tool.name}
+              <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${tool.name}</span>
               % if step.annotations:
-                <div class="step-annotation">Annotation: ${h.to_unicode( step.annotations[0].annotation )}</div>
+                <div class="step-annotation">${h.to_unicode( step.annotations[0].annotation )}</div>
               % endif
           </div>
           <div class="toolFormBody">
@@ -289,9 +309,9 @@ if wf_parms:
       <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
       <div class="toolForm">
           <div class="toolFormTitle">
-              Step ${int(step.order_index)+1}: ${module.name}
+              <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name}</span>
               % if step.annotations:
-                <div class="step-annotation">Annotation: ${step.annotations[0].annotation}</div>
+                <div class="step-annotation">${step.annotations[0].annotation}</div>
               % endif
           </div>
           <div class="toolFormBody">
@@ -300,8 +320,9 @@ if wf_parms:
       </div>
     %endif
 %endfor
-<div class="workflow-annotation">
-    <input type="checkbox" name='new_history' value="true"/> Place the results of this workflow in a new history named <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/>
-</div>
+<p id='new_history_p'>
+    <input type="checkbox" name='new_history' value="true" id='new_history_cbx'/><label for='new_history_cbx'>Send results to a new history </label>
+    <span id="new_history_input">named: <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/></span>
+</p>
 <input type="submit" name="run_workflow" value="Run workflow" />
 </form>
