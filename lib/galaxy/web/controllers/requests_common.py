@@ -1158,18 +1158,6 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                     current_sample[ 'library' ] = library
                     current_sample[ 'folder' ] = folder
             self.__update_samples( trans, cntrller, request, samples, **kwd )
-            # Samples will not have an associated SampleState until the request is submitted, at which
-            # time all samples of the request will be set to the first SampleState configured for the
-            # request's RequestType defined by the admin.
-            if request.is_submitted:
-                # See if all the samples' bar_codes are in the same state, and if so send email if configured to.
-                common_state = request.samples_have_common_state
-                if common_state and common_state.id == request.type.states[1].id:
-                    comment = "All samples of this request are in the (%s) sample state. " % common_state.name
-                    event = trans.model.RequestEvent( request, request.states.SUBMITTED, comment )
-                    trans.sa_session.add( event )
-                    trans.sa_session.flush()
-                    request.send_email_notification( trans, request.type.states[1] )
             message = 'Changes made to the samples have been saved. '
         else:
             # Saving a newly created sample.  The sample will not have an associated SampleState
@@ -1183,11 +1171,15 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 form_values = trans.model.FormValues( request.type.sample_form, sample_widget[ 'field_values' ] )
                 trans.sa_session.add( form_values )
                 trans.sa_session.flush()
+                if request.is_submitted:
+                    bar_code = sample_widget[ 'bar_code' ]
+                else:
+                    bar_code = ''
                 sample = trans.model.Sample( name=sample_widget[ 'name' ],
                                              desc='', 
                                              request=request,
                                              form_values=form_values, 
-                                             bar_code='',
+                                             bar_code=bar_code,
                                              library=sample_widget[ 'library' ],
                                              folder=sample_widget[ 'folder' ],
                                              history=sample_widget['history'],
@@ -1254,13 +1246,29 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                             # If the sample's associated SampleState is still the initial state
                             # configured by the admin for the request's RequestType, this must be
                             # the first time a bar code was added to the sample, so change it's state
-                            # to the next associated SampleState.
+                            # to the next associated SampleState. 
                             if sample.state.id == request.type.states[0].id:
+                                # Change the sample state only if its request_type 
+                                # has at least 2 states
+                                if len( request.type.states ) >= 2:
+                                    next_sample_state = request.type.states[1]
+                                else:
+                                    next_sample_state = request.type.states[0]
                                 event = trans.model.SampleEvent( sample, 
-                                                                request.type.states[1], 
-                                                                'Bar code associated with the sample' )
+                                                                 next_sample_state, 
+                                                                 'Bar code associated with the sample' )
                                 trans.sa_session.add( event )
                                 trans.sa_session.flush()
+                                # Next step is to update the request event history if bar codes 
+                                # have been assigned to all the samples of this request
+                                common_state = request.samples_have_common_state
+                                if request.is_submitted and common_state and len( request.type.states ) >= 2:
+                                    comment = "All samples of this request are in the (%s) sample state. " % common_state.name
+                                    event = trans.model.RequestEvent( request, request.states.SUBMITTED, comment )
+                                    trans.sa_session.add( event )
+                                    trans.sa_session.flush()
+                                    request.send_email_notification( trans, next_sample_state )
+
                     sample.bar_code = bar_code
                     sample.library = sample_widget[ 'library' ]
                     sample.folder = sample_widget[ 'folder' ]

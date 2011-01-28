@@ -141,6 +141,10 @@ class RequestType( BaseController, UsesFormDefinitions ):
                                                               action='browse_request_types',
                                                               message=message,
                                                               status=status ) )
+        # A request_type requires at least one possible sample state so that
+        # it can be used to create a sequencing request
+        if not len( rt_states_widgets ):
+            rt_states_widgets.append( ( "New", "First sample state" ) )
         return trans.fill_template( '/admin/request_type/create_request_type.mako',
                                     rt_info_widgets=rt_info_widgets,
                                     rt_states_widgets=rt_states_widgets,
@@ -150,8 +154,6 @@ class RequestType( BaseController, UsesFormDefinitions ):
     def __get_external_services(self, trans, request_type=None, **kwd):
         params = util.Params( kwd )
         external_services_list = []
-#        if request_type:
-#            i = 
         i = 0
         while True:
             if kwd.has_key( 'external_service_id_%i' % i ):
@@ -242,8 +244,8 @@ class RequestType( BaseController, UsesFormDefinitions ):
         sample_form_id = params.get( 'sample_form_id', 'none' )
         external_service_id = params.get( 'external_service_id', 'none' )
         # validate
-        if not name or request_form_id == 'none' or sample_form_id == 'none':
-            message = 'Enter the name, request form, and the sample form associated with this request type.'
+        if not name or request_form_id == 'none' or sample_form_id == 'none' or not kwd.has_key( 'state_name_0' ):
+            message = 'Enter the name, request form, sample form and at least one sample state associated with this request type.'
             return trans.response.send_redirect( web.url_for( controller='request_type',
                                                               action=action,
                                                               message=message,

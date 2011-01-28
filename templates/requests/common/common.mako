@@ -709,7 +709,7 @@
     %endif
     %if is_admin and is_submitted and request.samples_without_library_destinations:
         <div class='infomessage'>
-            Select a target data library and folder for a sample before selecting its datasets to transfer from the external service.
+            Select a target data library and folder for a sample before selecting it's datasets to transfer from the external service.
         </div><br/>
     %endif
     %if message:

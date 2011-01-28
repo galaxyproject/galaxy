@@ -3,7 +3,10 @@
         <div class="form-row">
             <label>${1+element_count}. State name:</label>
             <input type="text" name="state_name_${element_count}" value="${state_name}" size="40"/>
-            <input type="submit" name="remove_state_button" value="Remove state ${1+element_count}"/>
+            ## Do not show remove button for the first state
+            %if element_count > 0:
+                <input type="submit" name="remove_state_button" value="Remove state ${1+element_count}"/>
+            %endif
         </div>
         <div class="form-row">
             <label>Description:</label>

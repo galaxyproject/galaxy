@@ -29,7 +29,7 @@
         %if external_service.external_service_type_id != 'none':
             %for field_index, field in enumerate( external_service.form_definition.fields ):
                 <% 
-                    field_value = external_service.form_values.content[ field['name'] ]
+                    field_value = external_service.form_values.content.get( field['name'], '' )
                     if field[ 'type' ] == 'PasswordField':
                         field_value = '*' * len( field_value )
                 %>

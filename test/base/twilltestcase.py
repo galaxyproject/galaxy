@@ -1460,7 +1460,42 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "1 forms have been deleted."
         self.check_page_for_string( check_str )
         self.home()
-
+    
+    # External services stuff
+    def reload_external_service( self, external_service_type_id, strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( '%s/external_service/reload_external_service_types' % self.url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        tc.fv( "1", "external_service_type_id", external_service_type_id )
+        tc.submit( "reload_external_service_type_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def create_external_service( self, name, description, version, external_service_type_id, field_values={}, strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( '%s/external_service/create_external_service' % self.url )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", description )
+        tc.fv( "1", "version", version )
+        self.refresh_form( "external_service_type_id", external_service_type_id )
+        for field, value in field_values.items():
+            tc.fv( "1", field, value )
+        tc.submit( "create_external_service_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+    def view_external_service( self, external_service_id, strings_displayed=[] ):
+        self.visit_url( '%s/external_service/view_external_service?id=%s' % ( self.url, external_service_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+    def edit_external_service( self, external_service_id, field_values={}, strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.visit_url( '%s/external_service/edit_external_service?id=%s' % ( self.url, external_service_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for field, value in field_values.items():
+            tc.fv( "1", field, value )
+        tc.submit( "edit_external_service_button" )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
     # Sample tracking stuff
     def check_request_grid( self, cntrller, state, deleted=False, strings_displayed=[] ):
         self.visit_url( '%s/%s/browse_requests?sort=create_time&f-state=%s&f-deleted=%s' % \
@@ -1477,9 +1512,9 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "request_form_id", request_form_id )
         tc.fv( "1", "sample_form_id", sample_form_id )
         for index, state in enumerate(states):
-            tc.submit( "add_state_button" )
             tc.fv("1", "state_name_%i" % index, state[0])
             tc.fv("1", "state_desc_%i" % index, state[1])
+            tc.submit( "add_state_button" )
         tc.submit( "create_request_type_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )

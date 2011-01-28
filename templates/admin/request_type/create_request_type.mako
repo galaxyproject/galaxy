@@ -34,6 +34,9 @@
         <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Sample states defined for this request type</div>
+            <div class="form-row">
+                A request_type requires at least one possible sample state so that it can be used to create a sequencing request
+            </div>
             %for index, info in enumerate( rt_states_widgets ):
                 ${render_state( index, info[0], info[1] )}
             %endfor
