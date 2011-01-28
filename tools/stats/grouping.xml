@@ -1,4 +1,4 @@
-<tool id="Grouping1" name="Group" version="1.9.2">
+<tool id="Grouping1" name="Group" version="1.9.3">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python">
     grouping.py 

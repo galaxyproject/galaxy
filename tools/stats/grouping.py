@@ -154,7 +154,10 @@ def main():
                                 if op != 'random':
                                     rout = eval( rfunc )( prev_vals[i] )
                                 else:
-                                    rand_index = random.randint(0,len(prev_vals[i])-1)
+                                    try:
+                                        rand_index = random.randint(0,len(prev_vals[i])-1)  #if the two inputs to randint are equal, it seems to throw a ValueError. This can't be reproduced with the python interpreter in its interactive mode. 
+                                    except Exception, ValueError:
+                                        rand_index = 0
                                     rout = prev_vals[i][rand_index]
                             
                             if op == 'Mode' and rout == '>1 mode':
@@ -231,7 +234,10 @@ def main():
                 if op != 'random':
                     rout = eval( rfunc )( prev_vals[i] )
                 else:
-                    rand_index = random.randint(0,len(prev_vals[i])-1)
+                    try:
+                        rand_index = random.randint(0,len(prev_vals[i])-1)  #if the two inputs to randint are equal, it seems to throw a ValueError. This can't be reproduced with the python interpreter in its interactive mode. 
+                    except Exception, ValueError:
+                        rand_index = 0
                     rout = prev_vals[i][rand_index]
             
             if op == 'Mode' and rout == '>1 mode':
