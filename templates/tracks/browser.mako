@@ -178,29 +178,47 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 $("#no-tracks").show();
             }
             $("#title").text(view.title + " (" + view.dbkey + ")");
-            
-            // Make main tracks sortable.
-            $(".viewport-container").sortable({
-                start: function(e, ui) {
-                    view.in_reordering = true;
-                },
-                stop: function(e, ui) {
-                    view.in_reordering = false;
-                },
-                handle: ".draghandle"
-            });
-            
-            // Make child tracks sortable.
-            $(".child-tracks-container").sortable({
-                start: function(e, ui) {
-                    view.in_reordering = true;
-                },
-                stop: function(e, ui) {
-                    view.in_reordering = false;
-                },
-                handle: ".child-track-icon"
-            });
-            
+
+            function sortable( element, handle ) {
+                /* Make children of `element` sortable by dragging `handle` (a selector) */
+                element.children().each( function() {
+                    // The actual element to be moved
+                    var dragging = this;
+                    // Drag event is attached to the handle
+                    $(dragging).find(handle).bind( "dragstart", function() {
+                        element.css( "cursor", "move !important" );
+                    } ).bind( "dragend", function () {
+                        element.css( "cursor", "inherit" );
+                    } ).bind( "drag", function ( e ) {
+                        // Correction for offset parent and cursor position, and handle
+                        // FIXME: deal with handle position correctly
+                        var off = $(dragging).offsetParent().offset().top + e.cursorOffsetY //+ 10;
+                        // Determine new position
+                        var children = element.children();
+                        for ( var i = 0; i < children.length; i++ ) {
+                            var child = children.get( i );
+                            if ( e.offsetY - off < $(child).position().top ) {
+                                break;
+                            }
+                        }
+                        // If not already in the right place, move. Need 
+                        // to handle the end specially since we don't have 
+                        // insert at index
+                        if ( i == children.length ) {
+                            if ( dragging != children.get( i - 1 ) ) {
+                                element.append( dragging );
+                            }
+                        }
+                        else if ( dragging != children.get( i ) ) {
+                            $(dragging).insertBefore( children.get( i ) );
+                        }
+                    });
+                });
+            }
+
+            sortable( $(".viewport-container"), ".draghandle" );
+            sortable( $(".child-tracks-container"), ".child-track-icon" );
+           
             window.onbeforeunload = function() {
                 if (view.has_changes) {
                     return "There are unsaved changes to your visualization which will be lost.";
