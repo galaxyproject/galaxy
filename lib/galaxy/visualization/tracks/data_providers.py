@@ -87,6 +87,10 @@ class TracksDataProvider( object ):
         filters = []
         if self.original_dataset.metadata.viz_filter_cols:
             for viz_col_index in self.original_dataset.metadata.viz_filter_cols:
+                # Some columns are optional, so can't assume that a filter 
+                # column is in dataset.
+                if viz_col_index >= len( column_names ):
+                    continue;
                 col_name = column_names[ viz_col_index ]
                 # Make sure that column has a mapped index. If not, do not add filter.
                 try:
