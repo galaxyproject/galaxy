@@ -515,7 +515,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                         payload.append( [ ( start + block[1], start + block[1] + block[0] ) for block in blocks ] )
                     
                     if length >= 5:
-                        payload.append( int(feature[4]) ) # score
+                        payload.append( float(feature[4]) ) # score
 
             results.append( payload )
 
