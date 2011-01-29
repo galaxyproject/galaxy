@@ -518,7 +518,7 @@ class JobWrapper( object ):
                 #
                 if isinstance( dataset, model.HistoryDatasetAssociation ):
                     joda = self.sa_session.query( model.JobToOutputDatasetAssociation ).filter_by( job=job, dataset=dataset ).first()
-                    if job_tool:
+                    if joda and job_tool:
                         hda_tool_output = job_tool.outputs.get( joda.name, None )
                         if hda_tool_output and hda_tool_output.from_work_dir:
                             # Copy from working dir to HDA.
