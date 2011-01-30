@@ -31,10 +31,12 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
     .nav-container {
         width: 100%;
         height: 0;
+        text-align: center;
     }
     .nav {
         ## Overriding styles from trackster.css to push nav up into title bar
         position: relative;
+        display: inline-block;
         top: -2em;
         background: transparent;
         border: none;
