@@ -90,7 +90,7 @@ $.extend(Cache.prototype, {
     get: function(key) {
         var index = this.key_ary.indexOf(key);
         if (index != -1) {
-            this.move_key_to_end(key, index)
+            this.move_key_to_end(key, index);
         }
         return this.obj_cache[key];
     },
@@ -154,7 +154,7 @@ $.extend(DataCache.prototype, Cache.prototype, {
         //
         var key, split_key, entry_low, entry_high, mode, entry;
         for (var i = 0; i < this.key_ary.length; i++) {
-            key = this.key_ary[i]
+            key = this.key_ary[i];
             split_key = this.split_key(key);
             entry_low = split_key[0];
             entry_high = split_key[1];
@@ -969,7 +969,7 @@ var TiledTrack = function(filters, tool, parent_track) {
         var tool_params = this.tool.params;
         var track = this;
         $.each(this.tool.params, function(index, param) {
-            var param_div = $("<div>").addClass("param-row").appendTo(track.dynamic_tool_div)
+            var param_div = $("<div>").addClass("param-row").appendTo(track.dynamic_tool_div);
             
             //
             // Slider label.
@@ -1166,7 +1166,7 @@ var TiledTrack = function(filters, tool, parent_track) {
     var no_tracks_fn = function() { $("#no-tracks").show(); };
     if (this.parent_track) {
         // Track is child track.
-        parent_obj = this.parent_track
+        parent_obj = this.parent_track;
         no_tracks_fn = function() {};
     }
     track_dropdown.Remove = function() {
@@ -1329,7 +1329,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             chrom: this.view.chrom,
             low: this.view.low,
             high: this.view.high,
-            tool_id: this.tool.name,
+            tool_id: this.tool.name
         };
         $.extend(url_params, this.tool.get_param_values_dict());
         
@@ -1388,7 +1388,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         // Region is chrom:low-high or 'all.'
         var 
             track = this,
-            region = (chrom !== undefined && low !== undefined && high != undefined ? 
+            region = (chrom !== undefined && low !== undefined && high !== undefined ?
                       chrom + ":" + low + "-" + high : "all");
         return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
     },
@@ -1823,7 +1823,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         // Returns -1 if no slot was found.
         var find_slot = function(f_start, f_end) {
             var found;
-            for (var slot_num = 0, slot = undefined; slot_num <= MAX_FEATURE_DEPTH; slot_num++) {
+            for (var slot_num = 0, slot; slot_num <= MAX_FEATURE_DEPTH; slot_num++) {
                 found = true;
                 slot = s_e_by_tile[slot_num];
                 if (slot !== undefined) {

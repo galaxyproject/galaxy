@@ -19,7 +19,7 @@ function make_left_panel( panel_el, center_el, border_el ) {
         $( border_el ).css( "left", oldx );
         $( center_el ).css( "left", x+7 );
         // ie7-recalc.js
-        if ( document.recalc ) { document.recalc() };
+        if ( document.recalc ) { document.recalc(); }
     };
     var toggle = function() {
         if ( hidden ) {
@@ -34,7 +34,7 @@ function make_left_panel( panel_el, center_el, border_el ) {
             saved_size = $( border_el ).position().left;
             // Move center
             $( center_el ).css( "left", $(border_el).innerWidth() );
-            if ( document.recalc ) { document.recalc() };
+            if ( document.recalc ) { document.recalc(); }
             $( border_el).removeClass( "hover" );
             $( panel_el ).animate( { left: - saved_size }, "fast" );
             $( border_el ).animate( { left: -1 }, "fast", function() {
@@ -80,9 +80,9 @@ function make_right_panel( panel_el, center_el, border_el ) {
     var resize = function( x ) {
         $( panel_el ).css( "width", x );
         $( center_el ).css( "right", x+9 );
-        $( border_el ).css( "right", x ).css( "left", "" )
+        $( border_el ).css( "right", x ).css( "left", "" );
         // ie7-recalc.js
-        if ( document.recalc ) { document.recalc() };
+        if ( document.recalc ) { document.recalc(); }
     };
     var toggle = function() {
         if ( hidden ) {
@@ -90,7 +90,7 @@ function make_right_panel( panel_el, center_el, border_el ) {
             $( border_el ).animate( { right: saved_size }, "fast" );
             $( panel_el ).css( "right", - saved_size ).show().animate( { "right": 0 }, "fast", function () {
                 resize( saved_size );
-                $( border_el ).removeClass( "hidden" )
+                $( border_el ).removeClass( "hidden" );
             });
             hidden = false;
         }
@@ -99,12 +99,12 @@ function make_right_panel( panel_el, center_el, border_el ) {
             saved_size = $(document).width() - $( border_el ).position().left - $(border_el).outerWidth();
             // Move center
             $( center_el ).css( "right", $(border_el).innerWidth() + 1 );
-            if ( document.recalc ) { document.recalc() };
+            if ( document.recalc ) { document.recalc(); }
             // Hide border
             $( border_el ).removeClass( "hover" );
             $( panel_el ).animate( { right: - saved_size }, "fast" );
             $(  border_el ).animate( { right: -1 }, "fast", function() {
-                $( this ).addClass( "hidden" )
+                $( this ).addClass( "hidden" );
             });
             hidden = true;
         }
@@ -116,7 +116,7 @@ function make_right_panel( panel_el, center_el, border_el ) {
         {
             if ( ! hidden ) {
                 toggle();
-                hidden_by_tool = true
+                hidden_by_tool = true;
             }
         } else {
             if ( hidden_by_tool ) {
@@ -126,8 +126,8 @@ function make_right_panel( panel_el, center_el, border_el ) {
         }
     };
     $( border_el ).hover( 
-        function() { $( this ).addClass( "hover" ) },
-        function() { $( this ).removeClass( "hover" ) }
+        function() { $( this ).addClass( "hover" ); },
+        function() { $( this ).removeClass( "hover" ); }
     ).bind( "dragstart", function() {
         $( '#DD-helper' ).show();
     }).bind( "dragend", function() {  
@@ -201,7 +201,7 @@ function show_modal( title, body, buttons, extra_buttons, init_fn ) {
     $( ".dialog-box" ).find( ".body" ).html( body );
     if ( ! $(".dialog-box-container").is( ":visible" ) ) {
         $("#overlay").show();
-        $(".dialog-box-container").fadeIn()
+        $(".dialog-box-container").fadeIn();
     }
     // Fix min-width so that modal cannot shrink considerably if 
     // new content is loaded.
@@ -220,7 +220,7 @@ function show_in_overlay( options ) {
         $("#overlay-background").unbind( "click.overlay" );
     });
     show_modal( null, $( "<div style='margin: -5px;'><img id='close_button' style='position:absolute;right:-17px;top:-15px;src='" + image_path + "/closebox.png'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) );
-    $("#close_button").bind( "click", function() { hide_modal() } );
+    $("#close_button").bind( "click", function() { hide_modal(); } );
 }
     
 // Tab management

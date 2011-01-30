@@ -287,7 +287,7 @@ $.extend( Node.prototype, {
         this.form_html = data.form_html;
         this.tool_state = data.tool_state;
         this.tool_errors = data.tool_errors;
-        this.tooltip = data.tooltip ? data.tooltip : ""
+        this.tooltip = data.tooltip ? data.tooltip : "";
         this.annotation = data.annotation;
         this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
@@ -500,11 +500,12 @@ $.extend( Workflow.prototype, {
                         pjas_to_rem.push(pja_id);
                     }
                 });
-                if (pjas_to_rem.length > 0 && node == workflow.active_node)
-                $.each(pjas_to_rem, function(i, pja_name){
-                    node_changed = true;
-                    delete node.post_job_actions[pja_name];
-                })
+                if (pjas_to_rem.length > 0 && node == workflow.active_node) {
+                    $.each(pjas_to_rem, function(i, pja_name){
+                        node_changed = true;
+                        delete node.post_job_actions[pja_name];
+                    });
+                }
                 $.each(node.output_terminals, function(ot_id, ot){
                     var create_pja = true;
                     $.each(node.workflow_outputs, function(i, wo_name){
