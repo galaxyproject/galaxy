@@ -24,6 +24,33 @@ CanvasRenderingContext2D.prototype.dashedLine = function(x1, y1, x2, y2, dashLen
     }
 };
 
+/** 
+ * Make `element` sortable in parent by dragging `handle` (a selector)
+ */
+function sortable( element, handle ) {
+    element.bind( "drag", { handle: handle, relative: true }, function ( e, d ) {
+        var parent = $(this).parent();
+        var children = parent.children();
+        // Determine new position
+        for ( var i = 0; i < children.length; i++ ) {
+            if ( d.offsetY < $(children.get(i)).position().top ) {
+                break;
+            }
+        }
+        // If not already in the right place, move. Need 
+        // to handle the end specially since we don't have 
+        // insert at index
+        if ( i == children.length ) {
+            if ( this != children.get( i - 1 ) ) {
+                parent.append( this );
+            }
+        }
+        else if ( this != children.get( i ) ) {
+            $(this).insertBefore( children.get( i ) );
+        }
+    });
+}
+
 /**
  * Init constants & functions used throughout trackster.
  */
@@ -492,6 +519,7 @@ $.extend( View.prototype, {
         this.tracks.push(track);
         if (track.init) { track.init(); }
         track.container_div.attr('id', 'track_' + track.track_id);
+        sortable( track.container_div, '.draghandle' );
         this.track_id_counter += 1;
         this.num_tracks += 1;
     },
@@ -1399,6 +1427,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         child_track.track_id = this.track_id + "_" + this.child_tracks.length;
         child_track.container_div.attr('id', 'track_' + child_track.track_id);
         this.child_tracks_container.append(child_track.container_div);
+        sortable( child_track.container_div, '.child-track-icon' );
         if (!$(this.child_tracks_container).is(":visible")) {
             this.child_tracks_container.show();
         }

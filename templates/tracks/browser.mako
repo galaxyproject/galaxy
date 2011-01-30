@@ -188,34 +188,6 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 $("#no-tracks").show();
             }
             $("#title").text(view.title + " (" + view.dbkey + ")");
-
-            function sortable( element, handle ) {
-                /* Make `element` sortable in parent by dragging `handle` (a selector) */
-                element.bind( "drag", { handle: handle, relative: true }, function ( e, d ) {
-                    var parent = $(this).parent();
-                    var children = parent.children();
-                    // Determine new position
-                    for ( var i = 0; i < children.length; i++ ) {
-                        if ( d.offsetY < $(children.get(i)).position().top ) {
-                            break;
-                        }
-                    }
-                    // If not already in the right place, move. Need 
-                    // to handle the end specially since we don't have 
-                    // insert at index
-                    if ( i == children.length ) {
-                        if ( this != children.get( i - 1 ) ) {
-                            parent.append( this );
-                        }
-                    }
-                    else if ( this != children.get( i ) ) {
-                        $(this).insertBefore( children.get( i ) );
-                    }
-                });
-            }
-
-            sortable( $(".viewport-container > .track"), ".draghandle" );
-            sortable( $(".child-tracks-container > .track"), ".child-track-icon" );
            
             window.onbeforeunload = function() {
                 if (view.has_changes) {
