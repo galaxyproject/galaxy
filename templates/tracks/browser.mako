@@ -190,38 +190,32 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             $("#title").text(view.title + " (" + view.dbkey + ")");
 
             function sortable( element, handle ) {
-                /* Make children of `element` sortable by dragging `handle` (a selector) */
-                element.children().each( function() {
-                    // The actual element to be moved
-                    var dragging = this;
-                    // Drag event is attached to the handle
-                    $(dragging).bind( "drag", 
-                        { handle: handle, relative: true }, 
-                        function ( e, d ) {
-                        // Determine new position
-                        var children = element.children();
-                        for ( var i = 0; i < children.length; i++ ) {
-                            if ( d.offsetY < $(children.get(i)).position().top ) {
-                                break;
-                            }
+                /* Make `element` sortable in parent by dragging `handle` (a selector) */
+                element.bind( "drag", { handle: handle, relative: true }, function ( e, d ) {
+                    var parent = $(this).parent();
+                    var children = parent.children();
+                    // Determine new position
+                    for ( var i = 0; i < children.length; i++ ) {
+                        if ( d.offsetY < $(children.get(i)).position().top ) {
+                            break;
                         }
-                        // If not already in the right place, move. Need 
-                        // to handle the end specially since we don't have 
-                        // insert at index
-                        if ( i == children.length ) {
-                            if ( dragging != children.get( i - 1 ) ) {
-                                element.append( dragging );
-                            }
+                    }
+                    // If not already in the right place, move. Need 
+                    // to handle the end specially since we don't have 
+                    // insert at index
+                    if ( i == children.length ) {
+                        if ( this != children.get( i - 1 ) ) {
+                            parent.append( this );
                         }
-                        else if ( dragging != children.get( i ) ) {
-                            $(dragging).insertBefore( children.get( i ) );
-                        }
-                    });
+                    }
+                    else if ( this != children.get( i ) ) {
+                        $(this).insertBefore( children.get( i ) );
+                    }
                 });
             }
 
-            sortable( $(".viewport-container"), ".draghandle" );
-            sortable( $(".child-tracks-container"), ".child-track-icon" );
+            sortable( $(".viewport-container > .track"), ".draghandle" );
+            sortable( $(".child-tracks-container > .track"), ".child-track-icon" );
            
             window.onbeforeunload = function() {
                 if (view.has_changes) {
@@ -235,6 +229,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                                         track_data.name, view, track_data.dataset_id, track_data.prefs, 
                                         track_data.filters, track_data.tool );
                 view.add_track(new_track);
+                // Should replace with live event but can't get working
+                sortable( new_track.container_div, ".draghandle" );
                 view.has_changes = true;
                 $("#no-tracks").hide();
             };
