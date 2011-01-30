@@ -44,15 +44,15 @@ function make_left_panel( panel_el, center_el, border_el ) {
         }
     };
     // Connect to elements
-    $( border_el ).hover( 
-        function() { $( this ).addClass( "hover" ) },
-        function() { $( this ).removeClass( "hover" ) }
-    ).bind( "dragstart", function( e ) {
+    //$( border_el ).hover( 
+    //    function() { $( this ).addClass( "hover" ) },
+    //    function() { $( this ).removeClass( "hover" ) }
+    $( border_el ).bind( "dragstart", function() {
         $( '#DD-helper' ).show();
-    }).bind( "dragend", function( e ) {
+    }).bind( "dragend", function() {
         $( '#DD-helper' ).hide();
-    }).bind( "drag", function( e ) {
-        x = e.offsetX;
+    }).bind( "drag", function( e, d ) {
+        x = d.offsetX;
         // Limit range
         x = Math.min( 400, Math.max( 100, x ) );
         // Resize
@@ -62,7 +62,7 @@ function make_left_panel( panel_el, center_el, border_el ) {
             hidden = false;
         }
         resize( x );
-    }).bind( "dragclickonly", function( e ) {
+    }).bind( "dragclickonly", function() {
         toggle();
     }).find( "div" ).show();
     var force_panel = function( op ) {
@@ -128,12 +128,12 @@ function make_right_panel( panel_el, center_el, border_el ) {
     $( border_el ).hover( 
         function() { $( this ).addClass( "hover" ) },
         function() { $( this ).removeClass( "hover" ) }
-    ).bind( "dragstart", function( e ) {
+    ).bind( "dragstart", function() {
         $( '#DD-helper' ).show();
-    }).bind( "dragend", function( e ) {  
+    }).bind( "dragend", function() {  
         $( '#DD-helper' ).hide();
-    }).bind( "drag", function( e ) {
-        x = e.offsetX;
+    }).bind( "drag", function( e, d ) {
+        x = d.offsetX;
         w = $(window).width(); 
         // Limit range
         x = Math.min( w - 100, x );
@@ -145,7 +145,7 @@ function make_right_panel( panel_el, center_el, border_el ) {
             hidden = false;
         }
         resize( w - x - $(this).outerWidth() );
-    }).bind( "dragclickonly", function( e ) {
+    }).bind( "dragclickonly", function() {
         toggle();
     }).find( "div" ).show();
     var force_panel = function( op ) {

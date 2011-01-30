@@ -169,12 +169,16 @@ $.extend( Node.prototype, {
             var terminal = this.terminal = new InputTerminal( this, types );
             terminal.node = node;
             terminal.name = name;
-            $(this).bind( "dropstart", function( e ) {
-                e.dragProxy.terminal.connectors[0].inner_color = "#BBFFBB";
-            }).bind( "dropend", function ( e ) {
-                e.dragProxy.terminal.connectors[0].inner_color = "#FFFFFF";
-            }).bind( "drop", function( e ) {
-                ( new Connector( e.dragTarget.terminal, e.dropTarget.terminal ) ).redraw();
+            $(this).bind( "dropinit", function( e, d ) {
+                // Accept a dragable if it is an output terminal and has a
+                // compatible type
+                return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
+            }).bind( "dropstart", function( e, d  ) {
+                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+            }).bind( "dropend", function ( e, d ) {
+                d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+            }).bind( "drop", function( e, d ) {
+                ( new Connector( d.drag.terminal, terminal ) ).redraw();
             }).bind( "hover", function() {
                 // If connected, create a popup to allow disconnection
                 if ( terminal.connectors.length > 0 ) {
@@ -211,35 +215,35 @@ $.extend( Node.prototype, {
             var terminal = this.terminal = new OutputTerminal( this, type );
             terminal.node = node;
             terminal.name = name;
-            $(this).bind( "dragstart", function( e ) { 
-                    workflow.check_changes_in_active_form(); //To save PJAs in the case of change datatype actions.
-                    var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' ).appendTo( "#canvas-container" ).get(0);
-                    h.terminal = new OutputTerminal( h );
-                    var c = new Connector();
-                    c.dragging = true;
-                    c.connect( this.terminal, h.terminal );
-                    $.dropManage({
-                        filter: function( e ) {
-                            return this.terminal.can_accept( terminal );
-                        }
-                    }).addClass( "input-terminal-active" );
-                    return h;
-            }).bind( "drag", function ( e ) {
+            $(this).bind( "dragstart", function( e, d ) { 
+                $( d.available ).addClass( "input-terminal-active" );
+                // Save PJAs in the case of change datatype actions.
+                workflow.check_changes_in_active_form(); 
+                // Drag proxy div
+                var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
+                    .appendTo( "#canvas-container" ).get(0);
+                // Terminal and connection to display noodle while dragging
+                h.terminal = new OutputTerminal( h );
+                var c = new Connector();
+                c.dragging = true;
+                c.connect( this.terminal, h.terminal );
+                return h;
+            }).bind( "drag", function ( e, d ) {
                 var onmove = function() {
-                    var po = $(e.dragProxy).offsetParent().offset(),
-                        x = e.offsetX - po.left,
-                        y = e.offsetY - po.top;
-                    $(e.dragProxy).css( { left: x, top: y } );
-                    e.dragProxy.terminal.redraw();
+                    var po = $(d.proxy).offsetParent().offset(),
+                        x = d.offsetX - po.left,
+                        y = d.offsetY - po.top;
+                    $(d.proxy).css( { left: x, top: y } );
+                    d.proxy.terminal.redraw();
                     // FIXME: global
                     canvas_manager.update_viewport_overlay();
                 };
                 onmove();
                 $("#canvas-container").get(0).scroll_panel.test( e, onmove );
-            }).bind( "dragend", function ( e ) {
-                e.dragProxy.terminal.connectors[0].destroy();
-                $(e.dragProxy).remove();
-                $.dropManage().removeClass( "input-terminal-active" );
+            }).bind( "dragend", function ( e, d ) {
+                d.proxy.terminal.connectors[0].destroy();
+                $(d.proxy).remove();
+                $( d.available ).removeClass( "input-terminal-active" );
                 $("#canvas-container").get(0).scroll_panel.stop();
             });
             node.output_terminals[name] = terminal;
@@ -820,11 +824,11 @@ function prebuild_node( type, title_text, tool_id ) {
         canvas_manager.draw_overview();
     }).bind( "dragclickonly", function() {
        workflow.activate_node( node ); 
-    }).bind( "drag", function( e ) {
+    }).bind( "drag", function( e, d ) {
         // Move
         var po = $(this).offsetParent().offset(),
-            x = e.offsetX - po.left,
-            y = e.offsetY - po.top;
+            x = d.offsetX - po.left,
+            y = d.offsetY - po.top;
         $(this).css( { left: x, top: y } );
         // Redraw
         $(this).find( ".terminal" ).each( function() {
@@ -948,26 +952,26 @@ $.extend( CanvasManager.prototype, {
             this.scroll_panel = new ScrollPanel( this );
         });
         var x_adjust, y_adjust;
-        this.cv.bind( "dragstart", function( e ) {
+        this.cv.bind( "dragstart", function() {
             var o = $(this).offset();
             var p = self.cc.position();
             y_adjust = p.top - o.top;
             x_adjust = p.left - o.left;
-        }).bind( "drag", function( e ) {
-            move( e.offsetX + x_adjust, e.offsetY + y_adjust );
+        }).bind( "drag", function( e, d ) {
+            move( d.offsetX + x_adjust, d.offsetY + y_adjust );
         }).bind( "dragend", function() {
             workflow.fit_canvas_to_nodes();
             self.draw_overview();
         });
         // Dragging for overview pane
-        this.ov.bind( "drag", function( e ) {
+        this.ov.bind( "drag", function( e, d ) {
             var in_w = self.cc.width(),
                 in_h = self.cc.height(),
                 o_w = self.oc.width(),
                 o_h = self.oc.height(),
                 p = $(this).offsetParent().offset(),
-                new_x_offset = e.offsetX - p.left,
-                new_y_offset = e.offsetY - p.top;
+                new_x_offset = d.offsetX - p.left,
+                new_y_offset = d.offsetY - p.top;
             move( - ( new_x_offset / o_w * in_w ),
                   - ( new_y_offset / o_h * in_h ) );
         }).bind( "dragend", function() {
@@ -975,11 +979,11 @@ $.extend( CanvasManager.prototype, {
             self.draw_overview();
         });
         // Dragging for overview border (resize)
-        $("#overview-border").bind( "drag", function( e ) {
+        $("#overview-border").bind( "drag", function( e, d ) {
             var op = $(this).offsetParent();
             var opo = op.offset();
-            var new_size = Math.max( op.width() - ( e.offsetX - opo.left ),
-                                     op.height() - ( e.offsetY - opo.top ) );
+            var new_size = Math.max( op.width() - ( d.offsetX - opo.left ),
+                                     op.height() - ( d.offsetY - opo.top ) );
             $(this).css( {
                 width: new_size,
                 height: new_size
@@ -989,7 +993,7 @@ $.extend( CanvasManager.prototype, {
         
         /*  Disable dragging for child element of the panel so that resizing can
             only be done by dragging the borders */
-        $("#overview-border div").bind("drag", function(e) { });
+        $("#overview-border div").bind("drag", function() { });
         
     },
     update_viewport_overlay: function() {

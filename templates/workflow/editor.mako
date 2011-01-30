@@ -328,11 +328,11 @@
         });
         
         // Stores the size of the overview into local storage when it's resized
-        $("#overview-border").bind( "dragend", function( e ) {
+        $("#overview-border").bind( "dragend", function( e, d ) {
             var op = $(this).offsetParent();
             var opo = op.offset();
-            var new_size = Math.max( op.width() - ( e.offsetX - opo.left ),
-                                     op.height() - ( e.offsetY - opo.top ) );
+            var new_size = Math.max( op.width() - ( d.offsetX - opo.left ),
+                                     op.height() - ( d.offsetY - opo.top ) );
             $.jStore.store("overview-size", new_size + "px");
         });
         

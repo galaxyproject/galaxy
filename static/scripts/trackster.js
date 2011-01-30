@@ -321,17 +321,17 @@ $.extend( View.prototype, {
             $(this).find("input").trigger("blur"); 
         });
 
+        // Double clicking zooms in
         this.content_div.bind("dblclick", function( e ) {
             view.zoom_in(e.pageX, this.viewport_container);
         });
 
-        // To let the overview box be draggable
-        this.overview_box.bind("dragstart", function( e ) {
-            this.current_x = e.offsetX;
-        }).bind("drag", function( e ) {
-            var delta = e.offsetX - this.current_x;
-            this.current_x = e.offsetX;
-
+        // Dragging the overview box (~ horizontal scroll bar)
+        this.overview_box.bind("dragstart", function( e, d ) {
+            this.current_x = d.offsetX;
+        }).bind("drag", function( e, d ) {
+            var delta = d.offsetX - this.current_x;
+            this.current_x = d.offsetX;
             var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.max_high - view.max_low) );
             view.move_delta(-delta_chrom);
         });
@@ -346,49 +346,53 @@ $.extend( View.prototype, {
             $(this).hide();
         });
         
-        this.viewport_container.bind( "dragstart", function( e ) {
-            this.original_low = view.low;
-            this.current_height = e.clientY;
-            this.current_x = e.offsetX;
-            this.enable_pan = (e.clientX < view.viewport_container.width() - 16) ? true : false; // Fix webkit scrollbar
-        }).bind( "drag", function( e ) {
-            if (!this.enable_pan || this.in_reordering) { return; }
+        // Dragging in the viewport scrolls
+        this.viewport_container.bind( "dragstart", function( e, d ) {
+            d.original_low = view.low;
+            d.current_height = d.clientY;
+            d.current_x = d.offsetX;
+            // Fix webkit scrollbar
+            d.enable_pan = (e.clientX < view.viewport_container.width() - 16) ? true : false; 
+        }).bind( "drag", function( e, d ) {
+            if (!d.enable_pan) { return; }
             var container = $(this);
-            var delta = e.offsetX - this.current_x;
-            var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
+            var delta = d.offsetX - d.current_x;
+            var new_scroll = container.scrollTop() - (d.clientY - d.current_height);
             container.scrollTop(new_scroll);
-            this.current_height = e.clientY;
-            this.current_x = e.offsetX;
-
+            d.current_height = d.clientY;
+            d.current_x = d.offsetX;
             var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
             view.move_delta(delta_chrom);
         });
-        
-        this.top_labeltrack.bind( "dragstart", function(e) {
-            this.drag_origin_x = e.clientX;
-            this.drag_origin_pos = e.clientX / view.viewport_container.width() * (view.high - view.low) + view.low;
-            this.drag_div = $("<div />").css( { 
-                "height": view.content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height(), "top": "0px", "position": "absolute", 
-                "background-color": "#ccf", "opacity": 0.5, "z-index": 1000
+       
+        // Dragging in the top label track allows selecting a region
+        // to zoom in 
+        this.top_labeltrack.bind( "dragstart", function( e, d ) {
+            return $("<div />").css( { 
+                "height": view.content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height(), 
+                "top": "0px", 
+                "position": "absolute", 
+                "background-color": "#ccf", 
+                "opacity": 0.5, 
+                 "z-index": 1000
             } ).appendTo( $(this) );
-        }).bind( "drag", function(e) {
-            var min = Math.min(e.clientX, this.drag_origin_x) - view.container.offset().left,
-                max = Math.max(e.clientX, this.drag_origin_x) - view.container.offset().left,
+        }).bind( "drag", function( e, d ) {
+            $( d.proxy ).css({ left: Math.min( e.pageX, d.startX ), width: Math.abs( e.pageX - d.startX ) });
+            var min = Math.min(e.pageX, d.startX ) - view.container.offset().left,
+                max = Math.max(e.pageX, d.startX ) - view.container.offset().left,
                 span = (view.high - view.low),
                 width = view.viewport_container.width();
-            
-            view.update_location(Math.round(min / width * span) + view.low, Math.round(max / width * span) + view.low);
-            this.drag_div.css( { "left": min + "px", "width": (max - min) + "px" } );
-        }).bind( "dragend", function(e) {
-            var min = Math.min(e.clientX, this.drag_origin_x),
-                max = Math.max(e.clientX, this.drag_origin_x),
+            view.update_location( Math.round(min / width * span) + view.low, 
+                                  Math.round(max / width * span) + view.low );
+        }).bind( "dragend", function( e, d ) {
+            var min = Math.min(e.pageX, d.startX),
+                max = Math.max(e.pageX, d.startX),
                 span = (view.high - view.low),
                 width = view.viewport_container.width(),
                 old_low = view.low;
-                
             view.low = Math.round(min / width * span) + old_low;
             view.high = Math.round(max / width * span) + old_low;
-            this.drag_div.remove();
+            $(d.proxy).remove();
             view.redraw();
         });
         

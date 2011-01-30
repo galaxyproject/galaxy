@@ -185,19 +185,13 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     // The actual element to be moved
                     var dragging = this;
                     // Drag event is attached to the handle
-                    $(dragging).find(handle).bind( "dragstart", function() {
-                        element.css( "cursor", "move !important" );
-                    } ).bind( "dragend", function () {
-                        element.css( "cursor", "inherit" );
-                    } ).bind( "drag", function ( e ) {
-                        // Correction for offset parent and cursor position, and handle
-                        // FIXME: deal with handle position correctly
-                        var off = $(dragging).offsetParent().offset().top + e.cursorOffsetY //+ 10;
+                    $(dragging).bind( "drag", 
+                        { handle: handle, relative: true }, 
+                        function ( e, d ) {
                         // Determine new position
                         var children = element.children();
                         for ( var i = 0; i < children.length; i++ ) {
-                            var child = children.get( i );
-                            if ( e.offsetY - off < $(child).position().top ) {
+                            if ( d.offsetY < $(children.get(i)).position().top ) {
                                 break;
                             }
                         }
