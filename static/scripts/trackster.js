@@ -376,7 +376,7 @@ $.extend( View.prototype, {
         // Dragging in the viewport scrolls
         this.viewport_container.bind( "dragstart", function( e, d ) {
             d.original_low = view.low;
-            d.current_height = d.clientY;
+            d.current_height = e.clientY;
             d.current_x = d.offsetX;
             // Fix webkit scrollbar
             d.enable_pan = (e.clientX < view.viewport_container.width() - 16) ? true : false; 
@@ -384,9 +384,10 @@ $.extend( View.prototype, {
             if (!d.enable_pan) { return; }
             var container = $(this);
             var delta = d.offsetX - d.current_x;
-            var new_scroll = container.scrollTop() - (d.clientY - d.current_height);
+            var new_scroll = container.scrollTop() - (e.clientY - d.current_height);
+            console.log( new_scroll );
             container.scrollTop(new_scroll);
-            d.current_height = d.clientY;
+            d.current_height = e.clientY;
             d.current_x = d.offsetX;
             var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
             view.move_delta(delta_chrom);
