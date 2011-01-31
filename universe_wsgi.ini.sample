@@ -337,18 +337,17 @@ use_interactive = True
 #transfer_manager_port = 8163
 
 # Search data libraries with whoosh
-enable_whoosh_library_search = True
+#enable_whoosh_library_search = True
 # Whoosh indexes are stored in this directory.
-whoosh_index_dir = database/whoosh_indexes
+#whoosh_index_dir = database/whoosh_indexes
 
 # Search data libraries with lucene
 #enable_lucene_library_search = False
 # maxiumum file size to index for searching, in MB
 #fulltext_max_size = 500
 #fulltext_noindex_filetypes=bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
-# base URL of server providing search functionality using whoosh.
-#fulltext_index_url = http://localhost:8081/index
-#fulltext_find_url = http://localhost:8081/find
+# base URL of server providing search functionality using lucene
+#fulltext_url = http://localhost:8081
 
 # -- Users and Security
 

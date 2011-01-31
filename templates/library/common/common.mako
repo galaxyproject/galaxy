@@ -1,5 +1,48 @@
 <%namespace file="/common/template_common.mako" import="render_template_field" />
 
+<%def name="common_javascripts()">
+    <script type="text/javascript">
+        function checkAllFields()
+        {
+            var chkAll = document.getElementById('checkAll');
+            var checks = document.getElementsByTagName('input');
+            var boxLength = checks.length;
+            var allChecked = false;
+            var totalChecked = 0;
+            if ( chkAll.checked == true )
+            {
+                for ( i=0; i < boxLength; i++ )
+                {
+                    if ( checks[i].name.indexOf( 'ldda_ids' ) != -1)
+                    {
+                       checks[i].checked = true;
+                    }
+                }
+            }
+            else
+            {
+                for ( i=0; i < boxLength; i++ )
+                {
+                    if ( checks[i].name.indexOf( 'ldda_ids' ) != -1)
+                    {
+                       checks[i].checked = false
+                    }
+                }
+            }
+        }
+
+        function checkForm() {
+            if ( $("select#action_on_datasets_select option:selected").text() == "delete" ) {
+                if ( confirm( "Click OK to delete these datasets?" ) ) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+    </script>
+</%def>
+
 <%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, space_to_tab, link_data_only, widgets, roles_select_list, history, show_deleted )">
     <%
         import os, os.path
@@ -319,26 +362,34 @@
     %endif
 </%def>
 
-<%def name="render_actions_on_multiple_items()">
+<%def name="render_actions_on_multiple_items( actions_to_exclude=[] )">
+    <%
+        is_admin = trans.user_is_admin() and cntrller=='library_admin'
+        can_delete = 'delete' not in actions_to_exclude and is_admin
+        can_download = 'download' not in actions_to_exclude
+        can_import_to_histories = 'import_to_histories' not in actions_to_exclude
+        can_manage_permissions = 'manage_permissions' not in actions_to_exclude
+    %>
     <tfoot>
         <tr>
             <td colspan="5" style="padding-left: 42px;">
                 For selected items:
                 <select name="do_action" id="action_on_selected_items">
-                    %if ( trans.user_is_admin() and cntrller=='library_admin' ):
-                        <option value="manage_permissions">Edit permissions</option>
-                        <option value="delete">Delete</option>
-                    %elif cntrller in ['library', 'library_search']:
-                        %if default_action == 'add':
-                            <option value="add" selected>Import into your current history</option>
+                    %if can_import_to_histories:
+                        %if not is_admin and default_action == 'import_to_histories':
+                            <option value="import_to_histories" selected>Import selected datasets to histories</option>
                         %else:
-                            <option value="add">Import into your current history</option>
+                            <option value="import_to_histories">Import selected datasets to histories</option>
                         %endif
-                        %if default_action == 'manage_permissions':
+                    %endif
+                    %if can_manage_permissions:
+                        %if not is_admin and default_action == 'manage_permissions':
                             <option value="manage_permissions" selected>Edit permissions</option>
-                            # This condition should not contain an else clause because the user is not authorized
-                            # to manage dataset permissions unless the default action is 'manage_permissions'
+                        %else:
+                            <option value="manage_permissions">Edit permissions</option>
                         %endif
+                    %endif
+                    %if can_download:
                         %if 'gz' in comptypes:
                             <option value="tgz"
                             %if default_action == 'download':
@@ -360,6 +411,9 @@
                             %endif>
                             >Download as a .zip file</option>
                         %endif
+                    %endif
+                    %if can_delete:
+                        <option value="delete">Delete</option>
                     %endif
                 </select>
                 <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>

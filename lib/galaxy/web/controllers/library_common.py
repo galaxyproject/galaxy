@@ -1,4 +1,4 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string
+import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string, urllib2
 from galaxy.web.base.controller import *
 from galaxy import util, jobs
 from galaxy.datatypes import sniff
@@ -7,6 +7,7 @@ from galaxy.util.json import to_json_string
 from galaxy.tools.actions import upload_common
 from galaxy.model.orm import *
 from galaxy.util.streamball import StreamBall
+from galaxy.util import inflector
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
 import logging, tempfile, zipfile, tarfile, os, sys, operator
 from galaxy.eggs import require
@@ -20,7 +21,7 @@ try:
     whoosh_search_enabled = True
     # The following must be defined exactly like the
     # schema in ~/scripts/data_libraries/build_whoosh_index.py
-    schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT, state=TEXT )
+    schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
 except ImportError, e:
     whoosh_search_enabled = False
     schema = None
@@ -125,16 +126,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                 message += "Don't navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the "
                 message += "message \"This job is running\" is cleared from the \"Information\" column below for each selected dataset."
                 status = "info"
-            comptypes_t = comptypes
-            if trans.app.config.nginx_x_archive_files_base:
-                comptypes_t = ['ngxzip']
-            for comptype in trans.app.config.disable_library_comptypes:
-                # TODO: do this once, not every time (we're gonna raise an
-                # exception every time after the first time)
-                try:
-                    comptypes_t.remove( comptype )
-                except:
-                    pass
+            comptypes = get_comptypes( trans )
             try:
                 return trans.fill_template( '/library/common/browse_library.mako',
                                             cntrller=cntrller,
@@ -143,17 +135,18 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                             created_ldda_ids=created_ldda_ids,
                                             hidden_folder_ids=hidden_folder_ids,
                                             show_deleted=show_deleted,
-                                            comptypes=comptypes_t,
+                                            comptypes=comptypes,
                                             current_user_roles=current_user_roles,
                                             message=message,
                                             status=status )
             except Exception, e:
                 message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
                 status = 'error'
+        default_action = params.get( 'default_action', None )
         return trans.response.send_redirect( web.url_for( use_panels=use_panels,
                                                           controller=cntrller,
                                                           action='browse_libraries',
-                                                          default_action=params.get( 'default_action', None ),
+                                                          default_action=default_action,
                                                           message=util.sanitize_text( message ),
                                                           status=status ) )
     @web.expose
@@ -871,7 +864,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                     message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                                     default_action = 'manage_permissions'
                             else:
-                                default_action = 'add'
+                                default_action = 'import_to_histories'
                             trans.response.send_redirect( web.url_for( controller='library_common',
                                                                        action='browse_library',
                                                                        cntrller=cntrller,
@@ -1247,7 +1240,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                     message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                                     default_action = 'manage_permissions'
                             else:
-                                default_action = 'add'
+                                default_action = 'import_to_histories'
                     return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                       action='browse_library',
                                                                       cntrller=cntrller,
@@ -1512,7 +1505,12 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                                           message=util.sanitize_text( message ),
                                                           status=status ) )
     @web.expose
-    def act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ):
+    def act_on_multiple_datasets( self, trans, cntrller, library_id=None, ldda_ids='', **kwd ):
+        # This method is called from 1 of 3 places:
+        # - this controller's download_dataset_from_folder() method
+        # - he browse_library.mako template
+        # - the library_dataset_search_results.mako template
+        # In the last case above, we will not have a library_id
         class NgxZip( object ):
             def __init__( self, url_base ):
                 self.files = {}
@@ -1534,6 +1532,16 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         action = params.get( 'do_action', None )
+        if action == 'import_to_histories':
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='import_datasets_to_histories',
+                                                              cntrller=cntrller,
+                                                              library_id=library_id,
+                                                              ldda_ids=ldda_ids,
+                                                              use_panels=use_panels,
+                                                              show_deleted=show_deleted,
+                                                              message=message,
+                                                              status=status ) )
         lddas = []
         error = False
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
@@ -1557,27 +1565,177 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     message = "Invalid library dataset id ( %s ) specified." % str( ldda_id )
                     break
                 lddas.append( ldda )
-            if action == 'import_to_history' or action == 'add':
-                if trans.get_history() is None:
-                    # Must be a bot sending a request without having a history.
-                    error = True
-                    message = "You do not have a current history"
-            elif action == 'manage_permissions':
-                if not is_admin:
+            if not is_admin:
+                if action == 'manage_permissions':
                     for ldda in lddas:
                         if not ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and \
                                  trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) ):
                             error = True
                             message = "You are not authorized to manage permissions on library dataset '%s'." % ldda.name
                             break
-            elif action == 'delete':
-                if not is_admin:
+                elif action == 'delete':
                     for ldda in lddas:
                         if not trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
                             error = True
                             message = "You are not authorized to modify library dataset '%s'." % ldda.name
                             break
-        if error:
+        if not error:
+            if action == 'manage_permissions':
+                trans.response.send_redirect( web.url_for( controller='library_common',
+                                                           action='ldda_permissions',
+                                                           cntrller=cntrller,
+                                                           use_panels=use_panels,
+                                                           library_id=library_id,
+                                                           folder_id=trans.security.encode_id( lddas[0].library_dataset.folder.id ),
+                                                           id=",".join( ldda_ids ),
+                                                           show_deleted=show_deleted,
+                                                           message=util.sanitize_text( message ),
+                                                           status=status ) )
+            elif action == 'delete':
+                for ldda in lddas:
+                    # Do not delete the association, just delete the library_dataset.  The
+                    # cleanup_datasets.py script handles everything else.
+                    ld = ldda.library_dataset
+                    ld.deleted = True
+                    trans.sa_session.add( ld )
+                trans.sa_session.flush()
+                message = "The selected datasets have been deleted."
+            elif action in ['zip','tgz','tbz','ngxzip']:
+                error = False
+                killme = string.punctuation + string.whitespace
+                trantab = string.maketrans(killme,'_'*len(killme))
+                try:
+                    outext = 'zip'
+                    if action == 'zip':
+                        # Can't use mkstemp - the file must not exist first
+                        tmpd = tempfile.mkdtemp()
+                        tmpf = os.path.join( tmpd, 'library_download.' + action )
+                        if ziptype == '64' and trans.app.config.upstream_gzip:
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
+                        elif ziptype == '64':
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+                        elif trans.app.config.upstream_gzip:
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
+                        else:
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                        archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
+                    elif action == 'tgz':
+                        if trans.app.config.upstream_gzip:
+                            archive = util.streamball.StreamBall( 'w|' )
+                            outext = 'tar'
+                        else:
+                            archive = util.streamball.StreamBall( 'w|gz' )
+                            outext = 'tgz'
+                    elif action == 'tbz':
+                        archive = util.streamball.StreamBall( 'w|bz2' )
+                        outext = 'tbz2'
+                    elif action == 'ngxzip':
+                        archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
+                except ( OSError, zipfile.BadZipfile ):
+                    error = True
+                    log.exception( "Unable to create archive for download" )
+                    message = "Unable to create archive for download, please report this error"
+                    status = 'error'
+                except:
+                     error = True
+                     log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0] )
+                     message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
+                     status = 'error'
+                if not error:
+                    composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
+                    seen = []
+                    for ldda in lddas:
+                        if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
+                            continue
+                        ext = ldda.extension
+                        is_composite = ext in composite_extensions
+                        path = ""
+                        parent_folder = ldda.library_dataset.folder
+                        while parent_folder is not None:
+                            # Exclude the now-hidden "root folder"
+                            if parent_folder.parent is None:
+                                path = os.path.join( parent_folder.library_root[0].name, path )
+                                break
+                            path = os.path.join( parent_folder.name, path )
+                            parent_folder = parent_folder.parent
+                        path += ldda.name
+                        while path in seen:
+                            path += '_'
+                        seen.append( path )
+                        zpath = os.path.split(path)[-1] # comes as base_name/fname
+                        outfname,zpathext = os.path.splitext(zpath)
+                        if is_composite:
+                            # need to add all the components from the extra_files_path to the zip
+                            if zpathext == '':
+                                zpath = '%s.html' % zpath # fake the real nature of the html file 
+                            try:
+                                archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
+                            except IOError:
+                                error = True
+                                log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
+                                message = "Unable to create archive for download, please report this error"
+                                status = 'error'
+                                continue                                
+                            flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
+                            for fpath in flist:
+                                efp,fname = os.path.split(fpath)
+                                if fname > '':
+                                    fname = fname.translate(trantab)
+                                try:
+                                    archive.add( fpath,fname )
+                                except IOError:
+                                    error = True
+                                    log.exception( "Unable to add %s to temporary library download archive %s" % (fname,outfname))
+                                    message = "Unable to create archive for download, please report this error"
+                                    status = 'error'
+                                    continue
+                        else: # simple case
+                            try:
+                                archive.add( ldda.dataset.file_name, path )
+                            except IOError:
+                                error = True
+                                log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
+                                message = "Unable to create archive for download, please report this error"
+                                status = 'error'                            
+                    if not error:
+                        if library_id:
+                            lname = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) ).name
+                        else:
+                            # Request must have coe from the library_dataset_search_results page.
+                            lname = 'selected_dataset'
+                        fname = lname.replace( ' ', '_' ) + '_files'
+                        if action == 'zip':
+                            archive.close()
+                            tmpfh = open( tmpf )
+                            # clean up now
+                            try:
+                                os.unlink( tmpf )
+                                os.rmdir( tmpd )
+                            except OSError:
+                                error = True
+                                log.exception( "Unable to remove temporary library download archive and directory" )
+                                message = "Unable to create archive for download, please report this error"
+                                status = 'error'
+                            if not error:
+                                trans.response.set_content_type( "application/x-zip-compressed" )
+                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                                return tmpfh
+                        elif action == 'ngxzip':
+                            trans.response.set_content_type( "application/zip" )
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                            trans.response.headers[ "X-Archive-Files" ] = "zip"
+                            return archive
+                        else:
+                            trans.response.set_content_type( "application/x-tar" )
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                            archive.wsgi_status = trans.response.wsgi_status()
+                            archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                            return archive.stream
+        else:
+            status = 'error'
+            message = 'Invalid action ( %s ) specified.' % action
+        if library_id:
+            # If we have a library_id, browse the associated library
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -1585,181 +1743,129 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                                               id=library_id,
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
-                                                              status='error' ) )
-        if action == 'import_to_history' or action == 'add':
-            history = trans.get_history()
-            total_imported_lddas = 0
-            message = ''
-            status = 'done'
-            for ldda in lddas:
-                if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
-                    message += "Cannot import dataset '%s' since its state is '%s'.  " % ( ldda.name, ldda.dataset.state )
-                    status = 'error'
-                elif ldda.dataset.state in [ 'ok', 'error' ]:
-                    hda = ldda.to_history_dataset_association( target_history=history, add_to_history=True )
-                    total_imported_lddas += 1
-            if total_imported_lddas:
-                trans.sa_session.add( history )
-                trans.sa_session.flush()
-                message += "%i dataset(s) have been imported into your history.  " % total_imported_lddas
-        elif action == 'manage_permissions':
-            trans.response.send_redirect( web.url_for( controller='library_common',
-                                                       action='ldda_permissions',
-                                                       cntrller=cntrller,
-                                                       use_panels=use_panels,
-                                                       library_id=library_id,
-                                                       folder_id=trans.security.encode_id( lddas[0].library_dataset.folder.id ),
-                                                       id=",".join( ldda_ids ),
-                                                       show_deleted=show_deleted,
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )
-        elif action == 'delete':
-            for ldda in lddas:
-                # Do not delete the association, just delete the library_dataset.  The
-                # cleanup_datasets.py script handles everything else.
-                ld = ldda.library_dataset
-                ld.deleted = True
-                trans.sa_session.add( ld )
-            trans.sa_session.flush()
-            message = "The selected datasets have been removed from this data library"
-        elif action in ['zip','tgz','tbz','ngxzip']:
-            error = False
-            killme = string.punctuation + string.whitespace
-            trantab = string.maketrans(killme,'_'*len(killme))
-            try:
-                outext = 'zip'
-                if action == 'zip':
-                    # Can't use mkstemp - the file must not exist first
-                    tmpd = tempfile.mkdtemp()
-                    tmpf = os.path.join( tmpd, 'library_download.' + action )
-                    if ziptype == '64' and trans.app.config.upstream_gzip:
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
-                    elif ziptype == '64':
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                    elif trans.app.config.upstream_gzip:
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
-                    else:
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
-                    archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
-                elif action == 'tgz':
-                    if trans.app.config.upstream_gzip:
-                        archive = util.streamball.StreamBall( 'w|' )
-                        outext = 'tar'
-                    else:
-                        archive = util.streamball.StreamBall( 'w|gz' )
-                        outext = 'tgz'
-                elif action == 'tbz':
-                    archive = util.streamball.StreamBall( 'w|bz2' )
-                    outext = 'tbz2'
-                elif action == 'ngxzip':
-                    archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
-            except (OSError, zipfile.BadZipfile):
-                error = True
-                log.exception( "Unable to create archive for download" )
-                message = "Unable to create archive for download, please report this error"
-                status = 'error'
-            except:
-                 error = True
-                 log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0])
-                 message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
-                 status = 'error'
-            if not error:
-                composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
-                seen = []
-                for ldda in lddas:
-                    if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
-                        continue
-                    ext = ldda.extension
-                    is_composite = ext in composite_extensions
-                    path = ""
-                    parent_folder = ldda.library_dataset.folder
-                    while parent_folder is not None:
-                        # Exclude the now-hidden "root folder"
-                        if parent_folder.parent is None:
-                            path = os.path.join( parent_folder.library_root[0].name, path )
-                            break
-                        path = os.path.join( parent_folder.name, path )
-                        parent_folder = parent_folder.parent
-                    path += ldda.name
-                    while path in seen:
-                        path += '_'
-                    seen.append( path )
-                    zpath = os.path.split(path)[-1] # comes as base_name/fname
-                    outfname,zpathext = os.path.splitext(zpath)
-                    if is_composite:
-                        # need to add all the components from the extra_files_path to the zip
-                        if zpathext == '':
-                            zpath = '%s.html' % zpath # fake the real nature of the html file 
-                        try:
-                            archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
-                        except IOError:
-                            error = True
-                            log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
-                            message = "Unable to create archive for download, please report this error"
-                            status = 'error'
-                            continue                                
-                        flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
-                        for fpath in flist:
-                            efp,fname = os.path.split(fpath)
-                            if fname > '':
-                                fname = fname.translate(trantab)
-                            try:
-                                archive.add( fpath,fname )
-                            except IOError:
-                                error = True
-                                log.exception( "Unable to add %s to temporary library download archive %s" % (fname,outfname))
-                                message = "Unable to create archive for download, please report this error"
-                                status = 'error'
-                                continue
-                    else: # simple case
-                        try:
-                            archive.add( ldda.dataset.file_name, path )
-                        except IOError:
-                            error = True
-                            log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
-                            message = "Unable to create archive for download, please report this error"
-                            status = 'error'                            
-                if not error:
-                    lname = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) ).name
-                    fname = lname.replace( ' ', '_' ) + '_files'
-                    if action == 'zip':
-                        archive.close()
-                        tmpfh = open( tmpf )
-                        # clean up now
-                        try:
-                            os.unlink( tmpf )
-                            os.rmdir( tmpd )
-                        except OSError:
-                            error = True
-                            log.exception( "Unable to remove temporary library download archive and directory" )
-                            message = "Unable to create archive for download, please report this error"
-                            status = 'error'
-                        if not error:
-                            trans.response.set_content_type( "application/x-zip-compressed" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
-                            return tmpfh
-                    elif action == 'ngxzip':
-                        trans.response.set_content_type( "application/zip" )
-                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
-                        trans.response.headers[ "X-Archive-Files" ] = "zip"
-                        return archive
-                    else:
-                        trans.response.set_content_type( "application/x-tar" )
-                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
-                        archive.wsgi_status = trans.response.wsgi_status()
-                        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                        return archive.stream
+                                                              status=status ) )
         else:
-            status = 'error'
-            message = 'Invalid action ( %s ) specified.' % action
-        return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                          action='browse_library',
-                                                          cntrller=cntrller,
-                                                          use_panels=use_panels,
-                                                          id=library_id,
-                                                          show_deleted=show_deleted,
-                                                          message=util.sanitize_text( message ),
-                                                          status=status ) )
+            # We must have arrived here from the library_dataset_search_results page, so reddirect there.
+            search_term = params.get( 'search_term', '' )
+            comptypes = get_comptypes( trans )
+            return trans.fill_template( '/library/common/library_dataset_search_results.mako',
+                                        cntrller=cntrller,
+                                        search_term=search_term,
+                                        comptypes=comptypes,
+                                        lddas=lddas,
+                                        show_deleted=show_deleted,
+                                        use_panels=use_panels,
+                                        message=message,
+                                        status=status )
+            
+    @web.expose
+    def import_datasets_to_histories( self, trans, cntrller, library_id='', folder_id='', ldda_ids='', target_history_ids='', new_history_name='', **kwd ):
+        # This method is called from one of the following places:
+        # - a menu option for a library dataset ( ldda_ids will be a singel dataset id )
+        # - a menu option for a library folder ( folder_id will have a value )
+        # - a menu option for a library dataset search result set ( ldda_ids will be a comma separated string of dataset ids )
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        user = trans.get_user()
+        current_history = trans.get_history()
+        if library_id:
+            library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( library_id ) )
+        else:
+            library = None
+        if folder_id:
+            folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+        else:
+            folder = None
+        ldda_ids = util.listify( ldda_ids )
+        if ldda_ids:
+            # Check boxes cause 2 copies of each id to be included in the request
+            ldda_ids = map( trans.security.decode_id, ldda_ids )
+            unique_ldda_ids = []
+            for ldda_id in ldda_ids:
+                if ldda_id not in unique_ldda_ids:
+                    unique_ldda_ids.append( ldda_id )
+            ldda_ids = unique_ldda_ids
+        target_history_ids = util.listify( target_history_ids )
+        if target_history_ids:
+            target_history_ids = [ trans.security.decode_id( target_history_id ) for target_history_id in target_history_ids if target_history_id ]
+        if params.get( 'import_datasets_to_histories_button', False ):
+            invalid_datasets = 0
+            if not ldda_ids or not ( target_history_ids or new_history_name ):
+                message = "You must provide one or more source library datasets and one or more target histories."
+                status = 'error'
+            else:
+                if new_history_name:
+                    new_history = trans.app.model.History()
+                    new_history.name = new_history_name
+                    new_history.user = user
+                    trans.sa_session.add( new_history )
+                    trans.sa_session.flush()
+                    target_history_ids.append( new_history.id )
+                if user:
+                    target_histories = [ hist for hist in map( trans.sa_session.query( trans.app.model.History ).get, target_history_ids ) if ( hist is not None and hist.user == user )]
+                else:
+                    target_histories = [ current_history ]
+                if len( target_histories ) != len( target_history_ids ):
+                    message += "You do not have permission to add datasets to %i requested histories.  " % ( len( target_history_ids ) - len( target_histories ) )
+                    status = 'error'
+                for ldda in map( trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get, ldda_ids ):
+                    if ldda is None:
+                        message += "You tried to import a library dataset that does not exist.  "
+                        status = 'error'
+                        invalid_datasets += 1
+                    elif ldda.dataset.state not in [ trans.model.Dataset.states.OK, trans.model.Dataset.states.ERROR ]:
+                        message += "Cannot import dataset '%s' since its state is '%s'.  " % ( ldda.name, ldda.dataset.state )
+                        status = 'error'
+                        invalid_datasets += 1
+                    elif not ldda.has_data():
+                        message += "Cannot import empty dataset '%s'.  " % ldda.name
+                        status = 'error'
+                        invalid_datasets += 1
+                    else:
+                        for target_history in target_histories:
+                            hda = ldda.to_history_dataset_association( target_history=target_history, add_to_history=True )
+                trans.sa_session.flush()
+                hist_names_str = ", ".join( [ target_history.name for target_history in target_histories ] )
+                num_source = len( ldda_ids ) - invalid_datasets
+                num_target = len( target_histories )
+                message = "%i %s have been imported into %i %s: %s" % ( num_source,
+                                                                        inflector.cond_plural( num_source, "dataset" ),
+                                                                        num_target,
+                                                                        inflector.cond_plural( num_target, "history" ),
+                                                                        hist_names_str )
+                trans.sa_session.refresh( current_history )
+        current_user_roles = trans.get_current_user_roles()
+        source_lddas = []
+        if folder:
+            for library_dataset in folder.datasets:
+                ldda = library_dataset.library_dataset_dataset_association
+                if not ldda.deleted and trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ):
+                    source_lddas.append( ldda )
+        elif ldda_ids:
+            for ldda_id in ldda_ids:
+                # Secuirty access permiision chcck is not needed here since the current user had access
+                # to the lddas in order for the menu optin  to be available.
+                ldda = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
+                source_lddas.append( ldda )
+        target_histories = [ current_history ]
+        if user:
+           target_histories = user.active_histories
+        return trans.fill_template( "/library/common/import_datasets_to_histories.mako",
+                                    cntrller=cntrller,
+                                    library=library,
+                                    current_history=trans.get_history(),
+                                    ldda_ids=ldda_ids,
+                                    target_history_ids=target_history_ids,
+                                    source_lddas=source_lddas,
+                                    target_histories=target_histories,
+                                    new_history_name=new_history_name,
+                                    show_deleted=show_deleted,
+                                    use_panels=use_panels,
+                                    message=message,
+                                    status=status )
     @web.expose
     def manage_template_inheritance( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
         params = util.Params( kwd )
@@ -2064,6 +2170,31 @@ def get_containing_library_from_library_dataset( trans, library_dataset ):
         if library.root_folder == folder:
             return library
     return None
+def get_comptypes( trans ):
+    comptypes_t = comptypes
+    if trans.app.config.nginx_x_archive_files_base:
+        comptypes_t = ['ngxzip']
+    for comptype in trans.app.config.disable_library_comptypes:
+        # TODO: do this once, not every time (we're gonna raise an
+        # exception every time after the first time)
+        try:
+            comptypes_t.remove( comptype )
+        except:
+            pass
+    return comptypes_t
+def get_sorted_accessible_library_items( trans, cntrller, items, sort_attr ):
+    is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+    if is_admin:
+        accessible_items = items
+    else:
+        # Enforce access permission settings
+        current_user_roles = trans.get_current_user_roles()
+        accessible_items = []
+        for item in items:
+            if trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ):
+                accessible_items.append( item )
+    # Sort by name
+    return sort_by_attr( [ item for item in accessible_items ], sort_attr )
 def sort_by_attr( seq, attr ):
     """
     Sort the sequence of objects by object's attribute
@@ -2079,25 +2210,12 @@ def sort_by_attr( seq, attr ):
     intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
     intermed.sort()
     return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
-def get_sorted_accessible_library_items( trans, cntrller, items, sort_attr ):
-    is_admin = trans.user_is_admin() and cntrller == 'library_admin'
-    if is_admin:
-        accessible_items = items
-    else:
-        # Enforce access permission settings
-        current_user_roles = trans.get_current_user_roles()
-        accessible_items = []
-        for item in items:
-            if trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ):
-                accessible_items.append( item )
-    # Sort by name
-    return sort_by_attr( [ item for item in accessible_items ], sort_attr )
 def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     """Return display of results from a full-text lucene search of data libraries."""
     params = util.Params( kwd )
     message = util.restore_text( params.get( 'message', ''  ) )
     status = params.get( 'status', 'done' )
-    full_url = "%s?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
+    full_url = "%s/find?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
     response = urllib2.urlopen( full_url )
     ldda_ids = util.json.from_json_string( response.read() )[ "ids" ]
     response.close()
@@ -2115,17 +2233,20 @@ def whoosh_search( trans, cntrller, search_term, **kwd ):
         if index_exists:
             index = whoosh.index.open_dir( whoosh_index_dir )
             # Set field boosts for searcher to place equal weight on all search fields.
-            searcher = index.searcher( weighting=BM25F( field_B={ 'name_B' : 3.5,
-                                                                  'info_B' : 2.3,
-                                                                  'dbkey_B' : 3.1,
-                                                                  'message_B' : 2.1,
-                                                                  'state_B' : 1.2 } ) )
+            searcher = index.searcher( weighting=BM25F( field_B={ 'name_B' : 3.4,
+                                                                  'info_B' : 3.2,
+                                                                  'dbkey_B' : 3.3,
+                                                                  'message_B' : 3.5 } ) )
             # Perform search
-            parser = MultifieldParser( [ 'name', 'info', 'dbkey', 'message', 'state' ], schema=schema )
+            parser = MultifieldParser( [ 'name', 'info', 'dbkey', 'message' ], schema=schema )
             # Search term with wildcards may be slow...
-            results = searcher.search( parser.parse( '*' + search_term + '*' ), minscore=1.0 )
+            results = searcher.search( parser.parse( '*' + search_term + '*' ), minscore=0.1 )
             ldda_ids = [ result[ 'id' ] for result in results ]
-            lddas = [ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in ldda_ids ]
+            lddas = []
+            for ldda_id in ldda_ids:
+                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                if ldda:
+                    lddas.append( ldda )
             lddas = get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
         else:
             message = "Tell your Galaxy administrator that the directory %s does not contain valid whoosh indexes" % str( whoosh_index_dir )

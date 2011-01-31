@@ -2106,6 +2106,13 @@ class TwillTestCase( unittest.TestCase ):
                         % ( self.url, cntrller, library_id, ldda_ids, do_action ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
+    def import_datasets_to_histories( self, cntrller, library_id, ldda_ids='', new_history_name='Unnamed history', strings_displayed=[] ):
+        # Can't use the ~/library_admin/libraries form as twill barfs on it so we'll simulate the form submission
+        # by going directly to the form action
+        self.visit_url( '%s/library_common/import_datasets_to_histories?cntrller=%s&library_id=%s&ldda_ids=%s&new_history_name=%s&import_datasets_to_histories_button=Import+library+datasets' \
+                        % ( self.url, cntrller, library_id, ldda_ids, new_history_name ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
     def download_archive_of_library_files( self, cntrller, library_id, ldda_ids, format ):
         self.home()
         # Here it would be ideal to have twill set form values and submit the form, but

@@ -1,6 +1,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common/library_item_info.mako" import="render_library_item_info" />
 <%namespace file="/library/common/common.mako" import="render_actions_on_multiple_items" />
+<%namespace file="/library/common/common.mako" import="common_javascripts" />
 
 <%!
     def inherit(context):
@@ -46,6 +47,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js("class", "jquery.jstore")}
+    ${common_javascripts()}
     ${self.grid_javascripts()}
 </%def>
 
@@ -152,15 +154,6 @@
             });
         });
         
-        function checkForm() {
-            if ( $("select#action_on_datasets_select option:selected").text() == "delete" ) {
-                if ( confirm( "Click OK to delete these datasets?" ) ) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        }
         // Looks for changes in dataset state using an async request. Keeps
         // calling itself (via setTimeout) until all datasets are in a terminal
         // state.
@@ -212,7 +205,7 @@
     </script>
 </%def>
 
-<%def name="render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False, render_checkboxes=True )">
+<%def name="render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False )">
     <%
         ## The received ldda must always be a LibraryDatasetDatasetAssociation object.  The object id passed to methods
         ## from the drop down menu should be the ldda id to prevent id collision ( which could happen when displaying
@@ -248,13 +241,11 @@
             %endif
             id="libraryItem-${ldda.id}">
             <td style="padding-left: ${pad+20}px;">
-                %if render_checkboxes:
-                    <input style="float: left;" type="checkbox" name="ldda_ids" value="${trans.security.encode_id( ldda.id )}"
-                    %if selected:
-                        checked="checked"
-                    %endif
-                    />
+                <input style="float: left;" type="checkbox" name="ldda_ids" value="${trans.security.encode_id( ldda.id )}"
+                %if selected:
+                    checked="checked"
                 %endif
+                />
                 %if ldda.library_dataset.deleted:
                    <span class="libraryItem-error">
                 %endif
@@ -288,7 +279,7 @@
                             <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), replace_id=trans.security.encode_id( library_dataset.id ), show_deleted=show_deleted )}">Upload a new version of this dataset</a>
                         %endif
                         %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ldda.has_data:
-                            <a class="action-button" href="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), do_action='import_to_history', use_panels=use_panels, show_deleted=show_deleted )}">Import this dataset into your current history</a>
+                            <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Import this dataset into selected histories</a>
                             <a class="action-button" href="${h.url_for( controller='library_common', action='download_dataset_from_folder', cntrller=cntrller, id=trans.security.encode_id( ldda.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels )}">Download this dataset</a>
                         %endif
                         %if can_modify:
@@ -379,6 +370,7 @@
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add sub-folder</a>
                             %endif
                             %if not branch_deleted( folder ):
+                                <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select folder datasets for import into selected histories</a>
                                 %if can_modify:
                                     <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                                 %else:
@@ -515,6 +507,7 @@
                          %endif
                          <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                      %endif
+                 <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select datasets for import into selected histories</a>
                  %elif can_modify and not library.purged:
                      <a class="action-button" href="${h.url_for( controller='library_common', action='undelete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library', use_panels=use_panels )}">Undelete this data library</a>
                  %elif library.purged:
@@ -539,7 +532,10 @@
         <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
             <thead>
                 <tr class="libraryTitle">
-                    <th>Name</th>        
+                    <th>
+                        <input type="checkbox" id="checkAll" name=select_all_datasets_checkbox value="true" onclick='checkAllFields(1);'/><input type="hidden" name=select_all_datasets_checkbox value="true"/>
+                        Name
+                    </th>        
                     <th>Message</th>
                     <th>Uploaded By</th>
                     <th>Date</th>

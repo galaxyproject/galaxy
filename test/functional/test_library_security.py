@@ -296,11 +296,11 @@ class TestLibrarySecurity( TwillTestCase ):
                              strings_displayed=[ '2.bed',
                                                  'This is the latest version of this library dataset',
                                                  'Edit attributes of 2.bed' ] )
-        self.act_on_multiple_datasets( 'library',
-                                       self.security.encode_id( library1.id ),
-                                       'import_to_history',
-                                       ldda_ids=self.security.encode_id( ldda2.id ),
-                                       strings_displayed=[ '1 dataset(s) have been imported into your history' ] )
+        self.import_datasets_to_histories( cntrller='library',
+                                           library_id=self.security.encode_id( library1.id ),
+                                           ldda_ids=self.security.encode_id( ldda2.id ),
+                                           new_history_name='goodbye',
+                                           strings_displayed=[ '1 dataset have been imported into 1 history' ] )
         self.logout()
         # regular_user2 should not be able to see ldda2
         self.login( email=regular_user2.email )
@@ -382,10 +382,10 @@ class TestLibrarySecurity( TwillTestCase ):
         def check_edit_page( lddas, strings_displayed=[], strings_not_displayed=[] ):
             for ldda in lddas:
                 # Import each library dataset into our history
-                self.act_on_multiple_datasets( 'library',
-                                               self.security.encode_id( library1.id ),
-                                               'import_to_history',
-                                               ldda_ids=self.security.encode_id( ldda.id ) )
+                self.import_datasets_to_histories( cntrller='library',
+                                                   library_id=self.security.encode_id( library1.id ),
+                                                   ldda_ids=self.security.encode_id( ldda.id ),
+                                                   new_history_name='hello' )
                 # Determine the new HistoryDatasetAssociation id created when the library dataset was imported into our history
                 last_hda_created = get_latest_hda()            
                 self.edit_hda_attribute_info( str( last_hda_created.id ),
@@ -393,8 +393,8 @@ class TestLibrarySecurity( TwillTestCase ):
         # admin_user is associated with role1, so should have all permissions on imported datasets
         check_edit_page( latest_3_lddas,
                          strings_displayed=[ 'Manage dataset permissions on',
-                                           'can manage the roles associated with permissions on this dataset',
-                                           'can import this dataset into their history for analysis' ] )
+                                             'can manage the roles associated with permissions on this dataset',
+                                             'can import this dataset into their history for analysis' ] )
         self.logout()
         # regular_user1 is associated with role1, so should have all permissions on imported datasets
         self.login( email=regular_user1.email )

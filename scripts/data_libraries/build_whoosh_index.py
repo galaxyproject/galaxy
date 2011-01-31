@@ -24,7 +24,7 @@ try:
     from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
     from whoosh.index import Index
     whoosh_search_enabled = True
-    schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT, state=TEXT )
+    schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
     import galaxy.model.mapping
     from galaxy import config, model
     import pkg_resources
@@ -43,13 +43,12 @@ def build_index( sa_session, whoosh_index_dir ):
         else:
             return a_basestr
     lddas_indexed = 0
-    for id, name, info, dbkey, state, message in get_lddas( sa_session ):
+    for id, name, info, dbkey, message in get_lddas( sa_session ):
         writer.add_document( id=id,
                              name=to_unicode( name ),
                              info=to_unicode( info ),
                              dbkey=to_unicode( dbkey ),
-                             message=to_unicode( message ),
-                             state=to_unicode( state ) )
+                             message=to_unicode( message ) )
         lddas_indexed += 1
     writer.commit()
     print "Number of active library datasets indexed: ", lddas_indexed
@@ -64,9 +63,8 @@ def get_lddas( sa_session ):
         else:
             info = ''
         dbkey = ldda.metadata.dbkey
-        state = ldda.state
         message = ldda.message
-        yield id, name, info, dbkey, state, message
+        yield id, name, info, dbkey, message
 
 def get_sa_session_and_needed_config_settings( ini_file ):
     conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )

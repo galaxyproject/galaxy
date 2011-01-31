@@ -30,7 +30,7 @@ def main( ini_file ):
     sa_session, gconfig = get_sa_session( ini_file )
     max_size = float( gconfig.get( "fulltext_max_size", 100 ) ) * 1048576
     ignore_exts = gconfig.get( "fulltext_noindex_filetypes", "" ).split( "," )
-    search_url = gconfig.get( "fulltext_index_url", None )
+    search_url = gconfig.get( "fulltext_url", None )
     if not search_url:
         raise ValueError( "Need to specify search functionality in universe_wsgi.ini" )
     dataset_file = create_dataset_file( get_lddas( sa_session, max_size, ignore_exts ) )
@@ -41,7 +41,7 @@ def main( ini_file ):
             os.remove( dataset_file )
 
 def build_index( search_url, dataset_file ):
-    url = "%s?%s" % ( search_url, urllib.urlencode( { "docfile" : dataset_file } ) )
+    url = "%s/index?%s" % ( search_url, urllib.urlencode( { "docfile" : dataset_file } ) )
     request = urllib2.Request( url )
     request.get_method = lambda: "PUT"
     response = urllib2.urlopen( request )
@@ -57,21 +57,35 @@ def create_dataset_file( dataset_iter ):
 
 def get_lddas( sa_session, max_size, ignore_exts ):
     for ldda in sa_session.query( model.LibraryDatasetDatasetAssociation ).filter_by( deleted=False ):
-        id = ldda.id
-        name = ldda.name
-        info = ldda.library_dataset.get_info()
-        if info and not info.startswith( 'upload' ):
-            info = info.replace( 'no info', '' )
-        else:
-            info = ''
-        dbkey = ldda.metadata.dbkey
-        state = ldda.state
-        message = ldda.message
         if ( float( ldda.dataset.get_size() ) > max_size or ldda.extension in ignore_exts ):
             fname = ""
         else:
             fname = ldda.dataset.get_file_name()
-        yield id, name, info, dbkey, state, message, fname
+        yield ldda.id, fname, _get_dataset_metadata(ldda)
+
+def _get_dataset_metadata(ldda):
+    """Retrieve descriptions and information associated with a dataset.
+    """
+    lds = ldda.library_dataset
+    folder_info = _get_folder_info(lds.folder)
+    lds_info = lds.get_info()
+    if lds_info and not lds_info.startswith("upload"):
+        lds_info = lds_info.replace("no info", "")
+    else:
+        lds_info = ""
+    return "%s %s %s %s %s" % (lds.name or "", lds_info, ldda.metadata.dbkey,
+                               ldda.message, folder_info)
+
+def _get_folder_info(folder):
+    """Get names and descriptions for all parent folders except top level.
+    """
+    folder_info = ""
+    if folder and folder.parent:
+        folder_info = _get_folder_info(folder.parent)
+        folder_info += " %s %s" % (
+            folder.name.replace("Unnamed folder", ""),
+                folder.description or "")
+    return folder_info
 
 def get_sa_session( ini_file ):
     conf_parser = ConfigParser.ConfigParser( { 'here':os.getcwd() } )

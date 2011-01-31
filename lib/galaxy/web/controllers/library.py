@@ -6,7 +6,7 @@ from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import model, util
 from galaxy.util.odict import odict
-from library_common import lucene_search, whoosh_search
+from library_common import get_comptypes, lucene_search, whoosh_search
 
 log = logging.getLogger( __name__ )
 
@@ -25,17 +25,17 @@ class LibraryListGrid( grids.Grid ):
     template='/library/grid.mako'
     default_sort_key = "name"
     columns = [
-        NameColumn( "Name",
+        NameColumn( "Data library name",
                     key="name",
                     link=( lambda library: dict( operation="browse", id=library.id ) ),
                     attach_popup=False,
                     filterable="advanced" ),
-        DescriptionColumn( "Description",
+        DescriptionColumn( "Data library description",
                            key="description",
                            attach_popup=False,
                            filterable="advanced" ),
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
+    columns.append( grids.MulticolFilterColumn( "search library dataset name, info, message, dbkey", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
                                                 key="free-text-search",
                                                 visible=False,
@@ -74,8 +74,9 @@ class Library( BaseController ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        default_action = params.get( 'default_action', None )
         return trans.fill_template( "/library/index.mako",
-                                    default_action=params.get( 'default_action', None ),
+                                    default_action=default_action,
                                     message=message,
                                     status=status )
     @web.expose
@@ -91,8 +92,9 @@ class Library( BaseController ):
             search_term = kwd[ "f-free-text-search" ]
             if trans.app.config.enable_lucene_library_search:
                 indexed_search_enabled = True
-                search_url = trans.app.config.config_dict.get( "fulltext_find_url", "" )
+                search_url = trans.app.config.config_dict.get( "fulltext_url", "" )
                 if search_url:
+                    indexed_search_enabled = True
                     status, message, lddas = lucene_search( trans, 'library', search_term, search_url, **kwd )
             elif trans.app.config.enable_whoosh_library_search:
                 indexed_search_enabled = True
@@ -100,11 +102,15 @@ class Library( BaseController ):
             else:
                 indexed_search_enabled = False
             if indexed_search_enabled:
+                comptypes = get_comptypes( trans )
+                show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
                 use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
                 return trans.fill_template( '/library/common/library_dataset_search_results.mako',
                                             cntrller='library',
                                             search_term=search_term,
+                                            comptypes=comptypes,
                                             lddas=lddas,
+                                            show_deleted=show_deleted,
                                             use_panels=use_panels,
                                             message=message,
                                             status=status )

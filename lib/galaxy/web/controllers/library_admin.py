@@ -3,7 +3,7 @@ from galaxy import model, util
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
-from library_common import lucene_search, whoosh_search
+from library_common import get_comptypes, lucene_search, whoosh_search
 # Older py compatibility
 try:
     set()
@@ -35,12 +35,12 @@ class LibraryListGrid( grids.Grid ):
     template='/admin/library/grid.mako'
     default_sort_key = "name"
     columns = [
-        NameColumn( "Name",
+        NameColumn( "Data library name",
                     key="name",
                     link=( lambda library: dict( operation="browse", id=library.id ) ),
                     attach_popup=False,
                     filterable="advanced" ),
-        DescriptionColumn( "Description",
+        DescriptionColumn( "Data library description",
                            key="description",
                            attach_popup=False,
                            filterable="advanced" ),
@@ -50,7 +50,7 @@ class LibraryListGrid( grids.Grid ):
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
+    columns.append( grids.MulticolFilterColumn( "search library dataset name, info, message, dbkey",
                                                 cols_to_filter=[ columns[0], columns[1] ], 
                                                 key="free-text-search",
                                                 visible=False,
@@ -133,11 +133,15 @@ class LibraryAdmin( BaseController ):
             else:
                 indexed_search_enabled = False
             if indexed_search_enabled:
+                comptypes = get_comptypes( trans )
+                show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
                 use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
                 return trans.fill_template( '/library/common/library_dataset_search_results.mako',
                                             cntrller='library_admin',
                                             search_term=search_term,
+                                            comptypes=comptypes,
                                             lddas=lddas,
+                                            show_deleted=show_deleted,
                                             use_panels=use_panels,
                                             message=message,
                                             status=status )
