@@ -2283,11 +2283,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         ctx.fillStyle = block_color;
                         ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
                     } else {
-                        // Showing labels, blocks, details
-                        var feature_strand = feature[4],
-                            feature_ts = feature[5],
-                            feature_te = feature[6],
-                            feature_blocks = feature[7];
+                        // Showing labels, blocks, details.
+                        var feature_strand = feature[5],
+                            feature_ts = feature[6],
+                            feature_te = feature[7],
+                            feature_blocks = feature[8];
                         
                         if (feature_ts && feature_te) {
                             thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );

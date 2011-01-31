@@ -452,7 +452,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
     
-    col_name_data_attr_mapping = { 4 : { 'index': 8 , 'name' : 'Score' } }
+    col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
     
     def write_data_to_file( self, chrom, start, end, filename ):
         # TODO: write function.
@@ -475,8 +475,11 @@ class IntervalIndexDataProvider( TracksDataProvider ):
 
         #
         # Build data to return. Payload format is:
-        # [ <guid/offset>, <start>, <end>, <name>, <strand>, <blocks>]
+        # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
+        #   <thick_end>, <blocks> ]
         # 
+        # First three entries are mandatory, others are optional.
+        #
         no_detail = ( "no_detail" in kwargs )
         for start, end, offset in index.find(chrom, start, end):
             if count >= MAX_VALS:
@@ -498,9 +501,18 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                 if not no_detail:
                     feature = source.readline().split()
                     length = len(feature)
+                    
+                    # Simpler way to add stuff, but type casting is not done.
+                    # Name, score, strand, thick start, thick end.
+                    #end = min( len( feature ), 8 )
+                    #payload.extend( feature[ 3:end ] )
+                    
+                    # Name, score, strand, thick start, thick end.
                     if length >= 4:
-                        payload.append(feature[3]) # name
-                    if length >= 6: # strand
+                        payload.append(feature[3])
+                    if length >= 5:
+                        payload.append( float(feature[4]) )
+                    if length >= 6:
                         payload.append(feature[5])
 
                     # Thick start, end.
@@ -508,14 +520,12 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                         payload.append(int(feature[6]))
                         payload.append(int(feature[7]))
 
+                    # Blocks.
                     if length >= 12:
                         block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
                         block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
                         blocks = zip( block_sizes, block_starts )
                         payload.append( [ ( start + block[1], start + block[1] + block[0] ) for block in blocks ] )
-                    
-                    if length >= 5:
-                        payload.append( float(feature[4]) ) # score
 
             results.append( payload )
 
@@ -617,6 +627,7 @@ def package_gff_feature( feature, no_detail=False ):
     payload = [ feature.start, 
                 feature.end, 
                 feature.name(), 
+                feature.score,
                 feature.strand,
                 # No notion of thick start, end in GFF, so make everything
                 # thick.
@@ -637,6 +648,4 @@ def package_gff_feature( feature, no_detail=False ):
     blocks = zip( block_sizes, block_starts )
     payload.append( [ ( feature.start + block[1], feature.start + block[1] + block[0] ) for block in blocks ] )
     
-    # Score.
-    payload.append( feature.score )
     return payload

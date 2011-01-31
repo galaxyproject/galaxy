@@ -365,7 +365,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         dataset = self.get_dataset( trans, dataset_id )
         msg = self._check_dataset_state( trans, dataset )
         if not msg:
-            msg = "ok"
+            msg = messages.DATA
 
         return msg
         
