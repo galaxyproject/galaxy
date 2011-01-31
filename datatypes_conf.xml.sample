@@ -289,6 +289,7 @@
         <sniffer type="galaxy.datatypes.sequence:Axt"/>
         <sniffer type="galaxy.datatypes.interval:Bed"/>
         <sniffer type="galaxy.datatypes.interval:CustomTrack"/>
+        <sniffer type="galaxy.datatypes.interval:Gtf"/>
         <sniffer type="galaxy.datatypes.interval:Gff"/>
         <sniffer type="galaxy.datatypes.interval:Gff3"/>
         <sniffer type="galaxy.datatypes.tabular:Pileup"/>
