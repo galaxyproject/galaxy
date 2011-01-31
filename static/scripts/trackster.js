@@ -1554,7 +1554,9 @@ var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.mode = "Histogram";
     Track.call( this, name, view, view.viewport_container );
     TiledTrack.call( this );
-    
+   
+    this.min_height_px = 12; 
+    this.max_height_px = 400; 
     this.height_px = 80;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
@@ -1562,6 +1564,38 @@ var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.prefs = { 'color': 'black', 'min_value': undefined, 'max_value': undefined, 'mode': this.mode };
     this.restore_prefs(prefs);
+
+    // Add control for resizing
+    // Trickery here to deal with the hovering drag handle, can probably be
+    // pulled out and reused.
+    (function( track ){
+        var in_handle = false;
+        var in_drag = false;
+        var drag_control = $( "<div class='track-resize'>" )
+        // Control shows on hover over track, stays while dragging
+        $(track.container_div).hover( function() { 
+            in_handle = true;
+            drag_control.show(); 
+        }, function() { 
+            in_handle = false;
+            if ( ! in_drag ) { drag_control.hide(); }
+        });
+        // Update height and force redraw of current view while dragging,
+        // clear cache to force redraw of other tiles.
+        drag_control.hide().bind( "dragstart", function( e, d ) {
+            in_drag = true;
+            d.original_height = $(track.content_div).height();
+        }).bind( "drag", function( e, d ) {
+            var new_height = Math.min( Math.max( d.original_height + d.deltaY, track.min_height_px ), track.max_height_px );
+            $(track.content_div).css( 'height', new_height );
+            track.height_px = new_height;
+            track.draw( true );
+        }).bind( "dragend", function( e, d ) {
+            track.tile_cache.clear();    
+            in_drag = false;
+            if ( ! in_handle ) { drag_control.hide(); }
+        }).appendTo( track.container_div );
+    })(this);
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     predraw_init: function() {
@@ -1592,7 +1626,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             max_label.css({ position: "absolute", top: "24px", left: "10px" });
             max_label.prependTo(track.container_div);
     
-            min_label.css({ position: "absolute", top: track.height_px + 12 + "px", left: "10px" });
+            min_label.css({ position: "absolute", bottom: "2px", left: "10px" });
             min_label.prependTo(track.container_div);
         });
     },

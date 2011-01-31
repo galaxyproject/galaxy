@@ -30,6 +30,7 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
     }
     .nav-container {
         width: 100%;
+        ## Overriding styles from trackster.css to push nav up into title bar
         height: 0;
         text-align: center;
     }
@@ -86,6 +87,18 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
     }
     .param-value {
         cursor: pointer;
+    }
+
+    .track-resize {
+        
+        background: white url(${h.url_for('/static/images/visualization/draggable_vertical.png')}) no-repeat top center;
+        position: absolute;
+        right: 3px;
+        bottom: -4px;
+        width: 14px;
+        height: 7px;
+        border: solid #999 1px;
+        z-index: 100;
     }
 </style>
 </%def>
