@@ -1,4 +1,4 @@
-<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.7">
+<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.8">
     <description>Search nucleotide database with nucleotide query sequence(s)</description>
     <command>
 ## The command is a Cheetah template which allows some Python based syntax.
@@ -6,7 +6,7 @@
 blastn
 -query "$query"
 #if $db_opts.db_opts_selector == "db":
-  -db "$db_opts.database"
+  -db "${db_opts.database.fields.path}"
 #else:
   -subject "$db_opts.subject"
 #end if
@@ -40,13 +40,10 @@ $adv_opts.parse_deflines
             </param>
             <when value="db">
                 <param name="database" type="select" label="Nucleotide BLAST database">
-                    <!-- The BLAST loc file has three columns:
-                         column 0 is an identifier (not used here, see legacy megablast wrapper),
-                         column 1 is the caption (show this to the user),
-                         column 2 is the database path (given to BLAST+) -->
                     <options from_file="blastdb.loc">
+                      <column name="value" index="0"/>
                       <column name="name" index="1"/>
-                      <column name="value" index="2"/>
+                      <column name="path" index="2"/>
                     </options>
                 </param>
                 <param name="subject" type="hidden" value="" /> 
