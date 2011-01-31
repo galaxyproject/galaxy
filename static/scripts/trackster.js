@@ -1662,6 +1662,17 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             total_frequency = this.total_frequency,
             height_px = this.height_px,
             mode = this.mode;
+
+        // Pixel position of 0 on the y axis
+        var y_zero = Math.round( height_px + min_value / vertical_range * height_px );
+
+        // Line at 0.0
+        ctx.beginPath();
+        ctx.moveTo( 0, y_zero );
+        ctx.lineTo( tile_length * w_scale, y_zero );
+        // ctx.lineWidth = 0.5;
+        ctx.fillStyle = "#aaa";
+        ctx.stroke();
             
         ctx.beginPath();
         ctx.fillStyle = this.prefs.color;
@@ -1688,8 +1699,9 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             }
             
             if (mode === "Histogram") {
-                y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
-                ctx.fillRect(x_scaled, y, delta_x_px, height_px - y);
+                // y becomes the bar height in pixels, which is the negated for canvas coords
+                y = Math.round( y / vertical_range * height_px );
+                ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
             } else if (mode === "Intensity" ) {
                 y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
                 ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
@@ -1713,7 +1725,8 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         }
         if (mode === "Filled") {
             if (in_path) {
-                ctx.lineTo(x_scaled, height_px);
+                ctx.lineTo( x_scaled, y_zero );
+                ctx.lineTo( 0, y_zero );
             }
             ctx.fill();
         } else {
