@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<tool name="YeastMine" id="yeastmine" tool_type="data_source">
+    <description>server</description>
+    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <inputs action="http://yeastmine-test.yeastgenome.org/yeastmine-dev/begin.do" check_values="false" method="get" target="_top"> 
+        <display>go to yeastMine server $GALAXY_URL</display>
+    </inputs>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>
