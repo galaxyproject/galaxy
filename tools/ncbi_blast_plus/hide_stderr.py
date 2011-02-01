@@ -20,16 +20,14 @@ Once issue 325 is fixed, this script will not be needed.
 import sys
 import subprocess
 
-#Sadly passing the list directly to subprocess didn't seem to work.
-words = []
-for w in sys.argv[1:]:
-    if " " in w:
-        words.append('"%s"' % w)
-    else:
-        words.append(w)
-cmd = " ".join(words)
-child = subprocess.Popen(cmd, shell=True,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#Avoid using shell=True when we call subprocess to ensure if the Python
+#script is killed, so too is the BLAST process.
+try:
+    child = subprocess.Popen(sys.argv[1:],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+except Exception, err:
+    sys.stderr.write("Error invoking command:\n%s\n\n%s\n" % (cmd, err))
+    sys.exit(1)
 #Use .communicate as can get deadlocks with .wait(),
 stdout, stderr = child.communicate()
 return_code = child.returncode
