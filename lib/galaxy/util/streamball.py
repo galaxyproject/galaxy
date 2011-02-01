@@ -1,7 +1,7 @@
 """
 A simple wrapper for writing tarballs as a stream.
 """
-
+import os
 import logging, tarfile
 
 log = logging.getLogger( __name__ )
@@ -25,4 +25,20 @@ class StreamBall( object ):
         for file, rel in self.members.items():
             tf.add( file, arcname=rel )
         tf.close()
+        return []
+
+class ZipBall(object):
+    def __init__(self, tmpf, tmpd):
+        self._tmpf = tmpf
+        self._tmpd = tmpd
+    def stream(self, environ, start_response):
+        response_write = start_response( self.wsgi_status, self.wsgi_headeritems )
+        tmpfh = open( self._tmpf )
+        response_write(tmpfh.read())
+        tmpfh.close()
+        try:
+            os.unlink( self._tmpf )
+            os.rmdir( self._tmpd )
+        except OSError:
+            log.exception( "Unable to remove temporary library download archive and directory" )
         return []

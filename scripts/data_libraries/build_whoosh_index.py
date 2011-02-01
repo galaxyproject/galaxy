@@ -63,7 +63,10 @@ def get_lddas( sa_session ):
         else:
             info = ''
         dbkey = ldda.metadata.dbkey
-        message = ldda.message
+        if ldda.message:
+            message = ldda.message
+        else:
+            message = ''
         yield id, name, info, dbkey, message
 
 def get_sa_session_and_needed_config_settings( ini_file ):

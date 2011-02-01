@@ -1706,20 +1706,12 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                         fname = lname.replace( ' ', '_' ) + '_files'
                         if action == 'zip':
                             archive.close()
-                            tmpfh = open( tmpf )
-                            # clean up now
-                            try:
-                                os.unlink( tmpf )
-                                os.rmdir( tmpd )
-                            except OSError:
-                                error = True
-                                log.exception( "Unable to remove temporary library download archive and directory" )
-                                message = "Unable to create archive for download, please report this error"
-                                status = 'error'
-                            if not error:
-                                trans.response.set_content_type( "application/x-zip-compressed" )
-                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
-                                return tmpfh
+                            trans.response.set_content_type( "application/x-zip-compressed" )
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
+                            archive = util.streamball.ZipBall(tmpf, tmpd)
+                            archive.wsgi_status = trans.response.wsgi_status()
+                            archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                            return archive.stream
                         elif action == 'ngxzip':
                             trans.response.set_content_type( "application/zip" )
                             trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
@@ -1831,11 +1823,11 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                 hist_names_str = ", ".join( [ target_history.name for target_history in target_histories ] )
                 num_source = len( ldda_ids ) - invalid_datasets
                 num_target = len( target_histories )
-                message = "%i %s have been imported into %i %s: %s" % ( num_source,
-                                                                        inflector.cond_plural( num_source, "dataset" ),
-                                                                        num_target,
-                                                                        inflector.cond_plural( num_target, "history" ),
-                                                                        hist_names_str )
+                message = "%i %s imported into %i %s: %s" % ( num_source,
+                                                              inflector.cond_plural( num_source, "dataset" ),
+                                                              num_target,
+                                                              inflector.cond_plural( num_target, "history" ),
+                                                              hist_names_str )
                 trans.sa_session.refresh( current_history )
         current_user_roles = trans.get_current_user_roles()
         source_lddas = []
@@ -2240,7 +2232,7 @@ def whoosh_search( trans, cntrller, search_term, **kwd ):
             # Perform search
             parser = MultifieldParser( [ 'name', 'info', 'dbkey', 'message' ], schema=schema )
             # Search term with wildcards may be slow...
-            results = searcher.search( parser.parse( '*' + search_term + '*' ), minscore=0.1 )
+            results = searcher.search( parser.parse( '*' + search_term + '*' ), minscore=0.5 )
             ldda_ids = [ result[ 'id' ] for result in results ]
             lddas = []
             for ldda_id in ldda_ids:

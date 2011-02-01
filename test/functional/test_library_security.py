@@ -300,7 +300,7 @@ class TestLibrarySecurity( TwillTestCase ):
                                            library_id=self.security.encode_id( library1.id ),
                                            ldda_ids=self.security.encode_id( ldda2.id ),
                                            new_history_name='goodbye',
-                                           strings_displayed=[ '1 dataset have been imported into 1 history' ] )
+                                           strings_displayed=[ '1 dataset imported into 1 history' ] )
         self.logout()
         # regular_user2 should not be able to see ldda2
         self.login( email=regular_user2.email )

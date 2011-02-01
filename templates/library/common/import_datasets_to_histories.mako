@@ -58,8 +58,14 @@ ${h.js( "jquery", "galaxy.base" )}
                     <select id="single-dest-select" name="target_history_ids">
                         <option value=""></option>
                         %for i, target_history in enumerate( target_histories ):
-                            <% encoded_id = trans.security.encode_id( target_history.id ) %>
-                            <option value="${encoded_id}">${i + 1}: ${h.truncate( target_history.name, 30 )}</option>
+                            <%
+                                encoded_id = trans.security.encode_id( target_history.id )
+                                if target_history == current_history:
+                                    current_history_text = " (current history)"
+                                else:
+                                    current_history_text = ""
+                            %>
+                            <option value="${encoded_id}">${i + 1}: ${h.truncate( target_history.name, 30 )}${current_history_text}</option>
                         %endfor
                     </select>
                     <br/><br/>
@@ -68,12 +74,15 @@ ${h.js( "jquery", "galaxy.base" )}
                 <div id="multiple-destination" style="display: none;">
                     %for i, target_history in enumerate( target_histories ):
                         <%
-                            cur_history_text = ""
                             encoded_id = trans.security.encode_id( target_history.id )
+                            if target_history == current_history:
+                                current_history_text = " (current history)"
+                            else:
+                                current_history_text = ""
                         %>
                         <div class="form-row">
                             <input type="checkbox" name="target_history_ids" id="target_history_${encoded_id}" value="${encoded_id}"/>
-                            <label for="target_history_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${target_history.name}${cur_history_text}</label>
+                            <label for="target_history_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${target_history.name}${current_history_text}</label>
                         </div>
                     %endfor
                 </div>

@@ -50,7 +50,7 @@ class LibraryListGrid( grids.Grid ):
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "search library dataset name, info, message, dbkey",
+    columns.append( grids.MulticolFilterColumn( "search dataset name, info, message, dbkey",
                                                 cols_to_filter=[ columns[0], columns[1] ], 
                                                 key="free-text-search",
                                                 visible=False,

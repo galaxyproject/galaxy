@@ -43,6 +43,36 @@
     </script>
 </%def>
 
+<%def name="render_compression_types_help( comptypes )">
+    <div class="libraryItemBody">
+        <p class="infomark">
+            TIP: You can download individual library datasets by selecting "Download this dataset" from the context menu (triangle) next to each dataset's name.
+        </p>
+    </div>
+    %if len( comptypes ) > 1:
+        <div class="libraryItemBody">
+            <p class="infomark">
+                TIP: Several compression options are available for downloading multiple library datasets simultaneously:
+            </p>
+            <ul style="padding-left: 1em; list-style-type: disc;">
+                %if 'gz' in comptypes:
+                    <li>gzip: Recommended for fast network connections
+                        %if trans.app.config.upstream_gzip:
+                            NOTE: The file you receive will be an uncompressed .tar file - this is because the Galaxy server compresses it and your browser decompresses it on the fly.
+                        %endif
+                    </li>
+                %endif
+                %if 'bz2' in comptypes:
+                    <li>bzip2: Recommended for slower network connections (smaller size but takes longer to compress)</li>
+                %endif
+                %if 'zip' in comptypes:
+                    <li>zip: Not recommended but is provided as an option for those who cannot open the above formats</li>
+                %endif
+            </ul>
+        </div>
+    %endif
+</%def>
+
 <%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, space_to_tab, link_data_only, widgets, roles_select_list, history, show_deleted )">
     <%
         import os, os.path

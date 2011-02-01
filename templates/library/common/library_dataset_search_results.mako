@@ -1,6 +1,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common/browse_library.mako" import="render_dataset" />
 <%namespace file="/library/common/common.mako" import="render_actions_on_multiple_items" />
+<%namespace file="/library/common/common.mako" import="render_compression_types_help" />
 <%namespace file="/library/common/common.mako" import="common_javascripts" />
 
 <%!
@@ -127,35 +128,7 @@
                 ${render_actions_on_multiple_items( actions_to_exclude=[ 'manage_permissions' ] )}
             </table>
         </form>
-        ## Help about compression types
-     
-        <div class="libraryItemBody">
-            <p class="infomark">
-                TIP: You can download individual library files by selecting "Download this dataset" from the context menu (triangle) next to the dataset's name.
-            </p>
-        </div>
-        %if len( comptypes ) > 1:
-            <div class="libraryItemBody">
-                <p class="infomark">
-                    TIP: Multiple compression options are available for downloading library datasets:
-                </p>
-                <ul style="padding-left: 1em; list-style-type: disc;">
-                    %if 'gz' in comptypes:
-                        <li>gzip: Recommended for fast network connections
-                            %if trans.app.config.upstream_gzip:
-                                NOTE: The file you receive will be an uncompressed .tar file - this is because the Galaxy server compresses it and your browser decompresses it on the fly.
-                            %endif
-                        </li>
-                    %endif
-                    %if 'bz2' in comptypes:
-                        <li>bzip2: Recommended for slower network connections (smaller size but takes longer to compress)</li>
-                    %endif
-                    %if 'zip' in comptypes:
-                        <li>zip: Not recommended but is provided as an option for those who cannot open the above formats</li>
-                    %endif
-                </ul>
-            </div>
-        %endif
+        ${render_compression_types_help( comptypes )}
     %elif status != 'error':
         <p>The string "${search_term}" was not found in any of the following information components for any library datasets that you can access.</p>
         ${render_searched_components()}
