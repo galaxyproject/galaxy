@@ -1275,8 +1275,10 @@ class User( BaseController, UsesFormDefinitions ):
                 
                 counter = 0
                 f = open(new_len.file_name, "w")
+                # LEN files have format:
+                #   <chrom_name><tab><chrom_length>
                 for line in len_text.split("\n"):
-                    lst = line.strip().split()
+                    lst = line.strip().split("\t")
                     if not lst or len(lst) < 2:
                         lines_skipped += 1
                         continue

@@ -313,8 +313,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         for line in open( len_file ):
             if line.startswith("#"): 
                 continue
-            # LEN files are just whitespace separated
-            fields = line.split()
+            # LEN files have format:
+            #   <chrom_name><tab><chrom_length>
+            fields = line.split("\t")
             manifest[fields[0]] = int(fields[1])
         return manifest
         
