@@ -129,9 +129,9 @@ class InputDataModule( WorkflowModule ):
     def update_state( self, incoming ):
         self.state['name'] = incoming.get( 'name', 'Input Dataset' )
     
-    def get_runtime_inputs( self ):
+    def get_runtime_inputs( self, filter_set=['data'] ):
         label = self.state.get( "name", "Input Dataset" )
-        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, type="data", format="data" ) ) )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, type="data", format=', '.join(filter_set) ) ) )
     def get_runtime_state( self ):
         state = DefaultToolState()
         state.inputs = dict( input=None )

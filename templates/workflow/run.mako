@@ -315,7 +315,17 @@ if wf_parms:
               % endif
           </div>
           <div class="toolFormBody">
-              ${do_inputs( module.get_runtime_inputs(), step.state.inputs, errors.get( step.id, dict() ), "", step )}
+              <%
+              # Filter possible inputs to data types that are valid for subsequent steps
+              type_filter = []
+              for oc in step.output_connections:
+                  for ic in oc.input_step.module.get_data_inputs():
+                      if 'extensions' in ic and ic['name'] == oc.input_name:
+                          type_filter += ic['extensions']
+              if not type_filter:
+                  type_filter = ['data']
+              %>
+              ${do_inputs( module.get_runtime_inputs(type_filter), step.state.inputs, errors.get( step.id, dict() ), "", step )}
           </div>
       </div>
     %endif
