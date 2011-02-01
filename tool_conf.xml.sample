@@ -197,6 +197,9 @@
     <tool file="evolution/codingSnps.xml" />
     <tool file="evolution/add_scores.xml" />
  </section>
+  <section name="Motif Tools" id="motifs">
+    <tool file="meme/meme.xml"/>
+  </section>
  <section name="Metagenomic analyses" id="tax_manipulation">
     <tool file="taxonomy/gi2taxonomy.xml" />
     <tool file="taxonomy/t2t_report.xml" />

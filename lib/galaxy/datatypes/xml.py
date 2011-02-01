@@ -39,3 +39,18 @@ class BlastXml( data.Text ):
             line = line.rstrip( '\n\r' )
             if line != blastxml_header[ i ]:
                 return False
+
+class MEMEXml( data.Text ):
+    """MEME XML Output data"""
+    file_ext = "memexml"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = 'MEME XML data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+    def sniff( self, filename ):
+        return False
