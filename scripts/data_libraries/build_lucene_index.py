@@ -61,7 +61,7 @@ def get_lddas( sa_session, max_size, ignore_exts ):
             fname = ""
         else:
             fname = ldda.dataset.get_file_name()
-        yield ldda.id, fname, _get_dataset_metadata(ldda)
+        yield ldda.id, fname, _get_dataset_metadata(ldda).replace("\n", " ")
 
 def _get_dataset_metadata(ldda):
     """Retrieve descriptions and information associated with a dataset.

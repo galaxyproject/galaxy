@@ -110,6 +110,7 @@ class Library( BaseController ):
                                             search_term=search_term,
                                             comptypes=comptypes,
                                             lddas=lddas,
+                                            current_user_roles=trans.get_current_user_roles(),
                                             show_deleted=show_deleted,
                                             use_panels=use_panels,
                                             message=message,
