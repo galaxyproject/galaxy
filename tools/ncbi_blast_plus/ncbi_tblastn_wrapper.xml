@@ -1,7 +1,7 @@
 <tool id="ncbi_tblastn_wrapper" name="NCBI BLAST+ tblastn" version="0.0.8">
     <description>Search translated nucleotide database with protein query sequence(s)</description>
-    <command>
-## The command is a Cheetah template which allows some Python based syntax.
+    <command interpreter="python">hide_stderr.py
+# The command is a Cheetah template which allows some Python based syntax.
 ## Lines starting hash hash are comments. Galaxy will turn newlines into spaces
 tblastn
 -query "$query"

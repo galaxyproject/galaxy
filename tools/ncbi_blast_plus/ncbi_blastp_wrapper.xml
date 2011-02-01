@@ -1,6 +1,6 @@
 <tool id="ncbi_blastp_wrapper" name="NCBI BLAST+ blastp" version="0.0.8">
     <description>Search protein database with protein query sequence(s)</description>
-    <command>
+    <command interpreter="python">hide_stderr.py
 ## The command is a Cheetah template which allows some Python based syntax.
 ## Lines starting hash hash are comments. Galaxy will turn newlines into spaces
 blastp

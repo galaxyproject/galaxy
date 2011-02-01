@@ -1,6 +1,6 @@
 <tool id="ncbi_tblastx_wrapper" name="NCBI BLAST+ tblastx" version="0.0.8">
     <description>Search translated nucleotide database with translated nucleotide query sequence(s)</description>
-    <command>
+    <command interpreter="python">hide_stderr.py
 ## The command is a Cheetah template which allows some Python based syntax.
 ## Lines starting hash hash are comments. Galaxy will turn newlines into spaces
 tblastx
