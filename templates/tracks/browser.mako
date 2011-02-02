@@ -224,7 +224,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             %if add_dataset is not None:
                 $.ajax( {
                     url: "${h.url_for( action='add_track_async' )}",
-                    data: { id: "${add_dataset}" },
+                    data: { hda_id: "${add_dataset}" },
                     dataType: "json",
                     success: add_async_success
                 });
