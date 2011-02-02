@@ -1215,14 +1215,14 @@ class Tool:
                 raise Exception( "Unexpected parameter type" )
         return args
             
-    def execute( self, trans, incoming={}, set_output_hid=True, set_output_history=True, history=None ):
+    def execute( self, trans, incoming={}, set_output_hid=True, history=None, **kwargs ):
         """
         Execute the tool using parameter values in `incoming`. This just
         dispatches to the `ToolAction` instance specified by 
         `self.tool_action`. In general this will create a `Job` that 
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
-        return self.tool_action.execute( self, trans, incoming=incoming, set_output_hid=set_output_hid, set_output_history=set_output_history, history=history )
+        return self.tool_action.execute( self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs )
         
     def params_to_strings( self, params, app ):
         return params_to_strings( self.inputs, params, app )
@@ -1233,7 +1233,7 @@ class Tool:
     def check_and_update_param_values( self, values, trans ):
         """
         Check that all parameters have values, and fill in with default
-        values where neccesary. This could be called after loading values
+        values where necessary. This could be called after loading values
         from a database in case new parameters have been added. 
         """
         messages = {}
