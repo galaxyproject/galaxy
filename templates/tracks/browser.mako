@@ -156,7 +156,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 track_config = tracks_config[i];
                 track = new addable_track_types[track_config["track_type"]](
                                 track_config['name'], 
-                                view, 
+                                view,
+                                track_config['hda_ldda'],
                                 track_config['dataset_id'],
                                 track_config['prefs'], 
                                 track_config['filters'],
@@ -211,10 +212,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
             var add_async_success = function(track_data) {
                 var td = track_data,
                     new_track = new addable_track_types[track_data.track_type]( 
-                                        track_data.name, view, track_data.dataset_id, track_data.prefs, 
-                                        track_data.filters, track_data.tool );
+                                        track_data.name, view, track_data.hda_ldda, track_data.dataset_id,
+                                        track_data.prefs, track_data.filters, track_data.tool );
                 view.add_track(new_track);
-                // Should replace with live event but can't get working
+                ## Should replace with live event but can't get working
                 sortable( new_track.container_div, ".draghandle" );
                 view.has_changes = true;
                 $("#no-tracks").hide();
@@ -229,7 +230,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 });
                 
             %endif
-
+            
             // Use a popup grid to add more tracks
             $("#add-track").bind("click", function(e) {
                 $.ajax({
@@ -238,18 +239,24 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     error: function() { alert( "Grid failed" ); },
                     success: function(table_html) {
                         show_modal(
-                            "Add Track &mdash; Select History, then Dataset(s)", 
+                            "Add Track &mdash; Select history/library, then datasets", 
                             table_html, 
                             {
                                 "Cancel": function() {
                                     hide_modal();
                                 },
                                 "Insert": function() {
-                                    $('input[name=id]:checked').each(function() {
-                                        var item_id = $(this).val();
+                                    $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                                        var data,
+                                            id = $(this).val();
+                                        if ($(this).attr("name") === "id") {
+                                            data = { hda_id: id };
+                                        } else {
+                                            data = { ldda_id: id};
+                                        }
                                         $.ajax( {
                                             url: "${h.url_for( action='add_track_async' )}",
-                                            data: { id: item_id },
+                                            data: data,
                                             dataType: "json",
                                             success: add_async_success
                                         });
@@ -286,6 +293,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     tracks.push( {
                         "track_type": track.track_type,
                         "name": track.name,
+                        "hda_ldda": track.hda_ldda,
                         "dataset_id": track.dataset_id,
                         "prefs": track.prefs,
                         "is_child": (child_id ? true : false )

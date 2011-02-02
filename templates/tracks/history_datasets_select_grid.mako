@@ -10,6 +10,7 @@
             url_dict[ "f-" + filter ] = value
     %>
     ## Use class 'label' to piggyback on URL functionality in parent template.
-    <a class="label" href="${h.url_for( **url_dict )}">Back to histories</a><br/>
+    <a class="label" href="${h.url_for( **url_dict )}">Back to histories</a>
+    <br /><br />
     ${parent.title()}
 </%def>

@@ -164,14 +164,19 @@ class UsesVisualization( SharableItemSecurity ):
 
             # Set tracks.
             if 'tracks' in latest_revision.config:
-                hda_query = trans.sa_session.query( trans.model.HistoryDatasetAssociation )
                 for t in visualization.latest_revision.config['tracks']:
                     dataset_id = t['dataset_id']
+                    hda_ldda = t.get('hda_ldda', 'hda')
+                    if hda_ldda == "hda":
+                        dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+                    else:
+                        dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(dataset_id) )
+                        
                     try:
                         prefs = t['prefs']
                     except KeyError:
                         prefs = {}
-                    dataset = hda_query.get( dataset_id )
+                    
                     track_type, _ = dataset.datatype.get_track_type()
                     track_data_provider_class = get_data_provider( original_dataset=dataset )
                     track_data_provider = track_data_provider_class( original_dataset=dataset )
@@ -179,6 +184,7 @@ class UsesVisualization( SharableItemSecurity ):
                     tracks.append( {
                         "track_type": track_type,
                         "name": t['name'],
+                        "hda_ldda": t.get("hda_ldda", "hda"),
                         "dataset_id": trans.security.encode_id( dataset.id ),
                         "prefs": prefs,
                         "filters": track_data_provider.get_filters(),

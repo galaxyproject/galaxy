@@ -6,7 +6,7 @@
 <%namespace file="../grid_base.mako" import="*" />
 
 ## Need to define title so that it can be overridden by child templates.
-<%def name="title()"><h2>${grid.title}</h2></%def>
+<%def name="title()"></%def>
 
 ${self.title()}
 ${stylesheets()}
@@ -19,11 +19,11 @@ ${grid_javascripts()}
     var f = function() {
         $("a.label,.page-link>a").click(function() {
             var parent_body = $(this).parents("div.body");
-            if (parent_body.length != 0) {
+            if (parent_body.length !== 0) {
                 parent_body.load($(this).attr("href"));
                 return false;
             }
-        });            
+        });
     };
     // Need to process label URLs when document loaded and when grid changes. 
     $(document).ready(function() {
@@ -31,5 +31,15 @@ ${grid_javascripts()}
         $('#grid-table-body').bind('update', f);
     });
 </script>
+
+%if getattr(grid, "datasets_param", None):
+    %if grid.datasets_param == "f-history":
+        <a class="label" href="${h.url_for( action='list_libraries' )}">Show Data Libraries</a>
+    %else:
+        <a class="label" href="${h.url_for( action='list_histories' )}">Show Histories</a>
+    %endif
+    <br /><br />
+%endif
+
 ${render_grid_header( grid, False )}
 ${render_grid_table( grid, show_item_checkboxes=show_item_checkboxes )}

@@ -742,8 +742,7 @@ class DatasetInstance( object ):
             pass # No deps
             
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, metadata_safe=False )
-        new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps ).values()[0]
-        new_dataset.hid = self.hid
+        new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=False ).values()[0]
         new_dataset.name = self.name
         session = trans.sa_session
         session.add( new_dataset )
@@ -1326,7 +1325,12 @@ class ImplicitlyConvertedDatasetAssociation( object ):
     def __init__( self, id = None, parent = None, dataset = None, file_type = None, deleted = False, purged = False, metadata_safe = True ):
         self.id = id
         self.dataset = dataset
-        self.parent = parent
+        if isinstance(parent, HistoryDatasetAssociation):
+            self.parent_hda = parent
+        elif isinstance(parent, LibraryDatasetDatasetAssociation):
+            self.parent_ldda = parent
+        else:
+            raise AttributeError
         self.type = file_type
         self.deleted = deleted
         self.purged = purged

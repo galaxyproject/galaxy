@@ -385,7 +385,6 @@ $.extend( View.prototype, {
             var container = $(this);
             var delta = d.offsetX - d.current_x;
             var new_scroll = container.scrollTop() - (e.clientY - d.current_height);
-            console.log( new_scroll );
             container.scrollTop(new_scroll);
             d.current_height = e.clientY;
             d.current_x = d.offsetX;
@@ -843,8 +842,8 @@ $.extend( Track.prototype, {
         
         // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
         // about track status.
-        $.getJSON(this.dataset_check_url, 
-                 {dataset_id : track.dataset_id, chrom: track.view.chrom, low: track.view.max_low, high: track.view.max_high}, 
+        $.getJSON(this.dataset_check_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, 
+                                            chrom: track.view.chrom, low: track.view.max_low, high: track.view.max_high}, 
                  function (result) {
             if (!result || result === "error" || result.kind === "error") {
                 track.container_div.addClass("error");
@@ -1548,7 +1547,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var LineTrack = function ( name, view, dataset_id, prefs ) {
+var LineTrack = function ( name, view, hda_ldda, dataset_id, prefs ) {
     this.track_type = "LineTrack";
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
@@ -1558,6 +1557,7 @@ var LineTrack = function ( name, view, dataset_id, prefs ) {
     this.min_height_px = 12; 
     this.max_height_px = 400; 
     this.height_px = 80;
+    this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
     this.data_cache = new DataCache(CACHED_DATA);
@@ -1604,7 +1604,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         
         track.vertical_range = undefined;
         $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: null, high: null,
-                                        dataset_id: track.dataset_id }, function(result) {
+                                        hda_ldda: track.hda_ldda, dataset_id: track.dataset_id }, function(result) {
             track.container_div.addClass( "line-track" );
             var data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
@@ -1646,9 +1646,8 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 track.draw();
             });*/
             $.ajax({ 'url': this.data_url, 'dataType': 'json', 
-                     'data': {  "chrom": this.view.chrom, 
-                                "low": low, "high": high, "dataset_id": this.dataset_id,
-                                "resolution": this.view.resolution }, 
+                     'data': {  chrom: this.view.chrom, low: low, high: high, 
+                                hda_ldda: this.hda_ldda, dataset_id: this.dataset_id, resolution: this.view.resolution }, 
                 success: function (result) {
                     var data = result.data;
                     track.data_cache.set(key, data);
@@ -1804,7 +1803,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var FeatureTrack = function (name, view, dataset_id, prefs, filters, tool, parent_track) {
+var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, tool, parent_track) {
     this.track_type = "FeatureTrack";
     this.display_modes = ["Auto", "Dense", "Squish", "Pack"];
     Track.call(this, name, view, view.viewport_container);
@@ -1812,6 +1811,7 @@ var FeatureTrack = function (name, view, dataset_id, prefs, filters, tool, paren
     
     this.height_px = 0;
     this.container_div.addClass( "feature-track" );
+    this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
     this.zo_slots = {};
@@ -1839,7 +1839,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         if (!track.data_queue[key]) {
             track.data_queue[key] = true;
             $.getJSON( track.data_url, {  chrom: track.view.chrom, 
-                                          low: low, high: high, dataset_id: track.dataset_id,
+                                          low: low, high: high, hda_ldda: track.hda_ldda, dataset_id: track.dataset_id,
                                           resolution: this.view.resolution, mode: this.mode }, function (result) {
                 track.data_cache.set_data(low, high, track.mode, result);
                 // console.log("datacache", track.data_cache.get(key));
@@ -1987,7 +1987,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             else {
                 // TODO: remove this warning when skipped features are handled.
                 // Show warning for skipped feature.
-                console.log("WARNING: not displaying feature"); // , feature_uid, f_start, f_end);
+                // console.log("WARNING: not displaying feature"); // , feature_uid, f_start, f_end);
             }
         }
         
@@ -2425,8 +2425,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var ReadTrack = function (name, view, dataset_id, prefs, filters) {
-    FeatureTrack.call(this, name, view, dataset_id, prefs, filters);
+var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
+    FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
     this.track_type = "ReadTrack";
     this.vertical_detail_px = 10;
     this.vertical_nodetail_px = 5;
@@ -2436,8 +2436,8 @@ $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {})
 /**
  * Feature track that displays data generated from tool.
  */
-var ToolDataFeatureTrack = function(name, view, dataset_id, prefs, filters, parent_track) {
-    FeatureTrack.call(this, name, view, dataset_id, prefs, filters, {}, parent_track);
+var ToolDataFeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, parent_track) {
+    FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters, {}, parent_track);
     this.track_type = "ToolDataFeatureTrack";
     
     // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--

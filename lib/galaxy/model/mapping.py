@@ -145,6 +145,7 @@ ImplicitlyConvertedDatasetAssociation.table = Table( "implicitly_converted_datas
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
     Column( "hda_parent_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "ldda_parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "metadata_safe", Boolean, index=True, default=True ),
     Column( "type", TrimmedString( 255 ) ) )
@@ -1135,13 +1136,17 @@ assign_mapper( context, HistoryDatasetAssociationDisplayAtAuthorization, History
                      user = relation( User ) ) )
 
 assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvertedDatasetAssociation.table, 
-    properties=dict( parent=relation( 
-                     HistoryDatasetAssociation, 
-                     primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
+    properties=dict( parent_hda=relation( 
+                        HistoryDatasetAssociation, 
+                        primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == HistoryDatasetAssociation.table.c.id ) ),
+                     
+                     parent_ldda=relation( 
+                        LibraryDatasetDatasetAssociation, 
+                        primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
                      
                      dataset=relation( 
-                     HistoryDatasetAssociation, 
-                     primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_id == HistoryDatasetAssociation.table.c.id ) ) ) )
+                        HistoryDatasetAssociation, 
+                        primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.hda_id == HistoryDatasetAssociation.table.c.id ) ) ) )
 
 assign_mapper( context, History, History.table,
     properties=dict( galaxy_sessions=relation( GalaxySessionToHistoryAssociation ),
@@ -1322,6 +1327,9 @@ assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetA
             HistoryDatasetAssociation, 
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
             backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
+        implicitly_converted_datasets=relation( 
+            ImplicitlyConvertedDatasetAssociation, 
+            primaryjoin=( ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
         children=relation( 
             LibraryDatasetDatasetAssociation, 
             primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ),

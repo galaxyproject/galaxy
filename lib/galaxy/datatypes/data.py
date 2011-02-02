@@ -266,7 +266,7 @@ class Data( object ):
     def find_conversion_destination( self, dataset, accepted_formats, datatypes_registry, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions( dataset, accepted_formats, **kwd )
-    def convert_dataset(self, trans, original_dataset, target_type, return_output = False, visible = True, deps=None):
+    def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, set_output_history=True):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )
         
@@ -277,14 +277,14 @@ class Data( object ):
         #determine input parameter name and add to params
         input_name = 'input1'
         for key, value in converter.inputs.items():
-            if (deps) and (value.name in deps):
+            if deps and value.name in deps:
                 params[value.name] = deps[value.name]
             elif value.type == 'data':
                 input_name = key
             
         params[input_name] = original_dataset
         #Run converter, job is dispatched through Queue
-        converted_dataset = converter.execute( trans, incoming = params, set_output_hid = visible )[1]
+        converted_dataset = converter.execute( trans, incoming=params, set_output_hid=visible, set_output_history=set_output_history)[1]
         if len(params) > 0:
             trans.log_event( "Converter params: %s" % (str(params)), tool_id=converter.id )
         if not visible:

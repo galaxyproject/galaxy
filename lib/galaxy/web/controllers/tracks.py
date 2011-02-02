@@ -9,6 +9,7 @@ from bx.seq.twobit import TwoBitFile
 from galaxy import model
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.web.base.controller import *
+from galaxy.web.controllers.library import LibraryListGrid
 from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
@@ -36,8 +37,8 @@ class NameColumn( grids.TextColumn ):
         # Provide link to list all datasets in history that have a given dbkey.
         # Right now, only dbkey needs to be passed through, but pass through 
         # all for now since it's cleaner.
-        d = dict( action='list_history_datasets', show_item_checkboxes=True )
-        d[ "f-history" ] = history.id
+        d = dict( action=grid.datasets_action, show_item_checkboxes=True )
+        d[ grid.datasets_param ] = trans.security.encode_id( history.id )
         for filter, value in grid.cur_filter_dict.iteritems():
             d[ "f-" + filter ] = value
         return d
@@ -56,6 +57,8 @@ class HistorySelectionGrid( grids.Grid ):
     model_class = model.History
     template='/tracks/history_select_grid.mako'
     default_sort_key = "-update_time"
+    datasets_action = 'list_history_datasets'
+    datasets_param = "f-history"
     columns = [
         NameColumn( "History Name", key="name", filterable="standard" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
@@ -66,6 +69,24 @@ class HistorySelectionGrid( grids.Grid ):
     use_paging = True
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, purged=False, deleted=False, importing=False )
+        
+class LibrarySelectionGrid( LibraryListGrid ):
+    """
+    Grid enables user to select a Library, which is then used to display 
+    datasets from the history.
+    """
+    title = "Add Track: Select Library"
+    template='/tracks/history_select_grid.mako'
+    model_class = model.Library
+    datasets_action = 'list_library_datasets'
+    datasets_param = "f-library"
+    columns = [
+        NameColumn( "Library Name", key="name", filterable="standard" ),
+        grids.GridColumn( "Description", key="description" )
+    ]
+    num_rows_per_page = 10
+    use_async = True
+    use_paging = True
         
 class DbKeyColumn( grids.GridColumn ):
     """ Column for filtering by and displaying dataset dbkey. """
@@ -78,7 +99,7 @@ class DbKeyColumn( grids.GridColumn ):
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
     def filter( self, trans, user, query, history_id ):
-        return query.filter( model.History.id==history_id )
+        return query.filter( model.History.id==trans.security.decode_id(history_id) )
 
 class HistoryDatasetsSelectionGrid( grids.Grid ):
     # Grid definition.
@@ -95,7 +116,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
         grids.TextColumn( "Filetype", key="extension", model_class=model.HistoryDatasetAssociation ),
         HistoryColumn( "History", key="history", visible=False ),
-        DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
+        DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False )
     ]
     columns.append( 
         grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0], columns[1] ], 
@@ -103,7 +124,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
     )
 
     def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
+        return trans.sa_session.query( self.model_class ).join( model.History.table ).join( model.Dataset.table )
     def apply_query_filter( self, trans, query, **kwargs ):
         if self.available_tracks is None:
              self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
@@ -111,42 +132,6 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
                     .filter( model.Dataset.state == model.Dataset.states.OK ) \
                     .filter( model.HistoryDatasetAssociation.deleted == False ) \
                     .filter( model.HistoryDatasetAssociation.visible == True )
-
-# TODO: not currently used. Do we want to keep this?
-class DatasetSelectionGrid( grids.Grid ):
-    """ Lists all user datasets that can be added to a visualization. """
-    
-    # Grid definition.
-    available_tracks = None
-    title = "Add Tracks"
-    template = "/tracks/add_tracks.mako"
-    async_template = "/page/select_items_grid_async.mako"
-    model_class = model.HistoryDatasetAssociation
-    default_filter = { "deleted" : "False" , "shared" : "All" }
-    default_sort_key = "name"
-    use_async = True
-    use_paging = False
-    columns = [
-        grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
-        grids.TextColumn( "Filetype", key="extension", model_class=model.HistoryDatasetAssociation ),
-        DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
-    ]
-    columns.append( 
-        grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0], columns[1] ], 
-        key="free-text-search", visible=False, filterable="standard" )
-    )
-
-    def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
-    def apply_query_filter( self, trans, query, **kwargs ):
-        if self.available_tracks is None:
-             self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
-        return query.filter( model.History.user == trans.user ) \
-                    .filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) ) \
-                    .filter( model.Dataset.state == model.Dataset.states.OK ) \
-                    .filter( model.History.deleted == False ) \
-                    .filter( model.HistoryDatasetAssociation.deleted == False ) \
-                    .filter( model.HistoryDatasetAssociation.visible == True )   
                                      
 class TracksterSelectionGrid( grids.Grid ):
     # Grid definition.
@@ -178,9 +163,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     datasets in the current history, and display of the resulting browser.
     """
     
+    libraries_grid = LibrarySelectionGrid()
     histories_grid = HistorySelectionGrid()
     history_datasets_grid = HistoryDatasetsSelectionGrid()
-    data_grid = DatasetSelectionGrid()
     tracks_grid = TracksterSelectionGrid()
     
     #
@@ -216,8 +201,13 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             
     @web.json
     @web.require_login()
-    def add_track_async(self, trans, id):
-        dataset = self.get_dataset( trans, id, check_ownership=False, check_accessible=True )
+    def add_track_async(self, trans, hda_id=None, ldda_id=None):
+        if hda_id:
+            hda_ldda = "hda"
+            dataset = self.get_dataset( trans, hda_id, check_ownership=False, check_accessible=True )
+        elif ldda_id:
+            hda_ldda = "ldda"
+            dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
         track_type, _ = dataset.datatype.get_track_type()
         track_data_provider_class = get_data_provider( original_dataset=dataset )
         track_data_provider = track_data_provider_class( original_dataset=dataset )
@@ -225,6 +215,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         track = {
             "track_type": track_type,
             "name": dataset.name,
+            "hda_ldda": hda_ldda,
             "dataset_id": trans.security.encode_id( dataset.id ),
             "prefs": {},
             "filters": track_data_provider.get_filters(),
@@ -371,7 +362,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return msg
         
     @web.json
-    def converted_datasets_state( self, trans, dataset_id, chrom=None, low=None, high=None ):
+    def converted_datasets_state( self, trans, hda_ldda, dataset_id, chrom=None, low=None, high=None ):
         """ 
         Returns state of dataset's converted datasets. If a genome window is 
         specified, method checks whether dataset has data in the window.
@@ -379,7 +370,10 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # TODO: this code is copied from data() -- should refactor.
         
         # Dataset check.
-        dataset = self.get_dataset( trans, dataset_id )
+        if hda_ldda == "hda":
+            dataset = self.get_dataset( trans, dataset_id )
+        else:
+            dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         msg = self._check_dataset_state( trans, dataset )
         if msg:
             return msg
@@ -402,7 +396,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return messages.DATA
         
     @web.json
-    def data( self, trans, dataset_id, chrom, low, high, **kwargs ):
+    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, **kwargs ):
         """
         Called by the browser to request a block of data
         """
@@ -412,7 +406,10 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return messages.NO_DATA
         
         # Dataset check.
-        dataset = self.get_dataset( trans, dataset_id )
+        if hda_ldda == "hda":
+            dataset = self.get_dataset( trans, dataset_id )
+        else:
+            dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         msg = self._check_dataset_state( trans, dataset )
         if msg:
             return msg
@@ -491,11 +488,12 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Tracks from payload
         tracks = []
         for track in decoded_payload['tracks']:
-            tracks.append( {    "dataset_id": str( trans.security.decode_id( track['dataset_id']) ),
+            tracks.append( {    "dataset_id": track['dataset_id'],
+                                "hda_ldda": track.get('hda_ldda', "hda"),
                                 "name": track['name'],
                                 "track_type": track['track_type'],
                                 "prefs": track['prefs'],
-                                "is_child": track['is_child']
+                                "is_child": track.get('is_child', False)
             } )
         # Viewport from payload
         if 'viewport' in decoded_payload:
@@ -509,6 +507,32 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         session.add( vis_rev )
         session.flush()
         return trans.security.encode_id(vis.id)
+        
+    @web.expose
+    @web.require_login( "see all available libraries" )
+    def list_libraries( self, trans, **kwargs ):
+        """List all libraries that can be used for selecting datasets."""
+
+        # Render the list view
+        return self.libraries_grid( trans, **kwargs )
+
+    @web.expose
+    @web.require_login( "see a library's datasets that can added to this visualization" )
+    def list_library_datasets( self, trans, **kwargs ):
+        """List a library's datasets that can be added to a visualization."""
+        
+        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( kwargs.get('f-library') ) )
+        return trans.fill_template( '/library/common/browse_library.mako',
+                                    cntrller="library",
+                                    use_panels=False,
+                                    library=library,
+                                    created_ldda_ids='',
+                                    hidden_folder_ids='',
+                                    show_deleted=False,
+                                    comptypes=[],
+                                    current_user_roles=trans.get_current_user_roles(),
+                                    message='',
+                                    status="done" )
         
     @web.expose
     @web.require_login( "see all available histories" )
@@ -654,6 +678,12 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 output_dataset = joda.dataset
         
         return self.add_track_async( trans, output_dataset.id )
+    
+    @web.expose
+    def woot( self, trans, ldda_id, target_type ):
+        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+        converted_dataset = ldda.get_converted_dataset( trans, target_type )
+        raise converted_dataset
         
     #
     # Helper methods.

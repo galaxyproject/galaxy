@@ -1,3 +1,4 @@
+from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.tools.parameters import *
@@ -100,7 +101,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None ):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None ):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -166,11 +167,20 @@ class DefaultToolAction( object ):
         input_ext = 'data'
         input_dbkey = incoming.get( "dbkey", "?" )
         for name, data in inp_data.items():
-            if data:
-                input_names.append( 'data %s' % data.hid )
-                input_ext = data.ext
-            else:
+            if not data:
                 data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
+                continue
+                
+            # Convert LDDA to an HDA.
+            if isinstance(data, LibraryDatasetDatasetAssociation):
+                data = data.to_history_dataset_association( None )
+                inp_data[name] = data
+            
+            else: # HDA
+                if data.hid:
+                    input_names.append( 'data %s' % data.hid )
+            input_ext = data.ext
+            
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
 
@@ -306,11 +316,12 @@ class DefaultToolAction( object ):
                     output.actions.apply_action( data, output_action_params )
                 # Store all changes to database
                 trans.sa_session.flush()
-        # Add all the top-level (non-child) datasets to the history
+        # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming: #don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
-                history.add_dataset( data, set_hid = set_output_hid )
+                if set_output_history:
+                    history.add_dataset( data, set_hid = set_output_hid )
                 trans.sa_session.add( data )
                 trans.sa_session.flush()
         # Add all the children to their parents
