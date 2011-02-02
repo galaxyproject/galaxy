@@ -102,7 +102,7 @@ def upgrade():
         return
     # if running postgres then rename the primary key sequence too
     if migrate_engine.name == 'postgres':
-        cmd = "ALTER SEQUENCE sequencer_id_seq RENAME TO external_service_id_seq" 
+        cmd = "ALTER TABLE sequencer_id_seq RENAME TO external_service_id_seq" 
         db_session.execute( cmd )
     # rename 'sequencer_type_id' column to 'external_service_type_id' in the table 'external_service'
     # create the column as 'external_service_type_id'
