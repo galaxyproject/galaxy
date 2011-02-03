@@ -374,14 +374,16 @@ $.extend( View.prototype, {
         });
         
         // Dragging in the viewport scrolls
-        this.viewport_container.bind( "dragstart", function( e, d ) {
+        this.viewport_container.bind( "draginit", function( e, d ) {
+            // Disable interaction if started in scrollbar (for webkit)
+            if ( e.clientX > view.viewport_container.width() - 16 ) {
+                return false;
+            }
+        }).bind( "dragstart", function( e, d ) {
             d.original_low = view.low;
             d.current_height = e.clientY;
             d.current_x = d.offsetX;
-            // Fix webkit scrollbar
-            d.enable_pan = (e.clientX < view.viewport_container.width() - 16) ? true : false; 
         }).bind( "drag", function( e, d ) {
-            if (!d.enable_pan) { return; }
             var container = $(this);
             var delta = d.offsetX - d.current_x;
             var new_scroll = container.scrollTop() - (e.clientY - d.current_height);
