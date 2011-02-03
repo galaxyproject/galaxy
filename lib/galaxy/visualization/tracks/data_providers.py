@@ -288,7 +288,7 @@ class BamDataProvider( TracksDataProvider ):
             if read.is_proper_pair:
                 if qname in paired_pending: # one in dict is always first
                     pair = paired_pending[qname]
-                    results.append( [ "%i_%s" % ( read.pos-start, qname ), 
+                    results.append( [ "%i_%s" % ( read.pos, qname ), 
                                       pair['start'], 
                                       read.pos + read_len, 
                                       qname, 
@@ -299,7 +299,7 @@ class BamDataProvider( TracksDataProvider ):
                 else:
                     paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos, 'rlen': read_len, 'cigar': read.cigar }
             else:
-                results.append( [ "%i_%s" % ( read.pos-start, qname ), read.pos, read.pos + read_len, qname, read.cigar, read.seq] )
+                results.append( [ "%i_%s" % ( read.pos, qname ), read.pos, read.pos + read_len, qname, read.cigar, read.seq] )
         # Take care of reads whose mates are out of range.
         for qname, read in paired_pending.iteritems():
             if read['mate_start'] < read['start']:
@@ -319,7 +319,7 @@ class BamDataProvider( TracksDataProvider ):
                 r1 = [ read['start'], read['end'], read['cigar'], read['seq'] ]
                 r2 = [ read['mate_start'], read['mate_start'] ]
 
-            results.append( [ "%i_%s" % ( read_start-start, qname ), read_start, read_end, qname, r1, r2 ] )
+            results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2 ] )
 
         bamfile.close()
         return { 'data': results, 'message': message }

@@ -1249,7 +1249,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         var tile_index = Math.floor( low / resolution / DENSITY );
         // A list of setTimeout() ids used when drawing tiles. Each ID indicates
         // a tile has been requested to be drawn or is being drawn.
-        var draw_tile_ids = {};
+        var draw_tile_count = 0;
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
             var key = this.content_div.width() + '_' + w_scale + '_' + tile_index;
@@ -1258,7 +1258,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             if ( !force && cached ) {
                 this.show_tile( cached, parent_element, tile_index );
             } else {
-                this.delayed_draw(key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids);
+                this.delayed_draw(key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_count);
             }
             tile_index += 1;
         }
@@ -1270,18 +1270,29 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         //
         var track = this;
         var intervalId = setInterval(function() {
-            // Only do stuff if all tile drawing is complete:
-            if (obj_length(draw_tile_ids) === 0) {
-                // All drawing has finished; if there is more than one child in the content div, 
-                // remove the first one, which is the oldest.
-                if ( track.content_div.children().length > 1 ) {
-                    track.content_div.children( ":first" ).remove();
+            if (draw_tile_count === 0) {
+                // All tiles have been drawn; clear out track content in order to show the most recent content.
+                // Most recent content is the div with children (tiles) most recently appended to track.
+                // However, do not delete recently-appended empty content as calls to draw() may still be active
+                // and using these divs.
+                var track_content = track.content_div.children();
+                var remove = false;
+                for (var i = track_content.length-1, len = 0; i >= len; i--) {
+                    var child = $(track_content[i]);
+                    if (remove) {
+                        child.remove();
+                    }
+                    else if (child.children().length !== 0) {
+                        // Found most recent content with tiles: set remove to start removing old elements.
+                        remove = true;
+                    }
                 }
                     
                 // Update filtering UI.
                 for (var f = 0; f < track.filters.length; f++) {
                     track.filters[f].update_ui_elt();
                 }
+
                 // Method complete; do not call it again.
                 clearInterval(intervalId);
             }
@@ -1293,7 +1304,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         for (var i = 0; i < this.child_tracks.length; i++) {
             this.child_tracks[i].draw(force);
         }
-    }, delayed_draw: function(key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids) {
+    }, delayed_draw: function(key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_count) {
         var track = this;
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
@@ -1318,10 +1329,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     track.show_tile(tile_element, parent_element, tile_index);
                 }
             }
-            // Remove setTimeout id.
-            delete draw_tile_ids[id];
+            delete draw_tile_count--;
         }, 50);
-        draw_tile_ids[id] = true;
+        draw_tile_count++
     }, 
     // Show track tile and perform associated actions.
     show_tile: function( tile_element, parent_element, tile_index ) {
