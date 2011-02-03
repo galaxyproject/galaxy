@@ -390,6 +390,14 @@ $.extend( View.prototype, {
             d.current_x = d.offsetX;
             var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
             view.move_delta(delta_chrom);
+        // Also capture mouse wheel for left/right scrolling
+        }).bind( 'mousewheel', function( e, d, dx, dy ) { 
+            // Only act on x axis scrolling if we see if, y will be i
+            // handled by the browser when the event bubbles up
+            if ( dx ) {
+                var delta_chrom = Math.round( - dx / view.viewport_container.width() * (view.high - view.low) );
+                view.move_delta( delta_chrom );
+            }
         });
        
         // Dragging in the top label track allows selecting a region
