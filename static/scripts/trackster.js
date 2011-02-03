@@ -1256,13 +1256,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             var cached = this.tile_cache.get(key);
             // console.log(cached, this.tile_cache);
             if ( !force && cached ) {
-                var tile_low = tile_index * DENSITY * resolution;
-                var left = ( tile_low - low ) * w_scale;
-                if (this.left_offset) {
-                    left -= this.left_offset;
-                }
-                cached.css({ left: left });
-                this.show_tile( cached, parent_element );
+                this.show_tile( cached, parent_element, tile_index );
             } else {
                 this.delayed_draw(this, key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids);
             }
@@ -1299,7 +1293,8 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         for (var i = 0; i < this.child_tracks.length; i++) {
             this.child_tracks[i].draw(force);
         }
-    }, delayed_draw: function(track, key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids) {
+    }, 
+    delayed_draw: function(track, key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids) {
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
             if (low <= track.view.high && high >= track.view.low) {
@@ -1316,7 +1311,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     }
                     // Add tile to cache and show tile.
                     track.tile_cache.set(key, tile_element);
-                    track.show_tile(tile_element, parent_element);
+                    track.show_tile(tile_element, parent_element, tile_index);
                 }
             }
             // Remove setTimeout id.
@@ -1325,10 +1320,24 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         draw_tile_ids[id] = true;
     }, 
     // Show track tile and perform associated actions.
-    show_tile: function( tile_element, parent_element ) {
+    show_tile: function( tile_element, parent_element, tile_index ) {
         // Readability.
         var track = this;
+       
+        // Position tile element
         
+        // Recalculate left position at display time
+        // FIXME: Should calculate this without tile_index
+        var range = this.view.high - this.view.low,
+            resolution = this.view.resolution,
+            w_scale = this.content_div.width() / range;
+        var tile_low = tile_index * DENSITY * this.view.resolution;
+        var left = ( tile_low - this.view.low ) * w_scale;
+        if (this.left_offset) {
+            left -= this.left_offset;
+        }
+        tile_element.css({ position: 'absolute', top: 0, left: left });
+
         // Setup and show tile element.
         parent_element.append( tile_element );
         track.max_height = Math.max( track.max_height, tile_element.height() );
@@ -1538,13 +1547,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
             
             canvas.get(0).width = Math.ceil( tile_length * w_scale + this.left_offset);
             canvas.get(0).height = this.height_px;
-            
-            canvas.css( {
-                position: "absolute",
-                top: 0,
-                left: ( tile_low - this.view.low ) * w_scale - this.left_offset
-            });
-            
+           
             for (var c = 0, str_len = seq.length; c < str_len; c++) {
                 var c_start = Math.round(c * w_scale),
                     gap = Math.round(w_scale / 2);
@@ -1690,12 +1693,6 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         var data = this.data_cache.get(key);
         if (!data) { return; }
         
-        canvas.css( {
-            position: "absolute",
-            top: 0,
-            left: ( tile_low - this.view.low ) * w_scale
-        });
-        
         canvas.get(0).width = Math.ceil( tile_length * w_scale );
         canvas.get(0).height = this.height_px;
         var ctx = canvas.get(0).getContext("2d"),
@@ -1776,7 +1773,6 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         } else {
             ctx.stroke();
         }
-        parent_element.append(canvas);
         return canvas;
     }, gen_options: function(track_id) {
         var container = $("<div />").addClass("form-row");
@@ -2131,12 +2127,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             required_height = this.incremental_slots( inc_scale, result.data, no_detail, mode ) * y_scale + min_height;
             slots = this.inc_slots[inc_scale];
         }
-        
-        canvas.css({
-            position: "absolute",
-            top: 0,
-            left: ( tile_low - this.view.low ) * w_scale - left_offset
-        });
+       
         canvas.get(0).width = width + left_offset;
         canvas.get(0).height = required_height;
         parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
@@ -2177,13 +2168,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     ctx.fillText(y, x + left_offset + (delta_x_px/2), this.summary_draw_height - 5);
                 }
             }
-            parent_element.append( canvas );
             return canvas;
         }
         
         //
         // Show message. If there is a message, return canvas.
-        //
+        // FIXME: Why is this drawn on a canvas instead of a div?
         if (result.message) {
             canvas.css({
                 border: "solid red",
@@ -2406,7 +2396,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             }
         }
         return canvas;
-    }, gen_options: function(track_id) {
+    }, 
+    gen_options: function(track_id) {
         var container = $("<div />").addClass("form-row");
 
         var block_color = 'track_' + track_id + '_block_color',
