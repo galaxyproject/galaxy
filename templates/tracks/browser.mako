@@ -100,6 +100,15 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         border: solid #999 1px;
         z-index: 100;
     }
+
+    .track-content {
+        background: #eee;
+        min-height: 16px;
+    }
+
+    .label-track .track-content {
+        background: white;
+    }
 </style>
 </%def>
 

@@ -838,9 +838,11 @@ $.extend( Track.prototype, {
         track.data_cache.clear();
         track.initial_canvas = undefined;
         track.content_div.css("height", "auto");
+        /*
         if (!track.content_div.text()) {
             track.content_div.text(DATA_LOADING);
         }
+        */
         track.container_div.removeClass("nodata error pending");
         
         //
@@ -849,46 +851,48 @@ $.extend( Track.prototype, {
         if (!track.dataset_id) {
             return;
         }
-        
-        // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
-        // about track status.
-        $.getJSON(this.dataset_check_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, 
-                                            chrom: track.view.chrom, low: track.view.max_low, high: track.view.max_high}, 
-                 function (result) {
-            if (!result || result === "error" || result.kind === "error") {
-                track.container_div.addClass("error");
-                track.content_div.text(DATA_ERROR);
-                if (result.message) {
-                    var track_id = track.view.tracks.indexOf(track);
-                    var error_link = $(" <a href='javascript:void(0);'></a>").attr("id", track_id + "_error");
-                    error_link.text("View error");
-                    $("#" + track_id + "_error").live("click", function() {                        
-                        show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
-                    });
-                    track.content_div.append(error_link);
+       
+        if ( track.view.chrom != null ) { 
+            // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
+            // about track status.
+            $.getJSON(this.dataset_check_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, 
+                                                chrom: track.view.chrom, low: track.view.max_low, high: track.view.max_high}, 
+                     function (result) {
+                if (!result || result === "error" || result.kind === "error") {
+                    track.container_div.addClass("error");
+                    track.content_div.text(DATA_ERROR);
+                    if (result.message) {
+                        var track_id = track.view.tracks.indexOf(track);
+                        var error_link = $(" <a href='javascript:void(0);'></a>").attr("id", track_id + "_error");
+                        error_link.text("View error");
+                        $("#" + track_id + "_error").live("click", function() {                        
+                            show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
+                        });
+                        track.content_div.append(error_link);
+                    }
+                } else if (result === "no converter") {
+                    track.container_div.addClass("error");
+                    track.content_div.text(DATA_NOCONVERTER);
+                } else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
+                    track.container_div.addClass("nodata");
+                    track.content_div.text(DATA_NONE);
+                } else if (result === "pending") {
+                    track.container_div.addClass("pending");
+                    track.content_div.text(DATA_PENDING);
+                    setTimeout(function() { track.init(); }, track.data_query_wait);
+                } else if (result === "data") {
+                    // Only draw in user has selected a chromosome.
+                    track.content_div.text(DATA_OK);
+                    if (track.view.chrom) {
+                        track.content_div.text("");
+                        track.content_div.css( "height", track.height_px + "px" );
+                        track.enabled = true;
+                        track.predraw_init();
+                        track.draw();
+                    }
                 }
-            } else if (result === "no converter") {
-                track.container_div.addClass("error");
-                track.content_div.text(DATA_NOCONVERTER);
-            } else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
-                track.container_div.addClass("nodata");
-                track.content_div.text(DATA_NONE);
-            } else if (result === "pending") {
-                track.container_div.addClass("pending");
-                track.content_div.text(DATA_PENDING);
-                setTimeout(function() { track.init(); }, track.data_query_wait);
-            } else if (result === "data") {
-                // Only draw in user has selected a chromosome.
-                track.content_div.text(DATA_OK);
-                if (track.view.chrom) {
-                    track.content_div.text("");
-                    track.content_div.css( "height", track.height_px + "px" );
-                    track.enabled = true;
-                    track.predraw_init();
-                    track.draw();
-                }
-            }
-        });
+            });
+        }
     },
     /**
      * Additional initialization required before drawing track for the first time.
@@ -1254,11 +1258,13 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             // Check in cache
             var key = this.content_div.width() + '_' + w_scale + '_' + tile_index;
             var cached = this.tile_cache.get(key);
+            var tile_low = tile_index * DENSITY * this.view.resolution;
+            var tile_high = tile_low + DENSITY * this.view.resolution;
             // console.log(cached, this.tile_cache);
             if ( !force && cached ) {
-                this.show_tile( cached, parent_element, tile_index );
+                this.show_tile( cached, parent_element, tile_low );
             } else {
-                this.delayed_draw(key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_count);
+                this.delayed_draw(key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_count);
             }
             tile_index += 1;
         }
@@ -1304,11 +1310,12 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         for (var i = 0; i < this.child_tracks.length; i++) {
             this.child_tracks[i].draw(force);
         }
-    }, delayed_draw: function(key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_count) {
+    }, 
+    delayed_draw: function(key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_count) {
         var track = this;
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
-            if (low <= track.view.high && high >= track.view.low) {
+            if (tile_low <= track.view.high && tile_high >= track.view.low) {
                 // Show/draw tile: check cache for tile; if tile not in cache, draw it.
                 var tile_element = track.tile_cache.get(key);
                 if (!tile_element) {
@@ -1326,7 +1333,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     }
                     // Add tile to cache and show tile.
                     track.tile_cache.set(key, tile_element);
-                    track.show_tile(tile_element, parent_element, tile_index);
+                    track.show_tile(tile_element, parent_element, tile_low);
                 }
             }
             delete draw_tile_count--;
@@ -1334,19 +1341,14 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         draw_tile_count++
     }, 
     // Show track tile and perform associated actions.
-    show_tile: function( tile_element, parent_element, tile_index ) {
+    show_tile: function( tile_element, parent_element, tile_low ) {
         // Readability.
         var track = this;
        
-        // Position tile element
-        
-        // Recalculate left position at display time
-        // FIXME: Should calculate this without tile_index
+        // Position tile element, recalculate left position at display time
         var range = this.view.high - this.view.low,
-            resolution = this.view.resolution,
-            w_scale = this.content_div.width() / range;
-        var tile_low = tile_index * DENSITY * this.view.resolution;
-        var left = ( tile_low - this.view.low ) * w_scale;
+            w_scale = this.content_div.width() / range,
+            left = ( tile_low - this.view.low ) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
         }
