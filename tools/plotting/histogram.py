@@ -69,7 +69,7 @@ def main():
                 first_invalid_line = i+1
 
         if valid:
-            matrix.append( row )
+            matrix += row
 
     if skipped_lines < i:
         try:
