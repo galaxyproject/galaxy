@@ -1264,7 +1264,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             if ( !force && cached ) {
                 this.show_tile( cached, parent_element, tile_low );
             } else {
-                this.delayed_draw(key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_count);
+                this.delayed_draw(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_count);
             }
             tile_index += 1;
         }
@@ -1311,13 +1311,16 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             this.child_tracks[i].draw(force);
         }
     }, 
-    delayed_draw: function(key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_count) {
+    delayed_draw: function(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_count) {
         var track = this;
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
             if (tile_low <= track.view.high && tile_high >= track.view.low) {
                 // Show/draw tile: check cache for tile; if tile not in cache, draw it.
-                var tile_element = track.tile_cache.get(key);
+                var tile_element;
+                if (!force) { 
+                    tile_element = track.tile_cache.get(key);
+                }
                 if (!tile_element) {
                     tile_element = track.draw_tile(resolution, tile_index, parent_element, w_scale);
                 }
