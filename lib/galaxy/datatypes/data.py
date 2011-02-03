@@ -397,6 +397,15 @@ class Text( Data ):
             if line and not line.startswith( '#' ):
                 data_lines += 1
         dataset.metadata.data_lines = data_lines
+    def estimate_file_lines( self, dataset ):
+        # Perform a rough estimate by extrapolating number of lines from a small read.
+        sample_size = 1048576
+        dataset_fh = open( dataset.file_name )
+        dataset_read = dataset_fh.read(sample_size)
+        dataset_fh.close()
+        sample_lines = dataset_read.count('\n')
+        est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
+        return est_lines
     def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
@@ -409,13 +418,7 @@ class Text( Data ):
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
                     # This can happen when the file is larger than max_optional_metadata_filesize.
-                    # Perform a rough estimate by extrapolating number of lines from a small read.
-                    sample_size = 1048576
-                    dataset_fh = open( dataset.file_name )
-                    dataset_read = dataset_fh.read(sample_size)
-                    dataset_fh.close()
-                    sample_lines = dataset_read.count('\n')
-                    est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
+                    est_lines = self.estimate_file_lines(dataset)
                     dataset.blurb = "~%s %s" % ( util.commaify(str(est_lines)), inflector.cond_plural(est_lines, "line") )
             else:
                 dataset.blurb = "%s %s" % util.commaify( str(line_count) ), inflector.cond_plural(line_count, "line")

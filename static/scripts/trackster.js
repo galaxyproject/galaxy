@@ -1258,7 +1258,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             if ( !force && cached ) {
                 this.show_tile( cached, parent_element, tile_index );
             } else {
-                this.delayed_draw(this, key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids);
+                this.delayed_draw(key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids);
             }
             tile_index += 1;
         }
@@ -1293,12 +1293,16 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         for (var i = 0; i < this.child_tracks.length; i++) {
             this.child_tracks[i].draw(force);
         }
-    }, 
-    delayed_draw: function(track, key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids) {
+    }, delayed_draw: function(key, low, high, tile_index, resolution, parent_element, w_scale, draw_tile_ids) {
+        var track = this;
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
             if (low <= track.view.high && high >= track.view.low) {
-                var tile_element = track.draw_tile(resolution, tile_index, parent_element, w_scale);
+                // Show/draw tile: check cache for tile; if tile not in cache, draw it.
+                var tile_element = track.tile_cache.get(key);
+                if (!tile_element) {
+                    tile_element = track.draw_tile(resolution, tile_index, parent_element, w_scale);
+                }
                 if (tile_element) {
                     // Store initial canvas in case we need to use it for overview
                     if (!track.initial_canvas && !window.G_vmlCanvasManager) {
