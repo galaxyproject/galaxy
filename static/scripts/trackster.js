@@ -1374,6 +1374,8 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 }
                 if (tile_element) {
                     // Store initial canvas in case we need to use it for overview
+                    /* This is completely broken, just saves the first tile it sees
+                       regardless of if it should be the overview
                     if (!track.initial_canvas && !window.G_vmlCanvasManager) {
                         track.initial_canvas = $(tile_element).clone();
                         var src_ctx = tile_element.get(0).getContext("2d");
@@ -1382,6 +1384,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                         tgt_ctx.putImageData(data, 0, 0);
                         track.set_overview();
                     }
+                    */
                     // Add tile to cache and show tile.
                     track.tile_cache.set(key, tile_element);
                     track.show_tile(tile_element, parent_element, tile_low);
