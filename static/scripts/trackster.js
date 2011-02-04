@@ -1406,7 +1406,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         if (this.left_offset) {
             left -= this.left_offset;
         }
-        tile_element.css({ position: 'absolute', top: 0, left: left });
+        tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
 
         // Setup and show tile element.
         parent_element.append( tile_element );
