@@ -213,7 +213,9 @@
         ## children, which are always lddas ).  We also need to make sure we're displaying the latest version of this
         ## library_dataset, so we display the attributes from the ldda.
 
-        from galaxy.web.controllers.library_common import active_folders, active_folders_and_lddas, activatable_folders_and_lddas, branch_deleted
+        from galaxy.web.controllers.library_common import branch_deleted
+
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
 
         if ldda.user:
             uploaded_by = ldda.user.email
@@ -221,7 +223,7 @@
             uploaded_by = 'anonymous'
         if ldda == library_dataset.library_dataset_dataset_association:
             current_version = True
-            if trans.user_is_admin() and cntrller == 'library_admin':
+            if is_admin:
                 can_modify = can_manage = True
             elif cntrller in [ 'library', 'requests' ]:
                 can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset )
@@ -307,7 +309,10 @@
 
 <%def name="render_folder( cntrller, folder, folder_pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=False, parent=None, row_counter=None, root_folder=False )">
     <%
-        from galaxy.web.controllers.library_common import active_folders, active_folders_and_lddas, activatable_folders_and_lddas, branch_deleted
+        from galaxy.web.controllers.library_common import active_folders, active_folders_and_library_datasets, activatable_folders_and_library_datasets, branch_deleted
+        
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        
         if root_folder:
             pad = folder_pad
             expander = h.url_for("/static/images/silk/resultset_bottom.png")
@@ -321,7 +326,7 @@
         if str( folder.id ) in hidden_folder_ids:
             return ""
         my_row = None
-        if trans.user_is_admin() and cntrller == 'library_admin':
+        if is_admin:
             can_add = can_modify = can_manage = True
         elif cntrller in [ 'library' ]:
             can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, folder )
@@ -340,8 +345,11 @@
             can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, folder )
         else:
             can_add = can_modify = can_manage = False
+
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
         info_association, inherited = folder.get_info_association( restrict=True )
+
+        has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, folder, trans.user, current_user_roles, search_downward=False )
     %>
     %if not root_folder and ( not folder.deleted or show_deleted ):
         <% encoded_id = trans.security.encode_id(folder.id) %>
@@ -371,7 +379,9 @@
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add sub-folder</a>
                             %endif
                             %if not branch_deleted( folder ):
-                                <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select folder datasets for import into selected histories</a>
+                                %if has_accessible_datasets:
+                                    <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select datasets for import into selected histories</a>
+                                %endif
                                 %if can_modify:
                                     <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                                 %else:
@@ -412,12 +422,28 @@
             row_counter.increment()
         %>
     %endif
-    %if cntrller == 'library':
-        <% sub_folders = active_folders( trans, folder ) %>
+    <%
+        if show_deleted:
+            sub_folders, library_datasets = activatable_folders_and_library_datasets( trans, folder )
+        else:
+            sub_folders, library_datasets = active_folders_and_library_datasets( trans, folder )
+    %>
+    %if is_admin:
+        %for sub_folder in sub_folders:
+            ${render_folder( cntrller, sub_folder, pad, created_ldda_ids, library, [], tracked_datasets, show_deleted=show_deleted, parent=my_row, row_counter=row_counter, root_folder=False )}
+        %endfor 
+        %for library_dataset in library_datasets:
+            <%
+                ldda = library_dataset.library_dataset_dataset_association
+                selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
+            %>
+            ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
+        %endfor
+    %else:
         %for sub_folder in sub_folders:
             ${render_folder( cntrller, sub_folder, pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=my_row, row_counter=row_counter, root_folder=False )}
         %endfor
-        %for library_dataset in folder.active_library_datasets:
+        %for library_dataset in library_datasets:
             <%
                 ldda = library_dataset.library_dataset_dataset_association
                 can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ldda.dataset )
@@ -426,23 +452,6 @@
             %if can_access:
                 ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
             %endif
-        %endfor
-    %elif trans.user_is_admin() and cntrller == 'library_admin':
-        <%
-            if show_deleted:
-                sub_folders, lddas = activatable_folders_and_lddas( trans, folder )
-            else:
-                sub_folders, lddas = active_folders_and_lddas( trans, folder )
-        %>
-        %for sub_folder in sub_folders:
-            ${render_folder( cntrller, sub_folder, pad, created_ldda_ids, library, [], tracked_datasets, show_deleted=show_deleted, parent=my_row, row_counter=row_counter, root_folder=False )}
-        %endfor 
-        %for ldda in lddas:
-            <%
-                library_dataset = ldda.library_dataset
-                selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
-            %>
-            ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
         %endfor
     %endif
 </%def>
@@ -453,7 +462,9 @@
         from galaxy.web.controllers.library_common import branch_deleted
         from time import strftime
  
-        if trans.user_is_admin() and cntrller == 'library_admin':
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+
+        if is_admin:
             can_add = can_modify = can_manage = True
         elif cntrller in [ 'library', 'requests' ]:
             can_add = trans.app.security_agent.can_add_library_item( current_user_roles, library )
@@ -461,11 +472,15 @@
             can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, library )
         else:
             can_add = can_modify = can_manage = False
+
         info_association, inherited = library.get_info_association()
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
- 
+
+        has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles, search_downward=False )
+        has_accessible_folders = is_admin or trans.app.security_agent.has_accessible_folders( trans, library.root_folder, trans.user, current_user_roles )
+        
         tracked_datasets = {}
- 
+
         class RowCounter( object ):
             def __init__( self ):
                 self.count = 0
@@ -478,7 +493,7 @@
     <h2>Data Library &ldquo;${library.name}&rdquo;</h2>
 
      <ul class="manage-table-actions">
-         %if not library.deleted and ( ( trans.user_is_admin() and cntrller == 'library_admin' ) or can_add ):
+         %if not library.deleted and ( is_admin or can_add ):
              <li><a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add datasets</a></li>
              <li><a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( library.root_folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add folder</a></li>
          %endif
@@ -508,7 +523,9 @@
                          %endif
                          <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                      %endif
-                 <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select datasets for import into selected histories</a>
+                     %if has_accessible_datasets:
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select datasets for import into selected histories</a>
+                     %endif
                  %elif can_modify and not library.purged:
                      <a class="action-button" href="${h.url_for( controller='library_common', action='undelete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library', use_panels=use_panels )}">Undelete this data library</a>
                  %elif library.purged:
@@ -528,13 +545,18 @@
         </div>
         <br/>
     %endif
- 
-    <form name="act_on_multiple_datasets" action="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}" onSubmit="javascript:return checkForm();" method="post">
+
+    %if has_accessible_datasets:
+        <form name="act_on_multiple_datasets" action="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}" onSubmit="javascript:return checkForm();" method="post">
+    %endif
+    %if has_accessible_folders:
         <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
             <thead>
                 <tr class="libraryTitle">
                     <th>
-                        <input type="checkbox" id="checkAll" name=select_all_datasets_checkbox value="true" onclick='checkAllFields(1);'/><input type="hidden" name=select_all_datasets_checkbox value="true"/>
+                        %if has_accessible_datasets:
+                            <input type="checkbox" id="checkAll" name=select_all_datasets_checkbox value="true" onclick='checkAllFields(1);'/><input type="hidden" name=select_all_datasets_checkbox value="true"/>
+                        %endif
                         Name
                     </th>        
                     <th>Message</th>
@@ -546,18 +568,21 @@
             <% row_counter = RowCounter() %>
             %if cntrller in [ 'library', 'requests' ]:
                 ${self.render_folder( 'library', library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
-                %if not library.deleted:
+                %if not library.deleted and has_accessible_datasets:
                     ${render_actions_on_multiple_items()}
                 %endif
             %elif ( trans.user_is_admin() and cntrller in [ 'library_admin', 'requests_admin' ] ):
                 ${self.render_folder( 'library_admin', library.root_folder, 0, created_ldda_ids, library, [], tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
-                %if not library.deleted and not show_deleted:
+                %if not library.deleted and not show_deleted and has_accessible_datasets:
                     ${render_actions_on_multiple_items()}
                 %endif
             %endif
         </table>
-    </form>
- 
+    %endif
+    %if has_accessible_datasets:
+        </form>
+    %endif
+     
     %if tracked_datasets:
         <script type="text/javascript">
             // Updater
@@ -566,5 +591,10 @@
         <!-- running: do not change this comment, used by TwillTestCase.library_wait -->
     %endif
 
-    ${render_compression_types_help( comptypes )}
+    %if has_accessible_datasets:
+        ${render_compression_types_help( comptypes )}
+    %endif
+    %if not has_accessible_folders:
+        The data library '${library.name}' does not contain any datasets that you can access.
+    %endif
 </%def>

@@ -270,6 +270,26 @@ class GalaxyRBACAgent( RBACAgent ):
                                        .order_by( trans.app.model.Library.name ):
             accessible_libraries.append( library )
         return accessible_libraries
+    def has_accessible_folders( self, trans, folder, user, roles, search_downward=True ):
+        if self.has_accessible_library_datasets( trans, folder, user, roles, search_downward=search_downward ) or \
+            self.can_add_library_item( roles, folder ) or \
+            self.can_modify_library_item( roles, folder ) or \
+            self.can_manage_library_item( roles, folder ):
+            return True
+        if search_downward:
+            for folder in folder.active_folders:
+                return self.has_accessible_folders( trans, folder, user, roles, search_downward=search_downward )
+        return False
+    def has_accessible_library_datasets( self, trans, folder, user, roles, search_downward=True ):
+        for library_dataset in trans.sa_session.query( trans.model.LibraryDataset ) \
+                                               .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
+                                                              trans.app.model.LibraryDataset.table.c.folder_id==folder.id ) ):
+            if self.can_access_library_item( roles, library_dataset, user ):
+                return True
+        if search_downward:
+            for folder in folder.active_folders:
+                return self.has_accessible_library_datasets( trans, folder, user, roles, search_downward=search_downward )
+        return False
     def can_access_library_item( self, roles, item, user ):
         if type( item ) == self.model.Library:
             return self.can_access_library( roles, item )
@@ -504,7 +524,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 permissions[ action ] = [ item_permission.role ]
         return permissions
     def get_accessible_request_types( self, trans, user ):
-        """Return all ReqquestTypes that the received user has permission to access."""
+        """Return all RequestTypes that the received user has permission to access."""
         accessible_request_types = []
         current_user_role_ids = [ role.id for role in user.all_roles() ]
         request_type_access_action = self.permitted_actions.REQUEST_TYPE_ACCESS.action

@@ -136,8 +136,8 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_025_check_library1( self ):
         """Checking library1 and its root folder"""
         # Logged in as admin_user
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library1.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ folder1.name, folder1.description ] )
         # Make sure the template and contents were inherited to folder1
         self.folder_info( cntrller='library_admin',
@@ -179,8 +179,8 @@ class TestLibraryFeatures( TwillTestCase ):
         global ldda1
         ldda1 = get_latest_ldda_by_name( filename )
         assert ldda1 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda1 from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library1.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ ldda1.name, ldda1.message, admin_user.email ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
@@ -275,8 +275,8 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_060_check_library2( self ):
         """Checking library2 and its root folder"""
         # Logged in as admin_user
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library2.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library2.id ),
                              strings_displayed=[ folder2.name, folder2.description ] )
     def test_065_save_folder2_inherited_template( self ):
         """Saving the inherited template for folder2"""
@@ -306,8 +306,8 @@ class TestLibraryFeatures( TwillTestCase ):
                                      strings_displayed=[ 'CheckboxField', 'checked' ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library2.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library2.id ),
                              strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
@@ -347,8 +347,8 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_090_check_library3( self ):
         """Checking library3 and its root folder"""
         # Logged in as admin_user
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library3.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library3.id ),
                              strings_displayed=[ folder3.name, folder3.description ] )
     def test_095_save_folder3_inherited_template( self ):
         """Saving the inherited template for folder3"""
@@ -379,8 +379,8 @@ class TestLibraryFeatures( TwillTestCase ):
                                      strings_displayed=[ 'SelectField', 'selected>Option1' ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library3.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library3.id ),
                              strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
@@ -402,8 +402,8 @@ class TestLibraryFeatures( TwillTestCase ):
                                      strings_displayed=[ '<input type="hidden" name="%s" value="Option1"/>' % select_field_name ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library3.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library3.id ),
                              strings_displayed=[ ldda.name, admin_user.email ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
@@ -469,8 +469,8 @@ class TestLibraryFeatures( TwillTestCase ):
                                      strings_displayed=[ 'TextArea', 'This text should be inherited' ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library4.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library4.id ),
                              strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
@@ -535,8 +535,8 @@ class TestLibraryFeatures( TwillTestCase ):
                                      strings_displayed=[ 'TextField', 'This text should be inherited' ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library5.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library5.id ),
                              strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
@@ -577,8 +577,8 @@ class TestLibraryFeatures( TwillTestCase ):
                                                          'TextArea' ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library5.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library5.id ),
                              strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',
@@ -642,8 +642,8 @@ class TestLibraryFeatures( TwillTestCase ):
                                      strings_displayed=[ 'WorkflowField', 'none' ] )
         ldda = get_latest_ldda_by_name( filename )
         assert ldda is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda from the database'
-        self.browse_library( 'library_admin',
-                             self.security.encode_id( library6.id ),
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library6.id ),
                              strings_displayed=[ ldda.name, ldda.message, admin_user.email ] )
         # Make sure the library template contents were correctly saved
         self.ldda_edit_info( 'library_admin',

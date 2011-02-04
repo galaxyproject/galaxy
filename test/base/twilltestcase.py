@@ -1844,10 +1844,8 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError, "String (%s) incorrectly displayed when browing library." % check_str
             except:
                 pass
-    def browse_library( self, cntrller, id, show_deleted=False, strings_displayed=[], strings_not_displayed=[] ):
-        self.visit_url( '%s/library_common/browse_library?cntrller=%s&id=%s&show_deleted=%s' % ( self.url, cntrller, id, str( show_deleted ) ) )
-        data=self.last_page()
-        file( 'greg.html', 'wb' ).write( data )
+    def browse_library( self, cntrller, library_id, show_deleted=False, strings_displayed=[], strings_not_displayed=[] ):
+        self.visit_url( '%s/library_common/browse_library?cntrller=%s&id=%s&show_deleted=%s' % ( self.url, cntrller, library_id, str( show_deleted ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         for check_str in strings_not_displayed:

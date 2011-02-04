@@ -1294,6 +1294,11 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
             primaryjoin=( ( LibraryDataset.table.c.folder_id == LibraryFolder.table.c.id ) ), 
             order_by=asc( LibraryDataset.table.c._name ), 
             lazy=False, 
+            viewonly=True ),
+        active_datasets=relation( LibraryDataset,
+            primaryjoin=( ( LibraryDataset.table.c.folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryDataset.table.c.deleted ) ) ),
+            order_by=asc( LibraryDataset.table.c._name ), 
+            lazy=False, 
             viewonly=True )
     ) )
 

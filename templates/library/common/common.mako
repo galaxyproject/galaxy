@@ -395,7 +395,7 @@
 <%def name="render_actions_on_multiple_items( actions_to_exclude=[] )">
     <%
         is_admin = trans.user_is_admin() and cntrller=='library_admin'
-        can_delete = 'delete' not in actions_to_exclude and is_admin
+        can_delete = 'delete' not in actions_to_exclude
         can_download = 'download' not in actions_to_exclude
         can_import_to_histories = 'import_to_histories' not in actions_to_exclude
         can_manage_permissions = 'manage_permissions' not in actions_to_exclude

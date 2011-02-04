@@ -1312,8 +1312,15 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             if option_value == 'upload_directory':
                 if is_admin and not trans.app.config.library_import_dir:
                     continue
-                elif not is_admin and not trans.app.config.user_library_import_dir:
-                    continue
+                elif not is_admin:
+                    if not trans.app.config.user_library_import_dir:
+                        continue
+                    path = os.path.join( trans.app.config.user_library_import_dir, trans.user.email )
+                    if not os.path.isdir( path ):
+                        try:
+                            os.makedirs( path )
+                        except:
+                            continue
             elif option_value == 'upload_paths':
                 if not is_admin or not trans.app.config.allow_library_path_paste:
                     continue
@@ -1553,54 +1560,70 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             error = True
             message = 'You must select an action to perform on the selected datasets.'
         else:
-            # Set up the list of lddas for later, and get permission checks out of the way so we don't have to do it in multiple places later.
             ldda_ids = util.listify( ldda_ids )
             for ldda_id in ldda_ids:
                 try:
                     ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+                    lddas.append( ldda )
                 except:
                     ldda = None
-                if not ldda or ( not is_admin and not trans.app.security_agent.can_access_library_item( current_user_roles, ldda, trans.user ) ):
-                    error = True
-                    message = "Invalid library dataset id ( %s ) specified." % str( ldda_id )
-                    break
-                lddas.append( ldda )
-            if not is_admin:
-                if action == 'manage_permissions':
-                    for ldda in lddas:
-                        if not ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and \
-                                 trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) ):
-                            error = True
-                            message = "You are not authorized to manage permissions on library dataset '%s'." % ldda.name
-                            break
-                elif action == 'delete':
-                    for ldda in lddas:
-                        if not trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
-                            error = True
-                            message = "You are not authorized to modify library dataset '%s'." % ldda.name
-                            break
+                    message += "Invalid library dataset id (%s) specified.  " % str( ldda_id )
         if not error:
             if action == 'manage_permissions':
-                trans.response.send_redirect( web.url_for( controller='library_common',
-                                                           action='ldda_permissions',
-                                                           cntrller=cntrller,
-                                                           use_panels=use_panels,
-                                                           library_id=library_id,
-                                                           folder_id=trans.security.encode_id( lddas[0].library_dataset.folder.id ),
-                                                           id=",".join( ldda_ids ),
-                                                           show_deleted=show_deleted,
-                                                           message=util.sanitize_text( message ),
-                                                           status=status ) )
-            elif action == 'delete':
+                valid_ldda_ids = []
+                valid_lddas = []
+                invalid_lddas = []
                 for ldda in lddas:
-                    # Do not delete the association, just delete the library_dataset.  The
-                    # cleanup_datasets.py script handles everything else.
-                    ld = ldda.library_dataset
-                    ld.deleted = True
-                    trans.sa_session.add( ld )
-                trans.sa_session.flush()
-                message = "The selected datasets have been deleted."
-            elif action in ['zip','tgz','tbz','ngxzip']:
+                    if trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ):
+                        valid_lddas.append( ldda )
+                        valid_ldda_ids.append( ldda.id )
+                    else:
+                        invalid_lddas.append( ldda )
+                if invalid_lddas:
+                    message += "You are not authorized to manage permissions on %s: " % inflector.cond_plural( len( invalid_lddas ), "dataset" )
+                    for ldda in invalid_lddas:
+                        message += '(%s)' % ldda.name
+                    message += '.  '
+                if valid_ldda_ids:
+                    folder_id = trans.security.encode_id( valid_lddas[0].library_dataset.folder.id )
+                    trans.response.send_redirect( web.url_for( controller='library_common',
+                                                               action='ldda_permissions',
+                                                               cntrller=cntrller,
+                                                               use_panels=use_panels,
+                                                               library_id=library_id,
+                                                               folder_id=folder_id,
+                                                               id=",".join( valid_ldda_ids ),
+                                                               show_deleted=show_deleted,
+                                                               message=util.sanitize_text( message ),
+                                                               status=status ) )
+                else:
+                    message = "You are not authorized to manage permissions on any of the selected datasets."
+            elif action == 'delete':
+                valid_lddas = []
+                invalid_lddas = []
+                for ldda in lddas:
+                    if trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
+                        valid_lddas.append( ldda )
+                    else:
+                        invalid_lddas.append( ldda )
+                if invalid_lddas:
+                    message += "You are not authorized to delete %s: " % inflector.cond_plural( len( invalid_lddas ), "dataset" )
+                    for ldda in invalid_lddas:
+                        message += '(%s)' % ldda.name
+                    message += '.  '
+                if valid_lddas:
+                    for ldda in valid_lddas:
+                        # Do not delete the association, just delete the library_dataset.  The
+                        # cleanup_datasets.py script handles everything else.
+                        ld = ldda.library_dataset
+                        ld.deleted = True
+                        trans.sa_session.add( ld )
+                    trans.sa_session.flush()
+                    num_valid_lddas = len( valid_lddas )
+                    message += "Deleted %i %s." % ( num_valid_lddas, inflector.cond_plural( num_valid_lddas, "dataset" ) )
+                else:
+                    message = "You are not authorized to delete any of the selected datasets."
+            elif action in [ 'zip','tgz','tbz','ngxzip' ]:
                 error = False
                 killme = string.punctuation + string.whitespace
                 trantab = string.maketrans(killme,'_'*len(killme))
@@ -1723,25 +1746,27 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream
-        else:
-            status = 'error'
-            message = 'Invalid action ( %s ) specified.' % action
+            else:
+                status = 'error'
+                message = 'Invalid action (%s) specified.' % str( action )
         if library_id:
             # If we have a library_id, browse the associated library
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
+                                                              current_user_roles=current_user_roles,
                                                               use_panels=use_panels,
                                                               id=library_id,
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status=status ) )
         else:
-            # We must have arrived here from the library_dataset_search_results page, so reddirect there.
+            # We arrived here from the library_dataset_search_results page, so redirect there.
             search_term = params.get( 'search_term', '' )
             comptypes = get_comptypes( trans )
             return trans.fill_template( '/library/common/library_dataset_search_results.mako',
                                         cntrller=cntrller,
+                                        current_user_roles=current_user_roles,
                                         search_term=search_term,
                                         comptypes=comptypes,
                                         lddas=lddas,
@@ -2121,27 +2146,26 @@ def activatable_folders( trans, folder ):
                            .options( eagerload_all( "actions" ) ) \
                            .order_by( trans.app.model.LibraryFolder.table.c.name ) \
                            .all()
-def active_folders_and_lddas( trans, folder ):
+def active_folders_and_library_datasets( trans, folder ):
     folders = active_folders( trans, folder )
-    # This query is much faster than the folder.active_library_datasets property
-    lddas = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
-                            .filter_by( deleted=False ) \
-                            .join( "library_dataset" ) \
-                            .filter( trans.app.model.LibraryDataset.table.c.folder_id==folder.id ) \
-                            .order_by( trans.app.model.LibraryDatasetDatasetAssociation.table.c.name ) \
-                            .all()
-    return folders, lddas
-def activatable_folders_and_lddas( trans, folder ):
+    library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
+                                       .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
+                                                      trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
+                                       .order_by( trans.model.LibraryDataset.table.c._name ) \
+                                       .all()
+    return folders, library_datasets
+def activatable_folders_and_library_datasets( trans, folder ):
     folders = activatable_folders( trans, folder )
-    # This query is much faster than the folder.activatable_library_datasets property
-    lddas = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
-                            .join( "library_dataset" ) \
-                            .filter( trans.app.model.LibraryDataset.table.c.folder_id==folder.id ) \
-                            .join( "dataset" ) \
-                            .filter( trans.app.model.Dataset.table.c.deleted==False ) \
-                            .order_by( trans.app.model.LibraryDatasetDatasetAssociation.table.c.name ) \
-                            .all()
-    return folders, lddas
+    library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
+                                       .filter( trans.model.LibraryDataset.table.c.folder_id == folder.id ) \
+                                       .join( ( trans.model.LibraryDatasetDatasetAssociation.table,
+                                                trans.model.LibraryDataset.table.c.library_dataset_dataset_association_id == trans.model.LibraryDatasetDatasetAssociation.table.c.id ) ) \
+                                       .join( ( trans.model.Dataset.table,
+                                                trans.model.LibraryDatasetDatasetAssociation.table.c.dataset_id == trans.model.Dataset.table.c.id ) ) \
+                                       .filter( trans.model.Dataset.table.c.deleted == False ) \
+                                       .order_by( trans.model.LibraryDataset.table.c._name ) \
+                                       .all()
+    return folders, library_datasets
 def branch_deleted( folder ):
     # Return True if a folder belongs to a branch that has been deleted
     if folder.deleted:

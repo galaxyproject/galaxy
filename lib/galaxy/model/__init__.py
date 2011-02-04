@@ -1040,33 +1040,9 @@ class LibraryFolder( object, APIItem ):
                 return template.get_widgets( trans.user )
         return []
     @property
-    def active_library_datasets( self ):
-        def sort_by_attr( seq, attr ):
-            """
-            Sort the sequence of objects by object's attribute
-            Arguments:
-            seq  - the list or any sequence (including immutable one) of objects to sort.
-            attr - the name of attribute to sort by
-            """
-            # Use the "Schwartzian transform"
-            # Create the auxiliary list of tuples where every i-th tuple has form
-            # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
-            # only to provide stable sorting, but mainly to eliminate comparison of objects
-            # (which can be expensive or prohibited) in case of equal attribute values.
-            intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
-            intermed.sort()
-            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
-         # This needs to be a list
-        active_library_datasets = [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.deleted ]
-        return sort_by_attr( [ ld for ld in active_library_datasets ], 'name' ) 
-    @property
     def activatable_library_datasets( self ):
          # This needs to be a list
         return [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.dataset.deleted ]
-    @property
-    def active_datasets( self ):
-        # This needs to be a list
-        return [ ld.library_dataset_dataset_association.dataset for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.deleted ]
     def get_display_name( self ):
         # Library folder name can be either a string or a unicode object. If string, 
         # convert to unicode object assuming 'utf-8' format.
