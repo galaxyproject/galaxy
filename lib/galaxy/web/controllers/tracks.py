@@ -241,9 +241,10 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
 
     @web.json
-    def chroms(self, trans, vis_id=None, dbkey=None ):
+    def chroms( self, trans, vis_id=None, dbkey=None, num=None, chrom=None, low=None ):
         """
         Returns a naturally sorted list of chroms/contigs for either a given visualization or a given dbkey.
+        Use either chrom or low to specify the starting chrom in the return list.
         """
         def check_int(s):
             if s.isdigit():
@@ -253,6 +254,25 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
 
         def split_by_number(s):
             return [ check_int(c) for c in re.split('([0-9]+)', s) ]
+            
+        #
+        # Parameter check, setting.
+        #
+        if num:
+            num = int( num )
+        else:
+            num = sys.maxint
+            
+        if low:
+            low = int( low )
+            if low < 0:
+                low = 0
+        else:
+            low = 0
+            
+        #
+        # Get viz, dbkey.
+        #
             
         # Must specify either vis_id or dbkey.
         if not vis_id and not dbkey:
@@ -269,46 +289,96 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             # No vis_id, so visualization is new. User is current user, dbkey must be given.
             vis_user = trans.user
             vis_dbkey = dbkey
+
+        #
+        # Get len file.
+        #
+        len_file = None
+        len_ds = None
+        # If there is any dataset in the history of extension `len`, this will use it
+        if 'dbkeys' in vis_user.preferences:
+            user_keys = from_json_string( vis_user.preferences['dbkeys'] )
+            if vis_dbkey in user_keys:  
+                len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ vis_dbkey ][ 'len' ] ).file_name
+
+        if not len_file:
+            len_ds = trans.db_dataset_for( dbkey )
+            if not len_ds:
+                len_file = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % vis_dbkey )
+            else:
+                len_file = len_ds.file_name
         
-        # Get chroms data.
-        chroms = self._chroms( trans, vis_user, vis_dbkey )
+        #
+        # Get chroms data:
+        #   (a) chrom name, len;
+        #   (b) whether there are previous, next chroms;
+        #   (c) index of start chrom.
+        #
+        len_file_enumerate = enumerate( open( len_file ) )
+        chroms = {}
+        prev_chroms = False
+        start_index = 0
+        if chrom:
+            # Use starting chrom to start list.
+            found = False
+            count = 0
+            for line_num, line in len_file_enumerate:
+                if line.startswith("#"): 
+                    continue
+                name, len = line.split("\t")
+                if found:
+                    chroms[ name ] = int( len )
+                    count += 1
+                elif name == chrom:
+                    # Found starting chrom.
+                    chroms[ name ] = int ( len )
+                    count += 1
+                    found = True
+                    start_index = line_num
+                    if line_num != 0:
+                        prev_chroms = True
+                if count >= num:
+                    break
+        else: 
+            # Use low to start list.
+            high = low + int( num )
+            prev_chroms = ( low != 0 )
+            start_index = low
+        
+            # Read chrom data from len file.
+            # TODO: this may be too slow for very large numbers of chroms/contigs, 
+            # but try it out for now.
+            if not os.path.exists( len_file ):
+                return None
+
+            for line_num, line in len_file_enumerate:
+                if line_num < low:
+                    continue
+                if line_num >= high:
+                    break
+                if line.startswith("#"): 
+                    continue
+                # LEN files have format:
+                #   <chrom_name><tab><chrom_length>
+                fields = line.split("\t")
+                chroms[ fields[0] ] = int( fields[1] )
+        
+        # Set flag to indicate whether there are more chroms after list.
+        next_chroms = False
+        try:
+            len_file_enumerate.next()
+            next_chroms = True
+        except:
+            # No more chroms to read.
+            pass
         
         # Check for reference chrom
         if self.available_genomes is None: self._init_references(trans)        
         
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
-        return { 'reference': vis_dbkey in self.available_genomes, 'chrom_info': to_sort }
-
-    def _chroms( self, trans, user, dbkey ):
-        """
-        Helper method that returns chrom lengths for a given user and dbkey.
-        """
-        len_file = None
-        len_ds = None
-        # If there is any dataset in the history of extension `len`, this will use it
-        if 'dbkeys' in user.preferences:
-            user_keys = from_json_string( user.preferences['dbkeys'] )
-            if dbkey in user_keys:
-                len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[dbkey]['len'] ).file_name
-            
-        if not len_file:
-            len_ds = trans.db_dataset_for( dbkey )
-            if not len_ds:
-                len_file = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % dbkey )
-            else:
-                len_file = len_ds.file_name
-        manifest = {}
-        if not os.path.exists( len_file ):
-            return None
-        for line in open( len_file ):
-            if line.startswith("#"): 
-                continue
-            # LEN files have format:
-            #   <chrom_name><tab><chrom_length>
-            fields = line.split("\t")
-            manifest[fields[0]] = int(fields[1])
-        return manifest
+        return { 'reference': vis_dbkey in self.available_genomes, 'chrom_info': to_sort, 
+                 'prev_chroms' : prev_chroms, 'next_chroms' : next_chroms, 'start_index' : start_index }
         
     @web.json
     def reference( self, trans, dbkey, chrom, low, high, **kwargs ):

@@ -59,6 +59,8 @@ var
     FEATURE_LEVELS = 10,
     MAX_FEATURE_DEPTH = 100,
     DEFAULT_DATA_QUERY_WAIT = 5000,
+    // Maximum number of chromosomes that are selectable at any one time.
+    MAX_CHROMS_SELECTABLE = 100,
     CONNECTOR_COLOR = "#ccc",
     DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
@@ -301,34 +303,13 @@ $.extend( View.prototype, {
         this.zo_link = $("<a id='zoom-out' />").click(function() { view.zoom_out(); view.redraw(); }).appendTo(this.chrom_form);
         this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.redraw(); }).appendTo(this.chrom_form);        
         
-        $.ajax({
-            url: chrom_url, 
-            data: (this.vis_id !== undefined ? { vis_id: this.vis_id } : { dbkey: this.dbkey }),
-            dataType: "json",
-            success: function ( result ) {
-                if (result.reference) {
-                    view.add_label_track( new ReferenceTrack(view) );
-                }
-                view.chrom_data = result.chrom_info;
-                var chrom_options = '<option value="">Select Chrom/Contig</option>';
-                for (var i = 0, len = view.chrom_data.length; i < len; i++) {
-                    var chrom = view.chrom_data[i].chrom;
-                    chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
-                }
-                view.chrom_select.html(chrom_options);
-                view.intro_div.show();
-                view.chrom_select.bind("change", function() {
-                    view.change_chrom(view.chrom_select.val());
-                });
-                if ( callback ) {
-                    callback();
-                }
-            },
-            error: function() {
-                alert( "Could not load chroms for this dbkey:", view.dbkey );
-            }
+        // Get initial set of chroms.
+        this.load_chroms({low: 0}, callback);
+        this.chrom_select.bind("change", function() {
+            view.change_chrom(view.chrom_select.val());
         });
-        
+        this.intro_div.show();
+                
         /*
         this.content_div.bind("mousewheel", function( e, delta ) {
             if (Math.abs(delta) < 0.5) {
@@ -446,42 +427,98 @@ $.extend( View.prototype, {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
         this.nav_input.val( this.chrom + ':' + commatize(low) + '-' + commatize(high) );
     },
+    load_chroms: function(url_parms, callback) {
+        url_parms['num'] = MAX_CHROMS_SELECTABLE;
+        $.extend( url_parms, (this.vis_id !== undefined ? { vis_id: this.vis_id } : { dbkey: this.dbkey } ) );
+        var view = this;
+        $.ajax({
+            url: chrom_url, 
+            data: url_parms,
+            dataType: "json",
+            success: function ( result ) {
+                if (result.reference) {
+                    view.add_label_track( new ReferenceTrack(view) );
+                }
+                view.chrom_data = result.chrom_info;
+                var chrom_options = '<option value="">Select Chrom/Contig</option>';
+                for (var i = 0, len = view.chrom_data.length; i < len; i++) {
+                    var chrom = view.chrom_data[i].chrom;
+                    chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
+                }
+                if (result.prev_chroms) {
+                    chrom_options += '<option value="previous">Previous ' + MAX_CHROMS_SELECTABLE + '</option>';
+                }
+                if (result.next_chroms) {
+                    chrom_options += '<option value="next">Next ' + MAX_CHROMS_SELECTABLE + '</option>';
+                }
+                view.chrom_select.html(chrom_options);
+                if ( callback ) {
+                    callback();
+                }
+                view.chrom_start_index = result.start_index;
+            },
+            error: function() {
+                alert( "Could not load chroms for this dbkey:", view.dbkey );
+            }
+        });
+        
+    },
     change_chrom: function(chrom, low, high) {
         var view = this;
+        
+        //
+        // If user is navigating to previous/next set of chroms, load new chrom set and return.
+        //
+        if (chrom == "previous") {
+            view.load_chroms({low: this.chrom_start_index - MAX_CHROMS_SELECTABLE});
+            return;
+        }
+        if (chrom == "next") {
+            view.load_chroms({low: this.chrom_start_index + MAX_CHROMS_SELECTABLE});
+            return;
+        }
+    
+        //
+        // User is loading a particular chrom. Look first in current set; if not in current set, load new
+        // chrom set.
+        //
         var found = $.grep(view.chrom_data, function(v, i) {
             return v.chrom === chrom;
         })[0];
         if (found === undefined) {
-            // Invalid chrom
+            // Try to load chrom and then change to chrom.
+            view.load_chroms({'chrom': chrom}, function() { view.change_chrom(chrom, low, high); });
             return;
         }
-        if (chrom !== view.chrom) {
-            view.chrom = chrom;
-            if (!view.chrom) {
-                // No chrom selected
-                view.intro_div.show();
-            } else {
-                view.intro_div.hide();
-            }
-            view.chrom_select.val(view.chrom);
-            view.max_high = found.len;
-            view.reset();
-            view.redraw(true);
-    
-            for (var track_id = 0, len = view.tracks.length; track_id < len; track_id++) {
-                var track = view.tracks[track_id];
-                if (track.init) {
-                    track.init();
+        else {
+            // Switching to local chrom.
+            if (chrom !== view.chrom) {
+                view.chrom = chrom;
+                if (!view.chrom) {
+                    // No chrom selected
+                    view.intro_div.show();
+                } else {
+                    view.intro_div.hide();
+                }
+                view.chrom_select.val(view.chrom);
+                view.max_high = found.len;
+                view.reset();
+                view.redraw(true);
+
+                for (var track_id = 0, len = view.tracks.length; track_id < len; track_id++) {
+                    var track = view.tracks[track_id];
+                    if (track.init) {
+                        track.init();
+                    }
                 }
             }
+            if (low !== undefined && high !== undefined) {
+                view.low = Math.max(low, 0);
+                view.high = Math.min(high, view.max_high);
+            }
+            view.reset_overview();
+            view.redraw();
         }
-        if (low !== undefined && high !== undefined) {
-            view.low = Math.max(low, 0);
-            view.high = Math.min(high, view.max_high);
-        }
-        view.reset_overview();
-        view.redraw();
-        
     },
     go_to: function(str) {
         var view = this,
