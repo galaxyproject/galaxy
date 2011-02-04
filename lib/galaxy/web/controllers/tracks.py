@@ -106,23 +106,29 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
     available_tracks = None
     title = "Add Datasets"
     template = "tracks/history_datasets_select_grid.mako"
-    async_template = "/page/select_items_grid_async.mako"
     model_class = model.HistoryDatasetAssociation
     default_filter = { "deleted" : "False" , "shared" : "All" }
-    default_sort_key = "name"
+    default_sort_key = "-hid"
     use_async = True
     use_paging = False
     columns = [
+        grids.GridColumn( "Id", key="hid" ),
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
         grids.TextColumn( "Filetype", key="extension", model_class=model.HistoryDatasetAssociation ),
         HistoryColumn( "History", key="history", visible=False ),
         DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False )
     ]
     columns.append( 
-        grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0], columns[1] ], 
+        grids.MulticolFilterColumn( "Search name and filetype", cols_to_filter=[ columns[1], columns[2] ], 
         key="free-text-search", visible=False, filterable="standard" )
     )
-
+    
+    def get_current_item( self, trans, **kwargs ):
+        """ 
+        Current item for grid is the history being queried. This is a bit 
+        of hack since current_item typically means the current item in the grid.
+        """
+        return model.History.get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table ).join( model.Dataset.table )
     def apply_query_filter( self, trans, query, **kwargs ):
@@ -144,13 +150,9 @@ class TracksterSelectionGrid( grids.Grid ):
     use_async = True
     use_paging = False
     columns = [
-        grids.TextColumn( "Title", key="title", model_class=model.Visualization ),
+        grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="standard" ),
         grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization )
     ]
-    columns.append( 
-        grids.MulticolFilterColumn( "Search", cols_to_filter=[ columns[0] ], 
-        key="free-text-search", visible=False, filterable="standard" )
-    )
 
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class )

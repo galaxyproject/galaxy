@@ -271,7 +271,7 @@ class Grid( object ):
                                     message = message,
                                     use_panels=self.use_panels,
                                     webapp=webapp,
-                                    show_item_checkboxes = kwargs.get( "show_item_checkboxes", False ),
+                                    show_item_checkboxes = ( kwargs.get( 'show_item_checkboxes', '' ) in ['True', 'true'] ),
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )

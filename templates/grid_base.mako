@@ -262,6 +262,9 @@
         // Add sort argument to URL args.
         url_args['sort'] = "${sort_key}";
         
+        // Add show_item_checkboxes argument to URL args.
+        url_args['show_item_checkboxes'] = ("${context.get('show_item_checkboxes', False)}" === "True");
+        
         // Add async keyword to URL args.
         url_args['async'] = true;
         

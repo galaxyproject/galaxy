@@ -11,6 +11,5 @@
     %>
     ## Use class 'label' to piggyback on URL functionality in parent template.
     <a class="label" href="${h.url_for( **url_dict )}">Back to histories</a>
-    <br /><br />
-    ${parent.title()}
+    <h2>History '${grid.get_current_item( trans, **kwargs ).name}'</h2>
 </%def>
