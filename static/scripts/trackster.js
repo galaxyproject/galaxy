@@ -51,6 +51,8 @@ function sortable( element, handle ) {
     });
 }
 
+
+
 /**
  * Init constants & functions used throughout trackster.
  */
@@ -1360,6 +1362,15 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 }
                 if (!tile_element) {
                     tile_element = track.draw_tile(resolution, tile_index, parent_element, w_scale);
+                    if ( tile_element ) {
+                        // Wrap element in div for background
+                        var wrapper_element = $("<div class='track-tile'>").prepend( tile_element );
+                        // HACK: filtering
+                        if ( tile_element.hasClass( FILTERABLE_CLASS ) ) {
+                            wrapper_element.addClass( FILTERABLE_CLASS );
+                        }
+                        tile_element = wrapper_element;
+                    }
                 }
                 if (tile_element) {
                     // Store initial canvas in case we need to use it for overview
@@ -1398,6 +1409,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         parent_element.append( tile_element );
         track.max_height = Math.max( track.max_height, tile_element.height() );
         track.content_div.css("height", track.max_height + "px");
+        parent_element.children().css("height", track.max_height + "px");
         
         if (track.hidden) { return; }
         

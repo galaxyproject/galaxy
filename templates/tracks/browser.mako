@@ -102,12 +102,21 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
     }
 
     .track-content {
-        background: #eee;
+        background: #eee url(${h.url_for('/static/images/tracks/diag_bg.gif')});
         min-height: 16px;
     }
 
     .label-track .track-content {
         background: white;
+    }
+
+    .track-tile {
+        background: white;
+    }
+
+    .track-tile canvas {
+        position: relative;
+        z-index: 100;
     }
 </style>
 </%def>
