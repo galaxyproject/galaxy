@@ -104,6 +104,7 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
     .track-content {
         background: #eee url(${h.url_for('/static/images/tracks/diag_bg.gif')});
         min-height: 16px;
+        border-top: 1px solid #eee;
     }
 
     .label-track .track-content {

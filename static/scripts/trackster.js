@@ -1638,7 +1638,7 @@ var LineTrack = function ( name, view, hda_ldda, dataset_id, prefs ) {
     Track.call( this, name, view, view.viewport_container );
     TiledTrack.call( this );
    
-    this.min_height_px = 12; 
+    this.min_height_px = 16; 
     this.max_height_px = 400; 
     this.height_px = 80;
     this.hda_ldda = hda_ldda;
@@ -2255,12 +2255,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             ctx.fillText(result.message, 100 + left_offset, y_scale);
             return canvas;
         }
-        
+
         //        
         // If tile is filterable, add class to canvas.
         //
         for (var f = 0; f < this.filters.length; f++) {
-            if (this.filters[f].applies_to(result.data[0])) {
+            if (result.data.length && this.filters[f].applies_to(result.data[0])) {
                 canvas.addClass(FILTERABLE_CLASS);
                 break;
             }
