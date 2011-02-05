@@ -18,16 +18,6 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
     #browser-container {
         overflow: none;
     }
-    ul#sortable-ul {
-        list-style: none;
-        padding: 0;
-        margin: 5px;
-    }
-    ul#sortable-ul li {
-        display: block;
-        margin: 5px 0;
-        background: #eee;
-    }
     .nav-container {
         width: 100%;
         ## Overriding styles from trackster.css to push nav up into title bar
@@ -41,83 +31,6 @@ ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8
         top: -2em;
         background: transparent;
         border: none;
-    }
-    #
-    # TODO: move these into trackster.css
-    # Styles for tools and filters.
-    #
-    .filter-name {
-        float: left;
-    }
-    input {
-        font: 10px verdana;
-    }
-    table.filters {
-        border-collapse: separate;
-        border-spacing: 7px 0px;
-    }
-    .values {
-        padding-left: 0.25em;
-    }
-    .dynamic-tool {
-        width: 400px;
-        margin-left: 0.25em;
-    }
-    .param-row {
-        margin-top: 0.4em;
-        margin-left: 1em;
-    }
-    .slider-label {
-        float: left;
-        font-weight: bold;
-    }
-    .slider {
-        float: right;
-        width: 200px; 
-        position: relative;
-    }
-    .tool-name {
-        font-size: 110%;
-        font-weight: bold;
-    }
-    .child-track-icon {
-        background:url(${h.url_for('/static/images/fugue/arrow-000-small-bw.png')}) no-repeat;
-        width: 30px;
-        cursor: move;
-    }
-    .param-value {
-        cursor: pointer;
-    }
-
-    .track-resize {
-        
-        background: white url(${h.url_for('/static/images/visualization/draggable_vertical.png')}) no-repeat top center;
-        position: absolute;
-        right: 3px;
-        bottom: -4px;
-        width: 14px;
-        height: 7px;
-        border: solid #999 1px;
-        z-index: 100;
-    }
-
-    .track-content {
-        background: #eee url(${h.url_for('/static/images/tracks/diag_bg.gif')});
-        min-height: 16px;
-        border-top: 1px solid #eee;
-    }
-
-    .label-track .track-content {
-        background: white;
-    }
-
-    .track-tile {
-        background: white;
-    }
-
-    .track-tile canvas {
-        position: relative;
-        z-index: 100;
     }
 </style>
 </%def>
