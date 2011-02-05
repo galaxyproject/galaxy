@@ -466,6 +466,12 @@ $.extend( View.prototype, {
         
     },
     change_chrom: function(chrom, low, high) {
+        
+        // Don't do anything if chrom is "None" (hackish but some browsers already have this set), or null/blank
+        if (!chrom || chrom === "None") {
+            return;
+        }
+        
         var view = this;
         
         //
