@@ -1574,6 +1574,9 @@ var ReferenceTrack = function (view) {
     this.left_offset = 200;
     this.height_px = 12;
     this.container_div.addClass( "reference-track" );
+    this.content_div.css("background", "none");
+    this.content_div.css("min-height", "0px");
+    this.content_div.css("border", "none");
     this.data_queue = {};
     this.data_cache = new DataCache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
