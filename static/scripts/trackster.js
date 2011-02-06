@@ -1018,8 +1018,8 @@ $.extend( Track.prototype, {
                         track.content_div.text("");
                         track.content_div.css( "height", track.height_px + "px" );
                         track.enabled = true;
-                        track.predraw_init();
-                        track.draw();
+                        // predraw_init may be asynchronous, wait for it and then draw
+                        $.when( track.predraw_init() ).done( function() { track.draw() } );
                     }
                 }
             });
@@ -1803,7 +1803,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             track_id = track.view.tracks.indexOf(track);
         
         track.vertical_range = undefined;
-        $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: null, high: null,
+        return $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: null, high: null,
                                         hda_ldda: track.hda_ldda, dataset_id: track.dataset_id }, function(result) {
             track.container_div.addClass( "line-track" );
             var data = result.data;
