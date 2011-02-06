@@ -1771,7 +1771,7 @@ var LineTrack = function ( name, view, hda_ldda, dataset_id, prefs ) {
             track.tile_cache.clear();    
             in_drag = false;
             if ( ! in_handle ) { drag_control.hide(); }
-            track.track_config.values.height_px = track.height_px;
+            track.track_config.values.height = track.height_px;
         }).appendTo( track.container_div );
     })(this);
 };
