@@ -309,7 +309,7 @@
 
         }
         
-        $.jStore.engineReady(function() {
+        $.jStore.ready(function() {
             // On load, set the size to the pref stored in local storage if it exists
             overview_size = $.jStore.store("overview-size");
             if (overview_size !== undefined) {

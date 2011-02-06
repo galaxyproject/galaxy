@@ -316,7 +316,7 @@ $.extend( Node.prototype, {
                        left:'',
                        top:'',
                        display:'' });
-            $('body').remove(ib);
+            ib.remove();
             ibox.append( ib.prepend( t ) );
         });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
@@ -381,7 +381,7 @@ $.extend( Node.prototype, {
                        left:'',
                        top:'',
                        display:'' });
-            $('body').remove(r);
+            r.remove();
             b.append( r.append( t ) );
         });
         f.css( "width", Math.min(250, Math.max(f.width(), output_width )));

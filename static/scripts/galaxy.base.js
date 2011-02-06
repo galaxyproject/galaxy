@@ -496,7 +496,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
     } else {
         // Load jStore for local storage
         $.jStore.init("galaxy"); // Auto-select best storage
-        $.jStore.engineReady(function() {
+        $.jStore.ready(function() {
             action();
         });
     }
