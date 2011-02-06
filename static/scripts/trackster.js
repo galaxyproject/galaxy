@@ -859,8 +859,25 @@ $.extend( TrackConfig.prototype, {
                 row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
                 if ( param.type == 'bool' ) {
                     row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', track_config.values[ param.key ] ) );
+                } else if ( param.type == 'color' ) {
+                    var value = track_config.values[ param.key ];
+                    var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
+                    // Color picker in tool tip style float
+                    var tip = $( "<div class='tipsy tipsy-west' style='position: absolute;' />" )
+                        .append( $("<div class='tipsy-inner' />")
+                        .farbtastic( { width: 100, height: 100, callback: input, color: value } ) )
+                        .hide();
+                    // Outer div container input and tip for hover to work
+                    $("<div />").append( input ).append( tip ).appendTo( row ).hover( function () { 
+                        tip.css( { 
+                            left: $(this).position().left + $(input).width() - 20,
+                            top: $(this).position().top - 50 
+                        } ).show(); 
+                    }, function () { 
+                        tip.hide(); 
+                    } );
                 } else {
-                    row.append( $('<input />').attr("id", id ).attr("name", id ).val( track_config.values[ param.key ] ) );
+                    row.append( $('<input />').attr("id", id ).attr("name", id ).val( track_config.values[ param.key ] ) ); 
                 }
             }
         });
