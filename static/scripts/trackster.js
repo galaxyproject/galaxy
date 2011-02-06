@@ -863,18 +863,21 @@ $.extend( TrackConfig.prototype, {
                     var value = track_config.values[ param.key ];
                     var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
                     // Color picker in tool tip style float
-                    var tip = $( "<div class='tipsy tipsy-west' style='position: absolute;' />" )
+                    var tip = $( "<div class='tipsy tipsy-north' style='position: absolute;' />" )
                         .append( $("<div class='tipsy-inner' />")
                         .farbtastic( { width: 100, height: 100, callback: input, color: value } ) )
                         .hide();
                     // Outer div container input and tip for hover to work
-                    $("<div />").append( input ).append( tip ).appendTo( row ).hover( function () { 
+                    $("<div />").append( input ).append( tip ).appendTo( row ).bind( "click", function ( e ) { 
                         tip.css( { 
-                            left: $(this).position().left + $(input).width() - 20,
-                            top: $(this).position().top - 50 
-                        } ).show(); 
-                    }, function () { 
-                        tip.hide(); 
+                            left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                            top: $(this).position().top + $(this.height) 
+                        } ).show();
+                       $(document).bind( "click.color-picker", function() {
+                           tip.hide();
+                           $(document).unbind( "click.color-picker" );
+                       }); 
+                        e.stopPropagation();
                     } );
                 } else {
                     row.append( $('<input />').attr("id", id ).attr("name", id ).val( track_config.values[ param.key ] ) ); 
