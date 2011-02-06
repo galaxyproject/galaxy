@@ -389,7 +389,8 @@ $.extend( View.prototype, {
         // to zoom in 
         this.top_labeltrack.bind( "dragstart", function( e, d ) {
             return $("<div />").css( { 
-                "height": view.content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height(), 
+                "height": view.content_div.height() + view.top_labeltrack.height() 
+                            + view.nav_labeltrack.height() + 1, 
                 "top": "0px", 
                 "position": "absolute", 
                 "background-color": "#ccf", 
@@ -1485,7 +1486,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
     show_tile: function( tile_element, parent_element, tile_low ) {
         // Readability.
         var track = this;
-       
+      
         // Position tile element, recalculate left position at display time
         var range = this.view.high - this.view.low,
             w_scale = this.content_div.width() / range,
@@ -1761,6 +1762,7 @@ var LineTrack = function ( name, view, hda_ldda, dataset_id, prefs ) {
 
     this.prefs = this.track_config.values;
     this.height_px = this.track_config.values.height;
+    this.vertical_range = this.track_config.values.max_value - this.track_config.values.min_value;
 
     // Add control for resizing
     // Trickery here to deal with the hovering drag handle, can probably be
