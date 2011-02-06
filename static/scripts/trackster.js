@@ -829,6 +829,71 @@ var get_filters_from_dict = function(filters_dict) {
     return filters;
 };
 
+var TrackConfig = function( options ) {
+    this.track = options.track;
+    this.params = options.params;
+    this.values = {}
+    if ( options.saved_values ) {
+        this.restore_values( options.saved_values );
+    }
+    this.onchange = options.onchange
+}
+$.extend( TrackConfig.prototype, {
+    restore_values: function( values ) {
+        var track_config = this;
+        $.each( this.params, function( index, param ) {
+            if ( values[ param.key ] !== undefined ) {
+                track_config.values[ param.key ] = values[ param.key ];
+            } else {
+                track_config.values[ param.key ] = param.default_value;
+            }
+        }); 
+    },
+    build_form: function() {
+        var track_config = this;
+        var container = $("<div />");
+        $.each( this.params, function( index, param ) {
+            if ( ! param.hidden ) {
+                var id = 'param_' + index;
+                var row = $("<div class='form-row' />").appendTo( container );
+                row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
+                if ( param.type == 'bool' ) {
+                    row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', track_config.values[ param.key ] ) );
+                } else {
+                    row.append( $('<input />').attr("id", id ).attr("name", id ).val( track_config.values[ param.key ] ) );
+                }
+            }
+        });
+        return container;
+    },
+    update_from_form : function( container ) {
+        var track_config = this;
+        var changed = false;
+        $.each( this.params, function( index, param ) {
+            if ( ! param.hidden ) {
+                // Parse value from form element
+                var id = 'param_' + index;
+                var value = container.find( '#' + id ).val();
+                if ( param.type == 'float' ) {
+                    value = parseFloat( value );
+                } else if ( param.type == 'int' ) {
+                    value = parseInt( value );
+                } else if ( param.type == 'bool' ) {
+                    value = container.find( '#' + id ).is( ':checked' );
+                } 
+                // Save value only if changed
+                if ( value !== track_config.values[ param.key ] ) {
+                    track_config.values[ param.key ] = value;
+                    changed = true;
+                }
+            }
+        });
+        if ( changed ) {
+            this.onchange();
+        }
+    }
+});
+
 /**
  * Tracks are objects can be added to the View. 
  * 
@@ -943,14 +1008,6 @@ $.extend( Track.prototype, {
      * Additional initialization required before drawing track for the first time.
      */
     predraw_init: function() {},
-    restore_prefs: function(prefs) {
-        var that = this;
-        $.each(prefs, function(pref, val) {
-            if (val !== undefined) {
-                that.prefs[pref] = val;
-            }
-        });
-    },
     // Provide support for updating and reverting track name. Currently, it's only possible to revert once.
     update_name: function(new_name) {
         this.old_name = this.name;
@@ -1186,7 +1243,11 @@ var TiledTrack = function(filters, tool, parent_track) {
     var track_dropdown = {};
     track_dropdown["Edit configuration"] = function() {
         var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
-            ok_fn = function() { track.update_options(track.track_id); hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+            ok_fn = function() { 
+                track.track_config.update_from_form( $(".dialog-box") );
+                hide_modal(); 
+                $(window).unbind("keypress.check_enter_esc"); 
+            },
             check_enter_esc = function(e) {
                 if ((e.keyCode || e.which) === 27) { // Escape key
                     cancel_fn();
@@ -1196,7 +1257,7 @@ var TiledTrack = function(filters, tool, parent_track) {
             };
 
         $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-        show_modal("Configure Track", track.gen_options(track.track_id), {
+        show_modal("Configure Track", track.track_config.build_form(), {
             "Cancel": cancel_fn,
             "OK": ok_fn
         });
@@ -1641,6 +1702,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
 });
 
 var LineTrack = function ( name, view, hda_ldda, dataset_id, prefs ) {
+    var track = this;
     this.track_type = "LineTrack";
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
@@ -1655,8 +1717,30 @@ var LineTrack = function ( name, view, hda_ldda, dataset_id, prefs ) {
     this.original_dataset_id = dataset_id;
     this.data_cache = new DataCache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
-    this.prefs = { 'color': 'black', 'min_value': undefined, 'max_value': undefined, 'mode': this.mode };
-    this.restore_prefs(prefs);
+
+    // Define track configuration
+    this.track_config = new TrackConfig( {
+        track: this,
+        params: [
+            { key: 'color', label: 'Color', type: 'color', default_value: 'black' },
+            { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
+            { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+            { key: 'height', type: 'int', default_value: this.height_px, hidden: true }
+        ], 
+        saved_values: prefs,
+        onchange: function() {
+            track.vertical_range = track.prefs.max_value - track.prefs.min_value;
+            // Update the y-axis
+            $('#linetrack_' + track.track_id + '_minval').text(track.prefs.min_value);
+            $('#linetrack_' + track.track_id + '_maxval').text(track.prefs.max_value);
+            track.tile_cache.clear();
+            track.draw();
+        }
+    });
+
+    this.prefs = this.track_config.values;
+    this.height_px = this.track_config.values.height;
 
     // Add control for resizing
     // Trickery here to deal with the hovering drag handle, can probably be
@@ -1687,6 +1771,7 @@ var LineTrack = function ( name, view, hda_ldda, dataset_id, prefs ) {
             track.tile_cache.clear();    
             in_drag = false;
             if ( ! in_handle ) { drag_control.hide(); }
+            track.track_config.values.height_px = track.height_px;
         }).appendTo( track.container_div );
     })(this);
 };
@@ -1854,42 +1939,11 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             ctx.stroke();
         }
         return canvas;
-    }, gen_options: function(track_id) {
-        var container = $("<div />").addClass("form-row");
-        
-        var color = 'track_' + track_id + '_color',
-            color_label = $('<label />').attr("for", color).text("Color:"),
-            color_input = $('<input />').attr("id", color).attr("name", color).val(this.prefs.color),
-            minval = 'track_' + track_id + '_minval',
-            min_label = $('<label></label>').attr("for", minval).text("Min value:"),
-            min_val = (this.prefs.min_value === undefined ? "" : this.prefs.min_value),
-            min_input = $('<input></input>').attr("id", minval).val(min_val),
-            maxval = 'track_' + track_id + '_maxval',
-            max_label = $('<label></label>').attr("for", maxval).text("Max value:"),
-            max_val = (this.prefs.max_value === undefined ? "" : this.prefs.max_value),
-            max_input = $('<input></input>').attr("id", maxval).val(max_val);
-
-        return container.append(min_label).append(min_input).append(max_label)
-                .append(max_input).append(color_label).append(color_input);
-    }, update_options: function(track_id) {
-        var min_value = $('#track_' + track_id + '_minval').val(),
-            max_value = $('#track_' + track_id + '_maxval').val(),
-            color = $('#track_' + track_id + '_color').val();
-        if ( min_value !== this.prefs.min_value || max_value !== this.prefs.max_value || color !== this.prefs.color ) {
-            this.prefs.min_value = parseFloat(min_value);
-            this.prefs.max_value = parseFloat(max_value);
-            this.prefs.color = color;
-            this.vertical_range = this.prefs.max_value - this.prefs.min_value;
-            // Update the y-axis
-            $('#linetrack_' + track_id + '_minval').text(this.prefs.min_value);
-            $('#linetrack_' + track_id + '_maxval').text(this.prefs.max_value);
-            this.tile_cache.clear();
-            this.draw();
-        }
-    }
+    } 
 });
 
 var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, tool, parent_track) {
+    var track = this;
     this.track_type = "FeatureTrack";
     this.display_modes = ["Auto", "Dense", "Squish", "Pack"];
     Track.call(this, name, view, view.viewport_container);
@@ -1914,8 +1968,22 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.data_cache = new DataCache(20);
     this.left_offset = 200;
     
-    this.prefs = { 'block_color': '#444', 'label_color': 'black', 'show_counts': true };
-    this.restore_prefs(prefs);
+    // Define track configuration
+    this.track_config = new TrackConfig( {
+        track: this,
+        params: [
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
+            { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
+            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true }
+        ], 
+        saved_values: prefs,
+        onchange: function() {
+            track.tile_cache.clear();
+            track.draw();
+        }
+    });
+
+    this.prefs = this.track_config.values;
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     get_data: function( low, high ) {
@@ -2476,33 +2544,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             }
         }
         return canvas;
-    }, 
-    gen_options: function(track_id) {
-        var container = $("<div />").addClass("form-row");
-
-        var block_color = 'track_' + track_id + '_block_color',
-            block_color_label = $('<label />').attr("for", block_color).text("Block color:"),
-            block_color_input = $('<input />').attr("id", block_color).attr("name", block_color).val(this.prefs.block_color),
-            label_color = 'track_' + track_id + '_label_color',
-            label_color_label = $('<label />').attr("for", label_color).text("Text color:"),
-            label_color_input = $('<input />').attr("id", label_color).attr("name", label_color).val(this.prefs.label_color),
-            show_count = 'track_' + track_id + '_show_count',
-            show_count_label = $('<label />').attr("for", show_count).text("Show summary counts"),
-            show_count_input = $('<input type="checkbox" style="float:left;"></input>').attr("id", show_count).attr("name", show_count).attr("checked", this.prefs.show_counts),
-            show_count_div = $('<div />').append(show_count_input).append(show_count_label);
-            
-        return container.append(block_color_label).append(block_color_input).append(label_color_label).append(label_color_input).append(show_count_div);
-    }, update_options: function(track_id) {
-        var block_color = $('#track_' + track_id + '_block_color').val(),
-            label_color = $('#track_' + track_id + '_label_color').val(),
-            show_counts = $('#track_' + track_id + '_show_count').attr("checked");
-        if (block_color !== this.prefs.block_color || label_color !== this.prefs.label_color || show_counts !== this.prefs.show_counts) {
-            this.prefs.block_color = block_color;
-            this.prefs.label_color = label_color;
-            this.prefs.show_counts = show_counts;
-            this.tile_cache.clear();
-            this.draw();
-        }
     }
 });
 
