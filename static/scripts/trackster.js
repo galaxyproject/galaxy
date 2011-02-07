@@ -61,6 +61,7 @@ var
     DENSE_HEIGHT = 1,
     SQUISH_HEIGHT = 3,
     PACK_HEIGHT = 9,
+    LABEL_SPACING = 2,
     
     // Other constants.
     DENSITY = 200,
@@ -2123,11 +2124,16 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             // Update start, end drawing locations to include feature name.
             // Try to put the name on the left, if not, put on right.
             if (feature_name !== undefined && !no_detail) {
-                if (f_start - text_len < 0) {
-                    f_end += text_len;
+                // +2 for gap b/t text and feature, +3 for packing issue. (TODO: it's not clear what
+                // the packing issue is, other than that packing is global but features are drawn locally;
+                // it seems this mismatch is causing features to slightly overlap, perhaps due to features
+                // being compressed onto tiles.)
+                text_len += (LABEL_SPACING + 4);
+                if (f_start - text_len >= 0) {
+                    f_start -= text_len;
                     text_align = "left";
                 } else {
-                    f_start -= text_len;
+                    f_end += text_len;
                     text_align = "right";
                 }
             }
@@ -2457,10 +2463,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         ctx.fillStyle = this.prefs.label_color;
                         if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                             ctx.textAlign = "left";
-                            ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
+                            ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING, y_center + 8);
                         } else {
                             ctx.textAlign = "right";
-                            ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
+                            ctx.fillText(feature_name, f_start + left_offset + LABEL_SPACING, y_center + 8);
                         }
                         ctx.fillStyle = block_color;
                     }
