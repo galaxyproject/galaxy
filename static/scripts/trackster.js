@@ -57,6 +57,12 @@ function sortable( element, handle ) {
  * Init constants & functions used throughout trackster.
  */
 var 
+    // Drawing constants.
+    DENSE_HEIGHT = 1,
+    SQUISH_HEIGHT = 3,
+    PACK_HEIGHT = 9,
+    
+    // Other constants.
     DENSITY = 200,
     FEATURE_LEVELS = 10,
     MAX_FEATURE_DEPTH = 100,
@@ -209,8 +215,7 @@ $.extend(DataCache.prototype, Cache.prototype, {
     },
     // Generate key for cache.
     gen_key: function(low, high, mode) {
-        // TODO: use mode to generate key?
-        var key = low + "_" + high;
+        var key = low + "_" + high + "_" + mode;
         /*
         if (no_detail) {
             key += "_" + no_detail
@@ -1978,7 +1983,7 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.vertical_detail_px = 10;
-    this.vertical_nodetail_px = 3;
+    this.vertical_nodetail_px = 5;
     this.summary_draw_height = 30;
     this.default_font = "9px Monaco, Lucida Console, monospace";
     this.inc_slots = {};
@@ -2221,7 +2226,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     } else {
                         ctx.fillStyle = this.prefs.block_color;
                         // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                        ctx.fillRect(s_start + this.left_offset, y_center + (this.mode != "Dense" ? 4 : 5), s_end - s_start, (this.mode != "Dense" ? 3 : 1) );
+                        ctx.fillRect(s_start + this.left_offset, 
+                                     y_center + (this.mode != "Dense" ? 4 : 5), 
+                                     s_end - s_start, 
+                                     (this.mode != "Dense" ? SQUISH_HEIGHT : DENSE_HEIGHT) );
                     }
                     seq_offset += cig_len;
                     break;
@@ -2261,8 +2269,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 break;
             }
         }*/
-        var result = this.data_cache.get_data(tile_low, tile_high, this.mode);
         
+        //
+        // Get tile data; if data not available, issue get_data request and return.
+        //
+        var result = this.data_cache.get_data(tile_low, tile_high, this.mode);
         if (result === undefined || result === "pending" || 
             (this.mode !== "Auto" && result.dataset_type === "summary_tree")) {
             this.data_queue[ [tile_low, tile_high] ] = true;
@@ -2270,6 +2281,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             return;
         }
         
+        //
+        // Create/set/compute some useful vars.
+        //
         var width = Math.ceil( tile_span * w_scale ),
             label_color = this.prefs.label_color,
             block_color = this.prefs.block_color,
@@ -2295,7 +2309,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             required_height = this.incremental_slots( inc_scale, result.data, no_detail, mode ) * y_scale + min_height;
             slots = this.inc_slots[inc_scale];
         }
-       
+
         canvas.get(0).width = width + left_offset;
         canvas.get(0).height = required_height;
         parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
@@ -2396,6 +2410,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             }
                 
             if (feature_start <= tile_high && feature_end >= tile_low) {
+                // -1 b/c intervals are half-open.
+                if (result.dataset_type == "interval_index") {
+                    feature_end -= 1;
+                }
+                
                 // All features need a start, end, and vertical center.
                 var f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
@@ -2446,12 +2465,37 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 }
                 // Interval index drawing.
                 else if (result.dataset_type === "interval_index") {
-                    // console.log(feature_uid, feature_start, feature_end, f_start, f_end, y_center);
-                    if (no_detail) {
+                    //
+                    // There are really four modes for interval indices:
+                    //      dense, no_detail, squish, pack.
+                    //
+                    
+                    // TODO: move this code out of loop.
+                    // Set mode in Auto
+                    if (mode == "Auto") {
+                        // Never use dense when in auto mode.
+                        // TODO: decide when to use squish and when to use pack.
+                        if (feature.length <= 4) {
+                            mode = "Squish";
+                        }
+                        else {
+                            mode = "Pack";
+                        }
+                    }
+                    
+                    // Dense mode displays the same for all data.
+                    if (mode == "Dense") {
                         ctx.fillStyle = block_color;
+                        ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, DENSE_HEIGHT);
+                    }
+                    // Mode is either Squish or Pack:
+                    else if (feature.length <= 4) {
+                        // No details for feature, so only one way to display.
+                        ctx.fillStyle = block_color;
+                        // TODO: what should width be here?
                         ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
                     } else {
-                        // Showing labels, blocks, details.
+                        // Feature has details.
                         var feature_strand = feature[5],
                             feature_ts = feature[6],
                             feature_te = feature[7],
@@ -2461,8 +2505,92 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
                             thick_end = Math.ceil( Math.min(width, Math.max(0, (feature_te - tile_low) * w_scale)) );
                         }
-                        if (mode !== "Dense" && feature_name !== undefined && feature_start > tile_low) {
-                            // Draw label
+                        
+                        // Set vars that depend on mode.
+                        var thin_height, thick_height;
+                        if (mode == "Squish") {
+                            thin_height = 1;
+                            thick_height = SQUISH_HEIGHT;
+                        }
+                        else { // mode == "Pack"
+                            thin_height = 5;
+                            thick_height = PACK_HEIGHT;
+                        }
+                        
+                        // Draw feature/feature blocks + connectors.
+                        if (!feature_blocks) {
+                            // If there are no blocks, treat the feature as one big exon.
+                            if ( feature.strand ) {
+                                if (feature.strand == "+") {
+                                    ctx.fillStyle = RIGHT_STRAND_INV;
+                                } else if (feature.strand == "-") {
+                                    ctx.fillStyle = LEFT_STRAND_INV;
+                                }
+                            }
+                            else { // No strand.
+                                ctx.fillStyle = CONNECTOR_COLOR;
+                            }                            
+                            ctx.fillRect(f_start + left_offset, y_center + (thick_height-thin_height)/2 + 1, 
+                                         f_end - f_start, thick_height);
+                        }
+                        else { // There are feature blocks and mode is either Squish or Pack.
+                            //
+                            // Approach: (a) draw whole feature as connector/intron and (b) draw blocks as 
+                            // needed. This ensures that whole feature, regardless of whether it starts with
+                            // a block, is visible.
+                            //
+                            
+                            // Draw whole feature as connector/intron.
+                            var cur_y_center, cur_height;
+                            if (mode == "Squish") {
+                                ctx.fillStyle = CONNECTOR_COLOR;
+                                cur_y_center = y_center + Math.floor(SQUISH_HEIGHT/2) + 1;
+                                cur_height = 1;
+                            }
+                            else { // mode == "Pack"
+                                if (feature_strand) {
+                                    var cur_y_center = y_center;
+                                    var cur_height = thick_height;
+                                    if (feature_strand == "+") {
+                                        ctx.fillStyle = RIGHT_STRAND;
+                                    } else if (feature_strand == "-") {
+                                        ctx.fillStyle = LEFT_STRAND;
+                                    }
+                                }
+                                else {
+                                    ctx.fillStyle = CONNECTOR_COLOR;
+                                    cur_y_center += (SQUISH_HEIGHT/2) + 1;
+                                    cur_height = 1;
+                                }
+                            }
+                            ctx.fillRect(f_start + left_offset, cur_y_center, f_end - f_start, cur_height);
+                            
+                            for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
+                                var block = feature_blocks[k],
+                                    block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
+                                    block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) );
+                                
+                                // Skip drawing if block not on tile.    
+                                if (block_start > block_end) { continue; }
+
+                                // Draw thin block.
+                                ctx.fillStyle = block_color;
+                                ctx.fillRect(block_start + left_offset, y_center + (thick_height-thin_height)/2 + 1, 
+                                             block_end - block_start, thin_height);
+
+                                // If block intersects with thick region, draw block as thick.
+                                if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
+                                    var block_thick_start = Math.max(block_start, thick_start),
+                                        // -1 b/c intervals are half-open.
+                                        block_thick_end = Math.min(block_end, thick_end-1);
+                                    ctx.fillRect(block_thick_start + left_offset, y_center + 1,
+                                                 block_thick_end - block_thick_start, thick_height);
+                                }
+                            }
+                        }
+                        
+                        // Draw label for Pack mode.
+                        if (mode == "Pack" && feature_start > tile_low) {
                             ctx.fillStyle = label_color;
                             if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                                 ctx.textAlign = "left";
@@ -2473,53 +2601,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             }
                             ctx.fillStyle = block_color;
                         }
-                        if (feature_blocks) {
-                            // Draw introns
-                            if (feature_strand) {
-                                if (feature_strand == "+") {
-                                    ctx.fillStyle = RIGHT_STRAND;
-                                } else if (feature_strand == "-") {
-                                    ctx.fillStyle = LEFT_STRAND;
-                                }
-                                ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
-                                ctx.fillStyle = block_color;
-                            }
-                        
-                            for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
-                                var block = feature_blocks[k],
-                                    block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                                    block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) );
-                                if (block_start > block_end) { continue; }
-                                // Draw the block
-                                thickness = 5;
-                                y_start = 3;
-                                ctx.fillRect(block_start + left_offset, y_center + y_start, block_end - block_start, thickness);
-                            
-                                // Draw thick regions: check if block intersects with thick region
-                                if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
-                                    thickness = 9;
-                                    y_start = 1;
-                                    var block_thick_start = Math.max(block_start, thick_start),
-                                        block_thick_end = Math.min(block_end, thick_end);
-                                    ctx.fillRect(block_thick_start + left_offset, y_center + y_start, block_thick_end - block_thick_start, thickness);
-
-                                }
-                            }
-                        } else {
-                            // If there are no blocks, we treat the feature as one big exon
-                            thickness = 9;
-                            y_start = 1;
-                            ctx.fillRect(f_start + left_offset, y_center + y_start, f_end - f_start, thickness);
-                            if ( feature.strand ) {
-                                if (feature.strand == "+") {
-                                    ctx.fillStyle = RIGHT_STRAND_INV;
-                                } else if (feature.strand == "-") {
-                                    ctx.fillStyle = LEFT_STRAND_INV;
-                                }
-                                ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
-                                ctx.fillStyle = block_color;
-                            }                            
-                        }                        
                     }
                 } else if (result.dataset_type === 'vcf') {
                     // VCF track.
