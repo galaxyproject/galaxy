@@ -870,22 +870,25 @@ $.extend( TrackConfig.prototype, {
                     var value = track_config.values[ param.key ];
                     var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
                     // Color picker in tool tip style float
-                    var tip = $( "<div class='tipsy tipsy-north' style='position: absolute;' />" )
-                        .append( $("<div class='tipsy-inner' />")
-                        .farbtastic( { width: 100, height: 100, callback: input, color: value } ) )
-                        .hide();
+                    var tip = $( "<div class='tipsy tipsy-north' style='position: absolute;' />" ).hide();
+                    // Inner div for padding purposes
+                    var tip_inner = $("<div style='background-color: black; padding: 10px;'></div>").appendTo(tip);
+                    var farb_container = $("<div/>")
+                            .appendTo(tip_inner)
+                            .farbtastic( { width: 100, height: 100, callback: input, color: value });
+                            
                     // Outer div container input and tip for hover to work
                     $("<div />").append( input ).append( tip ).appendTo( row ).bind( "click", function ( e ) { 
                         tip.css( { 
                             left: $(this).position().left + ( $(input).width() / 2 ) - 60,
                             top: $(this).position().top + $(this.height) 
-                        } ).show();
-                       $(document).bind( "click.color-picker", function() {
-                           tip.hide();
-                           $(document).unbind( "click.color-picker" );
-                       }); 
+                            } ).show();
+                        $(document).bind( "click.color-picker", function() {
+                            tip.hide();
+                            $(document).unbind( "click.color-picker" );
+                        }); 
                         e.stopPropagation();
-                    } );
+                    });
                 } else {
                     row.append( $('<input />').attr("id", id ).attr("name", id ).val( track_config.values[ param.key ] ) ); 
                 }
@@ -2369,7 +2372,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         if (result.message) {
             canvas.css({
                 border: "solid red",
-                "border-width": "2px 2px 2px 0px"            
+                "border-width": "2px 2px 2px 0px"
             });
             ctx.fillStyle = "red";
             ctx.textAlign = "left";
