@@ -2352,10 +2352,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 ctx.fillStyle = "black";
                 ctx.fillRect(x + left_offset, this.summary_draw_height - y_px, delta_x_px, y_px);
                 
-                if (this.prefs.show_counts && ctx.measureText(y).width < delta_x_px) {
-                    ctx.fillStyle = "#bbb";
+                // Draw number count if it can fit the number with some padding, otherwise things clump up
+                var text_padding_req_x = 4;
+                if (this.prefs.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
+                    ctx.fillStyle = "#666";
                     ctx.textAlign = "center";
-                    ctx.fillText(y, x + left_offset + (delta_x_px/2), this.summary_draw_height - 5);
+                    ctx.fillText(y, x + left_offset + (delta_x_px/2), 10);
                 }
             }
             return canvas;
