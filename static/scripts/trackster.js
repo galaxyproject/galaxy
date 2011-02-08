@@ -57,10 +57,16 @@ function sortable( element, handle ) {
  * Init constants & functions used throughout trackster.
  */
 var 
-    // Drawing constants.
-    DENSE_HEIGHT = 1,
-    SQUISH_HEIGHT = 3,
-    PACK_HEIGHT = 9,
+    // Drawing constants; track height is (constant) height of track, and feature height is the
+    // height of individual features within tracks. Feature height, then, should always be less
+    // than track height. 
+    DENSE_TRACK_HEIGHT = 10,
+    NO_DETAIL_TRACK_HEIGHT = 3,
+    SQUISH_TRACK_HEIGHT = 5,
+    PACK_TRACK_HEIGHT = 10,
+    NO_DETAIL_FEATURE_HEIGHT = DENSE_FEATURE_HEIGHT = 1,
+    SQUISH_FEATURE_HEIGHT = 3,
+    PACK_FEATURE_HEIGHT = 9,
     LABEL_SPACING = 2,
     
     // Other constants.
@@ -217,11 +223,6 @@ $.extend(DataCache.prototype, Cache.prototype, {
     // Generate key for cache.
     gen_key: function(low, high, mode) {
         var key = low + "_" + high + "_" + mode;
-        /*
-        if (no_detail) {
-            key += "_" + no_detail
-        }
-        */
         return key;
     },
     // Split key from cache into array with format [low, high, mode]
@@ -1988,8 +1989,6 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.zo_slots = {};
     this.show_labels_scale = 0.001;
     this.showing_details = false;
-    this.vertical_detail_px = 10;
-    this.vertical_nodetail_px = 5;
     this.summary_draw_height = 30;
     this.default_font = "9px Monaco, Lucida Console, monospace";
     this.inc_slots = {};
@@ -2040,7 +2039,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     // with keys 'slot' and 'text'.
     // Returns the number of slots used to pack features.
     //
-    incremental_slots: function(level, features, no_detail, mode) {
+    incremental_slots: function(level, features, no_label, mode) {
         //
         // Get/create incremental slots for level. If display mode changed,
         // need to create new slots.
@@ -2126,7 +2125,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             
             // Update start, end drawing locations to include feature name.
             // Try to put the name on the left, if not, put on right.
-            if (feature_name !== undefined && !no_detail) {
+            if (feature_name !== undefined && !no_label) {
                 // +2 for gap b/t text and feature, +3 for packing issue. (TODO: it's not clear what
                 // the packing issue is, other than that packing is global but features are drawn locally;
                 // it seems this mismatch is causing features to slightly overlap, perhaps due to features
@@ -2240,7 +2239,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         ctx.fillRect(s_start + this.left_offset, 
                                      y_center + (this.mode != "Dense" ? 4 : 5), 
                                      s_end - s_start, 
-                                     (this.mode != "Dense" ? SQUISH_HEIGHT : DENSE_HEIGHT) );
+                                     (this.mode != "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
                     }
                     seq_offset += cig_len;
                     break;
@@ -2300,7 +2299,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             block_color = this.prefs.block_color,
             mode = this.mode,
             min_height = 25,
-            no_detail = (mode === "Squish") || (mode === "Dense") && (mode !== "Pack") || (mode === "Auto" && (result.extra_info === "no_detail")),
+            no_label,
             left_offset = this.left_offset,
             slots, required_height, y_scale;
         
@@ -2312,12 +2311,32 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             required_height = this.summary_draw_height;
         } else if (mode === "Dense") {
             required_height = min_height;
-            y_scale = 10;
+            y_scale = DENSE_TRACK_HEIGHT;
         } else {
-            // Calculate new slots incrementally for this new chunk of data and update height if necessary
-            y_scale = ( no_detail ? this.vertical_nodetail_px : this.vertical_detail_px );
+            // Set y_scale based on mode and result data.
+            if (mode === "Squish") { 
+                y_scale = SQUISH_TRACK_HEIGHT;
+                no_label = true;
+            }
+            else if (mode === "Pack") { 
+                y_scale = PACK_TRACK_HEIGHT;
+                // TODO: is there data where there is no label even in pack mode?
+                no_label = false;
+            }
+            // mode == "Auto"
+            else if (result.extra_info === "no_detail") {
+                y_scale = NO_DETAIL_TRACK_HEIGHT;
+                no_label = true;
+            }
+            else {
+                y_scale = PACK_TRACK_HEIGHT;
+                no_label = false;
+            }
+            console.log(mode, y_scale);
+            
+            // Calculate new slots incrementally for this new chunk of data and update height if necessary.
             var inc_scale = (w_scale < 0.0001 ? 1/this.view.zoom_res : w_scale);
-            required_height = this.incremental_slots( inc_scale, result.data, no_detail, mode ) * y_scale + min_height;
+            required_height = this.incremental_slots(inc_scale, result.data, no_label, mode) * y_scale + min_height;
             slots = this.inc_slots[inc_scale];
         }
 
@@ -2463,7 +2482,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         ctx.fillStyle = block_color;
                         this.rect_or_text(ctx, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center);
                     }
-                    if (mode !== "Dense" && !no_detail && feature_start > tile_low) {
+                    if (mode !== "Dense" && !no_label && feature_start > tile_low) {
                         // Draw label.
                         ctx.fillStyle = this.prefs.label_color;
                         if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
@@ -2471,7 +2490,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING, y_center + 8);
                         } else {
                             ctx.textAlign = "right";
-                            ctx.fillText(feature_name, f_start + left_offset + LABEL_SPACING, y_center + 8);
+                            ctx.fillText(feature_name, f_start + left_offset - LABEL_SPACING, y_center + 8);
                         }
                         ctx.fillStyle = block_color;
                     }
@@ -2499,14 +2518,14 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     // Dense mode displays the same for all data.
                     if (mode == "Dense") {
                         ctx.fillStyle = block_color;
-                        ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, DENSE_HEIGHT);
+                        ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, DENSE_FEATURE_HEIGHT);
                     }
                     // Mode is either Squish or Pack:
                     else if (feature.length <= 4) {
                         // No details for feature, so only one way to display.
                         ctx.fillStyle = block_color;
                         // TODO: what should width be here?
-                        ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
+                        ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, DENSE_FEATURE_HEIGHT);
                     } else {
                         // Feature has details.
                         var feature_strand = feature[5],
@@ -2523,11 +2542,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         var thin_height, thick_height;
                         if (mode == "Squish") {
                             thin_height = 1;
-                            thick_height = SQUISH_HEIGHT;
+                            thick_height = SQUISH_FEATURE_HEIGHT;
                         }
                         else { // mode == "Pack"
                             thin_height = 5;
-                            thick_height = PACK_HEIGHT;
+                            thick_height = PACK_FEATURE_HEIGHT;
                         }
                         
                         // Draw feature/feature blocks + connectors.
@@ -2557,7 +2576,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             var cur_y_center, cur_height;
                             if (mode == "Squish") {
                                 ctx.fillStyle = CONNECTOR_COLOR;
-                                cur_y_center = y_center + Math.floor(SQUISH_HEIGHT/2) + 1;
+                                cur_y_center = y_center + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
                                 cur_height = 1;
                             }
                             else { // mode == "Pack"
@@ -2572,7 +2591,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 }
                                 else {
                                     ctx.fillStyle = CONNECTOR_COLOR;
-                                    cur_y_center += (SQUISH_HEIGHT/2) + 1;
+                                    cur_y_center += (SQUISH_FEATURE_HEIGHT/2) + 1;
                                     cur_height = 1;
                                 }
                             }
@@ -2617,7 +2636,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     }
                 } else if (result.dataset_type === 'vcf') {
                     // VCF track.
-                    if (no_detail) {
+                    if (no_label) {
                         ctx.fillStyle = block_color;
                         ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
                     }
@@ -2664,8 +2683,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
     this.track_type = "ReadTrack";
-    this.vertical_detail_px = 10;
-    this.vertical_nodetail_px = 5;
 };
 $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {});
 
