@@ -8,6 +8,9 @@ function ensure_dd_helper() {
     }
 }
 
+var MIN_PANEL_WIDTH = 100,
+    MAX_PANEL_WIDTH = 1000;
+
 function make_left_panel( panel_el, center_el, border_el ) {
     var hidden = false;
     var saved_size = null;
@@ -54,7 +57,7 @@ function make_left_panel( panel_el, center_el, border_el ) {
     }).bind( "drag", function( e, d ) {
         x = d.offsetX;
         // Limit range
-        x = Math.min( 400, Math.max( 100, x ) );
+        x = Math.min( MAX_PANEL_WIDTH, Math.max( MIN_PANEL_WIDTH, x ) );
         // Resize
         if ( hidden ) {
             $( panel_el ).css( "left", 0 );
@@ -74,9 +77,10 @@ function make_left_panel( panel_el, center_el, border_el ) {
 };
 
 function make_right_panel( panel_el, center_el, border_el ) {
-    var hidden = false;
-    var hidden_by_tool = false;
-    var saved_size = null;    
+    var hidden = false,
+        hidden_by_tool = false,
+        saved_size = null;
+    
     var resize = function( x ) {
         $( panel_el ).css( "width", x );
         $( center_el ).css( "right", x+9 );
@@ -136,8 +140,8 @@ function make_right_panel( panel_el, center_el, border_el ) {
         x = d.offsetX;
         w = $(window).width(); 
         // Limit range
-        x = Math.min( w - 100, x );
-        x = Math.max( w - 400, x );
+        x = Math.min( w - MIN_PANEL_WIDTH, x );
+        x = Math.max( w - MAX_PANEL_WIDTH, x );
         // Resize
         if ( hidden ) {
             $( panel_el ).css( "right", 0 );
