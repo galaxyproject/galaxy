@@ -354,22 +354,22 @@ $.extend( Node.prototype, {
                     });
                 callout.show();
                 r.append(callout);
-                if ($.inArray(output.name, node.workflow_outputs) == -1){
+                if ($.inArray(output.name, node.workflow_outputs) === -1){
                     callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
                 }else{
                     callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
                 }
-                r.bind( "hover", function() {
-                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small-yellow.png');
-                });
-                r.bind( "mouseleave", function() {
-                    callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
-                    if ($.inArray(output.name, node.workflow_outputs) == -1){
-                        callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
-                    }else{
-                        callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
-                    }
-                });
+                r.hover(
+                    function(){
+                        callout.find('img').attr('src', image_path + '/fugue/asterisk-small-yellow.png');
+                    },
+                    function(){
+                        if ($.inArray(output.name, node.workflow_outputs) === -1){
+                            callout.find('img').attr('src', image_path + '/fugue/asterisk-small-outline.png');
+                        }else{
+                            callout.find('img').attr('src', image_path + '/fugue/asterisk-small.png');
+                        }                            
+                    });
             }
             r.css({  position:'absolute',
                         left: -1000,
@@ -381,7 +381,7 @@ $.extend( Node.prototype, {
                        left:'',
                        top:'',
                        display:'' });
-            r.remove();
+            r.detach();
             b.append( r.append( t ) );
         });
         f.css( "width", Math.min(250, Math.max(f.width(), output_width )));
