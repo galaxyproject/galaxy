@@ -26,7 +26,10 @@ def iff( a, b, c ):
     
 # Smart string truncation
 def truncate(content, length=100, suffix='...'):
-    return (content if len(content) <= length else content[:length].rsplit(' ', 1)[0]+suffix)
+    if len(content) <= length:
+        return content
+    else:
+        return content[:length].rsplit(' ', 1)[0] + suffix
     
 # Quick helpers for static content
 
