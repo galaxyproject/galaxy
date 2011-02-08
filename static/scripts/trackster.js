@@ -1,5 +1,5 @@
 /* Trackster
-    2010, James Taylor, Kanwei Li
+    2010, James Taylor, Kanwei Li, Jeremy Goecks
 */
 
 /**
@@ -68,8 +68,10 @@ var
     SQUISH_FEATURE_HEIGHT = 3,
     PACK_FEATURE_HEIGHT = 9,
     LABEL_SPACING = 2,
+    PACK_SPACING = 5,
     
     // Other constants.
+    DEFAULT_FONT = "9px Monaco, Lucida Console, monospace",
     DENSITY = 200,
     FEATURE_LEVELS = 10,
     MAX_FEATURE_DEPTH = 100,
@@ -96,6 +98,7 @@ if (window.G_vmlCanvasManager) {
     G_vmlCanvasManager.initElement(DUMMY_CANVAS);
 }
 CONTEXT = DUMMY_CANVAS.getContext("2d");
+CONTEXT.font = DEFAULT_FONT; // To ensure consistent measureText width
 PX_PER_CHAR = CONTEXT.measureText("A").width;
     
 var right_img = new Image();
@@ -1382,8 +1385,8 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             resolution = this.view.resolution;
 
         var parent_element = $("<div style='position: relative;'></div>"),
-            w_scale = this.content_div.width() / range;
-
+            w_scale = this.view.container.width() / range;
+        
         this.content_div.append( parent_element );
         this.max_height = 0;
         // Index of first tile that overlaps visible region
@@ -1401,7 +1404,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             if ( !force && cached ) {
                 this.show_tile( cached, parent_element, tile_low );
             } else {
-                this.delayed_draw(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_count);
+                this.delayed_draw(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale);
             }
             tile_index += 1;
         }
@@ -1448,7 +1451,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             this.child_tracks[i].draw(force);
         }
     }, 
-    delayed_draw: function(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_count) {
+    delayed_draw: function(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale) {
         var track = this;
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
@@ -1488,9 +1491,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     track.show_tile(tile_element, parent_element, tile_low);
                 }
             }
-            delete draw_tile_count--;
         }, 50);
-        draw_tile_count++
     }, 
     // Show track tile and perform associated actions.
     show_tile: function( tile_element, parent_element, tile_low ) {
@@ -1990,10 +1991,10 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.summary_draw_height = 30;
-    this.default_font = "9px Monaco, Lucida Console, monospace";
+    this.default_font = DEFAULT_FONT;
     this.inc_slots = {};
     this.data_queue = {};
-    this.s_e_by_tile = {};
+    this.start_end_dct = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.data_cache = new DataCache(20);
     this.left_offset = 200;
@@ -2050,7 +2051,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             inc_slots.w_scale = level;
             inc_slots.mode = mode;
             this.inc_slots[level] = inc_slots;
-            this.s_e_by_tile[level] = {};
+            this.start_end_dct[level] = {};
         }
         
         //
@@ -2063,7 +2064,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             max_low = this.view.max_low;
         // TODO: Should calculate zoom tile index, which will improve performance
         // by only having to look at a smaller subset
-        // if (this.s_e_by_tile[0] === undefined) { this.s_e_by_tile[0] = []; }
+        // if (this.start_end_dct[0] === undefined) { this.start_end_dct[0] = []; }
         for (var i = 0, len = features.length; i < len; i++) {
             var feature = features[i],
                 feature_uid = feature[0];
@@ -2078,36 +2079,30 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         //
         // Slot unslotted features.
         //
-        var s_e_by_tile = this.s_e_by_tile[level];
+        var start_end_dct = this.start_end_dct[level];
         
-        // Find the first slot s/t current feature doesn't overlap any other features in that slot.
+        // Find the first slot such that current feature doesn't overlap any other features in that slot.
         // Returns -1 if no slot was found.
         var find_slot = function(f_start, f_end) {
-            var found;
-            for (var slot_num = 0, slot; slot_num <= MAX_FEATURE_DEPTH; slot_num++) {
-                found = true;
-                slot = s_e_by_tile[slot_num];
+            for (var slot_num = 0; slot_num <= MAX_FEATURE_DEPTH; slot_num++) {
+                var has_overlap = false,
+                    slot = start_end_dct[slot_num];
                 if (slot !== undefined) {
                     // Iterate through features already in slot to see if current feature will fit.
                     for (var k = 0, k_len = slot.length; k < k_len; k++) {
                         var s_e = slot[k];
                         if (f_end > s_e[0] && f_start < s_e[1]) {
-                            found = false;
+                            // There is overlap
+                            has_overlap = true;
                             break;
                         }
                     }
                 }
-                if (found) {
-                    break;
+                if (!has_overlap) {
+                    return slot_num;
                 }
             }
-            
-            if (found) {
-                return slot_num;
-            }
-            else {
-                return -1;
-            }
+            return -1;
         };
         
         // Do slotting.
@@ -2126,11 +2121,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             // Update start, end drawing locations to include feature name.
             // Try to put the name on the left, if not, put on right.
             if (feature_name !== undefined && !no_label) {
-                // +2 for gap b/t text and feature, +3 for packing issue. (TODO: it's not clear what
-                // the packing issue is, other than that packing is global but features are drawn locally;
-                // it seems this mismatch is causing features to slightly overlap, perhaps due to features
-                // being compressed onto tiles.)
-                text_len += (LABEL_SPACING + 4);
+                // Add gap for label spacing and extra pack space padding
+                text_len += (LABEL_SPACING + PACK_SPACING);
                 if (f_start - text_len >= 0) {
                     f_start -= text_len;
                     text_align = "left";
@@ -2142,8 +2134,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         
             // Find slot.
             var slot_num = find_slot(f_start, f_end);
+            /*
             if (slot_num < 0) {
-                /*
+                
                 TODO: this is not yet working --
                 console.log(feature_uid, "looking for slot with text on the right");
                 // Slot not found. If text was on left, try on right and see
@@ -2159,17 +2152,16 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 if (slot_num >= 0) {
                     console.log(feature_uid, "found slot with text on the right");
                 }
-                */
+
             }
-            
+            */
             // Do slotting.
             if (slot_num >= 0) {
                 // Add current feature to slot.
-                slot = s_e_by_tile[slot_num];
-                if (slot === undefined) { 
-                    slot = s_e_by_tile[slot_num] = [];
+                if (start_end_dct[slot_num] === undefined) { 
+                    start_end_dct[slot_num] = [];
                 }
-                slot.push([f_start, f_end]);
+                start_end_dct[slot_num].push([f_start, f_end]);
                 inc_slots[feature_uid] = slot_num;
                 highest_slot = Math.max(highest_slot, slot_num);
             }
@@ -2183,7 +2175,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         // Debugging: view slots data.
         /*
         for (var i = 0; i < MAX_FEATURE_DEPTH; i++) {
-            var slot = s_e_by_tile[i];
+            var slot = start_end_dct[i];
             if (slot !== undefined) {
                 console.log(i, "*************");
                 for (var k = 0, k_len = slot.length; k < k_len; k++) {
@@ -2290,7 +2282,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             this.get_data(tile_low, tile_high);
             return;
         }
-        
         //
         // Create/set/compute some useful vars.
         //
@@ -2317,18 +2308,14 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             if (mode === "Squish") { 
                 y_scale = SQUISH_TRACK_HEIGHT;
                 no_label = true;
-            }
-            else if (mode === "Pack") { 
+            } else if (mode === "Pack") { 
                 y_scale = PACK_TRACK_HEIGHT;
                 // TODO: is there data where there is no label even in pack mode?
                 no_label = false;
-            }
-            // mode == "Auto"
-            else if (result.extra_info === "no_detail") {
+            } else if (result.extra_info === "no_detail") { // mode == "Auto" 
                 y_scale = (result.track_type === "bai" ? SQUISH_TRACK_HEIGHT : NO_DETAIL_TRACK_HEIGHT);
                 no_label = true;
-            }
-            else {
+            } else {
                 y_scale = PACK_TRACK_HEIGHT;
                 no_label = false;
             }
@@ -2564,7 +2551,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             ctx.fillRect(f_start + left_offset, y_center + (thick_height-thin_height)/2 + 1, 
                                          f_end - f_start, thick_height);
                         }
-                        else { // There are feature blocks and mode is either Squish or Pack.
+                        else { 
+                            // There are feature blocks and mode is either Squish or Pack.
                             //
                             // Approach: (a) draw whole feature as connector/intron and (b) draw blocks as 
                             // needed. This ensures that whole feature, regardless of whether it starts with
@@ -2625,10 +2613,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             ctx.fillStyle = label_color;
                             if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                                 ctx.textAlign = "left";
-                                ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
+                                ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING, y_center + 8);
                             } else {
                                 ctx.textAlign = "right";
-                                ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
+                                ctx.fillText(feature_name, f_start + left_offset - LABEL_SPACING, y_center + 8);
                             }
                             ctx.fillStyle = block_color;
                         }
