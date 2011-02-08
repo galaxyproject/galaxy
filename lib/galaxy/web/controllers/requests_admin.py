@@ -514,13 +514,14 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         options = sample.request.type.rename_dataset_options
         option = scp_configs.get( 'rename_dataset', options.NO ) 
         if option == options.SAMPLE_NAME:
-            return sample.name + '_' + name
+            new_name = sample.name + '_' + name
         if option == options.EXPERIMENT_AND_SAMPLE_NAME:
-            return sample.request.name + '_' + sample.name + '_' + name
+            new_name = sample.request.name + '_' + sample.name + '_' + name
         if option == options.EXPERIMENT_NAME:
-            return sample.request.name + '_' + name
+            new_name = sample.request.name + '_' + name
         else:
-            return name
+            new_name = name
+        return util.sanitize_for_filename( new_name ) 
     def __check_library_add_permission( self, trans, target_library, target_folder ):
         """
         Checks if the current admin user had ADD_LIBRARY permission on the target library
