@@ -292,7 +292,7 @@ class Crate( object ):
 
 class GalaxyConfig( object ):
     config_file = os.path.join( galaxy_dir, "universe_wsgi.ini" )
-    always_conditional = ( 'GeneTrack', 'pysam', 'ctypes' )
+    always_conditional = ( 'GeneTrack', 'pysam', 'ctypes', 'python_daemon' )
     def __init__( self ):
         self.config = ConfigParser.ConfigParser()
         if self.config.read( GalaxyConfig.config_file ) == []:
@@ -322,6 +322,7 @@ class GalaxyConfig( object ):
                          "threadframe":     lambda: self.config.get( "app:main", "use_heartbeat" ),
                          "guppy":           lambda: self.config.get( "app:main", "use_memdump" ),
                          "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
+                         "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "GeneTrack":       lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "ctypes":          lambda: ( "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(",") ) and sys.version_info[:2] == ( 2, 4 ),
                          "pysam":           check_pysam()
