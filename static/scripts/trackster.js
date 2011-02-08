@@ -2325,14 +2325,13 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             }
             // mode == "Auto"
             else if (result.extra_info === "no_detail") {
-                y_scale = NO_DETAIL_TRACK_HEIGHT;
+                y_scale = (result.track_type === "bai" ? SQUISH_TRACK_HEIGHT : NO_DETAIL_TRACK_HEIGHT);
                 no_label = true;
             }
             else {
                 y_scale = PACK_TRACK_HEIGHT;
                 no_label = false;
             }
-            console.log(mode, y_scale);
             
             // Calculate new slots incrementally for this new chunk of data and update height if necessary.
             var inc_scale = (w_scale < 0.0001 ? 1/this.view.zoom_res : w_scale);
