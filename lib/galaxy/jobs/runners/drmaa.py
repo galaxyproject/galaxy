@@ -233,9 +233,12 @@ class DRMAAJobRunner( BaseJobRunner ):
             old_state = drm_job_state.old_state
             try:
                 state = self.ds.jobStatus( job_id )
-            except drmaa.InvalidJobException:
+            # InternalException was reported to be necessary on some DRMs, but
+            # this could cause failures to be detected as completion!  Please
+            # report if you experience problems with this.
+            except ( drmaa.InvalidJobException, drmaa.InternalException ), e:
                 # we should only get here if an orphaned job was put into the queue at app startup
-                log.debug("(%s/%s) job left DRM queue" % ( galaxy_job_id, job_id ) )
+                log.debug("(%s/%s) job left DRM queue with following message: %s" % ( galaxy_job_id, job_id, e ) )
                 self.work_queue.put( ( 'finish', drm_job_state ) )
                 continue
             except Exception, e:
