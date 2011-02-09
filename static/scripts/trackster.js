@@ -2321,9 +2321,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             }
             
             // Calculate new slots incrementally for this new chunk of data and update height if necessary.
-            var inc_scale = (w_scale < 0.0001 ? 1/this.view.zoom_res : w_scale);
-            required_height = this.incremental_slots(inc_scale, result.data, no_label, mode) * y_scale + min_height;
-            slots = this.inc_slots[inc_scale];
+            required_height = this.incremental_slots(w_scale, result.data, no_label, mode) * y_scale + min_height;
+            slots = this.inc_slots[w_scale];
         }
 
         canvas.get(0).width = width + left_offset;
