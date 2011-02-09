@@ -665,8 +665,30 @@ baciAnth_AMES	Bacillus anthracis str. Ames	chr=5227293
 shewOnei	Shewanella oneidensis MR-1	plasmid_pMR-1=161613,chr=4969803
 15217	Human herpesvirus 1	NC_001806=152261
 lMaj5	Leishmania major 2005	chr1=268984,chr2=355714,chr3=384518,chr4=441313,chr5=465823,chr6=516874,chr7=596348,chr8=574972,chr9=573441,chr10=570864,chr11=582575,chr12=675347,chr13=654604,chr14=622648,chr15=629514,chr16=714659,chr17=684831,chr18=739751,chr19=702212,chr20=742551,chr21=772974,chr22=716608,chr23=772567,chr24=840950,chr25=912849,chr26=1091579,chr27=1130447,chr28=1160128,chr29=1212674,chr30=1403454,chr31=1484336,chr32=1604650,chr33=1583673,chr34=1866754,chr35=2090491,chr36=2682183
-arabidopsis	Arabidopsis thaliana TAIR9
+arabidopsis	Arabidopsis thaliana TAIR9	chr1=30427671,chr2=19698289,chr3=23459830,chr4=18585056,chr5=26975502
 arabidopsis_tair8	Arabidopsis thaliana TAIR8
 araTha1	Arabidopsis thaliana TAIR7
-mm5	Mouse May 2004 (mm5)
-Sscrofa9.58	Pig May 2010 (SGSC Sscrofa9.58)
+mm5	Mouse May 2004
+Sscrofa9.58	Pig May 2010	chr1=79819395,chr2=66741929,chr3=145240301,chr4=57436344,chr5=134546103,chr6=136414062,chr7=64400339,chr8=77440658,chr9=54314914,chr10=295534705,chr11=16613,chr12=123604780,chr13=140138492,chr14=100521970,chr15=136259946,chr16=125876292,chr17=123310171,chr18=132473591,chrM=119990671,chrX=148515138
+AaegL1	Mosquito (Aedes aegypti)
+AgamP3	Mosquito (Anopheles gambiae)	chr3L=41963435,chr2L=49364325,chrX=24393108,chr2R=61545105,chrY_unplaced=237045,chr3R=53200684,chrUn=42389979,chrM=15363
+CpipJ1	Mosquito (Culex quinquefasciatus)
+IscaW1	Deer Tick (Ixodes scapularis)
+PhumU1	Head Louse (Pediculus humanus)
+bosTauMd3	Cow Aug. 2009 (UMD3.1)
+droWil1	D. willistoni Feb. 2006
+droAna3	D. ananassae Feb. 2006
+droEre2	D. erecta Feb. 2006
+droGri2	D. grimshawi Feb. 2006
+droMoj3	D. mojavensis Feb. 2006
+droSec1	D. sechellia Oct. 2005
+droSim1	D. simulans Apr. 2005	chrU=15797150,chr4=949497,chrYh_random=100575,chr3R=27517382,chr3R_random=1307089,chr3L=22553184,chr2L=22036055,chr2h_random=3178526,chrX_random=5698898,chrXh_random=84659,chrX=17042790,chr4_random=134295,chr2R=19596830,chr2R_random=2996586,chr3L_random=1049610,chr2L_random=909653,chrM=14972,chr3h_random=1452968
+droVir3	D. virilis Feb. 2006
+Bombyx_mori_p50T_2.0	Silkworm
+oryza_sativa_japonica_nipponbare_IRGSP4.0	Rice (Oryza sativa ssp. japonica var. Nipponbare)	chr1=30357780,chr10=32124789,chr11=30039014,chr12=35863200,chr2=37257345,chr3=36823111,chr4=45064769,chr5=134525,chr6=23843360,chr7=28530027,chr8=27757321,chr9=30828668,chrM=23661561,plastid=490520
+Schizosaccharomyces_pombe_1.1	Fission Yeast (S. pombe)	chrII=4539804,chrIII=2452883,chrI=5579133,chrM=19431
+Xanthomonas_oryzae_PXO99A	Xanthomonas oryzae pv. oryzae PXO99A	chr=5240075
+eschColi_EC4115	Escherichia coli EC4115	chr=5572075,plasmid_pO157=94644,plasmid_pEC4115=37452
+eschColi_TW14359	Escherichia coli TW14359	chr=5528136,plasmid_pO157=94601
+pUC18	pUC18 Plasmid
+nomLeu1	Gibbon	chr1=245538060,chr10=135320619,chr10_random=51011,chr11=134551115,chr12=132397767,chr12_random=336702,chr13=114140689,chr14=106383727,chr15=100373758,chr15_random=814500,chr16=88836341,chr16_random=121782,chr17=78641643,chr17_random=2617017,chr18=76124575,chr19=63791437,chr19_random=297341,chr1_random=3502083,chr2=242756806,chr20=62432189,chr21=47019833,chr22=49520868,chr22_random=31530,chr2_random=335351,chr3=199337376,chr3_random=950829,chr4=191633586,chr4_random=923474,chr5=180612635,chr5_random=150620,chr6=170839170,chr6_random=1837487,chr7=158619002,chr7_random=805938,chr8=146283503,chr8_random=649034,chr9=138402467,chr9_random=1315712,chrUn=217400297,chrX=154793867,chrX_random=1690203,chrY=57470892
