@@ -22,6 +22,43 @@ from galaxy.model.orm import and_, eagerload
 assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
+    """
+    Managing library datasets is a bit complex, so here is a scenario that hopefully provides clarification.  The complexities
+    of handling library datasets is mostly contained in the delete_datasets() method in this script.
+    
+    Assume we have 1 library dataset with: LibraryDatasetDatasetAssociation -> LibraryDataset and Dataset
+    At this point, we have the following database column values:
+
+    LibraryDatasetDatasetAssociation deleted: False
+    LibraryDataset deleted: False, purged: False
+    Dataset deleted: False purged: False
+
+    1. A user deletes the assumed dataset above from a data library via a UI menu option.
+    This action results in the following database column values (changes from previous step marked with *):
+
+    LibraryDatasetDatasetAssociation deleted: False
+    LibraryDataset deleted: True*, purged: False
+    Dataset deleted: False, purged: False
+    
+    2. After the number of days configured for the delete_datasets() method (option -6 below) have passed, execution
+    of the delete_datasets() method results in the following database column values (changes from previous step marked with *):
+
+    LibraryDatasetDatasetAssociation deleted: True*
+    LibraryDataset deleted: True, purged: True*
+    Dataset deleted: True*, purged: False
+    
+    3. After the number of days configured for the purge_datasets() method (option -3 below) have passed, execution
+    of the purge_datasets() method results in the following database column values (changes from previous step marked with *):
+
+    LibraryDatasetDatasetAssociation deleted: True
+    LibraryDataset deleted: True, purged: True
+    Dataset deleted: True, purged: True* (dataset file removed from disk if -r flag is used)
+
+    This scenario is about as simple as it gets.  Keep in mind that a Dataset object can have many HistoryDatasetAssociations
+    and many LibraryDatasetDatasetAssociations, and a LibraryDataset can have many LibraryDatasetDatasetAssociations.
+    Another way of stating it is: LibraryDatasetDatasetAssociation objects map LibraryDataset objects to Dataset objects,
+    and Dataset objects may be mapped to History objects via HistoryDatasetAssociation objects.  
+    """
     parser = OptionParser()
     parser.add_option( "-d", "--days", dest="days", action="store", type="int", help="number of days (60)", default=60 )
     parser.add_option( "-r", "--remove_from_disk", action="store_true", dest="remove_from_disk", help="remove datasets from disk when purged", default=False )
@@ -215,40 +252,70 @@ def delete_datasets( app, cutoff_time, remove_from_disk, info_only = False, forc
                                                whereclause = app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
                                                from_obj = [ sa.outerjoin( app.model.Dataset.table,
                                                                           app.model.HistoryDatasetAssociation.table ) ] )
-        library_dataset_ids_query = sa.select( ( app.model.Dataset.table.c.id,
-                                                 app.model.Dataset.table.c.state ),
-                                                whereclause = app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time,
-                                                from_obj = [ sa.outerjoin( app.model.Dataset.table,
-                                                                           app.model.LibraryDatasetDatasetAssociation.table ) ] )
+        library_dataset_ids_query = sa.select( ( app.model.LibraryDataset.table.c.id,
+                                                 app.model.LibraryDataset.table.c.deleted ),
+                                                whereclause = app.model.LibraryDataset.table.c.update_time < cutoff_time,
+                                                from_obj = [ app.model.LibraryDataset.table ] )
     else:                                  
         # We really only need the id column here, but sqlalchemy barfs when trying to select only 1 column
         history_dataset_ids_query = sa.select( ( app.model.Dataset.table.c.id,
                                                  app.model.Dataset.table.c.state ),
-                                               whereclause = sa.and_( app.model.Dataset.table.c.deleted == False,
-                                                                      app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
-                                                                      app.model.HistoryDatasetAssociation.table.c.deleted == True ),
+                                               whereclause = and_( app.model.Dataset.table.c.deleted == False,
+                                                                   app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
+                                                                   app.model.HistoryDatasetAssociation.table.c.deleted == True ),
                                                from_obj = [ sa.outerjoin( app.model.Dataset.table,
                                                                           app.model.HistoryDatasetAssociation.table ) ] )
-        library_dataset_ids_query = sa.select( ( app.model.Dataset.table.c.id,
-                                                 app.model.Dataset.table.c.state ),
-                                                whereclause = sa.and_( app.model.Dataset.table.c.deleted == False,
-                                                                       app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time,
-                                                                       app.model.LibraryDatasetDatasetAssociation.table.c.deleted == True ),
-                                                from_obj = [ sa.outerjoin( app.model.Dataset.table,
-                                                                           app.model.LibraryDatasetDatasetAssociation.table ) ] )                       
-    history_dataset_ids = [ row.id for row in history_dataset_ids_query.execute() ]
-    library_dataset_ids = [ row.id for row in library_dataset_ids_query.execute() ]
-    dataset_ids = history_dataset_ids + library_dataset_ids
-    skip = []
+        library_dataset_ids_query = sa.select( ( app.model.LibraryDataset.table.c.id,
+                                                 app.model.LibraryDataset.table.c.deleted ),
+                                                whereclause = and_( app.model.LibraryDataset.table.c.deleted == True,
+                                                                    app.model.LibraryDataset.table.c.purged == False,
+                                                                    app.model.LibraryDataset.table.c.update_time < cutoff_time ),
+                                                from_obj = [ app.model.LibraryDataset.table ] )
     deleted_dataset_count = 0
     deleted_instance_count = 0
+    skip = []
+    # Handle library datasets.  This is a bit tricky, so here's some clarification.  We have a list of all
+    # LibraryDatasets that were marked deleted before our cutoff_time, but have not yet been marked purged.
+    # A LibraryDataset object is marked purged when all of it's LibraryDatasetDatasetAssociations have been
+    # marked deleted.  When a LibraryDataset has been marked purged, it can never be undeleted in the data
+    # library.  We have several steps to complete here.  For each LibraryDataset, get it's associated Dataset
+    # and add it to our accrued list of Datasets for later processing.  We mark  as deleted all of it's
+    # LibraryDatasetDatasetAssociations.  Then we mark the LibraryDataset as purged.  We then process our
+    # list of Datasets.
+    library_dataset_ids = [ row.id for row in library_dataset_ids_query.execute() ]
+    dataset_ids = []
+    for library_dataset_id in library_dataset_ids:
+        print "######### Processing LibraryDataset id:", library_dataset_id
+        # Get the LibraryDataset and the current LibraryDatasetDatasetAssociation objects
+        ld = app.sa_session.query( app.model.LibraryDataset ).get( library_dataset_id )
+        ldda =  ld.library_dataset_dataset_association
+        # Append the associated Dataset object's id to our list of dataset_ids
+        dataset_ids.append( ldda.dataset_id )
+        # Mark all of the LibraryDataset's associated LibraryDatasetDatasetAssociation objects' as deleted
+        if not ldda.deleted:
+            ldda.deleted = True
+            app.sa_session.add( ldda )
+            print "Marked associated LibraryDatasetDatasetAssociation id %d as deleted" % ldda.id
+        for expired_ldda in ld.expired_datasets:
+            if not expired_ldda.deleted:
+                expired_ldda.deleted = True
+                app.sa_session.add( expired_ldda )
+                print "Marked associated expired LibraryDatasetDatasetAssociation id %d as deleted" % ldda.id
+        # Mark the LibraryDataset as purged
+        ld.purged = True
+        app.sa_session.add( ld )
+        print "Marked LibraryDataset id %d as purged" % ld.id
+        app.sa_session.flush()
+    # Add all datasets associated with Histories to our list
+    dataset_ids.extend( [ row.id for row in history_dataset_ids_query.execute() ] )
+    # Process each of the Dataset objects
     for dataset_id in dataset_ids:
         print "######### Processing dataset id:", dataset_id
         dataset = app.sa_session.query( app.model.Dataset ).get( dataset_id )
         if dataset.id not in skip and _dataset_is_deletable( dataset ):
             deleted_dataset_count += 1
             for dataset_instance in dataset.history_associations + dataset.library_associations:
-                print "Associated Dataset instance: ", dataset_instance.__class__.__name__, dataset_instance.id
+                # Mark each associated HDA as deleted
                 _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children=True, info_only=info_only, is_deletable=True )
                 deleted_instance_count += 1
         skip.append( dataset.id )
@@ -293,7 +360,7 @@ def _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_ch
     # A dataset_instance is either a HDA or an LDDA.  Purging a dataset instance marks the instance as deleted, 
     # and marks the associated dataset as deleted if it is not associated with another active DatsetInstance.
     if not info_only:
-        print "Deleting dataset_instance ", str( dataset_instance ), " id ", dataset_instance.id
+        print "Marking as deleted: ", dataset_instance.__class__.__name__, " id ", dataset_instance.id
         dataset_instance.mark_deleted( include_children = include_children )
         dataset_instance.clear_associated_files()
         app.sa_session.add( dataset_instance )
@@ -312,8 +379,8 @@ def _dataset_is_deletable( dataset ):
     return not bool( dataset.active_history_associations or dataset.active_library_associations )
 
 def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletable=False ):
-    #marks a base dataset as deleted, hdas/ldas associated with dataset can no longer be undeleted
-    #metadata files attached to associated dataset Instances is removed now
+    # Marks a base dataset as deleted, hdas/lddas associated with dataset can no longer be undeleted.
+    # Metadata files attached to associated dataset Instances is removed now.
     if not is_deletable and not _dataset_is_deletable( dataset ):
         print "This Dataset (%i) is not deletable, associated Metadata Files will not be removed.\n" % ( dataset.id )
     else:
@@ -324,9 +391,9 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletab
             for metadata_file in app.sa_session.query( app.model.MetadataFile ) \
                                                .filter( app.model.MetadataFile.table.c.hda_id==hda.id ):
                 metadata_files.append( metadata_file )
-        for lda in dataset.library_associations:
+        for ldda in dataset.library_associations:
             for metadata_file in app.sa_session.query( app.model.MetadataFile ) \
-                                               .filter( app.model.MetadataFile.table.c.lda_id==lda.id ):
+                                               .filter( app.model.MetadataFile.table.c.lda_id==ldda.id ):
                 metadata_files.append( metadata_file )
         for metadata_file in metadata_files:
             print "The following metadata files attached to associations of Dataset '%s' have been purged:" % dataset.id

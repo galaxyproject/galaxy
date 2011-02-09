@@ -1106,14 +1106,6 @@ class LibraryDataset( object ):
     name = property( get_name, set_name )
     def display_name( self ):
         self.library_dataset_dataset_association.display_name()
-    def get_purged( self ):
-        return self.library_dataset_dataset_association.dataset.purged
-    def set_purged( self, purged ):
-        if purged:
-            raise Exception( "Not implemented" )
-        if not purged and self.purged:
-            raise Exception( "Cannot unpurge once purged" )
-    purged = property( get_purged, set_purged )
     def get_api_value( self, view='collection' ):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
