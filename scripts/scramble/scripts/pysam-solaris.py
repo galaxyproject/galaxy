@@ -24,6 +24,7 @@ sys.argv.append( "bdist_egg" )
 cc = get_solaris_compiler()
 if cc == 'cc':
     os.environ['CFLAGS'] = '-xc99=all'
+    os.environ['LDFLAGS'] = '-lsocket -lnsl'
 
 # do it
 execfile( "setup.py", globals(), locals() )
