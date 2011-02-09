@@ -36,12 +36,13 @@ class Egg( object ):
     """
     Contains information about locating and downloading eggs.
     """
-    def __init__( self, name=None, version=None, tag=None, url=None, platform=None ):
+    def __init__( self, name=None, version=None, tag=None, url=None, platform=None, crate=None ):
         self.name = name
         self.version = version
         self.tag = tag
         self.url = url
         self.platform = platform
+        self.crate = crate
         self.distribution = None
         self.dir = None
         if self.name is not None and self.version is not None:
@@ -145,37 +146,68 @@ class Egg( object ):
             log.debug( "Removed conflicting egg: %s" % doppelganger )
     def resolve( self ):
         try:
-            return pkg_resources.working_set.resolve( ( self.distribution.as_requirement(), ), env, self.fetch )
+            rval = []
+            # resolve this egg and its dependencies
+            dists = pkg_resources.working_set.resolve( ( self.distribution.as_requirement(), ), env, self.fetch )
+            for dist in dists:
+                # if any of the resolved dependencies should be managed eggs but are being pulled from the wrong path, fix them
+                if dist.project_name in self.crate.all_names and not os.path.realpath( dist.location ).startswith( os.path.realpath( self.dir ) ):
+                    # TODO: like eggs.require(), this breaks requirement versioning
+                    subdists = self.version_conflict( dist, dist.as_requirement() )
+                    if type( subdists ) == list:
+                        rval.extend( subdists )
+                    else:
+                        rval.append( subdists )
+                else:
+                    rval.append( dist )
+            return rval
         except pkg_resources.DistributionNotFound, e:
             # If this statement is true, it means we do have the requested egg,
             # just not one (or more) of its deps.
             if e.args[0].project_name != self.distribution.project_name:
-                log.warning( "Warning: %s (a dependant egg of %s) cannot be fetched" % ( e.args[0].project_name, self.distribution.project_name ) )
+                log.warning( "Warning: %s (a dependent egg of %s) cannot be fetched" % ( e.args[0].project_name, self.distribution.project_name ) )
                 return ( self.distribution, )
             else:
                 raise EggNotFetchable( self )
         except pkg_resources.VersionConflict, e:
             # there's a conflicting egg on the path, remove it
-            dist = e.args[0]
-            # use the canonical path for comparisons
-            location = os.path.realpath( dist.location )
-            for entry in pkg_resources.working_set.entries:
-                if os.path.realpath( entry ) == location:
-                    pkg_resources.working_set.entries.remove( entry )
-                    break
-            else:
-                location = entry = None
-            del pkg_resources.working_set.by_key[dist.key]
-            if entry is not None:
-                pkg_resources.working_set.entry_keys[entry] = []
-                if entry in sys.path:
-                    sys.path.remove(entry)
-            r = pkg_resources.working_set.resolve( ( self.distribution.as_requirement(), ), env, self.fetch )
-            if location is not None and not location.endswith( '.egg' ):
-                # re-add the path if it's a non-egg dir, in case more deps live there
-                pkg_resources.working_set.entries.append( location )
-                sys.path.append( location )
-            return r
+            return self.version_conflict( e.args[0], e.args[1] )
+    def version_conflict( self, conflict_dist, conflict_req ):
+        # since this conflict may be for a dependent egg, find the correct egg from the crate
+        if conflict_dist.project_name == self.distribution.project_name:
+            egg = self
+            dist = egg.distribution
+        elif conflict_dist.project_name in self.crate.all_names:
+            egg = self.crate[conflict_dist.project_name]
+            dist = egg.distribution
+        else:
+            # should not happen, but just in case
+            egg = None
+            dist = conflict_dist
+        # use the canonical path to locate and remove the conflict from the working set
+        location = os.path.realpath( conflict_dist.location )
+        for entry in pkg_resources.working_set.entries:
+            if os.path.realpath( entry ) == location:
+                pkg_resources.working_set.entries.remove( entry )
+                break
+        else:
+            location = entry = None
+        del pkg_resources.working_set.by_key[conflict_dist.key]
+        # remove the conflict from sys.path
+        if entry is not None:
+            pkg_resources.working_set.entry_keys[entry] = []
+            if entry in sys.path:
+                sys.path.remove(entry)
+        # if the conflict is a dpeendent egg, fetch that specific egg
+        if egg:
+            r = pkg_resources.working_set.resolve( ( dist.as_requirement(), ), env, egg.fetch )
+        else:
+            r = pkg_resources.working_set.resolve( ( dist.as_requirement(), ), env )
+        # re-add the path if it's a non-egg dir, in case more deps live there
+        if location is not None and not location.endswith( '.egg' ):
+            pkg_resources.working_set.entries.append( location )
+            sys.path.append( location )
+        return r
     def require( self ):
         try:
             dists = self.resolve()
@@ -215,7 +247,7 @@ class Crate( object ):
                 platform = self.platform or '-'.join( ( py, pkg_resources.get_platform() ) )
             else:
                 platform = self.py_platform or py
-            egg = egg_class( name, version, tag, url, platform )
+            egg = egg_class( name=name, version=version, tag=tag, url=url, platform=platform, crate=self )
             self.eggs[name] = egg
     @property
     def config_missing( self ):
@@ -331,7 +363,7 @@ class GalaxyConfig( object ):
                 return False
 
 def get_env():
-    env = pkg_resources.Environment( platform=pkg_resources.get_platform() )
+    env = pkg_resources.Environment( search_path='', platform=pkg_resources.get_platform() )
     for dist in pkg_resources.find_distributions( os.path.join( galaxy_dir, 'eggs' ), False ):
         env.add( dist )
     return env
@@ -340,6 +372,8 @@ env = get_env()
 def require( req_str ):
     c = Crate()
     req = pkg_resources.Requirement.parse( req_str )
+    # TODO: This breaks egg version requirements.  Not currently a problem, but
+    # it could become one.
     try:
         return c[req.project_name].require()
     except KeyError:
