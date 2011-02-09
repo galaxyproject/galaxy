@@ -48,10 +48,10 @@ def upgrade():
     cmd = "SELECT * FROM library_dataset WHERE deleted = %s;" % boolean_true()
     deleted_lds = db_session.execute( cmd ).fetchall()
     for row in deleted_lds:
-        print "Processing LibraryDataset id: ", int( row.id )
         cmd = "SELECT * FROM library_dataset_dataset_association WHERE library_dataset_id = %d AND library_dataset_dataset_association.deleted = %s;" % ( int( row.id ), boolean_false() ) 
         active_lddas = db_session.execute( cmd ).fetchall()
         if not active_lddas:
+            print "Updating purged column to True for LibraryDataset id : ", int( row.id )
             cmd = "UPDATE library_dataset SET purged = %s WHERE id = %d;" % ( boolean_true(), int( row.id ) )
             db_session.execute( cmd )
 
