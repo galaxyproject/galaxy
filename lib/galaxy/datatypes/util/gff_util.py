@@ -258,3 +258,17 @@ def parse_gff_attributes( attr_str ):
         # 'group' attribute. This is the case for strictly GFF files.
         attributes['group'] = attr_str
     return attributes
+    
+def gff_attributes_to_str( attrs, gff_format ):
+    """
+    Convert GFF attributes to string. Supported formats are GFF3, GTF. 
+    """
+    if gff_format == 'GTF':
+        format_string = '%s "%s"'
+    elif gff_format == 'GFF3':
+        format_string = '%s=%s'
+    attrs_strs = []
+    for name, value in attrs.items():
+        attrs_strs.append( format_string % ( name, value ) )
+    return " ; ".join( attrs_strs )
+    

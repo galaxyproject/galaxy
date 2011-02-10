@@ -1,56 +1,111 @@
 <tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.1">
   <description>using coordinates from assembled/unassembled genomes</description>
   <command interpreter="python">
-      extract_genomic_dna.py $input $out_file1 -d $dbkey -o $out_format -g ${GALAXY_DATA_INDEX_DIR}
+      extract_genomic_dna.py $input $out_file1 -o $out_format -d $dbkey 
+      
+      #if str( $interpret_features ) == "yes":
+        -I
+      #end if
+      
+      ## Columns to use in input file.
       #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
         -1 1,4,5,7 --gff
       #else:
         -1 ${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol}
       #end if
+            
+      #if $seq_source.index_source == "cached":
+        ## Genomic data from cache.
+        -g ${GALAXY_DATA_INDEX_DIR}
+      #else:
+        ## Genomic data from history.
+        -F $seq_source.ref_file
+      #end if
   </command>
   <inputs>
-    <param format="interval,gff" name="input" type="data" label="Fetch sequences corresponding to Query">
-        <validator type="unspecified_build" />
-        <validator type="dataset_metadata_in_file" filename="alignseq.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="seq" />
-    </param>
-	<param name="out_format" type="select" label="Output data type">
-    	<option value="fasta">FASTA</option>
-    	<option value="interval">Interval</option>
-	</param>
+      <param format="interval,gff" name="input" type="data" label="Fetch sequences for intervals in">
+          <validator type="unspecified_build" />
+      </param>
+      <param name="interpret_features" type="select" label="Interpret features when possible" help="Only meaningful for GFF, GTF datasets.">
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+      </param>
+      <conditional name="seq_source">
+          <param name="index_source" type="select" label="Source for Genomic Data">
+              <option value="cached">Locally cached</option>
+              <option value="history">History</option>
+          </param>
+          <when value="cached">
+          </when>
+          <when value="history">
+              <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+          </when>
+      </conditional>
+	  <param name="out_format" type="select" label="Output data type">
+    	  <option value="fasta">FASTA</option>
+    	  <option value="interval">Interval</option>
+	  </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input">
-      <change_format>
-        <when input="out_format" value="fasta" format="fasta" />
-      </change_format>
-    </data>
+      <data format="input" name="out_file1" metadata_source="input">
+          <change_format>
+              <when input="out_format" value="fasta" format="fasta" />
+          </change_format>
+      </data>
   </outputs>
   <tests>
     <test>
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
+      <param name="interpret_features" value="yes"/>
+      <param name="index_source" value="cached"/>
       <param name="out_format" value="fasta"/>   
       <output name="out_file1" file="extract_genomic_dna_out1.fasta" />
     </test>
     <test>
       <param name="input" value="droPer1.bed" dbkey="droPer1" ftype="bed" />
+      <param name="interpret_features" value="yes"/>
+      <param name="index_source" value="cached"/>
       <param name="out_format" value="fasta"/>
       <output name="out_file1" file="extract_genomic_dna_out2.fasta" />
     </test>
     <test>
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
+      <param name="interpret_features" value="no"/>
+      <param name="index_source" value="cached"/>
       <param name="out_format" value="interval"/>
       <output name="out_file1" file="extract_genomic_dna_out3.interval" />
     </test>
     <!-- Test GFF file support. -->
     <test>
       <param name="input" value="gff_filter_by_attribute_out1.gff" dbkey="mm9" ftype="gff" />
+      <param name="interpret_features" value="no"/>
+      <param name="index_source" value="cached"/>
       <param name="out_format" value="interval"/>
       <output name="out_file1" file="extract_genomic_dna_out4.gff" />
     </test>
     <test>
       <param name="input" value="gff_filter_by_attribute_out1.gff" dbkey="mm9" ftype="gff" />
+      <param name="interpret_features" value="no"/>
       <param name="out_format" value="fasta"/>
+      <param name="index_source" value="cached"/>
       <output name="out_file1" file="extract_genomic_dna_out5.fasta" />
+    </test>
+    <!-- Test custom sequences support and GFF feature interpretation. -->
+    <test>
+      <param name="input" value="cufflinks_out1.gtf" dbkey="mm9" ftype="gff" />
+      <param name="interpret_features" value="no"/>
+      <param name="index_source" value="history"/>
+      <param name="ref_file" value="tophat_in1.fasta"/>
+      <param name="out_format" value="fasta"/>
+      <output name="out_file1" file="extract_genomic_dna_out6.fasta" />
+    </test>
+    <test>
+      <param name="input" value="cufflinks_out1.gtf" dbkey="mm9" ftype="gff" />
+      <param name="interpret_features" value="yes"/>
+      <param name="index_source" value="history"/>
+      <param name="ref_file" value="tophat_in1.fasta"/>
+      <param name="out_format" value="fasta"/>
+      <output name="out_file1" file="extract_genomic_dna_out7.fasta" />
     </test>
   </tests>
   <help>
