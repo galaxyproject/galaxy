@@ -705,7 +705,8 @@ Run.table = Table( 'run', metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "subindex", TrimmedString( 255 ), index=True ) )
 
 RequestTypeRunAssociation.table = Table( "request_type_run_association", metadata,
     Column( "id", Integer, primary_key=True ),

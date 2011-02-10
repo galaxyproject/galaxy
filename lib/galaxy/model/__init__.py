@@ -2050,9 +2050,10 @@ class SampleDataset( object ):
         self.external_service = external_service
 
 class Run( object ):
-    def __init__( self, form_definition, form_values ):
+    def __init__( self, form_definition, form_values, subindex=None ):
         self.template = form_definition
         self.info = form_values
+        self.subindex = subindex
 
 class RequestTypeRunAssociation( object ):
     def __init__( self, request_type, run ):
