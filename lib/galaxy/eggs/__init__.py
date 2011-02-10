@@ -212,7 +212,8 @@ class Egg( object ):
         try:
             dists = self.resolve()
             for dist in dists:
-                pkg_resources.working_set.add( dist )
+                if dist.location not in pkg_resources.working_set.entries:
+                    pkg_resources.working_set.add( dist )
             return dists
         except:
             raise
