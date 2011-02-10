@@ -18,7 +18,12 @@ if (!$mafile or !$orthfile or !$threshold_array or !$separation or !$tree_defini
 #-------------------------------------------------------------------------------
 # WHICH SPUTNIK USED?
 my $sputnikpath = ();
-$sputnikpath = "sputnik" ;
+$sputnikpath = "/Users/ydk/work/rhesus_microsat/codes/./sputnik_Mac-PowerPC";
+#print "sputnik_Mac-PowerPC non-existant\n" if !-e $sputnikpath;
+#exit if !-e $sputnikpath;
+#$sputnikpath = "bx-sputnik" ;
+#print "ARGV input = @ARGV\n";
+#print "ARGV input :\n mafile=$mafile\n orthfile=$orthfile\n threshold_array=$threshold_array\n  species_set=$species_set\n tree_definition=$tree_definition\n separation=$separation\n";
 #-------------------------------------------------------------------------------
 # RUNFILE
 #-------------------------------------------------------------------------------
@@ -37,9 +42,12 @@ my $tetra_threshold = $thresharr[3];
 my $tdir = tempdir( CLEANUP => 0 );
 chdir $tdir;
 my $dir = getcwd;  
+#print "current dit=$dir\n";
 #-------------------------------------------------------------------------------
 # CREATE AXT FILES IN FORWARD AND REVERSE ORDERS IF NECESSARY
 my @chrfiles=();
+
+#my $mafile =  "/Users/ydk/work/rhesus_microsat/results/galay/align.txt"; #$ARGV[0];
 my $chromt=int(rand(10000));
 my $p_chr=$chromt;
 
@@ -54,20 +62,27 @@ foreach my $spec (@treespecies){
 		push @exactspecies, $spec if $spec eq $espec;
 	}
 }
+#print "exactspecies=@exactspecies\n";
 my $focalspec = $exactspecies[0];
 my $arranged_species_set=join(".",@exactspecies);
 my $chr_name = join(".",("chr".$p_chr),$arranged_species_set, "net", "axt");
+#print "sending to maftoAxt_multispecies: $mafile, $tree_definition, $chr_name, $species_set .. focalspec=$focalspec \n"; 
 maftoAxt_multispecies($mafile, $tree_definition, $chr_name, $species_set);
+#print "done maf to axt conversion\n";
 my $reverse_chr_name = join(".",("chr".$p_chr."r"),$arranged_species_set, "net", "axt");
 artificial_axdata_inverter ($chr_name, $reverse_chr_name);
+#print "reverse_chr_name=$reverse_chr_name\n"; 
 #-------------------------------------------------------------------------------
+# FIND THE CORRESPONDING CHIMP CHROMOSOME FROM FILE ORTp_chrS.TXT
 foreach my $direct ("reverse_direction","forward_direction"){
 	$p_chr=$chromt;
+	#print "direction = $direct\n";
 	$p_chr = $p_chr."r" if $direct eq "reverse_direction";
 	$p_chr = $p_chr if $direct eq "forward_direction";
 	my $config = $species_set;
 	$config=~s/,/./g;
 	my @orgs = split(/\./,$arranged_species_set);
+	#print "ORGS= @orgs\n";
 	my @tag=@orgs;
 		
 	
@@ -80,6 +95,7 @@ foreach my $direct ("reverse_direction","forward_direction"){
 	my $ptag = $orgs[0]."-".$pchr.".".join(".",@orgs[1 ... scalar(@orgs)-1])."-".$threshold_array;
 	my @sp_tags = ();
 	
+	#print "orgs=@orgs, pchr=$pchr, hence, ptag = $ptag\n";
 	foreach my $sp (@tag){
 		push(@sp_tags, ($sp.".".$ptag));
 	}
@@ -105,6 +121,10 @@ foreach my $direct ("reverse_direction","forward_direction"){
 		push(@title_queries, $title);
 	}
 	my $title_query = join($sep, @title_queries);
+	#print "title_queries=@title_queries\n";
+	#print "query = >$title_query<\n"; 
+	#print "orgs = @orgs\n"; 
+	#-------------------------------------------------------------------------------
 	# GET AXTNET FILES, EDIT THEM AND SPLIT THEM INTO HUMAN AND CHIMP INPUT FILES
 	my $t1input = $pchr.".".$arranged_species_set.".net.axt";
 	
@@ -115,6 +135,8 @@ foreach my $direct ("reverse_direction","forward_direction"){
 	}
 	
 	multi_species_t1($t1input,$tags,(join(",", @t1outputs)), $title_query); 
+	#print "t1outputs=@t1outputs\n";
+	#print "done t1\n";
 	#-------------------------------------------------------------------------------
 	#START T2.PL
 	
@@ -261,6 +283,7 @@ foreach my $direct ("reverse_direction","forward_direction"){
 		multispecies_filtering_compound_microsats($compound_microsats, $compound_filterout, $compound_residue,$threshold_array,$threshold_array,scalar(@sp_tags));
 		$species_counter++;
 	}
+	#print "done filtering both simple and compound microsatellites \n";
 	
 	#-------------------------------------------------------------------------------
 	
@@ -289,6 +312,7 @@ foreach my $direct ("reverse_direction","forward_direction"){
 		}
 		$sp_counter++;		
 	}
+	#print "\ndone grouping interrupted & simple microsats based on their motif size for further extention\n";
 	
 	#-------------------------------------------------------------------------------
 	# BREAK CHROMOSOME INTO PARTS OF CERTAIN NO. CONTIGS EACH, FOR FUTURE SEARCHING OF INTERRUPTED MICROSATELLITES
@@ -311,6 +335,7 @@ foreach my $direct ("reverse_direction","forward_direction"){
 	
 
 	my @unionarray = ();
+	#print "splist=@splist\n";
 	#-------------------------------------------------------------------------------
 	# FIND INTERRUPTED MICROSATELLITES
 	
@@ -426,6 +451,7 @@ $date = `date`;
 #xxxxxxx maftoAxt_multispecies xxxxxxx xxxxxxx maftoAxt_multispecies xxxxxxx xxxxxxx maftoAxt_multispecies xxxxxxx 
 
 sub maftoAxt_multispecies {
+	#print "in maftoAxt_multispecies : got @_\n";
 	my $fname=$_[0];
 	open(IN,"<$_[0]") or die "Cannot open $_[0]: $! \n";
 	my $treedefinition = $_[1];
@@ -443,6 +469,7 @@ sub maftoAxt_multispecies {
 			push @exactspecies, $spec if $spec eq $espec;
 		}
 	}
+	#print "exactspecies=@exactspecies\n";
 	
 	###########
 	my $select = 2;  
@@ -453,7 +480,9 @@ sub maftoAxt_multispecies {
 	my @allowedset = ();
 	@allowedset = split(/;/,allowedSetOfSpecies(join("_",@species))) if $select == 0;
 	@allowedset = join("_",0,@species) if $select == 1;
+	#print "species = @species , allowedset =",join("\n", @allowedset) ," \n"; 
 	@allowedset = join("_",0,@exactspecies) if $select == 2;
+	#print "allowedset = @allowedset and exactspecies = @exactspecies\n";
 	
 	my $start = 0;
 	my @sequences = ();
@@ -474,6 +503,7 @@ sub maftoAxt_multispecies {
 		}
 		
 		if ($line =~ /^s /){
+		#	print "fields1 = $fields[1] , start = $start\n";
 		
 			foreach my $sp (@species){
 				if ($fields[1] =~ /$sp/){
@@ -493,12 +523,14 @@ sub maftoAxt_multispecies {
 			my $arrno = 0;
 			foreach my $set (@allowedset){
 				if ($arranged eq $set){
+	#				print "$arranged == $set\n";
 					$stopper = 0; last;
 				}
 				$arrno++;
 			}
 	
 			if ($stopper == 0) {
+			#	print "    accepted\n";
 				@titles = split ";", orderInfo(join(";", @titles), $species_counter, $arranged) if $species_counter ne $arranged;				
 				@sequences = split ";", orderInfo(join(";", @sequences), $species_counter, $arranged) if $species_counter ne $arranged;				
 				my $filteredseq = filter_gaps(@sequences);
@@ -519,6 +551,7 @@ sub maftoAxt_multispecies {
 			
 		}
 	}
+#	print "countermatch = $countermatch\n";
 }
 
 sub reorderSpecies{
@@ -535,6 +568,7 @@ sub reorderSpecies{
 
 sub filter_gaps{
 	my @sequences = @_;
+#	print "sequences sent are @sequences\n";
 	my $seq_length = length($sequences[0]);
 	my $seq_no = scalar(@sequences);
 	my $allgaps = ();
@@ -557,7 +591,9 @@ sub filter_gaps{
 		for my $u (0 ... $#seq_array){
 			$bases = $bases.$seq_array[$u][$g];
 		}	
+#		print $bases, "\n";
 		if ($bases eq $allgaps){
+#			print "bases are $bases, position is $g \n";
 			for my $seq (@seq_array){
 				splice(@$seq , $g, 1);
 			}
@@ -580,6 +616,7 @@ sub filter_gaps{
 sub allowedSetOfSpecies{
 	my @allowed_species = split(/_/,$_[0]);
 	unshift @allowed_species, 0;
+#	print "allowed set = @allowed_species \n";
 	my @output = ();
 	for (0 ... scalar(@allowed_species) - 4){
 		push(@output, join("_",@allowed_species));
@@ -626,14 +663,15 @@ sub artificial_axdata_inverter{
 				my @fields = split(/\s*/,$line);
 				
 				$final_line = join("",reverse(@fields));
-				print colored ['red'], "$line\n$final_line\n" if $final_line eq $line && $line !~ /chr/ && $line =~ /[a-zA-Z]/;
+		#		print colored ['red'], "$line\n$final_line\n" if $final_line eq $line && $line !~ /chr/ && $line =~ /[a-zA-Z]/;
 		#		$trycounter++;
+		#		print "trying again....$trycounter : $final_line\n" if $final_line eq $line;
 		#	}
 		}
 		
-		print colored ['yellow'], "$line\n$final_line\n" if $final_line eq $line && $line !~ /chr/ && $line =~ /[a-zA-Z]/;
+	#	print colored ['yellow'], "$line\n$final_line\n" if $final_line eq $line && $line !~ /chr/ && $line =~ /[a-zA-Z]/;
 		if ($line =~ /^[0-9]/){
-			$line =~ s/chr([0-9a-b]+)/chr$1r/g;
+			$line =~ s/chr([A-Z0-9a-b]+)/chr$1r/g;
 			$final_line = $line;
 		}
 		print OUT $final_line,"\n";
@@ -649,7 +687,7 @@ sub artificial_axdata_inverter{
 sub multi_species_t1 {
 
 	my $input1 = $_[0];
-	#print "@_\n"; #<STDIN>;
+#	print "@_\n"; #<STDIN>;
 	my @tags = split(/_/, $_[1]);
 	my @outputs = split(/,/, $_[2]);
 	my $title_query = $_[3];
@@ -1678,7 +1716,7 @@ sub multiSpecies_compoundClarifyer{
 			$key = join("\t",$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
 		}
 		else{
-			print "no key in $sine\nfor pattern ([a-z0-9A-Z]+) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+) [\+|\-] (a-z0-9A-Z) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+) [\+|\-] (a-z0-9A-Z) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+)   / \n"; 
+#			print "no key in $sine\nfor pattern ([a-z0-9A-Z]+) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+) [\+|\-] (a-z0-9A-Z) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+) [\+|\-] (a-z0-9A-Z) (chr[0-9a-zA-Z]+) ([0-9]+) ([0-9]+)   / \n"; 
 		}
 	
 		if (exists $micros{$key}){
@@ -1686,8 +1724,8 @@ sub multiSpecies_compoundClarifyer{
 			delete $micros{$key};
 			
 			foreach my $line (@microstring){
-				print "#---------#---------#---------#---------#---------#---------#---------#---------\n" if $printer == 1; 
-				print "microsat = $line" if $printer == 1; 
+#				print "#---------#---------#---------#---------#---------#---------#---------#---------\n" if $printer == 1; 
+#				print "microsat = $line" if $printer == 1; 
 				$linecounter++;
 				my $copy_line = $line;
 				my @mields = split(/\t/,$line);
@@ -1704,7 +1742,7 @@ sub multiSpecies_compoundClarifyer{
 				my @microields = split(/\][a-zA-Z|-]*\[/,$microsatcopy);
 				my @inields = split(/\[[a-zA-Z|-]*\]/,$microsat);
 				my $absolutstart = 1; my $absolutend = $absolutstart + ($end-$start);
-				print "absolut: start = $absolutstart, end = $absolutend\n" if $printer == 1;
+#				print "absolut: start = $absolutstart, end = $absolutend\n" if $printer == 1;
 				shift @inields;
 				#print "inields =@inields<\n";
 				$motifline =~ s/^\[|\]$//gs;
@@ -1790,11 +1828,11 @@ sub multiSpecies_compoundClarifyer{
 				
 				if ($rightstopper == 1 && $leftstopper == 1){
 					print COMP $line; 
-					print "rightstopper == 1 && leftstopper == 1\n" if $printer == 1; 
+#					print "rightstopper == 1 && leftstopper == 1\n" if $printer == 1; 
 					next;
 				}
 	
-				print "pased initial testing phase \n" if $printer == 1; 
+#				print "pased initial testing phase \n" if $printer == 1; 
 				my @outputs = ();
 				my @orig_starts = ();
 				my @orig_ends = ();
@@ -1845,7 +1883,7 @@ sub multiSpecies_compoundClarifyer{
 	
 					while($lefter == 1){
 						$newline = left_extender($templine, $seq,$org);
-						print "returned line from left extender= $newline \n" if $printer == 1; 
+#						print "returned line from left extender= $newline \n" if $printer == 1; 
 						if ($newline eq $templine){$templine = $newline; last;}
 						else {$templine = $newline;}
 						
@@ -1853,7 +1891,7 @@ sub multiSpecies_compoundClarifyer{
 					}
 					while($righter == 1){
 						$newline = right_extender($templine, $seq,$org);
-						print "returned line from right extender= $newline \n" if $printer == 1; 
+#						print "returned line from right extender= $newline \n" if $printer == 1; 
 						if ($newline eq $templine){$templine = $newline; last;}
 						else {$templine = $newline;}
 						if (right_extention_permission_giver($templine) eq "no") {last;}
@@ -1864,7 +1902,7 @@ sub multiSpecies_compoundClarifyer{
 					my @tempmotields = split(/\]\[/,$tempfields[$motifcord]);			
 					
 					if (scalar(@tempmotields) == 1 && $templine eq $orig_templine) { 
-						print "scalar ( tempmotields) = 1\n" if $printer == 1; 
+#						print "scalar ( tempmotields) = 1\n" if $printer == 1; 
 						next;
 					} 
 					my $prevmotif = shift(@tempmotields);
@@ -1877,7 +1915,7 @@ sub multiSpecies_compoundClarifyer{
 						$prevmotif = $tempmot;
 					}
 					if ( $stopper == 1) { 
-						print "length tempmot  != length prevmotif\n" if $printer == 1; 
+#						print "length tempmot  != length prevmotif\n" if $printer == 1; 
 						next; 
 					} 
 					my $lastend  = 0;
@@ -1886,32 +1924,32 @@ sub multiSpecies_compoundClarifyer{
 					my $left_bp = (); my $right_bp = ();
 	#				print "new startcord = $tempfields[$startcord] , new endcord  = $tempfields[$endcord].. orig strts = @orig_starts and orig ends = @orig_ends\n";
 					for my $o (0 ... $#orig_starts){
-						print "we are talking abut tempstart:$tempfields[$startcord] >= origstart:$lastend && tempstart:$tempfields[$startcord] <= origend: $orig_ends[$o] \n" if $printer == 1; 
-						print "we are talking abut tempend:$tempfields[$endcord] >= origstart:$lastend && tempstart:$tempfields[$endcord] >= origend: $orig_ends[$o] \n" if $printer == 1; 
+#						print "we are talking abut tempstart:$tempfields[$startcord] >= origstart:$lastend && tempstart:$tempfields[$startcord] <= origend: $orig_ends[$o] \n" if $printer == 1; 
+#						print "we are talking abut tempend:$tempfields[$endcord] >= origstart:$lastend && tempstart:$tempfields[$endcord] >= origend: $orig_ends[$o] \n" if $printer == 1; 
 	
 						if (($tempfields[$startcord] > $lastend)  && ($tempfields[$startcord] <= $orig_ends[$o])){ # && ($tempfields[$startcord] != $fields[$startcord])
-							print "motif captured on left is $microields[$o] from $microsat\n" if $printer == 1; 
+#							print "motif captured on left is $microields[$o] from $microsat\n" if $printer == 1; 
 							$left_captured  = $o;
 							$left_bp =  $orig_ends[$o] - $tempfields[$startcord] + 1;
 						}
 						elsif ($tempfields[$endcord] > $lastend  && $tempfields[$endcord] <= $orig_ends[$o]){ #&& $tempfields[$endcord] != $fields[$endcord])
-							print "motif captured on right is $microields[$o] from $microsat\n" if $printer == 1; 
+#							print "motif captured on right is $microields[$o] from $microsat\n" if $printer == 1; 
 							$right_captured  = $o;
 							$right_bp = $tempfields[$endcord]  - $orig_starts[$o] + 1;
 						}
 						$lastend = $orig_ends[$o]
 					}
-					print "leftcaptured = $left_captured, right = $right_captured\n" if $printer==1;
+#					print "leftcaptured = $left_captured, right = $right_captured\n" if $printer==1;
 					my $leftmotif = (); my $left_trashed = ();
 					if ($tempfields[$startcord] != $fields[$startcord]) {
 						$leftmotif = $motields[$left_captured]; 
-						print "$left_captured in @microields: $motields[$left_captured]\n" if $printer == 1; 
+#						print "$left_captured in @microields: $motields[$left_captured]\n" if $printer == 1; 
 						if ( $left_captured !~ /[0-9]+/) {print $line,"\n", $templine,"\n"; }
 						 $left_trashed = length($microields[$left_captured]) - $left_bp;
 					}
 					my $rightmotif = (); my $right_trashed = ();
 					if ($tempfields[$endcord] != $fields[$endcord]) {
-						print "$right_captured in @microields: $motields[$right_captured]\n" if $printer == 1; 
+#						print "$right_captured in @microields: $motields[$right_captured]\n" if $printer == 1; 
 						$rightmotif = $motields[$right_captured];
 						$right_trashed = length($microields[$right_captured]) - $right_bp;
 					} 
@@ -1920,54 +1958,54 @@ sub multiSpecies_compoundClarifyer{
 					$stopper = 0;
 					my $deletioner = 0;
 					#if($tempfields[$startcord] != $fields[$startcord]){
-						print "enter left: tempfields,startcord  : $tempfields[$startcord] != $absolutstart && left_captured: $left_captured != 0 \n" if $printer==1;
+#						print "enter left: tempfields,startcord  : $tempfields[$startcord] != $absolutstart && left_captured: $left_captured != 0 \n" if $printer==1;
 						if ($left_captured != 0){ 
-							print "at line 370, going: 0 ... $left_captured-1 \n" if $printer == 1;
+#							print "at line 370, going: 0 ... $left_captured-1 \n" if $printer == 1;
 							for my $e (0 ... $left_captured-1){
 								if( length($motields[$e]) > 2 && length($microields[$e]) > (3* length($motields[$e]) )){
-									print "motif on left not included too big to be ignored : $microields[$e] \n" if $printer == 1;  
+#									print "motif on left not included too big to be ignored : $microields[$e] \n" if $printer == 1;  
 									$deletioner++; last;
 								}
 								if( length($motields[$e]) == 2 && length($microields[$e]) > (3* length($motields[$e]) )){
-									print "motif on left not included too big to be ignored : $microields[$e] \n" if $printer == 1;  
+#									print "motif on left not included too big to be ignored : $microields[$e] \n" if $printer == 1;  
 									$deletioner++; last;
 								}
 								if( length($motields[$e]) == 1 && length($microields[$e]) > (4* length($motields[$e]) )){
-									print "motif on left not included too big to be ignored : $microields[$e] \n" if $printer == 1; 
+#									print "motif on left not included too big to be ignored : $microields[$e] \n" if $printer == 1; 
 									$deletioner++; last;
 								}
 							}				
 						}
 					#}
-					print "after left search, deletioner = $deletioner\n" if $printer == 1;
+#					print "after left search, deletioner = $deletioner\n" if $printer == 1;
 					if ($deletioner >= 1) {  
-						print "deletioner = $deletioner\n" if $printer == 1;
+#						print "deletioner = $deletioner\n" if $printer == 1;
 						next; 
 					} 
 					
 					$deletioner = 0;
 	
 					#if($tempfields[$endcord] != $fields[$endcord]){				
-						print "if tempfields endcord: $tempfields[$endcord] != absolutend: $absolutend\n and $right_captured != $#microields\n" if $printer==1;
+#						print "if tempfields endcord: $tempfields[$endcord] != absolutend: $absolutend\n and $right_captured != $#microields\n" if $printer==1;
 						if ($right_captured != $#microields){ 
-							print "at line 394, going: $right_captured+1 ... $#microields \n" if $printer == 1;
+#							print "at line 394, going: $right_captured+1 ... $#microields \n" if $printer == 1;
 							for my $e ($right_captured+1 ... $#microields){
 								if( length($motields[$e]) > 2 &&  length($microields[$e]) > (3* length($motields[$e])) ){
-									print "motif on right not included too big to be ignored : $microields[$e] \n" if $printer == 1; 
+#									print "motif on right not included too big to be ignored : $microields[$e] \n" if $printer == 1; 
 									$deletioner++; last;
 								}
 								if( length($motields[$e]) == 2 && length($microields[$e]) > (3* length($motields[$e]) )){
-									print "motif on right not included too big to be ignored : $microields[$e] \n" if $printer == 1;
+#									print "motif on right not included too big to be ignored : $microields[$e] \n" if $printer == 1;
 									$deletioner++; last;
 								}
 								if( length($motields[$e]) == 1 && length($microields[$e]) > (4* length($motields[$e]) )){
-									print "motif on right not included too big to be ignored : $microields[$e] \n" if $printer == 1;
+#									print "motif on right not included too big to be ignored : $microields[$e] \n" if $printer == 1;
 									$deletioner++; last;
 								}
 							}				
 						}
 					#}
-					print "deletioner = $deletioner\n" if $printer == 1;
+#					print "deletioner = $deletioner\n" if $printer == 1;
 					if ($deletioner >= 1) {  
 						next; 
 					} 
@@ -1977,24 +2015,24 @@ sub multiSpecies_compoundClarifyer{
 					if ($tempfields[$startcord] != $fields[$startcord] ){
 						#print "in left params: (length($leftmotif) == 1 && $tempfields[$startcord] != $fields[$startcord]) ... and .... $left_trashed > (1.5* length($leftmotif]) && ($tempfields[$startcord] != $fields[$startcord])\n";
 						if (length($leftmotif) == 1 && $left_trashed > 3){
-							print "invaded left motif is long mononucleotide" if $printer == 1;
+#							print "invaded left motif is long mononucleotide" if $printer == 1;
 							 next;
 	
 						}
 						elsif ((length($leftmotif) != 1 && $left_trashed > ( thrashallow($leftmotif)) && ($tempfields[$startcord] != $fields[$startcord]) ) ){
-							print "invaded left motif too long" if $printer == 1; 						
+#							print "invaded left motif too long" if $printer == 1; 						
 							 next; 
 						}
 					}
 					if ($tempfields[$endcord] != $fields[$endcord] ){
 						#print "in right params: after $tempfields[$endcord] != $fields[$endcord]  .....   (length($rightmotif)==1 && $tempfields[$endcord] != $fields[$endcord]) ... and ... $right_trashed > (1.5* length($rightmotif))\n";
 						if (length($rightmotif)==1 && $right_trashed){
-							print "invaded right motif is long mononucleotide" if $printer == 1; 
+#							print "invaded right motif is long mononucleotide" if $printer == 1; 
 							 next; 
 	
 						}
 						elsif (length($rightmotif) !=1 && ($right_trashed > ( thrashallow($rightmotif))  && $tempfields[$endcord] != $fields[$endcord])){
-							print "invaded right motif too long" if $printer == 1;
+#							print "invaded right motif too long" if $printer == 1;
 							 next; 
 	
 						}
@@ -2286,8 +2324,8 @@ sub right_extender{
 	
 	##print "scalar of fields = ",scalar(@fields),"\n";
 	if (exists ($fields[$motifcord+1])){
-		print " print fields = @fields.. scalar=", scalar(@fields),".. motifcord+1 = $motifcord + 1 \n " if !exists $fields[$motifcord+1];
-		<STDIN> if !exists $fields[$motifcord+1];
+#		print " print fields = @fields.. scalar=", scalar(@fields),".. motifcord+1 = $motifcord + 1 \n " if !exists $fields[$motifcord+1];
+#		<STDIN> if !exists $fields[$motifcord+1];
 		$fields[$motifcord+1] = $fields[$motifcord+1].",indel/deletion";
 	}
 	else{$fields[$motifcord+1] = "indel/deletion";}
@@ -2302,7 +2340,7 @@ sub right_extender{
 	my @seventeen=();
 	if (exists ($fields[$motifcord+3])){
 		##print "at 608 we are doing this:length($microsat)+$intervalposs[$nikaal]\n";
-		print " print fields = @fields\n " if !exists $fields[$motifcord+3];
+#		print " print fields = @fields\n " if !exists $fields[$motifcord+3];
 		<STDIN> if !exists $fields[$motifcord+3];
 		my $currpos = length($microsat)+$intervalposs[$nikaal];
 		$fields[$motifcord+3] = $fields[$motifcord+3].",".$currpos;
@@ -2596,7 +2634,7 @@ sub chromosome_unrand_breaker{
 			open(SUB,">$subset");
 			print SUB $sine;
 			print OUT $subset,"\n";
-			print $subset,"\n";
+	#		print $subset,"\n";
 		}
 	}
 	close OUT;
@@ -2684,7 +2722,7 @@ sub multiSpecies_interruptedMicrosatHunter{
 			my @microstring = @{$micros{$key}};
 			delete $micros{$key};
 			my @filteredmicrostring;
-			print "sequence = $sields[$sequencepos]" if $prinkter == 1;
+#			print "sequence = $sields[$sequencepos]" if $prinkter == 1;
 			foreach my $line (@microstring){
 				$linecounter++;
 				my $copy_line = $line;
@@ -2692,7 +2730,7 @@ sub multiSpecies_interruptedMicrosatHunter{
 				my $start = $fields[$startcord];
 				my $end = $fields[$endcord];
 				
-				print $line if $prinkter == 1;
+#				print $line if $prinkter == 1;
 				#LOOKING FOR LEFTWARD EXTENTION OF MICROSATELLITE 
 				my $newline;
 				while(1){
@@ -2704,7 +2742,7 @@ sub multiSpecies_interruptedMicrosatHunter{
 					else {$line = $newline;}
 					
 					if (multiSpecies_interruptedMicrosatHunter_left_extention_permission_giver($line) eq "no") {last;}
-					print "returned line from left extender= $line \n" if $prinkter == 1;
+#					print "returned line from left extender= $line \n" if $prinkter == 1;
 				}
 				while(1){
 				#	print "sequence = $sields[$sequencepos]\n" if $prinkter == 1;
@@ -2715,9 +2753,9 @@ sub multiSpecies_interruptedMicrosatHunter{
 					else {$line = $newline;}
 					
 					if (multiSpecies_interruptedMicrosatHunter_right_extention_permission_giver($line) eq "no") {last;}
-					print "returned line from right extender= $line \n" if $prinkter == 1;
+#					print "returned line from right extender= $line \n" if $prinkter == 1;
 				}
-				print "\n>>>>>>>>>>>>>>>>\n In the end, the line is: \n$line\n<<<<<<<<<<<<<<<<\n" if $prinkter == 1;
+#				print "\n>>>>>>>>>>>>>>>>\n In the end, the line is: \n$line\n<<<<<<<<<<<<<<<<\n" if $prinkter == 1;
 	
 				my @tempfields = split(/\t/,$line);
 				if ($tempfields[$microsatcord] =~ /\[/){
@@ -2744,7 +2782,7 @@ sub multiSpecies_interruptedMicrosatHunter{
 
 sub multiSpecies_interruptedMicrosatHunter_left_extender{
 	my ($line, $seq, $org) = @_;	
-	print "left extender, like passed = $line\n" if $prinkter == 1;
+#	print "left extender, like passed = $line\n" if $prinkter == 1;
 #	print "in left extender... line passed = $line and sequence is $seq\n" if $prinkter == 1;
 	chomp $line;
 	my @fields = split(/\t/,$line);
@@ -2763,7 +2801,7 @@ sub multiSpecies_interruptedMicrosatHunter_left_extender{
 	}
 	else {$firstmotif = $motif;}
 	
-	print "hacked microsat = $microsat, motif = $motif, firstmotif = $firstmotif\n" if $prinkter == 1;
+#	print "hacked microsat = $microsat, motif = $motif, firstmotif = $firstmotif\n" if $prinkter == 1;
 	my $leftphase = substr($microsat, 0,length($firstmotif));
 	my $phaser = $leftphase.$leftphase;
 	my @phase = split(/\s*/,$leftphase);
@@ -2779,7 +2817,7 @@ sub multiSpecies_interruptedMicrosatHunter_left_extender{
 	my $end = $rend;
 	
 	my $leftseq = substr($seq, 0, $start);
-	print "left phases are @phases , start = $start left sequence = ",substr($leftseq, -10),"\n" if $prinkter == 1;	
+#	print "left phases are @phases , start = $start left sequence = ",substr($leftseq, -10),"\n" if $prinkter == 1;	
 	my @extentions = ();
 	my @trappeds = ();
 	my @intervalposs = ();
@@ -2788,15 +2826,15 @@ sub multiSpecies_interruptedMicrosatHunter_left_extender{
 	my @intervals = ();
 	my $firstmotif_length = length($firstmotif);
 	foreach my $phase (@phases){
-		print "left phase\t",substr($leftseq, -10),"\t$phase\n" if $prinkter == 1;
-		print "search patter = (($phase)+([a-zA-Z|-]{0,$firstmotif_length})) \n" if $prinkter == 1;
+#		print "left phase\t",substr($leftseq, -10),"\t$phase\n" if $prinkter == 1;
+#		print "search patter = (($phase)+([a-zA-Z|-]{0,$firstmotif_length})) \n" if $prinkter == 1;
 		if ($leftseq =~ /(($phase)+([a-zA-Z|-]{0,$firstmotif_length}))$/i){
-			print "in left pattern\n" if $prinkter == 1;
+#			print "in left pattern\n" if $prinkter == 1;
 			my $trapped = $1;
 			my $trappedpos = length($leftseq)-length($trapped);
 			my $interval = $3;
 			my $intervalpos = index($trapped, $interval) + 1;
-			print "left trapped = $trapped, interval = $interval, intervalpos = $intervalpos\n" if $prinkter == 1;
+#			print "left trapped = $trapped, interval = $interval, intervalpos = $intervalpos\n" if $prinkter == 1;
 
 			my $extention = substr($trapped, 0, length($trapped)-length($interval));
 			my $leftpeep = substr($seq, 0, ($start-length($trapped)));
@@ -2804,12 +2842,12 @@ sub multiSpecies_interruptedMicrosatHunter_left_extender{
 			
 			for my $i (1 ... length($phase)-1){
 				my $overhang = substr($phase, -length($phase)+$i);
-				print "current overhang = $overhang, leftpeep = ",substr($leftpeep,-10)," whole sequence = ",substr($seq, ($end - ($end-$start) - 20), (($end-$start)+20)),"\n" if $prinkter == 1;
+#				print "current overhang = $overhang, leftpeep = ",substr($leftpeep,-10)," whole sequence = ",substr($seq, ($end - ($end-$start) - 20), (($end-$start)+20)),"\n" if $prinkter == 1;
 				#TEMPORARY... BETTER METHOD NEEDED
 				$leftpeep =~ s/-//g;
 				if ($leftpeep =~ /$overhang$/i){
 					push(@passed_overhangs,$overhang);
-					print "l overhang\n" if $prinkter == 1;
+#					print "l overhang\n" if $prinkter == 1;
 				}
 			}
 			
@@ -2817,17 +2855,17 @@ sub multiSpecies_interruptedMicrosatHunter_left_extender{
 				my $overhang = $passed_overhangs[longest_array_element(@passed_overhangs)];
 				$extention = $overhang.$extention;
 				$trapped = $overhang.$trapped;
-				print "trapped extended to $trapped \n" if $prinkter == 1;
+#				print "trapped extended to $trapped \n" if $prinkter == 1;
 				$trappedpos = length($leftseq)-length($trapped);
 			}
 			
 			push(@extentions,$extention);
-			print "extentions = @extentions \n" if $prinkter == 1;
+#			print "extentions = @extentions \n" if $prinkter == 1;
 
 			push(@trappeds,$trapped );
 			push(@intervalposs,length($extention)+1);
 			push(@trappedposs, $trappedpos);
-			print "trappeds = @trappeds\n" if $prinkter == 1;
+#			print "trappeds = @trappeds\n" if $prinkter == 1;
 			push(@trappedphases, substr($extention,0,length($phase)));
 			push(@intervals, $interval);
 		}
@@ -2837,7 +2875,7 @@ sub multiSpecies_interruptedMicrosatHunter_left_extender{
 ############################	my $nikaal = longest_array_element(@trappeds);
 	my $nikaal = shortest_array_element(@intervals);
 	
-	print "longest element found = $nikaal \n" if $prinkter == 1;
+#	print "longest element found = $nikaal \n" if $prinkter == 1;
 	
 	if ($fields[$motifcord] !~ /\[/i) {$fields[$motifcord] = "[".$fields[$motifcord]."]";}
 	$fields[$motifcord] = "[".$trappedphases[$nikaal]."]".$fields[$motifcord];
@@ -2889,14 +2927,14 @@ sub multiSpecies_interruptedMicrosatHunter_left_extender{
 	if ($fields[$microsatcord] =~ /\[/){
 		$returnline = multiSpecies_interruptedMicrosatHunter_merge($returnline);
 	}
-	print "finally left-extended line = ",$returnline,"\n" if $prinkter == 1;
+#	print "finally left-extended line = ",$returnline,"\n" if $prinkter == 1;
 	return $returnline;
 }
 
 sub multiSpecies_interruptedMicrosatHunter_right_extender{
-	print "right extender\n" if $prinkter == 1;
+#	print "right extender\n" if $prinkter == 1;
 	my ($line, $seq, $org) = @_;	
-	print "in right extender... line passed = $line\n" if $prinkter == 1;
+#	print "in right extender... line passed = $line\n" if $prinkter == 1;
 #	print "line = $line, sequence = ",$seq, "\n" if $prinkter == 1;
 	chomp $line;
 	my @fields = split(/\t/,$line);
@@ -2915,7 +2953,7 @@ sub multiSpecies_interruptedMicrosatHunter_right_extender{
 	}
 	else {$temp_lastmotif = $motif;}
 	my $lastmotif = substr($microsat,-length($temp_lastmotif));
-	print "hacked microsat = $microsat, motif = $motif, lastmotif = $lastmotif\n" if $prinkter == 1;
+#	print "hacked microsat = $microsat, motif = $motif, lastmotif = $lastmotif\n" if $prinkter == 1;
 	my $rightphase = substr($microsat, -length($lastmotif));
 	my $phaser = $rightphase.$rightphase;
 	my @phase = split(/\s*/,$rightphase);
@@ -2931,8 +2969,8 @@ sub multiSpecies_interruptedMicrosatHunter_right_extender{
 	my $end = $rend;
 	
 	my $rightseq = substr($seq, $end+1);
-	print "length of sequence  = " ,length($seq), "the coordinate to start from = ", $end+1, "\n" if $prinkter == 1;
-	print "right phases are @phases , end = $end right sequence = ",substr($rightseq,0,10),"\n" if $prinkter == 1;	
+#	print "length of sequence  = " ,length($seq), "the coordinate to start from = ", $end+1, "\n" if $prinkter == 1;
+#	print "right phases are @phases , end = $end right sequence = ",substr($rightseq,0,10),"\n" if $prinkter == 1;	
 	my @extentions = ();
 	my @trappeds = ();
 	my @intervalposs = ();
@@ -2941,15 +2979,15 @@ sub multiSpecies_interruptedMicrosatHunter_right_extender{
 	my @intervals = ();
 	my $lastmotif_length = length($lastmotif);
 	foreach my $phase (@phases){
-		print "right phase\t$phase\t",substr($rightseq,0,10),"\n" if $prinkter == 1;
-		print "search patter = (([a-zA-Z|-]{0,$lastmotif_length})($phase)+) \n" if $prinkter == 1;
+#		print "right phase\t$phase\t",substr($rightseq,0,10),"\n" if $prinkter == 1;
+#		print "search patter = (([a-zA-Z|-]{0,$lastmotif_length})($phase)+) \n" if $prinkter == 1;
 		if ($rightseq =~ /^(([a-zA-Z|-]{0,$lastmotif_length}?)($phase)+)/i){
-			print "in right pattern\n" if $prinkter == 1;
+#			print "in right pattern\n" if $prinkter == 1;
 			my $trapped = $1;
 			my $trappedpos = $end+1;
 			my $interval = $2;
 			my $intervalpos = index($trapped, $interval) + 1;
-			print "trapped = $trapped, interval = $interval\n" if $prinkter == 1;
+#			print "trapped = $trapped, interval = $interval\n" if $prinkter == 1;
 
 			my $extention = substr($trapped, length($interval));
 			my $rightpeep = substr($seq, ($end+length($trapped))+1);
@@ -2960,17 +2998,17 @@ sub multiSpecies_interruptedMicrosatHunter_right_extender{
 
 			for my $i (1 ... length($phase)-1){
 				my $overhang = substr($phase,0, $i);
-				print "current extention = $extention, overhang = $overhang, rightpeep = ",substr($rightpeep,0,10),"\n" if $prinkter == 1;
+#				print "current extention = $extention, overhang = $overhang, rightpeep = ",substr($rightpeep,0,10),"\n" if $prinkter == 1;
 				if ($rightpeep =~ /^$overhang/i){
 					push(@passed_overhangs, $overhang);
-					print "r overhang\n" if $prinkter == 1;
+#					print "r overhang\n" if $prinkter == 1;
 				}
 			}
 			if (scalar(@passed_overhangs) > 0){			
 				my $overhang = @passed_overhangs[longest_array_element(@passed_overhangs)];
 				$extention = $extention.$overhang;
 				$trapped = $trapped.$overhang;
-				print "trapped extended to $trapped \n" if $prinkter == 1;
+#				print "trapped extended to $trapped \n" if $prinkter == 1;
 			}
 		
 			push(@extentions,$extention);
@@ -2979,7 +3017,7 @@ sub multiSpecies_interruptedMicrosatHunter_right_extender{
 			push(@trappeds,$trapped );
 			push(@intervalposs,$intervalpos);
 			push(@trappedposs, $trappedpos);
-			print "trappeds = @trappeds\n" if $prinkter == 1;
+#			print "trappeds = @trappeds\n" if $prinkter == 1;
 			push(@trappedphases, substr($extention,0,length($phase)));
 			push(@intervals, $interval);
 		}
@@ -2989,7 +3027,7 @@ sub multiSpecies_interruptedMicrosatHunter_right_extender{
 ###################################	my $nikaal = longest_array_element(@trappeds);
 	my $nikaal = shortest_array_element(@intervals);
 	
-	print "longest element found = $nikaal \n" if $prinkter == 1;
+#	print "longest element found = $nikaal \n" if $prinkter == 1;
 	
 	if ($fields[$motifcord] !~ /\[/i) {$fields[$motifcord] = "[".$fields[$motifcord]."]";}
 	$fields[$motifcord] = $fields[$motifcord]."[".$trappedphases[$nikaal]."]";
@@ -3032,7 +3070,7 @@ sub multiSpecies_interruptedMicrosatHunter_right_extender{
 	if ($fields[$microsatcord] =~ /\[/){
 		$returnline = multiSpecies_interruptedMicrosatHunter_merge($returnline);
 	}
-	print "finally right-extended line = ",$returnline,"\n" if $prinkter == 1;
+#	print "finally right-extended line = ",$returnline,"\n" if $prinkter == 1;
 	return $returnline;
 
 }
@@ -3058,7 +3096,7 @@ sub multiSpecies_interruptedMicrosatHunter_left_extention_permission_giver{
 		#print "firststretch = $firststretch\n" if $prinkter == 1;
 	}
 	else {$firstmotif = $motif;$firststretch = $microsat;}
-	print "if length:firststretch - length($firststretch) < threshes length :firstmotif ($firstmotif) - $thresholds[length($firstmotif)]\n" if $prinkter == 1; 
+#	print "if length:firststretch - length($firststretch) < threshes length :firstmotif ($firstmotif) - $thresholds[length($firstmotif)]\n" if $prinkter == 1; 
 	if (length($firststretch) < $thresholds[length($firstmotif)]){
 		return "no";
 	}
@@ -3206,20 +3244,22 @@ sub microsat_packer{
 
 }
 sub multiSpecies_interruptedMicrosatHunter_merge{
+		$prinkter = 0;
+#	print "~~~~~~~~|||~~~~~~~~|||~~~~~~~~|||~~~~~~~~|||~~~~~~~~|||~~~~~~~~|||~~~~~~~~\n";
 	my $line = $_[0];
-	print "sent for mering: $line \n" if $prinkter ==1;
+#	print "sent for mering: $line \n" if $prinkter ==1;
 	my @mields = split(/\t/,$line);
 	my @fields = @mields;
 	my $microsat = allCaps($fields[$microsatcord]);
 	my $motifline = allCaps($fields[$motifcord]);
 	my $microsatcopy = $microsat;
-	print "microsat = $microsat|\n" if $prinkter ==1;
+#	print "microsat = $microsat|\n" if $prinkter ==1;
 	$microsatcopy =~ s/^\[|\]$//sg;
 	chomp $microsatcopy;
 	my @microields = split(/\][a-zA-Z|-]*\[/,$microsatcopy);
 	my @inields = split(/\[[a-zA-Z|-]*\]/,$microsat);
 	shift @inields;
-	print "inields =",join("|",@inields)," microields = ",join("|",@microields)," and count of microields = ", $#microields,"\n" if $prinkter ==1;
+#	print "inields =",join("|",@inields)," microields = ",join("|",@microields)," and count of microields = ", $#microields,"\n" if $prinkter ==1;
 	$motifline =~ s/^\[|\]$//sg;
 	my @motields = split(/\]\[/,$motifline);
 	my @firstmotifs = ();
@@ -3228,7 +3268,7 @@ sub multiSpecies_interruptedMicrosatHunter_merge{
 		$firstmotifs[$i] =  substr($microields[$i],0,length($motields[$i]));
 		$lastmotifs[$i] = substr($microields[$i],-length($motields[$i]));
 	}
-	print "firstmotif = @firstmotifs... lastmotif = @lastmotifs\n" if $prinkter ==1;
+#	print "firstmotif = @firstmotifs... lastmotif = @lastmotifs\n" if $prinkter ==1;
 	my @mergelist = ();
 	my @inter_poses = split(/,/,$fields[$interr_poscord]);
 	my $no_of_interruptions = $fields[$no_of_interruptionscord];
@@ -3236,52 +3276,56 @@ sub multiSpecies_interruptedMicrosatHunter_merge{
 	my @interrtypes = split(/,/,$fields[$interrtypecord]);
 	my $stopper = 0;
 	for my $i (0 ... $#motields-1){
-		print "studying connection of $motields[$i] and $motields[$i+1], i = $i in $microsat\n:$lastmotifs[$i] eq $firstmotifs[$i+1]?\n" if $prinkter ==1;
+#		print "studying connection of $motields[$i] and $motields[$i+1], i = $i in $microsat\n:$lastmotifs[$i] eq $firstmotifs[$i+1]?\n" if $prinkter ==1;
 		if ((allCaps($lastmotifs[$i]) eq allCaps($firstmotifs[$i+1])) && (!exists $inields[$i] || $inields[$i] !~ /[a-zA-Z]/)){
 			$stopper = 1;
 			push(@mergelist, ($i)."_".($i+1)); #<STDIN> if $prinkter ==1;
 		}
 	}
 	
-	print "mergelist = @mergelist\n" if $prinkter ==1;
+#	print "mergelist = @mergelist\n" if $prinkter ==1;
 	return $line if scalar(@mergelist) == 0;
-	print "merging @mergelist\n" if $prinkter ==1;
+#	print "merging @mergelist\n" if $prinkter ==1;
 #	<STDIN> if $prinkter ==1;
 	
 	foreach my $merging (@mergelist){
 		my @sets = split(/_/, $merging);
-		print "sets = @sets\n" if $prinkter ==1;
+#		print "sets = @sets\n" if $prinkter ==1;
 		my @tempmicro = ();
 		my @tempmot = ();
-		print "for loop going from 0 ... ", $sets[0]-1, "\n" if $prinkter ==1;
+#		print "for loop going from 0 ... ", $sets[0]-1, "\n" if $prinkter ==1;
 		for my $i (0 ... $sets[0]-1){
-			print " adding pre- i = $i adding: microields= $microields[$i]. motields = $motields[$i], inields = |$inields[$i]|\n" if $prinkter ==1;
+#			print " adding pre- i = $i adding: microields= $microields[$i]. motields = $motields[$i], inields = |$inields[$i]|\n" if $prinkter ==1;
 			push(@tempmicro, "[".$microields[$i]."]");
 			push(@tempmicro, $inields[$i]);
 			push(@tempmot, "[".$motields[$i]."]");
-			print "adding pre-motifs number $i\n" if $prinkter ==1;
-			print "tempmot = @tempmot, tempmicro = @tempmicro \n" if $prinkter ==1;
+#			print "adding pre-motifs number $i\n" if $prinkter ==1;
+#			print "tempmot = @tempmot, tempmicro = @tempmicro \n" if $prinkter ==1;
 		}
-		print "tempmot = @tempmot, tempmicro = @tempmicro \n" if $prinkter ==1;
-		print "now pushing ", "[",$microields[$sets[0]]," and ",$microields[$sets[1]],"]\n" if $prinkter ==1;
+#		print "tempmot = @tempmot, tempmicro = @tempmicro \n" if $prinkter ==1;
+#		print "now pushing ", "[",$microields[$sets[0]]," and ",$microields[$sets[1]],"]\n" if $prinkter ==1;
 		my $pusher = "[".$microields[$sets[0]].$microields[$sets[1]]."]";
+#		print "middle is, from @motields -   @sets, number 0 which is  is\n";
+#		print ": $motields[$sets[0]]\n";
 		push (@tempmicro, $pusher);
 		push(@tempmot, "[".$motields[$sets[0]]."]");
-		push (@tempmicro, $inields[$sets[1]]) if $sets[1] != $#microields;
+		push (@tempmicro, $inields[$sets[1]]) if $sets[1] != $#microields && exists $sets[1] && exists $inields[$sets[1]];
 		my $outcoming = -2;
-		print "tempmot = @tempmot, tempmicro = @tempmicro \n" if $prinkter ==1;
-		print "for loop going from ",$sets[1]+1, " ... ", $#microields, "\n" if $prinkter ==1;
+#		print "tempmot = @tempmot, tempmicro = @tempmicro \n" if $prinkter ==1;
+#		print "for loop going from ",$sets[1]+1, " ... ", $#microields, "\n" if $prinkter ==1;
 		for my $i ($sets[1]+1 ... $#microields){
-			print " adding post- i = $i adding: microields= $microields[$i]. motields = $motields[$i]\n" if $prinkter ==1;
-			push(@tempmicro, "[".$microields[$i]."]");
-			push(@tempmicro, $inields[$i]) unless $i == $#microields;
+#			print " adding post- i = $i adding: microields= $microields[$i]. motields = $motields[$i]\n" if $prinkter ==1;
+			push(@tempmicro, "[".$microields[$i]."]") if exists $microields[$i];
+			push(@tempmicro, $inields[$i]) unless $i == $#microields || !exists $inields[$i];
 			push(@tempmot, "[".$motields[$i]."]");
-			print "adding post-motifs number $i\n" if $prinkter ==1;
+#			print "adding post-motifs number $i\n" if $prinkter ==1;
 			$outcoming  = $i;
 		}
+#		print "____________________________________________________________________________\n";
+		$prinkter = 0;
 		$fields[$microsatcord] = join("",@tempmicro);
 		$fields[$motifcord] = join("",@tempmot);
-		print "tempmot = @tempmot, tempmicro = @tempmicro . microsat = $fields[$microsatcord] and motif = $fields[$motifcord] \n" if $prinkter ==1;
+#		print "tempmot = @tempmot, tempmicro = @tempmicro . microsat = $fields[$microsatcord] and motif = $fields[$motifcord] \n" if $prinkter ==1;
 		
 		splice(@interrtypes, $sets[0], 1);
 		$fields[$interrtypecord] = join(",",@interrtypes);
@@ -3300,7 +3344,7 @@ sub multiSpecies_interruptedMicrosatHunter_merge{
 	else{
 		$line = join("\t", @fields);
 	}
-	print "post merging, the line is $line\n" if $prinkter ==1;
+#	print "post merging, the line is $line\n" if $prinkter ==1;
 	#<STDIN> if $stopper ==1;
 	return $line;
 }
@@ -3411,7 +3455,7 @@ sub merge_interruptedMicrosats{
 	while(my $sine = <SEQ>){
 		#<STDIN> if $sine =~ /16349128/;
 		next if $sine !~ /[a-zA-Z0-9]/;
-		print "-" x 150, "\n"  if $printer == 1;
+#		print "-" x 150, "\n"  if $printer == 1;
 		my @sields = split(/\t/,$sine);
 		my @merged = ();
 	
@@ -3435,7 +3479,7 @@ sub merge_interruptedMicrosats{
 		#	print "line no : $linecount\n";
 			my @raw_microstring = @{$fmicros{$key}};
 			my %starts = (); my %ends = ();
-			print colored ['yellow'],"unsorted, unfiltered microats = \n" if $printer == 1; foreach (@raw_microstring) {print colored ['blue'],$_,"\n" if $printer == 1;}
+#			print colored ['yellow'],"unsorted, unfiltered microats = \n" if $printer == 1; foreach (@raw_microstring) {print colored ['blue'],$_,"\n" if $printer == 1;}
 			my @microstring=();
 			for my $u (0 ... $#raw_microstring){
 				my @tields = split(/\t/,$raw_microstring[$u]);
@@ -3457,7 +3501,7 @@ sub merge_interruptedMicrosats{
 		#	print "line no : $linecount\n";
 			my @raw_microstring = @{$rmicros{$key}};
 			my %starts = (); my %ends = ();
-			print colored ['yellow'],"unsorted, unfiltered microats = \n" if $printer == 1; foreach (@raw_microstring) {print colored ['blue'],$_,"\n" if $printer == 1;}
+#			print colored ['yellow'],"unsorted, unfiltered microats = \n" if $printer == 1; foreach (@raw_microstring) {print colored ['blue'],$_,"\n" if $printer == 1;}
 			my @microstring=();
 			for my $u (0 ... $#raw_microstring){
 				my @tields = split(/\t/,$raw_microstring[$u]);
@@ -3553,7 +3597,7 @@ sub find_clusters{
 	my @mergedSet = ();
 #		print "set of microsats = @microstring \n";
 	my @microstring = map { $_->[0] } sort custom map { [$_, split /\t/ ] } @microstring0; 
-	print "microstring = ", join("\n",@microstring0) ," \n---->\n", join("\n", @microstring),"\n ,,+." if $printer == 1; 
+#	print "microstring = ", join("\n",@microstring0) ," \n---->\n", join("\n", @microstring),"\n ,,+." if $printer == 1; 
 	#<STDIN> if $printer == 1; 
 	my @tempmicrostring = @microstring;
 	foreach my $line (@tempmicrostring){
@@ -3567,7 +3611,7 @@ sub find_clusters{
 	}
 	my $firstflag = 'down';
 	while( my $line =shift(@microstring)){
-		print "-----------\nline = $line \n" if $printer == 1;
+#		print "-----------\nline = $line \n" if $printer == 1;
 		chomp $line;
 		my @fields = split(/\t/,$line);
 		my $start = $fields[$startcord];
@@ -3592,9 +3636,9 @@ sub find_clusters{
 		my $endrank = 1;
 
 		while( ($startflag eq "down") || ($endflag eq "down") ){
-			print "prestart=$prestart, post end =$postend.. seqlen =", length($sequence)," firstflag = $firstflag \n" if $printer == 1;
+#			print "prestart=$prestart, post end =$postend.. seqlen =", length($sequence)," firstflag = $firstflag \n" if $printer == 1;
 			if ( (($prestart < 0) && $firstflag eq "up") || (($postend > length($sequence) && $firstflag eq "up")) ){
-				print "coming to the end of sequence,post end = $postend and sequence length =", length($sequence)," so exiting\n" if $printer == 1;
+#				print "coming to the end of sequence,post end = $postend and sequence length =", length($sequence)," so exiting\n" if $printer == 1;
 				last;
 			}
 			
@@ -3611,7 +3655,7 @@ sub find_clusters{
 							chomp $startmicro;
 							$flag = 'down';
 							$startrank++;
-							print "deleting $microend{$i}[0] and $microstart{$tields[$startcord]}[0]\n" if $printer == 1;
+#							print "deleting $microend{$i}[0] and $microstart{$tields[$startcord]}[0]\n" if $printer == 1;
 							delete $microend{$i};
 							delete $microstart{$tields[$startcord]};
 							$end = $tields[$endcord];
@@ -3629,7 +3673,7 @@ sub find_clusters{
 			if ($endflag eq "down"){	
 
 				for my $i ($start ... $postend){
-					print "$start ----> $i -----> $postend\n" if $printer == 1;
+#					print "$start ----> $i -----> $postend\n" if $printer == 1;
 					if(exists $microstart{$i} ){
 						chomp $microstart{$i}[0];
 						if(exists $compoundhash{$microstart{$i}[0]}) {next;}	
@@ -3640,11 +3684,11 @@ sub find_clusters{
 							$endrank++;
 							chomp $endmicro;
 							$flag = 'down';
-							print "deleting $microend{$tields[$endcord]}[0]\n" if $printer == 1;
+#							print "deleting $microend{$tields[$endcord]}[0]\n" if $printer == 1;
 							
 							delete $microstart{$i} if exists $microstart{$i} ;
 							delete $microend{$tields[$endcord]} if exists $microend{$tields[$endcord]};
-							print "done\n" if $printer == 1;
+#							print "done\n" if $printer == 1;
 							
 							shift @microstring;
 							$end = $tields[$endcord];
@@ -3656,25 +3700,25 @@ sub find_clusters{
 						$flag = 'up';
 						$endflag = 'up';
 					}
-					print "out of the if\n" if $printer == 1;
+#					print "out of the if\n" if $printer == 1;
 				}
-				print "out of the for\n" if $printer == 1;
+#				print "out of the for\n" if $printer == 1;
 
 			}
 #			print "for next turn, flag status: startflag = $startflag and endflag = $endflag \n";
 		} 														#end while( $flag eq "down")
-			print "compoundlines = @compoundlines \n" if $printer == 1;
+#			print "compoundlines = @compoundlines \n" if $printer == 1;
 
 		if (scalar (@compoundlines) == 1){
 			push(@nonmerged, $line);		
 
 		}
 		if (scalar (@compoundlines) > 1){
-			print "FROM CLUSTERER\n"  if $printer == 1;
+#			print "FROM CLUSTERER\n"  if $printer == 1;
 			push(@mergedSet,merge_microsats(@compoundlines, $sequence) );
 		}
 	} #end foreach my $line (@microstring){
-print join("\n",@mergedSet),"<-----mergedSet\n"  if $printer == 1;
+#	print join("\n",@mergedSet),"<-----mergedSet\n"  if $printer == 1;
 #<STDIN> if scalar(@mergedSet) > 0;
 #	print "EXIT: find_clusters\n";
 return (join("_",@nonmerged). "=".join("_",@mergedSet));
@@ -3711,7 +3755,7 @@ sub popOuter {
 	my %forPopouting = ();
 
 	while( my $line =shift(@merged)){
-		print "\n MErgedline: $line \n" if $printer == 1;
+#		print "\n MErgedline: $line \n" if $printer == 1;
 		chomp $line;
 		my @fields = split(/\t/,$line);
 		my $start = $fields[$startcord];
@@ -3764,7 +3808,7 @@ sub popOuter {
 			push(@mergedSet,join("\t",@compoundlines) );
 		}
 		else {
-			print "FROM POPOUTER\n" if $printer == 1;
+#			print "FROM POPOUTER\n" if $printer == 1;
 			push(@mergedSet, merge_microsats(@compoundlines, $sequence) );
 		}
 	} 
@@ -3789,7 +3833,7 @@ sub invert_justCoordinates{
 	$fields[$startcord] = $start;
 	$fields[$endcord] = $end;
 	$fields[$microsatcord] = reverse_micro($fields[$microsatcord]);
-	print "RETURNIG: ", join("\t",@fields), "\n" if $printer == 1;
+#	print "RETURNIG: ", join("\t",@fields), "\n" if $printer == 1;
 	return join("\t",@fields); 	
 }
 
@@ -3823,7 +3867,7 @@ sub filterDuplicates_merged{
 	my @fmerged = ();
 	foreach my $micro (@merged) {
 		my @fields = split(/\t/,$micro);
-		if ($fields[3] =~ /chr[0-9a-z]+r/){
+		if ($fields[3] =~ /chr[A-Z0-9a-z]+r/){
 			my $key = join("_",$fields[1], $fields[$startcord], $fields[$endcord]);
 	#		print "adding  ... \n$key\n$micro\n";
 			push(@{$revmerged{$key}}, $micro);
@@ -3853,7 +3897,7 @@ sub filterDuplicates_merged{
 sub invert_microsat{
 	my $micro = $_[0];
 	chomp $micro;
-	if ($micro =~ /chr[0-9a-z]+r/) { $micro =~  s/chr([0-9a-b]+)r/chr$1/g ;}
+	if ($micro =~ /chr[A-Z0-9a-z]+r/) { $micro =~  s/chr([0-9a-b]+)r/chr$1/g ;}
 	else {  $micro =~  s/chr([0-9a-b]+)/chr$1r/g ; }
 	my $sequence = $_[1];
 	$sequence =~ s/ //g;
@@ -4032,10 +4076,10 @@ sub forward_reverse_sputoutput_comparer	{
 		foreach my $r (@localrs){
 			chomp $r;
 			my @rields = split(/\t/,$r);
-			print "rields = @rields\n" if $printer == 1;
+#			print "rields = @rields\n" if $printer == 1;
 			my $reciprocalstart = length($sequence) - $rields[$endcord] + 1;
 			my $reciprocalend = length($sequence) - $rields[$startcord] + 1;
-			print "reciprocal start = $reciprocalstart = ",length($sequence)," - $rields[$endcord] + 1\n" if $printer == 1;
+#			print "reciprocal start = $reciprocalstart = ",length($sequence)," - $rields[$endcord] + 1\n" if $printer == 1;
 			my $microsat = reverse_micro(all_caps($rields[$microsatcord]));
 			my @localcollection=();
 			for my $i ($reciprocalstart+1 ... $reciprocalend-1){
@@ -4055,11 +4099,11 @@ sub forward_reverse_sputoutput_comparer	{
 			}
 	
 			elsif (scalar(@localcollection) == 1){
-				print "f microsat = $localcollection[0]\n"  if $printer == 1;
+#				print "f microsat = $localcollection[0]\n"  if $printer == 1;
 				my @lields = split(/\t/,$localcollection[0]);
 				$lields[$microsatcord]=all_caps($lields[$microsatcord]);
-				print "comparing: $microsat and $lields[$microsatcord]\n" if $printer == 1;
-				print "coordinates are: $lields[$startcord]-$lields[$endcord] and $reciprocalstart-$reciprocalend\n" if $printer == 1;
+#				print "comparing: $microsat and $lields[$microsatcord]\n" if $printer == 1;
+#				print "coordinates are: $lields[$startcord]-$lields[$endcord] and $reciprocalstart-$reciprocalend\n" if $printer == 1;
 				if ($microsat eq $lields[$microsatcord]){
 					chomp $localcollection[0];
 					print SAME $localcollection[0], "\n";
@@ -4067,19 +4111,19 @@ sub forward_reverse_sputoutput_comparer	{
 				if ($microsat ne $lields[$microsatcord]){
 					chomp $localcollection[0];
 					my $newmicro = microsatChooser(join("\t",@lields), join("\t",@rields), $sequence);
-					print "newmicro = $newmicro\n"  if $printer == 1;
+#					print "newmicro = $newmicro\n"  if $printer == 1;
 					if ($newmicro =~ /[a-zA-Z]/){
 						print SAME $newmicro,"\n";
 					}
 					else{
 					print DIFF join("\t",$localcollection[0],"-->",$rields[$typecord],$reciprocalstart,$reciprocalend, $rields[$microsatcord], reverse_micro($rields[$motifcord]), @rields[$motifcord+1 ... $#rields] ),"\n";
-					print join("\t",$localcollection[0],"-->",$rields[$typecord],$reciprocalstart,$reciprocalend, $rields[$microsatcord], reverse_micro($rields[$motifcord]), @rields[$motifcord+1 ... $#rields] ),"\n" if $printer == 1;
-					print "@rields\n@lields\n" if $printer == 1;
+#					print join("\t",$localcollection[0],"-->",$rields[$typecord],$reciprocalstart,$reciprocalend, $rields[$microsatcord], reverse_micro($rields[$motifcord]), @rields[$motifcord+1 ... $#rields] ),"\n" if $printer == 1;
+#					print "@rields\n@lields\n" if $printer == 1;
 					}
 				}			
 			}
 			else{
-				print "multiple found for $r --> ", join("\t",@localcollection),"\n" if $printer == 1;
+#				print "multiple found for $r --> ", join("\t",@localcollection),"\n" if $printer == 1;
 			}
 		}
 	}	
@@ -4146,13 +4190,13 @@ sub microsatChooser{
 	my $r_purestretch = join("",@r_microields);
 
 	if ($fields[$typecord]=~/nucleotide/ && $rields[$typecord]=~/nucleotide/){
-		print "now.. studying $forward\n$reverse\n" if $printer == 1;
+#		print "now.. studying $forward\n$reverse\n" if $printer == 1;
 		if ($fields[$typecord] eq $rields[$typecord]){
-			print "comparing motifs::", all_caps($fields[$motifcord]) ," and ", all_caps(reverse_micro($rields[$motifcord])), "\n" if $printer == 1;
+#			print "comparing motifs::", all_caps($fields[$motifcord]) ," and ", all_caps(reverse_micro($rields[$motifcord])), "\n" if $printer == 1;
 
 			if(motifBYmotif_match(all_caps($fields[$motifcord]), all_caps(reverse_micro($rields[$motifcord]))) == 1){
 				my $subset_answer = isSubset($forward, $reverse, $seqLength);
-				print "subset answer = $subset_answer\n" if $printer == 1;
+#				print "subset answer = $subset_answer\n" if $printer == 1;
 				return $forward if $subset_answer == 1; 
 				return invert_microsat($reverse, $sequence) if $subset_answer == 2; 
 				return $forward if $subset_answer == 0 && length($f_purestretch) >= length($r_purestretch);
@@ -4202,13 +4246,13 @@ sub microsatChooser{
 		}
 	}
 	if ($fields[$typecord] eq "compound" && $rields[$typecord] eq "compound"){
-			print "comparing compound motifs::", all_caps($fields[$motifcord]) ," and ", all_caps(reverse_micro($rields[$motifcord])), "\n" if $printer == 1;
+#			print "comparing compound motifs::", all_caps($fields[$motifcord]) ," and ", all_caps(reverse_micro($rields[$motifcord])), "\n" if $printer == 1;
 			if(motifBYmotif_match(all_caps($fields[$motifcord]), all_caps(reverse_micro($rields[$motifcord]))) == 1){
 				my $subset_answer = isSubset($forward, $reverse, $seqLength);
-				print "subset answer = $subset_answer\n" if $printer == 1;
+#				print "subset answer = $subset_answer\n" if $printer == 1;
 				return $forward if $subset_answer == 1; 
 				return invert_microsat($reverse, $sequence) if $subset_answer == 2; 
-				print length($f_purestretch) ,">", length($r_purestretch)," \n" if $printer == 1;
+#				print length($f_purestretch) ,">", length($r_purestretch)," \n" if $printer == 1;
 				return $forward if $subset_answer == 0 && length($f_purestretch) >= length($r_purestretch);
 				return invert_microsat($reverse, $sequence) if $subset_answer == 0 && length($f_purestretch) < length($r_purestretch);
 				if ($subset_answer == 3){
@@ -4243,11 +4287,11 @@ sub microsatChooser{
 	}
 	
 	if ($fields[$typecord] eq "compound" && $rields[$typecord] =~ /nucleotide/){
-		print "one compound, one nucleotide\n" if $printer == 1; 
+#		print "one compound, one nucleotide\n" if $printer == 1; 
 		return merge_microsats($forward, invert_microsat($reverse, $sequence), $sequence);
 	}
 	if ($fields[$typecord] =~ /nucleotide/ && $rields[$typecord]eq "compound"){
-		print "one compound, one nucleotide\n" if $printer == 1; 
+#		print "one compound, one nucleotide\n" if $printer == 1; 
 		return merge_microsats($forward, invert_microsat($reverse, $sequence), $sequence);
 	}
 }
@@ -4258,7 +4302,7 @@ sub isSubset{
 	my $seqLength = $_[2];
 	my $r_start = $seqLength - $rields[$endcord] + 1;
 	my $r_end = $seqLength - $rields[$startcord] + 1;
-	print "we have $fields[$startcord] -> $fields[$endcord] && $r_start -> $r_end\n" if $printer == 1;
+#	print "we have $fields[$startcord] -> $fields[$endcord] && $r_start -> $r_end\n" if $printer == 1;
 	return "0" if $fields[$startcord] == $r_start && $fields[$endcord] == $r_end;
 	return "1" if $fields[$startcord] <= $r_start && $fields[$endcord] >= $r_end;
 	return "2" if $r_start <= $fields[$startcord] && $r_end >= $fields[$endcord];
@@ -4284,7 +4328,7 @@ sub motifBYmotif_match{
 		
 		for my $i (0 ... $#sub){
 			my $probe = $sub[$i].$sub[$i];
-			print "probing $probe and $mega[$i]\n" if $printer == 1;
+#			print "probing $probe and $mega[$i]\n" if $printer == 1;
 			if ($probe =~ /$mega[$i]/) {$subresult = 1; }
 			else {$subresult = 0; last; }
 		}
@@ -4416,7 +4460,7 @@ sub new_multispecies_t10{
 	#		print $key, "#-#-#-#-#-#-#-#\n";
 		if ($line =~ /([0-9]+)\s+([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			my $key = join("\t",$1, $2, $3, $4, $5);
-			print "key = $key\n" if $prinkter == 1;
+#			print "key = $key\n" if $prinkter == 1;
 			push (@{$seen{$key}},$line);	
 			$microcounter++;
 		}
@@ -4424,7 +4468,7 @@ sub new_multispecies_t10{
 		}
 	}
 #	print "done hash.. linecounter = $linecounter, microcounter = $microcounter and total keys entered = ",scalar(keys %seen),"\n";
-	print INFO  "done hash.. linecounter = $linecounter, microcounter = $microcounter and total keys entered = ",scalar(keys %seen),"\n";
+#	print INFO  "done hash.. linecounter = $linecounter, microcounter = $microcounter and total keys entered = ",scalar(keys %seen),"\n";
 	close SPUT;
 	
 	#----------------------------------------------------------------------------------------------------------------
@@ -4449,7 +4493,7 @@ sub new_multispecies_t10{
 	my $keysused = 0;
 	
 	while (my $line = <MATCH>)	{
-		print    colored ['magenta'], $line  if $prinkter == 1;
+#		print    colored ['magenta'], $line  if $prinkter == 1;
 		next if $line !~ /[a-zA-Z0-9]/;
 		chomp $line;	
 		my @fields2 = split(/\t/,$line);
@@ -4458,10 +4502,10 @@ sub new_multispecies_t10{
 		if ($line =~ /([0-9]+)\s+([0-9a-zA-Z]+)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)\s/ ) {
 			$matchkeysformed++;
 			$key2 = join("\t",$1, $2, $3, $4, $5);
-			print "key = $key2 \n" if $prinkter == 1; 
+#			print "key = $key2 \n" if $prinkter == 1; 
 		}
 		else{
-			print "could not make ker in SEQ : $line\n";
+#			print "could not make ker in SEQ : $line\n";
 			next;
 		}
 		my $sequence = $fields2[$sequencepos];
@@ -4473,7 +4517,7 @@ sub new_multispecies_t10{
 			delete $seen{$key2};
 			my @sequencearr = split(/\s*/, $sequence);
 			
-			print "sequencearr = @sequencearr\n" if $prinkter == 1;
+#			print "sequencearr = @sequencearr\n" if $prinkter == 1;
 			
 			my $counter;
 	
@@ -4487,13 +4531,13 @@ sub new_multispecies_t10{
 			
 			my @unsorted = ();
 			my %starts = (); my %ends = ();
-			print colored ['yellow'],"unsorted, unfiltered microats = \n" if $prinkter == 1; foreach (@unsorted_raw) {print colored ['blue'],$_,"\n" if $prinkter == 1;}
+#			print colored ['yellow'],"unsorted, unfiltered microats = \n" if $prinkter == 1; foreach (@unsorted_raw) {print colored ['blue'],$_,"\n" if $prinkter == 1;}
 			for my $u (0 ... $#unsorted_raw){
 				my @tields = split(/\t/,$unsorted_raw[$u]);
 				next if exists $starts{$tields[$startcord]} && exists $ends{$tields[$endcord]};
 				push(@unsorted, $unsorted_raw[$u]);
 				$starts{$tields[$startcord]} = $unsorted_raw[$u];
-				print "in starts : $tields[$startcord] -> $unsorted_raw[$u]\n" if $prinkter == 1;
+#				print "in starts : $tields[$startcord] -> $unsorted_raw[$u]\n" if $prinkter == 1;
 			}
 			
 			my $basecounter= 0;
@@ -4517,7 +4561,7 @@ sub new_multispecies_t10{
 				
 				if (exists $starts{$basecounter}){
 					my $locus = $starts{$basecounter};
-					print "locus identified = $locus\n" if $prinkter == 1;
+#					print "locus identified = $locus\n" if $prinkter == 1;
 					my @fields3 = split(/\t/,$locus);
 					my $start = $fields3[$startcord];
 					my $end = $fields3[$endcord];
@@ -4529,14 +4573,14 @@ sub new_multispecies_t10{
 					my $leftbrackets=();
 					my $rightbrackets = ();
 					my $micro_cpy = $microsat;
-					print "microsat = $microsat\n" if $prinkter == 1;
+#					print "microsat = $microsat\n" if $prinkter == 1;
 					while($microsat =~ m/\[/g) {push(@leftbracketpos, (pos($microsat)));  $leftbrackets = join("__",@leftbracketpos);$bracket_picker='yes';}
 					while($microsat =~ m/\]/g) {push(@rightbracketpos, (pos($microsat))); $rightbrackets = join("__",@rightbracketpos);}
 					$microsat =~ s/[\[\]\-\*]//g;
-					print "microsat = $microsat\n" if $prinkter == 1;
+#					print "microsat = $microsat\n" if $prinkter == 1;
 					my $human_search = join '-*', split //, $microsat;
 					my $temp = substr($sequence, $poscounter-1);
-					print "with poscounter = $poscounter\n" if $prinkter == 1;
+#					print "with poscounter = $poscounter\n" if $prinkter == 1;
 					my $search_result = ();
 					my $posnow  = ();
 					while ($temp =~ /($human_search)/gi){
@@ -4725,9 +4769,9 @@ sub multiSpecies_orthFinder4{
 			if ($line =~ /([0-9]+)\s+($focalspec)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
 				$key = join("\t",$1, $2,  $4, $5);
 	
-					print "key =  : $key\n" if $prinkter == 1;
+#					print "key =  : $key\n" if $prinkter == 1;
 				
-				print $line if $prinkter == 1;
+#				print $line if $prinkter == 1;
 				push (@{$single_hash{$key}},$line);
 			}
 			else{
@@ -4736,10 +4780,10 @@ sub multiSpecies_orthFinder4{
 		}
 		push @hasharr, {%single_hash};
 	#	print "@{$single_hash{$key}} \n";
-		print "done $path: counter = $counter\n" if $prinkter == 1;
+#		print "done $path: counter = $counter\n" if $prinkter == 1;
 		close READ;
 	}	
-	#print "Done hashes\n";
+#	print "Done hashes\n";
 	#----------------------------------------------------------------------------------------------------------------
 	my $question=();
 	#----------------------------------------------------------------------------------------------------------------
@@ -4754,22 +4798,24 @@ sub multiSpecies_orthFinder4{
 	my %contigpath=();
 	my $dotcounter = 0;
 	while (my $line = <BO>){
-		print "x" x 60, "\n" if $prinkter == 1;
+#		print "x" x 60, "\n" if $prinkter == 1;
 		$dotcounter++;
 		
 	
 		
-		#print "." if $dotcounter % 100 ==0;
-		#print "\n" if $dotcounter % 5000 ==0;
+#		print "." if $dotcounter % 100 ==0;
+#		print "\n" if $dotcounter % 5000 ==0;
 		next if $line !~ /^[0-9]+/;
-		print $line if $prinkter == 1;
+#		print $line if $prinkter == 1;
 		chomp $line;	
 		my @fields2 = split(/\t/,$line);
 		my $key2 = ();
 		if ($line =~ /([0-9]+)\s+($focalspec)\s(chr[0-9a-zA-Z]+)\s([0-9]+)\s([0-9]+)/ ) {
 			$key2 = join("\t",$1, $2,  $4, $5);
 		}
-		else {print "seq line $line incompatible\n" if $prinkter == 1; next;}
+		else {
+#			print "seq line $line incompatible\n" if $prinkter == 1; 
+			next;}
 		
 		
 		
@@ -4809,22 +4855,22 @@ sub multiSpecies_orthFinder4{
 		my @currentcontigchrs=();
 		
 		for my $i (0 ... $#tags){
-			print "searching for : if exists  hasharr: $i : $tags[$i] : $key2 \n" if $prinkter == 1;
+#			print "searching for : if exists  hasharr: $i : $tags[$i] : $key2 \n" if $prinkter == 1;
 			my @temparr = (); 
 	
 			if (exists $hasharr[$i]{$key2}){
 				@temparr =  @{$hasharr[$i]{$key2}};
 				
-				print "in line $line, trying to hunt for: $tags[$i]\\s([a-zA-Z0-9])+\\s([0-9]+)\\s([0-9]+) \n" if $prinkter == 1;
+#				print "in line $line, trying to hunt for: $tags[$i]\\s([a-zA-Z0-9])+\\s([0-9]+)\\s([0-9]+) \n" if $prinkter == 1;
 				$line =~ /$tags[$i]\s([a-zA-Z0-9]+)\s([0-9]+)\s([0-9]+)/;
-				print "org = $tags[$i], and chr = $1, start = $2, end =$3 \n" if $prinkter == 1; 
+#				print "org = $tags[$i], and chr = $1, start = $2, end =$3 \n" if $prinkter == 1; 
 				my $startkey = $1."_".$2; print "adding start key for this alignmebt block: $startkey to species $tags[$i]\n" if $prinkter == 1;
 				my $endkey = $1."_".$3; print "adding end key for this alignmebt block: $endkey to species $tags[$i]\n" if $prinkter == 1;
 				$contigstarts[$i]{$startkey}= $key2;
 				$contigends[$i]{$endkey}= $key2;
-				print "confirming existance: \n" if $prinkter == 1;
-				print "present \n" if exists $contigends[$i]{$endkey} && $prinkter == 1;
-				print "absent \n" if !exists $contigends[$i]{$endkey} && $prinkter == 1;			
+#				print "confirming existance: \n" if $prinkter == 1;
+#				print "present \n" if exists $contigends[$i]{$endkey} && $prinkter == 1;
+#				print "absent \n" if !exists $contigends[$i]{$endkey} && $prinkter == 1;			
 				$currentcontigchrs[$i]=$1;
 				$currentcontigstarts[$i]=$2;
 				$currentcontigends[$i]=$3;
@@ -4846,7 +4892,7 @@ sub multiSpecies_orthFinder4{
 	#		print "---------------------------\n";
 	
 			foreach my $templine (@temparr){
-				print "templine = $templine\n" if $prinkter == 1;
+#				print "templine = $templine\n" if $prinkter == 1;
 				my @tields = split(/\t/,$templine);
 				my $start = $tields[$startcord]; # - $tields[$gapcord];
 				my $end = $tields[$endcord]; #- $tields[$gapcord];
@@ -4870,7 +4916,7 @@ sub multiSpecies_orthFinder4{
 			
 			foreach my $cluster (@clusters) {
 				my @constituenst = split(/,/,$cluster);
-				print "clusters returned: @constituenst\n" if $prinkter == 1;
+#				print "clusters returned: @constituenst\n" if $prinkter == 1;
 			}
 	
 			@string = split("_",stringPainter(join("_",@string),$foundclusters));
@@ -4879,13 +4925,13 @@ sub multiSpecies_orthFinder4{
 		}
 		next if $stopper == 1;
 	
-		print colored ['blue'],"FINAL:\n" if $prinkter == 1;
+#		print colored ['blue'],"FINAL:\n" if $prinkter == 1;
 		my $finalclusters  =findClusters(join("!",@string), 1);
-		print colored ['blue'],"----------------------\n" if $prinkter == 1;
+#		print colored ['blue'],"----------------------\n" if $prinkter == 1;
 		my @clusters = split(/,/,$finalclusters);
-			print "@string\n" if $prinkter == 1;
-			print "@clusters\n" if $prinkter == 1;
-			print "------------------------------------------------------------------\n" if $prinkter == 1;
+#			print "@string\n" if $prinkter == 1;
+#			print "@clusters\n" if $prinkter == 1;
+#			print "------------------------------------------------------------------\n" if $prinkter == 1;
 		
 		my $clustno = 0;
 		
@@ -4921,7 +4967,7 @@ sub multiSpecies_orthFinder4{
 			my $extremeend = largest_number(@ends);
 			push(@contigClusterstarts, $extremestart);
 			push(@contigClusterends, $extremeend);
-			print "cluster starts from $extremestart and ends at $extremeend \n" if $prinkter == 1 ;
+#			print "cluster starts from $extremestart and ends at $extremeend \n" if $prinkter == 1 ;
 					
 			foreach my $clustparts (@localclust){
 				my @pattern = split(/:/, $clustparts);
@@ -4929,7 +4975,7 @@ sub multiSpecies_orthFinder4{
 				push (@result, $starthash[$pattern[0]]{$pattern[1]});
 			}
 			push(@contigcluster, join("\t", @result));
-			print join("\t", @result),"<-result \n" if $prinkter == 1 ;
+#			print join("\t", @result),"<-result \n" if $prinkter == 1 ;
 		}	
 		
 	
@@ -4940,7 +4986,7 @@ sub multiSpecies_orthFinder4{
 		$contigclustersFirstStartOnly{$key2}=$firstclusterstart;	
 		$contigclustersLastEndOnly{$key2} = $lastclusterend;
 		$contigclusters{$key2}=[ @contigcluster ];
-		print "currentcontigchr are @currentcontigchrs , firstclusterstart = $firstclusterstart, lastclusterend = $lastclusterend\n " if $prinkter == 1;
+#		print "currentcontigchr are @currentcontigchrs , firstclusterstart = $firstclusterstart, lastclusterend = $lastclusterend\n " if $prinkter == 1;
 		for my $i (0 ... $#tags){
 			#1 check if there exists adjacent alignment block wrt coordinates of this species.
 			next if $currentcontigchrs[$i] eq "0"; #1 this means that there are no microsats in this species in this alignment block.. 
@@ -4951,7 +4997,7 @@ sub multiSpecies_orthFinder4{
 			#3 adjacent alignment block is found lateron, the exact distance between the potentially
 			#4 adjacent microsat clusters can be found here. the exact start coordinate will be used
 			#5 immediately below.
-			print "full sequence = $origsequences[$i] and its length = ",length($origsequences[$i])," \n" if $prinkter == 1;		
+	#		print "full sequence = $origsequences[$i] and its length = ",length($origsequences[$i])," \n" if $prinkter == 1;		
 			
 			my $species_startsubstring = substr($origsequences[$i], 0, $firstclusterstart);
 			my $species_endsubstring = ();
@@ -4959,8 +5005,8 @@ sub multiSpecies_orthFinder4{
 			if (length ($origsequences[$i]) <= $lastclusterend+1){ $species_endsubstring = "";}
 			else{  $species_endsubstring = substr($origsequences[$i], $lastclusterend+1);}
 			
-			print "\nnot defined species_endsubstring...\n"  if !defined $species_endsubstring && $prinkter == 1;
-			print "for species: $tags[$i]: \n" if $prinkter == 1;
+#			print "\nnot defined species_endsubstring...\n"  if !defined $species_endsubstring && $prinkter == 1;
+#			print "for species: $tags[$i]: \n" if $prinkter == 1;
 			
 			$species_startsubstring =~ s/-| //g;
 			$species_endsubstring =~ s/-| //g;
@@ -4969,11 +5015,11 @@ sub multiSpecies_orthFinder4{
 	
 	
 	
-			print "species_startsubstring = $species_startsubstring, and its length =",length($species_startsubstring)," \n" if $prinkter == 1;
-			print "species_endsubstring = $species_endsubstring, and its length =",length($species_endsubstring)," \n" if $prinkter == 1;
-			print "attaching to contigclustersLastEndOnly: $key2: $i\n" if $prinkter == 1;	
+#			print "species_startsubstring = $species_startsubstring, and its length =",length($species_startsubstring)," \n" if $prinkter == 1;
+#			print "species_endsubstring = $species_endsubstring, and its length =",length($species_endsubstring)," \n" if $prinkter == 1;
+#			print "attaching to contigclustersLastEndOnly: $key2: $i\n" if $prinkter == 1;	
 			
-			print "just confirming: $contigclustersLastEndLengthOnly{$key2}[$i] \n" if $prinkter == 1;
+#			print "just confirming: $contigclustersLastEndLengthOnly{$key2}[$i] \n" if $prinkter == 1;
 	
 		}
 	
@@ -5001,7 +5047,7 @@ sub multiSpecies_orthFinder4{
 	my $existing_removed=0;
 	
 	while (my $line = <BO>){
-		print "x" x 60, "\n" if $prinkter == 1;
+#		print "x" x 60, "\n" if $prinkter == 1;
 		next if $line !~ /^[0-9]+/;
 		#print $line;
 		chomp $line;	
@@ -5012,7 +5058,7 @@ sub multiSpecies_orthFinder4{
 		}
 		
 		else {print "seq line $line incompatible\n"; next;}
-		print "KEY =  : $key2\n" if $prinkter == 1;
+#		print "KEY =  : $key2\n" if $prinkter == 1;
 	
 	
 		my @currentcontigstarts=();
@@ -5024,9 +5070,9 @@ sub multiSpecies_orthFinder4{
 			@clusters =  @{$contigclusters{$key2}};
 			@clusterscopy=@clusters;
 			for my $i (0 ... $#tags){
-				print "in line $line, trying to hunt for: $tags[$i]\\s([a-zA-Z0-9])+\\s([0-9]+)\\s([0-9]+) \n" if $prinkter == 1;
+	#			print "in line $line, trying to hunt for: $tags[$i]\\s([a-zA-Z0-9])+\\s([0-9]+)\\s([0-9]+) \n" if $prinkter == 1;
 				if ($line =~ /$tags[$i]\s([a-zA-Z0-9]+)\s([0-9]+)\s([0-9]+)/){
-					print "org = $tags[$i], and chr = $1, start = $2, end =$3 \n" if $prinkter == 1; 
+	#				print "org = $tags[$i], and chr = $1, start = $2, end =$3 \n" if $prinkter == 1; 
 					my $startkey = $1."_".$2; #print "adding start key for this alignmebt block: $startkey to species $tags[$i]\n" if $prinkter == 1;
 					my $endkey = $1."_".$3; #print "adding end key for this alignmebt block: $endkey to species $tags[$i]\n" if $prinkter == 1;
 					$currentcontigchrs[$i]=$1;
@@ -5035,7 +5081,7 @@ sub multiSpecies_orthFinder4{
 				}
 				else {
 					$currentcontigchrs[$i] = 0;
-					print "no microsat clusters for $key2\n" if $prinkter == 1; next;	
+	#				print "no microsat clusters for $key2\n" if $prinkter == 1; next;	
 				}
 			}
 		} # print "exists: @{$hasharr[$i]{$key2}}[0]\n"}
@@ -5050,7 +5096,7 @@ sub multiSpecies_orthFinder4{
 		
 		next if scalar @currentcontigchrs == 0;
 		
-		print "contigchrs= @currentcontigchrs \n" if $prinkter == 1;
+	#	print "contigchrs= @currentcontigchrs \n" if $prinkter == 1;
 		my %visitedcontigs=();
 	
 		for my $i (0 ... $#tags){
@@ -5067,38 +5113,38 @@ sub multiSpecies_orthFinder4{
 			my $lastclusterend = $contigclustersLastEndOnly{$key2};
 					
 			my $key3 = $currentcontigchrs[$i]."_".($currentcontigstarts[$i]);
-			print  "check if exists $key3 in  contigends for $i\n" if $prinkter == 1; 
+#			print  "check if exists $key3 in  contigends for $i\n" if $prinkter == 1; 
 			
 			if (exists($contigends[$i]{$key3}) && !exists $visitedcontigs{$contigends[$i]{$key3}}){
 				$visitedcontigs{$contigends[$i]{$key3}} = $contigends[$i]{$key3}; #1 this array keeps track of adjacent contigs that we have already visited, thus saving computational time and potential redundancies#
-				print "just checking the hash visitedcontigs: ",$visitedcontigs{$contigends[$i]{$key3}} ,"\n" if $prinkter == 1;
+	#			print "just checking the hash visitedcontigs: ",$visitedcontigs{$contigends[$i]{$key3}} ,"\n" if $prinkter == 1;
 	
 				#1 extract coordinates of the last cluster of this found alignment block
-				print "key of the found alignment block = ", $contigends[$i]{$key3},"\n" if $prinkter == 1;
-				print "we are trying to mine: contigclustersAllLastEndLengthOnly_raw: $contigends[$i]{$key3}: $i \n" if $prinkter == 1;
-				print "EXISTS\n" if exists $contigclusters{$contigends[$i]{$key3}} && $prinkter == 1;
-				print "does NOT EXIST\n" if !exists $contigclusters{$contigends[$i]{$key3}} && $prinkter == 1;
+#				print "key of the found alignment block = ", $contigends[$i]{$key3},"\n" if $prinkter == 1;
+	#			print "we are trying to mine: contigclustersAllLastEndLengthOnly_raw: $contigends[$i]{$key3}: $i \n" if $prinkter == 1;
+	#			print "EXISTS\n" if exists $contigclusters{$contigends[$i]{$key3}} && $prinkter == 1;
+	#			print "does NOT EXIST\n" if !exists $contigclusters{$contigends[$i]{$key3}} && $prinkter == 1;
 				my @contigclustersAllFirstStartLengthOnly_raw=@{$contigclustersFirstStartLengthOnly{$key2}};
 				my @contigclustersAllLastEndLengthOnly_raw=@{$contigclustersLastEndLengthOnly{$contigends[$i]{$key3}}};
 				my @contigclustersAllFirstStartLengthOnly=(); my @contigclustersAllLastEndLengthOnly=();
 				
 				for my $val (0 ... $#contigclustersAllFirstStartLengthOnly_raw){
-					print "val = $val\n" if $prinkter == 1;
+	#				print "val = $val\n" if $prinkter == 1;
 					if (defined $contigclustersAllFirstStartLengthOnly_raw[$val]){
 						push(@contigclustersAllFirstStartLengthOnly, $contigclustersAllFirstStartLengthOnly_raw[$val]) if $contigclustersAllFirstStartLengthOnly_raw[$val] =~ /[0-9]+/;
 					}
 				}
-				print "-----\n" if $prinkter == 1;
+	#			print "-----\n" if $prinkter == 1;
 				for my $val (0 ... $#contigclustersAllLastEndLengthOnly_raw){
-					print "val = $val\n" if $prinkter == 1;
+	#				print "val = $val\n" if $prinkter == 1;
 					if (defined $contigclustersAllLastEndLengthOnly_raw[$val]){
 						push(@contigclustersAllLastEndLengthOnly, $contigclustersAllLastEndLengthOnly_raw[$val]) if  $contigclustersAllLastEndLengthOnly_raw[$val] =~ /[0-9]+/;
 					}
 				}
 				
 				
-				print "our two arrays are: starts = <@contigclustersAllFirstStartLengthOnly> ......... and ends = <@contigclustersAllLastEndLengthOnly>\n" if $prinkter == 1;
-				print "the last cluster's end in that one is: ",smallest_number(@contigclustersAllFirstStartLengthOnly) + smallest_number(@contigclustersAllLastEndLengthOnly)," = ", smallest_number(@contigclustersAllFirstStartLengthOnly)," + ",smallest_number(@contigclustersAllLastEndLengthOnly),"\n" if $prinkter == 1; 
+	#			print "our two arrays are: starts = <@contigclustersAllFirstStartLengthOnly> ......... and ends = <@contigclustersAllLastEndLengthOnly>\n" if $prinkter == 1;
+	#			print "the last cluster's end in that one is: ",smallest_number(@contigclustersAllFirstStartLengthOnly) + smallest_number(@contigclustersAllLastEndLengthOnly)," = ", smallest_number(@contigclustersAllFirstStartLengthOnly)," + ",smallest_number(@contigclustersAllLastEndLengthOnly),"\n" if $prinkter == 1; 
 				
 	#			if ($contigclustersFirstStartLengthOnly{$key2}[$i] + $contigclustersLastEndLengthOnly{$contigends[$i]{$key3}}[$i] < 50){
 				if (smallest_number(@contigclustersAllFirstStartLengthOnly) + smallest_number(@contigclustersAllLastEndLengthOnly) < $CLUSTER_DIST){
@@ -5119,7 +5165,7 @@ sub multiSpecies_orthFinder4{
 	#					print " clusteringpaths $key2 -> $contigends[$i]{$key3}\n";
 						$founkeys_enteredcount-- if exists $foundkeys{$key2};
 						$existing_removed++  if exists $foundkeys{$key2};
-						print "$key2->",@{$contigclusters{$key2}},"->>$foundkeys{$key2}\n" if exists $foundkeys{$key2} && $prinkter == 1;
+#						print "$key2->",@{$contigclusters{$key2}},"->>$foundkeys{$key2}\n" if exists $foundkeys{$key2} && $prinkter == 1;
 						delete $foundkeys{$key2} if exists $foundkeys{$key2};
 						$complete_transfered++;
 					}
@@ -5165,13 +5211,13 @@ sub multiSpecies_orthFinder4{
 	my $pathed_count=0; 
 	foreach my $key2 (keys %foundkeys){
 		#print "x" x 60, "\n";
-		print "x" if $dotcounter % 100 ==0;
-		print "\n" if $dotcounter % 5000 ==0;
+#		print "x" if $dotcounter % 100 ==0;
+#		print "\n" if $dotcounter % 5000 ==0;
 		$founkeys_count++;
 		my $key = $key2;
-		print "$key2 -> $clusteringpaths{$key2}\n" if $prinkter == 1;
+#		print "$key2 -> $clusteringpaths{$key2}\n" if $prinkter == 1;
 		if ($clusteringpaths{$key} eq $key){
-			print "printing hit the alignment block immediately... no path needed\n" if $prinkter == 1;
+#			print "printing hit the alignment block immediately... no path needed\n" if $prinkter == 1;
 			$nopath_count++;
 			delete $foundkeys{$key2};
 			print ORTH join ("\n",@{$contigclusters{$key2}}),"\n";
@@ -5180,43 +5226,43 @@ sub multiSpecies_orthFinder4{
 			my @pool=();
 			my $key3=();
 			$pathed_count++;
-			print "going reverse... clusteringpathsRev, $key = $clusteringpathsRev{$key}\n" if exists $clusteringpathsRev{$key} && $prinkter == 1;
-			print "going reverse... clusteringpathsRev  $key does not exist\n" if !exists $clusteringpathsRev{$key} && $prinkter == 1;
+#			print "going reverse... clusteringpathsRev, $key = $clusteringpathsRev{$key}\n" if exists $clusteringpathsRev{$key} && $prinkter == 1;
+#			print "going reverse... clusteringpathsRev  $key does not exist\n" if !exists $clusteringpathsRev{$key} && $prinkter == 1;
 			if ($clusteringpathsRev{$key} eq "0") {
  				next;
 			}
 			else{
 				my $yek3 = $clusteringpathsRev{$key};
 				my $yek = $key;
-				print "caught in the middle of a path, now goin down from $yek to $yek3, which is $clusteringpathsRev{$key} \n" if $prinkter == 1;
+#				print "caught in the middle of a path, now goin down from $yek to $yek3, which is $clusteringpathsRev{$key} \n" if $prinkter == 1;
 				while ($yek3 ne "0"){
-					print "$yek->$yek3," if $prinkter == 1;
+#					print "$yek->$yek3," if $prinkter == 1;
 					$yek = $yek3;
 					$yek3 = $clusteringpathsRev{$yek};
 				}
-				print "\nfinally reached the end of path: $yek3, and the next in line is $yek, and its up-route is  $clusteringpaths{$yek}\n" if $prinkter == 1; 
+#				print "\nfinally reached the end of path: $yek3, and the next in line is $yek, and its up-route is  $clusteringpaths{$yek}\n" if $prinkter == 1; 
 				$key3 = $clusteringpaths{$yek};
 				$key = $yek;
 			}
 		
-			print "now that we are at bottom of the path, lets start climbing up again\n" if $prinkter == 1;
+#			print "now that we are at bottom of the path, lets start climbing up again\n" if $prinkter == 1;
 			
 			while($key ne $key3){
-				print "KEEY $key->$key3\n" if $prinkter == 1;
-				print "our contigcluster = @{$contigclusters{$key}}\n----------\n" if $prinkter == 1;
+#				print "KEEY $key->$key3\n" if $prinkter == 1;
+#				print "our contigcluster = @{$contigclusters{$key}}\n----------\n" if $prinkter == 1;
 				
 				if (scalar(@{$contigclusters{$key}}) > 0) {push @pool, @{$contigclusters{$key}}; print "now pool = @pool\n" if $prinkter == 1;}
 				delete $foundkeys{$key3};
 				$key=$key3;
 				$key3=$clusteringpaths{$key};
 			}
-			print "\nfinally, adding the first element of path: @{$contigclusters{$key}}\n AND printing the contents:\n" if $prinkter == 1;
+#			print "\nfinally, adding the first element of path: @{$contigclusters{$key}}\n AND printing the contents:\n" if $prinkter == 1;
 			my @firstcontig= @{$contigclusters{$key}};
 			delete $foundkeys{$key2} if exists $foundkeys{$key2} ;
 			delete $foundkeys{$key} if exists $foundkeys{$key};
 	
 			unshift @pool, pop @firstcontig;
-			print join("\t",@pool),"\n" if $prinkter == 1;
+#			print join("\t",@pool),"\n" if $prinkter == 1;
 			print ORTH join ("\n",@firstcontig),"\n" if scalar(@firstcontig) > 0;
 			print ORTH join ("\t",@pool),"\n";		
 		#	join();
@@ -5224,7 +5270,7 @@ sub multiSpecies_orthFinder4{
 	
 	}
 	#close (NORTH);
-	print "founkeys_entered =$founkeys_enteredcount, plain_transfered=$plain_transfered,existing_removed=$existing_removed,founkeys_count =$founkeys_count, nopath_count =$nopath_count, transfered = $transfered, complete_transfered = $complete_transfered, totalcount = $totalcount, pathed=$pathed_count\n" if $prinkter == 1;
+#	print "founkeys_entered =$founkeys_enteredcount, plain_transfered=$plain_transfered,existing_removed=$existing_removed,founkeys_count =$founkeys_count, nopath_count =$nopath_count, transfered = $transfered, complete_transfered = $complete_transfered, totalcount = $totalcount, pathed=$pathed_count\n" if $prinkter == 1;
 	close (BO);
 	close (ORTH);
 	close (OUTP);

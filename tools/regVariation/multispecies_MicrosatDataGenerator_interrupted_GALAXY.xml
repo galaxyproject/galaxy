@@ -1,4 +1,4 @@
-<tool id="multispecies_orthologous_microsats" name="Extract orthologous microsatellites" version="1.0.0">
+<tool id="multispecies_orthologous_microsats" name="Extract orthologous microsatellites" version="1.0.1">
   <description> for multiple (>2) species alignments</description>
   <command interpreter="perl">
     multispecies_MicrosatDataGenerator_interrupted_GALAXY.pl   	
