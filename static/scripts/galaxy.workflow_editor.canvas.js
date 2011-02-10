@@ -409,7 +409,7 @@ $.extend( Node.prototype, {
             var t = $("<div class='terminal input-terminal'></div>");
             node.enable_input_terminal( t, input.name, input.extensions );
             // If already connected save old connection
-            old_body.find( "div[name=" + input.name + "]" ).each( function() {
+            old_body.find( "div[name='" + input.name + "']" ).each( function() {
                 $(this).find( ".input-terminal" ).each( function() {
                     var c = this.terminal.connectors[0];
                     if ( c ) {
