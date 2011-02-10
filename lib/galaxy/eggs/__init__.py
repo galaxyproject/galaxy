@@ -295,8 +295,9 @@ class Crate( object ):
         """
         rval = []
         for egg in self.eggs.values():
-            if egg.name not in self.galaxy_config.always_conditional:
-                rval.append( egg )
+            if egg.name in self.galaxy_config.always_conditional and not self.galaxy_config.check_conditional( egg.name ):
+                continue
+            rval.append( egg )
         return rval
     def __getitem__( self, name ):
         """
@@ -357,7 +358,7 @@ class GalaxyConfig( object ):
                          "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "GeneTrack":       lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "ctypes":          lambda: ( "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(",") ) and sys.version_info[:2] == ( 2, 4 ),
-                         "pysam":           check_pysam()
+                         "pysam":           lambda: check_pysam()
                        }.get( egg_name, lambda: True )()
             except:
                 return False
