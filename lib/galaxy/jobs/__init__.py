@@ -1033,7 +1033,7 @@ class DefaultJobDispatcher( object ):
         for obj in module.__all__:
             display_name = ':'.join( ( module_name, obj ) )
             runner = getattr( module, obj )
-            self.job_runners[obj] = runner( self.app )
+            self.job_runners[name] = runner( self.app )
             log.debug( 'Loaded job runner: %s' % display_name )
             
     def put( self, job_wrapper ):
