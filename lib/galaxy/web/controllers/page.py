@@ -63,15 +63,15 @@ class PageAllPublishedGrid( grids.Grid ):
     columns = [
         grids.PublicURLColumn( "Title", key="title", filterable="advanced" ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
-        grids.OwnerColumn( "Owner", key="owner", model_class=model.User, filterable="advanced" ),
+        grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced" ),
         grids.CommunityRatingColumn( "Community Rating", key="rating" ), 
         grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
         grids.ReverseSortColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
         grids.MulticolFilterColumn(  
-        "Search", 
-        cols_to_filter=[ columns[0], columns[1], columns[2], columns[3] ], 
+        "Search title, annotation, owner, and tags", 
+        cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
     def build_initial_query( self, trans, **kwargs ):
