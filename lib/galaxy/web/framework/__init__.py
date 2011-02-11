@@ -27,7 +27,7 @@ import mako.runtime
 
 pkg_resources.require( "Babel" )
 from babel.support import Translations
-from babel import Locale
+from babel import Locale, UnknownLocaleError
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
@@ -198,11 +198,16 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # and such).
         self.workflow_building_mode = False
     def setup_i18n( self ):
+        locales = []
         if 'HTTP_ACCEPT_LANGUAGE' in self.environ:
             # locales looks something like: ['en', 'en-us;q=0.7', 'ja;q=0.3']
             locales = self.environ['HTTP_ACCEPT_LANGUAGE'].split( ',' )
-            locales = [ Locale.parse(l.split( ';' )[0], sep='-').language for l in locales ]
-        else:
+            for locale in locales:
+                try:
+                    locales.append( Locale.parse( locale.split( ';' )[0], sep='-' ).language )
+                except UnknownLocaleError:
+                    pass
+        if not locales:
             # Default to English
             locales = 'en'
         t = Translations.load( dirname='locale', locales=locales, domain='ginga' )
