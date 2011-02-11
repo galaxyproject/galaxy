@@ -18,7 +18,7 @@ if (!$mafile or !$orthfile or !$threshold_array or !$separation or !$tree_defini
 #-------------------------------------------------------------------------------
 # WHICH SPUTNIK USED?
 my $sputnikpath = ();
-$sputnikpath = "/Users/ydk/work/rhesus_microsat/codes/./sputnik_Mac-PowerPC";
+$sputnikpath = "sputnik";
 #print "sputnik_Mac-PowerPC non-existant\n" if !-e $sputnikpath;
 #exit if !-e $sputnikpath;
 #$sputnikpath = "bx-sputnik" ;
