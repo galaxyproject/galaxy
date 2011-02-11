@@ -45,6 +45,7 @@ class Egg( object ):
         self.crate = crate
         self.distribution = None
         self.dir = None
+        self.removed_location = None
         if self.name is not None and self.version is not None:
             self.set_distribution()
     def set_dir( self ):
@@ -103,34 +104,50 @@ class Egg( object ):
                         pkg_resources.compatible_platforms( tmp_dist.platform, pkg_resources.get_platform() ):
                     return file
             return None
-        if self.url is None:
-            return None
-        alternative = None
-        try:
-            url = self.url + '/' + self.distribution.egg_name() + '.egg'
-            URLRetriever().retrieve( url, self.distribution.location )
-            log.debug( "Fetched %s" % url )
-        except IOError, e:
-            if e[1] == 404 and self.distribution.platform != py:
-                alternative = find_alternative()
-                if alternative is None:
-                    return None
-            else:
-                return None
-        if alternative is not None:
+        def _fetch():
+            if self.url is None:
+                return False
+            alternative = None
             try:
-                url = '/'.join( ( self.url, alternative ) )
-                URLRetriever().retrieve( url, os.path.join( self.dir, alternative ) )
+                url = self.url + '/' + self.distribution.egg_name() + '.egg'
+                URLRetriever().retrieve( url, self.distribution.location )
                 log.debug( "Fetched %s" % url )
             except IOError, e:
-                return None
-            self.platform = alternative.split( '-', 2 )[-1].rsplit( '.egg', 1 )[0]
-            self.set_distribution()
-        self.unpack_if_needed()
-        self.remove_doppelgangers()
-        global env
-        env = get_env() # reset the global Environment object now that we've obtained a new egg
-        return self.distribution
+                if e[1] == 404 and self.distribution.platform != py:
+                    alternative = find_alternative()
+                    if alternative is None:
+                        return False
+                else:
+                    return False
+            if alternative is not None:
+                try:
+                    url = '/'.join( ( self.url, alternative ) )
+                    URLRetriever().retrieve( url, os.path.join( self.dir, alternative ) )
+                    log.debug( "Fetched %s" % url )
+                except IOError, e:
+                    return False
+                self.platform = alternative.split( '-', 2 )[-1].rsplit( '.egg', 1 )[0]
+                self.set_distribution()
+            self.unpack_if_needed()
+            self.remove_doppelgangers()
+            return True
+        # If being called from a version conflict, that code has removed a
+        # directory from sys.path.  That directory could be Python's main lib
+        # directory (e.g. in the case of wsgiref under 2.6).  Temporarily put
+        # it back during the execution of this code.
+        if self.removed_location:
+            sys.path.append( self.removed_location )
+        try:
+            assert _fetch()
+            rval = self.distribution
+        except:
+            rval = None
+        if self.removed_location:
+            sys.path.remove( self.removed_location )
+        if rval is not None:
+            global env
+            env = get_env() # reset the global Environment object now that we've obtained a new egg
+        return rval
     def unpack_if_needed( self ):
         meta = pkg_resources.EggMetadata( zipimport.zipimporter( self.distribution.location ) )    
         if meta.has_metadata( 'not-zip-safe' ):
@@ -200,7 +217,10 @@ class Egg( object ):
                 sys.path.remove(entry)
         # if the conflict is a dpeendent egg, fetch that specific egg
         if egg:
+            # Store the removed path so the fetch method can use it
+            egg.removed_location = location
             r = pkg_resources.working_set.resolve( ( dist.as_requirement(), ), env, egg.fetch )
+            egg.removed_location = None
         else:
             r = pkg_resources.working_set.resolve( ( dist.as_requirement(), ), env )
         # re-add the path if it's a non-egg dir, in case more deps live there
