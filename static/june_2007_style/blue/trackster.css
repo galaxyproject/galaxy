@@ -22,12 +22,12 @@
 .track{background:white;}
 .track-header{text-align:left;padding:4px 0px;color:#666;}
 .track-header .menubutton{margin-left:0px;}
-.track-content{overflow:hidden;text-align:center;border-bottom:1px solid #eee;background:#eee url('/static/images/tracks/diag_bg.gif');min-height:16px;}
+.track-content{overflow:hidden;text-align:center;border-bottom:1px solid #bbb;background:#eee url('/static/images/tracks/diag_bg.gif');min-height:16px;}
 .label-track .track-content{background:white;}
 .track-tile{background:white;}
 .track-tile canvas{position:relative;z-index:100;}
-.track.error .track-content{background-color:#ECB4AF;padding:2px 0;}
-.track.nodata .track-content{background-color:#ddd;padding:2px 0;}
+.track.error .track-content{background-color:#ECB4AF;background-image:none;padding:2px 0;}
+.track.nodata .track-content{background-color:#eee;background-image:none;padding:2px 0;}
 .loading{min-height:100px;}
 .label-track{font-size:10px;border:none;padding:0;margin:0;height:1.5em;overflow:hidden;}
 .label-track .label{border-left:solid #999 1px;padding:1px;padding-bottom:2px;display:inline-block;}

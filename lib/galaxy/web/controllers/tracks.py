@@ -498,8 +498,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return return_message
             
         extra_info = None
-        if 'index' in data_sources and kwargs.get("mode", "Auto") == "Auto":
-            # Only check for summary if it's Auto mode (which is the default)
+        if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and kwargs.get("mode", "Auto") == "Auto":
+            # Only check for summary_tree if it's Auto mode (which is the default)
             # 
             # Have to choose between indexer and data provider
             tracks_dataset_type = data_sources['index']['name']

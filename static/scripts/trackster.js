@@ -1007,9 +1007,7 @@ $.extend( Track.prototype, {
                     track.content_div.text(DATA_ERROR);
                     if (result.message) {
                         var track_id = track.view.tracks.indexOf(track);
-                        var error_link = $(" <a href='javascript:void(0);'></a>").attr("id", track_id + "_error");
-                        error_link.text("View error");
-                        $("#" + track_id + "_error").live("click", function() {                        
+                        var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").bind("click", function() {
                             show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
                         });
                         track.content_div.append(error_link);
@@ -1050,7 +1048,7 @@ $.extend( Track.prototype, {
     },
     revert_name: function() {
         this.name = this.old_name;
-        this.name_div.text(this.name);        
+        this.name_div.text(this.name);
     }
 });
 
@@ -1382,10 +1380,11 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         var low = this.view.low,
             high = this.view.high,
             range = high - low,
+            width = this.view.container.width(),
             resolution = this.view.resolution;
 
         var parent_element = $("<div style='position: relative;'></div>"),
-            w_scale = this.view.container.width() / range;
+            w_scale = width / range;
         
         this.content_div.append( parent_element );
         this.max_height = 0;
@@ -1396,13 +1395,13 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         var draw_tile_count = 0;
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
-            var key = this.content_div.width() + '_' + w_scale + '_' + tile_index;
+            var key = width + '_' + w_scale + '_' + tile_index;
             var cached = this.tile_cache.get(key);
             var tile_low = tile_index * DENSITY * this.view.resolution;
             var tile_high = tile_low + DENSITY * this.view.resolution;
             // console.log(cached, this.tile_cache);
             if ( !force && cached ) {
-                this.show_tile( cached, parent_element, tile_low );
+                this.show_tile( cached, parent_element, tile_low, w_scale );
             } else {
                 this.delayed_draw(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale);
             }
@@ -1488,19 +1487,18 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     */
                     // Add tile to cache and show tile.
                     track.tile_cache.set(key, tile_element);
-                    track.show_tile(tile_element, parent_element, tile_low);
+                    track.show_tile(tile_element, parent_element, tile_low, w_scale);
                 }
             }
         }, 50);
     }, 
     // Show track tile and perform associated actions.
-    show_tile: function( tile_element, parent_element, tile_low ) {
+    show_tile: function( tile_element, parent_element, tile_low, w_scale ) {
         // Readability.
         var track = this;
       
         // Position tile element, recalculate left position at display time
         var range = this.view.high - this.view.low,
-            w_scale = this.content_div.width() / range,
             left = ( tile_low - this.view.low ) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
@@ -1642,7 +1640,7 @@ $.extend( LabelTrack.prototype, Track.prototype, {
             range = view.high - view.low,
             tickDistance = Math.floor( Math.pow( 10, Math.floor( Math.log( range ) / Math.log( 10 ) ) ) ),
             position = Math.floor( view.low / tickDistance ) * tickDistance,
-            width = this.content_div.width(),
+            width = this.view.container.width(),
             new_div = $("<div style='position: relative; height: 1.3em;'></div>");
         while ( position < view.high ) {
             var screenPosition = ( position - view.low ) / range * width;
