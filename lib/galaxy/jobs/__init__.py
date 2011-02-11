@@ -1015,44 +1015,58 @@ class DefaultJobDispatcher( object ):
             start_job_runners.extend( app.config.start_job_runners.split(",") )
         if app.config.use_tasked_jobs:
             start_job_runners.append("tasks")
-        for runner_name in start_job_runners:
-            if runner_name == "local":
-                import runners.local
-                self.job_runners[runner_name] = runners.local.LocalJobRunner( app )
-            elif runner_name == "tasks":
-                import runners.tasks
-                self.job_runners[runner_name] = runners.tasks.TaskedJobRunner( app )
-            elif runner_name == "pbs":
-                import runners.pbs
-                self.job_runners[runner_name] = runners.pbs.PBSJobRunner( app )
-            elif runner_name == "sge":
-                import runners.sge
-                self.job_runners[runner_name] = runners.sge.SGEJobRunner( app )
-            elif runner_name == "drmaa":
-                import runners.drmaa
-                self.job_runners[runner_name] = runners.drmaa.DRMAAJobRunner( app )
-            else:
-                log.error( "Unable to start unknown job runner: '%s'" %runner_name )
+        for name in start_job_runners:
+            self._load_plugin( name )
+
+    def _load_plugin( self, name ):
+        module_name = 'galaxy.jobs.runners.' + name
+        try:
+            module = __import__( module_name )
+        except:
+            log.exception( 'Job runner is not loadable: %s' % module_name )
+            return
+        for comp in module_name.split( "." )[1:]:
+            module = getattr( module, comp )
+        if '__all__' not in dir( module ):
+            log.error( 'Runner "%s" does not contain a list of exported classes in __all__' % module_name )
+            return
+        for obj in module.__all__:
+            display_name = ':'.join( ( module_name, obj ) )
+            runner = getattr( module, obj )
+            self.job_runners[obj] = runner( self.app )
+            log.debug( 'Loaded job runner: %s' % display_name )
             
     def put( self, job_wrapper ):
-        if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
-            runner_name = "tasks"
-            log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
-            self.job_runners[runner_name].put( job_wrapper )
-        else:
-            runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
-            log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
-            self.job_runners[runner_name].put( job_wrapper )
+        try:
+            if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
+                runner_name = "tasks"
+                log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
+                self.job_runners[runner_name].put( job_wrapper )
+            else:
+                runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
+                log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
+                self.job_runners[runner_name].put( job_wrapper )
+        except KeyError:
+            log.error( 'put(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
+            job_wrapper.fail( 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.' )
 
     def stop( self, job ):
         runner_name = ( job.job_runner_name.split(":", 1) )[0]
         log.debug( "stopping job %d in %s runner" %( job.id, runner_name ) )
-        self.job_runners[runner_name].stop_job( job )
+        try:
+            self.job_runners[runner_name].stop_job( job )
+        except KeyError:
+            log.error( 'stop(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
+            # Job and output dataset states have already been updated, so nothing is done here.
 
     def recover( self, job, job_wrapper ):
         runner_name = ( job.job_runner_name.split(":", 1) )[0]
         log.debug( "recovering job %d in %s runner" %( job.id, runner_name ) )
-        self.job_runners[runner_name].recover( job, job_wrapper )
+        try:
+            self.job_runners[runner_name].recover( job, job_wrapper )
+        except KeyError:
+            log.error( 'recover(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
+            job_wrapper.fail( 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.' )
 
     def shutdown( self ):
         for runner in self.job_runners.itervalues():

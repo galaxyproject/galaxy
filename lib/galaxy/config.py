@@ -189,16 +189,6 @@ class Configuration( object ):
         for path in self.tool_config, self.datatypes_config:
             if not os.path.isfile(path):
                 raise ConfigurationError("File not found: %s" % path )
-        # Check job runners so the admin can scramble dependent egg.
-        if self.start_job_runners is not None:
-            runner_to_egg = dict( pbs = 'pbs_python', sge = 'DRMAA_python', drmaa = 'drmaa' )
-            for runner in self.start_job_runners.split( ',' ):
-                try:
-                    pkg_resources.require( runner_to_egg[runner] )
-                except eggs.EggNotFetchable, e:
-                    raise eggs.EggNotFetchable( 'You must scramble the %s egg to use the %s job runner.  Instructions are available at:\n  http://bitbucket.org/galaxy/galaxy-central/wiki/Config/Cluster' % ( runner_to_egg[runner], runner ) )
-                except KeyError:
-                    raise Exception( 'No such job runner: %s.  Please double-check the value of start_job_runners in universe_wsgi.ini' % runner )
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:

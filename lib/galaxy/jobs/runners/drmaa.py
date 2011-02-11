@@ -8,29 +8,29 @@ from paste.deploy.converters import asbool
 
 import pkg_resources
 
-try:
-    if sys.version_info[:2] == ( 2, 4 ):
-        pkg_resources.require( "ctypes" )
-    pkg_resources.require( "drmaa" )
-    drmaa = __import__( "drmaa" )
-except Exception, e:
-    drmaa = str( e )
+if sys.version_info[:2] == ( 2, 4 ):
+    pkg_resources.require( "ctypes" )
+pkg_resources.require( "drmaa" )
+# We foolishly named this file the same as the name exported by the drmaa
+# library... 'import drmaa' import itself.
+drmaa = __import__( "drmaa" )
 
 log = logging.getLogger( __name__ )
 
-if type( drmaa ) != str:
-    drmaa_state = {
-        drmaa.JobState.UNDETERMINED: 'process status cannot be determined',
-        drmaa.JobState.QUEUED_ACTIVE: 'job is queued and active',
-        drmaa.JobState.SYSTEM_ON_HOLD: 'job is queued and in system hold',
-        drmaa.JobState.USER_ON_HOLD: 'job is queued and in user hold',
-        drmaa.JobState.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
-        drmaa.JobState.RUNNING: 'job is running',
-        drmaa.JobState.SYSTEM_SUSPENDED: 'job is system suspended',
-        drmaa.JobState.USER_SUSPENDED: 'job is user suspended',
-        drmaa.JobState.DONE: 'job finished normally',
-        drmaa.JobState.FAILED: 'job finished, but failed',
-    }
+__all__ = [ 'DRMAAJobRunner' ]
+
+drmaa_state = {
+    drmaa.JobState.UNDETERMINED: 'process status cannot be determined',
+    drmaa.JobState.QUEUED_ACTIVE: 'job is queued and active',
+    drmaa.JobState.SYSTEM_ON_HOLD: 'job is queued and in system hold',
+    drmaa.JobState.USER_ON_HOLD: 'job is queued and in user hold',
+    drmaa.JobState.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
+    drmaa.JobState.RUNNING: 'job is running',
+    drmaa.JobState.SYSTEM_SUSPENDED: 'job is system suspended',
+    drmaa.JobState.USER_SUSPENDED: 'job is user suspended',
+    drmaa.JobState.DONE: 'job finished normally',
+    drmaa.JobState.FAILED: 'job finished, but failed',
+}
 
 drm_template = """#!/bin/sh
 #$ -S /bin/sh
@@ -70,8 +70,6 @@ class DRMAAJobRunner( BaseJobRunner ):
     def __init__( self, app ):
         """Initialize this job runner and start the monitor thread"""
         # Check if drmaa was importable, fail if not
-        if type( drmaa ) == str:
-            raise Exception( "DRMAAJobRunner requires drmaa module which could not be loaded: %s" % drmaa )
         self.app = app
         self.sa_session = app.model.context
         # 'watched' and 'queue' are both used to keep track of jobs to watch.

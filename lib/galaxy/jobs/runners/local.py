@@ -12,6 +12,8 @@ from time import sleep
 
 log = logging.getLogger( __name__ )
 
+__all__ = [ 'LocalJobRunner' ]
+
 class LocalJobRunner( BaseJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling

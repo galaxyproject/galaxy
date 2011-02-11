@@ -11,13 +11,27 @@ from paste.deploy.converters import asbool
 
 import pkg_resources
 
+egg_message = """
+
+The 'pbs' runner depends on 'pbs_python' which is not installed or not
+configured properly.  Galaxy's "scramble" system should make this installation
+simple, please follow the instructions found at:
+
+    http://bitbucket.org/galaxy/galaxy-central/wiki/Config/Cluster
+
+Additional errors may follow:
+%s
+"""
+
 try:
     pkg_resources.require( "pbs_python" )
-    pbs = __import__( "pbs" )
-except:
-    pbs = None
+    import pbs
+except Exception, e:
+    raise Exception( egg_message % str( e ) )
 
 log = logging.getLogger( __name__ )
+
+__all__ = [ 'PBSJobRunner' ]
 
 pbs_template = """#!/bin/sh
 GALAXY_LIB="%s"

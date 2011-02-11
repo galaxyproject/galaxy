@@ -8,27 +8,42 @@ from paste.deploy.converters import asbool
 
 import pkg_resources
 
+egg_message = """
+
+The 'sge' runner depends on 'DRMAA_python' which is not installed.  Galaxy's
+"scramble" system should make this installation simple, please follow the
+instructions found at:
+
+  http://bitbucket.org/galaxy/galaxy-central/wiki/Config/Cluster
+
+Additional errors may follow:
+%s
+"""
+
+
 try:
     pkg_resources.require( "DRMAA_python" )
-    DRMAA = __import__( "DRMAA" )
-except:
-    DRMAA = None
+    import DRMAA
+except Exception, e:
+    raise Exception( egg_message % str( e ) )
+
 
 log = logging.getLogger( __name__ )
 
-if DRMAA is not None:
-    DRMAA_state = {
-        DRMAA.Session.UNDETERMINED: 'process status cannot be determined',
-        DRMAA.Session.QUEUED_ACTIVE: 'job is queued and waiting to be scheduled',
-        DRMAA.Session.SYSTEM_ON_HOLD: 'job is queued and in system hold',
-        DRMAA.Session.USER_ON_HOLD: 'job is queued and in user hold',
-        DRMAA.Session.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
-        DRMAA.Session.RUNNING: 'job is running',
-        DRMAA.Session.SYSTEM_SUSPENDED: 'job is system suspended',
-        DRMAA.Session.USER_SUSPENDED: 'job is user suspended',
-        DRMAA.Session.DONE: 'job finished normally',
-        DRMAA.Session.FAILED: 'job finished, but failed',
-    }
+__all__ = [ 'SGEJobRunner' ]
+
+DRMAA_state = {
+    DRMAA.Session.UNDETERMINED: 'process status cannot be determined',
+    DRMAA.Session.QUEUED_ACTIVE: 'job is queued and waiting to be scheduled',
+    DRMAA.Session.SYSTEM_ON_HOLD: 'job is queued and in system hold',
+    DRMAA.Session.USER_ON_HOLD: 'job is queued and in user hold',
+    DRMAA.Session.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
+    DRMAA.Session.RUNNING: 'job is running',
+    DRMAA.Session.SYSTEM_SUSPENDED: 'job is system suspended',
+    DRMAA.Session.USER_SUSPENDED: 'job is user suspended',
+    DRMAA.Session.DONE: 'job finished normally',
+    DRMAA.Session.FAILED: 'job finished, but failed',
+}
 
 sge_template = """#!/bin/sh
 #$ -S /bin/sh
@@ -67,9 +82,6 @@ class SGEJobRunner( BaseJobRunner ):
     STOP_SIGNAL = object()
     def __init__( self, app ):
         """Initialize this job runner and start the monitor thread"""
-        # Check if SGE was importable, fail if not
-        if DRMAA is None:
-            raise Exception( "SGEJobRunner requires DRMAA_python which was not found" )
         self.app = app
         self.sa_session = app.model.context
         # 'watched' and 'queue' are both used to keep track of jobs to watch.

@@ -12,6 +12,8 @@ from galaxy.jobs import TaskWrapper
 
 log = logging.getLogger( __name__ )
 
+__all__ = [ 'TaskedJobRunner' ]
+
 class TaskedJobRunner( object ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
