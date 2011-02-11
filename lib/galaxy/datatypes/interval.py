@@ -1161,7 +1161,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         resolution = max( resolution, 1 )
         return resolution
     def get_track_type( self ):
-        return "LineTrack", {"data": "bigwig"}
+        return "LineTrack", {"data": "bigwig", "index": "bigwig"}
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""

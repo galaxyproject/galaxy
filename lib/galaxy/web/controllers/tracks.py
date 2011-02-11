@@ -458,13 +458,17 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return msg
             
         # Check for data in the genome window.
-        # TODO: Not all tracks have an index data source, so need to try alternative data sources to check for data.
-        if chrom and low and high and data_sources.get( 'index' ):
+        if data_sources.get( 'index' ):
             tracks_dataset_type = data_sources['index']['name']
             indexer = get_data_provider( tracks_dataset_type )( dataset.get_converted_dataset( trans, tracks_dataset_type ), dataset )
-            if not indexer.has_data( chrom, low, high ):
+            if not indexer.has_data( chrom ):
                 return messages.NO_DATA
-
+        else:
+            # Standalone data provider
+            standalone_provider = get_data_provider(data_sources['data_standalone']['name'])( dataset )
+            kwargs = {"stats": True}
+            if not standalone_provider.has_data( chrom ):
+                return messages.NO_DATA
         return messages.DATA
         
     @web.json

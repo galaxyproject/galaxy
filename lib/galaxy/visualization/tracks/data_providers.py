@@ -48,13 +48,13 @@ class TracksDataProvider( object ):
         # Override.
         pass
     
-    def has_data( self, chrom, start, end ):
+    def has_data( self, chrom, start, end, **kwargs ):
         """
         Returns true if dataset has data in the specified genome window, false
         otherwise.
         """
         # Override.
-        return False
+        pass
         
     def get_data( self, chrom, start, end, **kwargs ):
         """ Returns data in region defined by chrom, start, and end. """
@@ -140,10 +140,9 @@ class SummaryTreeDataProvider( TracksDataProvider ):
         else:
             return results, stats[level]["max"], stats[level]["avg"], stats[level]["delta"]
             
-    def has_data( self, chrom, start, end ):
+    def has_data( self, chrom ):
         """
-        Returns true if dataset has data in the specified genome window, false
-        otherwise.
+        Returns true if dataset has data for this chrom
         """
         
         # Get summary tree.
@@ -154,8 +153,7 @@ class SummaryTreeDataProvider( TracksDataProvider ):
             self.CACHE[filename] = st
             
         # Check for data.
-        level = ceil( log( 100000, st.block_size ) ) - 1
-        return ( st.query( chrom, int(start), int(end), level ) is not None )
+        return st.chrom_blocks.get(chrom, None) is not None
 
 class VcfDataProvider( TracksDataProvider ):
     """
@@ -405,14 +403,24 @@ class BigWigDataProvider( TracksDataProvider ):
     """
     BigWig data provider for the Galaxy track browser. 
     """
-                 
-    def get_data( self, chrom, start, end, **kwargs ):
-        # Bigwig has the possibility of it being a standalone bigwig file, in which case we use
-        # original_dataset, or coming from wig->bigwig conversion in which we use converted_dataset
+    def _get_dataset( self ):
         if self.converted_dataset is not None:
             f = open( self.converted_dataset.file_name )
         else:
             f = open( self.original_dataset.file_name )
+        return f
+        
+    def has_data( self, chrom ):
+        f = self._get_dataset()
+        bw = BigWigFile(file=f)
+        all_dat = bw.query(chrom, 0, 2147483647, 1)
+        f.close()
+        return all_dat is not None
+        
+    def get_data( self, chrom, start, end, **kwargs ):
+        # Bigwig has the possibility of it being a standalone bigwig file, in which case we use
+        # original_dataset, or coming from wig->bigwig conversion in which we use converted_dataset
+        f = self._get_dataset()
         bw = BigWigFile(file=f)
         
         if 'stats' in kwargs:
@@ -426,7 +434,6 @@ class BigWigDataProvider( TracksDataProvider ):
                      'min': float( all_dat['min'] ), \
                      'total_frequency': float( all_dat['coverage'] ) }
                      
-        
         start = int(start)
         end = int(end)
         num_points = 2000
@@ -439,9 +446,10 @@ class BigWigDataProvider( TracksDataProvider ):
         pos = start
         step_size = (end - start) / num_points
         result = []
-        for dat_dict in data:
-            result.append( (pos, float_nan(dat_dict['mean']) ) )
-            pos += step_size
+        if data:
+            for dat_dict in data:
+                result.append( (pos, float_nan(dat_dict['mean']) ) )
+                pos += step_size
             
         return result
 
