@@ -162,6 +162,8 @@ def __main__():
                 if strand not in ['+', '-']:
                     strand = '+'
                 sequence = ''
+            else:
+                continue
 
         # Open sequence file and get sequence for feature/interval. 
         if seq_path and os.path.exists( "%s/%s.nib" % ( seq_path, chrom ) ):
