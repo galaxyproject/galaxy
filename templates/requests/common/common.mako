@@ -254,7 +254,7 @@
             checked_str = ""
     %>
     %if display_checkboxes:
-        <td><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true" ${checked_str}/><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"/></td>
+        <td valign="top"><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true" ${checked_str}/><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"/></td>
     %endif
     <td valign="top">
         <input type="text" name="sample_${sample_widget_index}_name" value="${sample_widget['name']}" size="10"/>

@@ -5,53 +5,23 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}    
-    ## TODO: Clean up these styles and move into panel_layout.css (they are
-    ## used here and in the editor).
+    ## Include "base.css" for styling tool menu and forms (details)
+    ${h.css( "base", "autocomplete_tagging", "tool_menu" )}
+
+    ## But make sure styles for the layout take precedence
+    ${parent.stylesheets()}
+
     <style type="text/css">
-    #left {
-        background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
-    }
-    div.toolMenu {
-        margin: 5px;
-        margin-left: 10px;
-        margin-right: 10px;
-    }
-    div.toolSectionPad {
-        margin: 0;
-        padding: 0;
-        height: 5px;
-        font-size: 0px;
-    }
-    div.toolSectionDetailsInner { 
-        margin-left: 5px;
-        margin-right: 5px;
-    }
-    div.toolSectionTitle {
-        padding-bottom: 0px;
-        font-weight: bold;
-    }
-    div.toolMenuGroupHeader {
-        font-weight: bold;
-        padding-top: 0.5em;
-        padding-bottom: 0.5em;
-        color: #333;
-        font-style: italic;
-        border-bottom: dotted #333 1px;
-        margin-bottom: 0.5em;
-    }    
-    div.toolTitle {
-        padding-top: 5px;
-        padding-bottom: 5px;
-        margin-left: 16px;
-        margin-right: 10px;
-        display: list-item;
-        list-style: square outside;
-    }
-    a:link, a:visited, a:active
-    {
-        color: #303030;
-    }
+        body { margin: 0; padding: 0; overflow: hidden; }
+        #left {
+            background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
+        }
     </style>
+</%def>
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${h.js( "jquery", "galaxy.base" )}
 </%def>
 
 <%def name="init()">
@@ -66,7 +36,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
-    <div class="unified-panel-body" style="overflow: auto;">
+    <div class="page-container" style="padding: 10px;">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">

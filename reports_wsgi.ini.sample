@@ -17,8 +17,8 @@ paste.app_factory = galaxy.webapps.reports.buildapp:app_factory
 log_level = DEBUG
 
 # Database connection
-#database_file = database/universe.sqlite
-# You may use a SQLAlchemy connection string to specify an external database instead
+# Galaxy reports are intended for production Galaxy instances, so sqlite is not supported.
+# You may use a SQLAlchemy connection string to specify an external database.
 # database_connection = postgres:///galaxy_test?user=postgres&password=postgres 
 
 # Where dataset files are saved
@@ -67,4 +67,3 @@ static_images_dir = %(here)s/static/images
 static_favicon_dir = %(here)s/static/favicon.ico
 static_scripts_dir = %(here)s/static/scripts/
 static_style_dir = %(here)s/static/june_2007_style/blue
-
