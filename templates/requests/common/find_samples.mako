@@ -66,7 +66,7 @@
 	                %for sample in samples:
 	                    <div class="form-row">
                             Sample: <b>${sample.name}</b> | Barcode: ${sample.bar_code}<br/>
-                            %if sample.request.is_new:
+                            %if sample.request.is_new or not sample.state:
                                 State: Unsubmitted<br/>
                             %else:
                                 State: ${sample.state.name}<br/>
@@ -76,7 +76,7 @@
                                <i>User: ${sample.request.user.email}</i>
                             %endif
                             <div class="toolParamHelp" style="clear: both;">
-                                <a href="${h.url_for( controller='requests_common', action='edit_samples', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Sequencing request: ${sample.request.name} | Type: ${sample.request.type.name} | State: ${sample.request.state}</a>
+                                <a href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Sequencing request: ${sample.request.name} | Type: ${sample.request.type.name} | State: ${sample.request.state}</a>
                             </div>
 	                    </div>
 	                    <br/>
