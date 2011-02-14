@@ -97,9 +97,12 @@ var
 if (window.G_vmlCanvasManager) {
     G_vmlCanvasManager.initElement(DUMMY_CANVAS);
 }
-CONTEXT = DUMMY_CANVAS.getContext("2d");
+var 
+    CONTEXT = DUMMY_CANVAS.getContext("2d");
 CONTEXT.font = DEFAULT_FONT; // To ensure consistent measureText width
-PX_PER_CHAR = CONTEXT.measureText("A").width;
+var 
+    CHAR_WIDTH_PX = CONTEXT.measureText("A").width,
+    CHAR_HEIGHT_PX = 9; // Taken from DEFAULT_FONT.
     
 var right_img = new Image();
 right_img.src = image_path + "/visualization/strand_right.png";
@@ -1704,7 +1707,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
         
         var ctx = canvas.get(0).getContext("2d");
         
-        if (w_scale > PX_PER_CHAR) {
+        if (w_scale > CHAR_WIDTH_PX) {
             if (this.data_cache.get(key) === undefined) {
                 this.get_data( resolution, tile_index );
                 return;
@@ -2213,7 +2216,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 case "M": // Match
                 case "=":
                     var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
-                    if ( (this.mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > PX_PER_CHAR) {
+                    if ( (this.mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
                         ctx.fillStyle = this.prefs.block_color;
                         ctx.fillRect(s_start + this.left_offset, y_center + 1, s_end - s_start, 9);
                         ctx.fillStyle = CONNECTOR_COLOR;
@@ -2325,6 +2328,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 
         canvas.get(0).width = width + left_offset;
         canvas.get(0).height = required_height;
+        if (result.dataset_type == "summary_tree") {
+            // Increase canvas height in order to display max label.
+            canvas.get(0).height += LABEL_SPACING + CHAR_HEIGHT_PX;
+        }
         parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = canvas.get(0).getContext("2d");
@@ -2337,7 +2344,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         // Draw summary tree. If tree is drawn, canvas is returned.
         //
         if (result.dataset_type == "summary_tree") {            
-            var points = result.data,
+            var 
+                // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
+                // start. However, height of each rectangle is relative to required_height; hence, the
+                // max rectangle is required_height.
+                base_y = required_height + LABEL_SPACING + CHAR_HEIGHT_PX;
+                points = result.data,
                 max = result.max,
                 delta_x_px = Math.ceil(result.delta * w_scale);
             
@@ -2352,10 +2364,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 var y = points[i][1];
                 
                 if (!y) { continue; }
-                var y_px = y / max * this.summary_draw_height;
+                var y_px = y / max * required_height;
                 
                 ctx.fillStyle = "black";
-                ctx.fillRect(x + left_offset, this.summary_draw_height - y_px, delta_x_px, y_px);
+                ctx.fillRect(x + left_offset, base_y - y_px, delta_x_px, y_px);
                 
                 // Draw number count if it can fit the number with some padding, otherwise things clump up
                 var text_padding_req_x = 4;
