@@ -25,7 +25,7 @@ Additional errors may follow:
 
 try:
     pkg_resources.require( "pbs_python" )
-    import pbs
+    pbs = __import__( "pbs" )
 except Exception, e:
     raise Exception( egg_message % str( e ) )
 
