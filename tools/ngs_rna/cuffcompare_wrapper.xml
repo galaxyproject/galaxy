@@ -22,7 +22,7 @@
                 #else:
                     --ref_file="None"
                 #end if
-                --dbkey=${first_input.input.metadata.dbkey} 
+                --dbkey=${first_input.metadata.dbkey} 
                 --index_dir=${GALAXY_DATA_INDEX_DIR}
             #end if
             
