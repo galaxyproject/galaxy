@@ -479,10 +479,10 @@
                         %if is_submitted or is_complete:
                             <td>
                                 ## An admin can select the datasets to transfer, while a non-admin can only view what has been selected
-                                %if is_admin:
+                                %if sample.library and is_admin:
                                     ## This link will direct the admin to a page allowing them to manage datasets.
                                     <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_admin', action='manage_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
-                                %elif sample.datasets:
+                                %elif sample.library and sample.datasets:
                                     ## Since this is a regular user, only display a link if there is at least 1
                                     ## selected dataset for the sample.
                                     <a id="sampleDatasets-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a>
