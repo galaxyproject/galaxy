@@ -132,6 +132,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # http://bitbucket.org/galaxy/galaxy-central/wiki/DataIntegration
 #tool_data_path = tool-data
 
+# Directory where chrom len files are kept, currently mainly used by trackster
+#len_file_path = tool-data/shared/ucsc/chrom
+
+
 # Datatypes config file, defines what data (file) types are available in
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml

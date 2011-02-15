@@ -130,7 +130,7 @@ class UsesVisualization( SharableItemSecurity ):
         
         # Read len files.
         if not self.len_files:
-            len_files = glob.glob(os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "*.len" ))
+            len_files = glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") )
             self.len_files = [ os.path.split(f)[1].split(".len")[0] for f in len_files ] # get xxx.len
 
         user_keys = {}

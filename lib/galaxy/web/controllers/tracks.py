@@ -306,7 +306,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if not len_file:
             len_ds = trans.db_dataset_for( dbkey )
             if not len_ds:
-                len_file = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % vis_dbkey )
+                len_file = os.path.join( trans.app.config.len_file_path, "%s.len" % vis_dbkey )
             else:
                 len_file = len_ds.file_name
         
