@@ -112,7 +112,7 @@ class JobQueue( object ):
             else:
                 log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
                 self.queue.put( ( job.id, job.tool_id ) )
-        for job in self.sa_session.query( model.Job ).filter( ( model.Job.state == model.Job.states.RUNNING ) | ( model.Job.state == model.Job.states.QUEUED ) ):
+        for job in self.sa_session.query( model.Job ).options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ).filter( ( model.Job.state == model.Job.states.RUNNING ) | ( model.Job.state == model.Job.states.QUEUED ) ):
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "Tool '%s' removed from tool config, unable to recover job: %s" % ( job.tool_id, job.id ) )
                 JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
@@ -1129,18 +1129,18 @@ class JobStopQueue( object ):
                                      .filter( model.Job.state == model.Job.states.DELETED_NEW ).all()
             for job in newly_deleted_jobs:
                 jobs_to_check.append( ( job, None ) )
-        else:
-            try:
-                while 1:
-                    message = self.queue.get_nowait()
-                    if message is self.STOP_SIGNAL:
-                        return
-                    # Unpack the message
-                    job_id, error_msg = message
-                    # Get the job object and append to watch queue
-                    jobs_to_check.append( ( self.sa_session.query( model.Job ).get( job_id ), error_msg ) )
-            except Empty:
-                pass
+        # Also pull from the queue (in the case of Administrative stopped jobs)
+        try:
+            while 1:
+                message = self.queue.get_nowait()
+                if message is self.STOP_SIGNAL:
+                    return
+                # Unpack the message
+                job_id, error_msg = message
+                # Get the job object and append to watch queue
+                jobs_to_check.append( ( self.sa_session.query( model.Job ).get( job_id ), error_msg ) )
+        except Empty:
+            pass
         for job, error_msg in jobs_to_check:
             if error_msg is not None:
                 job.state = job.states.ERROR
