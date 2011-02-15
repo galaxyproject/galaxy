@@ -2259,7 +2259,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             draw_offset += cig_len;
         }
     },
-    draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
+    draw_tile: function(resolution, tile_index, parent_element, w_scale) {
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = tile_high - tile_low;
@@ -2359,7 +2359,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             max_label.css({ position: "absolute", top: "22px", left: "10px" });
             max_label.prependTo(this.container_div);
                 
-            for ( var i = 0, len = points.length; i < len; i++ ) {
+            for (var i = 0, len = points.length; i < len; i++) {
                 var x = Math.floor( (points[i][0] - tile_low) * w_scale );
                 var y = points[i][1];
                 
@@ -2380,18 +2380,23 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             return canvas;
         }
         
+        
         //
         // Show message. If there is a message, return canvas.
         // FIXME: Why is this drawn on a canvas instead of a div?
         if (result.message) {
             canvas.css({
-                border: "solid red",
-                "border-width": "2px 2px 2px 0px"
+                "border-color": "red"
             });
+
             ctx.fillStyle = "red";
             ctx.textAlign = "left";
             ctx.fillText(result.message, 100 + left_offset, y_scale);
-            return canvas;
+
+            // If there's no data, return.
+            if (!result.data) {
+                return canvas;
+            }
         }
 
         //        
