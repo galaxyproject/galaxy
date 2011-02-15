@@ -11,7 +11,9 @@
 </%def>
 
 <%def name="center_panel()">
-    <div style="margin: 1em;">
-        ${grid_body( grid )}
+    <div style="overflow: auto; height: 100%">
+        <div class="page-container" style="padding: 10px;">
+            ${grid_body( grid )}
+        </div>
     </div>
 </%def>

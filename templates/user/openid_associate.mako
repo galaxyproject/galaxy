@@ -30,10 +30,11 @@
 
 <%def name="body()">
 
+    <div style="overflow: auto; height: 100%">
     %if context.get('use_panels'):
-        <div style="margin: 1em;">
+        <div class="page-container" style="padding: 10px;">
     %else:
-        <div>
+        <div class="page-container">
     %endif
 
     %if message:
@@ -70,6 +71,7 @@
 
     ${render_registration_form( form_action=form_action )}
 
+    </div>
     </div>
 
 </%def>
