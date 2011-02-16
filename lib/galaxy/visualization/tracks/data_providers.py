@@ -47,6 +47,12 @@ class TracksDataProvider( object ):
         """
         # Override.
         pass
+        
+    def valid_chroms( self ):
+        """
+        Returns chroms/contigs that the dataset contains
+        """
+        return None # by default
     
     def has_data( self, chrom, start, end, **kwargs ):
         """
@@ -108,6 +114,11 @@ class SummaryTreeDataProvider( TracksDataProvider ):
     """
     
     CACHE = LRUCache(20) # Store 20 recently accessed indices for performance
+    
+    def valid_chroms( self ):
+        st = summary_tree_from_file( self.converted_dataset.file_name )
+        return st.chrom_blocks.keys()
+        
     
     def get_summary( self, chrom, start, end, **kwargs):
         filename = self.converted_dataset.file_name
@@ -409,6 +420,10 @@ class BigWigDataProvider( TracksDataProvider ):
         else:
             f = open( self.original_dataset.file_name )
         return f
+        
+    def valid_chroms( self ):
+        # No way to return this info as of now
+        return None
         
     def has_data( self, chrom ):
         f = self._get_dataset()

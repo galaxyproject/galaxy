@@ -54,16 +54,21 @@ function show_hide_popupmenu_options( menu, option_name_re, show ) {
     });
 }
 
-function make_popupmenu( button_element, options ) {
+function make_popupmenu( button_element, initial_options ) {
+    
+    /*  Use the $.data feature to store options with the link element.
+        This allows options to be changed at a later time 
+    */
+    button_element.data("menu_options", initial_options);
     button_element.bind("click.show_popup", function(e) {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
-        
         
         // Need setTimeouts so clicks don't interfere with each other        
         setTimeout( function() {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
             var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></ul>" );
+            var options = button_element.data("menu_options");
             if (obj_length(options) <= 0) {
                 $("<li>No Options.</li>").appendTo(menu_element);
             }

@@ -386,7 +386,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
         if self.available_genomes is None: self._init_references(trans)
 
-        if dbkey not in self.available_genomes: 
+        if dbkey not in self.available_genomes:
             return None
         
         try:
@@ -434,10 +434,10 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return msg
         
     @web.json
-    def converted_datasets_state( self, trans, hda_ldda, dataset_id, chrom=None, low=None, high=None ):
-        """ 
-        Returns state of dataset's converted datasets. If a genome window is 
-        specified, method checks whether dataset has data in the window.
+    def converted_datasets_state( self, trans, hda_ldda, dataset_id, chrom=None ):
+        """
+        Init-like method that returns state of dataset's converted datasets. Returns valid chroms
+        for that dataset as well.
         """
         # TODO: this code is copied from data() -- should refactor.
         
@@ -457,19 +457,24 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if msg:
             return msg
             
+        valid_chroms = None
         # Check for data in the genome window.
         if data_sources.get( 'index' ):
             tracks_dataset_type = data_sources['index']['name']
             indexer = get_data_provider( tracks_dataset_type )( dataset.get_converted_dataset( trans, tracks_dataset_type ), dataset )
             if not indexer.has_data( chrom ):
                 return messages.NO_DATA
+            valid_chroms = indexer.valid_chroms()
         else:
             # Standalone data provider
             standalone_provider = get_data_provider(data_sources['data_standalone']['name'])( dataset )
             kwargs = {"stats": True}
             if not standalone_provider.has_data( chrom ):
                 return messages.NO_DATA
-        return messages.DATA
+            valid_chroms = standalone_provider.valid_chroms()
+            
+        # Have data if we get here
+        return { "status": messages.DATA, "valid_chroms": valid_chroms }
         
     @web.json
     def data( self, trans, hda_ldda, dataset_id, chrom, low, high, **kwargs ):

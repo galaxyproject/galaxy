@@ -903,7 +903,7 @@ $.extend( TrackConfig.prototype, {
         });
         return container;
     },
-    update_from_form : function( container ) {
+    update_from_form: function( container ) {
         var track_config = this;
         var changed = false;
         $.each( this.params, function( index, param ) {
@@ -1002,8 +1002,7 @@ $.extend( Track.prototype, {
         if ( track.view.chrom != null ) { 
             // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
             // about track status.
-            $.getJSON(this.dataset_check_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, 
-                                                chrom: track.view.chrom, low: track.view.max_low, high: track.view.max_high}, 
+            $.getJSON(converted_datasets_state_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
                      function (result) {
                 if (!result || result === "error" || result.kind === "error") {
                     track.container_div.addClass("error");
@@ -1025,8 +1024,13 @@ $.extend( Track.prototype, {
                     track.container_div.addClass("pending");
                     track.content_div.text(DATA_PENDING);
                     setTimeout(function() { track.init(); }, track.data_query_wait);
-                } else if (result === "data") {
-                    // Only draw in user has selected a chromosome.
+                } else if (result['status'] === "data") {
+                    if (result['valid_chroms']) {
+                        track.valid_chroms = result['valid_chroms'];
+                        track.name_div.data("menu_options")["List chrom/contigs with data"] = function() {
+                            show_modal("Chrom/contigs with data", "<p>" + track.valid_chroms.join("<br/>") + "</p>", { "Close": function() { hide_modal(); } });
+                        };
+                    }
                     track.content_div.text(DATA_OK);
                     if (track.view.chrom) {
                         track.content_div.text("");
@@ -1297,7 +1301,7 @@ var TiledTrack = function(filters, tool, parent_track) {
             "OK": ok_fn
         });
     };
-    
+    /*
     track_dropdown["Set as overview"] = function() {
         view.overview_viewport.find("canvas").remove();
         track.is_overview = true;
@@ -1307,7 +1311,7 @@ var TiledTrack = function(filters, tool, parent_track) {
                 view.tracks[track_id].is_overview = false;
             }
         }
-    };
+    };*/
     
     if (track.filters.length > 0) {
         // Show/hide filters menu item.
