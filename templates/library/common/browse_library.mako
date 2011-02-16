@@ -438,9 +438,14 @@
         %for library_dataset in library_datasets:
             <%
                 ldda = library_dataset.library_dataset_dataset_association
-                selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
+                if ldda:
+                    # There should always be an ldda, but some users running their own instances have reported that
+                    # some of their LibraryDatasets have no associated lddas
+                    selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
             %>
-            ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
+            %if ldda:
+                ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
+            %endif
         %endfor
     %else:
         %for sub_folder in sub_folders:
@@ -449,8 +454,13 @@
         %for library_dataset in library_datasets:
             <%
                 ldda = library_dataset.library_dataset_dataset_association
-                can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ldda.dataset )
-                selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
+                if ldda:
+                    # There should always be an ldda, but some users running their own instances have reported that
+                    # some of their LibraryDatasets have no associated lddas
+                    can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ldda.dataset )
+                    selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
+                else:
+                    can_access = False
             %>
             %if can_access:
                 ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
