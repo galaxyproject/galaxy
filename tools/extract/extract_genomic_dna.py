@@ -120,7 +120,7 @@ def __main__():
     twobitfile = None
     file_iterator = open( input_filename )
     if gff_format and interpret_features:
-        file_iterator = gff_util.GFFReaderWrapper( file_iterator, fix_strand=True )
+        file_iterator = gff_util.GFFReaderWrapper( file_iterator, fix_strand=False )
     for i, feature in enumerate( file_iterator ):
         if gff_format and interpret_features:
             # Processing features.
