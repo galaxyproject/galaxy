@@ -115,4 +115,17 @@ if [ ! -f "tool-data/shared/ucsc/chrom/hg17.len" -a -f "test-data/wig_to_bigwig_
     cp test-data/wig_to_bigwig_hg17.len tool-data/shared/ucsc/chrom/hg17.len
 fi
 
+if [ -d "test-data-repo" ]; then
+    echo "Updating test data repository"
+    cd test-data-repo
+    hg pull
+    hg update
+    cd ..
+else
+    echo "Cloning test data repository"
+    hg clone http://bitbucket.org/natefoo/galaxy-test-data/ test-data-repo
+fi
+echo "Setting up test data location files"
+python test-data-repo/location/make_location.py
+
 python ./scripts/fetch_eggs.py all
