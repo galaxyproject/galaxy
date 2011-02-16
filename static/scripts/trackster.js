@@ -523,7 +523,7 @@ $.extend( View.prototype, {
                     view.intro_div.hide();
                 }
                 view.chrom_select.val(view.chrom);
-                view.max_high = found.len;
+                view.max_high = found.len-1; // -1 because we're using 0-based indexing.
                 view.reset();
                 view.redraw(true);
 
