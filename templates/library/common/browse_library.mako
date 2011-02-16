@@ -20,6 +20,7 @@
     self.message_box_visible=False
     self.active_view="user"
     self.overlay_visible=False
+    self.has_accessible_datasets = False
 %>
 </%def>
 
@@ -349,7 +350,9 @@
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
         info_association, inherited = folder.get_info_association( restrict=True )
 
-        has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, folder, trans.user, current_user_roles, search_downward=False )
+        if not self.has_accessible_datasets:
+            # If we already know the library contains accessible datasets, no need to check again (and we may set it to False if we do).
+            self.has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, folder, trans.user, current_user_roles, search_downward=False )
     %>
     %if not root_folder and ( not folder.deleted or show_deleted ):
         <% encoded_id = trans.security.encode_id(folder.id) %>
@@ -379,7 +382,7 @@
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add sub-folder</a>
                             %endif
                             %if not branch_deleted( folder ):
-                                %if has_accessible_datasets:
+                                %if self.has_accessible_datasets:
                                     <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select datasets for import into selected histories</a>
                                 %endif
                                 %if can_modify:
@@ -476,7 +479,7 @@
         info_association, inherited = library.get_info_association()
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
 
-        has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles, search_downward=False )
+        self.has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles, search_downward=False )
         has_accessible_folders = is_admin or trans.app.security_agent.has_accessible_folders( trans, library.root_folder, trans.user, current_user_roles )
         
         tracked_datasets = {}
@@ -523,7 +526,7 @@
                          %endif
                          <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                      %endif
-                     %if has_accessible_datasets:
+                     %if self.has_accessible_datasets:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select datasets for import into selected histories</a>
                      %endif
                  %elif can_modify and not library.purged:
@@ -546,7 +549,7 @@
         <br/>
     %endif
 
-    %if has_accessible_datasets:
+    %if self.has_accessible_datasets:
         <form name="act_on_multiple_datasets" action="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}" onSubmit="javascript:return checkForm();" method="post">
     %endif
     %if has_accessible_folders:
@@ -554,7 +557,7 @@
             <thead>
                 <tr class="libraryTitle">
                     <th>
-                        %if has_accessible_datasets:
+                        %if self.has_accessible_datasets:
                             <input type="checkbox" id="checkAll" name=select_all_datasets_checkbox value="true" onclick='checkAllFields(1);'/><input type="hidden" name=select_all_datasets_checkbox value="true"/>
                         %endif
                         Name
@@ -568,18 +571,18 @@
             <% row_counter = RowCounter() %>
             %if cntrller in [ 'library', 'requests' ]:
                 ${self.render_folder( 'library', library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
-                %if not library.deleted and has_accessible_datasets:
+                %if not library.deleted and self.has_accessible_datasets:
                     ${render_actions_on_multiple_items()}
                 %endif
             %elif ( trans.user_is_admin() and cntrller in [ 'library_admin', 'requests_admin' ] ):
                 ${self.render_folder( 'library_admin', library.root_folder, 0, created_ldda_ids, library, [], tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
-                %if not library.deleted and not show_deleted and has_accessible_datasets:
+                %if not library.deleted and not show_deleted and self.has_accessible_datasets:
                     ${render_actions_on_multiple_items()}
                 %endif
             %endif
         </table>
     %endif
-    %if has_accessible_datasets:
+    %if self.has_accessible_datasets:
         </form>
     %endif
      
@@ -591,7 +594,7 @@
         <!-- running: do not change this comment, used by TwillTestCase.library_wait -->
     %endif
 
-    %if has_accessible_datasets:
+    %if self.has_accessible_datasets:
         ${render_compression_types_help( comptypes )}
     %endif
     %if not has_accessible_folders:

@@ -143,7 +143,6 @@ class SampleTracking( BaseController ):
                                row.total,
                                row.date.strftime( "%B" ),
                                row.date.strftime( "%Y" ) ) )
-        log.debug("#######In per_month_all, requests: %s" % str( requests ))
         return trans.fill_template( '/webapps/reports/requests_per_month_all.mako',
                                     requests=requests,
                                     message=message )
