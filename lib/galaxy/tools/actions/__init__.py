@@ -244,6 +244,12 @@ class DefaultToolAction( object ):
                     ext = output.format
                     if ext == "input":
                         ext = input_ext
+                    if output.format_source is not None and output.format_source in inp_data:
+                        try:
+                            ext = inp_data[output.format_source].ext
+                        except Exception, e:
+                            pass
+                    
                     #process change_format tags
                     if output.change_format:
                         if params is None:

@@ -249,10 +249,11 @@ class ToolOutput( object ):
       (format, metadata_source, parent)  
     """
 
-    def __init__( self, name, format=None, metadata_source=None, 
+    def __init__( self, name, format=None, format_source=None, metadata_source=None, 
                   parent=None, label=None, filters = None, actions = None ):
         self.name = name
         self.format = format
+        self.format_source = format_source
         self.metadata_source = metadata_source
         self.parent = parent
         self.label = label
@@ -559,6 +560,7 @@ class Tool:
             output = ToolOutput( data_elem.get("name") )
             output.format = data_elem.get("format", "data")
             output.change_format = data_elem.findall("change_format")
+            output.format_source = data_elem.get("format_source", None)
             output.metadata_source = data_elem.get("metadata_source", "")
             output.parent = data_elem.get("parent", None)
             output.label = util.xml_text( data_elem, "label" )
