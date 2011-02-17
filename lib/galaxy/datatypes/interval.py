@@ -71,7 +71,7 @@ class Interval( Tabular ):
                 else:
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
-                    dataset.blurb = "~%s regions" % util.commaify( str( self.estimate_file_lines(dataset) ) ) 
+                    dataset.blurb = "~%s regions" % util.commaify(util.roundify(str(self.estimate_file_lines(dataset))))
             else:
                 dataset.blurb = "%s regions" % util.commaify( str( line_count ) )
         else:

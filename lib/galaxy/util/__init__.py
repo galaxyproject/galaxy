@@ -298,7 +298,16 @@ def commaify(amount):
         return new
     else:
         return commaify(new)
-  
+
+def roundify(amount, sfs = 2):
+    """
+    Take a number in string form and truncate to 'sfs' significant figures.
+    """
+    if len(amount) <= sfs:
+        return amount
+    else:
+        return amount[0:sfs] + '0'*(len(amount) - sfs)
+
 def object_to_string( obj ):
     return binascii.hexlify( pickle.dumps( obj, 2 ) )
     

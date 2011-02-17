@@ -388,17 +388,13 @@ class Text( Data ):
         return 'text/plain'
     def set_meta( self, dataset, **kwd ):
         """
-        Set the number of lines of data in dataset,
-        skipping all blank lines and comments.
+        Set the number of lines of data in dataset.
         """
-        data_lines = 0
-        for line in file( dataset.file_name ):
-            line = line.strip()
-            if line and not line.startswith( '#' ):
-                data_lines += 1
-        dataset.metadata.data_lines = data_lines
+        dataset.metadata.data_lines = self.count_data_lines(dataset)
     def estimate_file_lines( self, dataset ):
-        # Perform a rough estimate by extrapolating number of lines from a small read.
+        """
+        Perform a rough estimate by extrapolating number of lines from a small read.
+        """
         sample_size = 1048576
         dataset_fh = open( dataset.file_name )
         dataset_read = dataset_fh.read(sample_size)
@@ -406,6 +402,17 @@ class Text( Data ):
         sample_lines = dataset_read.count('\n')
         est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         return est_lines
+    def count_data_lines(self, dataset):
+        """
+        Count the number of lines of data in dataset,
+        skipping all blank lines and comments.
+        """
+        data_lines = 0
+        for line in file( dataset.file_name ):
+            line = line.strip()
+            if line and not line.startswith( '#' ):
+                data_lines += 1
+        return data_lines
     def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
@@ -418,8 +425,13 @@ class Text( Data ):
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
                     # This can happen when the file is larger than max_optional_metadata_filesize.
-                    est_lines = self.estimate_file_lines(dataset)
-                    dataset.blurb = "~%s %s" % ( util.commaify(str(est_lines)), inflector.cond_plural(est_lines, "line") )
+                    if int(dataset.get_size()) <= 1048576:
+                        #Small dataset, recount all lines and reset peek afterward.
+                        dataset.metadata.data_lines = self.count_data_lines(dataset)
+                        self.set_peek(dataset)
+                    else:
+                        est_lines = self.estimate_file_lines(dataset)
+                        dataset.blurb = "~%s %s" % ( util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, "line") )
             else:
                 dataset.blurb = "%s %s" % util.commaify( str(line_count) ), inflector.cond_plural(line_count, "line")
         else:
