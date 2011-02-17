@@ -234,7 +234,7 @@ def __main__():
                 fout.write( "%s\n" % str( sequence[c:b] ) )
                 c = b
         else: # output_format == "interval"
-            if interpret_features:
+            if gff_format and interpret_features:
                 # TODO: need better GFF Reader to capture all information needed
                 # to produce this line.
                 meta_data = "\t".join( 
