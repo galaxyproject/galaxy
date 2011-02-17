@@ -370,7 +370,7 @@ For **postprocess**::
       <param name="suppressHeader" value="False" />
       <param name="indexing_repeatmasker" value="" />
       <param name="indexing_option_selector" value="default" />
-      <output name="output" ftype="sam" file="bfast_out1.sam" lines_diff="2" /><!-- MD:Z:11T38 instead of MD:Z:50 on one line-->
+      <output name="output" ftype="sam" file="bfast_out3.sam" lines_diff="2" /><!-- MD:Z:11T38 instead of MD:Z:50 on one line-->
     </test>
   </tests>
 </tool>
