@@ -1,5 +1,5 @@
 <tool id="gops_intersect_1" name="Intersect">
-  <description>the intervals of two datastes</description>
+  <description>the intervals of two datasets</description>
   <command interpreter="python">gops_intersect.py 
       $input1 $input2 $output
 
