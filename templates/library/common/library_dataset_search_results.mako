@@ -46,7 +46,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("class", "jquery.jstore")}
+    ${h.js("jstorage")}
     ${common_javascripts()}
 </%def>
 

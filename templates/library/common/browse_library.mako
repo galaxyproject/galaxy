@@ -48,7 +48,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("class", "jquery.jstore")}
+    ${h.js("json2", "jstorage")}
     ${common_javascripts()}
     ${self.grid_javascripts()}
 </%def>
@@ -56,11 +56,10 @@
 <%def name="grid_javascripts()">
     <script type="text/javascript">
         $(function() {
-            $.jStore.init("galaxy"); // Auto-select best storage
             var storage_id = "library-expand-state-${trans.security.encode_id(library.id)}";
             
             var restore_folder_state = function() {
-                var state = $.jStore.store(storage_id);
+                var state = $.jStorage.get(storage_id);
                 if (state) {
                     for (var id in state) {
                         if (state[id] === true) {
@@ -79,7 +78,7 @@
                     var folder = $(this);
                     state[folder.attr("id")] = folder.hasClass("expanded");
                 });
-                $.jStore.store(storage_id, state);
+                $.jStorage.set(storage_id, state);
             };
             
             $("#library-grid").each(function() {
@@ -131,10 +130,10 @@
                 // Initialize dict[parent_id] = rows_which_have_that_parent_id_as_parent_attr
                 var par_child_dict = {},
                     no_parent = [];
-                    
+                
                 $(this).find("tbody tr").each( function() {
-                    if (this.hasAttribute("parent")) {
-                        var parent = this.getAttribute("parent");
+                    if ( $(this).attr("parent")) {
+                        var parent = $(this).attr("parent");
                         if (par_child_dict[parent] !== undefined) {
                             par_child_dict[parent].push(this);
                         } else {
@@ -151,9 +150,7 @@
                });
             });
             
-            $.jStore.engineReady(function() {
-                restore_folder_state();
-            });
+            restore_folder_state();
         });
         
         // Looks for changes in dataset state using an async request. Keeps

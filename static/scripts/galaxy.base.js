@@ -424,7 +424,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
     var action = function() {
         // Load saved state and show as necessary
         try {
-            var stored = $.jStore.store("history_expand_state");
+            var stored = $.jStorage.get("history_expand_state");
             if (stored) {
                 for (var id in stored) {
                     $("#" + id + " div.historyItemBody" ).show();
@@ -432,7 +432,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
             }
         } catch(err) {
             // Something was wrong with values in storage, so clear storage
-            $.jStore.remove("history_expand_state");
+            $.jStorage.deleteKey("history_expand_state");
         }
 
         // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
@@ -455,10 +455,10 @@ function init_history_items(historywrapper, noinit, nochanges) {
                     
                     if (!nochanges) { // Ignore embedded item actions
                         // Save setting
-                        prefs = $.jStore.store("history_expand_state");
+                        prefs = $.jStorage.get("history_expand_state");
                         if (prefs) {
                             delete prefs[id];
-                            $.jStore.store("history_expand_state", prefs);
+                            $.jStorage.set("history_expand_state", prefs);
                         }
                     }
                 } else {
@@ -469,10 +469,10 @@ function init_history_items(historywrapper, noinit, nochanges) {
                     
                     if (!nochanges) {
                         // Save setting
-                        prefs = $.jStore.store("history_expand_state");
-                        if (prefs === undefined) { prefs = {}; }
+                        prefs = $.jStorage.get("history_expand_state");
+                        if (!prefs) { prefs = {}; }
                         prefs[id] = true;
-                        $.jStore.store("history_expand_state", prefs);
+                        $.jStorage.set("history_expand_state", prefs);
                     }
                 }
                 return false;
@@ -481,8 +481,8 @@ function init_history_items(historywrapper, noinit, nochanges) {
         
         // Generate 'collapse all' link
         $("#top-links > a.toggle").click( function() {
-            var prefs = $.jStore.store("history_expand_state");
-            if (prefs === undefined) { prefs = {}; }
+            var prefs = $.jStorage.get("history_expand_state");
+            if (!prefs) { prefs = {}; }
             $( "div.historyItemBody:visible" ).each( function() {
                 if ( $.browser.mozilla ) {
                     $(this).find( "pre.peek" ).css( "overflow", "hidden" );
@@ -492,19 +492,11 @@ function init_history_items(historywrapper, noinit, nochanges) {
                     delete prefs[$(this).parent().attr("id")];
                 }
             });
-            $.jStore.store("history_expand_state", prefs);
+            $.jStorage.set("history_expand_state", prefs);
         }).show();
     };
     
-    if (noinit) {
-        action();
-    } else {
-        // Load jStore for local storage
-        $.jStore.init("galaxy"); // Auto-select best storage
-        $.jStore.ready(function() {
-            action();
-        });
-    }
+    action();
 }
 
 function commatize( number ) {

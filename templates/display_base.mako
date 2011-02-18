@@ -32,7 +32,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstore", "jquery.autocomplete", "jquery.rating", "autocomplete_tagging", "trackster" )}
+    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "jstorage", "jquery.autocomplete", "jquery.rating", "autocomplete_tagging", "trackster" )}
 
     <script type="text/javascript">
         

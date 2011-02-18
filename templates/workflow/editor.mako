@@ -31,9 +31,8 @@
             "jquery.event.drop", 
             "jquery.event.hover",
             "jquery.form",
-            "class",
             "json2",
-            "jquery.jstore",
+            "jstorage",
             "galaxy.base",
             "galaxy.workflow_editor.canvas",
             "jquery.autocomplete",
@@ -177,9 +176,6 @@
         });
         %endif          
         
-        // Load jStore for local storage
-        $.jStore.init("galaxy"); // Auto-select best storage
-        
         // Canvas overview management
         canvas_manager = new CanvasManager( $("#canvas-viewport"), $("#overview") );
         
@@ -309,23 +305,21 @@
 
         }
         
-        $.jStore.ready(function() {
-            // On load, set the size to the pref stored in local storage if it exists
-            overview_size = $.jStore.store("overview-size");
-            if (overview_size !== undefined) {
-                $("#overview-border").css( {
-                    width: overview_size,
-                    height: overview_size
-                });
-            }
-            
-            // Show viewport on load unless pref says it's off
-            if ($.jStore.store("overview-off")) {
-                hide_overview();
-            } else {
-                show_overview();
-            }
-        });
+        // On load, set the size to the pref stored in local storage if it exists
+        overview_size = $.jStorage.get("overview-size");
+        if (overview_size !== undefined) {
+            $("#overview-border").css( {
+                width: overview_size,
+                height: overview_size
+            });
+        }
+        
+        // Show viewport on load unless pref says it's off
+        if ($.jStorage.get("overview-off")) {
+            hide_overview();
+        } else {
+            show_overview();
+        }
         
         // Stores the size of the overview into local storage when it's resized
         $("#overview-border").bind( "dragend", function( e, d ) {
@@ -333,17 +327,17 @@
             var opo = op.offset();
             var new_size = Math.max( op.width() - ( d.offsetX - opo.left ),
                                      op.height() - ( d.offsetY - opo.top ) );
-            $.jStore.store("overview-size", new_size + "px");
+            $.jStorage.set("overview-size", new_size + "px");
         });
         
         function show_overview() {
-            $.jStore.remove("overview-off");
+            $.jStorage.set("overview-off", false);
             $("#overview-border").css("right", "0px");
             $("#close-viewport").css("background-position", "0px 0px");
         }
         
         function hide_overview() {
-            $.jStore.store("overview-off", true);
+            $.jStorage.set("overview-off", true);
             $("#overview-border").css("right", "20000px");
             $("#close-viewport").css("background-position", "12px 0px");
         }
