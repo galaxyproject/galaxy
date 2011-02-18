@@ -1093,7 +1093,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                     request_widgets=request_widgets,
                                     displayable_sample_widgets=displayable_sample_widgets,
                                     sample_copy_select_field=sample_copy_select_field )
-    def __save_samples( self, trans, cntrller, request, samples, saving_new_samples=False, **kwd ):
+    def __save_samples( self, trans, cntrller, request, sample_widgets, saving_new_samples=False, **kwd ):
         # Here we handle saving all new samples added by the user as well as saving
         # changes to any subset of the request's samples.  A sample will not have an
         # associated SampleState until the request is submitted, at which time the
@@ -1109,7 +1109,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         else:
             redirect_action = 'edit_samples'
         # Check for duplicate sample names within the request
-        self.__validate_sample_names( trans, cntrller, request, samples, **kwd )
+        self.__validate_sample_names( trans, cntrller, request, sample_widgets, **kwd )
         if not saving_new_samples:
             library = None
             folder = None
@@ -1138,8 +1138,8 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 # TODO: make changes necessary to just send the samples...
                 encoded_selected_sample_ids = self.__get_encoded_selected_sample_ids( trans, request, **kwd )
                 # Make sure all samples have a unique bar_code if the state is changing
-                for sample_index in range( len( samples ) ):
-                    current_sample = samples[ sample_index ]
+                for sample_index in range( len( sample_widgets ) ):
+                    current_sample = sample_widgets[ sample_index ]
                     if current_sample is None:
                         # We have a None value because the user did not select this sample 
                         # on which to perform the action.
@@ -1163,15 +1163,15 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 library_id = params.get( 'sample_operation_library_id', 'none' )
                 folder_id = params.get( 'sample_operation_folder_id', 'none' )
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
-                for sample_index in range( len( samples ) ):
-                    current_sample = samples[ sample_index ]
+                for sample_index in range( len( sample_widgets ) ):
+                    current_sample = sample_widgets[ sample_index ]
                     if current_sample is None:
                         # We have a None value because the user did not select this sample 
                         # on which to perform the action.
                         continue
                     current_sample[ 'library' ] = library
                     current_sample[ 'folder' ] = folder
-            self.__update_samples( trans, cntrller, request, samples, **kwd )
+            self.__update_samples( trans, cntrller, request, sample_widgets, **kwd )
             message = 'Changes made to the samples have been saved. '
         else:
             # Saving a newly created sample.  The sample will not have an associated SampleState
@@ -1179,9 +1179,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             # set to the first SampleState configured for the request's RequestType configured
             # by the admin ( i.e., the sample's SampleState would be set to request.type.states[0] ).
             new_samples = []
-            for index in range( len( samples ) - len( request.samples ) ):
+            for index in range( len( sample_widgets ) - len( request.samples ) ):
                 sample_index = len( request.samples )
-                sample_widget = samples[ sample_index ]
+                sample_widget = sample_widgets[ sample_index ]
                 form_values = trans.model.FormValues( request.type.sample_form, sample_widget[ 'field_values' ] )
                 trans.sa_session.add( form_values )
                 trans.sa_session.flush()
