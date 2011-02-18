@@ -228,7 +228,7 @@ class UploadData( TwillTestCase ):
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( 'qualscores.qualsolid', hid=str( hda.hid ) )
-        self.check_history_for_string( '48 lines, format: <span class="qualsolid">qualsolid</span>, database: \? Info: uploaded file' )
+        self.check_history_for_string( '48 lines format: <span class="qualsolid">qualsolid</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'Change data type value="qualsolid" selected="yes">qualsolid' )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0090_upload_file( self ):
@@ -240,7 +240,7 @@ class UploadData( TwillTestCase ):
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( 'qualscores.qual454', hid=str( hda.hid ) )
-        self.check_history_for_string( '49 lines, format: <span class="qual454">qual454</span>, database: \?' )
+        self.check_history_for_string( '49 lines format: <span class="qual454">qual454</span>, database: \?' )
         self.check_metadata_for_string( 'Change data type value="qual454" selected="yes">qual454' )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0095_upload_file( self ):
@@ -357,7 +357,7 @@ class UploadData( TwillTestCase ):
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( 'shrimp_cs_test1.csfasta', hid=str( hda.hid ) )
-        self.check_history_for_string( '2,500 sequences, format: <span class="csfasta">csfasta</span>, <td>&gt;2_14_26_F3,-1282216.0</td>' )
+        self.check_history_for_string( '2,500 sequences format: <span class="csfasta">csfasta</span>, <td>&gt;2_14_26_F3,-1282216.0</td>' )
         self.check_metadata_for_string( 'value="shrimp_cs_test1.csfasta" value="\?" Change data type value="csfasta" selected="yes"' )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0140_upload_file( self ):
