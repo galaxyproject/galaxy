@@ -463,8 +463,18 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                         samples.append( sample )
                     else:
                         samples.append( None )
-                # The __save_samples method requires sample_widgets, not sample objects
-                sample_widgets = self.__get_sample_widgets( trans, request, samples, **kwd )
+                # The __save_samples method requires sample_widgets, not sample objects, so we'll get what we
+                # need by calling __get_sample_widgets().  However, we need to take care here because __get_sample_widgets()
+                # is used to populate the sample widget dicts from kwd, and the method assumes that a None object in the 
+                # received list of samples should be populated from the db.  Since we're just re-using the method here to
+                # change our list of samples into a list of sample widgets, we'll need to make sure to keep track of our
+                # None objects.
+                sample_widgets = [ obj for obj in samples ]
+                sample_widgets = self.__get_sample_widgets( trans, request, sample_widgets, **kwd )
+                # Replace each sample widget dict with a None object if necessary
+                for index, obj in enumerate( samples ):
+                    if obj is None:
+                        sample_widgets[ index ] = None
             else:
                 sample_widgets = displayable_sample_widgets
             return self.__save_samples( trans, cntrller, request, sample_widgets, saving_new_samples=False, **kwd )
@@ -1155,6 +1165,10 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 library, folder = self.__get_library_and_folder( trans, library_id, folder_id )
                 for sample_index in range( len( samples ) ):
                     current_sample = samples[ sample_index ]
+                    if current_sample is None:
+                        # We have a None value because the user did not select this sample 
+                        # on which to perform the action.
+                        continue
                     current_sample[ 'library' ] = library
                     current_sample[ 'folder' ] = folder
             self.__update_samples( trans, cntrller, request, samples, **kwd )
