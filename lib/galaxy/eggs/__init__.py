@@ -187,6 +187,10 @@ class Egg( object ):
             else:
                 raise EggNotFetchable( self )
         except pkg_resources.VersionConflict, e:
+            if e.args[1].key != e.args[0].key:
+                log.error( "One of Galaxy's managed eggs depends on something which is missing, this is almost certainly a bug in the egg distribution." )
+                log.error( 'Dependency "%s" requires "%s"' % ( e.args[0].project_name, str( e.args[1] ) ) )
+                raise
             # there's a conflicting egg on the path, remove it
             return self.version_conflict( e.args[0], e.args[1] )
     def version_conflict( self, conflict_dist, conflict_req ):

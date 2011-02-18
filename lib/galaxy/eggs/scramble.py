@@ -54,7 +54,6 @@ class ScrambleEgg( Egg ):
         self.copy_build_script()
         if not os.path.exists( ScrambleEgg.ez_setup ):
             URLRetriever().retrieve( ScrambleEgg.ez_setup_url, ScrambleEgg.ez_setup )
-        shutil.copyfile( ScrambleEgg.ez_setup, os.path.join( self.buildpath, 'ez_setup.py' ) )
         self.run_scramble_script()
         new_egg = os.path.join( self.buildpath, 'dist', os.path.basename( self.distribution.location ) )
         if not os.path.exists( new_egg ):
