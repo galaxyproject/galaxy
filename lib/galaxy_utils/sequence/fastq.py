@@ -314,8 +314,12 @@ class fastqAggregator( object ):
                 rval.append( fastq_format )
         return rval
     def get_ascii_range( self ):
+        if not self.ascii_values_used:
+            return None
         return ( min( self.ascii_values_used ), max( self.ascii_values_used ) )
     def get_decimal_range( self ):
+        if not self.nuc_index_quality:
+            return None
         decimal_values_used = []
         for scores in self.nuc_index_quality:
             decimal_values_used.extend( scores.keys() )
