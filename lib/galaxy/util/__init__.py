@@ -19,7 +19,7 @@ import pkg_resources
 
 pkg_resources.require( 'docutils' )
 import docutils.core
-from galaxy.util.docutils_ext.htmlfrag import Writer as HTMLFragWriter
+import docutils.writers.html4css1
 
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
@@ -252,7 +252,9 @@ def rst_to_html( s ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
                 log.warn( str )
-    return docutils.core.publish_string( s, writer=HTMLFragWriter(), settings_overrides=dict( warning_stream=FakeStream() ) )
+    return docutils.core.publish_string(s, 
+                writer=docutils.writers.html4css1.Writer(),
+                settings_overrides={"embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream()})
 
 def xml_text(root, name=None):
     """Returns the text inside an element"""
