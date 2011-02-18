@@ -349,10 +349,6 @@
 
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
         info_association, inherited = folder.get_info_association( restrict=True )
-
-        if not self.has_accessible_datasets:
-            # If we already know the library contains accessible datasets, no need to check again (and we may set it to False if we do).
-            self.has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, folder, trans.user, current_user_roles, search_downward=False )
     %>
     %if not root_folder and ( not folder.deleted or show_deleted ):
         <% encoded_id = trans.security.encode_id(folder.id) %>
@@ -489,7 +485,7 @@
         info_association, inherited = library.get_info_association()
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
 
-        self.has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles, search_downward=False )
+        self.has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles )
         has_accessible_folders = is_admin or trans.app.security_agent.has_accessible_folders( trans, library.root_folder, trans.user, current_user_roles )
         
         tracked_datasets = {}
