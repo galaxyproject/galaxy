@@ -1318,13 +1318,16 @@ var TiledTrack = function(filters, tool, parent_track) {
     if (track.display_modes !== undefined) {
         if (track.mode_div === undefined) {
             track.mode_div = $("<div class='right-float menubutton popup' />").appendTo(track.header_div);
-            var init_mode = track.display_modes[0];
+            var init_mode = (track.track_config && track.track_config.values['mode'] ? 
+                             track.track_config.values['mode'] : track.display_modes[0]);
             track.mode = init_mode;
             track.mode_div.text(init_mode);
         
             var change_mode = function(name) {
                 track.mode_div.text(name);
+                // TODO: is it necessary to store the mode in two places (.mode and track_config)?
                 track.mode = name;
+                track.track_config.values['mode'] = name;
                 track.tile_cache.clear();
                 track.draw();
             };
@@ -2046,9 +2049,33 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
 });
 
 var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, tool, parent_track) {
+    //
+    // Preinitialization: do things that need to be done before calling Track and TiledTrack
+    // initialization code.
+    //
     var track = this;
     this.track_type = "FeatureTrack";
     this.display_modes = ["Auto", "Dense", "Squish", "Pack"];
+    // Define and restore track configuration.
+    this.track_config = new TrackConfig( {
+        track: this,
+        params: [
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
+            { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
+            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        ], 
+        saved_values: prefs,
+        onchange: function() {
+            track.tile_cache.clear();
+            track.draw();
+        }
+    });
+    this.prefs = this.track_config.values;
+    
+    //
+    // Initialization.
+    //
     Track.call(this, name, view, view.viewport_container);
     TiledTrack.call(this, filters, tool, parent_track);
     
@@ -2068,23 +2095,6 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.data_cache = new DataCache(20);
     this.left_offset = 200;
-    
-    // Define track configuration
-    this.track_config = new TrackConfig( {
-        track: this,
-        params: [
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
-            { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
-            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true }
-        ], 
-        saved_values: prefs,
-        onchange: function() {
-            track.tile_cache.clear();
-            track.draw();
-        }
-    });
-
-    this.prefs = this.track_config.values;
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     get_data: function( low, high ) {
