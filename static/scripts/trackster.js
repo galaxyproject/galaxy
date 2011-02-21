@@ -24,6 +24,29 @@ CanvasRenderingContext2D.prototype.dashedLine = function(x1, y1, x2, y2, dashLen
     }
 };
 
+/**
+ * Draw an isosceles triangle that points down.
+ */
+CanvasRenderingContext2D.prototype.drawDownwardEquilateralTriangle = function(down_vertex_x, down_vertex_y, side_len) {
+    // Compute other two points of triangle.
+    var 
+        x1 = down_vertex_x - side_len/2,
+        x2 = down_vertex_x + side_len/2,
+        y = down_vertex_y - Math.sqrt( side_len*3/2 );
+        
+    // Draw and fill.
+    this.beginPath();
+    this.moveTo(x1, y);
+    this.lineTo(x2, y);
+    this.lineTo(down_vertex_x, down_vertex_y);
+    this.lineTo(x1, y);
+
+    this.strokeStyle = this.fillStyle;
+    this.fill();
+    this.stroke();
+    this.closePath();    
+}
+
 /** 
  * Make `element` sortable in parent by dragging `handle` (a selector)
  */
@@ -51,7 +74,49 @@ function sortable( element, handle ) {
     });
 }
 
+/**
+ * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
+ * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
+ * region overlaps the start (but not the end) of the second region.
+ */
+var NO_OVERLAP = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005;
+function compute_overlap(first_region, second_region) {
+    var 
+        first_start = first_region[0], first_end = first_region[1],
+        second_start = second_region[0], second_end = second_region[1],
+        overlap;
+    if (first_start < second_start) {
+        if (first_end < second_start) {
+            overlap = NO_OVERLAP;
+        }
+        else if (first_end <= second_end) {
+            overlap = OVERLAP_START;
+        }
+        else { // first_end > second_end
+            overlap = CONTAINS;
+        }
+    }
+    else { // first_start >= second_start
+        if (first_start > second_end) {
+            overlap = NO_OVERLAP;
+        }
+        else if (first_end <= second_end) {
+            overlap = CONTAINED_BY;
+        }
+        else {
+            overlap = OVERLAP_END;
+        }
+    }
+    
+    return overlap;
+}
 
+/**
+ * Returns true if there is any overlap between regions.
+ */
+function is_overlap(first_region, second_region) {
+    return (compute_overlap(first_region, second_region) != NO_OVERLAP);
+}
 
 /**
  * Init constants & functions used throughout trackster.
@@ -2192,11 +2257,18 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         return highest_slot;
     },
     // Right now this function is used only for rendering BAM reads.
-    rect_or_text: function( ctx, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center ) {
+    rect_or_text: function(ctx, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center) {
         ctx.textAlign = "center";
-        var draw_offset = 0, 
+        var 
+            tile_region = [tile_low, tile_high],
+            base_offset = 0, 
             seq_offset = 0,
             gap = Math.round(w_scale / 2);
+            
+        // Keep list of triangles that need to be drawn on top of initial drawing layer.
+        // TODO: Eventually, we'll probably want to keep an ordered list of items to draw and then draw all 
+        // items at once.
+        var draw_last = [];
         
         for (var cig_id = 0, len = cigar.length; cig_id < len; cig_id++) {
             var cig = cigar[cig_id],
@@ -2205,69 +2277,135 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             
             if (cig_op === "H" || cig_op === "S") {
                 // Go left if it clips
-                draw_offset -= cig_len;
+                base_offset -= cig_len;
             }
-            var seq_start = feature_start + draw_offset,
+            var seq_start = feature_start + base_offset,
                 s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
                 
             switch (cig_op) {
-                case "H": // Hard clipping
+                case "H": // Hard clipping.
                     // TODO: draw anything?
                     // Sequence not present, so do not increment seq_offset.
                     break;
-                case "S": // Soft clipping
-                case "M": // Match
-                case "=":
-                    var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
-                    if ( (this.mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
-                        ctx.fillStyle = this.prefs.block_color;
-                        ctx.fillRect(s_start + this.left_offset, y_center + 1, s_end - s_start, 9);
-                        ctx.fillStyle = CONNECTOR_COLOR;
-                        for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                            if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
-                                var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
-                                ctx.fillText(seq[c], c_start + this.left_offset + gap, y_center + 9);
+                case "S": // Soft clipping.
+                case "M": // Match.
+                case "=": // Equals.
+                    var seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region);
+                    if (seq_tile_overlap != NO_OVERLAP) {
+                        // Draw.
+                        var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
+                        if ( (this.mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                            ctx.fillStyle = this.prefs.block_color;
+                            ctx.fillRect(s_start + this.left_offset, y_center + 1, s_end - s_start, 9);
+                            ctx.fillStyle = CONNECTOR_COLOR;
+                            // TODO: this can be made much more efficient by computing the complete sequence
+                            // to draw and then drawing it.
+                            for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                                if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
+                                    var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
+                                    ctx.fillText(seq[c], c_start + this.left_offset + gap, y_center + 9);
+                                }
                             }
+                        } else {
+                            ctx.fillStyle = this.prefs.block_color;
+                            // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
+                            ctx.fillRect(s_start + this.left_offset, 
+                                         y_center + (this.mode != "Dense" ? 4 : 5), 
+                                         s_end - s_start, 
+                                         (this.mode != "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
                         }
-                    } else {
-                        ctx.fillStyle = this.prefs.block_color;
-                        // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                        ctx.fillRect(s_start + this.left_offset, 
-                                     y_center + (this.mode != "Dense" ? 4 : 5), 
-                                     s_end - s_start, 
-                                     (this.mode != "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
                     }
                     seq_offset += cig_len;
+                    base_offset += cig_len;
                     break;
-                case "N": // Skipped bases
+                case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
                     ctx.fillRect(s_start + this.left_offset, y_center + 5, s_end - s_start, 1);
                     //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
+                    // No change in seq_offset because sequence not used when skipping.
+                    base_offset += cig_len;
                     break;
-                case "D": // Deletion
+                case "D": // Deletion.
                     ctx.fillStyle = "red";
                     ctx.fillRect(s_start + this.left_offset, y_center + 4, s_end - s_start, 3);
+                    // TODO: is this true? No change in seq_offset because sequence not used when skipping.
+                    base_offset += cig_len;
                     break;
                 case "P": // TODO: No good way to draw insertions/padding right now, so ignore
                     // Sequences not present, so do not increment seq_offset.
                     break;
-                case "I":
+                case "I": // Insertion.
+                    //
+                    // Show insertion above, centered on insertion point.
+                    //
+                    
+                    // Check to see if sequence should be drawn at all by looking at the overlap between
+                    // the sequence region and the tile region.
+                    var seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region);
+                    if (seq_tile_overlap != NO_OVERLAP) {
+                        // Draw sequence.
+                        var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
+                        // X center is offset + start - <half_sequence_length>
+                        var x_center = this.left_offset + s_start - (s_end - s_start)/2;
+                        if ( (this.mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                            // Draw sequence container.
+                            ctx.fillStyle = "yellow";
+                            ctx.fillRect(x_center, y_center - 9, s_end - s_start, 9);
+                            draw_last[draw_last.length] = [x_center + (s_end - s_start)/2, y_center + 4, 5];
+                            ctx.fillStyle = CONNECTOR_COLOR;
+                            // Based on overlap b/t sequence and tile, get sequence to be drawn.
+                            switch(seq_tile_overlap) {
+                                case(OVERLAP_START):
+                                    seq = seq.slice(tile_low-seq_start);
+                                    break;
+                                case(OVERLAP_END):
+                                    seq = seq.slice(0, seq_start-tile_high);
+                                    break;
+                                case(CONTAINED_BY):
+                                    // All of sequence drawn.
+                                    break;
+                                case(CONTAINS):
+                                    seq = seq.slice(tile_low-seq_start, seq_start-tile_high);
+                                    break;
+                            }
+                            // Draw sequence.
+                            for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                                var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
+                                ctx.fillText(seq[c], c_start + this.left_offset + gap - (s_end - s_start)/2, y_center);
+                            }
+                        }
+                        else {
+                            // Draw block.
+                            ctx.fillStyle = "yellow";
+                            // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
+                            ctx.fillRect(x_center, y_center + (this.mode != "Dense" ? 2 : 5), 
+                                         s_end - s_start, (this.mode != "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
+                        }
+                    }                
                     seq_offset += cig_len;
+                    // No change to base offset because insertions are drawn above sequence/read.
                     break;
                 case "X":
                     // TODO: draw something?
                     seq_offset += cig_len;
                     break;
             }
-            draw_offset += cig_len;
+        }
+        
+        // Draw last items.
+        var item;
+        for (var i = 0; i < draw_last.length; i++) {
+            item = draw_last[i];
+            ctx.fillStyle = "yellow";
+            ctx.drawDownwardEquilateralTriangle(item[0], item[1], item[2]);
         }
     },
     draw_tile: function(resolution, tile_index, parent_element, w_scale) {
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = tile_high - tile_low;
-        // console.log("drawing " + tile_low + " to " + tile_high);
+        //console.log("drawing " + tile_low + " to " + tile_high);
 
         /*for (var k in this.data_cache.obj_cache) {
             var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
