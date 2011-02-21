@@ -285,7 +285,7 @@ class BamDataProvider( TracksDataProvider ):
         paired_pending = {}
         for read in data:
             if len(results) > MAX_VALS:
-                message = "Only the first %s pairs are being displayed." % MAX_VALS
+                message = "Only the first %s reads are being displayed." % MAX_VALS
                 break
             qname = read.qname
             seq = read.seq
