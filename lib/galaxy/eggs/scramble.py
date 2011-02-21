@@ -193,7 +193,7 @@ class ScrambleEgg( Egg ):
     def run_scramble_script( self ):
         log.warning( "%s(): Beginning build" % sys._getframe().f_code.co_name )
         # subprocessed to sterilize the env
-        cmd = "%s -ES %s" % ( self.python, "scramble.py" )
+        cmd = "%s %s" % ( self.python, "scramble.py" )
         log.debug( '%s(): Executing in %s:' % ( sys._getframe().f_code.co_name, self.buildpath ) )
         log.debug( '  %s' % cmd )
         p = subprocess.Popen( args = cmd, shell = True, cwd = self.buildpath )
