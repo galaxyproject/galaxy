@@ -379,8 +379,7 @@
       chrM_base needs to be the base location/name of the index files.
       -->
       <param name="genomeSource" value="indexed" />
-      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
-      <param name="index" value="/galaxy/data/equCab2_chrM/bowtie_index/chrM" />
+      <param name="index" value="equCab2chrM" />
       <param name="sPaired" value="single" />
       <param name="sInput1" ftype="fastqsanger" value="bowtie_in2.fastqsanger" />
       <param name="sSettingsType" value="preSet" />
@@ -448,7 +447,7 @@
       -->
       <param name="genomeSource" value="indexed" />
       <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
-      <param name="index" value="/galaxy/data/equCab2_chrM/bowtie_index/chrM" />
+      <param name="index" value="equCab2chrM" />
       <param name="sPaired" value="single" />
       <param name="sInput1" ftype="fastqsanger" value="bowtie_in2.fastqsanger" />
       <param name="sSettingsType" value="full" />

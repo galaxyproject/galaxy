@@ -396,8 +396,7 @@
       chrM_color needs to be the base location/name of the index files.
       -->
       <param name="genomeSource" value="indexed" />
-      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
-      <param name="index" value="/galaxy/data/equCab2_chrM/bowtie_index/cs/chrM" />
+      <param name="index" value="equCab2chrM" />
       <param name="sPaired" value="single" />
       <param name="sInput1" ftype="fastqcssanger" value="bowtie_in1.fastqcssanger" />
       <param name="sSettingsType" value="preSet" />
@@ -466,8 +465,7 @@
       chrM_base is the index files' location/base name. 
       -->
       <param name="genomeSource" value="indexed" />
-      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
-      <param name="index" value="/galaxy/data/equCab2_chrM/bowtie_index/cs/chrM" />
+      <param name="index" value="equCab2chrM" />
       <param name="sPaired" value="single" />
       <param name="sInput1" ftype="fastqcssanger" value="bowtie_in1.fastqcssanger" />
       <param name="sSettingsType" value="full" />
