@@ -110,17 +110,6 @@
         <output name="out_file1" file="kpca_out1.tabular"/>
         <output name="out_file2" file="kpca_out2.pdf"/>
     </test>
-    <test>
-        <param name="input1" value="iris.tabular"/>
-        <param name="var_cols" value="2,3,4"/>
-        <param name="kernel" value="besseldot"/>
-        <param name="features" value="1"/>
-        <param name="sigma" value="1"/>
-        <param name="order" value="1"/>
-        <param name="degree" value="1"/>
-        <output name="out_file1" file="kpca_out3.tabular"/>
-        <output name="out_file2" file="kpca_out4.pdf"/>
-    </test>
   </tests>
   <help>
 

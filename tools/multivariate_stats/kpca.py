@@ -97,7 +97,7 @@ elif kernel=="besseldot":
 elif kernel=="anovadot":
     pars = r.list(degree=float(options.degree),sigma=float(options.sigma))
 else:
-    pars = rlist()
+    pars = r.list()
     
 try:
     kpc = r.kpca(x=r.na_exclude(dat), kernel=kernel, kpar=pars, features=ncomps)

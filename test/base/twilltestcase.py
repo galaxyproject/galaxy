@@ -76,7 +76,7 @@ class TwillTestCase( unittest.TestCase ):
                         # PDF files contain creation dates, modification dates, ids and descriptions that change with each
                         # new file, so we need to handle these differences.  As long as the rest of the PDF file does
                         # not differ we're ok.
-                        valid_diff_strs = [ 'description', 'createdate', 'creationdate', 'moddate', 'id', 'producer', 'creator' ]
+                        valid_diff_strs = [ 'description', 'createdate', 'creationdate', 'moddate', 'id', 'producer', 'creator', 'extgstate', 'ais' ]
                         valid_diff = False
                         for line in diff_slice:
                             # Make sure to lower case strings before checking.
