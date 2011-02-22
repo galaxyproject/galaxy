@@ -29,6 +29,42 @@ $(function() {
             }
         });
     });
+    
+    // For drilldown parameters: add expand/collapse buttons and collapse initially-collapsed elements
+    $( 'li ul.toolParameterExpandableCollapsable' ).each( function() {
+        var el = $(this),
+            parent_li = el.parent('li'),
+            sub_ul = el.remove();
+        
+        parent_li.find( 'span' ).wrapInner( '<a/>' ).find( 'a' ).click( function() {
+            sub_ul.toggle();
+            (this).html( sub_ul.is(":hidden") ? '[+]' : '[-]' );
+        });
+        parent_li.append( sub_ul );
+    });
+    
+    $( 'ul ul.toolParameterExpandableCollapsable' ).each( function(i) {
+        var el = $(this);
+        if (el.attr("default_state") === "collapsed") {
+            el.hide();
+        }
+    });
+    
+    function checkUncheckAll( name, check ) {
+        $("input[name=" + name + "][type='checkbox']").attr('checked', !!check);
+    }
+    
+    // Inserts the Select All / Unselect All buttons for checkboxes
+    $("div.checkUncheckAllPlaceholder").each( function() {
+        var check_name = $(this).attr("checkbox_name");
+        select_link = $("<a class='action-button'></a>").text("Select All").click(function() {
+           checkUncheckAll(check_name, true);
+        });
+        unselect_link = $("<a class='action-button'></a>").text("Unselect All").click(function() {
+           checkUncheckAll(check_name, false);
+        });
+        $(this).append(select_link).append(" ").append(unselect_link);
+    });
 });
 
 %if not add_frame.debug:
@@ -36,13 +72,6 @@ $(function() {
         location.replace( '${h.url_for( controller='root', action='index', tool_id=tool.id )}' );
     }
 %endif
-function checkUncheckAll( name, check ) {
-    if (!check) {
-        $("input[name=" + name + "][type='checkbox']").attr('checked', false);
-    } else {
-        $("input[name=" + name + "][type='checkbox']").attr('checked', true );
-    }
-}
 
 </script>
 </head>
@@ -59,16 +88,16 @@ function checkUncheckAll( name, check ) {
                   <% repeat_state = tool_state[input.name] %>
                   %for i in range( len( repeat_state ) ):
                     <div class="repeat-group-item">
-                    <%
-                    if input.name in errors:
-                        rep_errors = errors[input.name][i]
-                    else:
-                        rep_errors = dict()
-                    index = repeat_state[i]['__index__']
-                    %>
-                    <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
-                    ${do_inputs( input.inputs, repeat_state[i], rep_errors, prefix + input.name + "_" + str(index) + "|", other_values )}
-                    <div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
+                        <%
+                        if input.name in errors:
+                            rep_errors = errors[input.name][i]
+                        else:
+                            rep_errors = dict()
+                        index = repeat_state[i]['__index__']
+                        %>
+                        <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
+                        ${do_inputs( input.inputs, repeat_state[i], rep_errors, prefix + input.name + "_" + str(index) + "|", other_values )}
+                        <div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
                     </div>
                     %if rep_errors.has_key( '__index__' ):
                         <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${rep_errors['__index__']}</span></div>
@@ -231,37 +260,4 @@ function checkUncheckAll( name, check ) {
         </div>
     %endif
 </body>
-
-<script type="text/javascript">
-##For Drilldown Parameters adds expand/collapse buttons and collapses collapsed elements
-   $( function() {
-       $( 'li > ul' ).each( function( i ) {
-           if ( $( this )[0].className == 'toolParameterExpandableCollapsable' )
-           {
-               var parent_li = $( this ).parent( 'li' );
-               var sub_ul = $( this ).remove();
-               parent_li.find( 'span' ).wrapInner( '<a/>' ).find( 'a' ).click( function() {
-                 sub_ul.toggle();
-                 $( this )[0].innerHTML = ( sub_ul[0].style.display=='none' ) ? '[+]' : '[-]';
-               });
-               parent_li.append( sub_ul );
-           }
-       });
-       $( 'ul ul' ).each( function(i) {
-           if ( $( this )[0].className == 'toolParameterExpandableCollapsable' && this.attributes.getNamedItem( 'default_state' ).value == 'collapsed' )
-           {
-               $( this ).hide();
-           }
-       });
-   });
-
-##inserts the Select All / Unselect All buttons for checkboxes
-$( function() {
-    $("div.checkUncheckAllPlaceholder").each( function( i ) {
-        $( this )[0].innerHTML = '<a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', true );"><span>Select All</span></a> <a class="action-button" onclick="checkUncheckAll( \'' + this.attributes.getNamedItem( 'checkbox_name' ).value + '\', false );"><span>Unselect All</span></a>';
-    });
-});
-
-</script>
-
 </html>
