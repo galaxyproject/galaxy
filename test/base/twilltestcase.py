@@ -543,12 +543,15 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( 'change' )
         self.check_page_for_string( 'Changed the type of dataset' )
         self.home()
-    def copy_history_item( self, source_dataset_ids='', target_history_ids=[], all_target_history_ids=[],
+    def copy_history_item( self, source_dataset_id=None, target_history_id=None, all_target_history_ids=[],
                            deleted_history_ids=[] ):
-        """Copy 1 or more history_dataset_associations to 1 or more histories"""
+        """
+        Copy 1 history_dataset_association to 1 history (Limited by twill since it doesn't support multiple
+        field names, such as checkboxes
+        """
         self.home()
-        self.visit_url( "%s/dataset/copy_datasets?source_dataset_ids=%s" % ( self.url, source_dataset_ids ) )
-        self.check_page_for_string( 'Source History Items' )
+        self.visit_url( "%s/dataset/copy_datasets?source_dataset_ids=%s" % ( self.url, source_dataset_id ) )
+        self.check_page_for_string( 'Source History:' )
         # Make sure all of users active histories are displayed
         for id in all_target_history_ids:
             self.check_page_for_string( id )
@@ -559,12 +562,10 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError, "deleted history id %d displayed in list of target histories" % id
             except:
                 pass
-        # Check each history to which we want to copy the item
-        for id in target_history_ids:
-            tc.fv( '1', 'target_history_ids', id )
+        
+        tc.fv( '1', 'target_history_id', target_history_id )
         tc.submit( 'do_copy' )
-        no_source_ids = len( source_dataset_ids.split( ',' ) )
-        check_str = '%d datasets copied to %d histories.' % ( no_source_ids, len( target_history_ids ) )
+        check_str = '1 dataset copied to 1 history'
         self.check_page_for_string( check_str )
         self.home()
     def get_hids_in_history( self ):

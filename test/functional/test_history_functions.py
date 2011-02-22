@@ -726,16 +726,16 @@ class TestHistory( TwillTestCase ):
                          .first()
         assert hda1 is not None, "Problem retrieving hda1 from database"
         # We'll just test copying 1 hda
-        source_dataset_ids=str( hda1.id )
+        source_dataset_ids=self.security.encode_id( hda1.id )
         # The valid list of target histories is only the user's active histories
-        all_target_history_ids = [ str( hda.id ) for hda in admin_user.active_histories ]
+        all_target_history_ids = [ self.security.encode_id( hda.id ) for hda in admin_user.active_histories ]
         # Since history1 and history2 have been deleted, they should not be displayed in the list of target histories
         # on the copy_view.mako form
-        deleted_history_ids = [ str( history1.id ), str( history2.id ) ]
+        deleted_history_ids = [ self.security.encode_id( history1.id ), self.security.encode_id( history2.id ) ]
         # Test copying to the current history
-        target_history_ids=[ str( history6.id ) ]
-        self.copy_history_item( source_dataset_ids=source_dataset_ids,
-                                target_history_ids=target_history_ids,
+        target_history_id = self.security.encode_id( history6.id )
+        self.copy_history_item( source_dataset_id=source_dataset_ids,
+                                target_history_id=target_history_id,
                                 all_target_history_ids=all_target_history_ids,
                                 deleted_history_ids=deleted_history_ids )
         sa_session.refresh( history6 )
@@ -751,12 +751,12 @@ class TestHistory( TwillTestCase ):
         assert history7 is not None, "Problem retrieving history7 from database"
         # Switch back to our history from which we want to copy
         self.switch_history( id=self.security.encode_id( history6.id ), name=history6.name )
-        target_history_ids=[ str( history7.id ) ]
-        all_target_history_ids = [ str( hda.id ) for hda in admin_user.active_histories ]
+        target_history_id = self.security.encode_id( history7.id )
+        all_target_history_ids = [ self.security.encode_id( hda.id ) for hda in admin_user.active_histories ]
         # Test copying to the a history that is not the current history
-        target_history_ids=[ str( history7.id ) ]
-        self.copy_history_item( source_dataset_ids=source_dataset_ids,
-                                target_history_ids=target_history_ids,
+        target_history_ids=[ self.security.encode_id( history7.id ) ]
+        self.copy_history_item( source_dataset_id=source_dataset_ids,
+                                target_history_id=target_history_id,
                                 all_target_history_ids=all_target_history_ids,
                                 deleted_history_ids=deleted_history_ids )
         # Switch to the history to which we copied

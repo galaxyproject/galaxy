@@ -79,16 +79,19 @@ ${h.js( "jquery", "galaxy.base" )}
             <div class="toolFormTitle">Destination History:</div>
             <div class="toolFormBody">
                 <div class="form-row" id="single-destination">
-                    <select id="single-dest-select" name="target_history_ids">
+                    <select id="single-dest-select" name="target_history_id">
                         <option value=""></option>
                         %for i, hist in enumerate(target_histories):
                             <%
                                 encoded_id = trans.security.encode_id(hist.id)
                                 source_history_text = ""
+                                selected = ""
                                 if hist == source_history:
                                     source_history_text = " (source history)"
+                                if encoded_id == target_history_id:
+                                    selected = " selected='selected'"
                             %>
-                            <option value="${encoded_id}">${i + 1}: ${h.truncate(hist.name, 30)}${source_history_text}</option>
+                            <option value="${encoded_id}"${selected}>${i + 1}: ${h.truncate(hist.name, 30)}${source_history_text}</option>
                         %endfor
                     </select><br /><br />
                     <a style="margin-left: 10px;" href="javascript:void(0);" id="select-multiple">Choose multiple histories</a>

@@ -753,7 +753,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         return trans.fill_template( "show_params.mako", history=trans.get_history(), hda=hda, tool=tool, params_objects=params_objects )
         
     @web.expose
-    def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_ids="", new_history_name="", do_copy=False, **kwd ):
+    def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
         params = util.Params( kwd )
         user = trans.get_user()
         if source_history is not None:
@@ -763,14 +763,16 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         refresh_frames = []
         if source_dataset_ids:
             if not isinstance( source_dataset_ids, list ):
-                source_dataset_ids = source_dataset_ids.split( "," )
-            source_dataset_ids = map( trans.security.decode_id, source_dataset_ids )
+                source_dataset_ids = source_dataset_ids.split(",")
+            source_dataset_ids = set(map( trans.security.decode_id, source_dataset_ids ))
         else:
             source_dataset_ids = []
-        if target_history_ids:
+        if target_history_id:
+            target_history_ids = [ trans.security.decode_id(target_history_id) ]
+        elif target_history_ids:
             if not isinstance( target_history_ids, list ):
-                target_history_ids = target_history_ids.split( "," )
-            target_history_ids = [ trans.security.decode_id(h) for h in target_history_ids if h ]
+                target_history_ids = target_history_ids.split(",")
+            target_history_ids = set([ trans.security.decode_id(h) for h in target_history_ids if h ])
         else:
             target_history_ids = []
         done_msg = error_msg = ""
@@ -818,6 +820,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                                     source_history = history,
                                     current_history = trans.get_history(),
                                     source_dataset_ids = source_dataset_ids,
+                                    target_history_id = target_history_id,
                                     target_history_ids = target_history_ids,
                                     source_datasets = source_datasets,
                                     target_histories = target_histories,
