@@ -1,0 +1,80 @@
+<tool id="vcf_intersect" name="Intersect VCF Files" version="1.0.0">
+  <description>Generate the intersection of two VCF files</description>
+  <command interpreter="python">
+    vcfPytools.py
+      intersect 
+      --in=$input1
+      #if $format_type.format == "vcf"
+      --in=$input2
+      #elif $format_type.format == "bed"
+      --bed=$input2
+      #end if
+      #if $priority_file.value == "first_file"
+      --priority-file=$input1
+      #elif $priority_file.value == "second_file"
+      --priority-file=$input2
+      #end if
+      --out=$output1
+  </command>
+  <inputs>
+    <param name="input1" label="First VCF file" type="data" format="vcf" />
+    <conditional name="format_type">
+      <param name="format" type="select" label="intersect with file of format">
+        <option value="vcf">VCF</option>
+        <option value="bed">BED</option>
+      </param>
+      <when value="vcf">
+        <param name="input2" label="second VCF file" type="data" format="vcf"/>
+      </when>
+      <when value="bed">
+        <param name="input2" label="second BED file" type="data" format="bed"/>
+      </when>
+    </conditional>
+    <param name="priority_file" type="select" label="Priority file" help="If the priority file argument is set (this must be equal to one of the input vcf files), then the record written to the output will come from this file.  If this argument is not set, the record with the highest quality is written out.">
+      <option value="none">None</option>
+      <option value="first_file">First file</option>
+      <option value="second_file">Second file</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output1" label="${tool.name} on ${on_string}" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="1.vcf" />
+      <param name="format" value="vcf" />
+      <param name="input2" value="2.vcf" />
+      <param name="priority_file" value="none" />
+      <output name="output" file="1_2_intersect_priority_0.vcf" lines_diff="2" ftype="vcf" />
+    </test>
+    <test>
+      <param name="input1" value="1.vcf" />
+      <param name="format" value="vcf" />
+      <param name="input2" value="2.vcf" />
+      <param name="priority_file" value="first_file" />
+      <output name="output" file="1_2_intersect_priority_1.vcf" lines_diff="2" ftype="vcf" />
+    </test>
+    <test>
+      <param name="input1" value="1.vcf" />
+      <param name="format" value="vcf" />
+      <param name="input2" value="2.vcf" />
+      <param name="priority_file" value="second_file" />
+      <output name="output" file="1_2_intersect_priority_2.vcf" lines_diff="2" ftype="vcf" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool uses vcfPytools_' intersect command to generate the intersection of two VCF files
+
+.. _vcfPytools: https://github.com/AlistairNWard/vcfPytools
+
+Two input files are required as input and the intersection of these two files is generated and sent to the output.  These files must be sorted by genomic coordinate to function correctly, although the reference sequence order is no important.
+
+The intersection can be calculated on two VCF files or a VCF and a BED file.
+
+If the priority file argument is set (this must be equal to one of the input VCF files), then the record written to the output will come from this file.  If this argument is not set, the record with the highest quality is written out.
+
+  </help>
+</tool>

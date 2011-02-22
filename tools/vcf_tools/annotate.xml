@@ -1,0 +1,62 @@
+<tool id="vcf_annotate" name="Annotate a VCF file" version="1.0.0">
+  <description></description>
+  <command interpreter="python">
+    vcfPytools.py
+      annotate 
+      --in=$input1
+      #if $annotation_options.annotate == "dbsnp"
+      --dbsnp=$input2
+      #elif $annotation_options.annotate == "hapmap"
+      --hapmap=$input2
+      #end if
+      --out=$output1
+  </command>
+  <inputs>
+    <param name="input1" label="VCF file to annotate" type="data" format="vcf" />
+    <conditional name="annotation_options">
+      <param name="annotate" type="select" label="annotation source">
+        <option value="dbsnp">dbSNP vcf file</option>
+        <option value="hapmap">hapmap vcf file</option>
+      </param>
+      <when value="dbsnp">
+        <param name="input2" label="dbSNP vcf file" type="data" format="vcf" help="This option will annotate the vcf file with dbSNP rsid values.  The input dbSNP file must also be in vcf v4.0 format.  Only dbSNP entries with VC=SNP are included."/>
+      </when>
+      <when value="hapmap">
+        <param name="input2" label="hapmap vcf file" type="data" format="vcf" help="This option will annotate the vcf file info string to include HM3 if the record is included hapmap.  If the ref/alt values do not match the hapmap file, the info string will be populated with HM3A."/>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output1" label="${tool.name} on ${on_string}" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="test.small.vcf" />
+      <param name="annotate" value="dbsnp" />
+      <param name="input2" value="dbsnp.small.vcf" />
+      <output name="output" file="test_annotated_dbsnp.vcf" lines_diff="6" ftype="vcf" />
+    </test>
+    <test>
+      <param name="input1" value="test.small.vcf" />
+      <param name="annotate" value="hapmap" />
+      <param name="input2" value="hapmap.small.vcf" />
+      <output name="output" file="test_annotated_hapmap.vcf" lines_diff="6" ftype="vcf" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool uses vcfPytools_' annotate command annotate a VCF file
+
+.. _vcfPytools: https://github.com/AlistairNWard/vcfPytools
+
+Currently, either a hapmap or a dbsnp file should be provided, not both.
+
+dbSNP option will annotate the VCF file with dbSNP rsid values.  The input dbSNP file must also be in VCF v4.0 format.  Only dbSNP entries with VC=SNP are included.
+
+hapmap option will annotate the VCF file info string to include HM3 if the record is included hapmap.  If the ref/alt values do not match the hapmap file, the info string will be populated with HM3A.
+
+
+  </help>
+</tool>
