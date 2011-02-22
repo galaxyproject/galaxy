@@ -70,28 +70,26 @@
                 $( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" )
                 var last_expanded = null;
                 $( "div.toolSectionTitle" ).each( function() { 
-                   var body = $(this).next( "div.toolSectionBody" );
-                   $(this).click( function() {
-                       if ( body.is( ":hidden" ) ) {
+                    var body = $(this).next( "div.toolSectionBody" );
+                    $(this).click( function() {
+                        if ( body.is( ":hidden" ) ) {
                             if ( last_expanded ) {
                                 last_expanded.slideUp( "fast" );
                             }
                             last_expanded = body;
                             body.slideDown( "fast" );
-                       }
-                       else {
-                           body.slideUp( "fast" );
-                           last_expanded = null;
-                       }
-                       return false;
-                   });
+                        } else {
+                            body.slideUp( "fast" );
+                            last_expanded = null;
+                        }
+                        return false;
+                    });
                 });
                 
                 // Log clicks on tools.
-                $("div.toolTitle > a").click( function() 
-                {
+                $("div.toolTitle > a").click( function() {
                     var tool_title = $(this).attr('id').split("-")[1];
-                    var section_title = $(this).parents("div.toolSectionWrapper").find("div.toolSectionTitle").text().trim();
+                    var section_title = $.trim( $(this).parents("div.toolSectionWrapper").find("div.toolSectionTitle").text() );
                     var search_active = $(this).parents("div.toolTitle").hasClass("search_match");
                     
                     // Log action.
@@ -106,18 +104,17 @@
                 });
                 
                 // Init searching.
-                $("#tool-search-query").click( function (){
+                $("#tool-search-query").click( function () {
                     $(this).focus();
                     $(this).select();
-                })
-                .keyup( function () {
+                }).keyup( function () {
                     // Remove italics.
                     $(this).css("font-style", "normal");
                     
                     // Don't update if same value as last time
                     if ( this.value.length < 3 ) {
                         reset_tool_search(false);
-                    } else if ( this.value != this.lastValue ) {
+                    } else if ( this.value !== this.lastValue ) {
                         // Add class to denote that searching is active.
                         $(this).addClass("search_active");
                         // input.addClass(config.loadingClass);
@@ -138,7 +135,7 @@
                                 $(".toolSectionWrapper").hide();
                                 // This hides all tools but not workflows link (which is in a .toolTitle div).
                                 $(".toolSectionWrapper").find(".toolTitle").hide();
-                                if ( data.length != 0 ) {
+                                if ( data.length !== 0 ) {
                                     // Map tool ids to element ids and join them.
                                     var s = $.map( data, function( n, i ) { return ".link-" + n.toLowerCase().replace(/[^a-z0-9_]/g,'_'); } ).join( ", " );
 
@@ -146,14 +143,13 @@
                                     $(s).each( function() {
                                         // Add class to denote match.
                                         $(this).parent().addClass("search_match");
-                                        if ($(this).parents("#recently_used_wrapper").length == 0)
+                                        if ($(this).parents("#recently_used_wrapper").length === 0) {
                                             // Default behavior.
                                             $(this).parent().show().parent().parent().show().parent().show();
-                                        else if ($(this).parents(".user_pref_visible").length != 0)
+                                        } else if ($(this).parents(".user_pref_visible").length !== 0) {
                                             // RU menu is visible, so filter it as normal.
                                             $(this).parent().show().parent().parent().show().parent().show();
-                                        else 
-                                        {
+                                        } else  {
                                             // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
                                             // aleady in place.
                                             $(this).parent().show();
@@ -162,22 +158,21 @@
                                     
                                     // Hide labels that have no visible children.
                                     $(".toolPanelLabel").each( function() {
-                                       var this_label = $(this);                                   
-                                       var next = this_label.next();
-                                       var no_visible_tools = true;
-                                       // Look through tools following label and, if none are visible, hide label.
-                                       while (next.length != 0 && next.hasClass("toolTitle"))
-                                       {
-                                           if (next.is(":visible"))
-                                           {
-                                               no_visible_tools = false;
-                                               break;
-                                           }
-                                           else
-                                               next = next.next();
+                                        var this_label = $(this);                                   
+                                        var next = this_label.next();
+                                        var no_visible_tools = true;
+                                        // Look through tools following label and, if none are visible, hide label.
+                                        while (next.length !== 0 && next.hasClass("toolTitle")) {
+                                            if (next.is(":visible")) {
+                                                no_visible_tools = false;
+                                                break;
+                                            } else {
+                                                next = next.next();
+                                            }
                                         }
-                                        if (no_visible_tools)
+                                        if (no_visible_tools) {
                                             this_label.hide();
+                                        }
                                     });
                                 } else {
                                     $("#search-no-results").show();
@@ -191,8 +186,7 @@
             });            
 
             // Update recently used tools menu. Function inserts a new item and removes the last item.
-            function update_recently_used()
-            {
+            function update_recently_used() {
                 $.ajax({
                     url: "${h.url_for( controller='/user', action='get_most_recently_used_tool_async' )}",
                     dataType: 'json',
@@ -208,15 +202,13 @@
                         recently_used_elts.each( function(index) {
                             var anchor = $(this).find("a");
                             var tool_id = anchor.attr("id").split("-")[1];
-                            if (tool_id == new_tool_info.id)
-                            {
+                            if (tool_id === new_tool_info.id) {
                                 found_in_list = true;
                     
                                 // If tool is first, do nothing.
-                                if (index == 0)
+                                if (index === 0) {
                                     return;
-                                else 
-                                {
+                                } else {
                                     // Tool not first; reorder.
                                     $(this).remove();
                                     first_elt.before($(this));
@@ -225,8 +217,7 @@
                         });
             
                         // If tool not in list, create new element, remove last element, and put new element first in list.
-                        if (!found_in_list)
-                        {
+                        if (!found_in_list) {
                             new_tool_elt = $("<div class='toolTitle'> \
                                                 <a id='link-" + new_tool_info.id + "' href='" + new_tool_info.link + "' target='" + 
                                                 new_tool_info.target + "' minsizehint='" + new_tool_info.minsizehint + "'>" +
