@@ -59,7 +59,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="gff" name="out_file1" />
+    <data format="input" name="out_file1" metadata_source="input1"/>
   </outputs>
   <tests>
     <test>
