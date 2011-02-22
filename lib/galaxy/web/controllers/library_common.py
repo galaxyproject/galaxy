@@ -1585,6 +1585,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                         message += '(%s)' % ldda.name
                     message += '.  '
                 if valid_ldda_ids:
+                    encoded_ldda_ids = [ trans.security.encode_id( ldda_id ) for ldda_id in valid_ldda_ids ]
                     folder_id = trans.security.encode_id( valid_lddas[0].library_dataset.folder.id )
                     trans.response.send_redirect( web.url_for( controller='library_common',
                                                                action='ldda_permissions',
@@ -1592,7 +1593,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                                                use_panels=use_panels,
                                                                library_id=library_id,
                                                                folder_id=folder_id,
-                                                               id=",".join( valid_ldda_ids ),
+                                                               id=",".join( encoded_ldda_ids ),
                                                                show_deleted=show_deleted,
                                                                message=util.sanitize_text( message ),
                                                                status=status ) )
