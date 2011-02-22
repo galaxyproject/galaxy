@@ -1,4 +1,5 @@
 import sys, new
+import os.path
 from galaxy.tools.parameters import grouping
 from galaxy.tools.parameters import basic
 from base.twilltestcase import TwillTestCase
@@ -58,8 +59,9 @@ class ToolTestCase( TwillTestCase ):
             if value:
                 for end in [ '.zip', '.gz' ]:
                     if value.endswith( end ):
-                        value = value.rstrip( end )
+                        value = value[ :-len( end ) ]
                         break
+                value = os.path.basename( value ) #if uploading a file in a path other than root of test-data
             all_inputs[ name ] = value
         # See if we have a grouping.Repeat element
         repeat_name = None
