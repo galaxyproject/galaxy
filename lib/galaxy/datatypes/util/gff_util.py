@@ -3,6 +3,7 @@ Provides utilities for working with GFF files.
 """
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.intervals.io import *
+from bx.tabular.io import Header, Comment
 
 class GFFInterval( GenomicInterval ):
     """ 
@@ -148,6 +149,12 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                     self.seed_interval = GenomicIntervalReader.next( self )
                 except ParseError, e:
                     handle_parse_error( e )
+                    
+        # If header or comment, clear seed interval and return it.
+        if isinstance( self.seed_interval, ( Header, Comment ) ):
+            return_val = self.seed_interval
+            self.seed_interval = None
+            return return_val
     
         # Initialize feature name from seed.
         feature_group = self.seed_interval.attributes.get( 'group', None ) # For GFF
