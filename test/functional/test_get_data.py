@@ -389,7 +389,7 @@ class UploadData( TwillTestCase ):
         self.upload_file( '1.bam' )
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
-        self.verify_dataset_correctness( '1.bam', hid=str( hda.hid ) )
+        self.verify_dataset_correctness( '1.bam', hid=str( hda.hid ), attributes={ 'ftype' : 'bam' } )
         self.check_history_for_string( '<span class="bam">bam</span>' )
         # Make sure the Bam index was created
         assert hda.metadata.bam_index is not None, "Bam index was not correctly created for 1.bam"

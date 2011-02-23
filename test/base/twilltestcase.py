@@ -1,7 +1,7 @@
 import pkg_resources
 pkg_resources.require( "twill==0.9" )
 
-import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil
+import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil, subprocess
 from itertools import *
 
 import twill
@@ -633,6 +633,9 @@ class TwillTestCase( unittest.TestCase ):
                 try:
                     if attributes is None:
                         attributes = {}
+                    if attributes.get( 'ftype', None ) == 'bam':
+                        local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
+                        local_name = local_fh.name
                     compare = attributes.get( 'compare', 'diff' )
                     extra_files = attributes.get( 'extra_files', None )
                     if compare == 'diff':
@@ -657,6 +660,17 @@ class TwillTestCase( unittest.TestCase ):
                     raise AssertionError( errmsg )
             finally:
                 os.remove( temp_name )
+
+    def _bam_to_sam( self, local_name, temp_name ):
+        temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
+        fd, temp_temp = tempfile.mkstemp( suffix='.sam', prefix='history_bam_converted_to_sam_' )
+        os.close( fd )
+        p = subprocess.Popen( args="samtools view %s -o %s" % ( local_name, temp_local.name ), shell=True )
+        assert not p.wait(), 'Converting local (test-data) bam to sam failed'
+        p = subprocess.Popen( args="samtools view %s -o %s" % ( temp_name, temp_temp ), shell=True )
+        assert not p.wait(), 'Converting history bam to sam failed'
+        os.remove( temp_name )
+        return temp_local, temp_temp
 
     def verify_extra_files_content( self, extra_files, hda_id ):
         files_list = []
