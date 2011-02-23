@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<tool id="mosaik_wrapper" name="Map with Mosaik" version="1.1.0021">
+  <description/>
+  <requirements><requirement type="package">mosaik</requirement></requirements>
+  <command>
+    #set $processors = '-p 4'
+    #set $lm = ''
+    #if $paired.kind == 'single':
+        #set $mfl = ''
+        #set $ls  = ''
+    #else:
+        #set $ls = '-ls $mfl'
+    #end if
+    MosaikBuild -fr
+    #if $genomeSource.refGenomeSource == 'indexed':
+        ##$genomeSource.indexReference
+    ${ filter( lambda x: str( x[0] ) == str( $genomeSource.indexReference ), $__app__.tool_data_tables[ 'mosaik_indexes' ].get_fields() )[0][-1] }
+    #else:
+        $genomeSource.historyReference
+    #end if
+        -oa mosaik_ref_file;
+    MosaikBuild  -q $reads $mfl -st $st -out mosaik_reads_file;
+    MosaikAligner -ia mosaik_ref_file -in mosaik_reads_file -out mosaik_aligned_file $ls -mm $mm -mhp $mhp -act $act -bw $bw $processors $lm -hs 15;
+    MosaikText -in mosaik_aligned_file -$outFormat sam_bam_file;
+    #if str($outFormat) == 'bam':
+        samtools sort sam_bam_file sorted_bam;
+        mv sorted_bam.bam $output
+    #else:
+        gunzip sam_bam_file.gz;
+        mv sam_bam_file $output
+    #end if
+  </command>
+  <inputs>
+    <conditional name="genomeSource">
+      <param name="refGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?">
+        <option value="indexed">Use a built-in index</option>
+        <option value="history">Use one from the history</option>
+      </param>
+      <when value="indexed">
+        <param name="indexReference" type="select" label="Select a reference genome">
+          <options from_data_table="mosaik_indexes">
+            <filter type="sort_by" column="3"/>
+            <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param format="fasta" name="historyReference" type="data" label="Select a reference from history"/>
+      </when>
+    </conditional>
+    <param format="fastq" name="reads" type="data" label="Fastq Reads File"/>
+    <param name="outFormat" type="select" label="Output Format">
+      <option value="sam">Sam</option>
+      <option value="bam">Bam</option>
+    </param>
+    <param name="st" type="select" label="Sequencing Technology Used">
+      <option value="454">454</option>
+      <option value="illumina">Illumina</option>
+      <option value="solid">Solid</option>
+      <option value="sanger">Sanger</option>
+      <option value="helicos">Helicos</option>
+    </param>
+    <conditional name="paired">
+      <param name="kind" type="select" label="Is this library mate-paired?">
+        <option value="single">Single-end</option>
+        <option value="paired">Paired-end</option>
+      </param>
+      <when value="single"/>
+      <when value="paired">
+        <param name="mfl" type="integer" value="200" label="Insert Size" help="the length between the paired reads"/>	
+        <param name="ls" type="integer" value="50" label="Realignment Window" help="Window size to realign mate pairs that are out of position. Large values slow down performance"/>
+      </when>
+    </conditional>
+    <param name="mm" size="5" type="integer" value="6" label="Mismatches allowed" help="mismatches allowed per sequence"/>
+    <param name="act" size="5" type="integer" value="35" label="Alignment Candidate Threshold" help="determines which hash regions will be aligned with Smith Waterman"/>
+    <param name="bw" size="5" type="integer" value="19" label="Smith Watermin Bandwidth"/>
+    <param name="mhp" size="5" type="integer" value="100" label="Maximum # Of Positions Stored Per Seed" help="number of places in the reference the aligner will try to place a particular hash"/>
+  </inputs>
+  <outputs>
+    <data format="sam" name="output">
+       <change_format>
+           <when input="outFormat" value="bam" format="bam"/>
+       </change_format>
+   </data>
+  </outputs>
+  <tests>
+    <test>
+    </test>
+  </tests>
+  <help>
+This tool uses Mosaik to align reads to a reference sequence.
+  </help>
+</tool>

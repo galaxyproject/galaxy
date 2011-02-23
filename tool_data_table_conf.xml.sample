@@ -80,4 +80,9 @@
         <columns>value, name, path</columns>
         <file path="tool-data/ccat_configurations.loc" />
     </table>
+    <!-- Location of Mosaik files -->
+    <table name="mosaik_indexes" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/mosaik_index.loc" />
+    </table>
 </tables>

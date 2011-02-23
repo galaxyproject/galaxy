@@ -1,0 +1,19 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of Mosaik indexed sequences data files. You will need
+#to create these data files and then create a mosaik_index.loc file 
+#similar to this one (store it in this directory) that points to 
+#the directories in which those files are stored. The mosaik_index.loc 
+#file has this format (longer white space is the TAB character):
+#
+#<unique_build_id>   <dbkey>   <display_name>   <fasta_file_path>
+#
+#So, for example, if you had hg18 indexed and stored in 
+#/depot/data2/galaxy/mosaik/hg18/
+#then the mosaik_index.loc entry would look like this:
+#
+#hg18   hg18   hg18 Pretty   /depot/data2/galaxy/mosaik/hg18/hg18.fa
+#
+#and your /depot/data2/galaxy/mosaik/hg18/ directory
+#would contain the following files:
+#TODO handle mosaik jump tables.
+#

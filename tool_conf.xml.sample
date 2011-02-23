@@ -291,6 +291,7 @@
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="sr_mapping/PerM.xml" />
    <tool file="sr_mapping/srma_wrapper.xml" />
+   <tool file="sr_mapping/mosaik.xml"/>
   </section>
   <section name="NGS: Indel Analysis" id="indel_analysis">
    <tool file="indels/sam_indel_filter.xml" />
@@ -369,6 +370,7 @@
     <tool file="human_genome_variation/beam.xml" />
     <tool file="human_genome_variation/lps.xml" />
     <tool file="human_genome_variation/hilbertvis.xml" />
+    <tool file="human_genome_variation/freebayes.xml" />
   </section>
   <section name="VCF Tools" id="vcf_tools">
     <tool file="vcf_tools/intersect.xml" />

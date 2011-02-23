@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<tool id="freebayes_wrapper" name="Call SNPS with Freebayes" version="0.4.2">
+  <requirements>
+    <requirement type="package">freebayes</requirement>
+  </requirements>
+  <description>Bayesian genetic variant detector</description>
+  <command>
+    freebayes --fasta-reference $reference $bamfile --vcf $output
+            #if $params.source_select == "full":
+                $params.showRefRepeats
+                -T $params.theta
+                -p $params.ploidy
+                $params.pooled
+                $params.mnps
+                $params.nosnps
+                -n $params.bestAlleles
+                $params.allAlleles
+                $params.duplicateReads
+                -M $params.refMapQuality
+                $params.ignoreRefAllele
+                $params.haploidReference
+                -m $params.minMapQuality
+                -q $params.minBaseQuality
+                $params.noFilters
+                -x $params.indelExclusionWindow
+                <!-- -D $readDependenceFactor -->
+                -V $params.diffusionPriorScalar
+                -W $params.postIntegBandwidth
+                -Y $params.postIntegBanddepth
+                -F $params.minAltFraction
+                -C $params.minAltCount
+                -G $params.minAltTotal
+                --min-coverage $params.minCoverage
+            #end if
+  </command>
+  <inputs>
+    <param format="fasta" name="reference" type="data" label="Reference File"/>
+    <param format="bam" name="bamfile" type="data" label="Bam Alignment File"/>
+    <conditional name="params">
+      <param name="source_select" type="select" label="Freebayes Settings to Use" help="For straight forward mapping needs use Commonly Used settings. If you want full control use Full Parameter List">
+        <option value="pre_set">Commonly Used</option>
+        <option value="full">Full Parameter List</option>
+      </param>
+      <when value="pre_set"/>
+      <when value="full">
+        <param name="indels" type="select" label="Include insertion and deletion alleles in the analysis">
+          <option value="">No</option>
+          <option value="-i -N --report-all-alternates --left-align-indels">Yes</option>
+        </param>
+        <param name="theta" size="5" type="float" value="0.001" label="Theta" help="The expected mutation rate or pairwise nucleotide diversity among the population under analysis.  This serves as the single parameter to the Ewens Sampling Formula prior model"/>
+        <param name="showRefRepeats" type="select" label="Show Reference Repeats" help="Calculate and show information about reference repeats in the VCF output">
+          <option value="">No</option>
+          <option value="-_">Yes</option>
+        </param>
+        <param name="ploidy" size="5" type="integer" value="2" label="Ploidy" help="Sets the default ploidy for the analysis"/>
+        <param name="pooled" type="select" label="Pooled" help="Assume that samples result from pooled sequencing. When using this flag, set --ploidy to the number of alleles in each sample">
+          <option value="">No</option>
+          <option value="-J">Yes</option>
+        </param>
+        <param name="mnps" type="select" label="Include multi-nuceotide polymorphisms in the analysis">
+          <option value="">No</option>
+          <option value="--mnps">Yes</option>
+        </param>
+        <param name="nosnps" type="select" label="Ignore SNP alleles">
+          <option value="">No</option>
+          <option value="--no-snps">Yes</option>
+        </param>
+        <param name="duplicateReads" type="select" label="Include duplicate-marked alignments in the analysis">
+          <option value="">No</option>
+          <option value="--use-duplicate-reads">Yes</option>
+        </param>
+        <param name="bestAlleles" size="5" type="integer" value="2" label="Use Best N Alleles" help="Evaluate only the best N alleles, ranked by sum of supporting quality scores"/>
+        <param name="allAlleles" type="select" label="Evaluate all possible alleles">
+          <option value="">No</option>
+          <option value="--use-all-alleles">Yes</option>
+        </param>
+        <param name="refMapQuality" size="5" type="integer" value="100" label="Assign mapping quality of Q to the reference allele at each site"/>
+        <param name="refBaseQuality" size="5" type="integer" value="60" label="Reference Base Quality" help="Assign a base quality of Q to the reference allele at each site"/>
+        <param name="minMapQuality" size="5" type="integer" value="10" label="Minimum Mapping Quality" help="Exclude alignments from analysis if they have a mapping quality less than Q"/>
+        <param name="minBaseQuality" size="5" type="integer" value="5" label="Minimum Base Quality" help="Exclude alleles from analysis if their supporting base quality is less than Q"/>
+        <param name="indelExclusionWindow" size="5" type="integer" value="0" label="Indel Exclusion Window" help="Ignore portions of alignments N bases from a putative insertion or deletion allele"/>
+        <param name="ignoreRefAllele" type="select" label="Ignore Reference Allele" help="By default, the reference allele is considered as another sample.  This flag excludes it from the analysis">
+          <option value="">No</option>
+          <option value="--ignore-reference-allele">Yes</option>
+        </param>
+        <param name="haploidReference" type="select" label="Haploid Reference" help="If using the reference sequence as a sample, consider it to be haploid">
+          <option value="">No</option>
+          <option value="--haploid-reference">Yes</option>
+        </param>
+        <param name="noFilters" type="select" label="No Filters" help="Do not use any input base and mapping quality filters. Equivalent to -m 0 -q 0 -R 0 -S 0">
+          <option value="">No</option>
+          <option value="--no-filters">Yes</option>
+        </param>
+        <!-- <param name="readDependenceFactor" size="5" type="float" value="0.9" label="Read Dependence Factor" help="Incorporate non-independence of reads by scaling successive observations by this factor during data likelihood calculations"/> -->
+        <param name="diffusionPriorScalar" size="5" type="float" value="1" label="Diffusion Prior Scalar" help="Downgrade the significance of P(genotype combo | allele frequency) by taking the Nth root of this component of the prior"/>
+        <param name="postIntegBandwidth" size="5" type="integer" value="2" label="Posterior Integratoin Bandwidth" help="Integrate all genotype combinations in our posterior space which lie no more than N steps from the most likely combination in terms of data likelihoods, taking the N steps from the most to least likely genotype for each individual"/>
+        <param name="postIntegBanddepth" size="5" type="integer" value="2" label="Posterior Integratoin Banddepth" help="Generate all genotype combinations for which up to this number of samples have up to their -W'th worst genotype according to data likelihood"/>
+        <param name="minAltFraction" size="5" type="integer" value="0" label="Minimum Alternative Fraction" help="Require at least this fraction of observations supporting an alternate allele within a single individual in the in order to evaluate the position"/>
+        <param name="minAltCount" size="5" type="integer" value="1" label="Minimum Alternative Count" help="Require at least this count of observations supporting an alternate allele within a single individual in order to evaluate the position"/>
+        <param name="minAltTotal" size="5" type="integer" value="1" label="Minimum Alternative Total" help="Require at least this count of observations supporting an alternate allele within the total population in order to use the allele in analysis"/>
+        <param name="minCoverage" size="5" type="integer" value="0" label="Minimum Coverage" help="Require at least this coverage to process a site"/>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output"/>
+  </outputs>
+  <tests>
+    <test>
+
+    </test>
+  </tests>
+  <help>
+This tool uses Freebayes to call SNPS given a reference sequence and a BAM alignment file.
+  </help>
+</tool>
