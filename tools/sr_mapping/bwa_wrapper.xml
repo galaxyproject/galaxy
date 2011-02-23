@@ -139,8 +139,7 @@
       python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out1.u.sam bwa_wrapper_out1.sam
       -->
       <param name="refGenomeSource" value="indexed" />
-      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
-      <param name="indices" value="/galaxy/data/phiX/bwa_index/phiX.fa" />
+      <param name="indices" value="phiX" />
       <param name="sPaired" value="single" />
       <param name="input1" value="bwa_wrapper_in1.fastqsanger" ftype="fastqsanger" />
       <param name="source_select" value="pre_set" />
@@ -195,8 +194,7 @@
       python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out3.u.sam bwa_wrapper_out3.sam
       -->
       <param name="refGenomeSource" value="indexed" />
-      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
-      <param name="indices" value="/galaxy/data/phiX/bwa_index/phiX.fa" />
+      <param name="indices" value="phiX" />
       <param name="sPaired" value="paired" />
       <param name="input1" value="bwa_wrapper_in2.fastqsanger" ftype="fastqsanger" />
       <param name="input2" value="bwa_wrapper_in3.fastqsanger" ftype="fastqsanger" />
