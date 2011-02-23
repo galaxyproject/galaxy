@@ -591,7 +591,11 @@
                             %endfor
                         </select>
                     %elif field_type == 'CheckboxField':
-                        <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/>
+                        %if field_value is True:
+                            <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes" checked="checked"/><input type="hidden" name="sample_${index}_field_${field_index}" value="Yes"/>
+                        %else:
+                            <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/><input type="hidden" name="sample_${index}_field_${field_index}" value="Yes"/>
+                        %endif
                     %endif
                     <div class="toolParamHelp" style="clear: both;">
                         <i>${'('+field['required']+')' }</i>

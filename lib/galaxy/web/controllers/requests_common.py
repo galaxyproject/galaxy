@@ -1432,7 +1432,11 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 field_values = {}
                 for field_index, field in enumerate( request.type.sample_form.fields ):
                     field_name = field['name']
-                    field_value = util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), sample.values.content[ field_name ] ) )
+                    input_value = params.get( 'sample_%i_field_%i' % ( index, field_index ), sample.values.content[ field_name ] )
+                    if field['type'] == CheckboxField.__name__:
+                        field_value = CheckboxField.is_checked( input_value )
+                    else: 
+                        field_value = util.restore_text( input_value )
                     field_values[ field_name ] = field_value
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
                                                                                                        user=request.user,
@@ -1504,8 +1508,13 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                             workflow_dict['mappings'][int(k[len(kwd_tag):])] = {'ds_tag':v}
             field_values = {}
             for field_index, field in enumerate( request.type.sample_form.fields ):
-                field_name = field['name']
-                field_values[ field_name ] = util.restore_text( params.get( 'sample_%i_field_%i' % ( index, field_index ), '' ) )
+                    field_name = field['name']
+                    input_value = params.get( 'sample_%i_field_%i' % ( index, field_index ), '' )
+                    if field['type'] == CheckboxField.__name__:
+                        field_value = CheckboxField.is_checked( input_value )
+                    else: 
+                        field_value = util.restore_text( input_value )
+                    field_values[ field_name ] = field_value
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
                                                                                                        user=request.user,
                                                                                                        sample_index=index,
