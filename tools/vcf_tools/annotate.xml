@@ -31,15 +31,15 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="test.small.vcf" />
+      <param name="input1" value="test.small.vcf" ftype="vcf" />
       <param name="annotate" value="dbsnp" />
-      <param name="input2" value="dbsnp.small.vcf" />
+      <param name="input2" value="dbsnp.small.vcf" ftype="vcf" />
       <output name="output" file="test_annotated_dbsnp.vcf" lines_diff="6" ftype="vcf" />
     </test>
     <test>
-      <param name="input1" value="test.small.vcf" />
+      <param name="input1" value="test.small.vcf" ftype="vcf" />
       <param name="annotate" value="hapmap" />
-      <param name="input2" value="hapmap.small.vcf" />
+      <param name="input2" value="hapmap.small.vcf" ftype="vcf" />
       <output name="output" file="test_annotated_hapmap.vcf" lines_diff="6" ftype="vcf" />
     </test>
   </tests>

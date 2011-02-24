@@ -41,23 +41,23 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="1.vcf" />
+      <param name="input1" value="1.vcf" ftype="vcf" />
       <param name="format" value="vcf" />
-      <param name="input2" value="2.vcf" />
+      <param name="input2" value="2.vcf" ftype="vcf" />
       <param name="priority_file" value="none" />
       <output name="output" file="1_2_intersect_priority_0.vcf" lines_diff="2" ftype="vcf" />
     </test>
     <test>
-      <param name="input1" value="1.vcf" />
+      <param name="input1" value="1.vcf" ftype="vcf" />
       <param name="format" value="vcf" />
-      <param name="input2" value="2.vcf" />
+      <param name="input2" value="2.vcf" ftype="vcf" />
       <param name="priority_file" value="first_file" />
       <output name="output" file="1_2_intersect_priority_1.vcf" lines_diff="2" ftype="vcf" />
     </test>
     <test>
-      <param name="input1" value="1.vcf" />
+      <param name="input1" value="1.vcf" ftype="vcf" />
       <param name="format" value="vcf" />
-      <param name="input2" value="2.vcf" />
+      <param name="input2" value="2.vcf" ftype="vcf" />
       <param name="priority_file" value="second_file" />
       <output name="output" file="1_2_intersect_priority_2.vcf" lines_diff="2" ftype="vcf" />
     </test>
