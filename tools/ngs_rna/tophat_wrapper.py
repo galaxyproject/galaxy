@@ -30,6 +30,10 @@ def __main__():
     parser.add_option( '-g', '--max_multihits', dest='max_multihits', help='Maximum number of alignments to be allowed' )
     parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
     parser.add_option( '', '--seg-length', dest='seg_length', help='Minimum length of read segments' )
+    parser.add_option( '', '--library-type', dest='library_type', help='TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.' )
+    parser.add_option( '', '--allow-indels', action="store_true", help='Allow indel search. Indel search is disabled by default.' )
+    parser.add_option( '', '--max-insertion-length', dest='max_insertion_length', help='The maximum insertion length. The default is 3.' )
+    parser.add_option( '', '--max-deletion-length', dest='max_deletion_length', help='The maximum deletion length. The default is 3.' )
 
     # Options for supplying own junctions
     parser.add_option( '-G', '--GTF', dest='gene_model_annotations', help='Supply TopHat with a list of gene model annotations. \
@@ -115,8 +119,7 @@ def __main__():
         index_path = options.index_path
 
     # Build tophat command.
-    tmp_output_dir = tempfile.mkdtemp()
-    cmd = 'tophat -o %s %s %s %s'
+    cmd = 'tophat %s %s %s'
     reads = options.input1
     if options.input2:
         reads += ' ' + options.input2
@@ -124,7 +127,7 @@ def __main__():
     if options.single_paired == 'paired':
         opts += ' -r %s' % options.mate_inner_dist
     if options.settings == 'preSet':
-        cmd = cmd % ( tmp_output_dir, opts, index_path, reads )
+        cmd = cmd % ( opts, index_path, reads )
     else:
         try:
             if int( options.min_anchor_length ) >= 3:
@@ -144,6 +147,13 @@ def __main__():
                 opts += ' -j %s' % options.raw_juncs
             if options.no_novel_juncs:
                 opts += ' --no-novel-juncs'
+            if options.library_type:
+                opts += ' --library-type %s' % options.library_type
+            if options.allow_indels:
+                # Max options do not work for Tophat v1.2.0, despite documentation to the contrary.
+                opts += ' --allow-indels'
+                #opts += ' --allow-indels --max-insertion-length %i --max-deletion-length %i' % ( int( options.max_insertion_length ), int( options.max_deletion_length ) )
+
 
             # Search type options.
             if options.coverage_search:
@@ -166,23 +176,21 @@ def __main__():
                 opts += ' --min-segment-intron %d' % int(options.min_segment_intron)
             if options.max_segment_intron:
                 opts += ' --max-segment-intron %d' % int(options.max_segment_intron)
-            cmd = cmd % ( tmp_output_dir, opts, index_path, reads )
+            cmd = cmd % ( opts, index_path, reads )
         except Exception, e:
             # Clean up temp dirs
             if os.path.exists( tmp_index_dir ):
                 shutil.rmtree( tmp_index_dir )
-            if os.path.exists( tmp_output_dir ):
-                shutil.rmtree( tmp_output_dir )
             stop_err( 'Something is wrong with the alignment parameters and the alignment could not be run\n' + str( e ) )
     print cmd
 
     # Run
     try:
-        tmp_out = tempfile.NamedTemporaryFile( dir=tmp_output_dir ).name
+        tmp_out = tempfile.NamedTemporaryFile().name
         tmp_stdout = open( tmp_out, 'wb' )
-        tmp_err = tempfile.NamedTemporaryFile( dir=tmp_output_dir ).name
+        tmp_err = tempfile.NamedTemporaryFile().name
         tmp_stderr = open( tmp_err, 'wb' )
-        proc = subprocess.Popen( args=cmd, shell=True, cwd=tmp_output_dir, stdout=tmp_stdout, stderr=tmp_stderr )
+        proc = subprocess.Popen( args=cmd, shell=True, cwd=".", stdout=tmp_stdout, stderr=tmp_stderr )
         returncode = proc.wait()
         tmp_stderr.close()
         # get stderr, allowing for case where it's very large
@@ -202,17 +210,11 @@ def __main__():
             raise Exception, stderr
 
         # TODO: look for errors in program output.
-
-        # Copy output files from tmp directory to specified files.
-        shutil.copyfile( os.path.join( tmp_output_dir, "junctions.bed" ), options.junctions_output_file )
-        shutil.copyfile( os.path.join( tmp_output_dir, "accepted_hits.bam" ), options.accepted_hits_output_file )
     except Exception, e:
         stop_err( 'Error in tophat:\n' + str( e ) ) 
 
     # Clean up temp dirs
     if os.path.exists( tmp_index_dir ):
         shutil.rmtree( tmp_index_dir )
-    if os.path.exists( tmp_output_dir ):
-        shutil.rmtree( tmp_output_dir )
 
 if __name__=="__main__": __main__()

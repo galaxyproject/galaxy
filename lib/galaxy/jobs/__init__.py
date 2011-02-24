@@ -505,10 +505,14 @@ class JobWrapper( object ):
                         return
         job_context = ExpressionContext( dict( stdout = stdout, stderr = stderr ) )
         job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
-        def file_in_dir( file_path, a_dir ):
-            """ Returns true if file is in directory. """
-            abs_file_path = os.path.abspath( file_path )
-            return os.path.split( abs_file_path )[0] == os.path.abspath( a_dir )
+        def in_directory( file, directory ):
+            # Make both absolute.
+            directory = os.path.realpath( directory )
+            file = os.path.realpath( file )
+
+            #Return true, if the common prefix of both is equal to directory
+            #e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
+            return os.path.commonprefix( [ file, directory ] ) == directory
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
@@ -523,7 +527,7 @@ class JobWrapper( object ):
                         if hda_tool_output and hda_tool_output.from_work_dir:
                             # Copy from working dir to HDA.
                             source_file = os.path.join( os.path.abspath( self.working_directory ), hda_tool_output.from_work_dir )
-                            if file_in_dir( source_file, self.working_directory ):
+                            if in_directory( source_file, self.working_directory ):
                                 try:
                                     shutil.move( source_file, dataset.file_name )
                                     log.debug( "finish(): Moved %s to %s as directed by from_work_dir" % ( source_file, dataset.file_name ) )

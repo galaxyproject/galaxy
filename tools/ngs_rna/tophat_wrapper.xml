@@ -39,6 +39,14 @@
                     --max-segment-intron $singlePaired.sParams.max_segment_intron
                     --seg-mismatches=$singlePaired.sParams.seg_mismatches
                     --seg-length=$singlePaired.sParams.seg_length
+                    --library-type=$singlePaired.sParams.library_type
+                    
+                    ## Indel search.
+                    #if $singlePaired.sParams.indel_search.allow_indel_search == "Yes":
+                        --allow-indels
+                        --max-insertion-length $singlePaired.sParams.indel_search.max_insertion_length
+                        --max-deletion-length $singlePaired.sParams.indel_search.max_deletion_length
+                    #end if
 
                     ## Supplying junctions parameters.
                     #if $singlePaired.sParams.own_junctions.use_junctions == "Yes":
@@ -90,6 +98,14 @@
                     --max-segment-intron $singlePaired.pParams.max_segment_intron
                     --seg-mismatches=$singlePaired.pParams.seg_mismatches
                     --seg-length=$singlePaired.pParams.seg_length
+                    --library-type=$singlePaired.pParams.library_type
+                    
+		    ## Indel search.
+                    #if $singlePaired.pParams.indel_search.allow_indel_search == "Yes":
+                        --allow-indels
+                        --max-insertion-length $singlePaired.pParams.indel_search.max_insertion_length
+                        --max-deletion-length $singlePaired.pParams.indel_search.max_deletion_length
+                    #end if
 
                     ## Supplying junctions parameters.
                     #if $singlePaired.pParams.own_junctions.use_junctions == "Yes":
@@ -157,10 +173,26 @@
                 <when value="preSet" />
                 <!-- Full/advanced parms. -->
                 <when value="full">
+                  <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
+                      <option value="fr-unstranded">FR Unstranded</option>
+                      <option value="fr-firststrand">FR First Strand</option>
+                      <option value="fr-secondstrand">FR Second Strand</option>
+                  </param>
                   <param name="anchor_length" type="integer" value="8" label="Anchor length (at least 3)" help="Report junctions spanned by reads with at least this many bases on each side of the junction." />
                   <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
                   <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
                   <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
+                  <conditional name="indel_search">
+                      <param name="allow_indel_search" type="select" label="Allow indel search">
+                          <option value="No">No</option>
+                          <option value="Yes">Yes</option>
+                      </param>
+                      <when value="No"/>
+                      <when value="Yes">
+                         <param name="max_insertion_length" type="integer" value="3" label="Max insertion length." help="The maximum insertion length." />
+                         <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
+                      </when>
+                  </conditional>
                   <param name="junction_filter" type="float" value="0.15" label="Minimum isoform fraction: filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
                   <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
@@ -247,11 +279,27 @@
                 <when value="preSet" />
                 <!-- Full/advanced parms. -->
                 <when value="full">
+                    <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
+                        <option value="fr-unstranded">FR Unstranded</option>
+                        <option value="fr-firststrand">FR First Strand</option>
+                        <option value="fr-secondstrand">FR Second Strand</option>
+                    </param>
                     <param name="mate_std_dev" type="integer" value="20" label="Std. Dev for Distance between Mate Pairs"  help="The standard deviation for the distribution on inner distances between mate pairs."/>
                   <param name="anchor_length" type="integer" value="8" label="Anchor length (at least 3)" help="Report junctions spanned by reads with at least this many bases on each side of the junction." />
                   <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
                   <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
                   <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
+                  <conditional name="indel_search">
+                      <param name="allow_indel_search" type="select" label="Allow indel search">
+                          <option value="No">No</option>
+                          <option value="Yes">Yes</option>
+                      </param>
+                      <when value="No"/>
+                      <when value="Yes">
+                         <param name="max_insertion_length" type="integer" value="3" label="Max insertion length." help="The maximum insertion length." />
+                         <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
+                      </when>
+                  </conditional>
                   <param name="junction_filter" type="float" value="0.15" label="Minimum isoform fraction: filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
                   <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
@@ -329,8 +377,28 @@
     </inputs>
 
     <outputs>
-        <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions"/>
-        <data format="bam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits"/>
+        <data format="bed" name="insertions" label="${tool.name} on ${on_string}: insertions" from_work_dir="tophat_out/insertions.bed">
+            <filter>
+                (
+                    ( ( 'sParams' in singlePaired ) and ( 'indel_search' in singlePaired['sParams'] ) and 
+                      ( singlePaired['sParams']['indel_search']['allow_indel_search'] == 'Yes' ) ) or 
+                    ( ( 'pParams' in singlePaired ) and ( 'indel_search' in singlePaired['pParams'] ) and 
+                      ( singlePaired['pParams']['indel_search']['allow_indel_search'] == 'Yes' ) )
+                ) 
+            </filter>
+        </data>
+        <data format="bed" name="deletions" label="${tool.name} on ${on_string}: deletions" from_work_dir="tophat_out/deletions.bed">
+            <filter>
+                (
+                    ( ( 'sParams' in singlePaired ) and ( 'indel_search' in singlePaired['sParams'] ) and 
+                      ( singlePaired['sParams']['indel_search']['allow_indel_search'] == 'Yes' ) ) or 
+                    ( ( 'pParams' in singlePaired ) and ( 'indel_search' in singlePaired['pParams'] ) and 
+                      ( singlePaired['pParams']['indel_search']['allow_indel_search'] == 'Yes' ) )
+                )
+            </filter>
+        </data>
+        <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions" from_work_dir="tophat_out/junctions.bed"/>
+        <data format="bam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits" from_work_dir="tophat_out/accepted_hits.bam"/>
     </outputs>
 
     <tests>
@@ -367,7 +435,7 @@
         <test>
             <!-- Tophat commands:
             bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 ++allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
             Replace the + with double-dash
             -->
             <param name="genomeSource" value="history"/>
@@ -375,6 +443,7 @@
             <param name="sPaired" value="single"/>
             <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
             <param name="sSettingsType" value="full"/>
+	    <param name="library_type" value="FR Unstranded"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
             <param name="min_intron_length" value="70"/>
@@ -386,6 +455,9 @@
             <param name="max_segment_intron" value="500000" />
             <param name="seg_mismatches" value="2"/>
             <param name="seg_length" value="25"/>
+            <param name="allow_indel_search" value="Yes"/>
+	    <param name="max_insertion_length" value="3"/>
+	    <param name="max_deletion_length" value="3"/>
             <param name="use_junctions" value="Yes" />
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
@@ -398,6 +470,8 @@
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
             <param name="microexon_search" value="Yes" />
+            <output name="insertions" file="tophat_out3i.bed" ftype="bed"/>
+            <output name="deletions" file="tophat_out3d.bed" ftype="bed"/>
             <output name="junctions" file="tophat_out3j.bed" ftype="bed" />
             <output name="accepted_hits" file="tophat_out3h.bam" compare="sim_size" ftype="bam" />
         </test>
@@ -414,6 +488,7 @@
             <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger"/>
             <param name="mate_inner_distance" value="20"/>
             <param name="pSettingsType" value="full"/>
+	    <param name="library_type" value="FR Unstranded"/>
             <param name="mate_std_dev" value="20"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
@@ -426,6 +501,7 @@
             <param name="max_segment_intron" value="500000" />
             <param name="seg_mismatches" value="2"/>
             <param name="seg_length" value="25"/>
+            <param name="allow_indel_search" value="No"/>
             <param name="use_junctions" value="Yes" />
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
