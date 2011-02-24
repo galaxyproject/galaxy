@@ -109,7 +109,7 @@ for dir in $DIRS; do
     fi
 done
 
-# for wig_to_bigWig
+# for wig_to_bigWig and bed_to_bigBed
 if [ ! -f "tool-data/shared/ucsc/chrom/hg17.len" -a -f "test-data/wig_to_bigwig_hg17.len" ]; then
     mkdir -p tool-data/shared/ucsc/chrom
     cp test-data/wig_to_bigwig_hg17.len tool-data/shared/ucsc/chrom/hg17.len

@@ -31,7 +31,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="7.bed" dbkey="hg18" />
+      <param name="input1" value="7.bed" dbkey="hg17" />
       <param name="settingsType" value="full" />
       <param name="blockSize" value="256" />
       <param name="itemsPerSlot" value="512" />
@@ -39,7 +39,7 @@
       <output name="out_file1" file="7.bigbed"/>
     </test>
     <test>
-      <param name="input1" value="7.bed" dbkey="hg18" />
+      <param name="input1" value="7.bed" dbkey="hg17" />
       <param name="settingsType" value="preset" />
       <output name="out_file1" file="7.bigbed"/>
     </test>
