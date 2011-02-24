@@ -23,6 +23,13 @@ import subprocess
 #Avoid using shell=True when we call subprocess to ensure if the Python
 #script is killed, so too is the BLAST process.
 try:
+    words = []
+    for w in sys.argv[1:]:
+       if " " in w:
+           words.append('"%s"' % w)
+       else:
+           words.append(w)
+    cmd = " ".join(words)
     child = subprocess.Popen(sys.argv[1:],
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 except Exception, err:
