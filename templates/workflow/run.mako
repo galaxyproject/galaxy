@@ -126,7 +126,7 @@ if wf_parms:
             <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
             ${do_inputs( input.inputs, repeat_values[ i ], rep_errors,  prefix + input.name + "_" + str(index) + "|", step, other_values )}
             ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_${i}_remove" value="Remove ${input.title} ${i+1}" /></div>
-            </div> 
+            </div>
           %endfor
           ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_add" value="Add new ${input.title}" /></div>
       </div>
@@ -209,7 +209,7 @@ if wf_parms:
             <div style="width: 300px;"><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${error_dict[param.name]}</span></div>
         </div>
         %endif
-        <div style="clear: both"></div>       
+        <div style="clear: both"></div>
     </div>
 </%def>
 
@@ -262,7 +262,7 @@ if wf_parms:
                 $('.wfpspan.wf_parm__'+tag_id).text(new_text);
                 // Now set the hidden input to the generated text.
                 $('.wfpspan.wf_parm__'+tag_id).not('.pja_wfp').each(function(){
-                    // var new_text = $(this).parent().text();
+                    var new_text = $(this).parent().text();
                     $(this).parent().siblings().children().val(new_text);
                 });
             }
