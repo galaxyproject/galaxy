@@ -27,7 +27,7 @@
                 toggle_tool_body($(this));
             });
             // Collapse non-interactive run-workflow panels by default.
-            $("div.toolFormBody:not(:has(select, textarea, input[type!=hidden]))").hide().parent().css('border-bottom-width', '0px');
+            $("div.toolFormBody:not(:has(select, textarea, input[type!=hidden], .wfpspan))").hide().parent().css('border-bottom-width', '0px');
             $("#show_all_tool_body").click(function(){
                 $("div.toolFormTitle").each(function(){
                     show_tool_body($(this));
