@@ -5,7 +5,12 @@
   </requirements>
   <description>Bayesian genetic variant detector</description>
   <command>
-    freebayes --fasta-reference $reference $bamfile --vcf $output
+    ln -s $reference localref.fa;
+    ln -s $bamfile localbam.bam;
+    samtools faidx localref.fa;
+    samtools sort localbam.bam localbam.bam;
+    samtools index localbam.bam;
+    freebayes --fasta-reference localref.fa localbam.bam --vcf $output
             #if $params.source_select == "full":
                 $params.showRefRepeats
                 -T $params.theta
@@ -107,7 +112,6 @@
   </outputs>
   <tests>
     <test>
-
     </test>
   </tests>
   <help>

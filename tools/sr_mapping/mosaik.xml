@@ -67,13 +67,13 @@
       </param>
       <when value="single"/>
       <when value="paired">
-        <param name="mfl" type="integer" value="200" label="Insert Size" help="the length between the paired reads"/>	
+        <param name="mfl" type="integer" value="200" label="Insert Size" help="the length between the paired reads"/>
         <param name="ls" type="integer" value="50" label="Realignment Window" help="Window size to realign mate pairs that are out of position. Large values slow down performance"/>
       </when>
     </conditional>
     <param name="mm" size="5" type="integer" value="6" label="Mismatches allowed" help="mismatches allowed per sequence"/>
     <param name="act" size="5" type="integer" value="35" label="Alignment Candidate Threshold" help="determines which hash regions will be aligned with Smith Waterman"/>
-    <param name="bw" size="5" type="integer" value="19" label="Smith Watermin Bandwidth"/>
+    <param name="bw" size="5" type="integer" value="19" label="Smith-Waterman band width"/>
     <param name="mhp" size="5" type="integer" value="100" label="Maximum # Of Positions Stored Per Seed" help="number of places in the reference the aligner will try to place a particular hash"/>
   </inputs>
   <outputs>
@@ -85,6 +85,17 @@
   </outputs>
   <tests>
     <test>
+      <param name="refGenomeSource" value="history"/>
+      <param name="historyReference" ftype="fasta" value="mosaik_test_ref.fasta"/>
+      <param name="reads" ftype="fastq" value="mosaik_test_input.fastq"/>
+      <param name="outFormat" value="sam"/>
+      <param name="st" value="454"/>
+      <param name="kind" value="single"/>
+      <param name="mm" value="6"/>
+      <param name="act" value="35"/>
+      <param name="bw" value="19"/>
+      <param name="mhp" value="100"/>
+      <output name="output" ftype="sam" file="mosaik_test_out.sam" sort="True"/>
     </test>
   </tests>
   <help>
