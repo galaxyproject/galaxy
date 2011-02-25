@@ -244,7 +244,7 @@ class RequestType( BaseController, UsesFormDefinitions ):
         sample_form_id = params.get( 'sample_form_id', 'none' )
         external_service_id = params.get( 'external_service_id', 'none' )
         # validate
-        if not name or request_form_id == 'none' or sample_form_id == 'none' or not kwd.has_key( 'state_name_0' ):
+        if not name or request_form_id == 'none' or sample_form_id == 'none':
             message = 'Enter the name, request form, sample form and at least one sample state associated with this request type.'
             return trans.response.send_redirect( web.url_for( controller='request_type',
                                                               action=action,
