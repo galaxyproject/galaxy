@@ -209,7 +209,7 @@ Cuffdiff produces many output files:
 1. Transcript FPKM expression tracking.
 2. Gene FPKM expression tracking; tracks the summed FPKM of transcripts sharing each gene_id
 3. Primary transcript FPKM tracking; tracks the summed FPKM of transcripts sharing each tss_id
-4. Coding sequence FPKM tracking; tracks the summed FPKM of transcripts sharing each p_id, indepedent of tss_id
+4. Coding sequence FPKM tracking; tracks the summed FPKM of transcripts sharing each p_id, independent of tss_id
 5. Transcript differential FPKM.
 6. Gene differential FPKM. Tests difference sin the summed FPKM of transcripts sharing each gene_id
 7. Primary transcript differential FPKM. Tests difference sin the summed FPKM of transcripts sharing each tss_id
@@ -233,7 +233,7 @@ This is a list of implemented Cuffdiff options::
   -m INT                         This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments selected at 300bp, where each end is 50bp, you should set -r to be 200. The default is 45bp.
   -s INT                         The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
   -Q	                         Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number. The default is 0.
-  -c INT                         The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not signficant, and the locus' observed changes don't contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).
+  -c INT                         The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not significant, and the locus' observed changes don't contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).
   --FDR FLOAT                    The allowed false discovery rate. The default is 0.05.
   --num-importance-samples INT   Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000
   --max-mle-iterations INT       Sets the number of iterations allowed during maximum likelihood estimation of abundances. Default: 5000

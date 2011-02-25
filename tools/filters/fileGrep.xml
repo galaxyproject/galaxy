@@ -32,7 +32,7 @@ and another that is a typical BED file describing genomic location of some ESTs:
   chr7 115443243 115443347 DB331869_exon_0_0_chr7_115443244_f 0	+
   chr7 115443347 115443373 DB331869_exon_1_0_chr7_115443348_f 0	+
 
-Using this tool you will bne able to tell how many ESTs in Query1 are also preset in Query2 and will output this::
+Using this tool you will be able to tell how many ESTs in Query1 are also preset in Query2 and will output this::
 
   chr7 115443239 115443802 AA001842_exon_0_0_chr7_115443240_f 0	
 

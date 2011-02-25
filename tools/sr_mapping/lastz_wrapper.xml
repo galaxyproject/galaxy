@@ -504,7 +504,7 @@ This is an exhaustive list of LASTZ options. Once again, please note that not al
                           up 65 thousand
   --census32[=&lt;output_file&gt;]  count and report how many times each target bas aligns, up
                           to 4 billion
-  --writecapsule=&lt;capsule_file&gt;    just write out a targegt capsule file and quit; don't 
+  --writecapsule=&lt;capsule_file&gt;    just write out a target capsule file and quit; don't 
                           search for seeds or perform subsequent stages
   --verbosity=&lt;level&gt;     set info level (0 is minimum, 10 is everything)
                           (default is 0)

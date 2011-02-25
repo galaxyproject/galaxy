@@ -25,7 +25,7 @@
             ## First input file always required.
             --input1=$singlePaired.input1
 
-            ## Set parms based on whether reads are single-end or paired.
+            ## Set params based on whether reads are single-end or paired.
             #if $singlePaired.sPaired == "single":
                 --settings=$singlePaired.sParams.sSettingsType
                 #if $singlePaired.sParams.sSettingsType == "full":
@@ -171,7 +171,7 @@
                   <option value="full">Full parameter list</option>
                 </param>
                 <when value="preSet" />
-                <!-- Full/advanced parms. -->
+                <!-- Full/advanced params. -->
                 <when value="full">
                   <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
                       <option value="fr-unstranded">FR Unstranded</option>
@@ -277,7 +277,7 @@
                   <option value="full">Full parameter list</option>
                 </param>
                 <when value="preSet" />
-                <!-- Full/advanced parms. -->
+                <!-- Full/advanced params. -->
                 <when value="full">
                     <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
                         <option value="fr-unstranded">FR Unstranded</option>
@@ -435,7 +435,7 @@
         <test>
             <!-- Tophat commands:
             bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 ++allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
             Replace the + with double-dash
             -->
             <param name="genomeSource" value="history"/>
