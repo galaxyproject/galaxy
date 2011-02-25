@@ -1,4 +1,4 @@
-<tool id="vcf_intersect" name="Intersect VCF Files" version="1.0.0">
+<tool id="vcf_intersect" name="Intersect" version="1.0.0">
   <description>Generate the intersection of two VCF files</description>
   <command interpreter="python">
     vcfPytools.py

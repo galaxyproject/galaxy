@@ -1,0 +1,46 @@
+<tool id="vcf_filter" name="Filter" version="1.0.0">
+  <description>a VCF file</description>
+  <command interpreter="python">
+    vcfPytools.py
+      filter 
+      --in=$input1
+      --out=$output1
+      --quality=$quality
+      #for $i in $info_filter:
+        --info ${i.info}
+      #end for
+      $remove_genotypes
+      $mark_as_pass
+  </command>
+  <inputs>
+    <param name="input1" label="VCF file" type="data" format="vcf" />
+    <param name="quality" label="Filter by quality" type="integer" value='' help="Filter out SNPs with qualities lower than selected value" />
+    <repeat name="info_filter" title="Filter based on entries in the info string">
+      <param name="info" label="Filter" type="text" value='' help='This option takes three values: the info string tag, the cutoff value and whether to filter out those records with less than (lt) or greater than (gt) this value.  For example: DP 10 lt ' />
+    </repeat>
+    <param name="remove_genotypes" label="Remove the genotype strings" type="boolean" truevalue="--remove-genotypes" falsevalue="" checked="False" />
+    <param name="mark_as_pass" label="Mark all records as having passed filters" type="boolean" truevalue="--mark-as-pass" falsevalue="" checked="False" />
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output1" label="${tool.name} ${on_string}" />
+  </outputs>
+  <help>
+
+**What it does**
+
+This tool uses vcfPytools_' filter command
+
+.. _vcfPytools: https://github.com/AlistairNWard/vcfPytools
+
+Quality option will check the variant quality for each record and if it is below the defined value, the filter field will be populated with the filter entry Q[value].
+
+Any value in the info string can be used for filtering by using the 'Filter by info' option.  This option takes three values: the info string tag, the cutoff value and whether to filter out those records with less than (lt) or greater than (gt) this value.  For example:
+
+  DP 10 lt 
+
+would filter out all varianta with a depth (DP) less than 10 and the filter field would be populated with DP10.
+
+This option can be defined as many times as required.
+
+  </help>
+</tool>

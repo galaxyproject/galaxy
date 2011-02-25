@@ -1,5 +1,5 @@
-<tool id="vcf_annotate" name="Annotate a VCF file" version="1.0.0">
-  <description></description>
+<tool id="vcf_annotate" name="Annotate" version="1.0.0">
+  <description>a VCF file (dbSNP, hapmap)</description>
   <command interpreter="python">
     vcfPytools.py
       annotate 
@@ -27,7 +27,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="vcf" name="output1" label="${tool.name} on ${on_string}" />
+    <data format="vcf" name="output1" label="${tool.name} ${on_string}" />
   </outputs>
   <tests>
     <test>
