@@ -845,9 +845,8 @@ class ColumnListParameter( SelectToolParameter ):
         removes the 'c' when entered into a workflow.
         """
         def _strip_c( column ):
-            column = column.strip().lower()
             if column.startswith( 'c' ):
-                column = column[1:]
+                column = column.strip().lower()[1:]
             return column
         if self.multiple:
             #split on newline and ,
