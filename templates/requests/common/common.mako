@@ -606,7 +606,7 @@
     </tr> 
 </%def>
 
-<%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, displayable_sample_widgets, adding_new_samples )">
+<%def name="render_request_type_sample_form_grids( grid_index, grid_name, fields_dict, displayable_sample_widgets, show_saved_samples_read_only )">
     <%
         if not grid_name:
             grid_name = "Sample form layout %s" % str( grid_index )
@@ -629,7 +629,7 @@
                 <% trans.sa_session.refresh( request ) %>
                 %for sample_index, sample in enumerate( displayable_sample_widgets ):
                     <%
-                        if not adding_new_samples or sample_index >= len( request.samples ):
+                        if not show_saved_samples_read_only or sample_index >= len( request.samples ):
                             display_only = False
                         else:
                             display_only = True

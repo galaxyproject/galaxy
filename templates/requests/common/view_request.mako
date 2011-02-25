@@ -162,7 +162,7 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
     ## Render the other grids
     <% trans.sa_session.refresh( request.type.sample_form ) %>
     %for grid_index, grid_name in enumerate( request.type.sample_form.layout ):
-        ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), displayable_sample_widgets=displayable_sample_widgets, adding_new_samples=False )}
+        ${render_request_type_sample_form_grids( grid_index, grid_name, request.type.sample_form.grid_fields( grid_index ), displayable_sample_widgets=displayable_sample_widgets, show_saved_samples_read_only=True )}
     %endfor
 %else:
     There are no samples.
