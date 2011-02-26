@@ -48,6 +48,7 @@ LINKS="
 /galaxy/data/location/maf_index.loc
 /galaxy/data/location/maf_pairwise.loc
 /galaxy/data/location/microbes/microbial_data.loc
+/galaxy/data/location/mosaik_index.loc
 /galaxy/data/location/perm_base_index.loc
 /galaxy/data/location/perm_color_index.loc
 /galaxy/data/location/phastOdds.loc
