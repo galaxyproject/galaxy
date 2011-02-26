@@ -112,6 +112,10 @@
   </outputs>
   <tests>
     <test>
+      <param name="reference" ftype="fasta" value="mosaik_test_ref.fasta"/>
+      <param name="bamfile" ftype="bam" value="freebayes_in.bam"/>
+      <param name="source_select" value="pre_set"/>
+      <output name="output" ftype="vcf" file="freebayes_out.vcf" lines_diff="4"/>
     </test>
   </tests>
   <help>
