@@ -135,8 +135,8 @@ def __main__():
     
     # Build command.
     
-    # Base.
-    cmd = "cuffdiff"
+    # Base; always use quiet mode to avoid problems with storing log output.
+    cmd = "cuffdiff -q"
     
     # Add options.
     if options.inner_dist_std_dev:
