@@ -31,6 +31,58 @@
     <param name="discard_info" label="Discard records containing this info field" type="text" value='' />
     <param name="pass_filter" label="Discard records whose filter field is not PASS" type="boolean" truevalue="--pass-filter" falsevalue="" checked="False"/>
   </inputs>
+  <tests>
+    <test>
+      <param name="input1" value="test_filter_quality_9_DP_2000_lt.vcf" ftype="vcf" />
+      <param name="reference_sequence" value='' />
+	  <param name="region" value='' />
+	  <param name="keep_quality" value='' />
+	  <param name="keep_info" value='' />
+	  <param name="discard_info" value='' />
+	  <param name="pass_filter" value='true' />      
+      <output name="output" file="test_extract_pass_filter_quality_9_DP_2000_lt.vcf" ftype="vcf" />
+    </test>
+    <test>
+      <param name="input1" value="test.small.vcf" ftype="vcf" />
+      <param name="reference_sequence" value='' />
+      <param name="region" value='20:80000..100000' />
+      <param name="keep_quality" value='' />
+      <param name="keep_info" value='' />
+      <param name="discard_info" value='' />
+      <param name="pass_filter" value='false' />      
+      <output name="output" file="test_extract_region_80000_100000.vcf" ftype="vcf" />
+    </test>
+    <test>
+      <param name="input1" value="test.small.vcf" ftype="vcf" />
+      <param name="reference_sequence" value='' />
+      <param name="region" value='' />
+      <param name="keep_quality" value='90 ge' />
+      <param name="keep_info" value='' />
+      <param name="discard_info" value='' />
+      <param name="pass_filter" value='false' />      
+      <output name="output" file="test_extract_quality_90_ge.vcf" ftype="vcf" />
+    </test>
+    <test>
+      <param name="input1" value="test.small.vcf" ftype="vcf" />
+      <param name="reference_sequence" value='' />
+      <param name="region" value='' />
+      <param name="keep_quality" value='' />
+      <param name="keep_info" value='TV' />
+      <param name="discard_info" value='' />
+      <param name="pass_filter" value='false' />      
+      <output name="output" file="test_extract_keep_info_TV.vcf" ftype="vcf" />
+    </test>
+    <test>
+      <param name="input1" value="test.small.vcf" ftype="vcf" />
+      <param name="reference_sequence" value='' />
+      <param name="region" value='' />
+      <param name="keep_quality" value='' />
+      <param name="keep_info" value='' />
+      <param name="discard_info" value='TV' />
+      <param name="pass_filter" value='false' />      
+      <output name="output" file="test_extract_discard_info_TV.vcf" ftype="vcf" />
+    </test>
+  </tests>
   <outputs>
     <data format="vcf" name="output1" label="${tool.name} from ${on_string}" />
   </outputs>

@@ -375,6 +375,8 @@
   <section name="VCF Tools" id="vcf_tools">
     <tool file="vcf_tools/intersect.xml" />
     <tool file="vcf_tools/annotate.xml" />
+    <tool file="vcf_tools/filter.xml" />
+    <tool file="vcf_tools/extract.xml" />
   </section>
 <!--
   TODO: uncomment the following EMBOSS section whenever

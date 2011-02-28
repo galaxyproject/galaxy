@@ -21,6 +21,24 @@
     <param name="remove_genotypes" label="Remove the genotype strings" type="boolean" truevalue="--remove-genotypes" falsevalue="" checked="False" />
     <param name="mark_as_pass" label="Mark all records as having passed filters" type="boolean" truevalue="--mark-as-pass" falsevalue="" checked="False" />
   </inputs>
+  <tests>
+    <test>
+      <param name="input1" value="test.small.vcf" ftype="vcf" />
+      <param name="quality" value="9" />
+      <param name="info" value="NS 360 gt"/>
+      <param name="remove_genotypes" value="" />
+      <param name="mark_as_pass" value="" />
+      <output name="output" file="test_filter_quality_9_NS_360_gt.vcf" lines_diff="6" ftype="vcf" />
+    </test>
+    <test>
+      <param name="input1" value="test.small.vcf" ftype="vcf" />
+      <param name="quality" value="9" />
+      <param name="info" value="DP 2000 lt"/>
+      <param name="remove_genotypes" value="" />
+      <param name="mark_as_pass" value="" />
+      <output name="output" file="test_filter_quality_9_DP_2000_lt.vcf" lines_diff="6" ftype="vcf" />
+    </test>
+  </tests>
   <outputs>
     <data format="vcf" name="output1" label="${tool.name} ${on_string}" />
   </outputs>
