@@ -105,7 +105,6 @@
         <test>
             <param name="sPaired" value="No"/>
             <param name="input" value="cufflinks_in.sam"/>
-            <param name="mean_inner_distance" value="20"/>
             <param name="max_intron_len" value="300000"/>
             <param name="min_isoform_fraction" value="0.05"/>
             <param name="pre_mrna_fraction" value="0.05"/>

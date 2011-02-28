@@ -448,7 +448,6 @@
             <param name="splice_mismatches" value="0"/>
             <param name="min_intron_length" value="70"/>
             <param name="max_intron_length" value="500000"/>
-            <param name="quals_scale" value="default"/>
             <param name="junction_filter" value="0.15"/>
             <param name="max_multihits" value="40"/>
             <param name="min_segment_intron" value="50" />
@@ -494,7 +493,6 @@
             <param name="splice_mismatches" value="0"/>
             <param name="min_intron_length" value="70"/>
             <param name="max_intron_length" value="500000"/>
-            <param name="quals_scale" value="default"/>
             <param name="junction_filter" value="0.15"/>
             <param name="max_multihits" value="40"/>
             <param name="min_segment_intron" value="50" />
