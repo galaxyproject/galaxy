@@ -144,6 +144,8 @@ def main():
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",
                                    database_connection = database_connection,
+                                   database_engine_option_pool_size = '10',
+                                   database_engine_option_max_overflow = '20',
                                    file_path = file_path,
                                    new_file_path = new_file_path,
                                    tool_path = tool_path,
