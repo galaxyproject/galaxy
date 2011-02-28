@@ -13,8 +13,7 @@
     #end if
     MosaikBuild -fr
     #if $genomeSource.refGenomeSource == 'indexed':
-        ##$genomeSource.indexReference
-    ${ filter( lambda x: str( x[0] ) == str( $genomeSource.indexReference ), $__app__.tool_data_tables[ 'mosaik_indexes' ].get_fields() )[0][-1] }
+        ${ filter( lambda x: str( x[0] ) == str( $genomeSource.indexReference ), $__app__.tool_data_tables[ 'mosaik_indexes' ].get_fields() )[0][-1] }
     #else:
         $genomeSource.historyReference
     #end if
@@ -95,7 +94,7 @@
       <param name="act" value="35"/>
       <param name="bw" value="19"/>
       <param name="mhp" value="100"/>
-      <output name="output" ftype="sam" file="mosaik_test_out.sam" sort="True"/>
+      <output name="output" ftype="sam" file="mosaik_test_out.sam" compare="sim_size" delta="0"/>
     </test>
   </tests>
   <help>
