@@ -24,7 +24,7 @@
       <param name="input" value="ldInput1.txt" />
       <param name="rsquare" value="0.64" />
       <param name="freq" value="0.00" />
-      <param name="output" file="ldOutput1.txt" />
+      <output name="output" file="ldOutput1.txt" />
     </test>
   </tests>
 

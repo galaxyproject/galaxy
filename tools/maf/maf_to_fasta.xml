@@ -38,15 +38,15 @@
   <tests>
     <test>
       <param name="input1" value="3.maf" ftype="maf"/>
-      <param name="species" value="canFam1"/>
       <param name="fasta_type" value="concatenated"/>
+      <param name="species" value="canFam1"/>
       <output name="out_file1" file="cf_maf2fasta_concat.dat" ftype="fasta"/>
     </test>
     <test>
       <param name="input1" value="4.maf" ftype="maf"/>
+      <param name="fasta_type" value="multiple"/>
       <param name="species" value="hg17,panTro1,rheMac2,rn3,mm7,canFam2,bosTau2,dasNov1"/>
       <param name="complete_blocks" value="partial_allowed"/>
-      <param name="fasta_type" value="multiple"/>
       <output name="out_file1" file="cf_maf2fasta_new.dat" ftype="fasta"/>
     </test>
   </tests>

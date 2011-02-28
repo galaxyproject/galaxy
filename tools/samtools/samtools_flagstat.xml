@@ -14,7 +14,7 @@
   <tests>
     <test>
       <param name="input1" value="3.bam" ftype="bam" />
-      <param name="output1" file="samtools_flagstat_out1.txt" />
+      <output name="output1" file="samtools_flagstat_out1.txt" />
     </test>
   </tests>
   <help>

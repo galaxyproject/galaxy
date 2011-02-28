@@ -56,7 +56,6 @@
       <param name="input" value="6.maf"/>
       <param name="mask_char" value="0"/>
       <param name="type" value="nonCpG" />
-      <param name="definition" value="NA" />
       <output name="out_file1" file="6_mask_noncpg.maf"/>
     </test>
   </tests>

@@ -140,10 +140,10 @@ ${ simplejson.dumps( __options ) }
   </configfiles>
   <tests>
     <test>
+      <param name="input_type_selector" value="single_end" />
       <param name="input_chipseq_file1" value="chipseq_enriched.bed.gz" ftype="bed" />
       <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
       <param name="experiment_name" value="Galaxy Test Run" />
-      <param name="input_type_selector" value="single_end" />
       <param name="tsize" value="36" />
       <param name="mfold" value="13" />
       <param name="gsize" value="2.7e+9" />
@@ -166,10 +166,10 @@ ${ simplejson.dumps( __options ) }
       </output>
     </test>
     <test>
+      <param name="input_type_selector" value="single_end" />
       <param name="input_chipseq_file1" value="chipseq_enriched.bed.gz" ftype="bed" />
       <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
       <param name="experiment_name" value="Galaxy Test Run" />
-      <param name="input_type_selector" value="single_end" />
       <param name="tsize" value="36" />
       <param name="mfold" value="13" />
       <param name="gsize" value="2.7e+9" />
@@ -190,10 +190,10 @@ ${ simplejson.dumps( __options ) }
       </output>
     </test>
     <!-- <test>
+      <param name="input_type_selector" value="single_end" />
       <param name="input_chipseq_file1" value="chipseq_enriched.bed.gz" ftype="bed" />
       <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
       <param name="experiment_name" value="Galaxy Test Run" />
-      <param name="input_type_selector" value="single_end" />
       <param name="tsize" value="36" />
       <param name="mfold" value="13" />
       <param name="gsize" value="2.7e+9" />

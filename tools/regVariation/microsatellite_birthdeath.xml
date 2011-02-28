@@ -41,7 +41,6 @@
       <param name="alignment" value="chr22_5sp.maf"/>
       <param name="orthfile" value="chr22_5sp.microraw.tabular"/>
       <param name="thresholds" value="9,10,12,12"/>
-      <param name="species" value="hg18,panTro2,ponAbe2,rheMac2,calJac1"/>
       <param name="tree_definition" value="((((hg18, panTro2), ponAbe2), rheMac2), calJac1)"/>
       <param name="separation" value="40"/>
       <param name="simthresh" value="80"/>

@@ -76,10 +76,10 @@ region~~~~$m.region
     <edit_attributes type='name' value='tinywga' /> 
     </param>
     <param name='title' value='rgPedSubtest1' />
+    <param name="mtype" value="grslist" />
     <param name="region" value="" />
     <param name="rslist" value="rs2283802Xrs2267000Xrs16997606Xrs4820537Xrs3788347Xrs756632Xrs4820539Xrs2283804Xrs2267006Xrs4822363X" />
     <param name="relfilter" value="all" />
-    <param name="mtype" value="grslist" />
     <output name='output1' file='rgtestouts/rgPedSub/rgPedSubtest1.lped' ftype='lped' linesDiff='7'/>
  </test>
 </tests>

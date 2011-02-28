@@ -54,9 +54,9 @@
     <test>
       <param name="input1" value="fr.csfasta" ftype="csfasta"/>
       <param name="input2" value="fr.qualsolid" ftype="qualsolid" />
+      <param name="paired" value="yes"/>
       <param name="input3" value="rr.csfasta" ftype="csfasta"/>
       <param name="input4" value="rr.qualsolid" ftype="qualsolid" />
-      <param name="paired" value="yes"/>
       <param name="qual" value="0" />
       <param name="trim_first_base" value="No" />
       <param name="trim_name" value="Yes" />

@@ -15,13 +15,11 @@
 <tests>
     <test>          
         <param name="input1" value="sam_bioinf_example.sam" ftype="sam"/>
-        <param name="flags" value="Read is mapped in a proper pair"/>
         <param name="print_all" value="Yes"/>
         <output name="out_file1" file="sam2interval_printAll.dat" ftype="interval"/>
     </test>
     <test>          
         <param name="input1" value="sam_bioinf_example.sam" ftype="sam"/>
-        <param name="flags" value="Read is mapped in a proper pair"/>
         <param name="print_all" value="No"/>
         <output name="out_file1" file="sam2interval_noprintAll.dat" ftype="interval"/>
     </test>

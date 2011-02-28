@@ -38,7 +38,6 @@
   <code file="operation_filter.py"/>
   <tests>
     <test>
-      <param name="type" value="Interval"/>
       <param name="input1" value="1.bed" />
       <param name="input2" value="2.bed" />
       <param name="min" value="1" />
@@ -46,7 +45,6 @@
       <output name="output" file="gops_intersect_out.bed" />
     </test>
     <test>
-      <param name="type" value="Interval"/>  
       <param name="input1" value="1.bed" />
       <param name="input2" value="2_mod.bed" ftype="interval"/>
       <param name="min" value="1" />
