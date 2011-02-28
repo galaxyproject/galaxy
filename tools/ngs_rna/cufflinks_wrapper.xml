@@ -103,7 +103,7 @@
             Simple test that uses test data included with cufflinks.
         -->
         <test>
-            <param name="sPaired" value="single"/>
+            <param name="sPaired" value="No"/>
             <param name="input" value="cufflinks_in.sam"/>
             <param name="mean_inner_distance" value="20"/>
             <param name="max_intron_len" value="300000"/>
