@@ -139,13 +139,15 @@ def main():
         if psu_production:
             global_conf = None
 
+        if not database_connection.startswith( 'sqlite://' ):
+            kwargs['database_engine_option_max_overflow'] = '20'
+
         # Build the Universe Application
         app = UniverseApplication( job_queue_workers = 5,
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",
                                    database_connection = database_connection,
                                    database_engine_option_pool_size = '10',
-                                   database_engine_option_max_overflow = '20',
                                    file_path = file_path,
                                    new_file_path = new_file_path,
                                    tool_path = tool_path,
