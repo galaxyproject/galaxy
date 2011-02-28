@@ -2,9 +2,14 @@
 Data providers for tracks visualizations.
 """
 
+import sys
 from math import floor, ceil, log, pow
 import pkg_resources
-pkg_resources.require( "bx-python" ); pkg_resources.require( "pysam" ); pkg_resources.require( "numpy" )
+pkg_resources.require( "bx-python" )
+if sys.version_info[:2] == (2, 4):
+    pkg_resources.require( "ctypes" )
+pkg_resources.require( "pysam" )
+pkg_resources.require( "numpy" )
 from galaxy.datatypes.util.gff_util import *
 from bx.interval_index_file import Indexes
 from bx.arrays.array_tree import FileArrayTreeDict

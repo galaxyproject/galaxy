@@ -4,7 +4,11 @@ from __future__ import division
 
 import sys
 from galaxy import eggs
-import pkg_resources; pkg_resources.require( "pysam" )
+import pkg_resources
+
+if sys.version_info[:2] == (2, 4):
+    pkg_resources.require( "ctypes" )
+pkg_resources.require( "pysam" )
 
 from pysam import csamtools
 from galaxy.visualization.tracks.summary import *
