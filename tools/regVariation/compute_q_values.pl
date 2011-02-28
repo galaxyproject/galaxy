@@ -11,6 +11,8 @@
 use strict;
 use warnings;
 use IO::Handle;
+use File::Temp qw/ tempfile tempdir /;
+my $tdir = tempdir( CLEANUP => 0 );
 
 # check to make sure having correct input and output files
 my $usage = "usage: compute_q_values.pl [TABULAR.in] [lambda] [pi0_method] [fdr_level] [robust] [TABULAR.out] [PDF.out] \n";
@@ -44,7 +46,8 @@ open (OUTPUT2, ">", $p_q_values_histograms_QPlotsFile) || die("Could not open fi
 my $r_script;
 
 # R script to implement the calcualtion of q-values based on multiple simultaneous tests p-values 	
-# construct an R script file and save it in the same directory where the perl file is located
+# construct an R script file and save it in a temp directory
+chdir $tdir;
 $r_script = "q_values_computation.r";
 
 open(Rcmd,">", $r_script) or die "Cannot open $r_script \n\n"; 
@@ -76,6 +79,7 @@ print Rcmd "
 	dev.off();
 	
 	#save the q-values in the output file $q_valuesOutputFile
+	qobj\$pi0 <- signif(qobj\$pi0,digits=6)
 	qwrite(qobj, filename=\"$q_valuesOutputFile\"); 
 
 	#options(show.error.messages = TRUE);

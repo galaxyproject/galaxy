@@ -643,7 +643,11 @@ for my $no (3 ... $#all_tags+1){
 			my %microsatstarts=();										#1 WITHIN EACH ALIGNMENT, IF THERE EXISTS A MICROSATELLITE
 																#2 THIS HASH CONTAINS THE START SITE OF THE MICROSATELLITE
 																#3 WIHIN THE ALIGNMENT
-			
+			next if !defined $extreme_start;
+			next if !defined $extreme_end;
+			next if $extreme_start > length($sequences{$tags[0]});
+			next if $extreme_start < 0;
+			next if $extreme_end > length($sequences{$tags[0]});
 			
 			for my $i (0 ... $#tags){							#1 NOW THAT WE HAVE GATHERED INFORMATION REGARDING
 																#2 SEQUENCE ALIGNMENT AND MICROSATELLITE COORDINATES
@@ -3977,3 +3981,4 @@ sub printarr {
 	foreach my $line (@_) {print "$line\n";}
 	print "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::<\n";
 }
+

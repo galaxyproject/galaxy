@@ -1,4 +1,4 @@
-<tool id="compute_q_values" name="Compute q-values" version="1.0.0">
+<tool id="compute_q_values" name="Compute q-values" version="1.0.1">
   <description>based on multiple simultaneous tests p-values</description>
   
   <command interpreter="perl">
