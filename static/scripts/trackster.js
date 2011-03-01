@@ -9,15 +9,16 @@
  * rectangles instead.
  */
 CanvasRenderingContext2D.prototype.dashedLine = function(x1, y1, x2, y2, dashLen) {
-    if (dashLen == undefined) { dashLen = 4; }
+    if (dashLen === undefined) { dashLen = 4; }
     var dX = x2 - x1;
     var dY = y2 - y1;
     var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
     var dashX = dX / dashes;
     var dashY = dY / dashes;
+    var q;
     
-    for (var q= 0; q < dashes; q++, x1 += dashX, y1 += dashY) {
-        if (q % 2 != 0) {
+    for (q = 0; q < dashes; q++, x1 += dashX, y1 += dashY) {
+        if (q % 2 !== 0) {
             continue;
         }
         this.fillRect(x1, y1, dashLen, 1);
@@ -45,7 +46,7 @@ CanvasRenderingContext2D.prototype.drawDownwardEquilateralTriangle = function(do
     this.fill();
     this.stroke();
     this.closePath();    
-}
+};
 
 /** 
  * Make `element` sortable in parent by dragging `handle` (a selector)
@@ -54,8 +55,9 @@ function sortable( element, handle ) {
     element.bind( "drag", { handle: handle, relative: true }, function ( e, d ) {
         var parent = $(this).parent();
         var children = parent.children();
+        var i;
         // Determine new position
-        for ( var i = 0; i < children.length; i++ ) {
+        for ( i = 0; i < children.length; i++ ) {
             if ( d.offsetY < $(children.get(i)).position().top ) {
                 break;
             }
@@ -63,12 +65,12 @@ function sortable( element, handle ) {
         // If not already in the right place, move. Need 
         // to handle the end specially since we don't have 
         // insert at index
-        if ( i == children.length ) {
-            if ( this != children.get( i - 1 ) ) {
+        if ( i === children.length ) {
+            if ( this !== children.get( i - 1 ) ) {
                 parent.append( this );
             }
         }
-        else if ( this != children.get( i ) ) {
+        else if ( this !== children.get( i ) ) {
             $(this).insertBefore( children.get( i ) );
         }
     });
@@ -115,7 +117,7 @@ function compute_overlap(first_region, second_region) {
  * Returns true if there is any overlap between regions.
  */
 function is_overlap(first_region, second_region) {
-    return (compute_overlap(first_region, second_region) != NO_OVERLAP);
+    return (compute_overlap(first_region, second_region) !== NO_OVERLAP);
 }
 
 /**
@@ -129,7 +131,8 @@ var
     NO_DETAIL_TRACK_HEIGHT = 3,
     SQUISH_TRACK_HEIGHT = 5,
     PACK_TRACK_HEIGHT = 10,
-    NO_DETAIL_FEATURE_HEIGHT = DENSE_FEATURE_HEIGHT = 1,
+    NO_DETAIL_FEATURE_HEIGHT = 1,
+    DENSE_FEATURE_HEIGHT = 1,
     SQUISH_FEATURE_HEIGHT = 3,
     PACK_FEATURE_HEIGHT = 9,
     LABEL_SPACING = 2,
@@ -206,7 +209,7 @@ var Cache = function( num_elements ) {
 $.extend(Cache.prototype, {
     get: function(key) {
         var index = this.key_ary.indexOf(key);
-        if (index != -1) {
+        if (index !== -1) {
             this.move_key_to_end(key, index);
         }
         return this.obj_cache[key];
@@ -558,11 +561,11 @@ $.extend( View.prototype, {
         //
         // If user is navigating to previous/next set of chroms, load new chrom set and return.
         //
-        if (chrom == "previous") {
+        if (chrom === "previous") {
             view.load_chroms({low: this.chrom_start_index - MAX_CHROMS_SELECTABLE});
             return;
         }
-        if (chrom == "next") {
+        if (chrom === "next") {
             view.load_chroms({low: this.chrom_start_index + MAX_CHROMS_SELECTABLE});
             return;
         }
@@ -797,7 +800,7 @@ var NumberToolParameter = function(name, label, min, max, init_value) {
 
 // Uses a dictionary to construct a tool object.
 var get_tool_from_dict = function(tool_dict) {
-    if (obj_length(tool_dict) == 0) {
+    if (obj_length(tool_dict) === 0) {
         return undefined;
     }
     
@@ -901,7 +904,7 @@ var get_filters_from_dict = function(filters_dict) {
     for (var i = 0; i < filters_dict.length; i++) {
         var filter_dict = filters_dict[i];
         var name = filter_dict.name, type = filter_dict.type, index = filter_dict.index;
-        if (type == 'int' || type == 'float') {
+        if (type === 'int' || type === 'float') {
             filters[i] = new NumberFilter(name, index);
         } else {
             filters[i] = new Filter(name, index, type);
@@ -938,9 +941,9 @@ $.extend( TrackConfig.prototype, {
                 var id = 'param_' + index;
                 var row = $("<div class='form-row' />").appendTo( container );
                 row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
-                if ( param.type == 'bool' ) {
+                if ( param.type === 'bool' ) {
                     row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', track_config.values[ param.key ] ) );
-                } else if ( param.type == 'color' ) {
+                } else if ( param.type === 'color' ) {
                     var value = track_config.values[ param.key ];
                     var input = $('<input />').attr("id", id ).attr("name", id ).val( value );
                     // Color picker in tool tip style float
@@ -978,11 +981,11 @@ $.extend( TrackConfig.prototype, {
                 // Parse value from form element
                 var id = 'param_' + index;
                 var value = container.find( '#' + id ).val();
-                if ( param.type == 'float' ) {
+                if ( param.type === 'float' ) {
                     value = parseFloat( value );
-                } else if ( param.type == 'int' ) {
+                } else if ( param.type === 'int' ) {
                     value = parseInt( value );
-                } else if ( param.type == 'bool' ) {
+                } else if ( param.type === 'bool' ) {
                     value = container.find( '#' + id ).is( ':checked' );
                 } 
                 // Save value only if changed
@@ -1066,7 +1069,7 @@ $.extend( Track.prototype, {
             return;
         }
        
-        if ( track.view.chrom != null ) { 
+        if ( track.view.chrom !== null ) { 
             // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
             // about track status.
             $.getJSON(converted_datasets_state_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
@@ -1636,7 +1639,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 		    new_track;
 		    
 		// TODO: add support for other kinds of tool data tracks.
-	    if (current_track.track_type == 'FeatureTrack') {
+	    if (current_track.track_type === 'FeatureTrack') {
 	        new_track = new ToolDataFeatureTrack(track_name, view, undefined, {}, {}, current_track);    
 	    }
 		      
@@ -1647,7 +1650,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 		// Run tool.
 		var json_run_tool = function() {
             $.getJSON(run_tool_url, url_params, function(track_data) {
-                if (track_data == "no converter") {
+                if (track_data === "no converter") {
                     // No converter available for input datasets, so cannot run tool.
                     new_track.container_div.addClass("error");
                     new_track.content_div.text(DATA_NOCONVERTER);
@@ -1657,7 +1660,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     new_track.container_div.addClass("error");
                     new_track.content_div.text(DATA_CANNOT_RUN_TOOL + track_data.message);
                 }
-                else if (track_data == "pending") {
+                else if (track_data === "pending") {
                     // Converting/indexing input datasets; show message and try again.
                     new_track.container_div.addClass("pending");
                     new_track.content_div.text("Converting input data so that it can be easily reused.");
@@ -1739,8 +1742,10 @@ var ReferenceTrack = function (view) {
     Track.call( this, null, view, view.top_labeltrack );
     TiledTrack.call( this );
     
+    view.reference_track = this;
     this.left_offset = 200;
     this.height_px = 12;
+    this.font = DEFAULT_FONT;
     this.container_div.addClass( "reference-track" );
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
@@ -1750,25 +1755,33 @@ var ReferenceTrack = function (view) {
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
-    get_data: function(resolution, position) {
+    get_data: function(resolution, tile_index, key) {
         var track = this,
-            low = position * DENSITY * resolution,
-            high = ( position + 1 ) * DENSITY * resolution,
-            key = resolution + "_" + position;
-        
-        if (!track.data_queue[key]) {
-            track.data_queue[key] = true;
+            low = tile_index * DENSITY * resolution,
+            high = ( tile_index + 1 ) * DENSITY * resolution,
+            internal_key = low + "_" + high;
+            
+        if (key === undefined) { key = internal_key; }
+        if (!track.data_queue[internal_key]) {
+            track.data_queue[internal_key] = true;
             $.ajax({ 'url': reference_url, 'dataType': 'json', 'data': {  "chrom": this.view.chrom,
                                     "low": low, "high": high, "dbkey": this.view.dbkey },
                 success: function (seq) {
                     track.data_cache.set(key, seq);
-                    delete track.data_queue[key];
+                    track.data_cache.set(internal_key, seq);
+                    delete track.data_queue[internal_key];
                     track.draw();
                 }, error: function(r, t, e) {
                     console.log(r, t, e);
                 }
             });
         }
+    },
+    range_data: function(low, high) {
+        var key = low + "_" + high;
+        
+        var data = this.data_cache.get(key);
+        return data;
     },
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         var tile_low = tile_index * DENSITY * resolution,
@@ -1783,7 +1796,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
         
         if (w_scale > CHAR_WIDTH_PX) {
             if (this.data_cache.get(key) === undefined) {
-                this.get_data( resolution, tile_index );
+                this.get_data(resolution, tile_index, key);
                 return;
             }
             
@@ -1795,11 +1808,12 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
             
             canvas.get(0).width = Math.ceil( tile_length * w_scale + this.left_offset);
             canvas.get(0).height = this.height_px;
-           
+            ctx.font = DEFAULT_FONT;
+            ctx.textAlign = "center";
             for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                var c_start = Math.round(c * w_scale),
-                    gap = Math.round(w_scale / 2);
-                ctx.fillText(seq[c], c_start + this.left_offset + gap, 10);
+                var c_start = Math.round(c * w_scale);
+
+                ctx.fillText(seq[c], c_start + this.left_offset, 10);
             }
             parent_element.append(canvas);
             return canvas;
@@ -2225,7 +2239,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 // if slot can be found.
                 // TODO: are there any checks we need to do to ensure that text
                 // will fit on tile?
-                if (text_align == "left") {
+                if (text_align === "left") {
                     f_start -= text_len;
                     f_end -= text_len;
                     text_align = "right";
@@ -2346,11 +2360,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             
             // Set vars that depend on mode.
             var thin_height, thick_height;
-            if (mode == "Squish") {
+            if (mode === "Squish") {
                 thin_height = 1;
                 thick_height = SQUISH_FEATURE_HEIGHT;
             }
-            else { // mode == "Pack"
+            else { // mode === "Pack"
                 thin_height = 5;
                 thick_height = PACK_FEATURE_HEIGHT;
             }
@@ -2359,9 +2373,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             if (!feature_blocks) {
                 // If there are no blocks, treat the feature as one big exon.
                 if ( feature.strand ) {
-                    if (feature.strand == "+") {
+                    if (feature.strand === "+") {
                         ctx.fillStyle = RIGHT_STRAND_INV;
-                    } else if (feature.strand == "-") {
+                    } else if (feature.strand === "-") {
                         ctx.fillStyle = LEFT_STRAND_INV;
                     }
                 }
@@ -2381,18 +2395,18 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 
                 // Draw whole feature as connector/intron.
                 var cur_y_center, cur_height;
-                if (mode == "Squish") {
+                if (mode === "Squish") {
                     ctx.fillStyle = CONNECTOR_COLOR;
                     cur_y_center = y_center + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
                     cur_height = 1;
                 }
-                else { // mode == "Pack"
+                else { // mode === "Pack"
                     if (feature_strand) {
                         var cur_y_center = y_center;
                         var cur_height = thick_height;
-                        if (feature_strand == "+") {
+                        if (feature_strand === "+") {
                             ctx.fillStyle = RIGHT_STRAND;
-                        } else if (feature_strand == "-") {
+                        } else if (feature_strand === "-") {
                             ctx.fillStyle = LEFT_STRAND;
                         }
                     }
@@ -2546,7 +2560,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         //
         canvas.get(0).width = width + left_offset;
         canvas.get(0).height = required_height;
-        if (result.dataset_type == "summary_tree") {
+        if (result.dataset_type === "summary_tree") {
             // Increase canvas height in order to display max label.
             canvas.get(0).height += LABEL_SPACING + CHAR_HEIGHT_PX;
         }
@@ -2697,6 +2711,7 @@ $.extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
 var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
     this.track_type = "ReadTrack";
+    this.difference_mode = true;
 };
 $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     /**
@@ -2704,17 +2719,22 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
      */
     draw_read: function(ctx, mode, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center) {
         ctx.textAlign = "center";
-        var 
-            tile_region = [tile_low, tile_high],
-            base_offset = 0, 
+        var tile_region = [tile_low, tile_high],
+            base_offset = 0,
             seq_offset = 0,
-            gap = Math.round(w_scale / 2);
+            gap = 0,
+            seq_data;
             
         // Keep list of triangles that need to be drawn on top of initial drawing layer.
         // TODO: Eventually, we'll probably want to keep an ordered list of items to draw and then draw all 
         // items at once.
         var draw_last = [];
-        
+        if (view.reference_track) {
+            seq_data = view.reference_track.range_data(tile_low, tile_high);
+        }
+        if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+            gap = Math.round(w_scale/2);
+        }
         for (var cig_id = 0, len = cigar.length; cig_id < len; cig_id++) {
             var cig = cigar[cig_id],
                 cig_op = "MIDNSHP=X"[cig[0]],
@@ -2737,28 +2757,31 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                 case "M": // Match.
                 case "=": // Equals.
                     var seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region);
-                    if (seq_tile_overlap != NO_OVERLAP) {
+                    if (seq_tile_overlap !== NO_OVERLAP) {
                         // Draw.
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
-                        if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                        if (gap > 0) {
                             ctx.fillStyle = this.prefs.block_color;
-                            ctx.fillRect(s_start + this.left_offset, y_center + 1, s_end - s_start, 9);
+                            ctx.fillRect(s_start + this.left_offset - gap, y_center + 1, s_end - s_start, 9);
                             ctx.fillStyle = CONNECTOR_COLOR;
                             // TODO: this can be made much more efficient by computing the complete sequence
                             // to draw and then drawing it.
                             for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                                if (this.difference_mode && seq_data && seq_data[seq_start - tile_low + c] === seq[c]) {
+                                    continue;
+                                }
                                 if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
                                     var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
-                                    ctx.fillText(seq[c], c_start + this.left_offset + gap, y_center + 9);
+                                    ctx.fillText(seq[c], c_start + this.left_offset, y_center + 9);
                                 }
                             }
                         } else {
                             ctx.fillStyle = this.prefs.block_color;
                             // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
                             ctx.fillRect(s_start + this.left_offset, 
-                                         y_center + (this.mode != "Dense" ? 4 : 5), 
+                                         y_center + (this.mode !== "Dense" ? 4 : 5), 
                                          s_end - s_start, 
-                                         (mode != "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
+                                         (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
                         }
                     }
                     seq_offset += cig_len;
@@ -2766,14 +2789,14 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                     break;
                 case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
-                    ctx.fillRect(s_start + this.left_offset, y_center + 5, s_end - s_start, 1);
+                    ctx.fillRect(s_start + this.left_offset - gap, y_center + 5, s_end - s_start, 1);
                     //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
                     // No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
                     ctx.fillStyle = "red";
-                    ctx.fillRect(s_start + this.left_offset, y_center + 4, s_end - s_start, 3);
+                    ctx.fillRect(s_start + this.left_offset - gap, y_center + 4, s_end - s_start, 3);
                     // TODO: is this true? No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
@@ -2788,7 +2811,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                     // Check to see if sequence should be drawn at all by looking at the overlap between
                     // the sequence region and the tile region.
                     var seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region);
-                    if (seq_tile_overlap != NO_OVERLAP) {
+                    if (seq_tile_overlap !== NO_OVERLAP) {
                         // Draw sequence.
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                         // X center is offset + start - <half_sequence_length>
@@ -2796,7 +2819,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                         if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
                             // Draw sequence container.
                             ctx.fillStyle = "yellow";
-                            ctx.fillRect(x_center, y_center - 9, s_end - s_start, 9);
+                            ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
                             draw_last[draw_last.length] = [x_center + (s_end - s_start)/2, y_center + 4, 5];
                             ctx.fillStyle = CONNECTOR_COLOR;
                             // Based on overlap b/t sequence and tile, get sequence to be drawn.
@@ -2817,15 +2840,15 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                             // Draw sequence.
                             for (var c = 0, str_len = seq.length; c < str_len; c++) {
                                 var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
-                                ctx.fillText(seq[c], c_start + this.left_offset + gap - (s_end - s_start)/2, y_center);
+                                ctx.fillText(seq[c], c_start + this.left_offset - (s_end - s_start)/2 - gap, y_center);
                             }
                         }
                         else {
                             // Draw block.
                             ctx.fillStyle = "yellow";
                             // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                            ctx.fillRect(x_center, y_center + (this.mode != "Dense" ? 2 : 5), 
-                                         s_end - s_start, (mode != "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
+                            ctx.fillRect(x_center, y_center + (this.mode !== "Dense" ? 2 : 5), 
+                                         s_end - s_start, (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
                         }
                     }                
                     seq_offset += cig_len;
@@ -2861,6 +2884,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
             y_center = (mode === "Dense" ? 1 : (1 + slot)) * y_scale,
             block_color = this.prefs.block_color,
             label_color = this.prefs.label_color;
+            gap = 0; // Left-gap for label text since we align chrom text to the position tick
         
         // Draw read.
         ctx.fillStyle = block_color;
@@ -2893,12 +2917,15 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         if (mode === "Pack" && feature_start > tile_low) {
             // Draw label.
             ctx.fillStyle = this.prefs.label_color;
+            if ( (mode === "Pack" || this.mode === "Auto") && w_scale > CHAR_WIDTH_PX) {
+                var gap = Math.round(w_scale/2);
+            }
             if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
-                ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING, y_center + 8);
+                ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING - gap, y_center + 8);
             } else {
                 ctx.textAlign = "right";
-                ctx.fillText(feature_name, f_start + left_offset - LABEL_SPACING, y_center + 8);
+                ctx.fillText(feature_name, f_start + left_offset - LABEL_SPACING - gap, y_center + 8);
             }
             ctx.fillStyle = block_color;
         }
@@ -2927,7 +2954,7 @@ $.extend( ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.pro
         // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
         var track = this; 
         var post_init = function() {
-            if (track.data_cache.size() == 0) {
+            if (track.data_cache.size() === 0) {
                 // Track still drawing initial data, so do nothing.
                 setTimeout(post_init, 300);
             }
