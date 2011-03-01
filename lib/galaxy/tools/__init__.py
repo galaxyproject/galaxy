@@ -642,6 +642,8 @@ class Tool:
                     attributes['delta'] = int( attrib.pop( 'delta', '10000' ) ) 
                     attributes['sort'] = util.string_as_bool( attrib.pop( 'sort', False ) )
                     attributes['extra_files'] = []
+                    if 'ftype' in attrib:
+                        attributes['ftype'] = attrib['ftype']
                     for extra in output_elem.findall( 'extra_files' ):
                         # File or directory, when directory, compare basename 
                         # by basename

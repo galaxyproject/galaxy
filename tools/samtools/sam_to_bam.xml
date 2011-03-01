@@ -60,7 +60,7 @@
       -->
       <param name="index_source" value="cached" />
       <param name="input1" value="3.sam" ftype="sam" dbkey="equCab2" />
-      <output name="output1" file="sam_to_bam_out2.bam" />
+      <output name="output1" file="sam_to_bam_out2.bam" ftype="bam" />
     </test>
   </tests>
   <help>
