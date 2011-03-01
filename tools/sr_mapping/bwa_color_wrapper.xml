@@ -168,7 +168,7 @@
       python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out5.u.sam bwa_wrapper_out5.sam
       -->
       <param name="refGenomeSource" value="indexed" />
-      <param name="indices" value="equCab2chrM_cs" />
+      <param name="indices" value="equCab2chrM" />
       <param name="sPaired" value="paired" />
       <param name="input1" value="bwa_wrapper_in5.fastqcssanger" ftype="fastqcssanger" />
       <param name="input2" value="bwa_wrapper_in6.fastqcssanger" ftype="fastqcssanger" />
@@ -188,7 +188,7 @@
       python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out6.u.sam bwa_wrapper_out6.sam
       -->
       <param name="refGenomeSource" value="indexed" />
-      <param name="indices" value="hg19chrX_midpart_cs" />
+      <param name="indices" value="hg19chrX_midpart" />
       <param name="sPaired" value="single" />
       <param name="input1" value="bwa_wrapper_in4.fastqcssanger" ftype="fastqcssanger" />
       <param name="source_select" value="full" />
