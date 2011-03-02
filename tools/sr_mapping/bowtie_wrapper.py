@@ -67,6 +67,11 @@ usage: bowtie_wrapper.py [options]
 
 import optparse, os, shutil, subprocess, sys, tempfile
 
+#Allow more than Sanger encoded variants
+DEFAULT_ASCII_ENCODING = '--phred33-quals'
+GALAXY_FORMAT_TO_QUALITY_SCORE_ENCODING_ARG = { 'fastqsanger':'--phred33-quals', 'fastqillumina':'--phred64-quals', 'fastqsolexa':'--solexa-quals' }
+#FIXME: Integer quality scores are supported only when the '--integer-quals' argument is specified to bowtie; this is not currently able to be set in the tool/wrapper/config
+
 def stop_err( msg ):
     sys.stderr.write( '%s\n' % msg )
     sys.exit()
@@ -131,6 +136,7 @@ def __main__():
     parser.add_option( '-c', '--icutoff', dest='icutoff', help='Number of first bases of the reference sequence to index' )
     parser.add_option( '-x', '--indexSettings', dest='index_settings', help='Whether or not indexing options are to be set' )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
+    parser.add_option( '--galaxy_input_format', dest='galaxy_input_format', default="fastqsanger", help='galaxy input format' )
     parser.add_option( '--do_not_build_index', dest='do_not_build_index', action="store_true", default=False, help='Flag to specify that provided file is already indexed, use as is' )
     (options, args) = parser.parse_args()
     stdout = ''
@@ -255,9 +261,10 @@ def __main__():
         mateOrient = '--%s' % options.mateOrient
     else:
         mateOrient = ''
+    quality_score_encoding = GALAXY_FORMAT_TO_QUALITY_SCORE_ENCODING_ARG.get( options.galaxy_input_format, DEFAULT_ASCII_ENCODING )
     if options.params == 'preSet':
-        aligning_cmds = '-q %s %s -p %s -S %s %s ' % \
-                ( maxInsert, mateOrient, options.threads, suppressHeader, colorspace )
+        aligning_cmds = '-q %s %s -p %s -S %s %s %s ' % \
+                ( maxInsert, mateOrient, options.threads, suppressHeader, colorspace, quality_score_encoding )
     else:
         try:
             if options.skip and int( options.skip ) > 0:
@@ -386,14 +393,15 @@ def __main__():
             else:
                 keepends = ''
             aligning_cmds = '-q %s %s -p %s -S %s %s %s %s %s %s %s %s %s %s %s %s ' \
-                            '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % \
+                            '%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s ' % \
                             ( maxInsert, mateOrient, options.threads, suppressHeader,
                               colorspace, skip, alignLimit, trimH, trimL, maqSoapAlign,
                               mismatchSeed, mismatchQual, seedLen, rounding, minInsert, 
                               maxAlignAttempt, forwardAlign, reverseAlign, maxBacktracks,
                               tryHard, valAlign, allValAligns, suppressAlign, best,
                               strata, offrate, seed, snpphred, snpfrac, keepends,
-                              output_unmapped_reads, output_suppressed_reads )
+                              output_unmapped_reads, output_suppressed_reads,
+                              quality_score_encoding )
         except ValueError, e:
             # clean up temp dir
             if os.path.exists( tmp_index_dir ):

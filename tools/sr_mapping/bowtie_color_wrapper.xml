@@ -7,7 +7,7 @@
     --threads="4"
     ## Outputs
       --output=$output
-      #if $singlePaired == "single"
+      #if str( $singlePaired.sPaired ) == "single"
         #if $output_unmapped_reads_l
           --output_unmapped_reads=$output_unmapped_reads_l
         #end if

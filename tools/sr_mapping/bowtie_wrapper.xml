@@ -8,13 +8,14 @@
       --threads="4"
       ## Outputs
       --output=$output
-      #if $singlePaired == "single"
+      #if str( $singlePaired.sPaired ) == "single"
         #if $output_unmapped_reads_l
           --output_unmapped_reads=$output_unmapped_reads_l
         #end if
         #if $output_suppressed_reads_l
           --output_suppressed_reads=$output_suppressed_reads_l
         #end if
+        --galaxy_input_format="${singlePaired.sInput1.ext}"
       #else
         #if $output_unmapped_reads_l and $output_unmapped_reads_r
           --output_unmapped_reads_l=$output_unmapped_reads_l
@@ -24,9 +25,10 @@
           --output_suppressed_reads_l=$output_suppressed_reads_l
           --output_suppressed_reads_r=$output_suppressed_reads_r
         #end if
+        --galaxy_input_format="${singlePaired.pInput1.ext}"
       #end if
       ## Inputs
-      --dataType="solexa"
+      --dataType="solexa" ##this indicates that nucleotide base space is used in the wrapper
       --suppressHeader=$suppressHeader
       --genomeSource=$refGenomeSource.genomeSource
       #if $refGenomeSource.genomeSource == "history":
@@ -59,7 +61,8 @@
         #end if
       #else
         ##use pre-built index
-        --ref="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'bowtie_indexes' ].get_fields() )[0][-1] }"
+        ##--ref="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'bowtie_indexes' ].get_fields() )[0][-1] }"
+        --ref="${ refGenomeSource.index.fields.path }"
       #end if
       --paired=$singlePaired.sPaired
       #if $singlePaired.sPaired == "single":
@@ -191,7 +194,7 @@
         <option value="paired">Paired-end</option>
       </param>
       <when value="single">
-        <param name="sInput1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+        <param name="sInput1" type="data" format="fastqsanger,fastqillumina,fastqsolexa" label="FASTQ file" help="Must have ASCII encoded quality scores"/>
         <conditional name="sParams">
           <param name="sSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
             <option value="preSet">Commonly used</option>
@@ -245,8 +248,14 @@
         </conditional> <!-- sParams -->
       </when> <!-- single -->
       <when value="paired">
-        <param name="pInput1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
-        <param name="pInput2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+        <param name="pInput1" type="data" format="fastqsanger,fastqillumina,fastqsolexa" label="Forward FASTQ file" help="Must have ASCII encoded quality scores"/>
+        <param name="pInput2" type="data" format="fastqsanger,fastqillumina,fastqsolexa" label="Reverse FASTQ file" help="File format must match the Forward FASTQ file">
+            <options options_filter_attribute="ext" from_parameter="tool.app.datatypes_registry.datatypes_by_extension" transform_lines="obj.keys()">>
+               <column name="name" index="0"/>
+               <column name="value" index="0"/>
+               <filter type="param_value" ref="pInput1" ref_attribute="ext" column="0"/> 
+           </options>
+        </param>
         <param name="pMaxInsert" type="integer" value="1000" label="Maximum insert size for valid paired-end alignments (-X)" />
         <param name="pMateOrient" type="select" label="The upstream/downstream mate orientation for valid paired-end alignment against the forward reference strand (--fr/--rf/--ff)">
           <option value="fr">FR (for Illumina)</option>
@@ -333,7 +342,7 @@
         </conditional>
       </actions>
     </data>
-    <data format="fastqsanger" name="output_suppressed_reads_l" label="${tool.name} on ${on_string}: suppressed reads (L)">
+    <data format="fastq" name="output_suppressed_reads_l" label="${tool.name} on ${on_string}: suppressed reads (L)">
       <filter>((
           singlePaired['sPaired'] == "single" and
           singlePaired['sParams']['sSettingsType'] == "full" and
@@ -344,13 +353,41 @@
           singlePaired['pParams']['pMaxFile'] is True
         ))
       </filter>
+      <actions>
+        <conditional name="singlePaired.sPaired">
+          <when value="single">
+            <action type="format">
+              <option type="from_param" name="singlePaired.sInput1" param_attribute="ext" />
+            </action>
+          </when>
+          <when value="paired">
+            <action type="format">
+              <option type="from_param" name="singlePaired.pInput1" param_attribute="ext" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
     </data>
-    <data format="fastqsanger" name="output_suppressed_reads_r" label="${tool.name} on ${on_string}: suppressed reads (R)">
+    <data format="fastq" name="output_suppressed_reads_r" label="${tool.name} on ${on_string}: suppressed reads (R)">
       <filter>singlePaired['sPaired'] == "paired"</filter>
       <filter>singlePaired['pParams']['pSettingsType'] == "full"</filter>
       <filter>singlePaired['pParams']['pMaxFile'] is True</filter>
+      <actions>
+        <conditional name="singlePaired.sPaired">
+          <when value="single">
+            <action type="format">
+              <option type="from_param" name="singlePaired.sInput1" param_attribute="ext" />
+            </action>
+          </when>
+          <when value="paired">
+            <action type="format">
+              <option type="from_param" name="singlePaired.pInput1" param_attribute="ext" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
     </data>
-    <data format="fastqsanger" name="output_unmapped_reads_l" label="${tool.name} on ${on_string}: unmapped reads (L)">
+    <data format="fastq" name="output_unmapped_reads_l" label="${tool.name} on ${on_string}: unmapped reads (L)">
       <filter>
         ((
           singlePaired['sPaired'] == "single" and
@@ -362,11 +399,39 @@
           singlePaired['pParams']['pUnmappedFile'] is True
         ))
       </filter>
+      <actions>
+        <conditional name="singlePaired.sPaired">
+          <when value="single">
+            <action type="format">
+              <option type="from_param" name="singlePaired.sInput1" param_attribute="ext" />
+            </action>
+          </when>
+          <when value="paired">
+            <action type="format">
+              <option type="from_param" name="singlePaired.pInput1" param_attribute="ext" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
     </data>
-    <data format="fastqsanger" name="output_unmapped_reads_r" label="${tool.name} on ${on_string}: unmapped reads (R)">
+    <data format="fastq" name="output_unmapped_reads_r" label="${tool.name} on ${on_string}: unmapped reads (R)">
       <filter>singlePaired['sPaired'] == "paired"</filter>
       <filter>singlePaired['pParams']['pSettingsType'] == "full"</filter>
       <filter>singlePaired['pParams']['pUnmappedFile'] is True</filter>
+      <actions>
+        <conditional name="singlePaired.sPaired">
+          <when value="single">
+            <action type="format">
+              <option type="from_param" name="singlePaired.sInput1" param_attribute="ext" />
+            </action>
+          </when>
+          <when value="paired">
+            <action type="format">
+              <option type="from_param" name="singlePaired.pInput1" param_attribute="ext" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
     </data>
   </outputs>
   <tests>
@@ -379,6 +444,7 @@
       chrM_base needs to be the base location/name of the index files.
       -->
       <param name="genomeSource" value="indexed" />
+      <!-- this is the backwards-compatible "unique value" for this index, not an actual path -->
       <param name="index" value="equCab2chrM" />
       <param name="sPaired" value="single" />
       <param name="sInput1" ftype="fastqsanger" value="bowtie_in2.fastqsanger" />
@@ -437,6 +503,86 @@
       <output name="output_unmapped_reads_l" ftype="fastqsanger" file="bowtie_out8_1.fastq" sort="True" />
       <output name="output_unmapped_reads_r" ftype="fastqsanger" file="bowtie_out8_2.fastq" sort="True" />
     </test>
+    <!-- start testing of non-sanger variant fastq reads -->
+    <test>
+      <param name="genomeSource" value="history" />
+      <param name="ownFile" value="phiX.fasta" />
+      <param name="indexSettings" value="indexPreSet" />
+      <param name="sPaired" value="paired" />
+      <param name="pInput1" ftype="fastqillumina" value="bowtie_in5.fastqillumina" />
+      <param name="pInput2" ftype="fastqillumina" value="bowtie_in6.fastqillumina" />
+      <param name="pMaxInsert" value="1000" />
+      <param name="pMateOrient" value="ff" />
+      <param name="pSettingsType" value="full" />
+      <param name="pSkip" value="0" />
+      <param name="pAlignLimit" value="-1" />
+      <param name="pTrimH" value="0" />
+      <param name="pTrimL" value="0" />
+      <param name="pMismatchSeed" value="2" />
+      <param name="pMismatchQual" value="70" />
+      <param name="pSeedLen" value="28" />
+      <param name="pRounding" value="round" />
+      <param name="pMaqSoapAlign" value="-1" />
+      <param name="pMinInsert" value="0" />
+      <param name="pMaxAlignAttempt" value="100" />
+      <param name="pForwardAlign" value="forward" />
+      <param name="pReverseAlign" value="reverse" />
+      <param name="pTryHard" value="noTryHard" />
+      <param name="pValAlign" value="1" />
+      <param name="pAllValAligns" value="noAllValAligns" />
+      <param name="pSuppressAlign" value="-1" />
+      <param name="pUnmappedFile" value="true" />
+      <param name="pMaxFile" value="false" />
+      <param name="pBest" value="doBest" />
+      <param name="pdMaxBacktracks" value="800" />
+      <param name="pdStrata" value="noStrata" />
+      <param name="pOffrate" value="-1" />
+      <param name="pSeed" value="-1" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" ftype="sam" file="bowtie_out7.sam" sort="True" />
+      <output name="output_unmapped_reads_l" ftype="fastqillumna" file="bowtie_out8_1.fastqillumina.sorted" sort="True" />
+      <output name="output_unmapped_reads_r" ftype="fastqillumna" file="bowtie_out8_2.fastqillumina.sorted" sort="True" />
+    </test>
+    <test>
+      <param name="genomeSource" value="history" />
+      <param name="ownFile" value="phiX.fasta" />
+      <param name="indexSettings" value="indexPreSet" />
+      <param name="sPaired" value="paired" />
+      <param name="pInput1" ftype="fastqsolexa" value="bowtie_in5.fastqsolexa" />
+      <param name="pInput2" ftype="fastqsolexa" value="bowtie_in6.fastqsolexa" />
+      <param name="pMaxInsert" value="1000" />
+      <param name="pMateOrient" value="ff" />
+      <param name="pSettingsType" value="full" />
+      <param name="pSkip" value="0" />
+      <param name="pAlignLimit" value="-1" />
+      <param name="pTrimH" value="0" />
+      <param name="pTrimL" value="0" />
+      <param name="pMismatchSeed" value="2" />
+      <param name="pMismatchQual" value="70" />
+      <param name="pSeedLen" value="28" />
+      <param name="pRounding" value="round" />
+      <param name="pMaqSoapAlign" value="-1" />
+      <param name="pMinInsert" value="0" />
+      <param name="pMaxAlignAttempt" value="100" />
+      <param name="pForwardAlign" value="forward" />
+      <param name="pReverseAlign" value="reverse" />
+      <param name="pTryHard" value="noTryHard" />
+      <param name="pValAlign" value="1" />
+      <param name="pAllValAligns" value="noAllValAligns" />
+      <param name="pSuppressAlign" value="-1" />
+      <param name="pUnmappedFile" value="true" />
+      <param name="pMaxFile" value="false" />
+      <param name="pBest" value="doBest" />
+      <param name="pdMaxBacktracks" value="800" />
+      <param name="pdStrata" value="noStrata" />
+      <param name="pOffrate" value="-1" />
+      <param name="pSeed" value="-1" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" ftype="sam" file="bowtie_out7.sam" sort="True" />
+      <output name="output_unmapped_reads_l" ftype="fastqsolexa" file="bowtie_out8_1.fastqsolexa.sorted" sort="True" />
+      <output name="output_unmapped_reads_r" ftype="fastqsolexa" file="bowtie_out8_2.fastqsolexa.sorted" sort="True" />
+    </test>
+    <!-- end testing of non-sanger variant fastq reads -->    
     <test>
       <!--
       Bowtie command:
