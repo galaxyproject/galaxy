@@ -412,8 +412,8 @@
             <param name="sPaired" value="single" />
             <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
             <param name="sSettingsType" value="preSet" />
-            <output name="junctions" file="tophat_out1j.bed" ftype="bed" />
-            <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" ftype="bam" />
+            <output name="junctions" file="tophat_out1j.bed" />
+            <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" />
         </test>
         <!-- Test using test data: paired-end reads, index from history. -->
         <test>
@@ -428,8 +428,8 @@
             <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger" />
             <param name="mate_inner_distance" value="20" />
             <param name="pSettingsType" value="preSet" />
-            <output name="junctions" file="tophat_out2j.bed" ftype="bed" />
-            <output name="accepted_hits" file="tophat_out2h.bam" compare="sim_size" ftype="bam" />
+            <output name="junctions" file="tophat_out2j.bed" />
+            <output name="accepted_hits" file="tophat_out2h.bam" compare="sim_size" />
         </test>
         <!-- Test single-end reads with user-supplied reference fasta and full parameters -->
         <test>
@@ -469,10 +469,10 @@
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
             <param name="microexon_search" value="Yes" />
-            <output name="insertions" file="tophat_out3i.bed" ftype="bed"/>
-            <output name="deletions" file="tophat_out3d.bed" ftype="bed"/>
-            <output name="junctions" file="tophat_out3j.bed" ftype="bed" />
-            <output name="accepted_hits" file="tophat_out3h.bam" compare="sim_size" ftype="bam" />
+            <output name="insertions" file="tophat_out3i.bed" />
+            <output name="deletions" file="tophat_out3d.bed" />
+            <output name="junctions" file="tophat_out3j.bed" />
+            <output name="accepted_hits" file="tophat_out3h.bam" compare="sim_size" />
         </test>
         <!-- Test paired-end reads with user-supplied reference fasta and full parameters -->
         <test>
@@ -512,8 +512,8 @@
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
             <param name="microexon_search" value="Yes" />
-            <output name="junctions" file="tophat_out4j.bed" ftype="bed" />
-            <output name="accepted_hits" file="tophat_out4h.bam" compare="sim_size" ftype="bam" />
+            <output name="junctions" file="tophat_out4j.bed" />
+            <output name="accepted_hits" file="tophat_out4h.bam" compare="sim_size" />
         </test>
     </tests>
 
