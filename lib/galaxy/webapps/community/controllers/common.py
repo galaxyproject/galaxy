@@ -30,6 +30,7 @@ class ItemRatings( UsesItemRatings ):
             # User has previously rated item; update rating.
             item_rating.rating = rating
             item_rating.comment = comment
+            trans.sa_session.add( item_rating )
             trans.sa_session.flush()
         return item_rating
 
@@ -85,12 +86,10 @@ class ToolListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="Tool.name",
                     link=( lambda item: dict( operation="view_tool", id=item.id, webapp="community" ) ),
-                    attach_popup=False
-                    ),
+                    attach_popup=False ),
         DescriptionColumn( "Description",
                            key="description",
-                           attach_popup=False
-                           ),
+                           attach_popup=False ),
         VersionColumn( "Version",
                        key="version",
                        attach_popup=False,
@@ -119,7 +118,7 @@ class ToolListGrid( grids.Grid ):
                             key="Category.name",
                             visible=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
+    columns.append( grids.MulticolFilterColumn( "Search tool name, description, version", 
                                                 cols_to_filter=[ columns[0], columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -165,13 +164,11 @@ class CategoryListGrid( grids.Grid ):
                     key="name",
                     link=( lambda item: dict( operation="tools_by_category", id=item.id, webapp="community" ) ),
                     attach_popup=False,
-                    filterable="advanced"
-                  ),
+                    filterable="advanced" ),
         DescriptionColumn( "Description",
                     key="description",
                     attach_popup=False,
-                    filterable="advanced"
-                  ),
+                    filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted",
                              key="deleted",
@@ -181,7 +178,7 @@ class CategoryListGrid( grids.Grid ):
                      model_class=model.Tool,
                      attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search",
+    columns.append( grids.MulticolFilterColumn( "Search category name, description",
                                                 cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
