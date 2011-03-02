@@ -1640,7 +1640,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 		    
 		// TODO: add support for other kinds of tool data tracks.
 	    if (current_track.track_type === 'FeatureTrack') {
-	        new_track = new ToolDataFeatureTrack(track_name, view, undefined, {}, {}, current_track);    
+	        new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);
 	    }
 		      
 		this.add_track(new_track);
@@ -2964,7 +2964,7 @@ $.extend( ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.pro
                 track.data_url = default_data_url;
                 track.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
                 track.dataset_state_url = converted_datasets_state_url;
-                $.getJSON(track.dataset_state_url, { dataset_id : track.dataset_id }, function(track_data) {});
+                $.getJSON(track.dataset_state_url, { dataset_id : track.dataset_id, hda_ldda: track.hda_ldda }, function(track_data) {});
             }
         };
         post_init();
