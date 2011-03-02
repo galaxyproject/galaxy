@@ -1256,8 +1256,14 @@ class DataToolParameter( ToolParameter ):
         options = elem.find( 'options' )
         if options is None:
             self.options = None
+            self.options_filter_attribute = None
         else:
             self.options = dynamic_options.DynamicOptions( options, self )
+            
+            #HACK to get around current hardcoded limitation of when a set of dynamic options is defined for a DataToolParameter
+            #it always causes available datasets to be filtered by dbkey
+            #this behavior needs to be entirely reworked (in a backwards compatible manner)
+            self.options_filter_attribute = options.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
         # Load conversions required for the dataset input
         self.conversions = []
@@ -1302,7 +1308,7 @@ class DataToolParameter( ToolParameter ):
                     # associated with the dataset that restrict it's access from "public".
                     if self.tool and self.tool.tool_type == 'data_destination' and not trans.app.security_agent.dataset_is_public( hda.dataset ):
                         continue
-                    if self.options and hda.get_dbkey() != filter_value:
+                    if self.options and self._options_filter_attribute( hda ) != filter_value:
                         continue
                     if isinstance( hda.datatype, self.formats):
                         selected = ( value and ( hda in value ) )
@@ -1363,7 +1369,7 @@ class DataToolParameter( ToolParameter ):
                 return False
             for i, data in enumerate( datasets ):
                 if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
-                    if self.options and data.get_dbkey() != filter_value:
+                    if self.options and self._options_filter_attribute( data ) != filter_value:
                         continue
                     most_recent_dataset[0] = data
                 # Also collect children via association object
@@ -1436,6 +1442,25 @@ class DataToolParameter( ToolParameter ):
                     converter_safe[0] = False #This option does not allow for conversion, i.e. uses contents of dataset file to generate options
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
+
+    def _options_filter_attribute( self, value ):
+        #HACK to get around current hardcoded limitation of when a set of dynamic options is defined for a DataToolParameter
+        #it always causes available datasets to be filtered by dbkey
+        #this behavior needs to be entirely reworked (in a backwards compatible manner)
+        options_filter_attribute = self.options_filter_attribute
+        if options_filter_attribute is None:
+            return value.get_dbkey()
+        if options_filter_attribute.endswith( "()" ):
+            call_attribute = True
+            options_filter_attribute = options_filter_attribute[:-2]
+        else:
+            call_attribute = False
+        ref = value
+        for attribute in options_filter_attribute.split( '.' ):
+            ref = getattr( ref, attribute )
+        if call_attribute:
+            ref = ref()
+        return ref
 
 # class RawToolParameter( ToolParameter ):
 #     """
