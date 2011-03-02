@@ -179,11 +179,16 @@ class FromParamToolOutputActionOption( ToolOutputActionOption ):
         self.column = int( self.column )
         self.offset = elem.get( 'offset', -1 )
         self.offset = int( self.offset )
+        self.param_attribute = elem.get( 'param_attribute', [] )
+        if self.param_attribute:
+            self.param_attribute = self.param_attribute.split( '.' )
     def get_value( self, other_values ):
         value = other_values
         for ref_name in self.name:
             assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
             value = value.get( ref_name )
+        for attr_name in self.param_attribute:
+            value = getattr( value, attr_name )
         options = [ [ str( value ) ] ]
         for filter in self.filters:
             options = filter.filter_options( options, other_values )
@@ -276,6 +281,9 @@ class ParamValueToolOutputActionOptionFilter( ToolOutputActionOptionFilter ):
         self.keep = util.string_as_bool( elem.get( "keep", 'True' ) )
         self.compare = parse_compare_type( elem.get( 'compare', None ) )
         self.cast = parse_cast_attribute( elem.get( "cast", None ) )
+        self.param_attribute = elem.get( 'param_attribute', [] )
+        if self.param_attribute:
+            self.param_attribute = self.param_attribute.split( '.' )
     def filter_options( self, options, other_values ):
         if self.ref:
             #find ref value
@@ -283,6 +291,8 @@ class ParamValueToolOutputActionOptionFilter( ToolOutputActionOptionFilter ):
             for ref_name in self.ref:
                 assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
                 value = value.get( ref_name )
+            for attr_name in self.param_attribute:
+                value = getattr( value, attr_name )
             value = str( value )
         else:
             value = self.value
