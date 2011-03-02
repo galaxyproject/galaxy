@@ -373,7 +373,7 @@ $.extend( View.prototype, {
                 return false;
             }
         };
-        this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keypress focusout", submit_nav).appendTo(this.chrom_form);
+        this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.chrom_form);
         this.location_span = $("<span/>").addClass("location").appendTo(this.chrom_form);
         this.location_span.bind("click", function() {
             view.location_span.hide();
@@ -1533,6 +1533,10 @@ $.extend( TiledTrack.prototype, Track.prototype, {
     delayed_draw: function(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale) {
         var track = this;
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
+        var draw_tile = function(tile_element) {
+            track.tile_cache.set(key, tile_element);
+            track.show_tile(tile_element, parent_element, tile_low, w_scale);
+        };
         var id = setTimeout(function() {
             if (tile_low <= track.view.high && tile_high >= track.view.low) {
                 // Show/draw tile: check cache for tile; if tile not in cache, draw it.
@@ -1541,16 +1545,18 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     tile_element = track.tile_cache.get(key);
                 }
                 if (!tile_element) {
-                    tile_element = track.draw_tile(resolution, tile_index, parent_element, w_scale);
-                    if ( tile_element ) {
-                        // Wrap element in div for background
-                        var wrapper_element = $("<div class='track-tile'>").prepend( tile_element );
-                        // HACK: filtering
-                        if ( tile_element.hasClass( FILTERABLE_CLASS ) ) {
-                            wrapper_element.addClass( FILTERABLE_CLASS );
+                    track.draw_tile(resolution, tile_index, parent_element, w_scale, function(returned_tile) {
+                        if ( returned_tile ) {
+                            // Wrap element in div for background
+                            var wrapper_element = $("<div class='track-tile'>").prepend( returned_tile );
+                            // HACK: filtering
+                            if ( returned_tile.hasClass( FILTERABLE_CLASS ) ) {
+                                wrapper_element.addClass( FILTERABLE_CLASS );
+                            }
+                            tile_element = wrapper_element;
                         }
-                        tile_element = wrapper_element;
-                    }
+                        draw_tile(tile_element);
+                    });
                 }
                 if (tile_element) {
                     // Store initial canvas in case we need to use it for overview
@@ -1565,9 +1571,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                         track.set_overview();
                     }
                     */
-                    // Add tile to cache and show tile.
-                    track.tile_cache.set(key, tile_element);
-                    track.show_tile(tile_element, parent_element, tile_low, w_scale);
+                    draw_tile(tile_element);
                 }
             }
         }, 50);
@@ -1631,24 +1635,24 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         //
         // Create track for tool's output immediately to provide user feedback.
         //
-		var 
-		    current_track = this,
+        var 
+            current_track = this,
             // Set name of track to include tool name, parameters, and region used.
-		    track_name = url_params.tool_id +
-		                 current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
-		    new_track;
-		    
-		// TODO: add support for other kinds of tool data tracks.
-	    if (current_track.track_type === 'FeatureTrack') {
-	        new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);
-	    }
-		      
-		this.add_track(new_track);
-		new_track.content_div.text("Starting job.");
-		view.has_changes = true;
-		
-		// Run tool.
-		var json_run_tool = function() {
+            track_name = url_params.tool_id +
+                         current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
+            new_track;
+            
+        // TODO: add support for other kinds of tool data tracks.
+        if (current_track.track_type === 'FeatureTrack') {
+            new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);    
+        }
+              
+        this.add_track(new_track);
+        new_track.content_div.text("Starting job.");
+        view.has_changes = true;
+        
+        // Run tool.
+        var json_run_tool = function() {
             $.getJSON(run_tool_url, url_params, function(track_data) {
                 if (track_data === "no converter") {
                     // No converter available for input datasets, so cannot run tool.
@@ -1673,8 +1677,8 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     new_track.init();
                 }
             });
-		};
-		json_run_tool();
+        };
+        json_run_tool();
     },
     /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
@@ -1755,68 +1759,62 @@ var ReferenceTrack = function (view) {
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
-    get_data: function(resolution, tile_index, key) {
+    fetch_data: function(low, high, key, callback) {
         var track = this,
-            low = tile_index * DENSITY * resolution,
-            high = ( tile_index + 1 ) * DENSITY * resolution,
-            internal_key = low + "_" + high;
-            
-        if (key === undefined) { key = internal_key; }
-        if (!track.data_queue[internal_key]) {
-            track.data_queue[internal_key] = true;
+            cached = track.data_cache.get(key);
+        
+        if (cached) {
+            callback(cached);
+        } else {
             $.ajax({ 'url': reference_url, 'dataType': 'json', 'data': {  "chrom": this.view.chrom,
                                     "low": low, "high": high, "dbkey": this.view.dbkey },
                 success: function (seq) {
                     track.data_cache.set(key, seq);
-                    track.data_cache.set(internal_key, seq);
-                    delete track.data_queue[internal_key];
-                    track.draw();
+                    callback(seq);
                 }, error: function(r, t, e) {
                     console.log(r, t, e);
                 }
             });
         }
     },
-    range_data: function(low, high) {
-        var key = low + "_" + high;
+    tile_data: function(resolution, tile_index, callback) {
+        var low = tile_index * DENSITY * resolution,
+            high = ( tile_index + 1 ) * DENSITY * resolution,
+            key = low + "_" + high;
         
-        var data = this.data_cache.get(key);
-        return data;
+        this.fetch_data(low, high, key, function (seq) {
+            callback(seq);
+        });
     },
-    draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
-        var tile_low = tile_index * DENSITY * resolution,
+    draw_tile: function( resolution, tile_index, parent_element, w_scale, callback ) {
+        var track = this,
+            tile_low = tile_index * DENSITY * resolution,
             tile_length = DENSITY * resolution,
             key = resolution + "_" + tile_index;
         
-        var canvas = document.createElement("canvas");
-        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
-        canvas = $(canvas);
-        
-        var ctx = canvas.get(0).getContext("2d");
-        
         if (w_scale > CHAR_WIDTH_PX) {
-            if (this.data_cache.get(key) === undefined) {
-                this.get_data(resolution, tile_index, key);
-                return;
-            }
+            var canvas = document.createElement("canvas");
+            if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
+            canvas = $(canvas);
             
-            var seq = this.data_cache.get(key);
-            if (seq === null) {
-                this.content_div.css("height", "0px");
-                return;
-            }
+            var ctx = canvas.get(0).getContext("2d");
             
-            canvas.get(0).width = Math.ceil( tile_length * w_scale + this.left_offset);
-            canvas.get(0).height = this.height_px;
-            ctx.font = DEFAULT_FONT;
-            ctx.textAlign = "center";
-            for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                var c_start = Math.round(c * w_scale);
-
-                ctx.fillText(seq[c], c_start + this.left_offset, 10);
-            }
-            parent_element.append(canvas);
-            return canvas;
+            track.tile_data(resolution, tile_index, function(seq) {
+                if (seq === null) {
+                    track.content_div.css("height", "0px");
+                    return;
+                }
+                canvas.get(0).width = Math.ceil( tile_length * w_scale + track.left_offset);
+                canvas.get(0).height = track.height_px;
+                ctx.font = DEFAULT_FONT;
+                ctx.textAlign = "center";
+                for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                    var c_start = Math.round(c * w_scale);
+                    ctx.fillText(seq[c], c_start + track.left_offset, 10);
+                }
+                // parent_element.append(canvas);
+                callback(canvas);
+            });
         }
         this.content_div.css("height", "0px");
     }
@@ -1959,7 +1957,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             });
         }
     },
-    draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
+    draw_tile: function( resolution, tile_index, parent_element, w_scale, callback ) {
         if (this.vertical_range === undefined) {
             return;
         }
@@ -2060,7 +2058,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         } else {
             ctx.stroke();
         }
-        return canvas;
+        callback(canvas);
     } 
 });
 
@@ -2459,12 +2457,19 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw FeatureTrack tile.
      */
-    draw_tile: function(resolution, tile_index, parent_element, w_scale) {
+    draw_tile: function(resolution, tile_index, parent_element, w_scale, callback, ref_seq) {
+        // Fetch reference sequence data if it exists and we are displaying
+        var track = this;
+        if (track.view.reference_track && w_scale > CHAR_WIDTH_PX && ref_seq === undefined) {
+            return track.view.reference_track.tile_data(resolution, tile_index, function(ret_ref_seq) {
+                track.draw_tile(resolution, tile_index, parent_element, w_scale, callback, ret_ref_seq);
+            });
+        }
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = tile_high - tile_low;
         //console.log("drawing " + tile_low + " to " + tile_high);
-
+        
         /*for (var k in this.data_cache.obj_cache) {
             var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
             if (k_low <= tile_low && k_high >= tile_high) {
@@ -2640,10 +2645,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             // Draw feature.
             if (is_overlap([feature_start, feature_end], [tile_low, tile_high]) && slot !== null) {
                 this.draw_element(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, 
-                                  width, left_offset);
+                                  width, left_offset, ref_seq);
             }
         }
-        return canvas;                        
+        callback(canvas);
     }
 });
 
@@ -2717,21 +2722,19 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     /**
      * Draw a single read.
      */
-    draw_read: function(ctx, mode, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center) {
+    draw_read: function(ctx, mode, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center, ref_seq) {
         ctx.textAlign = "center";
-        var tile_region = [tile_low, tile_high],
+        var track = this,
+            tile_region = [tile_low, tile_high],
             base_offset = 0,
             seq_offset = 0,
-            gap = 0,
-            seq_data;
+            gap = 0;
             
         // Keep list of triangles that need to be drawn on top of initial drawing layer.
         // TODO: Eventually, we'll probably want to keep an ordered list of items to draw and then draw all 
         // items at once.
         var draw_last = [];
-        if (view.reference_track) {
-            seq_data = view.reference_track.range_data(tile_low, tile_high);
-        }
+        
         if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
             gap = Math.round(w_scale/2);
         }
@@ -2767,8 +2770,11 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                             // TODO: this can be made much more efficient by computing the complete sequence
                             // to draw and then drawing it.
                             for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                if (this.difference_mode && seq_data && seq_data[seq_start - tile_low + c] === seq[c]) {
-                                    continue;
+                                if (this.difference_mode && ref_seq) {
+                                    var ref_char = ref_seq[seq_start - tile_low + c];
+                                    if (!ref_char || ref_char.toLowerCase() === seq[c].toLowerCase()) {
+                                        continue;
+                                    }
                                 }
                                 if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
                                     var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
@@ -2872,7 +2878,8 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     /**
      * Draw a complete read.
      */
-    draw_element: function(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width, left_offset) {
+    draw_element: function(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width, left_offset, ref_seq) {
+        
         // All features need a start, end, and vertical center.
         var 
             feature_uid = feature[0],
@@ -2897,11 +2904,11 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
 
             // Draw left/forward read.
             if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {
-                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center);
+                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center, ref_seq);
             }
             // Draw right/reverse read.
             if (feature[5][1] >= tile_low && feature[5][0] <= tile_high && feature[5][2]) {
-                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], y_center);
+                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], y_center, ref_seq);
             }
             // Draw connector.
             if (b2_start > b1_end) {
@@ -2912,7 +2919,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         } else {
             // Read is single.
             ctx.fillStyle = block_color;
-            this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center);
+            this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center, ref_seq);
         }
         if (mode === "Pack" && feature_start > tile_low) {
             // Draw label.
