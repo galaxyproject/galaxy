@@ -112,10 +112,13 @@ for dir in $DIRS; do
 done
 
 # for wig_to_bigWig and bed_to_bigBed
-if [ ! -f "tool-data/shared/ucsc/chrom/hg17.len" -a -f "test-data/wig_to_bigwig_hg17.len" ]; then
-    mkdir -p tool-data/shared/ucsc/chrom
-    cp test-data/wig_to_bigwig_hg17.len tool-data/shared/ucsc/chrom/hg17.len
-fi
+for build in hg17 hg18; do
+    if [ -f "test-data/chrom/$build.len" ]; then
+        echo "Copying test-data/chrom/$build.len to tool-data/shared/ucsc/chrom/"
+        mkdir -p tool-data/shared/ucsc/chrom
+        cp test-data/chrom/$build.len tool-data/shared/ucsc/chrom/$build.len
+    fi
+done
 
 if [ -d "test-data-repo" ]; then
     echo "Updating test data repository"
