@@ -40,7 +40,7 @@
 	  <param name="keep_info" value='' />
 	  <param name="discard_info" value='' />
 	  <param name="pass_filter" value='true' />      
-      <output name="output" file="test_extract_pass_filter_quality_9_DP_2000_lt.vcf" ftype="vcf" />
+      <output name="output" file="test_extract_pass_filter_quality_9_DP_2000_lt.vcf" lines_diff="6" ftype="vcf" />
     </test>
     <test>
       <param name="input1" value="test.small.vcf" ftype="vcf" />
