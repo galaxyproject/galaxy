@@ -250,9 +250,11 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         n_deleted = 0
         deleted_current = False
         message_parts = []
+        status = SUCCESS
         for history in histories:
             if history.users_shared_with:
                 message_parts.append( "History (%s) has been shared with others, unshare it before deleting it.  " % history.name )
+                status = ERROR
             elif not history.deleted:
                 # We'll not eliminate any DefaultHistoryPermissions in case we undelete the history later
                 history.deleted = True
@@ -262,7 +264,6 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                     trans.new_history()
                 trans.log_event( "History (%s) marked as deleted" % history.name )
                 n_deleted += 1
-        status = SUCCESS
         if n_deleted:
             message_parts.append( "Deleted %d %s.  " % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) ) )
         if deleted_current:
