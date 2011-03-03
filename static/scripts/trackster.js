@@ -135,6 +135,7 @@ var
     DENSE_FEATURE_HEIGHT = 1,
     SQUISH_FEATURE_HEIGHT = 3,
     PACK_FEATURE_HEIGHT = 9,
+    ERROR_PADDING = 10, // Padding at the top of tracks for error messages
     LABEL_SPACING = 2,
     PACK_SPACING = 5,
     // Minimum width for window for squish to be used.
@@ -2348,7 +2349,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             feature_name = feature[3],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = (mode === "Dense" ? 1 : (1 + slot)) * y_scale,
+            y_center = ERROR_PADDING + (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             thickness, y_start, thick_start = null, thick_end = null,
             block_color = this.prefs.block_color,
             label_color = this.prefs.label_color;
@@ -2381,8 +2382,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             if (mode === "Squish") {
                 thin_height = 1;
                 thick_height = SQUISH_FEATURE_HEIGHT;
-            }
-            else { // mode === "Pack"
+            } else { // mode === "Pack"
                 thin_height = 5;
                 thick_height = PACK_FEATURE_HEIGHT;
             }
@@ -2401,8 +2401,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     ctx.fillStyle = block_color;
                 }                            
                 ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, thick_height);
-            }
-            else { 
+            } else { 
                 // There are feature blocks and mode is either Squish or Pack.
                 //
                 // Approach: (a) draw whole feature as connector/intron and (b) draw blocks as 
@@ -2602,7 +2601,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         if (mode === "summary_tree") {            
             this.draw_summary_tree(canvas, result.data, result.delta, result.max, w_scale, required_height, 
                                    tile_low, left_offset);
-            return canvas;
+            return callback(canvas);
         }
         
         //
@@ -2610,16 +2609,19 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         // FIXME: Why is this drawn on a canvas instead of a div?
         if (result.message) {
             canvas.css({
-                "border-color": "red"
+                "border-top": "1px solid red"
             });
 
             ctx.fillStyle = "red";
             ctx.textAlign = "left";
-            ctx.fillText(result.message, 100 + left_offset, y_scale);
+            var old_base = ctx.textBaseline;
+            ctx.textBaseline = "top";
+            ctx.fillText(result.message, left_offset, 0);
+            ctx.textBaseline = old_base;
 
             // If there's no data, return.
             if (!result.data) {
-                return canvas;
+                return callback(canvas);
             }
         }
 
@@ -2690,7 +2692,7 @@ $.extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
             // All features need a start, end, and vertical center.
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = (mode === "Dense" ? 1 : (1 + slot)) * y_scale,
+            y_center = ERROR_PADDING + (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             thickness, y_start, thick_start = null, thick_end = null;
         
         if (no_label) {

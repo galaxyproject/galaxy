@@ -21,6 +21,7 @@ from galaxy.datatypes.interval import Bed, Gff
 from pysam import csamtools
 
 MAX_VALS = 5000 # only display first MAX_VALS features
+ERROR_MAX_VALS = "Only the first " + str(MAX_VALS) + " %s in this tile are displayed."
 
 # Return None instead of NaN to pass jQuery 1.4's strict JSON
 def float_nan(n):
@@ -199,7 +200,7 @@ class VcfDataProvider( TracksDataProvider ):
 
         for start, end, offset in index.find(chrom, start, end):
             if count >= MAX_VALS:
-                message = "Only the first %s features are being displayed." % MAX_VALS
+                message = ERROR_MAX_VALS % "features"
                 break
             count += 1
             source.seek(offset)
@@ -290,7 +291,7 @@ class BamDataProvider( TracksDataProvider ):
         paired_pending = {}
         for read in data:
             if len(results) > MAX_VALS:
-                message = "Only the first %s reads are being displayed." % MAX_VALS
+                message = ERROR_MAX_VALS % "reads"
                 break
             qname = read.qname
             seq = read.seq
@@ -511,7 +512,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
         no_detail = ( "no_detail" in kwargs )
         for start, end, offset in index.find(chrom, start, end):
             if count >= MAX_VALS:
-                message = "Only the first %s features are being displayed." % MAX_VALS
+                message = ERROR_MAX_VALS % "features"
                 break
             count += 1
             source.seek( offset )
@@ -580,7 +581,7 @@ class GFFDataProvider( TracksDataProvider ):
             if feature.chrom != chrom or feature_start < start or feature_end > end:
                 continue
             if count >= MAX_VALS:
-                message = "Only the first %s features are being displayed." % MAX_VALS
+                message = ERROR_MAX_VALS % "features"
                 break
             count += 1
             payload = package_gff_feature( feature )
