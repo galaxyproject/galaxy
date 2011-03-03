@@ -36,15 +36,12 @@
 .right-float{float:right;margin-left:5px;}
 .top-labeltrack{position:relative;border-bottom:solid #999 1px;}
 .nav-labeltrack{border-top:solid #999 1px;border-bottom:solid #333 1px;}
-.filter-name{float:left;}
 input{font:10px verdana;}
-table.filters{border-collapse:separate;border-spacing:7px 0px;}
 .values{padding-left:0.25em;}
-.dynamic-tool{width:400px;margin-left:0.25em;}
-.param-row{margin-top:0.4em;margin-left:1em;}
+.dynamic-tool,.filters{width:400px;margin-left:0.25em;padding-bottom:0.5em;}
+.slider-row{margin-top:0.4em;margin-left:1em;}
 .slider-label{float:left;font-weight:bold;}
 .slider{float:right;width:200px;position:relative;}
 .tool-name{font-size:110%;font-weight:bold;}
 .child-track-icon{background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;width:30px;cursor:move;}
-.param-value{cursor:pointer;}
 .track-resize{background:white url('../images/visualization/draggable_vertical.png') no-repeat top center;position:absolute;right:3px;bottom:-4px;width:14px;height:7px;border:solid #999 1px;z-index:100;}

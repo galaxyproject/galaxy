@@ -1161,45 +1161,51 @@ var TiledTrack = function(filters, tool, parent_track) {
     }
     
     // Create filtering div.
-    this.filtering_div = $("<div/>").addClass("track-filters").hide();
-    this.header_div.after(this.filtering_div);
+    this.filters_div = $("<div/>").addClass("filters").hide();
+    this.header_div.after(this.filters_div);
     // Disable dragging, double clicking on div so that actions on slider do not impact viz.
-    this.filtering_div.bind("drag", function(e) {
+    this.filters_div.bind("drag", function(e) {
         e.stopPropagation();
     }).bind("dblclick", function(e) {
         e.stopPropagation();
     });
-    var filters_table = $("<table class='filters'>").appendTo(this.filtering_div);
     $.each(this.filters, function(index, filter) {
-        var table_row = $("<tr>").appendTo(filters_table);
-        var filter_th = $("<th class='filter-info'>").appendTo(table_row);
-        var name_span = $("<span class='name'>").appendTo(filter_th);
+        var filter_div = $("<div/>").addClass("slider-row").appendTo(track.filters_div);
+        
+        // Set up filter label (name, values).
+        var filter_label = $("<div/>").addClass("slider-label").appendTo(filter_div)
+        var name_span = $("<span/>").addClass("name").appendTo(filter_label);
         name_span.text(filter.name + "  "); // Extra spacing to separate name and values
-        var values_span = $("<span class='values'>").appendTo(filter_th);
+        var values_span = $("<span/>").addClass("values").appendTo(filter_label);
+        
+        // Set up slider for filter.
         // TODO: generate custom interaction elements based on filter type.
-        var table_data = $("<td>").appendTo(table_row);
-        filter.control_element = $("<div id='" + filter.name + "-filter-control' style='width: 200px; position: relative'>").appendTo(table_data);
+        var slider_div = $("<div/>").addClass("slider").appendTo(filter_div);
+        filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
         filter.control_element.slider({
             range: true,
             min: Number.MAX_VALUE,
             max: -Number.MIN_VALUE,
             values: [0, 0],
-            slide: function( event, ui ) {
+            slide: function(event, ui) {
                 var values = ui.values;
                 // Set new values in UI.
-                values_span.text( "[" + values[0] + "-" + values[1] + "]" );
+                values_span.text("[" + values[0] + "-" + values[1] + "]");
                 // Set new values in filter.
                 filter.low = values[0];
                 filter.high = values[1];                    
                 // Redraw track.
-                track.draw( true );
+                track.draw(true);
             },
             change: function( event, ui ) {
-                filter.control_element.slider( "option", "slide" ).call( filter.control_element, event, ui );
+                filter.control_element.slider("option", "slide").call( filter.control_element, event, ui );
             }
         });
         filter.slider = filter.control_element;
         filter.slider_label = values_span;
+        
+        // Add to clear floating layout.
+        $("<div style='clear: both;'/>").appendTo(filter_div);
     });
     
     //
@@ -1221,19 +1227,15 @@ var TiledTrack = function(filters, tool, parent_track) {
         var tool_params = this.tool.params;
         var track = this;
         $.each(this.tool.params, function(index, param) {
-            var param_div = $("<div>").addClass("param-row").appendTo(track.dynamic_tool_div);
+            var param_div = $("<div>").addClass("slider-row").appendTo(track.dynamic_tool_div);
             
-            //
             // Slider label.
-            //
             var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
             var name_span = $("<span class='param-name'>").text(param.label + "  ").appendTo(label_div);
             var values_span = $("<span/>").text(param.value);
             var values_span_container = $("<span class='param-value'>").appendTo(label_div).append("[").append(values_span).append("]");
             
-            //
             // Slider.
-            //
             var slider_div = $("<div/>").addClass("slider").appendTo(param_div);
             var slider = $("<div id='" + param.name + "-param-control'>").appendTo(slider_div);
             // Make step reasonable.
@@ -1257,9 +1259,7 @@ var TiledTrack = function(filters, tool, parent_track) {
                 }   
             });
             
-            //
             // Enable users to edit parameter's value via a text box.
-            //
             values_span_container.click(function() {
                 var span = values_span,
                     cur_value = span.text(),
@@ -1297,12 +1297,12 @@ var TiledTrack = function(filters, tool, parent_track) {
                 });
             });
             
-            // Added to clear floating layout.
-            $("<div style='clear: both;'/>").appendTo(param_div); 
+            // Add to clear floating layout.
+            $("<div style='clear: both;'/>").appendTo(param_div);
         });
         
         // Add 'Go' button.
-        var run_tool_row = $("<div>").addClass("param-row").appendTo(this.dynamic_tool_div);
+        var run_tool_row = $("<div>").addClass("slider-row").appendTo(this.dynamic_tool_div);
         var run_tool_button = $("<input type='submit'>").attr("value", "Run").appendTo(run_tool_row);
         var track = this;
         run_tool_button.click( function() {
@@ -1418,11 +1418,11 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         //
         if (track.filters.length > 0) {
             // Show/hide filters menu item.
-            var text = (track.filtering_div.is(":visible") ? "Hide filters" : "Show filters");
+            var text = (track.filters_div.is(":visible") ? "Hide filters" : "Show filters");
             track_dropdown[text] = function() {
                 // Toggle filtering div and remake menu.
-                track.filters_visible = (track.filtering_div.is(":visible"));
-                track.filtering_div.toggle();
+                track.filters_visible = (track.filters_div.is(":visible"));
+                track.filters_div.toggle();
                 track.make_name_popup_menu();
             };
         }
@@ -1622,11 +1622,11 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         if ( tile_element.hasClass(FILTERABLE_CLASS) ) {
             show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters");
             if (track.filters_visible) {
-                track.filtering_div.show();
+                track.filters_div.show();
             }
         } else {
             show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters", false);
-            track.filtering_div.hide();
+            track.filters_div.hide();
         }
     }, 
     // Set track as the overview track in the visualization.
