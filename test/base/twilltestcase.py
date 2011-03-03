@@ -64,7 +64,6 @@ class TwillTestCase( unittest.TestCase ):
                 allowed_diff_count = int(attributes.get( 'lines_diff', 0 ))
                 diff = list( difflib.unified_diff( local_file, history_data, "local_file", "history_data" ) )
                 diff_lines = get_lines_diff( diff )
-                log.debug('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1,file2,allowed_diff_count,diff_lines))
                 if diff_lines > allowed_diff_count:
                     diff_slice = diff[0:40]
                     #FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff 
@@ -78,6 +77,7 @@ class TwillTestCase( unittest.TestCase ):
                         # not differ we're ok.
                         valid_diff_strs = [ 'description', 'createdate', 'creationdate', 'moddate', 'id', 'producer', 'creator', 'extgstate', 'ais' ]
                         valid_diff = False
+                        invalid_diff_lines = 0
                         for line in diff_slice:
                             # Make sure to lower case strings before checking.
                             line = line.lower()
@@ -91,10 +91,14 @@ class TwillTestCase( unittest.TestCase ):
                                         # Stop checking as soon as we know we have a valid difference
                                         break
                                 if not valid_diff:
-                                    # Print out diff_slice so we can see what failed
-                                    print "###### diff_slice ######"
-                                    raise AssertionError( "".join( diff_slice ) )
+                                    invalid_diff_lines += 1
+                        log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1,file2,allowed_diff_count,diff_lines,invalid_diff_lines))
+                        if invalid_diff_lines > allowed_diff_count:
+                            # Print out diff_slice so we can see what failed
+                            print "###### diff_slice ######"
+                            raise AssertionError( "".join( diff_slice ) )
                     else:
+                        log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1,file2,allowed_diff_count,diff_lines))
                         for line in diff_slice:
                             for char in line:
                                 if ord( char ) > 128:
