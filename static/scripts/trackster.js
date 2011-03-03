@@ -1097,9 +1097,7 @@ $.extend( Track.prototype, {
                 } else if (result['status'] === "data") {
                     if (result['valid_chroms']) {
                         track.valid_chroms = result['valid_chroms'];
-                        track.name_div.data("menu_options")["List chrom/contigs with data"] = function() {
-                            show_modal("Chrom/contigs with data", "<p>" + track.valid_chroms.join("<br/>") + "</p>", { "Close": function() { hide_modal(); } });
-                        };
+                        track.make_name_popup_menu();
                     }
                     track.content_div.text(DATA_OK);
                     if (track.view.chrom) {
@@ -1349,93 +1347,7 @@ var TiledTrack = function(filters, tool, parent_track) {
         }
     }
     
-    //
-    // Track dropdown menu.
-    //
-    var track_dropdown = {};
-    track_dropdown["Edit configuration"] = function() {
-        var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
-            ok_fn = function() { 
-                track.track_config.update_from_form( $(".dialog-box") );
-                hide_modal(); 
-                $(window).unbind("keypress.check_enter_esc"); 
-            },
-            check_enter_esc = function(e) {
-                if ((e.keyCode || e.which) === 27) { // Escape key
-                    cancel_fn();
-                } else if ((e.keyCode || e.which) === 13) { // Enter key
-                    ok_fn();
-                }
-            };
-
-        $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-        show_modal("Configure Track", track.track_config.build_form(), {
-            "Cancel": cancel_fn,
-            "OK": ok_fn
-        });
-    };
-    /*
-    track_dropdown["Set as overview"] = function() {
-        view.overview_viewport.find("canvas").remove();
-        track.is_overview = true;
-        track.set_overview();
-        for (var track_id in view.tracks) {
-            if (view.tracks[track_id] !== track) {
-                view.tracks[track_id].is_overview = false;
-            }
-        }
-    };*/
-    
-    if (track.filters.length > 0) {
-        // Show/hide filters menu item.
-        track_dropdown["Show filters"] = function() {
-            // Set option text and toggle filtering div.
-            var menu_option_text;
-            if (!track.filtering_div.is(":visible")) {
-                menu_option_text = "Hide filters";
-                track.filters_visible = true;
-            }
-            else {
-                menu_option_text = "Show filters";
-                track.filters_visible = false;
-            }
-            // TODO: set menu option name.
-            track.filtering_div.toggle();
-        };
-    }
-    if (track.tool) {
-        // Show/hide dynamic tool menu item.
-        track_dropdown["Toggle Tool"] = function() {
-            // Show/hide tool, update/revert name, and set menu text.
-            var menu_option_text;
-            if (!track.dynamic_tool_div.is(":visible")) {
-                menu_option_text = "Hide dynamic tool";
-                track.update_name(track.name + track.tool_region_and_parameters_str());
-            }
-            else {
-                menu_option_text = "Show dynamic tool";
-                track.revert_name();
-            }
-            // TODO: set menu option name.
-            track.dynamic_tool_div.toggle();
-        };
-    }
-    
-    // Need to either remove track from view or from parent.
-    var parent_obj = view;
-    var no_tracks_fn = function() { $("#no-tracks").show(); };
-    if (this.parent_track) {
-        // Track is child track.
-        parent_obj = this.parent_track;
-        no_tracks_fn = function() {};
-    }
-    track_dropdown.Remove = function() {
-        parent_obj.remove_track(track);
-        if (parent_obj.num_tracks === 0) {
-            no_tracks_fn();
-        }
-    };
-    track.popup_menu = make_popupmenu(track.name_div, track_dropdown);
+    this.make_name_popup_menu();
     
     /*
     if (track.overview_check_div === undefined) {
@@ -1456,6 +1368,114 @@ var TiledTrack = function(filters, tool, parent_track) {
     */
 };
 $.extend( TiledTrack.prototype, Track.prototype, {
+    /**
+     * Make popup menu for track name.
+     */
+    make_name_popup_menu: function() {
+        var track = this;
+        
+        var track_dropdown = {};
+        
+        //
+        // Edit config option.
+        //
+        track_dropdown["Edit configuration"] = function() {
+            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+                ok_fn = function() { 
+                    track.track_config.update_from_form( $(".dialog-box") );
+                    hide_modal(); 
+                    $(window).unbind("keypress.check_enter_esc"); 
+                },
+                check_enter_esc = function(e) {
+                    if ((e.keyCode || e.which) === 27) { // Escape key
+                        cancel_fn();
+                    } else if ((e.keyCode || e.which) === 13) { // Enter key
+                        ok_fn();
+                    }
+                };
+
+            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
+            show_modal("Configure Track", track.track_config.build_form(), {
+                "Cancel": cancel_fn,
+                "OK": ok_fn
+            });
+        };
+        /*
+        track_dropdown["Set as overview"] = function() {
+            view.overview_viewport.find("canvas").remove();
+            track.is_overview = true;
+            track.set_overview();
+            for (var track_id in view.tracks) {
+                if (view.tracks[track_id] !== track) {
+                    view.tracks[track_id].is_overview = false;
+                }
+            }
+        };*/
+
+        //
+        // Show/hide filters option.
+        //
+        if (track.filters.length > 0) {
+            // Show/hide filters menu item.
+            var text = (track.filtering_div.is(":visible") ? "Hide filters" : "Show filters");
+            track_dropdown[text] = function() {
+                // Toggle filtering div and remake menu.
+                track.filters_visible = (track.filtering_div.is(":visible"));
+                track.filtering_div.toggle();
+                track.make_name_popup_menu();
+            };
+        }
+        
+        //
+        // Show/hide tool option.
+        //
+        if (track.tool) {
+            // Show/hide dynamic tool menu item.
+            var text = (track.dynamic_tool_div.is(":visible") ? "Hide Tool" : "Show Tool");
+            track_dropdown[text] = function() {
+                // Set track name, toggle tool div, and remake menu.
+                if (!track.dynamic_tool_div.is(":visible")) {
+                    track.update_name(track.name + track.tool_region_and_parameters_str());
+                }
+                else {
+                    menu_option_text = "Show dynamic tool";
+                    track.revert_name();
+                }
+                track.dynamic_tool_div.toggle();
+                track.make_name_popup_menu();
+            };
+        }
+        
+        //
+        // List chrom/contigs with data option.
+        //
+        if (track.valid_chroms) {
+            track_dropdown["List chrom/contigs with data"] = function() {
+                show_modal("Chrom/contigs with data", "<p>" + track.valid_chroms.join("<br/>") + "</p>", { "Close": function() { hide_modal(); } });
+            };
+        }
+        
+        //
+        // Remove option.
+        //
+
+        // Need to either remove track from view or from parent.
+        var parent_obj = view;
+        var no_tracks_fn = function() { $("#no-tracks").show(); };
+        if (this.parent_track) {
+            // Track is child track.
+            parent_obj = this.parent_track;
+            no_tracks_fn = function() {};
+        }
+        track_dropdown.Remove = function() {
+            parent_obj.remove_track(track);
+            if (parent_obj.num_tracks === 0) {
+                no_tracks_fn();
+            }
+        };
+        
+        make_popupmenu(track.name_div, track_dropdown);
+    },
     draw: function(force) {
         var low = this.view.low,
             high = this.view.high,

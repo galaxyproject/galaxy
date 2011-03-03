@@ -59,7 +59,10 @@ function make_popupmenu( button_element, initial_options ) {
     /*  Use the $.data feature to store options with the link element.
         This allows options to be changed at a later time 
     */
+    var element_menu_exists = (button_element.data("menu_options"));
     button_element.data("menu_options", initial_options);
+    // If element already has menu, nothing else to do since HTML and actions are already set.
+    if (element_menu_exists) { return; }
     button_element.bind("click.show_popup", function(e) {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
