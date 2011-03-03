@@ -1,5 +1,5 @@
 /* Trackster
-    2010, James Taylor, Kanwei Li, Jeremy Goecks
+    2010-2011: James Taylor, Kanwei Li, Jeremy Goecks
 */
 
 /**
@@ -2336,7 +2336,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         // Dense mode displays the same for all data.
         if (mode === "Dense") {
             ctx.fillStyle = block_color;
-            ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, DENSE_FEATURE_HEIGHT);
+            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, DENSE_FEATURE_HEIGHT);
         }
         else if (mode === "no_detail") {
             // No details for feature, so only one way to display.
@@ -2345,7 +2345,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, DENSE_FEATURE_HEIGHT);
         } 
         else { // Mode is either Squish or Pack:
-            // Feature has details.
+            // Feature details.
             var feature_strand = feature[5],
                 feature_ts = feature[6],
                 feature_te = feature[7],
@@ -2378,10 +2378,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     }
                 }
                 else { // No strand.
-                    ctx.fillStyle = CONNECTOR_COLOR;
+                    ctx.fillStyle = block_color;
                 }                            
-                ctx.fillRect(f_start + left_offset, y_center + (thick_height-thin_height)/2 + 1, 
-                             f_end - f_start, thick_height);
+                ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, thick_height);
             }
             else { 
                 // There are feature blocks and mode is either Squish or Pack.
@@ -2642,8 +2641,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 continue;
             }    
             
-            // Draw feature.
-            if (is_overlap([feature_start, feature_end], [tile_low, tile_high]) && slot !== null) {
+            // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
+            if (is_overlap([feature_start, feature_end], [tile_low, tile_high]) && (mode == "Dense" || slot !== null)) {
                 this.draw_element(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, 
                                   width, left_offset, ref_seq);
             }
