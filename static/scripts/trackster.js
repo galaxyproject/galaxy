@@ -1051,7 +1051,6 @@ $.extend( Track.prototype, {
     init: function() {
         var track = this;
         track.enabled = false;
-        track.data_queue = {};
         track.tile_cache.clear();    
         track.data_cache.clear();
         track.initial_canvas = undefined;
@@ -1477,6 +1476,29 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         
         make_popupmenu(track.name_div, track_dropdown);
     },
+    tile_data: function(resolution, tile_index, extra_params, callback, key) {
+        var track = this,
+            low = tile_index * DENSITY * resolution,
+            high = ( tile_index + 1 ) * DENSITY * resolution,
+            params = { "chrom": this.view.chrom, "low": low, "high": high, "dbkey": this.view.dbkey };
+        
+        if (key === undefined) {
+            key = resolution + "_" + tile_index;
+        }
+        var cached = track.data_cache.get(key);
+        if (cached) {
+            return callback(cached);
+        }
+        $.extend(params, extra_params);
+        $.ajax({ 'url': this.data_url, 'dataType': 'json', 'data': params,
+            success: function (result) {
+                track.data_cache.set(key, result);
+                return callback(result);
+            }, error: function(r, t, e) {
+                console.log(r, t, e);
+            }
+        });
+    },
     draw: function(force) {
         var low = this.view.low,
             high = this.view.high,
@@ -1775,56 +1797,26 @@ var ReferenceTrack = function (view) {
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
     this.content_div.css("border", "none");
-    this.data_queue = {};
+    this.data_url = reference_url;
     this.data_cache = new DataCache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
-    fetch_data: function(low, high, key, callback) {
-        var track = this,
-            cached = track.data_cache.get(key);
-        
-        if (cached) {
-            callback(cached);
-        } else {
-            $.ajax({ 'url': reference_url, 'dataType': 'json', 'data': {  "chrom": this.view.chrom,
-                                    "low": low, "high": high, "dbkey": this.view.dbkey },
-                success: function (seq) {
-                    track.data_cache.set(key, seq);
-                    callback(seq);
-                }, error: function(r, t, e) {
-                    console.log(r, t, e);
-                }
-            });
-        }
-    },
-    tile_data: function(resolution, tile_index, callback) {
-        var low = tile_index * DENSITY * resolution,
-            high = ( tile_index + 1 ) * DENSITY * resolution,
-            key = low + "_" + high;
-        
-        this.fetch_data(low, high, key, function (seq) {
-            callback(seq);
-        });
-    },
     draw_tile: function( resolution, tile_index, parent_element, w_scale, callback ) {
         var track = this,
-            tile_low = tile_index * DENSITY * resolution,
-            tile_length = DENSITY * resolution,
-            key = resolution + "_" + tile_index;
+            tile_length = DENSITY * resolution;
         
         if (w_scale > CHAR_WIDTH_PX) {
-            var canvas = document.createElement("canvas");
-            if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
-            canvas = $(canvas);
-            
-            var ctx = canvas.get(0).getContext("2d");
-            
-            track.tile_data(resolution, tile_index, function(seq) {
+            track.tile_data(resolution, tile_index, {}, function(seq) {
                 if (seq === null) {
                     track.content_div.css("height", "0px");
                     return;
                 }
+                var canvas = document.createElement("canvas");
+                if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
+                canvas = $(canvas);
+
+                var ctx = canvas.get(0).getContext("2d");
                 canvas.get(0).width = Math.ceil( tile_length * w_scale + track.left_offset);
                 canvas.get(0).height = track.height_px;
                 ctx.font = DEFAULT_FONT;
@@ -1834,7 +1826,7 @@ $.extend( ReferenceTrack.prototype, TiledTrack.prototype, {
                     ctx.fillText(seq[c], c_start + track.left_offset, 10);
                 }
                 // parent_element.append(canvas);
-                callback(canvas);
+                return callback(canvas);
             });
         }
         this.content_div.css("height", "0px");
@@ -1949,137 +1941,105 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             min_label.prependTo(track.container_div);
         });
     },
-    get_data: function( resolution, position ) {
-        var track = this,
-            low = position * DENSITY * resolution,
-            high = ( position + 1 ) * DENSITY * resolution,
-            key = resolution + "_" + position;
-        
-        if (!track.data_queue[key]) {
-            track.data_queue[key] = true;
-            /*$.getJSON( track.data_url, {  "chrom": this.view.chrom, 
-                                            "low": low, "high": high, "dataset_id": this.dataset_id,
-                                            "resolution": this.view.resolution }, function (data) {
-                track.data_cache.set(key, data);
-                delete track.data_queue[key];
-                track.draw();
-            });*/
-            $.ajax({ 'url': this.data_url, 'dataType': 'json', 
-                     'data': {  chrom: this.view.chrom, low: low, high: high, 
-                                hda_ldda: this.hda_ldda, dataset_id: this.dataset_id, resolution: this.view.resolution }, 
-                success: function (result) {
-                    var data = result.data;
-                    track.data_cache.set(key, data);
-                    delete track.data_queue[key];
-                    track.draw();
-                }, error: function(r, t, e) {
-                    console.log(r, t, e);
-                } 
-            });
-        }
-    },
     draw_tile: function( resolution, tile_index, parent_element, w_scale, callback ) {
         if (this.vertical_range === undefined) {
             return;
         }
         
-        var tile_low = tile_index * DENSITY * resolution,
+        var track = this,
+            tile_low = tile_index * DENSITY * resolution,
             tile_length = DENSITY * resolution,
-            key = resolution + "_" + tile_index;
+            key = resolution + "_" + tile_index,
+            params = { hda_ldda: this.hda_ldda, dataset_id: this.dataset_id, resolution: this.view.resolution };
         
-        var canvas = document.createElement("canvas");
-        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
-        canvas = $(canvas);
+        this.tile_data(resolution, tile_index, params, function(result) {
+            var canvas = document.createElement("canvas"),
+                data = result.data;
+            if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
+            canvas = $(canvas);
         
-        if (this.data_cache.get(key) === undefined) {
-            this.get_data( resolution, tile_index );
-            return;
-        }
-        
-        var data = this.data_cache.get(key);
-        if (!data) { return; }
-        
-        canvas.get(0).width = Math.ceil( tile_length * w_scale );
-        canvas.get(0).height = this.height_px;
-        var ctx = canvas.get(0).getContext("2d"),
-            in_path = false,
-            min_value = this.prefs.min_value,
-            max_value = this.prefs.max_value,
-            vertical_range = this.vertical_range,
-            total_frequency = this.total_frequency,
-            height_px = this.height_px,
-            mode = this.mode;
+            canvas.get(0).width = Math.ceil( tile_length * w_scale );
+            canvas.get(0).height = track.height_px;
+            var ctx = canvas.get(0).getContext("2d"),
+                in_path = false,
+                min_value = track.prefs.min_value,
+                max_value = track.prefs.max_value,
+                vertical_range = track.vertical_range,
+                total_frequency = track.total_frequency,
+                height_px = track.height_px,
+                mode = track.mode;
 
-        // Pixel position of 0 on the y axis
-        var y_zero = Math.round( height_px + min_value / vertical_range * height_px );
+            // Pixel position of 0 on the y axis
+            var y_zero = Math.round( height_px + min_value / vertical_range * height_px );
 
-        // Line at 0.0
-        ctx.beginPath();
-        ctx.moveTo( 0, y_zero );
-        ctx.lineTo( tile_length * w_scale, y_zero );
-        // ctx.lineWidth = 0.5;
-        ctx.fillStyle = "#aaa";
-        ctx.stroke();
+            // Line at 0.0
+            ctx.beginPath();
+            ctx.moveTo( 0, y_zero );
+            ctx.lineTo( tile_length * w_scale, y_zero );
+            // ctx.lineWidth = 0.5;
+            ctx.fillStyle = "#aaa";
+            ctx.stroke();
             
-        ctx.beginPath();
-        ctx.fillStyle = this.prefs.color;
-        var x_scaled, y, delta_x_px;
-        if (data.length > 1) {
-            delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
-        } else {
-            delta_x_px = 10;
-        }
-        for (var i = 0, len = data.length; i < len; i++) {
-            x_scaled = Math.round((data[i][0] - tile_low) * w_scale);
-            y = data[i][1];
-            if (y === null) {
-                if (in_path && mode === "Filled") {
-                    ctx.lineTo(x_scaled, height_px);
-                }
-                in_path = false;
-                continue;
-            }
-            if (y < min_value) {
-                y = min_value;
-            } else if (y > max_value) {
-                y = max_value;
-            }
-            
-            if (mode === "Histogram") {
-                // y becomes the bar height in pixels, which is the negated for canvas coords
-                y = Math.round( y / vertical_range * height_px );
-                ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
-            } else if (mode === "Intensity" ) {
-                y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
-                ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
-                ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
+            ctx.beginPath();
+            ctx.fillStyle = track.prefs.color;
+            var x_scaled, y, delta_x_px;
+            if (data.length > 1) {
+                delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
             } else {
-                // console.log(y, this.min_value, this.vertical_range, (y - this.min_value) / this.vertical_range * this.height_px);
-                y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
-                // console.log(canvas.get(0).height, canvas.get(0).width);
-                if (in_path) {
-                    ctx.lineTo(x_scaled, y);
+                delta_x_px = 10;
+            }
+            for (var i = 0, len = data.length; i < len; i++) {
+                x_scaled = Math.round((data[i][0] - tile_low) * w_scale);
+                y = data[i][1];
+                if (y === null) {
+                    if (in_path && mode === "Filled") {
+                        ctx.lineTo(x_scaled, height_px);
+                    }
+                    in_path = false;
+                    continue;
+                }
+                if (y < min_value) {
+                    y = min_value;
+                } else if (y > max_value) {
+                    y = max_value;
+                }
+            
+                if (mode === "Histogram") {
+                    // y becomes the bar height in pixels, which is the negated for canvas coords
+                    y = Math.round( y / vertical_range * height_px );
+                    ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
+                } else if (mode === "Intensity" ) {
+                    y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
+                    ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
+                    ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
                 } else {
-                    in_path = true;
-                    if (mode === "Filled") {
-                        ctx.moveTo(x_scaled, height_px);
+                    // console.log(y, track.min_value, track.vertical_range, (y - track.min_value) / track.vertical_range * track.height_px);
+                    y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
+                    // console.log(canvas.get(0).height, canvas.get(0).width);
+                    if (in_path) {
                         ctx.lineTo(x_scaled, y);
                     } else {
-                        ctx.moveTo(x_scaled, y);
+                        in_path = true;
+                        if (mode === "Filled") {
+                            ctx.moveTo(x_scaled, height_px);
+                            ctx.lineTo(x_scaled, y);
+                        } else {
+                            ctx.moveTo(x_scaled, y);
+                        }
                     }
                 }
             }
-        }
-        if (mode === "Filled") {
-            if (in_path) {
-                ctx.lineTo( x_scaled, y_zero );
-                ctx.lineTo( 0, y_zero );
+            if (mode === "Filled") {
+                if (in_path) {
+                    ctx.lineTo( x_scaled, y_zero );
+                    ctx.lineTo( 0, y_zero );
+                }
+                ctx.fill();
+            } else {
+                ctx.stroke();
             }
-            ctx.fill();
-        } else {
-            ctx.stroke();
-        }
-        callback(canvas);
+            callback(canvas);
+        });
     } 
 });
 
@@ -2125,29 +2085,12 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.summary_draw_height = 30;
     this.default_font = DEFAULT_FONT;
     this.inc_slots = {};
-    this.data_queue = {};
     this.start_end_dct = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.data_cache = new DataCache(20);
     this.left_offset = 200;
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
-    get_data: function( low, high ) {
-        var track = this,
-            key = low + '_' + high;
-        
-        if (!track.data_queue[key]) {
-            track.data_queue[key] = true;
-            $.getJSON( track.data_url, {  chrom: track.view.chrom, 
-                                          low: low, high: high, hda_ldda: track.hda_ldda, dataset_id: track.dataset_id,
-                                          resolution: this.view.resolution, mode: this.mode }, function (result) {
-                track.data_cache.set_data(low, high, track.mode, result);
-                // console.log("datacache", track.data_cache.get(key));
-                delete track.data_queue[key];
-                track.draw();
-            });
-        }
-    },
     //
     // Place features in slots for drawing (i.e. pack features).
     // this.inc_slots[level] is created in this method. this.inc_slots[level]
@@ -2475,37 +2418,35 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw FeatureTrack tile.
      */
-    draw_tile: function(resolution, tile_index, parent_element, w_scale, callback, ref_seq) {
+    draw_tile: function(resolution, tile_index, parent_element, w_scale, callback, ref_seq, result) {
         // Fetch reference sequence data if it exists and we are displaying
         var track = this;
         if (track.view.reference_track && w_scale > CHAR_WIDTH_PX && ref_seq === undefined) {
-            return track.view.reference_track.tile_data(resolution, tile_index, function(ret_ref_seq) {
+            return track.view.reference_track.tile_data(resolution, tile_index, {}, function(ret_ref_seq) {
                 track.draw_tile(resolution, tile_index, parent_element, w_scale, callback, ret_ref_seq);
             });
         }
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
-            tile_span = tile_high - tile_low;
-        //console.log("drawing " + tile_low + " to " + tile_high);
-        
-        /*for (var k in this.data_cache.obj_cache) {
-            var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
-            if (k_low <= tile_low && k_high >= tile_high) {
-                data = this.data_cache.get(k);
-                break;
+            tile_span = tile_high - tile_low,
+            params = { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id,
+              resolution: this.view.resolution, mode: this.mode };
+            
+        //
+        // Get tile data; if data not available, issue get_data request and rerun with data
+        //
+        if (result === undefined) {
+            var cached = this.data_cache.get_data(tile_low, tile_high, this.mode),
+                key = resolution + "_" + tile_index + "_" + this.mode;
+            if (cached === undefined) {
+                return track.tile_data(resolution, tile_index, params, function(get_data_result) {
+                    track.data_cache.set_data(tile_low, tile_high, this.mode, get_data_result);
+                    track.draw_tile(resolution, tile_index, parent_element, w_scale, callback, ref_seq, get_data_result);
+                }, key);
             }
-        }*/
-        
-        //
-        // Get tile data; if data not available, issue get_data request and return.
-        //
-        var result = this.data_cache.get_data(tile_low, tile_high, this.mode);
-        if (result === undefined || result === "pending" || 
-            (this.mode !== "Auto" && result.dataset_type === "summary_tree")) {
-            this.data_queue[ [tile_low, tile_high] ] = true;
-            this.get_data(tile_low, tile_high);
-            return;
+            result = cached;
         }
+        
         //
         // Create/set/compute some useful vars.
         //
@@ -2527,8 +2468,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 mode = result.dataset_type;
             } else if (result.extra_info === "no_detail") {
                 mode = "no_detail";
-            }
-            else {
+            } else {
                 // Choose b/t Squish and Pack.
                 // Proxy measures for using Squish: 
                 // (a) error message re: limiting number of features shown; 
@@ -2542,8 +2482,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 if ( (data.length && data.length < 4) ||
                      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
                     mode = "Squish";
-                }
-                else {
+                } else {
                     mode = "Pack";
                 }
             }            
@@ -2605,8 +2544,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         }
         
         //
-        // If there is a message, show it; also, return if there's no data to draw.
-        // FIXME: Why is this drawn on a canvas instead of a div?
+        // If there is a message, draw it on canvas so that it moves around with canvas, and make the border red
+        // to indicate region where message is applicable
         if (result.message) {
             canvas.css({
                 "border-top": "1px solid red"
@@ -2698,8 +2637,7 @@ $.extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         if (no_label) {
             ctx.fillStyle = block_color;
             ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
-        }
-        else { // Show blocks, labels, etc.                        
+        } else { // Show blocks, labels, etc.                        
             // Unpack.
             var ref_base = feature[4], alt_base = feature[5], qual = feature[6];
         
