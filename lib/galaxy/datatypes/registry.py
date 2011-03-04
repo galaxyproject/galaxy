@@ -48,20 +48,24 @@ class Registry( object ):
                     dtype = elem.get( 'type', None )
                     mimetype = elem.get( 'mimetype', None )
                     display_in_upload = elem.get( 'display_in_upload', False )
+                    make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
                     if extension and dtype:
                         fields = dtype.split( ':' )
                         datatype_module = fields[0]
-                        datatype_class = fields[1]
+                        datatype_class_name = fields[1]
                         fields = datatype_module.split( '.' )
                         module = __import__( fields.pop(0) )
                         for mod in fields:
                             module = getattr( module, mod )
-                        self.datatypes_by_extension[extension] = getattr( module, datatype_class )()
+                        datatype_class = getattr( module, datatype_class_name )
+                        if make_subclass:
+                            datatype_class = type( datatype_class_name, (datatype_class,), {} )
+                        self.datatypes_by_extension[extension] = datatype_class()
                         if mimetype is None:
                             # Use default mime type as per datatype spec
                             mimetype = self.datatypes_by_extension[extension].get_mime()
                         self.mimetypes_by_extension[extension] = mimetype
-                        if hasattr( getattr( module, datatype_class ), "get_track_type" ):
+                        if hasattr( datatype_class, "get_track_type" ):
                             self.available_tracks.append( extension )
                         if display_in_upload:
                             self.upload_file_formats.append( extension )
