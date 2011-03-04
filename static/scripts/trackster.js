@@ -157,7 +157,6 @@ var
     DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ",
     DATA_LOADING = "Loading data...",
     DATA_OK = "Ready for display",
-    FILTERABLE_CLASS = "filterable",
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 5,
     CACHED_DATA = 5,
@@ -1133,7 +1132,11 @@ var TiledTrack = function(filters, tool, parent_track) {
     
     // Attribute init.
     this.filters = (filters !== undefined ? get_filters_from_dict( filters ) : []);
+    // filters_available is determined by data, filters_visible is set by user.
+    this.filters_available = false;
+    this.filters_visible = false;
     this.tool = (tool !== undefined ? get_tool_from_dict( tool ) : undefined);
+    
     //
     // TODO: Right now there is only the notion of a parent track and multiple child tracks. However, 
     // a more general notion of a 'track group' is probably needed and can be easily created using
@@ -1415,7 +1418,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         //
         // Show/hide filters option.
         //
-        if (track.filters.length > 0) {
+        if (track.filters_available > 0) {
             // Show/hide filters menu item.
             var text = (track.filters_div.is(":visible") ? "Hide filters" : "Show filters");
             track_dropdown[text] = function() {
@@ -1555,11 +1558,6 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                         remove = true;
                     }
                 }
-                    
-                // Update filtering UI.
-                for (var f = 0; f < track.filters.length; f++) {
-                    track.filters[f].update_ui_elt();
-                }
 
                 // Method complete; do not call it again.
                 clearInterval(intervalId);
@@ -1592,10 +1590,6 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                         if ( returned_tile ) {
                             // Wrap element in div for background
                             var wrapper_element = $("<div class='track-tile'>").prepend( returned_tile );
-                            // HACK: filtering
-                            if ( returned_tile.hasClass( FILTERABLE_CLASS ) ) {
-                                wrapper_element.addClass( FILTERABLE_CLASS );
-                            }
                             tile_element = wrapper_element;
                         }
                         draw_tile(tile_element);
@@ -1619,10 +1613,16 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             }
         }, 50);
     }, 
-    // Show track tile and perform associated actions.
+    /**
+     * Show track tile and perform associated actions.
+     */
     show_tile: function( tile_element, parent_element, tile_low, w_scale ) {
         // Readability.
         var track = this;
+        
+        //
+        // Show tile element.
+        //
       
         // Position tile element, recalculate left position at display time
         var range = this.view.high - this.view.low,
@@ -1640,15 +1640,35 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         
         if (track.hidden) { return; }
         
-        // Show/hide filters based on whether tile is filterable.
-        if ( tile_element.hasClass(FILTERABLE_CLASS) ) {
-            show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters");
-            if (track.filters_visible) {
-                track.filters_div.show();
+        //
+        // Update filter attributes, UI.
+        // TODO: this could be done after all tiles are drawn, but there's no reliable way to detect 
+        // that right now.
+        //
+                
+        // Update filtering UI.
+        for (var f = 0; f < track.filters.length; f++) {
+            track.filters[f].update_ui_elt();
+        }
+        
+        // Determine if filters are available; this is based on the example feature.
+        var filters_available = false;
+        if (track.example_feature) {
+            for (var f = 0; f < track.filters.length; f++) {
+                if (track.filters[f].applies_to(track.example_feature)) {
+                    filters_available = true;
+                    break;
+                }
             }
-        } else {
-            show_hide_popupmenu_options(track.popup_menu, "(Show|Hide) filters", false);
-            track.filters_div.hide();
+        }
+        
+        // If filter availability changed, hide filter div if necessary and update menu.
+        if (track.filters_available !== filters_available) {
+            track.filters_available = filters_available;
+            if (!track.filters_available) {
+                track.filters_div.hide();
+            }
+            track.make_name_popup_menu();
         }
     }, 
     // Set track as the overview track in the visualization.
@@ -2565,14 +2585,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         }
 
         //        
-        // If tile is filterable, add class to canvas.
+        // Set example feature. This is needed so that track can update its UI based on feature attributes.
         //
-        for (var f = 0; f < this.filters.length; f++) {
-            if (result.data.length && this.filters[f].applies_to(result.data[0])) {
-                canvas.addClass(FILTERABLE_CLASS);
-                break;
-            }
-        }
+        this.example_feature = (result.data.length ? result.data[0] : undefined);
         
         //
         // Draw elements.

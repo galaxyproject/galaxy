@@ -39,22 +39,7 @@ $.fn.makeAbsolute = function(rebase) {
     });
 };
 
-// Toggle popup menu options using regular expression on option names.
-function show_hide_popupmenu_options( menu, option_name_re, show ) {
-    show = (show === undefined ? true : show );
-    var re = new RegExp(option_name_re);
-    $(menu).find("li").each( function() {
-        if ( re.exec($(this).text()) ) {
-            if (show) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
-        }
-    });
-}
-
-function make_popupmenu( button_element, initial_options ) {
+function make_popupmenu(button_element, initial_options) {
     
     /*  Use the $.data feature to store options with the link element.
         This allows options to be changed at a later time 
