@@ -44,6 +44,10 @@ class WorkflowsAPIController(BaseController):
             return "Malformed workflow id ( %s ) specified, unable to decode." % str(workflow_id)
         try:
             stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).get(decoded_workflow_id)
+            if stored_workflow.user != trans.user and not trans.user_is_admin():
+                if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                    trans.response.status = 400
+                    return("Workflow is not owned by or shared with current user")
         except:
             trans.response.status = 400
             return "That workflow does not exist."
@@ -66,36 +70,53 @@ class WorkflowsAPIController(BaseController):
         POST /api/workflows
         We're not creating workflows from the api.  Just execute for now.
         """
-        workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(
-                        trans.security.decode_id(payload['workflow_id'])).latest_workflow
+        stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(
+                        trans.security.decode_id(payload['workflow_id']))
+        if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                trans.response.status = 400
+                return("Workflow is not owned by or shared with current user")
+        workflow = stored_workflow.latest_workflow
         if payload['history'].startswith('hist_id='):
             #Passing an existing history to use.
             history = trans.sa_session.query(self.app.model.History).get(
                     trans.security.decode_id(payload['history'][8:]))
+            if history.user != trans.user and not trans.user_is_admin():
+                trans.response.status = 400
+                return "Invalid History specified."
         else:
             history = self.app.model.History(name=payload['history'], user=trans.user)
             trans.sa_session.add(history)
             trans.sa_session.flush()
-        # not just one dataset, we need all of them.
         ds_map = payload['ds_map']
         add_to_history = 'no_add_to_history' not in payload
         for k in ds_map:
-            if ds_map[k]['src'] == 'ldda':
-                ldda = trans.sa_session.query(self.app.model.LibraryDatasetDatasetAssociation).get(
-                        trans.security.decode_id(ds_map[k]['id']))
-                hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-            if ds_map[k]['src'] == 'ld':
-                ld_t, ld_id = trans.security.decode_string_id(ds_map[k]['id']).split('.')
-                ldda = trans.sa_session.query(self.app.model.LibraryDataset).get(
-                        ld_id).library_dataset_dataset_association
-                hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-            else:
-                # Get dataset handle, add to dict and history if necessary
-                hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(
-                        trans.security.decode_id(ds_map[k]['id']))
-                if hda.history != history:
-                    history.add_dataset(hda)
-            ds_map[k]['hda'] = hda
+            try:
+                if ds_map[k]['src'] == 'ldda':
+                    ldda = trans.sa_session.query(self.app.model.LibraryDatasetDatasetAssociation).get(
+                            trans.security.decode_id(ds_map[k]['id']))
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
+                    hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
+                elif ds_map[k]['src'] == 'ld':
+                    ld_t, ld_id = trans.security.decode_string_id(ds_map[k]['id']).split('.')
+                    ldda = trans.sa_session.query(self.app.model.LibraryDataset).get(
+                            ld_id).library_dataset_dataset_association
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
+                    hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
+                elif ds_map[k]['src'] == 'hda':
+                    # Get dataset handle, add to dict and history if necessary
+                    hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(
+                            trans.security.decode_id(ds_map[k]['id']))
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+                    if add_to_history and  hda.history != history:
+                        history.add_dataset(hda)
+                else:
+                    trans.response.status = 400
+                    return "Unknown dataset source '%s' specified." % ds_map[k]['src']
+                ds_map[k]['hda'] = hda
+            except AssertionError:
+                trans.response.status = 400
+                return "Invalid Dataset '%s' Specified" % ds_map[k]['id']
         if not workflow:
             trans.response.status = 400
             return "Workflow not found."
