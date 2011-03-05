@@ -328,7 +328,7 @@ class History( object, UsesAnnotations ):
             self.galaxy_sessions.append( association )
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
         if isinstance( dataset, Dataset ):
-            dataset = HistoryDatasetAssociation( dataset = dataset, copied_from = dataset )
+            dataset = HistoryDatasetAssociation(dataset=dataset)
             object_session( self ).add( dataset )
             object_session( self ).flush()
         elif not isinstance( dataset, HistoryDatasetAssociation ):
@@ -348,6 +348,7 @@ class History( object, UsesAnnotations ):
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
         self.datasets.append( dataset )
+        return dataset
     def copy( self, name=None, target_user=None, activatable=False ):
         # Create new history.
         if not name:
@@ -1406,7 +1407,9 @@ class CloudUserCredentials( object ):
         self.secretKey = None
         self.credentials = []
 
-class StoredWorkflow( object ):
+class StoredWorkflow( object, APIItem):
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'id', 'name' )
     def __init__( self ):
         self.id = None
         self.user = None
