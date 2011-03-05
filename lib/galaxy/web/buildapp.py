@@ -115,6 +115,7 @@ def app_factory( global_conf, **kwargs ):
         webapp.api_mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
         webapp.api_mapper.resource( 'role', 'roles', path_prefix='/api' )
         webapp.api_mapper.resource( 'user', 'users', path_prefix='/api' )
+        webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
         
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware

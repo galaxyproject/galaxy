@@ -705,23 +705,25 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     
         dbnames.extend( util.dbnames )
         return dbnames
-        
+
     def db_dataset_for( self, dbkey ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
         """
-        
         # If no history, return None.
         if self.history is None:
             return None
-        
+        if isinstance(self.history, Bunch):
+            # The API presents a Bunch for a history.  Until the API is
+            # more fully featured for handling this, also return None.
+            return None
         datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
                                   .filter_by( deleted=False, history_id=self.history.id, extension="len" )
         for ds in datasets:
             if dbkey == ds.dbkey:
                 return ds
         return None
-    
+
     def request_types(self):
         if self.sa_session.query( self.app.model.RequestType ).filter_by( deleted=False ).count() > 0:
             return True
