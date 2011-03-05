@@ -1450,6 +1450,19 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         }
         
         //
+        // For ReadTracks: show/hide insertions.
+        //
+        if (track.track_type == "ReadTrack") {
+            // Show/hide insertions.
+            var text = (track.show_insertions ? "Hide Insertions" : "Show Insertions");
+            track_dropdown[text] = function() {
+                track.show_insertions = !track.show_insertions;
+                track.draw(true);
+                track.make_name_popup_menu();
+            };            
+        }
+        
+        //
         // List chrom/contigs with data option.
         //
         if (track.valid_chroms) {
@@ -1640,7 +1653,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
     /**
      * Show track tile and perform associated actions.
      */
-    show_tile: function( tile_element, parent_element, tile_low, w_scale ) {
+    show_tile: function(tile_element, parent_element, tile_low, w_scale) {
         // Readability.
         var track = this;
         
@@ -1650,15 +1663,15 @@ $.extend( TiledTrack.prototype, Track.prototype, {
       
         // Position tile element, recalculate left position at display time
         var range = this.view.high - this.view.low,
-            left = ( tile_low - this.view.low ) * w_scale;
+            left = (tile_low - this.view.low) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
         }
         tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
 
         // Setup and show tile element.
-        parent_element.append( tile_element );
-        track.max_height = Math.max( track.max_height, tile_element.height() );
+        parent_element.append(tile_element);
+        track.max_height = Math.max(track.max_height, tile_element.height());
         track.content_div.css("height", track.max_height + "px");
         parent_element.children().css("height", track.max_height + "px");
         
@@ -2135,13 +2148,13 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.left_offset = 200;
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
-    //
-    // Place features in slots for drawing (i.e. pack features).
-    // this.inc_slots[level] is created in this method. this.inc_slots[level]
-    // is a dictionary of slotted features; key is feature uid, value is a dictionary
-    // with keys 'slot' and 'text'.
-    // Returns the number of slots used to pack features.
-    //
+    /**
+     * Place features in slots for drawing (i.e. pack features).
+     * this.inc_slots[level] is created in this method. this.inc_slots[level]
+     * is a dictionary of slotted features; key is feature uid, value is a dictionary
+     * with keys 'slot' and 'text'.
+     * Returns the number of slots used to pack features.
+     */
     incremental_slots: function(level, features, mode) {
         //
         // Get/create incremental slots for level. If display mode changed,
@@ -2286,7 +2299,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             }
         }
         */
-        return highest_slot;
+        return highest_slot + 1;
     },
     /**
      * Draw summary tree on canvas.
@@ -2460,6 +2473,28 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         }
     },
     /**
+     * Returns y_scale based on mode.
+     */
+    get_y_scale: function(mode) {
+        var y_scale;
+        if (mode === "summary_tree") {
+            // No scale needed.
+        }
+        if (mode === "Dense") {
+            y_scale = DENSE_TRACK_HEIGHT;            
+        }
+        else if (mode === "no_detail") {
+            y_scale = NO_DETAIL_TRACK_HEIGHT;
+        }
+        else if (mode === "Squish") {
+            y_scale = SQUISH_TRACK_HEIGHT;
+        }
+        else { // mode === "Pack"
+            y_scale = PACK_TRACK_HEIGHT;
+        }
+        return y_scale;
+    },
+    /**
      * Draw FeatureTrack tile.
      */
     draw_tile: function(resolution, tile_index, parent_element, w_scale, callback, ref_seq, result) {
@@ -2498,7 +2533,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             mode = this.mode,
             min_height = 25,
             left_offset = this.left_offset,
-            slots, required_height, y_scale;
+            slots, required_height;
         
         var canvas = document.createElement("canvas");
         if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
@@ -2531,31 +2566,19 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 }
             }            
         }
-        
+
+        var y_scale = this.get_y_scale(mode);
+
         //
-        // Set required height, y_scale.
+        // Pack reads, set required height.
         //
         if (mode === "summary_tree") {
             required_height = this.summary_draw_height;
         }
         if (mode === "Dense") {
             required_height = min_height;
-            y_scale = DENSE_TRACK_HEIGHT;            
         }
-        else if (mode === "no_detail") {
-            y_scale = NO_DETAIL_TRACK_HEIGHT;
-        }
-        else if (mode === "Squish") {
-            y_scale = SQUISH_TRACK_HEIGHT;
-        }
-        else { // mode === "Pack"
-            y_scale = PACK_TRACK_HEIGHT;
-        }
-        
-        //
-        // Pack reads.
-        //
-        if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
+        else if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
             // Calculate new slots incrementally for this new chunk of data and update height if necessary.
             required_height = this.incremental_slots(w_scale, result.data, mode) * y_scale + min_height;
             slots = this.inc_slots[w_scale];
@@ -2715,8 +2738,32 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
     this.track_type = "ReadTrack";
     this.difference_mode = true;
+    this.show_insertions = false;
+    this.make_name_popup_menu();
 };
 $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+    /**
+     * Returns y_scale based on mode.
+     */
+    get_y_scale: function(mode) {
+        var y_scale;
+        if (mode === "summary_tree") {
+            // No scale needed.
+        }
+        if (mode === "Dense") {
+            y_scale = DENSE_TRACK_HEIGHT;            
+        }
+        else if (mode === "Squish") {
+            y_scale = SQUISH_TRACK_HEIGHT;
+        }
+        else { // mode === "Pack"
+            y_scale = PACK_TRACK_HEIGHT;
+            if (this.show_insertions) {
+                y_scale *= 2;
+            }
+        }
+        return y_scale;
+    },
     /**
      * Draw a single read.
      */
@@ -2728,9 +2775,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
             seq_offset = 0,
             gap = 0;
             
-        // Keep list of triangles that need to be drawn on top of initial drawing layer.
-        // TODO: Eventually, we'll probably want to keep an ordered list of items to draw and then draw all 
-        // items at once.
+        // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
         
         if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
@@ -2808,53 +2853,69 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                     // Sequences not present, so do not increment seq_offset.
                     break;
                 case "I": // Insertion.
-                    //
-                    // Show insertion above, centered on insertion point.
-                    //
-                    
                     // Check to see if sequence should be drawn at all by looking at the overlap between
                     // the sequence region and the tile region.
-                    var seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region);
+                    var 
+                        seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region),
+                        insert_x_coord = this.left_offset + s_start - gap;
+                    
                     if (seq_tile_overlap !== NO_OVERLAP) {
-                        // Draw sequence.
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
-                        // X center is offset + start - <half_sequence_length>
-                        var x_center = this.left_offset + s_start - (s_end - s_start)/2;
-                        if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
-                            // Draw sequence container.
-                            ctx.fillStyle = "yellow";
-                            ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
-                            draw_last[draw_last.length] = [x_center + (s_end - s_start)/2, y_center + 4, 5];
-                            ctx.fillStyle = CONNECTOR_COLOR;
-                            // Based on overlap b/t sequence and tile, get sequence to be drawn.
-                            switch(seq_tile_overlap) {
-                                case(OVERLAP_START):
-                                    seq = seq.slice(tile_low-seq_start);
-                                    break;
-                                case(OVERLAP_END):
-                                    seq = seq.slice(0, seq_start-tile_high);
-                                    break;
-                                case(CONTAINED_BY):
-                                    // All of sequence drawn.
-                                    break;
-                                case(CONTAINS):
-                                    seq = seq.slice(tile_low-seq_start, seq_start-tile_high);
-                                    break;
-                            }
+                        // Insertion point is between the sequence start and the previous base: (-gap) moves
+                        // back from sequence start to insertion point.
+                        if (this.show_insertions) {
+                            //
+                            // Show inserted sequence above, centered on insertion point.
+                            //
+
                             // Draw sequence.
-                            for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
-                                ctx.fillText(seq[c], c_start + this.left_offset - (s_end - s_start)/2 - gap, y_center);
+                            // X center is offset + start - <half_sequence_length>
+                            var x_center = this.left_offset + s_start - (s_end - s_start)/2;
+                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                                // Draw sequence container.
+                                ctx.fillStyle = "yellow";
+                                ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
+                                draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_center + 4, 5]};
+                                ctx.fillStyle = CONNECTOR_COLOR;
+                                // Based on overlap b/t sequence and tile, get sequence to be drawn.
+                                switch(seq_tile_overlap) {
+                                    case(OVERLAP_START):
+                                        seq = seq.slice(tile_low-seq_start);
+                                        break;
+                                    case(OVERLAP_END):
+                                        seq = seq.slice(0, seq_start-tile_high);
+                                        break;
+                                    case(CONTAINED_BY):
+                                        // All of sequence drawn.
+                                        break;
+                                    case(CONTAINS):
+                                        seq = seq.slice(tile_low-seq_start, seq_start-tile_high);
+                                        break;
+                                }
+                                // Draw sequence.
+                                for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                                    var c_start = Math.floor( Math.max(0, (seq_start + c -  tile_low) * w_scale) );
+                                    ctx.fillText(seq[c], c_start + this.left_offset - (s_end - s_start)/2, y_center);
+                                }
+                            }
+                            else {
+                                // Draw block.
+                                ctx.fillStyle = "yellow";
+                                // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
+                                ctx.fillRect(x_center, y_center + (this.mode !== "Dense" ? 2 : 5), 
+                                             s_end - s_start, (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
                             }
                         }
                         else {
-                            // Draw block.
-                            ctx.fillStyle = "yellow";
-                            // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                            ctx.fillRect(x_center, y_center + (this.mode !== "Dense" ? 2 : 5), 
-                                         s_end - s_start, (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
+                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                                // Show insertions with a single number at the insertion point.
+                                draw_last[draw_last.length] = {type: "text", data: [seq.length, insert_x_coord, y_center + 9]};
+                            }
+                            else {
+                                // TODO: probably can merge this case with code above.
+                            }
                         }
-                    }                
+                    }
                     seq_offset += cig_len;
                     // No change to base offset because insertions are drawn above sequence/read.
                     break;
@@ -2865,12 +2926,23 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
             }
         }
         
+        //
         // Draw last items.
-        var item;
+        //
+        ctx.fillStyle = "yellow";
+        var item, type, data;
         for (var i = 0; i < draw_last.length; i++) {
             item = draw_last[i];
-            ctx.fillStyle = "yellow";
-            ctx.drawDownwardEquilateralTriangle(item[0], item[1], item[2]);
+            type = item["type"];
+            data = item["data"];
+            if (type === "text") {
+                ctx.font = "bold " + DEFAULT_FONT;
+                ctx.fillText(data[0], data[1], data[2]);
+                ctx.font = DEFAULT_FONT;
+            }
+            else if (type == "triangle") {
+                ctx.drawDownwardEquilateralTriangle(data[0], data[1], data[2]);
+            }
         }
     },
     /**
