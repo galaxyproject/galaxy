@@ -12,11 +12,7 @@ Galaxy requires Python 2.4, 2.5 or 2.6. To check your python version, run:
 % python -V
 Python 2.4.4
 
-Before starting Galaxy for the first time, please run the setup script:
-
-% sh setup.sh
-
-If setup.sh finishes successfully, you can then proceed to starting Galaxy:
+Start Galaxy:
 
 % sh run.sh
 
