@@ -128,7 +128,7 @@ def __main__():
 
     # Clean up.
     out.close()
-    info_msg = "%i lines kept (%.2f%%) using condition %s.  " % ( kept_lines, float(kept_lines)/i, feature_name + condition )
+    info_msg = "%i lines kept (%.2f%%) using condition %s.  " % ( kept_lines, float(kept_lines)/i * 100.0, feature_name + condition )
     if skipped_lines > 0:
         info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." %( skipped_lines, first_skipped_line )
     print info_msg
