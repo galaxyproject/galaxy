@@ -354,7 +354,7 @@ class User( BaseController, UsesFormDefinitions ):
                 else:
                     refresh_frames = [ 'masthead', 'history' ]
             message, status, user, success = self.__validate_login( trans, webapp, **kwd )
-            if success and referer:
+            if success and referer and referer != trans.request.base + url_for( controller='user', action='logout' ):
                 redirect_url = referer
             elif success:
                 redirect_url = url_for( '/' )
