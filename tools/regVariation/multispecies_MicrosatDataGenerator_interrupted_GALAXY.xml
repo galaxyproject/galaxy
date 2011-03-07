@@ -17,13 +17,13 @@
     	help="A value of 10 means: Adjacent microsatellites separated by less than 10 base pairs will be excluded from the output."/>
     	<param name="thresholds" size="15" type="text" value="9,10,12,12" label="Minimum Threshold for the number of repeats for microsatellites"
     	help="A value of 9,10,12,12 means: All monos having fewer than 9 repeats, dis having fewer than 5 repeats, tris having fewer than 4 repeats, tetras having fewer than 3 repeats will be excluded from the output."/>
-        <param name="species" type="select" label="Species to extract" display="checkboxes" multiple="true">
-          <options>
-            <filter type="data_meta" ref="input1" key="species" />
-          </options>
-        </param>
-    	<param name="treedefinition" size="20" type="text" label="Tree definition of all species above whether or not selected for microsatellite extraction" 
-    	help="For example: ((hg17,panTro1),(mm5,rn3),canFam1)"/>
+        <param name="species" type="select" label="Select species" display="checkboxes" multiple="true" help="NOTE: Currently users are requested to select one of these three combinations: hg18-panTro2-ponAbe2, hg18-panTro2-ponAbe2-rheMac2 or hg18-panTro2-ponAbe2-rheMac2-calJac1">
+      	<options>
+        	<filter type="data_meta" ref="input1" key="species" />
+      	</options>
+    	</param>
+    	<param name="treedefinition" size="200" type="text" value = "((((hg18,panTro2),ponAbe2),rheMac2),calJac1)" label="Tree definition of all species above whether or not selected for microsatellite extraction" 
+    	help="For example: ((((hg18,panTro2),ponAbe2),rheMac2),calJac1)"/>
     </page>
   </inputs>
   <outputs>
