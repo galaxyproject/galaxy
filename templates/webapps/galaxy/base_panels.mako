@@ -70,10 +70,12 @@
                         [ 'Data Libraries', h.url_for( controller='/library', action='index') ],
                         None,
                         [ 'Published Histories', h.url_for( controller='/history', action='list_published' ) ],
-                        [ 'Published Workflows', h.url_for( controller='/workflow', action='list_published' ) ],
-                        [ 'Published Visualizations', h.url_for( controller='/visualization', action='list_published' ) ],
-                        [ 'Published Pages', h.url_for( controller='/page', action='list_published' ) ]
+                        [ 'Published Workflows', h.url_for( controller='/workflow', action='list_published' ) ]
                        ]
+        if app.config.get_bool( 'enable_tracks', False ):
+            menu_options.append( [ 'Published Visualizations', h.url_for( controller='/visualization', action='list_published' ) ] )        
+        if app.config.get_bool( 'enable_pages', False ):
+            menu_options.append( [ 'Published Pages', h.url_for( controller='/page', action='list_published' ) ] )
         tab( "shared", "Shared Data", h.url_for( controller='/library', action='index'), menu_options=menu_options )
     %>
     
