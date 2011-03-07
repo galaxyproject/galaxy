@@ -185,8 +185,8 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                 break
             gene_id = interval.attributes.get( 'gene_id', None )
             transcript_id = interval.attributes.get( 'transcript_id', None )
-            if transcript_id and transcript_id != feature_transcript_id and gene_id and \
-               gene_id != feature_gene_id:
+            if ( transcript_id and transcript_id != feature_transcript_id ) or \
+               ( gene_id and gene_id != feature_gene_id ):
                 break
     
             # Interval associated with feature.
