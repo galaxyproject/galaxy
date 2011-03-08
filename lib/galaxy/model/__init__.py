@@ -941,6 +941,28 @@ class Library( object, APIItem ):
         self.description = description
         self.synopsis = synopsis
         self.root_folder = root_folder
+    def get_active_folders( self, folder, folders=None ):
+        # TODO: should we make sure the library is not deleted?
+        def sort_by_attr( seq, attr ):
+            """
+            Sort the sequence of objects by object's attribute
+            Arguments:
+            seq  - the list or any sequence (including immutable one) of objects to sort.
+            attr - the name of attribute to sort by
+            """
+            # Use the "Schwartzian transform"
+            # Create the auxiliary list of tuples where every i-th tuple has form
+            # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
+            # only to provide stable sorting, but mainly to eliminate comparison of objects
+            # (which can be expensive or prohibited) in case of equal attribute values.
+            intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+            intermed.sort()
+            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
+        if folders is None:
+            active_folders = [ folder ]
+        for active_folder in folder.active_folders:
+            active_folders.extend( self.get_active_folders( active_folder, folders ) )
+        return sort_by_attr( active_folders, 'id' )
     def get_info_association( self, restrict=False, inherited=False ):
         if self.info_association:
             if not inherited or self.info_association[0].inheritable:

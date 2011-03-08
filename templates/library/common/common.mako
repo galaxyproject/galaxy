@@ -399,17 +399,18 @@
         can_download = 'download' not in actions_to_exclude
         can_import_to_histories = 'import_to_histories' not in actions_to_exclude
         can_manage_permissions = 'manage_permissions' not in actions_to_exclude
+        can_move = 'move' not in actions_to_exclude
     %>
     <tfoot>
         <tr>
             <td colspan="5" style="padding-left: 42px;">
-                For selected items:
+                For selected datasets:
                 <select name="do_action" id="action_on_selected_items">
                     %if can_import_to_histories:
                         %if not is_admin and default_action == 'import_to_histories':
-                            <option value="import_to_histories" selected>Import selected datasets to histories</option>
+                            <option value="import_to_histories" selected>Import to histories</option>
                         %else:
-                            <option value="import_to_histories">Import selected datasets to histories</option>
+                            <option value="import_to_histories">Import to histories</option>
                         %endif
                     %endif
                     %if can_manage_permissions:
@@ -419,13 +420,19 @@
                             <option value="manage_permissions">Edit permissions</option>
                         %endif
                     %endif
+                    %if can_move:
+                        <option value="move">Move</option>
+                    %endif
+                    %if can_delete:
+                        <option value="delete">Delete</option>
+                    %endif
                     %if can_download:
                         %if 'gz' in comptypes:
                             <option value="tgz"
                             %if default_action == 'download':
                                 selected
                             %endif>
-                            >Download  as a .tar.gz file</option>
+                            >Download as a .tar.gz file</option>
                         %endif
                         %if 'bz2' in comptypes:
                             <option value="tbz">Download as a .tar.bz2 file</option>
@@ -441,9 +448,6 @@
                             %endif>
                             >Download as a .zip file</option>
                         %endif
-                    %endif
-                    %if can_delete:
-                        <option value="delete">Delete</option>
                     %endif
                 </select>
                 <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>

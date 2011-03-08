@@ -1539,16 +1539,6 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         action = params.get( 'do_action', None )
-        if action == 'import_to_histories':
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='import_datasets_to_histories',
-                                                              cntrller=cntrller,
-                                                              library_id=library_id,
-                                                              ldda_ids=ldda_ids,
-                                                              use_panels=use_panels,
-                                                              show_deleted=show_deleted,
-                                                              message=message,
-                                                              status=status ) )
         lddas = []
         error = False
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
@@ -1560,6 +1550,31 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             error = True
             message = 'You must select an action to perform on the selected datasets.'
         else:
+            if action == 'import_to_histories':
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='import_datasets_to_histories',
+                                                                  cntrller=cntrller,
+                                                                  library_id=library_id,
+                                                                  ldda_ids=ldda_ids,
+                                                                  use_panels=use_panels,
+                                                                  show_deleted=show_deleted,
+                                                                  message=message,
+                                                                  status=status ) )
+            if action == 'move':
+                if library_id in [ 'none', 'None', None ]:
+                    source_library_id = ''
+                else:
+                    source_library_id = library_id
+                return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                                  action='move_library_item',
+                                                                  cntrller=cntrller,
+                                                                  source_library_id=source_library_id,
+                                                                  item_type='ldda',
+                                                                  item_id=ldda_ids,
+                                                                  use_panels=use_panels,
+                                                                  show_deleted=show_deleted,
+                                                                  message=message,
+                                                                  status=status ) )
             ldda_ids = util.listify( ldda_ids )
             for ldda_id in ldda_ids:
                 try:
@@ -1779,9 +1794,11 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
     @web.expose
     def import_datasets_to_histories( self, trans, cntrller, library_id='', folder_id='', ldda_ids='', target_history_ids='', new_history_name='', **kwd ):
         # This method is called from one of the following places:
-        # - a menu option for a library dataset ( ldda_ids will be a singel dataset id )
-        # - a menu option for a library folder ( folder_id will have a value )
-        # - a menu option for a library dataset search result set ( ldda_ids will be a comma separated string of dataset ids )
+        # - a menu option for a library dataset ( ldda_ids is a single ldda id )
+        # - a menu option for a library folder ( folder_id has a value )
+        # - a select list option for acting on multiple selected datasets within a library 
+        #   ( ldda_ids is a comma separated string of ldda ids )
+        # - a menu option for a library dataset search result set ( ldda_ids is a comma separated string of ldda ids )
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -1799,13 +1816,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             folder = None
         ldda_ids = util.listify( ldda_ids )
         if ldda_ids:
-            # Check boxes cause 2 copies of each id to be included in the request
             ldda_ids = map( trans.security.decode_id, ldda_ids )
-            unique_ldda_ids = []
-            for ldda_id in ldda_ids:
-                if ldda_id not in unique_ldda_ids:
-                    unique_ldda_ids.append( ldda_id )
-            ldda_ids = unique_ldda_ids
         target_history_ids = util.listify( target_history_ids )
         if target_history_ids:
             target_history_ids = [ trans.security.decode_id( target_history_id ) for target_history_id in target_history_ids if target_history_id ]
@@ -1831,15 +1842,15 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     status = 'error'
                 for ldda in map( trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get, ldda_ids ):
                     if ldda is None:
-                        message += "You tried to import a library dataset that does not exist.  "
+                        message += "You tried to import a dataset that does not exist.  "
                         status = 'error'
                         invalid_datasets += 1
                     elif ldda.dataset.state not in [ trans.model.Dataset.states.OK, trans.model.Dataset.states.ERROR ]:
-                        message += "Cannot import dataset '%s' since its state is '%s'.  " % ( ldda.name, ldda.dataset.state )
+                        message += "You cannot import dataset '%s' since its state is '%s'.  " % ( ldda.name, ldda.dataset.state )
                         status = 'error'
                         invalid_datasets += 1
                     elif not ldda.has_data():
-                        message += "Cannot import empty dataset '%s'.  " % ldda.name
+                        message += "You cannot import empty dataset '%s'.  " % ldda.name
                         status = 'error'
                         invalid_datasets += 1
                     else:
@@ -1930,6 +1941,226 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                                           show_deleted=show_deleted,
                                                           message=util.sanitize_text( message ),
                                                           status='done' ) )
+    @web.expose
+    def move_library_item( self, trans, cntrller, item_type, item_id, source_library_id='', make_target_current=True, **kwd ):
+        # This method is called from one of the following places:
+        # - a menu option for a library dataset ( item_type is 'ldda' and item_id is a single ldda id )
+        # - a menu option for a library folder ( item_type is 'folder' and item_id is a single folder id )
+        # - a select list option for acting on multiple selected datasets within a library ( item_type is 
+        #   'ldda' and item_id is a comma separated string of ldda ids )
+        # - a menu option for a library dataset search result set ( item_type is 'ldda' and item_id is a 
+        #   comma separated string of ldda ids )
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        make_target_current = util.string_as_bool( make_target_current )
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        user = trans.get_user()
+        current_user_roles = trans.get_current_user_roles()
+        move_ldda_ids = []
+        move_lddas = []
+        move_folder_id = []
+        move_folder = None
+        if source_library_id:
+            source_library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( source_library_id ) )
+        else:
+            # Request sent from the library_dataset_search_results page.
+            source_library = None
+        target_library_id = params.get( 'target_library_id', '' )
+        if target_library_id not in [ '', 'none', None ]:
+            target_library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( target_library_id ) )
+        elif make_target_current:
+            target_library = source_library
+        else:
+            target_library = None
+        target_folder_id = params.get( 'target_folder_id', '' )
+        if target_folder_id not in [ '', 'none', None ]:
+            target_folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( target_folder_id ) )
+            if target_library is None:
+                target_library = target_folder.parent_library
+        else:
+            target_folder = None
+        if item_type == 'ldda':
+            # We've been called from a menu option for a library dataset search result set
+            move_ldda_ids = util.listify( item_id )
+            if move_ldda_ids:
+                # Checkboxes cause 2 copies of each id to be included in the request
+                move_ldda_ids = map( trans.security.decode_id, move_ldda_ids )
+                unique_ldda_ids = []
+                for ldda_id in move_ldda_ids:
+                    if ldda_id not in unique_ldda_ids:
+                        unique_ldda_ids.append( ldda_id )
+                move_ldda_ids = unique_ldda_ids
+        elif item_type == 'folder':
+            move_folder_id = item_id
+            move_folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( move_folder_id ) )
+        if params.get( 'move_library_item_button', False ):
+            if not ( move_ldda_ids or move_folder_id ) or target_folder_id in [ '', 'none', None ]:
+                message = "You must select a source folder or one or more source datasets, and a target folder."
+                status = 'error'
+            else:
+                valid_lddas = []
+                invalid_lddas = []
+                invalid_items = 0
+                flush_required = False
+                if item_type == 'ldda':
+                    for ldda in map( trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get, move_ldda_ids ):
+                        if ldda is None:
+                            message += "You tried to move a dataset that does not exist.  "
+                            status = 'error'
+                            invalid_items += 1
+                        elif ldda.dataset.state not in [ trans.model.Dataset.states.OK, trans.model.Dataset.states.ERROR ]:
+                            message += "You cannot move dataset '%s' since its state is '%s'.  " % ( ldda.name, ldda.dataset.state )
+                            status = 'error'
+                            invalid_items += 1
+                        elif not ldda.has_data():
+                            message += "You cannot move empty dataset '%s'.  " % ldda.name
+                            status = 'error'
+                            invalid_items += 1
+                        else:
+                            if is_admin:
+                                library_dataset = ldda.library_dataset
+                                library_dataset.folder = target_folder
+                                trans.sa_session.add( library_dataset )
+                                flush_required = True
+                            else:
+                                if trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
+                                    valid_lddas.append( ldda )
+                                    library_dataset = ldda.library_dataset
+                                    library_dataset.folder = target_folder
+                                    trans.sa_session.add( library_dataset )
+                                    flush_required = True
+                                else:
+                                    invalid_items += 1
+                                    invalid_lddas.append( ldda )
+                    if not valid_lddas:
+                        message = "You are not authorized to move any of the selected datasets."
+                    elif invalid_lddas:
+                        message += "You are not authorized to move %s: " % inflector.cond_plural( len( invalid_lddas ), "dataset" )
+                        for ldda in invalid_lddas:
+                            message += '(%s)' % ldda.name
+                        message += '.  '
+                    num_source = len( move_ldda_ids ) - invalid_items
+                    message = "%i %s moved to folder (%s) within data library (%s)" % ( num_source,
+                                                                                        inflector.cond_plural( num_source, "dataset" ),
+                                                                                        target_folder.name,
+                                                                                        target_library.name )
+                elif item_type == 'folder':
+                    move_folder = trans.sa_session.query( trans.app.model.LibraryFolder ) \
+                                                  .get( trans.security.decode_id( move_folder_id ) )
+                    if move_folder is None:
+                        message += "You tried to move a folder that does not exist.  "
+                        status = 'error'
+                        invalid_items += 1
+                    else:
+                        move_folder.parent = target_folder
+                        trans.sa_session.add( move_folder )
+                        flush_required = True
+                    message = "Moved folder (%s) to folder (%s) within data library (%s) " % ( move_folder.name,
+                                                                                               target_folder.name,
+                                                                                               target_library.name )
+                if flush_required:
+                    trans.sa_session.flush()
+        if target_library:
+            if is_admin:
+                target_library_folders = target_library.get_active_folders( target_library.root_folder )
+            else:
+                folders_with_permission_to_add = []
+                for folder in target_library.get_active_folders( target_library.root_folder ):
+                    if trans.app.security_agent.can_add_library_item( current_user_roles, folder ):
+                        folders_with_permission_to_add.append( folder )
+                target_library_folders = folders_with_permission_to_add
+        else:
+            target_library_folders = []
+        if item_type == 'ldda':
+            for ldda_id in move_ldda_ids:
+                # TODO: It is difficult to filter out undesired folders (e.g. the ldda's current
+                # folder) if we have a list of lddas, but we may want to filter folders that
+                # are easily handled.
+                ldda = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
+                move_lddas.append( ldda )
+        elif item_type == 'folder':
+            def __is_contained_in( folder1, folder2 ):
+                # Return True if folder1 is contained in folder2
+                if folder1.parent:
+                    if folder1.parent == folder2:
+                        return True
+                    return __is_contained_in( folder1.parent, folder2 )
+                return False
+            filtered_folders = []
+            for folder in target_library_folders:
+                include = True
+                if move_folder:
+                    if __is_contained_in( folder, move_folder ):
+                        # Don't allow moving a folder to one of it's sub-folders (circular issues in db)
+                        include = False
+                    if move_folder.id == folder.id:
+                        # Don't allow moving a folder to itself
+                        include = False
+                    if move_folder.parent and move_folder.parent.id == folder.id:
+                        # Don't allow moving a folder to it's current parent folder
+                        include = False
+                if include:
+                    filtered_folders.append( folder )
+            target_library_folders = filtered_folders
+        def __build_target_library_id_select_field( trans, selected_value='none' ):
+            # Get all the libraries for which the current user can add items.
+            target_libraries = []
+            if is_admin:
+                for library in trans.sa_session.query( trans.model.Library ) \
+                                               .filter( trans.model.Library.deleted == False ) \
+                                               .order_by( trans.model.Library.table.c.name ):
+                    if source_library is None or library.id != source_library.id:
+                        target_libraries.append( library )
+            else:
+                for library in trans.app.security_agent.get_accessible_libraries( trans, user ):
+                    if source_library is None:
+                        if trans.app.security_agent.can_add_library_item( current_user_roles, library ):
+                            target_libraries.append( library )
+                    elif library.id != source_library.id:
+                        if trans.app.security_agent.can_add_library_item( current_user_roles, library ):
+                            target_libraries.append( library )
+            # A refresh_on_change is required to display the selected library's folders
+            return build_select_field( trans,
+                                       objs=target_libraries,
+                                       label_attr='name',
+                                       select_field_name='target_library_id',
+                                       selected_value=selected_value,
+                                       refresh_on_change=True )
+        def __build_target_folder_id_select_field( trans, folders, selected_value='none' ):
+            for folder in folders:
+                if not folder.parent:
+                    folder.name = 'Data library root folder'
+            return build_select_field( trans,
+                                       objs=folders,
+                                       label_attr='name',
+                                       select_field_name='target_folder_id',
+                                       selected_value=selected_value,
+                                       refresh_on_change=False )
+        if target_library:
+            selected_value = target_library.id
+        else:
+            selected_value = 'none'
+        target_library_id_select_field = __build_target_library_id_select_field( trans, selected_value=selected_value )
+        target_folder_id_select_field = __build_target_folder_id_select_field( trans, target_library_folders )
+        return trans.fill_template( "/library/common/move_library_item.mako",
+                                    cntrller=cntrller,
+                                    make_target_current=make_target_current,
+                                    source_library=source_library,
+                                    item_type=item_type,
+                                    item_id=item_id,
+                                    move_ldda_ids=move_ldda_ids,
+                                    move_lddas=move_lddas,
+                                    move_folder=move_folder,
+                                    target_library=target_library,
+                                    target_library_id_select_field=target_library_id_select_field,
+                                    target_folder_id_select_field=target_folder_id_select_field,
+                                    show_deleted=show_deleted,
+                                    use_panels=use_panels,
+                                    message=message,
+                                    status=status )
     @web.expose
     def delete_library_item( self, trans, cntrller, library_id, item_id, item_type, **kwd ):
         # This action will handle deleting all types of library items.  State is saved for libraries and
@@ -2257,7 +2488,7 @@ def whoosh_search( trans, cntrller, search_term, **kwd ):
             # Perform search
             parser = MultifieldParser( [ 'name', 'info', 'dbkey', 'message' ], schema=schema )
             # Search term with wildcards may be slow...
-            results = searcher.search( parser.parse( '*' + search_term + '*' ), minscore=0.5 )
+            results = searcher.search( parser.parse( '*' + search_term + '*' ), minscore=0.01 )
             ldda_ids = [ result[ 'id' ] for result in results ]
             lddas = []
             for ldda_id in ldda_ids:

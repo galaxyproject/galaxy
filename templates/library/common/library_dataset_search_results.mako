@@ -95,7 +95,7 @@
         <p>The string "${search_term}" was found in at least one of the following information components of the displayed library datasets.</p>
         ${render_searched_components()}
         <form name="act_on_multiple_datasets" action="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, use_panels=use_panels, show_deleted=show_deleted )}" onSubmit="javascript:return checkForm();" method="post">
-            <input type="hidden" name=search_term value="${search_term}"/>
+            <input type="hidden" name="search_term" value="${search_term}"/>
             <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
                 <thead>
                     <tr class="libraryTitle">

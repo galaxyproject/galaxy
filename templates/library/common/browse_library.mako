@@ -247,19 +247,20 @@
                     checked="checked"
                 %endif
                 />
-                %if ldda.library_dataset.deleted:
-                   <span class="libraryItem-error">
-                %endif
                 <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="dataset-${ldda.id}-popup">
-                    <a class="view-info" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">${ldda.name}</a>
+                    <a class="view-info" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">
+                        %if ldda.library_dataset.deleted:
+                            <div class="libraryItem-error">${ldda.name}</div>
+                        %else:
+                            ${ldda.name}
+                        %endif     
+                    </a>
                 </div>
-                %if ldda.library_dataset.deleted:
-                    </span>
-                %endif
                 %if not library.deleted:
                     <div popupmenu="dataset-${ldda.id}-popup">
                         %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and can_modify:
                             <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
+                            <a class="action-button" href="${h.url_for( controller='library_common', action='move_library_item', cntrller=cntrller, item_type='ldda', item_id=trans.security.encode_id( ldda.id ), source_library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Move this dataset</a>
                         %else:
                             <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">View information</a>
                         %endif
@@ -348,7 +349,7 @@
         info_association, inherited = folder.get_info_association( restrict=True )
     %>
     %if not root_folder and ( not folder.deleted or show_deleted ):
-        <% encoded_id = trans.security.encode_id(folder.id) %>
+        <% encoded_id = trans.security.encode_id( folder.id ) %>
         <tr id="folder-${encoded_id}" class="folderRow libraryOrFolderRow"
             %if parent is not None:
                 parent="${parent}"
@@ -358,15 +359,16 @@
             <td style="padding-left: ${folder_pad}px;">
                 <input type="checkbox" class="folderCheckbox"/>
                 <span class="expandLink folder-${encoded_id}-click">
-                <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="folder_img-${folder.id}-popup">
-                    <a class="folder-${encoded_id}-click" href="javascript:void(0);">
-                        %if folder.deleted:
-                            <span class="libraryItem-error">${folder.name}</span>
-                        %else:
-                            ${folder.name}
-                        %endif
-                    </a>
-                </div>
+                    <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="folder_img-${folder.id}-popup">
+                        <a class="folder-${encoded_id}-click" href="javascript:void(0);">
+                            %if folder.deleted:
+                                <div class="libraryItem-error">${folder.name}</div>
+                            %else:
+                                ${folder.name}
+                            %endif
+                        </a>
+                    </div>
+                </span>
                 %if not library.deleted:
                     <div popupmenu="folder_img-${folder.id}-popup">
                         %if not branch_deleted( folder ) and can_add:
@@ -379,6 +381,7 @@
                             %endif
                             %if can_modify:
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
+                                <a class="action-button" href="${h.url_for( controller='library_common', action='move_library_item', cntrller=cntrller, item_type='folder', item_id=trans.security.encode_id( folder.id ), source_library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Move this folder</a>
                             %else:
                                 <a class="action-button" class="view-info" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">View information</a>
                             %endif
