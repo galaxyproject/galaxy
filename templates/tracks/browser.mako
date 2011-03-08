@@ -55,7 +55,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "jquery.ui.sortable.slider", "farbtastic" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
 
 <script type="text/javascript">
 
@@ -252,13 +252,26 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                 });
             });
 
-            $(document).keydown( function( e ) {
-                // 37 == left
-                if ( e.which == 39 ) {
-                   view.move_fraction( -0.25 ); 
-                // 39 == right
-                } else if ( e.which == 37 ) {
-                   view.move_fraction( 0.25 ); 
+            //
+            // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
+            //
+            $(document).keydown(function(e) {
+                // Key codes: left == 37, up == 38, right == 39, down == 40
+                switch(e.which) {
+                    case 37:
+                        view.move_fraction(0.25);
+                        break
+                    case 38:
+                        var change = Math.round(view.viewport_container.height()/15.0);
+                        view.viewport_container.scrollTo('-=' + change + 'px');
+                        break;
+                    case 39:
+                        view.move_fraction(-0.25);
+                        break;
+                    case 40:
+                        var change = Math.round(view.viewport_container.height()/15.0);
+                        view.viewport_container.scrollTo('+=' + change + 'px');
+                        break;
                 }
             });
         };
