@@ -360,8 +360,7 @@ $.extend( View.prototype, {
         this.default_overview_height = this.overview_box.height();
         
         this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
-        this.chrom_form = $("<form/>").attr("action", function() {} ).appendTo(this.nav_controls);
-        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").addClass("no-autocomplete").append("<option value=''>Loading</option>").appendTo(this.chrom_form);
+        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").addClass("no-autocomplete").append("<option value=''>Loading</option>").appendTo(this.nav_controls);
         var submit_nav = function(e) {
             if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27 ) {
                 if ((e.keyCode || e.which) !== 27) { // Not escape key
@@ -373,8 +372,8 @@ $.extend( View.prototype, {
                 return false;
             }
         };
-        this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.chrom_form);
-        this.location_span = $("<span/>").addClass("location").appendTo(this.chrom_form);
+        this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.nav_controls);
+        this.location_span = $("<span/>").addClass("location").appendTo(this.nav_controls);
         this.location_span.bind("click", function() {
             view.location_span.hide();
             view.chrom_select.hide();
@@ -383,10 +382,10 @@ $.extend( View.prototype, {
             view.nav_input.focus();
         });
         if (this.vis_id !== undefined) {
-            this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.chrom_form);
+            this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.nav_controls);
         }
-        this.zo_link = $("<a id='zoom-out' />").click(function() { view.zoom_out(); view.redraw(); }).appendTo(this.chrom_form);
-        this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.redraw(); }).appendTo(this.chrom_form);        
+        this.zo_link = $("<a id='zoom-out' />").click(function() { view.zoom_out(); view.redraw(); }).appendTo(this.nav_controls);
+        this.zi_link = $("<a id='zoom-in' />").click(function() { view.zoom_in(); view.redraw(); }).appendTo(this.nav_controls);        
         
         // Get initial set of chroms.
         this.load_chroms({low: 0}, callback);
