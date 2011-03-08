@@ -47,14 +47,14 @@
         <param name="var_cols" value="1,2,3,4"/>
         <param name="method" value="cor"/>
         <output name="out_file1" file="pca_out1.tabular"/>
-        <output name="out_file2" file="pca_out2.pdf" lines_diff="6"/>
+        <output name="out_file2" file="pca_out2.pdf"/>
     </test>
     <test>
         <param name="input1" value="iris.tabular"/>
         <param name="var_cols" value="1,2,3,4"/>
         <param name="method" value="cov"/>
         <output name="out_file1" file="pca_out3.tabular"/>
-        <output name="out_file2" file="pca_out4.pdf" lines_diff="6"/>
+        <output name="out_file2" file="pca_out4.pdf"/>
     </test>
     <test>
         <param name="input1" value="iris.tabular"/>
@@ -62,7 +62,7 @@
         <param name="method" value="svd"/>
         <param name="scale" value="both"/>
         <output name="out_file1" file="pca_out5.tabular"/>
-        <output name="out_file2" file="pca_out6.pdf" lines_diff="6"/>
+        <output name="out_file2" file="pca_out6.pdf"/>
     </test>
   </tests>
   <help>

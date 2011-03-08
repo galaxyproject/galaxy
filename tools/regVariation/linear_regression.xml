@@ -29,7 +29,7 @@
         <param name="response_col" value="3"/>
         <param name="predictor_cols" value="1,2"/>
         <output name="out_file1" file="regr_out.tabular"/>
-        <output name="out_file2" file="regr_out.pdf" lines_diff="6"/>
+        <output name="out_file2" file="regr_out.pdf"/>
     </test>
   </tests>
   <help>

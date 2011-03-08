@@ -108,7 +108,7 @@
         <param name="scale" value="1"/>
         <param name="degree" value="2"/>
         <output name="out_file1" file="kpca_out1.tabular"/>
-        <output name="out_file2" file="kpca_out2.pdf" lines_diff="6"/>
+        <output name="out_file2" file="kpca_out2.pdf"/>
     </test>
   </tests>
   <help>

@@ -16,7 +16,7 @@
   <tests>
   	<test>
   		<param name="inputFile1" value="categories_criteria.tabular" />
-    	<output name="outputFile1" file="statcked_bars_plot.pdf" />     
+    	<output name="outputFile1" file="stacked_barplot.pdf" />     
   	</test>
   </tests>
 

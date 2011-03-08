@@ -52,7 +52,7 @@
         <param name="y_scale" value="scale"/>
         <param name="std_scores" value="yes"/>
         <output name="out_file1" file="cca_out1.tabular"/>
-        <output name="out_file2" file="cca_out2.pdf" lines_diff="6"/>
+        <output name="out_file2" file="cca_out2.pdf"/>
     </test>
   </tests>
   <help>
