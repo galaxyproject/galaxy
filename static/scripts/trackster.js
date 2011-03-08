@@ -1573,7 +1573,6 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         if (clear_after) {
             var track = this;
             var intervalId = setInterval(function() {
-                console.log("draw_tile_dict_length:", obj_length(draw_tile_dict));
                 if (obj_length(draw_tile_dict) === 0) {
                     // All tiles have been drawn; clear out track content in order to show the most recent content.
                     // Most recent content is the div with children (tiles) most recently appended to track.
