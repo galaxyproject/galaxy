@@ -7,6 +7,7 @@ from sqlalchemy.orm import *
 from migrate import *
 from migrate.changeset import *
 from sqlalchemy.exc import *
+import binascii
 
 from galaxy.util.json import from_json_string, to_json_string
 
