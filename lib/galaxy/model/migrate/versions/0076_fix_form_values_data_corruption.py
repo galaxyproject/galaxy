@@ -9,7 +9,6 @@ from migrate.changeset import *
 from sqlalchemy.exc import *
 
 from galaxy.util.json import from_json_string, to_json_string
-from galaxy.model.custom_types import _sniffnfix_pg9_hex
 
 import logging
 log = logging.getLogger( __name__ )
@@ -17,6 +16,18 @@ log = logging.getLogger( __name__ )
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
+def _sniffnfix_pg9_hex(value):
+    """
+    Sniff for and fix postgres 9 hex decoding issue
+    
+    """
+    try:
+        if value[0] == 'x':
+            return binascii.unhexlify(value[1:])
+        else:
+            return value
+    except Exception, ex:
+        return value
 
 def upgrade():
     print __doc__
@@ -32,7 +43,7 @@ def upgrade():
         # first check if loading the dict from the json succeeds
         # if that fails, it means that the content field is corrupted.
         try:
-            field_values_dict = from_json_string( str( row['field_values'] ) )
+            field_values_dict = from_json_string( _sniffnfix_pg9_hex( str( row['field_values'] ) ) )
         except Exception, e:
             corrupted_rows = corrupted_rows + 1
             # content field is corrupted
@@ -72,7 +83,10 @@ def upgrade():
             json_values = to_json_string(field_values_dict)
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( json_values, int( row['id'] ) )
             db_session.execute( cmd )
-    print 'Fixed %i corrupted rows.' % corrupted_rows
+    if corrupted_rows:
+        print 'Fixed %i corrupted rows.' % corrupted_rows
+    else:
+        print 'No corrupted rows found.'
 
 def downgrade():
     pass
