@@ -20,12 +20,20 @@
     <data format="input" name="out_file1" metadata_source="input_file1"/>
   </outputs>
   <tests>
-    <test>
-        <param name="input_file1" value="gops_subtract_in1.gff"/>
-        <param name="feature_name" value="exon"/>
-        <param name="cond" value=">1"/>
-        <output name="out_file1" file="gff_filter_by_feature_count_out1.gff"/>
-    </test>
+      <!-- Test GTF filtering. -->
+      <test>
+          <param name="input_file1" value="gops_subtract_in1.gff"/>
+          <param name="feature_name" value="exon"/>
+          <param name="cond" value=">1"/>
+          <output name="out_file1" file="gff_filter_by_feature_count_out1.gff"/>
+      </test>
+      <!-- Test GFF3 filtering. -->
+      <test>
+          <param name="input_file1" value="5.gff3"/>
+          <param name="feature_name" value="HSP"/>
+          <param name="cond" value=">=5"/>
+          <output name="out_file1" file="gff_filter_by_feature_count_out2.gff"/>
+      </test>
   </tests>
 
   <help>

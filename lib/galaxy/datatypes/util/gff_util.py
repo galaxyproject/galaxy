@@ -12,8 +12,18 @@ class GFFInterval( GenomicInterval ):
     """
     def __init__( self, reader, fields, chrom_col, feature_col, start_col, end_col, \
                   strand_col, score_col, default_strand, fix_strand=False, raw_line='' ):
+        # HACK: GFF format allows '.' for strand but GenomicInterval does not. To get around this,
+        # temporarily set strand and then unset after initing GenomicInterval.
+        unknown_strand = False
+        if not fix_strand and fields[ strand_col ] == '.':
+            unknown_strand = True
+            fields[ strand_col ] = '+'
         GenomicInterval.__init__( self, reader, fields, chrom_col, start_col, end_col, strand_col, \
                                   default_strand, fix_strand=fix_strand )
+        if unknown_strand:
+            self.strand = '.'
+            self.fields[ strand_col ] = '.'
+                                  
         # Handle feature, score column.
         self.feature_col = feature_col
         if self.feature_col >= self.nfields:
@@ -40,13 +50,10 @@ class GFFFeature( GFFInterval ):
         self.intervals = intervals
         # Use intervals to set feature attributes.
         for interval in self.intervals:
-            # Error checking.
+            # Error checking. NOTE: intervals need not share the same strand.
             if interval.chrom != self.chrom:
-                raise ValueError( "interval chrom does not match self chrom: %i != %i" % \
+                raise ValueError( "interval chrom does not match self chrom: %s != %s" % \
                                   ( interval.chrom, self.chrom ) )
-            if interval.strand != self.strand:
-                raise ValueError( "interval strand does not match self strand: %s != %s" % \
-                                  ( interval.strand, self.strand ) )
             # Set start, end of interval.
             if interval.start < self.start:
                 self.start = interval.start
@@ -140,7 +147,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             # For debugging, uncomment this to propogate parsing exceptions up. 
             # I.e. the underlying reason for an unexpected StopIteration exception 
             # can be found by uncommenting this. 
-            # raise e
+            #raise e
                
         #
         # Get next GFFFeature
@@ -163,7 +170,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
     
         # Initialize feature name from seed.
         feature_group = self.seed_interval.attributes.get( 'group', None ) # For GFF
-        feature_id = self.seed_interval.attributes.get( 'id', None ) # For GFF3
+        feature_id = self.seed_interval.attributes.get( 'ID', None ) # For GFF3
         feature_gene_id = self.seed_interval.attributes.get( 'gene_id', None ) # For GTF
         feature_transcript_id = self.seed_interval.attributes.get( 'transcript_id', None ) # For GTF
 
@@ -183,11 +190,14 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             
             # If interval not associated with feature, break.
             group = interval.attributes.get( 'group', None )
+            # GFF test:
             if group and feature_group != group:
                 break
-            id = interval.attributes.get( 'id', None )
-            if id and feature_id != id:
+            # GFF3 test:
+            parent = interval.attributes.get( 'Parent', None )
+            if feature_id and feature_id != parent:
                 break
+            # GTF test:
             gene_id = interval.attributes.get( 'gene_id', None )
             transcript_id = interval.attributes.get( 'transcript_id', None )
             if ( transcript_id and transcript_id != feature_transcript_id ) or \

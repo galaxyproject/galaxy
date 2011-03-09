@@ -8,8 +8,7 @@ Usage:
 import sys
 from galaxy import eggs
 from galaxy.datatypes.util.gff_util import GFFReaderWrapper
-
-assert sys.version_info[:2] >= ( 2, 4 )
+from bx.intervals.io import GenomicInterval
 
 # Valid operators, ordered so that complex operators (e.g. '>=') are
 # recognized before simple operators (e.g. '>')
@@ -62,7 +61,9 @@ def __main__():
     skipped_lines = 0
     first_skipped_line = 0
     out = open( output_name, 'w' )
-    for i, feature in enumerate( GFFReaderWrapper( open( input_name ), fix_strand=True ) ):
+    for i, feature in enumerate( GFFReaderWrapper( open( input_name ) ) ):
+        if not isinstance( feature, GenomicInterval ):
+            continue
         count = 0
         for interval in feature.intervals:
             if interval.feature == feature_name:
@@ -72,6 +73,9 @@ def __main__():
             for interval in feature.intervals:
                 out.write( "\t".join(interval.fields) + '\n' )
             kept_features += 1
+
+    # Needed because i is 0-based but want to display stats using 1-based.
+    i += 1
 
     # Clean up.
     out.close()
