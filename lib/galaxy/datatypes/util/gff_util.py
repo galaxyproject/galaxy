@@ -10,14 +10,18 @@ class GFFInterval( GenomicInterval ):
     A GFF interval, including attributes. If file is strictly a GFF file,
     only attribute is 'group.'
     """
-    def __init__( self, reader, fields, chrom_col, start_col, end_col, strand_col, \
-                  score_col, default_strand, fix_strand=False, raw_line='' ):
+    def __init__( self, reader, fields, chrom_col, feature_col, start_col, end_col, \
+                  strand_col, score_col, default_strand, fix_strand=False, raw_line='' ):
         GenomicInterval.__init__( self, reader, fields, chrom_col, start_col, end_col, strand_col, \
                                   default_strand, fix_strand=fix_strand )
-        # Handle score column.
+        # Handle feature, score column.
+        self.feature_col = feature_col
+        if self.feature_col >= self.nfields:
+            raise MissingFieldError( "No field for feature_col (%d)" % feature_col )
+        self.feature = self.fields[ self.feature_col ]
         self.score_col = score_col
         if self.score_col >= self.nfields:
-          raise MissingFieldError( "No field for score_col (%d)" % score_col )
+            raise MissingFieldError( "No field for score_col (%d)" % score_col )
         self.score = self.fields[ self.score_col ]
         
         # Attributes specific to GFF.
@@ -28,10 +32,11 @@ class GFFFeature( GFFInterval ):
     """
     A GFF feature, which can include multiple intervals.
     """
-    def __init__( self, reader, chrom_col, start_col, end_col, strand_col, score_col, default_strand, \
-                  fix_strand=False, intervals=[] ):
-        GFFInterval.__init__( self, reader, intervals[0].fields, chrom_col, start_col, end_col, \
-                                strand_col, score_col, default_strand, fix_strand=fix_strand )
+    def __init__( self, reader, chrom_col, feature_col, start_col, end_col, \
+                  strand_col, score_col, default_strand, fix_strand=False, intervals=[] ):
+        GFFInterval.__init__( self, reader, intervals[0].fields, chrom_col, feature_col, \
+                              start_col, end_col, strand_col, score_col, default_strand, \
+                              fix_strand=fix_strand )
         self.intervals = intervals
         # Use intervals to set feature attributes.
         for interval in self.intervals:
@@ -99,20 +104,20 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         expect traditional interval format.
     """
     
-    def __init__( self, reader, chrom_col=0, start_col=3, end_col=4, strand_col=6, score_col=5, \
-                  fix_strand=False, **kwargs ):
+    def __init__( self, reader, chrom_col=0, feature_col=2, start_col=3, \
+                  end_col=4, strand_col=6, score_col=5, fix_strand=False, **kwargs ):
         NiceReaderWrapper.__init__( self, reader, chrom_col=chrom_col, start_col=start_col, end_col=end_col, \
                                     strand_col=strand_col, fix_strand=fix_strand, **kwargs )
-        # HACK: NiceReaderWrapper (bx-python) does not handle score_col yet, so store ourselves.
+        self.feature_col = feature_col
         self.score_col = score_col
         self.last_line = None
         self.cur_offset = 0
         self.seed_interval = None
     
     def parse_row( self, line ):
-        interval = GFFInterval( self, line.split( "\t" ), self.chrom_col, self.start_col, \
-                                self.end_col, self.strand_col, self.score_col, self.default_strand, \
-                                fix_strand=self.fix_strand, raw_line=line )
+        interval = GFFInterval( self, line.split( "\t" ), self.chrom_col, self.feature_col, \
+                                self.start_col, self.end_col, self.strand_col, self.score_col, \
+                                self.default_strand, fix_strand=self.fix_strand, raw_line=line )
         return interval
         
     def next( self ):
@@ -196,8 +201,9 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         self.seed_interval = interval
     
         # Return GFF feature with all intervals.    
-        return GFFFeature( self, self.chrom_col, self.start_col, self.end_col, self.strand_col, \
-                           self.score_col, self.default_strand, fix_strand=self.fix_strand, \
+        return GFFFeature( self, self.chrom_col, self.feature_col, self.start_col, \
+                           self.end_col, self.strand_col, self.score_col, \
+                           self.default_strand, fix_strand=self.fix_strand, \
                            intervals=feature_intervals )
         
 
