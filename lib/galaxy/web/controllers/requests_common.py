@@ -748,6 +748,20 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                          trans.model.SampleDataset.table.c.sample_id==trans.model.Sample.table.c.id,
                                                          func.lower( trans.model.SampleDataset.table.c.name ).like( "%" + search_string.lower() + "%" ) ) ) \
                                           .order_by( trans.model.Sample.table.c.create_time.desc() )
+            elif search_type == 'form value':
+                samples = []
+                if search_string.find('=') != -1:
+                    field_label, field_value = search_string.split('=')
+                    all_samples = trans.sa_session.query( trans.model.Sample ) \
+                                              .filter( trans.model.Sample.table.c.deleted==False ) \
+                                              .order_by( trans.model.Sample.table.c.create_time.desc() )
+                    for sample in all_samples:
+                        # find the field in the sample form with the given label
+                        for field in sample.request.type.sample_form.fields:
+                            if field_label == field['label']:
+                                # check if the value is equal to the value in the search string
+                                if sample.values.content[ field['name'] ] == field_value:
+                                    samples.append( sample )
             if is_admin:
                 for s in samples:
                     if not s.request.deleted and s.request.state in request_states:
@@ -770,7 +784,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                              display='checkboxes' )
         # Build the search_type SelectField
         selected_value = kwd.get( 'search_type', 'sample name' )
-        types = [ 'sample name', 'bar_code', 'dataset' ]
+        types = [ 'sample name', 'bar_code', 'dataset', 'form value' ]
         search_type = build_select_field( trans, types, 'self', 'search_type', selected_value=selected_value, refresh_on_change=False )
         # Build the search_box TextField
         search_box = TextField( 'search_box', 50, kwd.get('search_box', '' ) )

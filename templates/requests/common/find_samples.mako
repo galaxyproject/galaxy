@@ -47,8 +47,15 @@
                 ${search_box.get_html()}
                 <input type="submit" name="find_samples_button" value="Find"/>  
                 <div class="toolParamHelp" style="clear: both;">
+                   <p>
                    Wildcard search (%) can be used as placeholder for any sequence of characters or words.<br/> 
                    For example, to search for samples starting with 'mysample' use 'mysample%' as the search string.
+                   </p>
+                   <p>
+                   When 'form value' search type is selected, then enter the search string in 'field label=value' format.
+                   <br/>For example, when searching for all samples whose 'Volume' field is 1.3mL, then the search string
+                   should be 'Volume=1.3mL' (without qoutes).
+                   </p>
                 </div>
             </div>
             %if results:
