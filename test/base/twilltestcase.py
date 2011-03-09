@@ -2144,7 +2144,8 @@ class TwillTestCase( unittest.TestCase ):
         #tc.fv( "1", "do_action", format )
         #tc.submit( "action_on_datasets_button" )
         # Here's the new approach...
-        url = "%s/library_common/act_on_multiple_datasets?cntrller=%s&library_id=%s&do_action=%s" % ( self.url, cntrller, library_id, format )
+        url = "%s/library_common/act_on_multiple_datasets?cntrller=%s&library_id=%s&do_action=%s" \
+            % ( self.url, cntrller, library_id, format )
         for ldda_id in ldda_ids:
             url += "&ldda_ids=%s" % ldda_id
         self.visit_url( url )
@@ -2195,6 +2196,21 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += 'Unpacked archive remains in: %s\n' % tmpd
                 raise AssertionError( errmsg )
         shutil.rmtree( tmpd )
+    def move_library_item( self, cntrller, item_type, item_id, source_library_id, make_target_current,
+                           target_library_id='', target_folder_id='', strings_displayed=[], strings_displayed_after_submit=[] ):
+        self.home()
+        self.visit_url( "%s/library_common/move_library_item?cntrller=%s&item_type=%s&item_id=%s&source_library_id=%s&make_target_current=%s" \
+                        % ( self.url, cntrller, item_type, item_id, source_library_id, make_target_current ) )
+        if target_library_id:
+            self.refresh_form( 'target_library_id', target_library_id )
+        if target_folder_id:
+            tc.fv( '1', 'target_folder_id', target_folder_id )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        tc.submit( 'move_library_item_button' )
+        for check_str in strings_displayed_after_submit:
+            self.check_page_for_string( check_str )
+        self.home()
     def delete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
         self.home()

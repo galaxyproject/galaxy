@@ -2132,7 +2132,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         def __build_target_folder_id_select_field( trans, folders, selected_value='none' ):
             for folder in folders:
                 if not folder.parent:
-                    folder.name = 'Data library root folder'
+                    folder.name = 'Data library root'
+                    break
             return build_select_field( trans,
                                        objs=folders,
                                        label_attr='name',

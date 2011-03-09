@@ -1,6 +1,16 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%inherit file="/base.mako"/>
 
+<%def name="javascripts()">
+   ${parent.javascripts()}
+   ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+</%def>
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "autocomplete_tagging" )}
+</%def>
+
 <%
     if source_library:
         source_library_id = trans.security.encode_id( source_library.id )

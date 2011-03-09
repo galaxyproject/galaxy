@@ -1636,9 +1636,11 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         else:
             selected_folder_id = 'none'
             folders = []
-        # TODO: Change the name of the library root folder to "Library root" to clarify to the
-        # user that it is the root folder.  We probably should just change this in the Library code,
-        # and update the data in the db.
+        # Change the name of the library root folder to clarify that it is the root
+        for folder in folders:
+            if not folder.parent:
+                folder.name = 'Data library root'
+                break
         folder_select_field = build_select_field( trans,
                                                   folders,
                                                   'name', 

@@ -35,7 +35,7 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_005_create_libraries( self ):
         """Testing creating libraries used in this script, then renaming one of them"""
         # Logged in as admin_user
-        for index in range( 0, 1 ):
+        for index in range( 0, 3 ):
             name = 'library%s' % str( index + 1 )
             description = '%s description' % name
             synopsis = '%s synopsis' % name
@@ -45,6 +45,12 @@ class TestLibraryFeatures( TwillTestCase ):
         global library1
         library1 = get_library( 'library1', 'library1 description', 'library1 synopsis' )
         assert library1 is not None, 'Problem retrieving library (library1) from the database'
+        global library2
+        library2 = get_library( 'library2', 'library2 description', 'library2 synopsis' )
+        assert library2 is not None, 'Problem retrieving library (library2) from the database'
+        global library3
+        library3 = get_library( 'library3', 'library3 description', 'library3 synopsis' )
+        assert library3 is not None, 'Problem retrieving library (library3) from the database'
         # Rename the library
         new_name = "library1 new name"
         new_description = "library1 new description"
@@ -413,13 +419,128 @@ class TestLibraryFeatures( TwillTestCase ):
                     raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' % \
                                           ( str( library_dataset.id ), library_dataset.name ) )
         check_folder( library1.root_folder )
+    def test_120_populate_public_library2( self ):
+        """Testing library datasets within a library"""
+        # Logged in as admin_user
+        # Add a folder named Three to library2 root
+        root_folder = library2.root_folder
+        name = "One"
+        description = "One description"
+        self.add_folder( 'library_admin',
+                         self.security.encode_id( library2.id ),
+                         self.security.encode_id( root_folder.id ),
+                         name=name,
+                         description=description )
+        global folder3
+        folder3 = get_folder( root_folder.id, name, description )
+        assert folder3 is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        # Upload dataset 1.bed to folder One
+        filename = '1.bed'
+        ldda_message = "Testing uploading %s" % filename
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library2.id ),
+                                     folder_id=self.security.encode_id( folder3.id ),
+                                     filename=filename,
+                                     file_type='bed',
+                                     dbkey='hg18',
+                                     ldda_message=ldda_message,
+                                     strings_displayed=[ 'Upload files' ] )
+        global ldda5
+        ldda5 = get_latest_ldda_by_name( filename )
+        assert ldda5 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda5 from the database'
+        # Add a sub-folder named Two to folder One
+        name = "Two"
+        description = "Two description"
+        self.add_folder( 'library_admin',
+                         self.security.encode_id( library2.id ),
+                         self.security.encode_id( folder3.id ),
+                         name=name,
+                         description=description )
+        global folder4
+        folder4 = get_folder( folder3.id, name, description )
+        assert folder4 is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        # Upload dataset 2.bed to folder Two
+        filename = '2.bed'
+        ldda_message = "Testing uploading %s" % filename
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library2.id ),
+                                     folder_id=self.security.encode_id( folder4.id ),
+                                     filename=filename,
+                                     file_type='bed',
+                                     dbkey='hg18',
+                                     ldda_message=ldda_message,
+                                     strings_displayed=[ 'Upload files' ] )
+        global ldda6
+        ldda6 = get_latest_ldda_by_name( filename )
+        assert ldda6 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda6 from the database'
+        # Add a folder named Three to library2 root
+        name = "Three"
+        description = "Three description"
+        self.add_folder( 'library_admin',
+                         self.security.encode_id( library2.id ),
+                         self.security.encode_id( root_folder.id ),
+                         name=name,
+                         description=description )
+        global folder5
+        folder5 = get_folder( root_folder.id, name, description )
+        assert folder5 is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        # Upload dataset 3.bed to library2 root folder
+        filename = '3.bed'
+        ldda_message = "Testing uploading %s" % filename
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library2.id ),
+                                     folder_id=self.security.encode_id( root_folder.id ),
+                                     filename=filename,
+                                     file_type='bed',
+                                     dbkey='hg18',
+                                     ldda_message=ldda_message,
+                                     strings_displayed=[ 'Upload files' ] )
+        global ldda7
+        ldda7 = get_latest_ldda_by_name( filename )
+        assert ldda7 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda7 from the database'
+    def test_125_move_dataset_within_library2( self ):
+        """Testing moving a dataset within library2"""
+        # Logged in as admin_user
+        # Move 3.bed to folder Three
+        self.move_library_item( cntrller='library_admin',
+                                item_type='ldda',
+                                item_id=self.security.encode_id( ldda7.id ),
+                                source_library_id=self.security.encode_id( library2.id ),
+                                make_target_current=True,
+                                target_folder_id=self.security.encode_id( folder5.id ),
+                                strings_displayed=[ 'Move data library items',
+                                                    '3.bed' ],
+                                strings_displayed_after_submit=[ '1 dataset moved to folder (Three) within data library (library2)' ] )
+    def test_130_move_folder_to_another_library( self ):
+        """Testing moving a folder to another library"""
+        # Logged in as admin_user
+        # Move folder Three which now includes 3.bed to library3
+        self.move_library_item( cntrller='library_admin',
+                                item_type='folder',
+                                item_id=self.security.encode_id( folder5.id ),
+                                source_library_id=self.security.encode_id( library2.id ),
+                                make_target_current=False,
+                                target_library_id=self.security.encode_id( library3.id ),
+                                target_folder_id=self.security.encode_id( library3.root_folder.id ),
+                                strings_displayed=[ 'Move data library items',
+                                                    'Three' ],
+                                strings_displayed_after_submit=[ 'Moved folder (Three) to folder (library3) within data library (library3)' ] )
+        # Make sure folder Three is not longer in library2
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library2.id ),
+                             strings_displayed=[ folder4.name, folder4.description ],
+                             strings_not_displayed=[ folder5.name, folder5.description ] )
+        # Make sure folder Three was moved to library3
+        self.browse_library( cntrller='library_admin',
+                             library_id=self.security.encode_id( library3.id ),
+                             strings_displayed=[ folder5.name, folder5.description, ldda7.name ] )
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
         ##################
         # Purge all libraries
         ##################
-        for library in [ library1 ]:
+        for library in [ library1, library2, library3 ]:
             self.delete_library_item( 'library_admin',
                                       self.security.encode_id( library.id ),
                                       self.security.encode_id( library.id ),
