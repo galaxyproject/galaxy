@@ -42,7 +42,12 @@ $().ready(function() {
     });
 });
 </script>
-  
+
+<%
+    from galaxy.web.form_builder import CheckboxField
+    create_role_for_group_checkbox = CheckboxField( 'create_role_for_group' )
+%>
+
 %if message:
     ${render_msg( message, status )}
 %endif
@@ -54,7 +59,7 @@ $().ready(function() {
             <div class="form-row">
                 <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
                 <label>Name:</label>
-                <input  name="name" type="textfield" value="" size=40"/>
+                <input  name="name" type="textfield" value="${name}" size=40"/>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
@@ -79,6 +84,12 @@ $().ready(function() {
                     ${render_select( "out_users", out_users )}<br/>
                     <input type="submit" id="users_add_button" value="<<"/>
                 </div>
+            </div>
+            <div class="form-row">
+                %if create_role_for_group_checked:
+                    <% create_role_for_group_checkbox.checked = True %>
+                %endif
+                ${create_role_for_group_checkbox.get_html()} Create a new role of the same name for this group
             </div>
             <div class="form-row">
                 <input type="submit" name="create_group_button" value="Save"/>

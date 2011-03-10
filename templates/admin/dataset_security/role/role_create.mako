@@ -19,29 +19,34 @@
 </%def>
 
 <script type="text/javascript">
-$().ready(function() {  
-    $('#groups_add_button').click(function() {
-        return !$('#out_groups option:selected').remove().appendTo('#in_groups');
-    });
-    $('#groups_remove_button').click(function() {
-        return !$('#in_groups option:selected').remove().appendTo('#out_groups');
-    });
-    $('#users_add_button').click(function() {
-        return !$('#out_users option:selected').remove().appendTo('#in_users');
-    });
-    $('#users_remove_button').click(function() {
-        return !$('#in_users option:selected').remove().appendTo('#out_users');
-    });
-    $('form#associate_role_group_user').submit(function() {
-        $('#in_groups option').each(function(i) {
-            $(this).attr("selected", "selected");
+    $().ready(function() {  
+        $('#groups_add_button').click(function() {
+            return !$('#out_groups option:selected').remove().appendTo('#in_groups');
         });
-        $('#in_users option').each(function(i) {
-            $(this).attr("selected", "selected");
+        $('#groups_remove_button').click(function() {
+            return !$('#in_groups option:selected').remove().appendTo('#out_groups');
+        });
+        $('#users_add_button').click(function() {
+            return !$('#out_users option:selected').remove().appendTo('#in_users');
+        });
+        $('#users_remove_button').click(function() {
+            return !$('#in_users option:selected').remove().appendTo('#out_users');
+        });
+        $('form#associate_role_group_user').submit(function() {
+            $('#in_groups option').each(function(i) {
+                $(this).attr("selected", "selected");
+            });
+            $('#in_users option').each(function(i) {
+                $(this).attr("selected", "selected");
+            });
         });
     });
-});
 </script>
+
+<%
+    from galaxy.web.form_builder import CheckboxField
+    create_group_for_role_checkbox = CheckboxField( 'create_group_for_role' )
+%>
 
 %if message:
     ${render_msg( message, status )}
@@ -54,11 +59,11 @@ $().ready(function() {
             <div class="form-row">
                 <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
                 <label>Name:</label>
-                <input  name="name" type="textfield" value="" size=40"/>
+                <input  name="name" type="textfield" value="${name}" size=40"/>
             </div>
             <div class="form-row">
                 <label>Description:</label>
-                <input  name="description" type="textfield" value="" size=40"/>
+                <input  name="description" type="textfield" value="${description}" size=40"/>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
@@ -85,7 +90,10 @@ $().ready(function() {
                 </div>
             </div>
             <div class="form-row">
-                <input type="checkbox" name="create_group_for_role" value="yes" />Create a new group of the same name for this role
+                %if create_group_for_role_checked:
+                    <% create_group_for_role_checkbox.checked = True %>
+                %endif
+                ${create_group_for_role_checkbox.get_html()} Create a new group of the same name for this role
             </div>
             <div class="form-row">
                 <input type="submit" name="create_role_button" value="Save"/>

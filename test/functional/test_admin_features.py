@@ -126,21 +126,26 @@ class TestDataSecurity( TwillTestCase ):
         # Logged in as admin_user
         name = 'Role One'
         description = "This is Role Ones description"
-        user_ids=[ str( admin_user.id ), str( regular_user1.id ), str( regular_user3.id ) ]
+        in_user_ids = [ str( admin_user.id ), str( regular_user1.id ), str( regular_user3.id ) ]
+        in_group_ids = []
+        # Add 1 to the number of associated groups since we are creating a new one with the same name as the role
+        num_gras = len( in_group_ids ) + 1
         self.create_role( name=name,
                           description=description,
-                          in_user_ids=user_ids,
-                          in_group_ids=[],
+                          in_user_ids=in_user_ids,
+                          in_group_ids=in_group_ids,
                           create_group_for_role='yes',
-                          private_role=admin_user.email )
+                          private_role=admin_user.email,
+                          strings_displayed=[ "Role '%s' has been created with %d associated users and %d associated groups." % ( name, len( in_user_ids ), num_gras ),
+                                              "One of the groups associated with this role is the newly created group with the same name." ] )
         # Get the role object for later tests
         global role_one
         role_one = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
         assert role_one is not None, 'Problem retrieving role named "Role One" from the database'
         # Make sure UserRoleAssociations are correct
-        if len( role_one.users ) != len( user_ids ):
+        if len( role_one.users ) != len( in_user_ids ):
             raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created ( should have been %d )' \
-                                  % ( len( role_one.users ), role_one.id, len( user_ids ) ) )
+                                  % ( len( role_one.users ), role_one.id, len( in_user_ids ) ) )
         # Each of the following users should now have 2 role associations, their private role and role_one
         for user in [ admin_user, regular_user1, regular_user3 ]:
             refresh( user )
@@ -162,29 +167,36 @@ class TestDataSecurity( TwillTestCase ):
         # Reset the role back to the original name and description
         self.rename_role( self.security.encode_id( role_one.id ), name=name, description=description )
     def test_035_create_group( self ):
-        """Testing creating new group with 3 members and 1 associated role, then renaming it"""
+        """Testing creating new group with 3 members and 2 associated roles, then renaming it"""
         # Logged in as admin_user
         name = "Group One's Name"
-        user_ids=[ str( admin_user.id ), str( regular_user1.id ), str( regular_user3.id ) ]
-        role_ids=[ str( role_one.id ) ]
-        self.create_group( name=name, in_user_ids=user_ids, in_role_ids=role_ids )
+        in_user_ids = [ str( admin_user.id ), str( regular_user1.id ), str( regular_user3.id ) ]
+        in_role_ids = [ str( role_one.id ) ]
+        # The number of GroupRoleAssociations should be 2, role_one and the newly created role named 'Group One's Name'
+        num_gras = len( in_role_ids ) + 1
+        self.create_group( name=name,
+                           in_user_ids=in_user_ids,
+                           in_role_ids=in_role_ids,
+                           create_role_for_group='yes',
+                           strings_displayed=[ "Group '%s' has been created with %d associated users and %d associated roles." % ( name, len( in_user_ids ), num_gras ),
+                                               "One of the roles associated with this group is the newly created role with the same name." ] )
         # Get the group object for later tests
         global group_one
         group_one = get_group_by_name( name )
         assert group_one is not None, 'Problem retrieving group named "Group One" from the database'
         # Make sure UserGroupAssociations are correct
-        if len( group_one.users ) != len( user_ids ):
+        if len( group_one.users ) != len( in_user_ids ):
             raise AssertionError( '%d UserGroupAssociations were created for group id %d when it was created ( should have been %d )' \
-                                  % ( len( group_one.users ), group_one.id, len( user_ids ) ) )
+                                  % ( len( group_one.users ), group_one.id, len( in_user_ids ) ) )
         # Each user should now have 1 group association, group_one
         for user in [ admin_user, regular_user1, regular_user3 ]:
             refresh( user )
             if len( user.groups ) != 1:
                 raise AssertionError( '%d UserGroupAssociations are associated with user %s ( should be 1 )' % ( len( user.groups ), user.email ) )
         # Make sure GroupRoleAssociations are correct
-        if len( group_one.roles ) != len( role_ids ):
+        if len( group_one.roles ) != num_gras:
             raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been %d )' \
-                                  % ( len( group_one.roles ), group_one.id, len( role_ids ) ) )
+                                  % ( len( group_one.roles ), group_one.id, num_gras ) )
         # Rename the group
         rename = "Group One's been Renamed"
         self.rename_group( self.security.encode_id( group_one.id ), name=rename, )

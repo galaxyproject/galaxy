@@ -1229,25 +1229,22 @@ class TwillTestCase( unittest.TestCase ):
                      description="This is Role One",
                      in_user_ids=[],
                      in_group_ids=[],
-                     create_group_for_role='no',
-                     private_role='' ):
+                     create_group_for_role='',
+                     private_role='',
+                     strings_displayed=[] ):
         """Create a new role"""
-        url = "%s/admin/roles?operation=create&create_role_button=Save&name=%s&description=%s" % ( self.url, name.replace( ' ', '+' ), description.replace( ' ', '+' ) )
+        url = "%s/admin/roles?operation=create&create_role_button=Save&name=%s&description=%s" % \
+            ( self.url, name.replace( ' ', '+' ), description.replace( ' ', '+' ) )
         if in_user_ids:
             url += "&in_users=%s" % ','.join( in_user_ids )
         if in_group_ids:
             url += "&in_groups=%s" % ','.join( in_group_ids )
         if create_group_for_role == 'yes':
-            url += '&create_group_for_role=yes'
+            url += '&create_group_for_role=yes&create_group_for_role=yes'
         self.home()
         self.visit_url( url )
-        if create_group_for_role == 'yes':
-            check_str = "Group '%s' has been created, and role '%s' has been created with %d associated users and %d associated groups" % \
-                ( name, name, len( in_user_ids ), len( in_group_ids ) )
-        else:
-            check_str = "Role '%s' has been created with %d associated users and %d associated groups" % \
-                ( name, len( in_user_ids ), len( in_group_ids ) ) 
-        self.check_page_for_string( check_str )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         if private_role:
             # Make sure no private roles are displayed
             try:
@@ -1304,17 +1301,19 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Tests associated with groups
-    def create_group( self, name='Group One', in_user_ids=[], in_role_ids=[] ):
+    def create_group( self, name='Group One', in_user_ids=[], in_role_ids=[], create_role_for_group='', strings_displayed=[] ):
         """Create a new group"""
         url = "%s/admin/groups?operation=create&create_group_button=Save&name=%s" % ( self.url, name.replace( ' ', '+' ) )
         if in_user_ids:
             url += "&in_users=%s" % ','.join( in_user_ids )
         if in_role_ids:
             url += "&in_roles=%s" % ','.join( in_role_ids )
+        if create_role_for_group == 'yes':
+            url += '&create_role_for_group=yes&create_role_for_group=yes'
         self.home()
         self.visit_url( url )
-        check_str = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_user_ids ), len( in_role_ids ) ) 
-        self.check_page_for_string( check_str )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
         self.home()
         self.visit_url( "%s/admin/groups" % self.url )
         self.check_page_for_string( name )

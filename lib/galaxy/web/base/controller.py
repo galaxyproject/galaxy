@@ -1185,16 +1185,24 @@ class Admin( object ):
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        name = util.restore_text( params.get( 'name', '' ) )
+        description = util.restore_text( params.get( 'description', '' ) )
+        in_users = util.listify( params.get( 'in_users', [] ) )
+        out_users = util.listify( params.get( 'out_users', [] ) )
+        in_groups = util.listify( params.get( 'in_groups', [] ) )
+        out_groups = util.listify( params.get( 'out_groups', [] ) )
+        create_group_for_role = params.get( 'create_group_for_role', '' )
+        create_group_for_role_checked = CheckboxField.is_checked( create_group_for_role )
+        ok = True
         if params.get( 'create_role_button', False ):
-            name = util.restore_text( params.name )
-            description = util.restore_text( params.description )
-            in_users = util.listify( params.get( 'in_users', [] ) )
-            in_groups = util.listify( params.get( 'in_groups', [] ) )
-            create_group_for_role = params.get( 'create_group_for_role', 'no' )
             if not name or not description:
-                message = "Enter a valid name and a description"
+                message = "Enter a valid name and a description."
+                status = 'error'
+                ok = False
             elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==name ).first():
-                message = "A role with that name already exists"
+                message = "Role names must be unique and a role with that name already exists, so choose another name."
+                status = 'error'
+                ok = False
             else:
                 # Create the role
                 role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
@@ -1207,41 +1215,44 @@ class Admin( object ):
                 for group in [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in in_groups ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
-                if create_group_for_role == 'yes':
+                if create_group_for_role_checked:
                     # Create the group
                     group = trans.app.model.Group( name=name )
                     trans.sa_session.add( group )
-                    message = "Group '%s' has been created, and role '%s' has been created with %d associated users and %d associated groups" % \
-                    ( group.name, role.name, len( in_users ), len( in_groups ) )
+                    # Associate the group with the role
+                    gra = trans.model.GroupRoleAssociation( group, role )
+                    trans.sa_session.add( gra )
+                    num_in_groups = len( in_groups ) + 1
                 else:
-                    message = "Role '%s' has been created with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
+                    num_in_groups = len( in_groups )
                 trans.sa_session.flush()
+                message = "Role '%s' has been created with %d associated users and %d associated groups.  " \
+                % ( role.name, len( in_users ), num_in_groups )
+                if create_group_for_role_checked:
+                    message += 'One of the groups associated with this role is the newly created group with the same name.'
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='roles',
                                                            webapp=webapp,
                                                            message=util.sanitize_text( message ),
                                                            status='done' ) )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='create_role',
-                                                       webapp=webapp,
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        out_users = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            out_users.append( ( user.id, user.email ) )
-        out_groups = []
-        for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
-            out_groups.append( ( group.id, group.name ) )
+        if ok:
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted==False ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                out_users.append( ( user.id, user.email ) )
+            for group in trans.sa_session.query( trans.app.model.Group ) \
+                                         .filter( trans.app.model.Group.table.c.deleted==False ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):
+                out_groups.append( ( group.id, group.name ) )
         return trans.fill_template( '/admin/dataset_security/role/role_create.mako',
-                                    in_users=[],
-                                    out_users=out_users,
-                                    in_groups=[],
-                                    out_groups=out_groups,
                                     webapp=webapp,
+                                    name=name,
+                                    description=description,
+                                    in_users=in_users,
+                                    out_users=out_users,
+                                    in_groups=in_groups,
+                                    out_groups=out_groups,
+                                    create_group_for_role_checked=create_group_for_role_checked,
                                     message=message,
                                     status=status )
     @web.expose
@@ -1617,14 +1628,23 @@ class Admin( object ):
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        name = util.restore_text( params.get( 'name', '' ) )
+        in_users = util.listify( params.get( 'in_users', [] ) )
+        out_users = util.listify( params.get( 'out_users', [] ) )
+        in_roles = util.listify( params.get( 'in_roles', [] ) )
+        out_roles = util.listify( params.get( 'out_roles', [] ) )
+        create_role_for_group = params.get( 'create_role_for_group', '' )
+        create_role_for_group_checked = CheckboxField.is_checked( create_role_for_group )
+        ok = True
         if params.get( 'create_group_button', False ):
-            name = util.restore_text( params.name )
-            in_users = util.listify( params.get( 'in_users', [] ) )
-            in_roles = util.listify( params.get( 'in_roles', [] ) )
             if not name:
-                message = "Enter a valid name"
+                message = "Enter a valid name."
+                status = 'error'
+                ok = False
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==name ).first():
-                message = "A group with that name already exists"
+                message = "Group names must be unique and a group with that name already exists, so choose another name."
+                status = 'error'
+                ok = False
             else:
                 # Create the group
                 group = trans.app.model.Group( name=name )
@@ -1634,39 +1654,49 @@ class Admin( object ):
                 for user in [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in in_users ]:
                     uga = trans.app.model.UserGroupAssociation( user, group )
                     trans.sa_session.add( uga )
-                    trans.sa_session.flush()
                 # Create the GroupRoleAssociations
                 for role in [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
-                    trans.sa_session.flush()
-                message = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_users ), len( in_roles ) )
+                if create_role_for_group_checked:
+                    # Create the role
+                    role = trans.app.model.Role( name=name, description='Role for group %s' % name )
+                    trans.sa_session.add( role )
+                    # Associate the role with the group
+                    gra = trans.model.GroupRoleAssociation( group, role )
+                    trans.sa_session.add( gra )
+                    num_in_roles = len( in_roles ) + 1
+                else:
+                    num_in_roles = len( in_roles )
+                trans.sa_session.flush()
+                message = "Group '%s' has been created with %d associated users and %d associated roles.  " \
+                % ( group.name, len( in_users ), num_in_roles )
+                if create_role_for_group_checked:
+                    message += 'One of the roles associated with this group is the newly created role with the same name.'
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='groups',
                                                            webapp=webapp,
                                                            message=util.sanitize_text( message ),
                                                            status='done' ) )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='create_group',
-                                                       webapp=webapp,
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        out_users = []
-        for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
-            out_users.append( ( user.id, user.email ) )
-        out_roles = []
-        for role in trans.sa_session.query( trans.app.model.Role ) \
-                                    .filter( trans.app.model.Role.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.Role.table.c.name ):
-            out_roles.append( ( role.id, role.name ) )
+
+
+        if ok:
+            for user in trans.sa_session.query( trans.app.model.User ) \
+                                        .filter( trans.app.model.User.table.c.deleted==False ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
+                out_users.append( ( user.id, user.email ) )
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                        .filter( trans.app.model.Role.table.c.deleted==False ) \
+                                        .order_by( trans.app.model.Role.table.c.name ):
+                out_roles.append( ( role.id, role.name ) )
         return trans.fill_template( '/admin/dataset_security/group/group_create.mako',
-                                    in_users=[],
-                                    out_users=out_users,
-                                    in_roles=[],
-                                    out_roles=out_roles,
                                     webapp=webapp,
+                                    name=name,
+                                    in_users=in_users,
+                                    out_users=out_users,
+                                    in_roles=in_roles,
+                                    out_roles=out_roles,
+                                    create_role_for_group_checked=create_role_for_group_checked,
                                     message=message,
                                     status=status )
     @web.expose

@@ -1986,13 +1986,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             # We've been called from a menu option for a library dataset search result set
             move_ldda_ids = util.listify( item_id )
             if move_ldda_ids:
-                # Checkboxes cause 2 copies of each id to be included in the request
                 move_ldda_ids = map( trans.security.decode_id, move_ldda_ids )
-                unique_ldda_ids = []
-                for ldda_id in move_ldda_ids:
-                    if ldda_id not in unique_ldda_ids:
-                        unique_ldda_ids.append( ldda_id )
-                move_ldda_ids = unique_ldda_ids
         elif item_type == 'folder':
             move_folder_id = item_id
             move_folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( move_folder_id ) )
