@@ -10,29 +10,29 @@
 </%def>
 
 <%def name="stylesheets()">
-${parent.stylesheets()}
+    ${parent.stylesheets()}
 
-${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom" )}
+    ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom" )}
 
-<style type="text/css">
-    #browser-container {
-        overflow: none;
-    }
-    .nav-container {
-        width: 100%;
-        ## Overriding styles from trackster.css to push nav up into title bar
-        height: 0;
-        text-align: center;
-    }
-    .nav {
-        ## Overriding styles from trackster.css to push nav up into title bar
-        position: relative;
-        display: inline-block;
-        top: -2em;
-        background: transparent;
-        border: none;
-    }
-</style>
+    <style type="text/css">
+        #browser-container {
+            overflow: none;
+        }
+        .nav-container {
+            width: 100%;
+            ## Overriding styles from trackster.css to push nav up into title bar
+            height: 0;
+            text-align: center;
+        }
+        .nav {
+            ## Overriding styles from trackster.css to push nav up into title bar
+            position: relative;
+            display: inline-block;
+            top: -2em;
+            background: transparent;
+            border: none;
+        }
+    </style>
 </%def>
 
 <%def name="center_panel()">
