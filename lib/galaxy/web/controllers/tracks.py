@@ -408,7 +408,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         """
         
         # Dataset check.
-        dataset = self.get_dataset( trans, dataset_id )
+        dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         msg = self._check_dataset_state( trans, dataset )
         if msg:
             return msg
@@ -426,7 +426,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # TODO: this code is copied from data() -- should refactor.
 
         # Dataset check.
-        dataset = self.get_dataset( trans, dataset_id )
+        dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         msg = self._check_dataset_state( trans, dataset )
         if not msg:
             msg = messages.DATA
@@ -443,7 +443,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         
         # Dataset check.
         if hda_ldda == "hda":
-            dataset = self.get_dataset( trans, dataset_id )
+            dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
             dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         msg = self._check_dataset_state( trans, dataset )
@@ -488,7 +488,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         
         # Dataset check.
         if hda_ldda == "hda":
-            dataset = self.get_dataset( trans, dataset_id )
+            dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
             dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         msg = self._check_dataset_state( trans, dataset )
@@ -656,7 +656,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         low, high = int( low ), int( high )
         
         # Dataset check.
-        original_dataset = self.get_dataset( trans, dataset_id )
+        original_dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         msg = self._check_dataset_state( trans, original_dataset )
         if msg:
             return to_json_string( msg )
