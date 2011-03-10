@@ -245,6 +245,7 @@ class UploadDataset( Group ):
         def get_one_filename( context ):
             data_file = context['file_data']
             url_paste = context['url_paste']
+            ftp_files = context['ftp_files']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             warnings = []
@@ -252,11 +253,32 @@ class UploadDataset( Group ):
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
             file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
-            if file_bunch.path and url_paste:
-                if url_paste.strip():
+            if file_bunch.path:
+                if url_paste is not None and url_paste.strip():
                     warnings.append( "All file contents specified in the paste box were ignored." )
-            else: #we need to use url_paste
+                if ftp_files:
+                    warnings.append( "All FTP uploaded file selections were ignored." )
+            elif url_paste is not None and url_paste.strip(): #we need to use url_paste
                 for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
+                    if file_bunch.path:
+                        break
+                if file_bunch.path and ftp_files is not None:
+                    warnings.append( "All FTP uploaded file selections were ignored." )
+            elif ftp_files is not None and trans.user is not None: # look for files uploaded via FTP
+                user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+                for ( dirpath, dirnames, filenames ) in os.walk( user_ftp_dir ):
+                    for filename in filenames:
+                        for ftp_filename in ftp_files:
+                            if ftp_filename == filename:
+                                path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
+                                if not os.path.islink( os.path.join( dirpath, filename ) ):
+                                    ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, path ) ),
+                                          'filename' : os.path.basename( path ) }
+                                    file_bunch = get_data_file_filename( ftp_data_file, override_name = name, override_info = info )
+                                    if file_bunch.path:
+                                        break
+                        if file_bunch.path:
+                            break
                     if file_bunch.path:
                         break
             file_bunch.space_to_tab = space_to_tab
