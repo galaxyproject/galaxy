@@ -696,3 +696,5 @@ Saccharomcyes_cerevisiae_S288C_SGD2010	S. cerevisae str. S288C	chr1=230218,chr2=
 Spur_v2.6	Purple Sea Urchin (Strongylocentrotus purpuratus) v2.6
 Ptrichocarpa_156	Poplar (Populus trichocarpa)
 Hydra_JCVI	Hydra magnipapillata str. 105
+Araly1	Arabidopsis lyrata
+Zea_mays_B73_RefGen_v2	Maize (Zea mays)	chr1=301354135,chr2=237068928,chr3=232140222,chr4=241473566,chr5=217872898,chr6=169174371,chr7=176764813,chr8=175793772,chr9=156750718,chr10=150189513,chr11=7140224
