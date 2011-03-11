@@ -280,7 +280,7 @@ def create_paramfile( trans, uploaded_datasets ):
             try:
                 link_data_only = uploaded_dataset.link_data_only
             except:
-                link_data_only = False
+                link_data_only = 'copy_files'
             json = dict( file_type = uploaded_dataset.file_type,
                          ext = uploaded_dataset.ext,
                          name = uploaded_dataset.name,

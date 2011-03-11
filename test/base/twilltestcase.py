@@ -2004,7 +2004,7 @@ class TwillTestCase( unittest.TestCase ):
     # Library dataset stuff
     def upload_library_dataset( self, cntrller, library_id, folder_id, filename='', server_dir='', replace_id='',
                                 upload_option='upload_file', file_type='auto', dbkey='hg18', space_to_tab='',
-                                link_data_only='', preserve_dirs='Yes', roles=[], ldda_message='', hda_ids='',
+                                link_data_only='copy_files', preserve_dirs='Yes', roles=[], ldda_message='', hda_ids='',
                                 template_refresh_field_name='1_field_name', template_refresh_field_contents='', template_fields=[],
                                 show_deleted='False', strings_displayed=[] ):
         """Add datasets to library using any upload_option"""
@@ -2031,10 +2031,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "dbkey", dbkey )
         if space_to_tab:
             tc.fv( "1", "space_to_tab", space_to_tab )
-        if link_data_only:
-            tc.fv( "1", "link_data_only", link_data_only )
-        if upload_option == 'filesystem_paths' and preserve_dirs == 'Yes':
-            tc.fv( "1", "preserve_dirs", preserve_dirs )
         for role_id in roles:
             tc.fv( "1", "roles", role_id )
         # Refresh the form by selecting the upload_option - we do this here to ensure
@@ -2051,18 +2047,21 @@ class TwillTestCase( unittest.TestCase ):
                     tc.fv( "add_history_datasets_to_library", "hda_ids", '1' )
             tc.submit( 'add_history_datasets_to_library_button' )
         else:
-            if filename:
-                filename = self.get_filename( filename )
-                tc.formfile( "1", "files_0|file_data", filename )
-            elif server_dir:
+            if upload_option == 'filesystem_paths' or upload_option == 'upload_directory':
+                tc.fv( "1", "link_data_only", link_data_only )
+            if upload_option == 'filesystem_paths' and preserve_dirs == 'Yes':
+                tc.fv( "1", "preserve_dirs", preserve_dirs )
+            if upload_option == 'upload_directory' and server_dir:
                 tc.fv( "1", "server_dir", server_dir )
+            if upload_option == 'upload_file':
+                if filename:
+                    filename = self.get_filename( filename )
+                    tc.formfile( "1", "files_0|file_data", filename )
             for check_str in strings_displayed:
                 self.check_page_for_string( check_str )
             tc.submit( "runtool_btn" )
         # Give the files some time to finish uploading
         self.library_wait( library_id )
-        data = self.last_page()
-        file( 'greg1.html', 'wb' ).write( data )
         self.home()
     def ldda_permissions( self, cntrller, library_id, folder_id, id, role_ids_str,
                           permissions_in=[], permissions_out=[], strings_displayed=[], ldda_name='' ):

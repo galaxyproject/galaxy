@@ -157,6 +157,7 @@ def add_file( dataset, registry, json_file, output_path ):
     line_count = None
     converted_path = None
     stdout = None
+    link_data_only = dataset.get( 'link_data_only', 'copy_files' )
 
     try:
         ext = dataset.file_type
@@ -334,7 +335,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 return
         if data_type != 'binary':
             # don't convert newlines on data we're only going to symlink
-            if not dataset.get( 'link_data_only', False ):
+            if link_data_only == 'link_to_files':
                 in_place = True
                 if dataset.type in ( 'server_dir', 'path_paste' ):
                     in_place = False
@@ -353,9 +354,7 @@ def add_file( dataset, registry, json_file, output_path ):
     if ext == 'auto':
         ext = 'data'
     # Move the dataset to its "real" path
-    if dataset.get( 'link_data_only', False ):
-        pass # data will remain in place
-    elif dataset.type in ( 'server_dir', 'path_paste' ):
+    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ):
         if converted_path is not None:
             shutil.copy( converted_path, output_path )
             try:
@@ -365,7 +364,7 @@ def add_file( dataset, registry, json_file, output_path ):
         else:
             # this should not happen, but it's here just in case
             shutil.copy( dataset.path, output_path )
-    else:
+    elif link_data_only == 'copy_files':
         shutil.move( dataset.path, output_path )
     # Write the job info
     stdout = stdout or 'uploaded %s file' % data_type

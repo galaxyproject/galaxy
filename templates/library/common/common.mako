@@ -218,33 +218,33 @@
                                 <input type="checkbox" name="preserve_dirs" value="Yes" checked="true" />Yes
                             </div>
                             <div class="toolParamHelp" style="clear: both;">
-                                If checked (default), library subfolders will be used to preserve any subdirectories on the filesystem.<br />
+                                If checked (default), library sub-folders will be used to preserve any subdirectories on the filesystem.
                                 If unchecked, any files in subdirectories on the filesystem will be placed directly in the library folder.
                             </div>
                         </div>
                     %endif
                     %if upload_option in ( 'upload_directory', 'upload_paths' ):
                         <div class="form-row">
-                        <%
-                            if link_data_only == 'No':
-                                checked = ' checked'
-                            else:
-                                checked = ''
-                            link_data_only_field = '<input type="checkbox" name="link_data_only" value="No"%s/>No' % checked
-                        %>
                             <label>Copy data into Galaxy?</label>
                             <div class="form-row-input">
-                                ${link_data_only_field}
+                                <select name="link_data_only">
+                                    %if not link_data_only or link_data_only == 'copy_files':
+                                        <option value="copy_files" selected>Copy files into Galaxy
+                                        <option value="link_to_files">Link to files without copying into Galaxy
+                                    %else:
+                                        <option value="copy_files">Copy files into Galaxy
+                                        <option value="link_to_files" selected>Link to files without copying into Galaxy
+                                    %endif
+                                </select>
                             </div>
                             <div class="toolParamHelp" style="clear: both;">
-                                Normally data uploaded with this tool is copied into Galaxy's "files" directory
-                                so any later changes to the data will not affect Galaxy.  However, this may not
-                                be desired (especially for large NGS datasets), so use of this option will
-                                force Galaxy to always read the data from its original path.
+                                Normally data uploaded with this tool is copied into Galaxy's configured "file_path" location where Galaxy
+                                has a form of control over the data files.  However, this may not be desired (especially for large NGS 
+                                datasets), so using the option labeled "Link to files without copying into Galaxy" will force Galaxy to 
+                                always read the data from its original path.
                                 %if upload_option == 'upload_directory':
-                                    Any symlinks encountered in the upload directory will be dereferenced once -
-                                    that is, Galaxy will point directly to the file that is linked, but no other
-                                    symlinks further down the line will be dereferenced.
+                                    Any symlinks encountered in the uploaded directory will be dereferenced once.  That is, Galaxy will 
+                                    point directly to the file that is linked, but no other symlinks further down the line will be dereferenced.
                                 %endif
                             </div>
                         </div>

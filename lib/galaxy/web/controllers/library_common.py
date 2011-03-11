@@ -717,7 +717,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             space_to_tab = params.get( 'files_0|space_to_tab', '' )
         else:
             space_to_tab = params.get( 'space_to_tab', '' )
-        link_data_only = params.get( 'link_data_only', '' )
+        link_data_only = params.get( 'link_data_only', 'copy_files' )
         dbkey = params.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
@@ -1044,8 +1044,9 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
-        if params.get( 'link_data_only', False ):
-            uploaded_dataset.link_data_only = True
+        link_data_only = params.get( 'link_data_only', 'copy_files' )
+        uploaded_dataset.link_data_only = link_data_only
+        if link_data_only == 'link_to_files':
             uploaded_dataset.data.file_name = os.path.abspath( path )
             # Since we are not copying the file into Galaxy's managed
             # default file location, the dataset should never be purgable.
@@ -1059,7 +1060,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             for entry in os.listdir( full_dir ):
                 # Only import regular files
                 path = os.path.join( full_dir, entry )
-                if os.path.islink( full_dir ) and params.get( 'link_data_only', False ):
+                link_data_only = params.get( 'link_data_only', 'copy_files' )
+                if os.path.islink( full_dir ) and link_data_only == 'link_to_files':
                     # If we're linking instead of copying and the
                     # sub-"directory" in the import dir is actually a symlink,
                     # dereference the symlink, but not any of its contents.
@@ -1068,7 +1070,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                         path = os.path.join( link_path, entry )
                     else:
                         path = os.path.abspath( os.path.join( link_path, entry ) )
-                elif os.path.islink( path ) and os.path.isfile( path ) and params.get( 'link_data_only', False ):
+                elif os.path.islink( path ) and os.path.isfile( path ) and link_data_only == 'link_to_files':
                     # If we're linking instead of copying and the "file" in the
                     # sub-directory of the import dir is actually a symlink,
                     # dereference the symlink (one dereference only, Vasili).
@@ -1146,7 +1148,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             space_to_tab = params.get( 'files_0|space_to_tab', '' )
         else:
             space_to_tab = params.get( 'space_to_tab', '' )
-        link_data_only = params.get( 'link_data_only', '' )
+        link_data_only = params.get( 'link_data_only', 'copy_files' )
         dbkey = params.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
