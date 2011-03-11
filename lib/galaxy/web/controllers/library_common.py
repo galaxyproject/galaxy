@@ -1097,9 +1097,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             message = "No paths entered in the upload form"
             response_code = 400
             return None, response_code, message
-        preserve_dirs = True
-        if params.get( 'dont_preserve_dirs', False ):
-            preserve_dirs = False
+        preserve_dirs = util.string_as_bool( params.get( 'preserve_dirs', False ) )
         # locate files
         bad_paths = []
         uploaded_datasets = []

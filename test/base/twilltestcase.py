@@ -2004,7 +2004,7 @@ class TwillTestCase( unittest.TestCase ):
     # Library dataset stuff
     def upload_library_dataset( self, cntrller, library_id, folder_id, filename='', server_dir='', replace_id='',
                                 upload_option='upload_file', file_type='auto', dbkey='hg18', space_to_tab='',
-                                link_data_only='', dont_preserve_dirs='', roles=[], ldda_message='', hda_ids='',
+                                link_data_only='', preserve_dirs='Yes', roles=[], ldda_message='', hda_ids='',
                                 template_refresh_field_name='1_field_name', template_refresh_field_contents='', template_fields=[],
                                 show_deleted='False', strings_displayed=[] ):
         """Add datasets to library using any upload_option"""
@@ -2033,8 +2033,8 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "space_to_tab", space_to_tab )
         if link_data_only:
             tc.fv( "1", "link_data_only", link_data_only )
-        if dont_preserve_dirs:
-            tc.fv( "1", "dont_preserve_dirs", dont_preserve_dirs )
+        if upload_option == 'filesystem_paths' and preserve_dirs == 'Yes':
+            tc.fv( "1", "preserve_dirs", preserve_dirs )
         for role_id in roles:
             tc.fv( "1", "roles", role_id )
         # Refresh the form by selecting the upload_option - we do this here to ensure

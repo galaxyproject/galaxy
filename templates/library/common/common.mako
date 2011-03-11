@@ -215,10 +215,11 @@
                         <div class="form-row">
                             <label>Preserve directory structure?</label>
                             <div class="form-row-input">
-                                <input type="checkbox" name="dont_preserve_dirs" value="No"/>No
+                                <input type="checkbox" name="preserve_dirs" value="Yes" checked="true" />Yes
                             </div>
                             <div class="toolParamHelp" style="clear: both;">
-                                If checked, all files in subdirectories on the filesystem will be placed at the top level of the folder, instead of into subfolders.
+                                If checked (default), library subfolders will be used to preserve any subdirectories on the filesystem.<br />
+                                If unchecked, any files in subdirectories on the filesystem will be placed directly in the library folder.
                             </div>
                         </div>
                     %endif
