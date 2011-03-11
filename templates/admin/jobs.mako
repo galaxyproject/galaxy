@@ -47,7 +47,7 @@
                     %endif
                 </td>
                 <td>${job.id}</td>
-                %if job.history.user:
+                %if job.history and job.history.user:
                     <td>${job.history.user.email}</td>
                 %else:
                     <td>anonymous</td>
