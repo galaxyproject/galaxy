@@ -2,7 +2,7 @@
 
 from __future__ import division
 
-import sys
+import sys, os
 sys.stderr = open(os.devnull, 'w')  # suppress stderr as cython produces warning on some systems:
                                     # csamtools.so:6: RuntimeWarning: __builtin__.file size changed
 
