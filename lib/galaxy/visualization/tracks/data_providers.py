@@ -170,7 +170,7 @@ class SummaryTreeDataProvider( TracksDataProvider ):
             self.CACHE[filename] = st
             
         # Check for data.
-        return st.chrom_blocks.get(chrom, None) is not None
+        return st.chrom_blocks.get(chrom, None) is not None or st.chrom_blocks.get(chrom[3:], None) is not None
 
 class VcfDataProvider( TracksDataProvider ):
     """

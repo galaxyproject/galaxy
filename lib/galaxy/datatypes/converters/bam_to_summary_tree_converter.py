@@ -3,6 +3,9 @@
 from __future__ import division
 
 import sys
+sys.stderr = open(os.devnull, 'w')  # suppress stderr as cython produces warning on some systems:
+                                    # csamtools.so:6: RuntimeWarning: __builtin__.file size changed
+
 from galaxy import eggs
 import pkg_resources
 
