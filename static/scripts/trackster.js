@@ -1067,47 +1067,45 @@ $.extend( Track.prototype, {
             return;
         }
        
-        if ( track.view.chrom !== null ) { 
-            // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
-            // about track status.
-            $.getJSON(converted_datasets_state_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
-                     function (result) {
-                if (!result || result === "error" || result.kind === "error") {
-                    track.container_div.addClass("error");
-                    track.content_div.text(DATA_ERROR);
-                    if (result.message) {
-                        var track_id = track.view.tracks.indexOf(track);
-                        var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").bind("click", function() {
-                            show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
-                        });
-                        track.content_div.append(error_link);
-                    }
-                } else if (result === "no converter") {
-                    track.container_div.addClass("error");
-                    track.content_div.text(DATA_NOCONVERTER);
-                } else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
-                    track.container_div.addClass("nodata");
-                    track.content_div.text(DATA_NONE);
-                } else if (result === "pending") {
-                    track.container_div.addClass("pending");
-                    track.content_div.text(DATA_PENDING);
-                    setTimeout(function() { track.init(); }, track.data_query_wait);
-                } else if (result['status'] === "data") {
-                    if (result['valid_chroms']) {
-                        track.valid_chroms = result['valid_chroms'];
-                        track.make_name_popup_menu();
-                    }
-                    track.content_div.text(DATA_OK);
-                    if (track.view.chrom) {
-                        track.content_div.text("");
-                        track.content_div.css( "height", track.height_px + "px" );
-                        track.enabled = true;
-                        // predraw_init may be asynchronous, wait for it and then draw
-                        $.when( track.predraw_init() ).done( function() { track.draw() } );
-                    }
+        // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
+        // about track status.
+        $.getJSON(converted_datasets_state_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
+                 function (result) {
+            if (!result || result === "error" || result.kind === "error") {
+                track.container_div.addClass("error");
+                track.content_div.text(DATA_ERROR);
+                if (result.message) {
+                    var track_id = track.view.tracks.indexOf(track);
+                    var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").bind("click", function() {
+                        show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
+                    });
+                    track.content_div.append(error_link);
                 }
-            });
-        }
+            } else if (result === "no converter") {
+                track.container_div.addClass("error");
+                track.content_div.text(DATA_NOCONVERTER);
+            } else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
+                track.container_div.addClass("nodata");
+                track.content_div.text(DATA_NONE);
+            } else if (result === "pending") {
+                track.container_div.addClass("pending");
+                track.content_div.text(DATA_PENDING);
+                setTimeout(function() { track.init(); }, track.data_query_wait);
+            } else if (result['status'] === "data") {
+                if (result['valid_chroms']) {
+                    track.valid_chroms = result['valid_chroms'];
+                    track.make_name_popup_menu();
+                }
+                track.content_div.text(DATA_OK);
+                if (track.view.chrom) {
+                    track.content_div.text("");
+                    track.content_div.css( "height", track.height_px + "px" );
+                    track.enabled = true;
+                    // predraw_init may be asynchronous, wait for it and then draw
+                    $.when( track.predraw_init() ).done( function() { track.draw() } );
+                }
+            }
+        });
     },
     /**
      * Additional initialization required before drawing track for the first time.
@@ -2778,6 +2776,10 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         
         if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
             gap = Math.round(w_scale/2);
+        }
+        if (!cigar) {
+            // If no cigar string, then assume all matches
+            cigar = [ [0, orig_seq.length] ]
         }
         for (var cig_id = 0, len = cigar.length; cig_id < len; cig_id++) {
             var cig = cigar[cig_id],
