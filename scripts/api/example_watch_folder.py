@@ -27,7 +27,7 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
     if not library_id:
         lib_create_data = {'name':data_library}
         library = submit(api_key, api_url + 'libraries', lib_create_data, return_formatted=False)
-        library_id = library['id']
+        library_id = library[0]['id']
     folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted = False)
     for f in folders:
         if f['name'] == "/":
