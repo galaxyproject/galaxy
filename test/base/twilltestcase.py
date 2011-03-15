@@ -637,10 +637,10 @@ class TwillTestCase( unittest.TestCase ):
                 try:
                     if attributes is None:
                         attributes = {}
+                    compare = attributes.get( 'compare', 'diff' )
                     if attributes.get( 'ftype', None ) == 'bam':
                         local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
                         local_name = local_fh.name
-                    compare = attributes.get( 'compare', 'diff' )
                     extra_files = attributes.get( 'extra_files', None )
                     if compare == 'diff':
                         self.files_diff( local_name, temp_name, attributes=attributes )

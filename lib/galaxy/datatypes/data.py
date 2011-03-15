@@ -88,8 +88,11 @@ class Data( object ):
         except OSError, e:
             log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
             return ''
-    def groom_dataset_content( self, file_name ):
+    def dataset_content_needs_grooming( self, file_name ):
         """This function is called on an output dataset file after the content is initially generated."""
+        return False
+    def groom_dataset_content( self, file_name ):
+        """This function is called on an output dataset file if dataset_content_needs_grooming returns True."""
         pass
     def init_meta( self, dataset, copy_from=None ):
         # Metadata should be left mostly uninitialized.  Dataset will

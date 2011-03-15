@@ -334,8 +334,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 file_err( 'The uploaded file contains inappropriate HTML content', dataset, json_file )
                 return
         if data_type != 'binary':
-            # don't convert newlines on data we're only going to symlink
-            if link_data_only == 'link_to_files':
+            if link_data_only == 'copy_files':
                 in_place = True
                 if dataset.type in ( 'server_dir', 'path_paste' ):
                     in_place = False
@@ -353,8 +352,16 @@ def add_file( dataset, registry, json_file, output_path ):
         ext = dataset.ext
     if ext == 'auto':
         ext = 'data'
-    # Move the dataset to its "real" path
+    datatype = registry.get_datatype_by_extension( ext )
+    if dataset.type in ( 'server_dir', 'path_paste' ) and link_data_only == 'link_to_files':
+        # Never alter a file that will not be copied to Galaxy's local file store.
+        if datatype.dataset_content_needs_grooming( output_path ):
+            err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \
+                '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
+            file_err( err_msg, dataset, json_file )
+            return
     if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ):
+        # Move the dataset to its "real" path
         if converted_path is not None:
             shutil.copy( converted_path, output_path )
             try:
@@ -362,7 +369,7 @@ def add_file( dataset, registry, json_file, output_path ):
             except:
                 pass
         else:
-            # this should not happen, but it's here just in case
+            # This should not happen, but it's here just in case
             shutil.copy( dataset.path, output_path )
     elif link_data_only == 'copy_files':
         shutil.move( dataset.path, output_path )
@@ -375,9 +382,9 @@ def add_file( dataset, registry, json_file, output_path ):
                  name = dataset.name,
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )
-    # Groom the dataset content if necessary
-    datatype = registry.get_datatype_by_extension( ext )
-    datatype.groom_dataset_content( output_path )
+    if datatype.dataset_content_needs_grooming( output_path ):
+        # Groom the dataset content if necessary
+        datatype.groom_dataset_content( output_path )
 
 def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         if dataset.composite_files:

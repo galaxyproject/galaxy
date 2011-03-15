@@ -59,7 +59,8 @@ class Bam( Binary ):
         output = subprocess.Popen(params, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[0]
         # find returns -1 if string is not found
         return output.find("SO:coordinate") != -1 or output.find("SO:sorted") != -1
-
+    def dataset_content_needs_grooming( self, file_name ):
+        return not self._is_coordinate_sorted( file_name )
     def groom_dataset_content( self, file_name ):
         """
         Ensures that the Bam file contents are sorted.  This function is called
@@ -72,11 +73,9 @@ class Bam( Binary ):
         ## This command may also create temporary files <out.prefix>.%d.bam when the
         ## whole alignment cannot be fitted into memory ( controlled by option -m ).
         #do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
-        
-        if self._is_coordinate_sorted(file_name):
+        if not self.dataset_content_needs_grooming( file_name ):
             # Don't re-sort if already sorted
             return
-            
         tmp_dir = tempfile.mkdtemp()
         tmp_sorted_dataset_file_name_prefix = os.path.join( tmp_dir, 'sorted' )
         stderr_name = tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "bam_sort_stderr" ).name
@@ -84,7 +83,6 @@ class Bam( Binary ):
         command = "samtools sort %s %s" % ( file_name, tmp_sorted_dataset_file_name_prefix )
         proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=open( stderr_name, 'wb' ) )
         exit_code = proc.wait()
-        
         #Did sort succeed?
         stderr = open( stderr_name ).read().strip()
         if stderr:
@@ -93,10 +91,8 @@ class Bam( Binary ):
                 raise Exception, "Error Grooming BAM file contents: %s" % stderr
             else:
                 print stderr
-        
         # Move samtools_created_sorted_file_name to our output dataset location
         shutil.move( samtools_created_sorted_file_name, file_name )
-        
         # Remove temp file and empty temporary directory
         os.unlink( stderr_name )
         os.rmdir( tmp_dir )
@@ -124,9 +120,7 @@ class Bam( Binary ):
                 raise Exception, "Error Setting BAM Metadata: %s" % stderr
             else:
                 print stderr
-        
         dataset.metadata.bam_index = index_file
-        
         # Remove temp file
         os.unlink( stderr_name )
     def sniff( self, filename ):
