@@ -218,12 +218,12 @@ class UploadDataset( Group ):
             url_paste_file = group_incoming.get( 'url_paste', None )
             if url_paste_file is not None:
                 url_paste = open( url_paste_file, 'r' ).read( 1024 )
-                if url_paste.lstrip().lower().startswith( 'http://' ) or url_paste.lstrip().lower().startswith( 'ftp://' ):
+                if url_paste.lstrip().lower().startswith( 'http://' ) or url_paste.lstrip().lower().startswith( 'ftp://' ) or url_paste.lstrip().lower().startswith( 'https://' ):
                     url_paste = url_paste.replace( '\r', '' ).split( '\n' )
                     for line in url_paste:
                         line = line.strip()
                         if line:
-                            if not line.lower().startswith( 'http://' ) and not line.lower().startswith( 'ftp://' ):
+                            if not line.lower().startswith( 'http://' ) and not line.lower().startswith( 'ftp://' ) and not line.lower().startswith( 'https://' ):
                                 continue # non-url line, ignore
                             precreated_name = line
                             dataset_name = override_name

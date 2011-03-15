@@ -237,7 +237,7 @@ class ToolRunner( BaseController ):
                         line = line.rstrip( '\r\n' ).strip()
                         if not line:
                             continue
-                        elif line.lower().startswith( 'http://' ) or line.lower().startswith( 'ftp://' ):
+                        elif line.lower().startswith( 'http://' ) or line.lower().startswith( 'ftp://' ) or line.lower().startswith( 'https://' ):
                             url = True
                             datasets.append( create_dataset( line ) )
                         else:
