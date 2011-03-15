@@ -104,21 +104,16 @@
                             <div style="clear: both"></div>
                         </div>
                     %endif
-                    %if replace_dataset in [ None, 'None' ]:
-                        ## Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
-                        <div class="form-row">
-                            <label>Upload option:</label>
-                            <div class="form-row-input">
-                                ${upload_option_select_list.get_html()}
-                            </div>
-                            <div class="toolParamHelp" style="clear: both;">
-                                Choose upload option (file, directory, filesystem paths, current history).
-                            </div>
-                            <div style="clear: both"></div>
+                    <div class="form-row">
+                        <label>Upload option:</label>
+                        <div class="form-row-input">
+                            ${upload_option_select_list.get_html()}
                         </div>
-                    %else:
-                        <input type="hidden" name="upload_option" value="upload_file"/>
-                    %endif
+                        <div class="toolParamHelp" style="clear: both;">
+                            Choose upload option (file, directory, filesystem paths, current history).
+                        </div>
+                        <div style="clear: both"></div>
+                    </div>
                     <div class="form-row">
                         <label>File Format:</label>
                         <div class="form-row-input">

@@ -726,11 +726,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         roles = params.get( 'roles', '' )
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
-        if replace_id not in [ None, 'None' ]:
-            try:
-                replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
-            except:
-                replace_dataset = None
+        if replace_id not in [ '', None, 'None' ]:
+            replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
             self._check_access( trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted )
             self._check_modify( trans, cntrller, is_admin, replace_dataset, current_user_roles, use_panels, library_id, show_deleted )
             library = replace_dataset.folder.parent_library
@@ -740,8 +737,6 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             replace_dataset_name = replace_dataset.name
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
-            # Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
-            upload_option = 'upload_file'
         else:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
             self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
@@ -776,7 +771,6 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                                            show_deleted=show_deleted,
                                                            message=util.sanitize_text( message ),
                                                            status='error' ) )
-
             else:
                 # See if we have any inherited templates.
                 info_association, inherited = folder.get_info_association( inherited=True )
@@ -919,7 +913,11 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             action = trans.app.config.nginx_upload_path + '?nginx_redir=' + web.url_for( controller='library_common', action='upload_library_dataset' )
         else:
             action = web.url_for( controller='library_common', action='upload_library_dataset' )
-        upload_option_select_list = self._build_upload_option_select_list( trans, upload_option, is_admin )
+        do_not_display_options = []
+        if replace_dataset:
+            # TODO: Not sure why, but 'upload_paths' is not allowed if replacing a dataset.  See self.make_library_uploaded_dataset().
+            do_not_display_options = [ 'upload_directory', 'upload_paths' ]
+        upload_option_select_list = self._build_upload_option_select_list( trans, upload_option, is_admin, do_not_display_options )
         roles_select_list = self._build_roles_select_list( trans, cntrller, library, util.listify( roles ) )
         return trans.fill_template( '/library/common/upload.mako',
                                     cntrller=cntrller,
@@ -1302,29 +1300,35 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             return roles_select_list
         else:
             return None
-    def _build_upload_option_select_list( self, trans, upload_option, is_admin ):
-        # Build the upload_option select list
-        upload_refresh_on_change_values = [ option_value for option_value, option_label in trans.model.LibraryDataset.upload_options ]
+    def _build_upload_option_select_list( self, trans, upload_option, is_admin, do_not_include_values=[] ):
+        # Build the upload_option select list.  The do_not_include_values param can contain options that
+        # should not be included in the list.  For example, the 'upload_directory' option should not be
+        # included if uploading a new version of a librar dataset.
+        upload_refresh_on_change_values = []
+        for option_value, option_label in trans.model.LibraryDataset.upload_options:
+            if option_value not in do_not_include_values:
+                upload_refresh_on_change_values.append( option_value )
         upload_option_select_list = SelectField( 'upload_option', 
                                                  refresh_on_change=True, 
                                                  refresh_on_change_values=upload_refresh_on_change_values )
         for option_value, option_label in trans.model.LibraryDataset.upload_options:
-            if option_value == 'upload_directory':
-                if is_admin and not trans.app.config.library_import_dir:
-                    continue
-                elif not is_admin:
-                    if not trans.app.config.user_library_import_dir:
+            if option_value not in do_not_include_values:
+                if option_value == 'upload_directory':
+                    if is_admin and not trans.app.config.library_import_dir:
                         continue
-                    path = os.path.join( trans.app.config.user_library_import_dir, trans.user.email )
-                    if not os.path.isdir( path ):
-                        try:
-                            os.makedirs( path )
-                        except:
+                    elif not is_admin:
+                        if not trans.app.config.user_library_import_dir:
                             continue
-            elif option_value == 'upload_paths':
-                if not is_admin or not trans.app.config.allow_library_path_paste:
-                    continue
-            upload_option_select_list.add_option( option_label, option_value, selected=option_value==upload_option )
+                        path = os.path.join( trans.app.config.user_library_import_dir, trans.user.email )
+                        if not os.path.isdir( path ):
+                            try:
+                                os.makedirs( path )
+                            except:
+                                continue
+                elif option_value == 'upload_paths':
+                    if not is_admin or not trans.app.config.allow_library_path_paste:
+                        continue
+                upload_option_select_list.add_option( option_label, option_value, selected=option_value==upload_option )
         return upload_option_select_list
     def _get_populated_widgets( self, folder ):
         # See if we have any inherited templates.
