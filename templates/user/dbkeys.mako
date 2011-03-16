@@ -116,22 +116,20 @@
     <form action="dbkeys" method="post" enctype="multipart/form-data">
         <div class="toolForm" style="float: left;">
             <div class="toolFormTitle">Add a Custom Build</div>
-            
-            
             <div class="toolFormBody">
                 <div class="form-row">
-                    <label for="name">Build Name (eg: Human Chromosome):</label>
+                    <label for="name">Build Name (eg: Mouse):</label>
                     <input type="text" id="name" name="name" />
                 </div>
                 <div class="form-row">
-                    <label for="key">Build Key (eg: hg18):</label>
+                    <label for="key">Build Key (eg: mm9):</label>
                     <input type="text" id="key" name="key" />
                 </div>
                 <div class="form-row">
-                    <label for="len_file">Chromosome Length file upload (.len file):</label>
+                    <label for="len_file">Upload .len file:</label>
                     <input type="file" id="len_file" name="len_file" /><br />
                     <label for="len_text">Or paste length info below:</label>
-                    <textarea id="len_text" name="len_text" cols="40" rows="10"></textarea>
+                    <textarea id="len_text" name="len_text" cols="30" rows="10"></textarea>
                 </div>
             
                 <div class="form-row"><input type="submit" name="add" value="Submit"/></div>
@@ -157,8 +155,7 @@ chr5    152537259
         
         <p>Trackster uses this information to populate the select box for chrom/contig, and
         to set the maximum basepair of the track browser. You may either upload a .len file
-        of this format, or directly enter the information in the box.
-        </p>
+        of this format, or directly enter the information into the box.</p>
         
     </div>
 </%def>
