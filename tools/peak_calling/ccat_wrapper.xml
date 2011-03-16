@@ -1,4 +1,4 @@
-<tool id="peakcalling_ccat2" name="CCAT" version="0.0.1">
+<tool id="peakcalling_ccat" name="CCAT" version="0.0.1">
   <description>Control-based ChIP-seq Analysis Tool</description>
   <command interpreter="python">ccat_wrapper.py '$input_tag_file' '$input_control_file' '$chromInfo' 
   #if str( $options_type[ 'options_type_selector' ] ) == 'advanced':
@@ -9,7 +9,7 @@
   'CCAT in Galaxy' 
   '$output_peak_file' '$output_region_file' '$output_top_file' '$output_log_file'</command>
   <requirements>
-    <requirement type="binary">CCAT</requirement>
+    <requirement type="binary" version="3.0">CCAT</requirement>
   </requirements>
   <inputs>
     <param name="input_tag_file" type="data" format="bed" label="ChIP-Seq Tag File" >
@@ -87,16 +87,6 @@ bootstrapPass	${options_type[ 'bootstrap_pass' ]}
     <test>
       <param name="input_tag_file" value="chipseq_enriched.bed.gz" ftype="bed" dbkey="hg18" />
       <param name="input_control_file" value="chipseq_input.bed.gz" ftype="bed" dbkey="hg18" />
-      <param name="options_type_selector" value="basic" />
-      <param name="input_config_file" value="ccat_2.0_histone_config" />
-      <output name="output_peak_file" file="peakcalling_ccat2/ccat2_test_peak_out_1.interval" />
-      <output name="output_region_file" file="peakcalling_ccat2/ccat2_test_region_out_1.interval" />
-      <output name="output_top_file" file="peakcalling_ccat2/ccat2_test_top_out_1.interval" />
-      <output name="output_log_file" file="peakcalling_ccat2/ccat2_test_log_out_1.interval" />
-    </test>
-    <test>
-      <param name="input_tag_file" value="chipseq_enriched.bed.gz" ftype="bed" dbkey="hg18" />
-      <param name="input_control_file" value="chipseq_input.bed.gz" ftype="bed" dbkey="hg18" />
       <param name="options_type_selector" value="advanced" />
       <param name="fragment_size" value="200" />
       <param name="sliding_window_size" value="500" />
@@ -105,13 +95,39 @@ bootstrapPass	${options_type[ 'bootstrap_pass' ]}
       <param name="min_count" value="4" />
       <param name="output_num" value="100000" />
       <param name="random_seed" value="123456" />
-      <param name="min_score" value="3.0" />
+      <param name="min_score" value="5.0" />
       <param name="bootstrap_pass" value="50" />
-      <output name="output_peak_file" file="peakcalling_ccat2/ccat2_test_peak_out_1.interval" />
-      <output name="output_region_file" file="peakcalling_ccat2/ccat2_test_region_out_1.interval" />
-      <output name="output_top_file" file="peakcalling_ccat2/ccat2_test_top_out_1.interval" />
-      <output name="output_log_file" file="peakcalling_ccat2/ccat2_test_log_out_1.interval" />
+      <output name="output_peak_file" file="peakcalling_ccat/3.0/ccat_test_peak_out_1.interval.re_match" compare="re_match" />
+      <output name="output_region_file" file="peakcalling_ccat/3.0/ccat_test_region_out_1.interval.re_match" compare="re_match" />
+      <output name="output_top_file" file="peakcalling_ccat/3.0/ccat_test_top_out_1.interval.sorted.re_match" compare="re_match" sort="True" />
+      <output name="output_log_file" file="peakcalling_ccat/3.0/ccat_test_log_out_1.txt" />
     </test>
+    <test>
+      <param name="input_tag_file" value="chipseq_enriched.bed.gz" ftype="bed" dbkey="hg18" />
+      <param name="input_control_file" value="chipseq_input.bed.gz" ftype="bed" dbkey="hg18" />
+      <param name="options_type_selector" value="basic" />
+      <param name="input_config_file" value="ccat_3.0_histone_config" />
+      <output name="output_peak_file" file="peakcalling_ccat/3.0/ccat_test_peak_out_1.interval.re_match" compare="re_match" />
+      <output name="output_region_file" file="peakcalling_ccat/3.0/ccat_test_region_out_1.interval.re_match" compare="re_match" />
+      <output name="output_top_file" file="peakcalling_ccat/3.0/ccat_test_top_out_1.interval.sorted.re_match" compare="re_match" sort="true" />
+      <output name="output_log_file" file="peakcalling_ccat/3.0/ccat_test_log_out_1.txt" />
+    </test>
+    <!-- Test below gives different results on different architectures, 
+    e.g.: x86_64 GNU/Linux gave an extra line (additional peak called) when compared to the version running on 10.6.0 Darwin i386 
+    slidingWinSize was fixed to be 1000, default as per readme.txt
+    -->
+    <!--
+    <test>
+      <param name="input_tag_file" value="chipseq_enriched.bed.gz" ftype="bed" dbkey="hg18" />
+      <param name="input_control_file" value="chipseq_input.bed.gz" ftype="bed" dbkey="hg18" />
+      <param name="options_type_selector" value="basic" />
+      <param name="input_config_file" value="ccat_3.0_histone_config_readme" />
+      <output name="output_peak_file" file="peakcalling_ccat/3.0/ccat_test_peak_out_2.interval.re_match" compare="re_match" />
+      <output name="output_region_file" file="peakcalling_ccat/3.0/ccat_test_region_out_2.interval.re_match" compare="re_match" />
+      <output name="output_top_file" file="peakcalling_ccat/3.0/ccat_test_top_out_2.interval.sorted.re_match" compare="re_match" sort="true" />
+      <output name="output_log_file" file="peakcalling_ccat/3.0/ccat_test_log_out_2.txt" />
+    </test>
+  -->
   </tests>
   <help>
 **What it does**
