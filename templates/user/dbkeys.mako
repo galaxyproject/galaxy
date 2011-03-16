@@ -61,27 +61,28 @@
     </script>
 </%def>
 
-% if message:
-    <div class="errormessagelarge">${message}</div>
-% elif lines_skipped > 0:
-    <div class="warningmessagelarge">Skipped ${lines_skipped} lines that could not be parsed</div>
-% endif
-
 <%def name="center_panel()">
     ${self.body()}
 </%def>
 
 <%def name="body()">
+
+    % if message:
+        <div class="errormessagelarge">${message}</div>
+    % elif lines_skipped > 0:
+        <div class="warningmessagelarge">Skipped ${lines_skipped} lines that could not be parsed. (Line was either blank or not 2-column, with 2nd column being an integer)</div>
+    % endif
+    
     <h2>Custom Database/Builds</h2>
 
-    <p>You may specify your own database/builds here.</p>
+    <p>Current custom builds:</p>
 
     % if dbkeys:
         <table id="custom_dbkeys" class="colored" cellspacing="0" cellpadding="0">
             <tr class="header">
                 <th>Name</th>
                 <th>Key</th>
-                <th>Number of Chroms</th>
+                <th>Number of chroms/contigs</th>
                 <th></th>
             </tr>
         % for key, dct in dbkeys.iteritems():
@@ -109,23 +110,27 @@
     % else:
         <p>You currently have no custom builds.</p>
     % endif
+    <p>Builds with system-installed len files: <em>${installed_len_files}</em></p>
     <br />
+    
     <form action="dbkeys" method="post" enctype="multipart/form-data">
-        <div class="toolForm">
-            <div class="toolFormTitle">Add a Build</div>
+        <div class="toolForm" style="float: left;">
+            <div class="toolFormTitle">Add a Custom Build</div>
+            
+            
             <div class="toolFormBody">
                 <div class="form-row">
-                    <label for="name">Name (eg: Human Chromosome):</label>
+                    <label for="name">Build Name (eg: Human Chromosome):</label>
                     <input type="text" id="name" name="name" />
                 </div>
                 <div class="form-row">
-                    <label for="key">Key (eg: hg18):</label>
+                    <label for="key">Build Key (eg: hg18):</label>
                     <input type="text" id="key" name="key" />
                 </div>
                 <div class="form-row">
                     <label for="len_file">Chromosome Length file upload (.len file):</label>
                     <input type="file" id="len_file" name="len_file" /><br />
-                    <label for="len_text">Alternatively, paste length info:</label>
+                    <label for="len_text">Or paste length info below:</label>
                     <textarea id="len_text" name="len_text" cols="40" rows="10"></textarea>
                 </div>
             
@@ -133,4 +138,27 @@
             </div>
         </div>
     </form>
+    <div class="infomessagesmall" style="float: left; margin-left: 10px; width: 40%;">
+        <h3>Length Format</h3>
+        <p>
+            The length format is two-column, separated by whitespace, of the form:
+            <pre>chrom/contig   length of chrom/contig</pre>
+        </p>
+        <p>
+            For example, the first few entries of <em>mm9.len</em> are as follows:
+            <pre>
+chr1    197195432
+chr2    181748087
+chr3    159599783
+chr4    155630120
+chr5    152537259
+            </pre>
+        </p>
+        
+        <p>Trackster uses this information to populate the select box for chrom/contig, and
+        to set the maximum basepair of the track browser. You may either upload a .len file
+        of this format, or directly enter the information in the box.
+        </p>
+        
+    </div>
 </%def>

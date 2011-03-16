@@ -5,7 +5,7 @@ from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy import util, model
-import logging, os, string, re, smtplib, socket
+import logging, os, string, re, smtplib, socket, glob
 from random import choice
 from email.MIMEText import MIMEText
 from galaxy.web.form_builder import * 
@@ -53,6 +53,8 @@ class UserOpenIDGrid( grids.Grid ):
 
 class User( BaseController, UsesFormDefinitions ):
     user_openid_grid = UserOpenIDGrid()
+    installed_len_files = None
+    
     @web.expose
     def index( self, trans, webapp='galaxy', **kwd ):
         return trans.fill_template( '/user/index.mako', webapp=webapp )
@@ -1237,12 +1239,21 @@ class User( BaseController, UsesFormDefinitions ):
         """ Log a user action asynchronously. If user is not logged in, do nothing. """
         if trans.user:
             trans.log_action( trans.get_user(), action, context, params )
+    
     @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
         user = trans.get_user()
         message = None
         lines_skipped = 0
+        if self.installed_len_files is None:
+            installed_builds = []
+            for build in glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") ):
+                installed_builds.append( os.path.basename(build).split(".len")[0] )
+            
+            self.installed_len_files = ", ".join(installed_builds)
+            
+            
         if 'dbkeys' not in user.preferences:
             dbkeys = {}
         else:
@@ -1263,6 +1274,8 @@ class User( BaseController, UsesFormDefinitions ):
                 len_text = kwds.get('len_text', '')
             if not name or not key or not len_text:
                 message = "You must specify values for all the fields."
+            elif key in dbkeys:
+                message = "There is already a custom build with that key. Delete it first if you want to replace it."
             else:
                 # Create new len file
                 new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
@@ -1278,7 +1291,7 @@ class User( BaseController, UsesFormDefinitions ):
                 # LEN files have format:
                 #   <chrom_name><tab><chrom_length>
                 for line in len_text.split("\n"):
-                    lst = line.strip().split("\t")
+                    lst = line.strip().rsplit(None, 1) # Splits at the last whitespace in the line
                     if not lst or len(lst) < 2:
                         lines_skipped += 1
                         continue
@@ -1300,6 +1313,7 @@ class User( BaseController, UsesFormDefinitions ):
                                     user=user,
                                     dbkeys=dbkeys,
                                     message=message,
+                                    installed_len_files=self.installed_len_files,
                                     lines_skipped=lines_skipped,
                                     use_panels=kwds.get( 'use_panels', None ) )          
     @web.expose
