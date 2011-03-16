@@ -400,7 +400,7 @@ class Bed( Interval ):
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
-    MetadataElement( name="viz_filter_cols", default=[4], param=metadata.ColumnParameter, multiple=True )
+    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[4], param=metadata.ColumnParameter, multiple=True )
     ###do we need to repeat these? they are the same as should be inherited from interval type
 
     def set_meta( self, dataset, overwrite = True, **kwd ):
