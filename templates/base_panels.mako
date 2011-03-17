@@ -200,6 +200,7 @@
     <head>
     <title>${self.title()}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name = "viewport" content = "maximum-scale=1.0">
     ${self.stylesheets()}
     ${self.javascripts()}
     </head>
