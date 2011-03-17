@@ -109,7 +109,7 @@ class TwillTestCase( unittest.TestCase ):
         """Checks the contents of 2 files for differences using re.match"""
         local_file = open( file1, 'U' ).readlines() #regex file
         history_data = open( file2, 'U' ).readlines()
-        assert len( local_file ) == len( history_data ), 'Data File and Regular Expression File contain a different number of lines (%s != %s)' % ( len( local_file ), len( history_data ) )
+        assert len( local_file ) == len( history_data ), 'Data File and Regular Expression File contain a different number of lines (%s != %s)\nHistory Data (first 40 lines):\n%s' % ( len( local_file ), len( history_data ), ''.join( history_data[:40] ) )
         if attributes is None:
             attributes = {}
         if attributes.get( 'sort', False ):
