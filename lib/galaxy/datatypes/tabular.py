@@ -235,7 +235,7 @@ class Tabular( data.Text ):
             return dataset.has_data() \
                 and dataset.state == dataset.states.OK \
                 and dataset.metadata.columns > 0 \
-                and dataset.metadata.data_lines > 0
+                and dataset.metadata.data_lines != 0
         except:
             return False
     def as_gbrowse_display_file( self, dataset, **kwd ):

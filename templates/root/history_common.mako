@@ -179,6 +179,7 @@
                             %for display_name, display_link in display_links:
                                 <a target="${target_frame}" href="${display_link}">${_(display_name)}</a> 
                             %endfor
+                            <br />
                         %endif
                     %endfor
                     %for display_app in data.get_display_applications( trans ).itervalues():
