@@ -98,6 +98,8 @@
             padding: 8px 5px 5px;
             min-width: 500px; 
             border: none;
+            margin-top: 1em;
+            margin-bottom: 1em;
         }
         .page-body caption { 
             text-align: left;
