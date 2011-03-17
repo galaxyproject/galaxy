@@ -21,7 +21,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery.event.drag", "jquery.event.drop", "jquery.event.hover", "jquery.form", "json2", "jstorage"
+    ${h.js( "jquery.event.drag", "jquery.event.drop", "jquery.event.hover", "jquery.form", "json2", "jstorage",
             "galaxy.base", "jquery.wymeditor", "jquery.autocomplete", "autocomplete_tagging")}    
     <script type="text/javascript">
             
