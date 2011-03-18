@@ -45,7 +45,7 @@ def __main__():
             #existing species
             for spec in species_exist:
                 if spec not in species_found_in_maf:
-                    print "Line %i, %s claims to be have blocks for %s, but was not found in MAF files." % ( i, uid, spec )
+                    print "Line %i, %s claims to have blocks for %s, but was not found in MAF files." % ( i, uid, spec )
             for spec in species_found_in_maf:
                 if spec not in species_exist:
                     print "Line %i, %s contains %s, but is not listed in loc file." % ( i, uid, spec )
