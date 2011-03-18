@@ -66,7 +66,7 @@ class Interval( Tabular ):
             dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
             if line_count is None:
                 # See if line_count is stored in the metadata
-                if dataset.metadata.data_lines:
+                if dataset.metadata.data_lines is not None:
                     dataset.blurb = "%s regions" % util.commaify( str( dataset.metadata.data_lines ) )
                 else:
                     # Number of lines is not known ( this should not happen ), and auto-detect is
