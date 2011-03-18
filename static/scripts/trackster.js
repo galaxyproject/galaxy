@@ -367,9 +367,9 @@ $.extend( View.prototype, {
                     view.go_to( $(this).val() );
                 }
                 $(this).hide();
+                $(this).val('');
                 view.location_span.show();
                 view.chrom_select.show();
-                return false;
             }
         };
         this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.nav_controls);
@@ -377,6 +377,7 @@ $.extend( View.prototype, {
         this.location_span.bind("click", function() {
             view.location_span.hide();
             view.chrom_select.hide();
+            view.nav_input.val(view.chrom + ":" + view.low + "-" + view.high);
             view.nav_input.css("display", "inline-block");
             view.nav_input.select();
             view.nav_input.focus();
@@ -520,7 +521,14 @@ $.extend( View.prototype, {
             url: chrom_url, 
             data: url_parms,
             dataType: "json",
-            success: function ( result ) {
+            success: function (result) {
+                // Show error if could not load chroms.
+                if (result.chrom_info.length === 0) {
+                    alert("Invalid chromosome: " + url_parms.chrom);
+                    return;
+                }
+                
+                // Load chroms.
                 if (result.reference) {
                     view.add_label_track( new ReferenceTrack(view) );
                 }
@@ -543,13 +551,12 @@ $.extend( View.prototype, {
                 view.chrom_start_index = result.start_index;
             },
             error: function() {
-                alert( "Could not load chroms for this dbkey:", view.dbkey );
+                alert("Could not load chroms for this dbkey:", view.dbkey);
             }
         });
         
     },
     change_chrom: function(chrom, low, high) {
-        
         // Don't do anything if chrom is "None" (hackish but some browsers already have this set), or null/blank
         if (!chrom || chrom === "None") {
             return;
