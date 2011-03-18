@@ -2348,7 +2348,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         var 
             feature_uid = feature[0],
             feature_start = feature[1],
-            feature_end = feature[2],
+            // -1 b/c intervals are half-open.
+            feature_end = feature[2] - 1, 
             feature_name = feature[3],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
@@ -2440,8 +2441,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
                         block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) );
-                    
+                        // -1 b/c intervals are half-open.
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - 1 - tile_low) * w_scale)) );
+
                     // Skip drawing if block not on tile.    
                     if (block_start > block_end) { continue; }
 
@@ -2453,8 +2455,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     // If block intersects with thick region, draw block as thick.
                     if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
-                            // -1 b/c intervals are half-open.
-                            block_thick_end = Math.min(block_end, thick_end-1);
+                            block_thick_end = Math.min(block_end, thick_end);
                         ctx.fillRect(block_thick_start + left_offset, y_center + 1,
                                      block_thick_end - block_thick_start, thick_height);
                     }
