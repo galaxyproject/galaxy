@@ -199,10 +199,10 @@
                         var found_in_list = false;
             
                         // Look for new tool in current list. If found, rearrange list to move tool to top.
+                        var new_tool_info_id = new_tool_info.id.toLowerCase().replace(/[^a-z0-9_]/, "_")
                         recently_used_elts.each( function(index) {
                             var anchor = $(this).find("a");
-                            var tool_id = anchor.attr("id").split("-")[1];
-                            if (tool_id === new_tool_info.id) {
+                            if (anchor.hasClass("link-" + new_tool_info_id)) {
                                 found_in_list = true;
                     
                                 // If tool is first, do nothing.
@@ -219,7 +219,7 @@
                         // If tool not in list, create new element, remove last element, and put new element first in list.
                         if (!found_in_list) {
                             new_tool_elt = $("<div class='toolTitle'> \
-                                                <a id='link-" + new_tool_info.id + "' href='" + new_tool_info.link + "' target='" + 
+                                                <a class='link-" + new_tool_info.id + "' href='" + new_tool_info.link + "' target='" + 
                                                 new_tool_info.target + "' minsizehint='" + new_tool_info.minsizehint + "'>" +
                                                 new_tool_info.name + "</a> " + new_tool_info.description + " \
                                               </div>");
