@@ -79,18 +79,18 @@ by setting **Trim from the beginning to this position** to *2* and **Remove ever
 
 -----
 
-**Eaxmple 2**
+**Example 2**
 
 Trimming column 2 of this dataset::
 
-  bcde	12345	fghij	67890
-  fghij	67890	abcde	12345
+  abcde 12345 fghij 67890
+  fghij 67890 abcde 12345
 
 by setting **Trim content of this column only** to *2*, **Trim from the beginning to this position** to *2*, and **Remove everything from this position to the end** to *4* will produce::
 
- abcde	234	fghij	67890
- fghij	789	abcde	12345
- 
+  abcde  234 fghij 67890
+  fghij  789 abcde 12345
+
 -----
 
 **Trimming FASTQ datasets**
