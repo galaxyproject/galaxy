@@ -142,6 +142,8 @@
     <tool file="stats/plot_from_lda.xml" />
     <tool file="regVariation/t_test_two_samples.xml" />
     <tool file="regVariation/compute_q_values.xml" />
+    <label text="GFF" id="gff" />
+		<tool file="stats/count_gff_features.xml" />
   </section>
   <section name="Wavelet Analysis" id="dwt">
     <tool file="discreteWavelet/execute_dwt_IvC_all.xml" />

@@ -1,0 +1,26 @@
+<tool id="count_gff_features" name="Count GFF Features" version="0.1">
+    <description></description>
+    <command interpreter="python">
+        count_gff_features.py $input &gt; $output
+    </command>
+    <inputs>
+        <param format="gff" name="input" type="data" label="GFF Dataset to Filter"/>
+    </inputs>
+    <outputs>
+        <data format="txt" name="output"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="gff2bed_in2.gff"/>
+            <output name="output" file="count_gff_features_out1.txt"/>
+        </test>
+        <test>
+            <param name="input" value="gff_filter_by_feature_count_out1.gff"/>
+            <output name="output" file="count_gff_features_out2.txt"/>
+        </test>
+    </tests>
+    <help>
+        Counts the number of features in a GFF dataset. GFF features are often spread across multiple lines; this tool counts the number of 
+        features in dataset rather than the number of lines.
+    </help>
+</tool>
