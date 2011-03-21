@@ -11,12 +11,12 @@
     <param name="min" size="4" type="integer" value="1" help="(bp)">
       <label>with min overlap</label>
     </param>
-	<param name="fill" type="select" label="Return">
-		<option value="none">Only records that are joined (INNER JOIN)</option>
-		<option value="right">All records of first dataset (fill null with ".")</option>
-		<option value="left">All records of second dataset (fill null with ".")</option>
-		<option value="both">All records of both datasets (fill nulls with ".")</option>
-	</param>
+  <param name="fill" type="select" label="Return">
+    <option value="none">Only records that are joined (INNER JOIN)</option>
+    <option value="right">All records of first dataset (fill null with ".")</option>
+    <option value="left">All records of second dataset (fill null with ".")</option>
+    <option value="both">All records of both datasets (fill nulls with ".")</option>
+  </param>
    </inputs>
   <outputs>
     <data format="interval" name="output" metadata_source="input1" />
