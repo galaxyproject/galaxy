@@ -20,7 +20,6 @@ db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False,
 def _sniffnfix_pg9_hex(value):
     """
     Sniff for and fix postgres 9 hex decoding issue
-    
     """
     try:
         if value[0] == 'x':
@@ -33,7 +32,6 @@ def _sniffnfix_pg9_hex(value):
 def upgrade():
     print __doc__
     metadata.reflect()
-    
     cmd = "SELECT form_values.id as id, form_values.content as field_values, form_definition.fields as fields " \
           + " FROM form_definition, form_values " \
           + " WHERE form_values.form_definition_id=form_definition.id " \
@@ -50,6 +48,12 @@ def upgrade():
             # content field is corrupted
             fields_list = from_json_string( _sniffnfix_pg9_hex( str( row['fields'] ) ) )
             field_values_str = _sniffnfix_pg9_hex( str( row['field_values'] ) )
+            try:
+                #Encoding errors?  Just to be safe.
+                print "Attempting to fix row %s" % row['id']
+                print "Prior to replacement: %s" % field_values_str
+            except:
+                pass
             field_values_dict = {}
             # look for each field name in the values and extract its value (string)
             for index in range( len(fields_list) ):
@@ -84,6 +88,10 @@ def upgrade():
             json_values = to_json_string(field_values_dict)
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( json_values, int( row['id'] ) )
             db_session.execute( cmd )
+            try:
+                print "Post replacement: %s" % json_values
+            except:
+                pass
     if corrupted_rows:
         print 'Fixed %i corrupted rows.' % corrupted_rows
     else:
@@ -91,3 +99,4 @@ def upgrade():
 
 def downgrade():
     pass
+
