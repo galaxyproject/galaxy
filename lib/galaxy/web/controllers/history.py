@@ -669,8 +669,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         if not trans.user_is_admin() and not self.security_check( user, import_history, check_ownership=False, check_accessible=True ):
             return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
         if user:
-            if import_history.user_id == user.id:
-                return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
+            #dan: I can import my own history.
+            #if import_history.user_id == user.id:
+            #    return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
             new_history = import_history.copy( target_user=user )
             new_history.name = "imported: " + new_history.name
             new_history.user_id = user.id
