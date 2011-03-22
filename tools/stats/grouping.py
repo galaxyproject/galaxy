@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-#Guruprasad Ananda
+# Guruprasad Ananda
+# Refactored 2011, Kanwei Li
 """
 This tool provides the SQL "group by" functionality.
 """
 import sys, string, re, commands, tempfile, random
 from rpy import *
+from itertools import groupby
 
 def stop_err(msg):
     sys.stderr.write(msg)
@@ -53,10 +55,10 @@ def main():
         stop_err( "Group column not specified." )
     
     str_ops = ['c', 'length', 'unique', 'random', 'cuniq', 'Mode'] #ops that can handle string/non-numeric inputs
-    for k,col in enumerate(cols):
+    for k, col in enumerate(cols):
         col = int(col)-1
         if ops[k] not in str_ops:
-            # We'll get here only if the user didn't choose 'Concatenate' or 'Count' or 'Count Distinct' or 'pick randmly', which are the
+            # We'll get here only if the user didn't choose 'Concatenate' or 'Count' or 'Count Distinct' or 'pick randomly', which are the
             # only aggregation functions that can be used on columns containing strings.
             try:
                 float( elems[col] )
@@ -90,191 +92,94 @@ def main():
     if error_code != 0:
         stop_err( "Sorting input dataset resulted in error: %s: %s" %( error_code, stdout ))
         
-    prev_item = ""
-    prev_vals = []
+    prev_item = None
     skipped_lines = 0
-    first_invalid_line = 0
-    invalid_line = ''
+    first_invalid_line = None
     invalid_value = ''
     invalid_column = 0
     fout = open(sys.argv[1], "w")
     
-    for ii, line in enumerate( file( tmpfile.name )):
-        if line and not line.startswith( '#' ):
-            line = line.rstrip( '\r\n' )
-            try:
-                fields = line.split("\t")
-                item = fields[group_col]
-                if ignorecase == 1:
-                    item = item.lower()
-                if prev_item != "":
-                    # At this level, we're grouping on values (item and prev_item) in group_col
-                    if item == prev_item:
-                        # Keep iterating and storing values until a new value is encountered.
-                        for i, col in enumerate(cols):
-                            col = int(col)-1
-                            valid = True
-                            # Before appending the current value, make sure it is numeric if the
-                            # operation for the column requires it.
-                            if ops[i] not in str_ops:
-                                try:
-                                    float( fields[col].strip())
-                                except:
-                                    valid = False
-                                    skipped_lines += 1
-                                    if not first_invalid_line:
-                                        first_invalid_line = ii+1
-                                        invalid_value = fields[col]
-                                        invalid_column = col+1
-                            if valid:
-                                prev_vals[i].append(fields[col].strip())
-                    else:   
-                        """
-                        When a new value is encountered, write the previous value and the 
-                        corresponding aggregate values into the output file.  This works 
-                        due to the sort on group_col we've applied to the data above.
-                        """
-                        out_str = prev_item
-                        multiple_modes = False
-                        mode_index = None
-                        for i, op in enumerate( ops ):
-                            if op == 'cuniq':
-                                rfunc = "r.c"
-                            else:
-                                rfunc = "r." + op 
-                            if op not in str_ops:
-                                for j, elem in enumerate( prev_vals[i] ):
-                                    prev_vals[i][j] = float( elem )
-                                rout = eval( rfunc )( prev_vals[i] )
-                                if rounds[i] == 'yes':
-                                    rout = int(round(float(rout)))
-                                else:
-                                    rout = '%g' %(float(rout))
-                            else:
-                                if op != 'random':
-                                    rout = eval( rfunc )( prev_vals[i] )
-                                else:
-                                    try:
-                                        rand_index = random.randint(0,len(prev_vals[i])-1)  #if the two inputs to randint are equal, it seems to throw a ValueError. This can't be reproduced with the python interpreter in its interactive mode. 
-                                    except Exception, ValueError:
-                                        rand_index = 0
-                                    rout = prev_vals[i][rand_index]
-                            
-                            if op == 'Mode' and rout == '>1 mode':
-                                multiple_modes = True
-                                mode_index = i
-                            if op == 'unique':
-                                rfunc = "r.length" 
-                                rout = eval( rfunc )( rout )
-                            if op in ['c', 'cuniq']:
-                                if op == 'c':
-                                    if type(rout) == type([]):
-                                        out_str += "\t" + ','.join(rout)
-                                    else:
-                                        out_str += "\t" + str(rout)
-                                else:
-                                    if type(rout) == type([]):
-                                        out_str += "\t" + ','.join(list(set(rout)))
-                                    else:
-                                        out_str += "\t" + str(rout)
-                            else:
-                                out_str += "\t" + str(rout)
-                        if multiple_modes and mode_index != None:
-                            out_str_list = out_str.split('\t')
-                            for val in prev_vals[mode_index]:
-                                out_str = '\t'.join(out_str_list[:mode_index+1]) + '\t' + str(val) + '\t' + '\t'.join(out_str_list[mode_index+2:])
-                                print >>fout, out_str.rstrip('\t')
-                        else:
-                            print >>fout, out_str
-    
-                        prev_item = item   
-                        prev_vals = [] 
-                        for col in cols:
-                            col = int(col)-1
-                            val_list = []
-                            val_list.append(fields[col].strip())
-                            prev_vals.append(val_list)
-                else:
-                    # This only occurs once, right at the start of the iteration.
-                    prev_item = item
-                    for col in cols:
-                        col = int(col)-1
-                        val_list = []
-                        val_list.append(fields[col].strip())
-                        prev_vals.append(val_list)
-    
-            except Exception, exc:
-                skipped_lines += 1
-                if not first_invalid_line:
-                    first_invalid_line = ii+1
-        else:
-            skipped_lines += 1
-            if not first_invalid_line:
-                first_invalid_line = ii+1
-    
-    # Handle the last grouped value
-    out_str = prev_item
-    multiple_modes = False
-    mode_index = None
-    for i, op in enumerate(ops):
-        if op == 'cuniq':
-            rfunc = "r.c"
-        else:
-            rfunc = "r." + op 
-        try:
+    def is_new_item(line):
+        item = line.strip().split("\t")[group_col]
+        if ignorecase == 1:
+            item = item.lower()
+        return item
+        
+    for key, line_list in groupby(tmpfile, key=is_new_item):
+        op_vals = [ [] for op in cols ]
+        out_str = key
+        multiple_modes = False
+        mode_index = None
+        
+        for line in line_list:
+            fields = line.strip().split("\t")
+            for i, col in enumerate(cols):
+                col = int(col)-1 # cXX from galaxy is 1-based
+                val = fields[col].strip()
+                # Before appending the current value, make sure it is numeric if the
+                # operation for the column requires it.
+                if ops[i] not in str_ops:
+                    try:
+                        float(val)
+                    except ValueError:
+                        skipped_lines += 1
+                        if first_invalid_line is None:
+                            first_invalid_line = i+1
+                            invalid_value = fields[col]
+                            invalid_column = col+1
+                        break
+                
+                op_vals[i].append(val)
+        
+        for i, op in enumerate( ops ):
+            if op == 'cuniq':
+                rfunc = "r.c"
+            else:
+                rfunc = "r." + op 
             if op not in str_ops:
-                for j, elem in enumerate( prev_vals[i] ):
-                    prev_vals[i][j] = float( elem )
-                rout = eval( rfunc )( prev_vals[i] )
+                for j, elem in enumerate( op_vals[i] ):
+                    op_vals[i][j] = float( elem )
+                rout = eval( rfunc )( op_vals[i] )
                 if rounds[i] == 'yes':
-                    rout = int(round(float(rout)))
+                    rout = round(float(rout))
                 else:
                     rout = '%g' %(float(rout))
             else:
                 if op != 'random':
-                    rout = eval( rfunc )( prev_vals[i] )
+                    rout = eval( rfunc )( op_vals[i] )
                 else:
                     try:
-                        rand_index = random.randint(0,len(prev_vals[i])-1)  #if the two inputs to randint are equal, it seems to throw a ValueError. This can't be reproduced with the python interpreter in its interactive mode. 
-                    except Exception, ValueError:
+                        rand_index = random.randint(0,len(op_vals[i])-1)  #if the two inputs to randint are equal, it seems to throw a ValueError. This can't be reproduced with the python interpreter in its interactive mode. 
+                    except:
                         rand_index = 0
-                    rout = prev_vals[i][rand_index]
+                    rout = op_vals[i][rand_index]
             
             if op == 'Mode' and rout == '>1 mode':
                 multiple_modes = True
-                mode_index = i      
+                mode_index = i
             if op == 'unique':
                 rfunc = "r.length" 
-                rout = eval( rfunc )( rout )  
-            if op in ['c','cuniq']:
-                if op == 'c':
-                    if type(rout) == type([]):
-                        out_str += "\t" + ','.join(rout)
-                    else:
-                        out_str += "\t" + str(rout)
+                rout = eval( rfunc )( rout )
+            if op in ['c', 'cuniq']:
+                if isinstance(rout, list):
+                    if op == 'cuniq':
+                        rout = set(rout)
+                    out_str += "\t" + ','.join(rout)
                 else:
-                    if type(rout) == type([]):
-                        out_str += "\t" + ','.join(list(set(rout)))
-                    else:
-                        out_str += "\t" + str(rout)
+                    out_str += "\t" + str(rout)
             else:
-                out_str += "\t" + str( rout )
-        except:
-            skipped_lines += 1
-            if not first_invalid_line:
-                first_invalid_line = ii+1
-    
-    if multiple_modes and mode_index != None:
-        out_str_list = out_str.split('\t')
-        for val in prev_vals[mode_index]:
-            out_str = '\t'.join(out_str_list[:mode_index+1]) + '\t' + str(val) + '\t' + '\t'.join(out_str_list[mode_index+2:])
-            print >>fout, out_str.rstrip('\t')
-    else:
-        print >>fout, out_str
+                out_str += "\t" + str(rout)
+        if multiple_modes and mode_index != None:
+            out_str_list = out_str.split('\t')
+            for val in op_vals[mode_index]:
+                out_str = '\t'.join(out_str_list[:mode_index+1]) + '\t' + str(val) + '\t' + '\t'.join(out_str_list[mode_index+2:])
+                fout.write(out_str.rstrip('\t') + "\n")
+        else:
+            fout.write(out_str + "\n")
     
     # Generate a useful info message.
     msg = "--Group by c%d: " %(group_col+1)
-    for i,op in enumerate(ops):
+    for i, op in enumerate(ops):
         if op == 'c':
             op = 'concat'
         elif op == 'length':
