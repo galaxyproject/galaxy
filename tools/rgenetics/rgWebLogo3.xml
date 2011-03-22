@@ -1,0 +1,90 @@
+<tool id="weblogo3" name="Sequence Logo" version="0.1">
+   <description>generator for fasta (eg Clustal alignments)</description>
+   <command> 
+    weblogo -F $outformat -s $size -f $input -o $output -t "$logoname"
+   </command>
+  <inputs>
+   <page>
+    <param format="fasta" name="input" type="data" label="Fasta File" />
+    <param name="logoname" label="Name for output logo - will appear on graphics" type="text" size="50" value="Galaxy/Rgenetics weblogo" />
+    <param name="outformat" type="select" label="Output weblogo format" >
+      <option value="png" selected="True">PNG screen quality</option>
+      <option value="png_print">High quality printable PNG</option>
+      <option value="pdf">PDF</option>
+      <option value="jpeg">JPG</option>
+      <option value="eps">EPS</option>
+      <option value="txt">Text (shows the detailed calculations for each position - no image)</option>
+    </param>
+    <param name="size" type="select" label="Output weblogo size" >
+      <option value="large" selected="True">Large</option>
+      <option value="medium">Medium</option>
+      <option value="small">Small</option>
+    </param>
+   </page>
+  </inputs>
+  <outputs>
+    <data format="pdf" name="output"  label="${logoname}_output.${outformat}">
+       <change_format>
+           <when input="outformat" value="png_print" format="png" />
+           <when input="outformat" value="png" format="png" />
+           <when input="outformat" value="jpeg" format="jpg" />
+           <when input="outformat" value="eps" format="eps" />
+           <when input="outformat" value="txt" format="txt" />
+       </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+  
+      <param name="input" value="rgClustal_testout.fasta" />
+      <param name = "logoname" value="Galaxy/Rgenetics weblogo" />
+      <param name = "outformat" value="jpeg" />
+      <param name = "size" value="medium" />
+    
+      <output name="output" file="rgWebLogo3_test.jpg" ftype="jpg" />
+    </test>
+
+  </tests>
+  <help>
+
+**Note**
+
+This tool uses Weblogo3_ in Galaxy to generate a sequence logo. The input file must be a fasta file in your current history.
+
+A typical output looks like this
+
+.. image:: ./static/images/rgWebLogo3_test.jpg
+
+----
+
+**Why use WebLogo in Galaxy?**
+
+Weblogo3_ is a good example of an easy to use tool and there are plenty of other web accessible weblogo generator sites available. 
+
+However, none of those offer the combination of:
+
+1) persistence of analyses and data in multiple shareable histories, pages and libraries 
+
+2) convenient access to shared data libraries, workflows and user controlled pages,  and to 3rd party data sources like UCSC tables. 
+
+3) analyses integrated with many other applicable generic and specialized tools already available for downstream processing.
+
+that you get for free when you use Galaxy. No muss; no fuss.
+
+----
+
+**Attribution**
+
+Weblogo attribution and associated documentation are available at Weblogo3_
+
+This wrapper was written by Ross Lazarus for the rgenetics project and the source code is licensed under the LGPL_ like other rgenetics artefacts
+
+.. _Weblogo3: http://weblogo.berkeley.edu/
+
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+
+  </help>
+
+</tool>
+
+
