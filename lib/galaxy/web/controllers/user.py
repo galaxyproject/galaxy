@@ -494,7 +494,7 @@ class User( BaseController, UsesFormDefinitions ):
                 else:
                     status = 'error'
         if webapp == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
+            user_type_form_definition = self.__get_user_type_form_definition( trans, user=None, **kwd )
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
                 user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
