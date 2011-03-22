@@ -4,8 +4,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button"  href="${h.url_for( controller='user', action='index')}">
-        <span>User preferences</span></a>
+        <a class="action-button"  href="${h.url_for( controller='user', cntrller=cntrller, action='index')}">User preferences</a>
     </li>
 </ul>
 %if trans.user:

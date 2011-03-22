@@ -464,7 +464,7 @@ class Forms( BaseController ):
                                    field.get( 'default', '' ) )
         # field name
         name = TextField( 'field_name_' + str( field_index ), 40, field[ 'name' ] )
-        name_helptext = "The field name must be unique for each field and must only contain alphanumeric characters and underscore ('_'). (Required)"
+        name_helptext = "The field name must be unique for each field and must contain only alphanumeric characters and underscore ."
         if layout_grids and form_type == trans.model.FormDefinition.types.SAMPLE:
             return [ ( 'Field label', label ),
                      ( 'Help text', helptext ),

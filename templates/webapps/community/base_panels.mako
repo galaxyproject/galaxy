@@ -64,7 +64,7 @@
         <ul class="loggedout-only" style="${style1}">
             <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login</a></li>
             %if app.config.allow_user_creation:
-            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='create', webapp='community' )}">Register</a></li>
+            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='create', cntrller='user', webapp='community' )}">Register</a></li>
             %endif
         </ul>
         <ul class="loggedin-only" style="${style2}">
@@ -74,7 +74,7 @@
                 %endif
             %else:
                 <li>Logged in as <span id="user-email">${user_email}</span></li>
-                <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='index', webapp='community' )}">Preferences</a></li>
+                <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='index', cntrller='user', webapp='community' )}">Preferences</a></li>
                 <%
                     if app.config.require_login:
                         logout_url = h.url_for( controller='/root', action='index', webapp='community', m_c='user', m_a='logout' )

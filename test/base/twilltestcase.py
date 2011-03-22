@@ -753,10 +753,10 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( genome_build == dbkey )
 
     # Functions associated with user accounts
-    def create( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', referer='' ):
+    def create( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', referer='' ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
-        self.visit_url( "%s/user/create?use_panels=False" % self.url )
+        self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
         tc.fv( '1', 'email', email )
         tc.fv( '1', 'webapp', webapp )
         tc.fv( '1', 'referer', referer )
@@ -786,25 +786,30 @@ class TwillTestCase( unittest.TestCase ):
                     except:
                         pass
         return previously_created, username_taken, invalid_username
-    def create_user_with_info( self, email, password, username, user_info_values, user_info_select='', admin_view='False',
+    def create_user_with_info( self, email, password, username, user_info_values, user_type_fd_id='', cntrller='user',
                                strings_displayed=[], strings_displayed_after_submit=[] ):
         # This method creates a new user with associated info
-        self.visit_url( "%s/user/create?admin_view=%s&use_panels=False" % ( self.url, admin_view ) )
-        for check_str in strings_displayed:
-            self.check_page_for_string( check_str)
+        self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
         tc.fv( "1", "email", email )
         tc.fv( "1", "password", password )
         tc.fv( "1", "confirm", password )
         tc.fv( "1", "username", username )
-        if user_info_select:
-            # The user_info_select SelectField requires a refresh_on_change
-            self.refresh_form( 'user_info_select', user_info_select )
+        if user_type_fd_id:
+            # The user_type_fd_id SelectField requires a refresh_on_change
+            self.refresh_form( 'user_type_fd_id', user_type_fd_id )
             for index, ( field_name, info_value ) in enumerate( user_info_values ):
                 tc.fv( "1", field_name, info_value )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str)
         tc.submit( "create_user_button" )
-    def edit_user_info( self, new_email='', new_username='', password='', new_password='',
+    def edit_user_info( self, cntrller='user', id='', new_email='', new_username='', password='', new_password='',
                         info_values=[], strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.visit_url( "%s/user/show_info" % self.url )
+        if cntrller == 'admin':
+            url = "%s/admin/users?id=%s&operation=information" % ( self.url, id )
+        else:  # cntrller == 'user:
+            # The user is editing his own info, so the user id is gotten from trans.user.
+            url = "%s/user/manage_user_info?cntrller=user" % self.url
+        self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         if new_email or new_username:
@@ -826,22 +831,20 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
-    def user_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id='2' ):
+    def user_set_default_permissions( self, cntrller='user', permissions_out=[], permissions_in=[], role_id='2' ):
         # role.id = 2 is Private Role for test2@bx.psu.edu 
         # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
         # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
         # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
         # /user/set_default_permissions method.
-        url = "user/set_default_permissions?update_roles_button=Save&id=None"
+        url = "user/set_default_permissions?cntrller=%s&update_roles_button=Save&id=None" % cntrller
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, str( role_id ) )
         for pi in permissions_in:
             key = '%s_in' % pi
             url ="%s&%s=%s" % ( url, key, str( role_id ) )
-        self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
-        self.last_page()
         self.check_page_for_string( 'Default new history permissions have been changed.' )
         self.home()
     def history_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=3 ): # role.id = 3 is Private Role for test3@bx.psu.edu 
@@ -1140,7 +1143,7 @@ class TwillTestCase( unittest.TestCase ):
         """Create a new account for another user"""
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
-        self.visit_url( "%s/user/create?admin_view=True" % self.url )
+        self.visit_url( "%s/user/create?cntrller=admin" % self.url )
         tc.fv( '1', 'email', email )
         tc.fv( '1', 'webapp', webapp )
         tc.fv( '1', 'referer', referer )
@@ -1790,7 +1793,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_string_count_in_page( check_str, count )
     def add_user_address( self, user_id, address_dict ):
         self.home()
-        self.visit_url( "%s/user/new_address?admin_view=False&user_id=%i" % ( self.url, user_id ) )
+        self.visit_url( "%s/user/new_address?cntrller=user&user_id=%s" % ( self.url, user_id ) )
         self.check_page_for_string( 'Add new address' )
         for field_name, value in address_dict.items():
             tc.fv( "1", field_name, value )

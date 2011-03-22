@@ -344,7 +344,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                              postal_code="007",
                              country="United Kingdom",
                              phone="007-007-0007" )
-        self.add_user_address( regular_user1.id, address_dict )
+        self.add_user_address( self.security.encode_id( regular_user1.id ), address_dict )
         global user_address1
         user_address1 = get_user_address( regular_user1, address_dict[ 'short_desc' ] )
         # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change

@@ -1,14 +1,21 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
+<br/><br/>
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button"  href="${h.url_for( controller='user', action='index', cntrller=cntrller )}">User preferences</a>
+    </li>
+</ul>
+
 %if message:
     ${render_msg( message, status )}
 %endif
 
 <div class="toolForm">
-    <form name="user_api_keys" id="user_api_keys" action="${h.url_for( controller='user', action='api_keys' )}" method="post" >
-        <div class="toolFormTitle">Web API Key</div>
-        <div class="toolFormBody">
+    <div class="toolFormTitle">Web API Key</div>
+    <div class="toolFormBody">
+        <form name="user_api_keys" id="user_api_keys" action="${h.url_for( controller='user', action='api_keys', cntrller=cntrller )}" method="post" >
             <div class="form-row">
                 <label>Current API key:</label>
                 %if user.api_keys:
@@ -30,6 +37,6 @@
                     as your login password</strong>.
                 </div>
             </div>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>

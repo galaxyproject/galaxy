@@ -1805,12 +1805,12 @@ class Admin( object ):
     # Galaxy User Stuff
     @web.expose
     @web.require_admin
-    def create_new_user( self, trans, **kwargs ):
-        webapp = kwargs.get( 'webapp', 'galaxy' )
+    def create_new_user( self, trans, **kwd ):
+        webapp = kwd.get( 'webapp', 'galaxy' )
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='create',
-                                                          webapp=webapp,
-                                                          admin_view=True ) )
+                                                          cntrller='admin',
+                                                          webapp=webapp ) )
     @web.expose
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
@@ -1993,60 +1993,45 @@ class Admin( object ):
                                                    status='done' ) )
     @web.expose
     @web.require_admin
-    def users( self, trans, **kwargs ):
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
+    def users( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
             if operation == "roles":
-                return self.user( trans, **kwargs )
-            if operation == "reset password":
-                return self.reset_user_password( trans, **kwargs )
-            if operation == "delete":
-                return self.mark_user_deleted( trans, **kwargs )
-            if operation == "undelete":
-                return self.undelete_user( trans, **kwargs )
-            if operation == "purge":
-                return self.purge_user( trans, **kwargs )
-            if operation == "create":
-                return self.create_new_user( trans, **kwargs )
-            if operation == "information":
-                return self.user_info( trans, **kwargs )
-            if operation == "manage roles and groups":
-                return self.manage_roles_and_groups_for_user( trans, **kwargs )
-            if operation == "tools_by_user":
+                return self.user( trans, **kwd )
+            elif operation == "reset password":
+                return self.reset_user_password( trans, **kwd )
+            elif operation == "delete":
+                return self.mark_user_deleted( trans, **kwd )
+            elif operation == "undelete":
+                return self.undelete_user( trans, **kwd )
+            elif operation == "purge":
+                return self.purge_user( trans, **kwd )
+            elif operation == "create":
+                return self.create_new_user( trans, **kwd )
+            elif operation == "information":
+                user_id = kwd.get( 'id', None )
+                if not user_id:
+                    kwd[ 'message' ] = util.sanitize_text( "Invalid user id (%s) received" % str( user_id ) )
+                    kwd[ 'status' ] = 'error'
+                else:
+                    return trans.response.send_redirect( web.url_for( controller='user',
+                                                                      action='manage_user_info',
+                                                                      cntrller='admin',
+                                                                      **kwd ) )
+            elif operation == "manage roles and groups":
+                return self.manage_roles_and_groups_for_user( trans, **kwd )
+            elif operation == "tools_by_user":
                 # This option is called via the ToolsColumn link in a grid subclass,
-                # so we need to add user_id to kwargs since id in the subclass is tool.id,
+                # so we need to add user_id to kwd since id in the subclass is tool.id,
                 # and update the current sort filter, using the grid subclass's default
                 # sort filter instead of this class's.
-                kwargs[ 'user_id' ] = kwargs[ 'id' ]
-                kwargs[ 'sort' ] = 'name'
+                kwd[ 'user_id' ] = kwd[ 'id' ]
+                kwd[ 'sort' ] = 'name'
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='browse_tools',
-                                                                  **kwargs ) )
+                                                                  **kwd ) )
         # Render the list view
-        return self.user_list_grid( trans, **kwargs )
-    @web.expose
-    @web.require_admin
-    def user_info( self, trans, **kwd ):
-        '''
-        This method displays the user information page which consists of login 
-        information, public username, reset password & other user information 
-        obtained during registration
-        '''
-        webapp = kwd.get( 'webapp', 'galaxy' )
-        user_id = kwd.get( 'id', None )
-        if not user_id:
-            message += "Invalid user id (%s) received" % str( user_id )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='users',
-                                                       webapp=webapp,
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        user = get_user( trans, user_id )
-        return trans.response.send_redirect( web.url_for( controller='user',
-                                                          action='show_info',
-                                                          user_id=user.id,
-                                                          admin_view=True,
-                                                          **kwd ) )
+        return self.user_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):

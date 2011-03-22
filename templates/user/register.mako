@@ -25,7 +25,7 @@
 
     <%
         if form_action is None:
-            form_action = h.url_for( controller='user', action='create', admin_view=admin_view )
+            form_action = h.url_for( controller='user', action='create', cntrller=cntrller )
         from galaxy.web.form_builder import CheckboxField
         subscribe_check_box = CheckboxField( 'subscribe' )
     %>
@@ -65,13 +65,13 @@
                     ${subscribe_check_box.get_html()}
                 </div>
             %endif
-            %if user_info_select:
+            %if user_type_fd_id_select_field:
                 <div class="form-row">
                     <label>User type</label>
-                    ${user_info_select.get_html()}
+                    ${user_type_fd_id_select_field.get_html()}
                 </div>
             %endif
-            %if user_info_form:
+            %if user_type_form_definition:
                 %for field in widgets:
                     <div class="form-row">
                         <label>${field['label']}</label>
@@ -82,8 +82,8 @@
                         <div style="clear: both"></div>
                     </div>
                 %endfor
-                %if not user_info_select:
-                    <input type="hidden" name="user_info_select" value="${user_info_form.id}"/>
+                %if not user_type_fd_id_select_field:
+                    <input type="hidden" name="user_type_fd_id" value="${trans.security.encode_id( user_type_form_definition.id )}"/>
                 %endif   
             %endif
             <div class="form-row">

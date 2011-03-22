@@ -47,29 +47,29 @@ class TestUserInfo( TwillTestCase ):
                           strings_displayed_after_submit=[ name, desc, form_type ] )
         tmp_form = get_form( name )
         # field names
-        global user_form_field_name1
-        user_form_field_name1 = 'affiliation'
-        global user_form_field_name2
-        user_form_field_name2 = 'name_of_organization'
-        global user_form_field_name3
-        user_form_field_name3 = 'contact_for_feedback'
+        global affiliation_field_name
+        affiliation_field_name = 'affiliation'
+        global organization_field_name
+        organization_field_name = 'name_of_organization'
+        global feedback_field_name
+        feedback_field_name = 'contact_for_feedback'
         # Add fields to the form
         field_dicts = [ dict( label='Affiliation',
                               desc='The type of  organization you are affiliated with',
                               type='SelectField',
                               required='optional',
                               selectlist=[ 'Educational', 'Research', 'Commercial' ],
-                              name=user_form_field_name1 ),
+                              name=affiliation_field_name ),
                         dict( label='Name of Organization',
                               desc='',
                               type='TextField',
                               required='optional',
-                              name=user_form_field_name2 ),
+                              name=organization_field_name ),
                         dict( label='Contact for feedback',
                               desc='',
                               type='CheckboxField',
                               required='optional',
-                              name=user_form_field_name3 ) ]
+                              name=feedback_field_name ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
                         field_dicts=field_dicts,
                         field_index=len( tmp_form.fields ),
@@ -96,17 +96,17 @@ class TestUserInfo( TwillTestCase ):
                               type='SelectField',
                               required='optional',
                               selectlist=[ 'Educational', 'Research', 'Commercial' ],
-                              name=user_form_field_name1 ),
+                              name=affiliation_field_name ),
                         dict( label='Name of Organization',
                               desc='',
                               type='TextField',
                               required='optional',
-                              name=user_form_field_name2 ),
+                              name=organization_field_name ),
                         dict( label='Contact for feedback',
                               desc='',
                               type='CheckboxField',
                               required='optional',
-                              name=user_form_field_name3 ) ]
+                              name=feedback_field_name ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
                         field_dicts=field_dicts,
                         field_index=len( tmp_form.fields ),
@@ -127,13 +127,14 @@ class TestUserInfo( TwillTestCase ):
         email = 'test11@bx.psu.edu'
         password = 'testuser'
         username = 'test11'
-        user_info_values=[ ( user_form_field_name1, 'Educational' ), 
-                           ( user_form_field_name2, 'Penn State' ), 
-                           ( user_form_field_name3, '1' ) ]
-        self.create_user_with_info( email=email,
+        user_info_values=[ ( affiliation_field_name, 'Educational' ), 
+                           ( organization_field_name, 'Penn State' ), 
+                           ( feedback_field_name, '1' ) ]
+        self.create_user_with_info( cntrller='admin',
+                                    email=email,
                                     password=password,
                                     username=username, 
-                                    user_info_select=str( form_one.id ), 
+                                    user_type_fd_id=self.security.encode_id( form_one.id ), 
                                     user_info_values=user_info_values,
                                     strings_displayed=[ "Create account", "User type" ] )
         global regular_user11
@@ -143,12 +144,13 @@ class TestUserInfo( TwillTestCase ):
         regular_user11_private_role = get_private_role( regular_user11 )
         self.logout()
         self.login( email=regular_user11.email, username=username )
-        global form_checkbox_field3_sring
-        form_checkbox_field3_sring = '<input type="checkbox" id="%s" name="%s" value="true" checked="checked">' % ( user_form_field_name3, user_form_field_name3 )
-        self.edit_user_info( strings_displayed=[ "Manage User Information",
+        global form_checkbox_field3_string
+        form_checkbox_field3_string = '<input type="checkbox" id="%s" name="%s" value="true" checked="checked">' % ( feedback_field_name, feedback_field_name )
+        self.edit_user_info( cntrller='user',
+                             strings_displayed=[ "Manage User Information",
                                                  user_info_values[0][1],
                                                  user_info_values[1][1],
-                                                 form_checkbox_field3_sring ] )
+                                                 form_checkbox_field3_string ] )
     def test_015_user_reqistration_single_user_info_forms( self ):
         """Testing user registration with a single user info form"""
         # Logged in as regular_user_11
@@ -162,15 +164,16 @@ class TestUserInfo( TwillTestCase ):
         email = 'test12@bx.psu.edu'
         password = 'testuser'
         username = 'test12'
-        user_info_values=[ ( user_form_field_name1, 'Educational' ), 
-                           ( user_form_field_name2, 'Penn State' ), 
-                           ( user_form_field_name3, '1' ) ]
-        self.create_user_with_info( email=email,
+        user_info_values=[ ( affiliation_field_name, 'Educational' ), 
+                           ( organization_field_name, 'Penn State' ), 
+                           ( feedback_field_name, '1' ) ]
+        self.create_user_with_info( cntrller='admin',
+                                    email=email,
                                     password=password,
                                     username=username, 
-                                    user_info_select=form_one.id, 
+                                    user_type_fd_id=self.security.encode_id( form_one.id ), 
                                     user_info_values=user_info_values,
-                                    strings_displayed=[ "Create account" ] )
+                                    strings_displayed=[ "Create account", "User type" ] )
         global regular_user12
         regular_user12 = get_user( email )
         assert regular_user12 is not None, 'Problem retrieving user with email "%s" from the database' % email
@@ -178,26 +181,30 @@ class TestUserInfo( TwillTestCase ):
         regular_user12_private_role = get_private_role( regular_user12 )
         self.logout()
         self.login( email=regular_user12.email, username=username )
-        self.edit_user_info( strings_displayed=[ "Manage User Information",
+        self.edit_user_info( cntrller='user',
+                             strings_displayed=[ "Manage User Information",
                                                  user_info_values[0][1],
                                                  user_info_values[1][1],
-                                                 form_checkbox_field3_sring ] )
+                                                 form_checkbox_field3_string ] )
     def test_020_edit_user_info( self ):
         """Testing editing user info as a regular user"""
         # Logged in as regular_user_12
         # Test changing email and user name - first try an invalid user name
-        self.edit_user_info( new_email='test12_new@bx.psu.edu',
+        self.edit_user_info( cntrller='user',
+                             new_email='test12_new@bx.psu.edu',
                              new_username='test12_new',
                              strings_displayed_after_submit=[ "Public names must be at least four characters" ] )
         # Now try a valid user name
-        self.edit_user_info( new_email='test12_new@bx.psu.edu',
+        self.edit_user_info( cntrller='user',
+                             new_email='test12_new@bx.psu.edu',
                              new_username='test12-new',
                              strings_displayed_after_submit=[ 'The login information has been updated with the changes' ] )
         # Since we changed the user's account. make sure the user's private role was changed accordingly
         if not get_private_role( regular_user12 ):
             raise AssertionError, "The private role for %s was not correctly set when their account (email) was changed" % regular_user12.email
         # Test changing password
-        self.edit_user_info( password='testuser',
+        self.edit_user_info( cntrller='user',
+                             password='testuser',
                              new_password='testuser#',\
                              strings_displayed_after_submit=[ 'The password has been changed.' ] )
         self.logout()
@@ -205,9 +212,10 @@ class TestUserInfo( TwillTestCase ):
         # Test logging in with new email and password
         self.login( email=regular_user12.email, password='testuser#' )
         # Test editing the user info
-        new_user_info_values=[ ( user_form_field_name1, 'Educational' ), 
-                               ( user_form_field_name2, 'Penn State' ) ]
-        self.edit_user_info( info_values=new_user_info_values,
+        new_user_info_values=[ ( affiliation_field_name, 'Educational' ), 
+                               ( organization_field_name, 'Penn State' ) ]
+        self.edit_user_info( cntrller='user',
+                             info_values=new_user_info_values,
                              strings_displayed_after_submit=[ "The user information has been updated with the changes" ] )
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""

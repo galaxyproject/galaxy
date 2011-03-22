@@ -119,7 +119,7 @@
         # Menu for user who is not logged in.
         menu_options = [ [ "Login", h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
         if app.config.allow_user_creation:
-            menu_options.append( [ "Register", h.url_for( controller='/user', action='create' ), "galaxy_main" ] ) 
+            menu_options.append( [ "Register", h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] ) 
         extra_class = "loggedout-only"
         visible = ( trans.user == None )
         tab( "user", "User", None, visible=visible, menu_options=menu_options )
@@ -134,7 +134,7 @@
             if app.config.remote_user_logout_href:
                 menu_options.append( [ 'Logout', app.config.remote_user_logout_href, "galaxy_main" ] )
         else:
-            menu_options.append( [ 'Preferences', h.url_for( controller='/user', action='index' ), "galaxy_main" ] )
+            menu_options.append( [ 'Preferences', h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
             if app.config.get_bool( 'enable_tracks', False ):
                 menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
             if app.config.require_login:
@@ -148,7 +148,7 @@
         if app.config.get_bool( 'enable_pages', False ):
             menu_options.append( [ 'Saved Pages', h.url_for( controller='/page', action='list' ), "_top" ] )
         if app.config.enable_api:
-            menu_options.append( [ 'API Keys', h.url_for( controller='/user', action='api_keys' ), "galaxy_main" ] )
+            menu_options.append( [ 'API Keys', h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
     
         extra_class = "loggedin-only"
         visible = ( trans.user != None )
