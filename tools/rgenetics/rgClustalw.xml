@@ -7,9 +7,9 @@
     #end if
     #if ($outcontrol.outform=="clustal")
 -f "CLUSTAL"
-    #end if
-    #if ($outcontrol.outform=="clustal" and $outcontrol.out_seqnos=="ON")
+    #if ($outcontrol.out_seqnos=="ON")
 -q "ON"
+    #end if
     #end if
     #if ($outcontrol.outform=="phylip")
 -f "PHYLIP"
