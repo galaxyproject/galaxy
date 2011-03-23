@@ -2007,9 +2007,9 @@ class TwillTestCase( unittest.TestCase ):
     # Library dataset stuff
     def upload_library_dataset( self, cntrller, library_id, folder_id, filename='', server_dir='', replace_id='',
                                 upload_option='upload_file', file_type='auto', dbkey='hg18', space_to_tab='',
-                                link_data_only='copy_files', preserve_dirs='Yes', roles=[], ldda_message='', hda_ids='',
-                                template_refresh_field_name='1_field_name', template_refresh_field_contents='', template_fields=[],
-                                show_deleted='False', strings_displayed=[] ):
+                                link_data_only='copy_files', preserve_dirs='Yes', filesystem_paths='', roles=[],
+                                ldda_message='', hda_ids='', template_refresh_field_name='1_field_name',
+                                template_refresh_field_contents='', template_fields=[], show_deleted='False', strings_displayed=[] ):
         """Add datasets to library using any upload_option"""
         # NOTE: due to the library_wait() method call at the end of this method, no tests should be done
         # for strings_displayed_after_submit.
@@ -2050,10 +2050,10 @@ class TwillTestCase( unittest.TestCase ):
                     tc.fv( "add_history_datasets_to_library", "hda_ids", '1' )
             tc.submit( 'add_history_datasets_to_library_button' )
         else:
-            if upload_option == 'filesystem_paths' or upload_option == 'upload_directory':
+            if upload_option in [ 'upload_paths', 'upload_directory' ]:
                 tc.fv( "1", "link_data_only", link_data_only )
-            if upload_option == 'filesystem_paths' and preserve_dirs == 'Yes':
-                tc.fv( "1", "preserve_dirs", preserve_dirs )
+            if upload_option == 'upload_paths':
+                tc.fv( "1", "filesystem_paths", filesystem_paths )
             if upload_option == 'upload_directory' and server_dir:
                 tc.fv( "1", "server_dir", server_dir )
             if upload_option == 'upload_file':
@@ -2084,6 +2084,19 @@ class TwillTestCase( unittest.TestCase ):
             strings_displayed = [ "Permissions updated for dataset '%s'." % ldda_name ]
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
+        self.home()
+    def ldda_info( self, cntrller, library_id, folder_id, ldda_id, strings_displayed=[], strings_not_displayed=[] ):
+        """View library_dataset_dataset_association information"""
+        self.visit_url( "%s/library_common/ldda_info?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
+                        ( self.url, cntrller, library_id, folder_id, ldda_id ) )
+        for check_str in strings_displayed:
+            self.check_page_for_string( check_str )
+        for check_str in strings_not_displayed:
+            try:
+                self.check_page_for_string( check_str )
+                raise AssertionError, "String (%s) should not have been displayed on ldda info page." % check_str
+            except:
+                pass
         self.home()
     def ldda_edit_info( self, cntrller, library_id, folder_id, ldda_id, ldda_name, new_ldda_name='', template_refresh_field_name='1_field_name',
                         template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[] ):

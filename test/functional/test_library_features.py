@@ -534,6 +534,25 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library3.id ),
                              strings_displayed=[ folder5.name, folder5.description, ldda7.name ] )
+    def test_135_upload_unsorted_bam_to_library_using_file_path_with_link_to_file( self ):
+        """Test uploading 3unsorted.bam, using filesystem_paths option in combination with link_to_files"""
+        filename = '3unsorted.bam'
+        self.upload_library_dataset( cntrller='library_admin',
+                                     library_id=self.security.encode_id( library2.id ),
+                                     folder_id=self.security.encode_id( library2.root_folder.id ),
+                                     upload_option='upload_paths',
+                                     link_data_only='link_to_files',
+                                     filesystem_paths='test-data/3unsorted.bam' )
+        global ldda8
+        ldda8 = get_latest_ldda_by_name( filename )
+        assert ldda8 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda8 from the database'
+        # The upload above should produce an error condition in the uploaded library dataset since
+        # the uploaded bam file is not sorted, and we are linking to the file.
+        self.ldda_info( cntrller='library_admin',
+                        library_id=self.security.encode_id( library2.id ),
+                        folder_id=self.security.encode_id( library2.root_folder.id ),
+                        ldda_id=self.security.encode_id( ldda8.id ),
+                        strings_displayed=[ 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be' ] )
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user

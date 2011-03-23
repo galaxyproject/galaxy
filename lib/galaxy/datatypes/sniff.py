@@ -267,7 +267,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     >>> fname = get_test_fname('1.bam')
     >>> guess_ext(fname)
     'bam'
-    >>> fname = get_test_fname('3.bam')
+    >>> fname = get_test_fname('3unsorted.bam')
     >>> guess_ext(fname)
     'bam'
     """

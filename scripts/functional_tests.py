@@ -93,6 +93,7 @@ def main():
                            nginx_x_accel_redirect_base = '/_x_accel_redirect',
                            nginx_upload_store = nginx_upload_store,
                            nginx_upload_path = '/_upload',
+                           allow_library_path_paste = 'True',
                            cluster_files_directory = cluster_files_directory,
                            job_working_directory = job_working_directory,
                            outputs_to_working_directory = 'True',
@@ -102,7 +103,7 @@ def main():
                            track_jobs_in_database = 'True',
                            job_scheduler_policy = 'FIFO',
                            start_job_runners = 'pbs',
-                           default_cluster_job_runner = default_cluster_job_runner, )
+                           default_cluster_job_runner = default_cluster_job_runner )
             psu_production = True
         else:
             if 'GALAXY_TEST_DBPATH' in os.environ:
@@ -161,6 +162,7 @@ def main():
                                    allow_user_creation = True,
                                    allow_user_deletion = True,
                                    admin_users = 'test@bx.psu.edu',
+                                   allow_library_path_paste = True,
                                    library_import_dir = galaxy_test_file_dir,
                                    user_library_import_dir = os.path.join( galaxy_test_file_dir, 'users' ),
                                    global_conf = global_conf,

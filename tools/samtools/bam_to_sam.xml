@@ -18,7 +18,7 @@
     <test>
       <!--
       Bam-to-Sam command:
-      samtools view -o bam_to_sam_out1.sam test-data/3.bam
+      samtools view -o bam_to_sam_out1.sam test-data/3unsorted.bam
       -->
       <param name="input1" value="1.bam" ftype="bam" />
       <output name="output1" file="bam_to_sam_out1.sam" sorted="True" />
@@ -28,7 +28,7 @@
       Bam-to-Sam command:
       samtools view -o bam_to_sam_out2.sam test-data/1.bam
       -->
-      <param name="input1" value="3.bam" ftype="bam" />
+      <param name="input1" value="3unsorted.bam" ftype="bam" />
       <output name="output1" file="bam_to_sam_out2.sam" sorted="True" />
     </test>
   </tests>

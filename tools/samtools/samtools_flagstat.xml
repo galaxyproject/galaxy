@@ -13,7 +13,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="3.bam" ftype="bam" />
+      <param name="input1" value="3unsorted.bam" ftype="bam" />
       <output name="output1" file="samtools_flagstat_out1.txt" />
     </test>
   </tests>

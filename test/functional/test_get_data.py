@@ -395,18 +395,18 @@ class UploadData( TwillTestCase ):
         assert hda.metadata.bam_index is not None, "Bam index was not correctly created for 1.bam"
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0155_upload_file( self ):
-        """Test uploading 3.bam, which is an unsorted Bam file, NOT setting the file format"""
+        """Test uploading 3unsorted.bam, which is an unsorted Bam file, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
         history = get_latest_history_for_user( admin_user )
-        self.upload_file( '3.bam' )
+        self.upload_file( '3unsorted.bam' )
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
-        # Since 3.bam is not sorted, we cannot verify dataset correctness since the uploaded
+        # Since 3unsorted.bam is not sorted, we cannot verify dataset correctness since the uploaded
         # dataset will be sorted.  However, the check below to see if the index was created is
         # sufficient.
         self.check_history_for_string( '<span class="bam">bam</span>' )
         # Make sure the Bam index was created
-        assert hda.metadata.bam_index is not None, "Bam index was not correctly created for 3.bam"
+        assert hda.metadata.bam_index is not None, "Bam index was not correctly created for 3unsorted.bam"
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0160_url_paste( self ):
         """Test url paste behavior"""

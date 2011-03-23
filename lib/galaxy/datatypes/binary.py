@@ -51,16 +51,72 @@ class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
-    
-    def _is_coordinate_sorted(self, filename):
-        """Check if the input BAM file is sorted from the header information.
-        """
-        params = ["samtools", "view", "-H", filename]
-        output = subprocess.Popen(params, stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[0]
+
+    def _get_samtools_version( self ):
+        # Determine the version of samtools being used.  Wouldn't it be nice if
+        # samtools provided a version flag to make this much simpler?
+        version = '0.0.0'
+        output = subprocess.Popen( [ 'samtools' ], stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[1]
+        lines = output.split( '\n' )
+        for line in lines:
+            if line.lower().startswith( 'version' ):
+                # Assuming line looks something like: version: 0.1.12a (r862)
+                version = line.split()[1]
+                break
+        return version
+    def _is_coordinate_sorted( self, file_name ):
+        """See if the input BAM file is sorted from the header information."""
+        params = [ "samtools", "view", "-H", file_name ]
+        output = subprocess.Popen( params, stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[0]
         # find returns -1 if string is not found
-        return output.find("SO:coordinate") != -1 or output.find("SO:sorted") != -1
+        return output.find( "SO:coordinate" ) != -1 or output.find( "SO:sorted" ) != -1
     def dataset_content_needs_grooming( self, file_name ):
-        return not self._is_coordinate_sorted( file_name )
+        """See if file_name is a sorted BAM file"""
+        version = self._get_samtools_version()
+        if version < '0.1.13':
+            return not self._is_coordinate_sorted( file_name )
+        else:
+            # Samtools version 0.1.13 or newer produces an error condition when attempting to index an
+            # unsorted bam file - see http://biostar.stackexchange.com/questions/5273/is-my-bam-file-sorted.
+            # So when using a newer version of samtools, we'll first check if the input BAM file is sorted
+            # from the header information.  If the header is present and sorted, we do nothing by returning False.
+            # If it's present and unsorted or if it's missing, we'll index the bam file to see if it produces the
+            # error.  If it does, sorting is needed so we return True (otherwise False).
+            #
+            # TODO: we're creating an index file here and throwing it away.  We then create it again when
+            # the set_meta() method below is called later in the job process.  We need to enhance this overall
+            # process so we don't create an index twice.  In order to make it worth the time to implement the
+            # upload tool / framework to allow setting metadata from directly within the tool itself, it should be
+            # done generically so that all tools will have the ability.  In testing, a 6.6 gb BAM file took 128
+            # seconds to index with samtools, and 45 minutes to sort, so indexing is relatively inexpensive.
+            if self._is_coordinate_sorted( file_name ):
+                return False
+            index_name = tempfile.NamedTemporaryFile( prefix = "bam_index" ).name
+            stderr_name = tempfile.NamedTemporaryFile( prefix = "bam_index_stderr" ).name
+            command = 'samtools index %s %s' % ( file_name, index_name )
+            proc = subprocess.Popen( args=command, shell=True, stderr=open( stderr_name, 'wb' ) )
+            exit_code = proc.wait()
+            stderr = open( stderr_name ).read().strip()
+            if stderr:
+                try:
+                    os.unlink( index_name )
+                except OSError:
+                    pass
+                try:
+                    os.unlink( stderr_name )
+                except OSError:
+                    pass
+                # Return True if unsorted error condition is found (find returns -1 if string is not found).
+                return stderr.find( "[bam_index_core] the alignment is not sorted" ) != -1
+            try:
+                os.unlink( index_name )
+            except OSError:
+                pass
+            try:
+                os.unlink( stderr_name )
+            except OSError:
+                pass
+            return False
     def groom_dataset_content( self, file_name ):
         """
         Ensures that the Bam file contents are sorted.  This function is called
@@ -104,7 +160,6 @@ class Bam( Binary ):
         index_file = dataset.metadata.bam_index
         if not index_file:
             index_file = dataset.metadata.spec['bam_index'].param.new_file( dataset = dataset )
-        
         # Create the Bam index
         ##$ samtools index
         ##Usage: samtools index <in.bam> [<out.index>]
