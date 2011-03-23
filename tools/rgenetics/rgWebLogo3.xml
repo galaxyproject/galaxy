@@ -68,7 +68,7 @@
       <param name="input" value="rgClustal_testout.fasta" />
       <param name = "logoname" value="Galaxy/Rgenetics weblogo" />
       <param name = "outformat" value="jpeg" />
-      <param name = "range" value="complete" />
+      <param name = "mode" value="complete" />
       <param name = "size" value="medium" />      
       <param name = "colours" value="auto" />
       <output name="output" file="rgWebLogo3_test.jpg" ftype="jpg" />
