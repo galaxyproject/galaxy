@@ -2,7 +2,7 @@
 <tool name="metabolicMine" id="metabolicmine" tool_type="data_source">
     <description>server</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://www.metabolicmine.org/beta/begin.do" check_values="false" method="get" target="_top"> 
+    <inputs action="http://www.metabolicmine.org/beta/begin.do" check_values="false" method="get"> 
         <display>go to metabolicMine server $GALAXY_URL</display>
     </inputs>
     <uihints minwidth="800"/>

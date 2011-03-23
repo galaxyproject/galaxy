@@ -2,7 +2,7 @@
 <tool name="YeastMine" id="yeastmine" tool_type="data_source">
     <description>server</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://yeastmine.yeastgenome.org/yeastmine/begin.do" check_values="false" method="get" target="_top"> 
+    <inputs action="http://yeastmine.yeastgenome.org/yeastmine/begin.do" check_values="false" method="get"> 
         <display>go to yeastMine server $GALAXY_URL</display>
     </inputs>
     <uihints minwidth="800"/>

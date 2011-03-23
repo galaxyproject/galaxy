@@ -7,7 +7,7 @@
 <tool name="Flymine" id="flymine" tool_type="data_source">
     <description>server</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://www.flymine.org" check_values="false" method="get" target="_top"> 
+    <inputs action="http://www.flymine.org" check_values="false" method="get"> 
         <display>go to Flymine server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=flymine" />
     </inputs>
