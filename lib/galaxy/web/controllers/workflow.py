@@ -329,8 +329,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         if stored.importable == False:
             return trans.show_error_message( "The owner of this workflow has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True )
-        elif stored.user == trans.user:
-            return trans.show_error_message( "You can't import this workflow because you own it.<br>You can %s" % referer_message, use_panels=True )
         elif stored.deleted:
             return trans.show_error_message( "You can't import this workflow because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
         else:
