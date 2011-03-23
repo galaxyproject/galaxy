@@ -1,13 +1,16 @@
 <tool id="weblogo3" name="Sequence Logo" version="0.1">
    <description>generator for fasta (eg Clustal alignments)</description>
    <command> 
-    weblogo -F $outformat -s $size -f $input -o $output -t "$logoname"
+    weblogo -F $outformat -s $size -f $input -o $output -t "$logoname" -c "$colours"
+#if $range.mode == 'part'
+-l "$range.seqstart" -u "$range.seqend"
+#end if
    </command>
   <inputs>
    <page>
     <param format="fasta" name="input" type="data" label="Fasta File" />
-    <param name="logoname" label="Name for output logo - will appear on graphics" type="text" size="50" value="Galaxy/Rgenetics weblogo" />
-    <param name="outformat" type="select" label="Output weblogo format" >
+    <param name="logoname" label="Title for output Sequence Logo" type="text" size="50" value="Galaxy-Rgenetics Sequence Logo" />
+    <param name="outformat" type="select" label="Output format for image (or text report)" >
       <option value="png" selected="True">PNG screen quality</option>
       <option value="png_print">High quality printable PNG</option>
       <option value="pdf">PDF</option>
@@ -15,6 +18,32 @@
       <option value="eps">EPS</option>
       <option value="txt">Text (shows the detailed calculations for each position - no image)</option>
     </param>
+    <param name="colours" type="select" label="Colour scheme for output Sequence Logo" 
+      help="Note that some of these only make sense for protein sequences!">
+      <option value="auto" selected="True">Default automatic colour selection</option>
+      <option value="base pairing">Base pairing</option>
+      <option value="charge">Charge colours</option>
+      <option value="chemistry">Chemistry colours</option>
+      <option value="classic">Classical colours</option>
+      <option value="hydrophobicity">Hydrophobicity</option>
+      <option value="monochrome">monochrome</option>
+    </param>
+    
+    <conditional name="range">
+        <param name="mode" type="select" label="Include entire sequence (default) or specify a subsequence range to use">
+          <option value="complete" selected="true">complete sequence</option>
+          <option value="part">Only use a part of the sequence</option>
+        </param>
+        <when value="complete">
+        </when>
+        <when value="part">    
+           <param name="seqstart" size="5" type="integer" value="1" help="WARNING: Specifying indexes outside the sequence lengths will cause unpredictable but bad consequences!" 
+             label="Index (eg 1=first letter) of the start of the sequence range to include in the logo">
+           </param>
+           <param name="seqend" size="5" type="integer" value="99999" label="Index (eg 75=75th letter) of the end of the sequence range to include in the logo" >
+           </param> 
+        </when>
+    </conditional>
     <param name="size" type="select" label="Output weblogo size" >
       <option value="large" selected="True">Large</option>
       <option value="medium">Medium</option>
@@ -39,8 +68,9 @@
       <param name="input" value="rgClustal_testout.fasta" />
       <param name = "logoname" value="Galaxy/Rgenetics weblogo" />
       <param name = "outformat" value="jpeg" />
-      <param name = "size" value="medium" />
-    
+      <param name = "range" value="complete" />
+      <param name = "size" value="medium" />      
+      <param name = "colours" value="auto" />
       <output name="output" file="rgWebLogo3_test.jpg" ftype="jpg" />
     </test>
 
@@ -51,33 +81,21 @@
 
 This tool uses Weblogo3_ in Galaxy to generate a sequence logo. The input file must be a fasta file in your current history.
 
+It is recommended for (eg) viewing multiple sequence alignments output from the clustalw tool - set the output to fasta and feed
+it in to this tool.
+
 A typical output looks like this
 
 .. image:: ./static/images/rgWebLogo3_test.jpg
 
 ----
 
-**Why use WebLogo in Galaxy?**
-
-Weblogo3_ is a good example of an easy to use tool and there are plenty of other web accessible weblogo generator sites available. 
-
-However, none of those offer the combination of:
-
-1) persistence of analyses and data in multiple shareable histories, pages and libraries 
-
-2) convenient access to shared data libraries, workflows and user controlled pages,  and to 3rd party data sources like UCSC tables. 
-
-3) analyses integrated with many other applicable generic and specialized tools already available for downstream processing.
-
-that you get for free when you use Galaxy. No muss; no fuss.
-
-----
 
 **Attribution**
 
 Weblogo attribution and associated documentation are available at Weblogo3_
 
-This wrapper was written by Ross Lazarus for the rgenetics project and the source code is licensed under the LGPL_ like other rgenetics artefacts
+This Galaxy wrapper was written by Ross Lazarus for the rgenetics project and the source code is licensed under the LGPL_ like other rgenetics artefacts
 
 .. _Weblogo3: http://weblogo.berkeley.edu/
 

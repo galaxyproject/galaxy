@@ -79,7 +79,7 @@
       <param name = "mode" value="complete" />
       <param name = "out_order" value="ALIGNED" />
       <output name="output" file="rgClustal_testout.fasta" ftype="fasta" />
-      <output name="output" file="rgClustal_testout.log" ftype="txt" lines_diff="5" />
+      <output name="outlog" file="rgClustal_testout.log" ftype="txt" lines_diff="5" />
      </test>
   </tests>
   <help>
@@ -109,15 +109,17 @@ Clustal attribution and associated documentation are available at Clustsrc_
 
 The first iteration of this Galaxy wrapper was written by Hans-Rudolf Hotz - see Clustfirst_
 
-It was modified by Ross Lazarus for the rgenetics project
+It was modified by Ross Lazarus for the rgenetics project - tests and some additional parameters were added
 
-This wrapper is now LGPL
+This wrapper is released licensed under the LGPL_
 
 .. _ClustalW2: http://www.ebi.ac.uk/2can/tutorials/protein/clustalw.html  
 
 .. _Clustsrc: http://www.clustal.org
 
 .. _Clustfirst: http://lists.bx.psu.edu/pipermail/galaxy-dev/2010-November/003732.html
+
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
 
   </help>
 
