@@ -9,3 +9,6 @@ tair	http://arabidopsis.org/cgi-bin/gbrowse/	arabidopsis_tair8,arabidopsis
 modencode_worm	http://modencode.oicr.on.ca/fgb2/gbrowse/worm	ce6
 modencode_fly	http://modencode.oicr.on.ca/fgb2/gbrowse/fly	dm2
 
+#SGD
+sgd_yeast	http://browse.yeastgenome.org/fgb2/gbrowse/scgenome	Saccharomcyes_cerevisiae_S288C_SGD2010
+

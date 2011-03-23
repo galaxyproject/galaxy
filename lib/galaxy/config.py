@@ -94,7 +94,7 @@ class Configuration( object ):
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
-        self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,tair,modencode_worm,modencode_fly" ).lower().split(",")
+        self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "wormbase,tair,modencode_worm,modencode_fly,sgd_yeast" ).lower().split(",")
         self.genetrack_display_sites = kwargs.get( 'genetrack_display_sites', "main,test" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )

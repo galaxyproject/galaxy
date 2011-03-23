@@ -182,7 +182,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #ucsc_display_sites = main,test,archaea,ucla
 
 # GBrowse servers: tool-data/shared/gbrowse/gbrowse_build_sites.txt
-#gbrowse_display_sites = wormbase,tair,modencode_worm,modencode_fly
+#gbrowse_display_sites = wormbase,tair,modencode_worm,modencode_fly,yeast_sgd
 
 # GeneTrack servers: tool-data/shared/genetrack/genetrack_sites.txt
 #genetrack_display_sites = main,test
