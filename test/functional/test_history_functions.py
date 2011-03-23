@@ -189,9 +189,10 @@ class TestHistory( TwillTestCase ):
         if not history3.importable:
             raise AssertionError, "History 3 is not marked as importable after make_accessible_via_link"
         # Try importing history3
-        self.import_history_via_url( self.security.encode_id( history3.id ),
-                                     admin_user.email,
-                                     strings_displayed_after_submit=[ 'You cannot import your own history.' ] )
+        #Importing your own history was enabled in 5248:dc9efb540f61.
+        #self.import_history_via_url( self.security.encode_id( history3.id ),
+        #                             admin_user.email,
+        #                             strings_displayed_after_submit=[ 'You cannot import your own history.' ] )
         # Disable access via link for history3.
         self.disable_access_via_link( self.security.encode_id( history3.id ),
                                      strings_displayed=[ 'Anyone can view and import this history' ],
