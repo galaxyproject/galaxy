@@ -91,7 +91,7 @@
           <param name="ref" value="hg18chr21" />
           <param name="input" value="srma_in1.bam" type="bam" />
           <param name="source_select" value="pre_set" />
-          <output name="output" file="srma_out1.bam"/> 
+          <output name="output" file="srma_out1.bam" ftype="bam"/> 
       </test>
       <test>
           <!-- Commands to run to prepare test files (uses custom genome):
@@ -118,7 +118,7 @@
           <param name="correctBases" value="true" />
           <param name="useSequenceQualities" value="true" />
           <param name="maxHeapSize" value="8192" />
-          <output name="output" file="srma_out2.bam"/> 
+          <output name="output" file="srma_out2.bam" ftype="bam"/> 
       </test>
   </tests>
   <help>
