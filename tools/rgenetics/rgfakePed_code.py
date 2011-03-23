@@ -40,7 +40,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
     ftype,pext = lookup[outFormat]
     data.name = '%s.%s' % (base_name,pext) # that's how they've been named in rgfakePhe.py
     data.change_datatype(pext)
-    data.file_name = data.file_name
+    #data.file_name = data.file_name
     data.metadata.base_name = base_name
     data.readonly = True
     out_data[pname] = data

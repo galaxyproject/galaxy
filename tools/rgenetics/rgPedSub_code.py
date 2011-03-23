@@ -70,7 +70,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
     trantab = string.maketrans(killme,'_'*len(killme))
     title = title.translate(trantab)
     info = '%s filtered by rgPedSub.py at %s' % (title,timenow())
-    data.file_name = data.file_name
+    #data.file_name = data.file_name
     data.metadata.base_name = basename
     data.name = '%s.lped' % title
     data.info = info

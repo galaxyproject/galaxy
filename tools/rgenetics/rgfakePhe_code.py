@@ -35,7 +35,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
     base_name = base_name.translate(ptran)
     data = out_data['ppheout']
     data.name = '%s.phe' % (base_name) # that's how they've been named in rgfakePhe.py
-    data.file_name = data.file_name
+    #data.file_name = data.file_name
     data.metadata.base_name = base_name
     out_data['pheout'] = data
     app.model.context.flush()
