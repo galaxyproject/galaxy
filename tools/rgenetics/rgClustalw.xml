@@ -1,21 +1,22 @@
 <tool id="clustalw" name="ClustalW" version="0.1">
    <description>multiple sequence alignment program for DNA or proteins</description>
-   <command> 
+   <command interpreter="python"> 
+    rgClustalw.py -i "$input" -o "$output" -s "$out_order" -l "$outlog" -t "$outname" -d "$dnarna"
     #if   ($range.mode=="part")
-    clustalw2 -infile=$input -outfile=$output -OUTORDER=$out_order -RANGE=$range.seq_range_start,$range.seq_range_end
-    #elif ($range.mode=="complete")
-    clustalw2 -infile=$input -outfile=$output -OUTORDER=$out_order 
+-b "$range.seq_range_start" -e "$range.seq_range_end"
     #end if
     #if ($outcontrol.outform=="clustal")
-    -SEQNOS=$outcontrol.out_seqnos
+-f "CLUSTAL"
+    #end if
+    #if ($outcontrol.outform=="clustal" and $outcontrol.out_seqnos=="ON")
+-q "ON"
     #end if
     #if ($outcontrol.outform=="phylip")
-    -OUTPUT=PHYLIP
+-f "PHYLIP"
     #end if
     #if ($outcontrol.outform=="fasta")
-    -OUTPUT=FASTA
+-f "FASTA"
     #end if
-    -TYPE=$dnarna 1&gt;$outlog  2&gt;&amp;1
    </command>
   <inputs>
    <page>
