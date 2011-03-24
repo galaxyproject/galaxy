@@ -245,9 +245,10 @@ $.extend(Cache.prototype, {
 /**
  * Data manager for a track.
  */
-var DataManager = function(num_elements, track) {
+var DataManager = function(num_elements, track, subset) {
     Cache.call(this, num_elements);
     this.track = track;
+    this.subset = (subset !== undefined ? subset : true);
 };
 $.extend(DataManager.prototype, Cache.prototype, {
     /**
@@ -283,30 +284,33 @@ $.extend(DataManager.prototype, Cache.prototype, {
         }
 
         //
+        // If data supports subsetting:
         // Look in cache for data that can be used. Data can be reused if it
         // has the requested data and is not summary tree and has details.
         // TODO: this logic could be improved if the visualization knew whether
         // the data was "index" or "data." Also could slice the data so that
         // only data points in request are returned.
         //
-        var key, split_key, entry_low, entry_high, mode, entry;
-        for (var i = 0; i < this.key_ary.length; i++) {
-            key = this.key_ary[i];
-            split_key = this.split_key(key);
-            entry_low = split_key[0];
-            entry_high = split_key[1];
+        if (this.subset) {
+            var key, split_key, entry_low, entry_high, mode, entry;
+            for (var i = 0; i < this.key_ary.length; i++) {
+                key = this.key_ary[i];
+                split_key = this.split_key(key);
+                entry_low = split_key[0];
+                entry_high = split_key[1];
             
-            if (low >= entry_low && high <= entry_high) {
-                // This track has the range of data needed; check other attributes.
-                entry = this.obj_cache[key];
-                if (entry.dataset_type !== "summary_tree" && entry.extra_info !== "no_detail") {
-                    // Data is usable.
-                    this.move_key_to_end(key, i);
-                    return entry;
+                if (low >= entry_low && high <= entry_high) {
+                    // This track has the range of data needed; check other attributes.
+                    entry = this.obj_cache[key];
+                    if (entry.dataset_type !== "summary_tree" && entry.extra_info !== "no_detail") {
+                        // Data is usable.
+                        this.move_key_to_end(key, i);
+                        return entry;
+                    }
                 }
             }
         }
-        
+                
         //
         // Load data from server.
         //
@@ -1477,20 +1481,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 track.make_name_popup_menu();
             };
         }
-        
-        //
-        // For ReadTracks: show/hide insertions.
-        //
-        if (track.track_type == "ReadTrack") {
-            // Show/hide insertions.
-            var text = (track.show_insertions ? "Hide Insertions" : "Show Insertions");
-            track_dropdown[text] = function() {
-                track.show_insertions = !track.show_insertions;
-                track.draw(true);
-                track.make_name_popup_menu();
-            };            
-        }
-        
+                
         //
         // List chrom/contigs with data option.
         //
@@ -1526,7 +1517,6 @@ $.extend( TiledTrack.prototype, Track.prototype, {
      * tiles after drawing new tiles.
      */
     draw: function(force, clear_after) {
-        console.log(this.name, force, clear_after);
         var low = this.view.low,
             high = this.view.high,
             range = high - low,
@@ -1643,16 +1633,16 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     $.when(track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
                                                      resolution, track.data_url_extra_params)).then(function() {
                         // Data available for track. 
-                        result = track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
-                                                            resolution, track.data_url_extra_params);
+                        var result = track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
+                                                                resolution, track.data_url_extra_params);
                         // If sequence data needed, get that and draw. Otherwise draw.
                         if (view.reference_track && w_scale > CHAR_WIDTH_PX) {
                             $.when(view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
                                                                             track.mode, resolution, 
                                                                             view.reference_track.data_url_extra_params)).then(function() {
-                                seq_data = view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
-                                                                                    track.mode, resolution, 
-                                                                                    view.reference_track.data_url_extra_params);
+                                var seq_data = view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
+                                                                                        track.mode, resolution, 
+                                                                                        view.reference_track.data_url_extra_params);
                                 draw_and_show_tile(id, result, resolution, tile_index, parent_element, w_scale, seq_data);
                             });
                         }
@@ -1871,7 +1861,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
-    this.data_cache = new DataManager(CACHED_DATA, this);
+    this.data_cache = new DataManager(CACHED_DATA, this, false);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 $.extend(ReferenceTrack.prototype, TiledTrack.prototype, {
@@ -2517,9 +2507,7 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
      * Draw FeatureTrack tile.
      */
     draw_tile: function(result, resolution, tile_index, parent_element, w_scale, ref_seq) {
-        // Fetch reference sequence data if it exists and we are displaying
         var track = this;
-
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = tile_high - tile_low,
@@ -2736,9 +2724,26 @@ $.extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
 
 var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
+    
+    this.track_config = new TrackConfig( {
+        track: this,
+        params: [
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: '#444' },
+            { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
+            { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
+            { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
+            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        ], 
+        saved_values: prefs,
+        onchange: function() {
+            this.track.tile_cache.clear();
+            this.track.draw();
+        }
+    });
+    this.prefs = this.track_config.values;
+    
     this.track_type = "ReadTrack";
-    this.difference_mode = true;
-    this.show_insertions = false;
     this.make_name_popup_menu();
 };
 $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
@@ -2758,7 +2763,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         }
         else { // mode === "Pack"
             y_scale = PACK_TRACK_HEIGHT;
-            if (this.show_insertions) {
+            if (this.track_config.values.show_insertions) {
                 y_scale *= 2;
             }
         }
@@ -2781,7 +2786,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         // Gap is needed so that read is offset and hence first base can be drawn on read.
         // TODO-FIX: using this gap offsets reads so that their start is not visually in sync with other tracks.
         if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
-            gap = Math.ceil(CHAR_WIDTH_PX/2 + 1);
+            gap = Math.round(w_scale/2);
         }
         if (!cigar) {
             // If no cigar string, then assume all matches
@@ -2819,7 +2824,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                             // TODO: this can be made much more efficient by computing the complete sequence
                             // to draw and then drawing it.
                             for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                if (this.difference_mode && ref_seq) {
+                                if (this.track_config.values.show_differences && ref_seq) {
                                     var ref_char = ref_seq[seq_start - tile_low + c];
                                     if (!ref_char || ref_char.toLowerCase() === seq[c].toLowerCase()) {
                                         continue;
@@ -2869,7 +2874,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                         // Insertion point is between the sequence start and the previous base: (-gap) moves
                         // back from sequence start to insertion point.
-                        if (this.show_insertions) {
+                        if (this.track_config.values.show_insertions) {
                             //
                             // Show inserted sequence above, centered on insertion point.
                             //
@@ -2955,7 +2960,6 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
      * Draw a complete read.
      */
     draw_element: function(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width, left_offset, ref_seq) {
-        
         // All features need a start, end, and vertical center.
         var 
             feature_uid = feature[0],
@@ -3029,7 +3033,7 @@ var ToolDataFeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, fil
     this.dataset_check_url = dataset_state_url;
 };
 
-$.extend( ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+$.extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     /**
      * For this track type, the predraw init sets up postdraw init. 
      */
