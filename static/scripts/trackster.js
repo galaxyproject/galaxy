@@ -2782,8 +2782,10 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
         
+        // Gap is needed so that read is offset and hence first base can be drawn on read.
+        // TODO-FIX: using this gap offsets reads so that their start is not visually in sync with other tracks.
         if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
-            gap = Math.round(w_scale/2);
+            gap = Math.ceil(CHAR_WIDTH_PX/2 + 1);
         }
         if (!cigar) {
             // If no cigar string, then assume all matches
