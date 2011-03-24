@@ -1,6 +1,6 @@
 #Dan Blankenberg
 import sys
-from galaxy_utils.sequence.fastq import fastqReader, fastqAggregator, fastqWriter
+from galaxy_utils.sequence.fastq import fastqReader, fastqVerboseErrorReader, fastqAggregator, fastqWriter
 
 def main():
     input_filename = sys.argv[1]
@@ -15,7 +15,11 @@ def main():
     aggregator = fastqAggregator()
     out = fastqWriter( open( output_filename, 'wb' ), format = output_type, force_quality_encoding = force_quality_encoding )
     read_count = None
-    for read_count, fastq_read in enumerate( fastqReader( open( input_filename ), format = input_type ) ):
+    if summarize_input:
+        reader = fastqVerboseErrorReader
+    else:
+        reader = fastqReader
+    for read_count, fastq_read in enumerate( reader( open( input_filename ), format = input_type ) ):
         if summarize_input:
             aggregator.consume_read( fastq_read )
         out.write( fastq_read )

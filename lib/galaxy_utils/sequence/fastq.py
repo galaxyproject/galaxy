@@ -455,6 +455,44 @@ class fastqReader( object ):
         while True:
             yield self.next()
 
+class ReadlineCountFile( object ):
+    def __init__( self, f ):
+        self.__file = f
+        self.readline_count = 0
+    def readline( self, *args, **kwds ):
+        self.readline_count += 1
+        return self.__file.readline( *args, **kwds )
+    def __getattr__( self, name ):
+        return getattr( self.__file, name )
+
+class fastqVerboseErrorReader( fastqReader ):
+    MAX_PRINT_ERROR_BYTES = 1024
+    def __init__( self, fh, **kwds ):
+        super( fastqVerboseErrorReader, self ).__init__( ReadlineCountFile( fh ), **kwds  )
+        self.last_good_identifier = None
+    def next( self ):
+        last_good_end_offset = self.file.tell()
+        last_readline_count = self.file.readline_count
+        try: 
+            block = super( fastqVerboseErrorReader, self ).next()
+            self.last_good_identifier = block.identifier
+            return block
+        except StopIteration, e:
+            raise e
+        except Exception, e:
+            print "There was an error reading your input file. Your input file is likely malformed.\nIt is suggested that you double-check your original input file for errors -- helpful information for this purpose has been provided below.\nHowever, if you think that you have encountered an actual error with this tool, please do tell us by using the bug reporting mechanism.\n\nThe reported error is: '%s'." % e
+            if self.last_good_identifier is not None:
+                print "The last valid FASTQ read had an identifier of '%s'." % self.last_good_identifier
+            else:
+                print "The error occurred at the start of your file and no valid FASTQ reads were found."
+            error_offset = self.file.tell()
+            error_byte_count = error_offset - last_good_end_offset
+            print_error_bytes = min( self.MAX_PRINT_ERROR_BYTES, error_byte_count )
+            print "The error in your file occurs between lines '%i' and '%i', which corresponds to byte-offsets '%i' and '%i', and contains the text (%i of %i bytes shown):\n" % ( last_readline_count + 1, self.file.readline_count, last_good_end_offset, error_offset, print_error_bytes, error_byte_count )
+            self.file.seek( last_good_end_offset )
+            print self.file.read( print_error_bytes )
+            raise e
+
 class fastqNamedReader( object ):
     def __init__( self, fh, format = 'sanger' ):
         self.file = fh
