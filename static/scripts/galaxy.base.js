@@ -77,7 +77,7 @@ function make_popupmenu(button_element, initial_options) {
             x = Math.max( x, $(document).scrollLeft() + 20 );
 
             wrapper.css( {
-               top: e.pageY - 5,
+               top: e.pageY - 15,
                left: x
             } );
         }, 10);

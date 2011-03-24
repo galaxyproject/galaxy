@@ -64,8 +64,8 @@ table.simple td{padding:10px 8px 0px 8px;}
 table.simple tbody tr:hover td{color:#333;}
 table.tabletip{width:100%;border-collapse:collapse;text-align:left;}
 table.tabletip th{white-space:nowrap;border-bottom:1px solid #444;padding-right:3px;}
-table.tabletip td{border-bottom:1px solid #444;}
-table.tabletip tbody tr:hover td{background-color:#111;}
+table.tabletip td{border-bottom:1px solid #ddd;}
+table.tabletip tbody tr:hover td{background-color:#eee;}
 table.colored{border-top:solid #d8b365 1px;border-bottom:solid #d8b365 1px;}
 table.colored td,table.colored th{text-align:left;padding:5px;}
 table.colored tr.header{background:#ebd9b2;background-image:url(form_title_bg.png);background-repeat:repeat-x;background-position:top;border-bottom:solid #d8b365 1px;font-weight:bold;}
@@ -103,13 +103,13 @@ ul.manage-table-actions li{display:block;float:left;margin-left:0.5em;}
 .action-button > *{vertical-align:middle;}
 .action-button:hover{color:black;background:#dddddd;}
 .action-button:active{color:white;background:#aaaaaa;}
-.menubutton{display:inline-block;cursor:pointer;position:relative;user-select:none;-moz-user-select:none;-webkit-user-select:none;border:solid transparent 1px;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em;padding:3px 0.5em;margin:-3px -0.5em;}
+.menubutton{display:inline-block;cursor:pointer;position:relative;user-select:none;-moz-user-select:none;-webkit-user-select:none;border:solid transparent 1px;-moz-border-radius:0.25em;-webkit-border-radius:0.25em;border-radius:0.25em;padding:1px 0.25em;margin:-1px -0.25em;}
 .menubutton .label{position:relative;display:block;border-right:none;}
 .menubutton.action-button{border-color:#aaaaaa;}
-.menubutton.popup,.action-button.popup{padding-right:20px;background-image:url(../images/dropdownarrow.png);background-repeat:no-repeat;background-position:right 8px;}
+.menubutton.popup,.action-button.popup{padding-right:20px;background-image:url(../images/dropdownarrow.png);background-repeat:no-repeat;background-position:right 7px;}
 .menubutton:hover{border-color:#aaaaaa;}
 .menubutton.popup.split{padding-right:2em;}
-.menubutton.popup.split:hover{background:url(../images/ddarrowsplit.png) no-repeat right -38px;}
+.menubutton.popup.split:hover{background:url(../images/ddarrowsplit.png) no-repeat right -39px;}
 .overlay-border{position:absolute;top:0;left:0;height:100%;width:100%;padding:1em;margin:-1em;background-color:rgba(0,0,0,0.5);-moz-border-radius:1em;-webkit-border-radius:1em;z-index:-1;}
 div.popmenu-wrapper{position:absolute;top:100%;z-index:20000;}
 div.popmenu-wrapper ul{display:block;margin:0;padding:0;background:white;color:#333;font-weight:bold;font-style:normal;white-space:nowrap;border:solid #aaaaaa 1px;padding:3px 0;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em;user-select:none;-moz-user-select:none;-webkit-user-select:none;}

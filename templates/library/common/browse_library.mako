@@ -361,6 +361,7 @@
                 <span class="expandLink folder-${encoded_id}-click">
                     <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="folder_img-${folder.id}-popup">
                         <a class="folder-${encoded_id}-click" href="javascript:void(0);">
+                            <span class="rowIcon"></span>
                             %if folder.deleted:
                                 <div class="libraryItem-error">${folder.name}</div>
                             %else:

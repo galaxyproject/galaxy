@@ -1,3 +1,4 @@
+<%inherit file="/base.mako"/>
 <% from galaxy.util import nice_size %>
 
 <%def name="inputs_recursive( input_params, param_values, depth=1 )">
@@ -27,12 +28,12 @@
     <tr><th colspan="2" style="font-size: 120%;">${tool.name}</th></tr>
   </thead>
   <tbody>
-    <tr><th>Created:</th><td>${history.create_time.strftime("%b %d, %Y")}</td></tr>
-    <tr><th>Modified:</th><td>${history.update_time.strftime("%b %d, %Y")}</td></tr>
-##      <tr><th>Copied from another history?</td><td>${hda.source_library_dataset}</td></tr>
-    <tr><th>Filesize:</th><td>${nice_size(hda.dataset.file_size)}</td></tr>
-    <tr><th>Dbkey:</th><td>${hda.dbkey}</td></tr>
-    <tr><th>Format:</th><td>${hda.ext}</td></tr>
+    <tr><td>Created:</th><td>${history.create_time.strftime("%b %d, %Y")}</td></tr>
+    <tr><td>Modified:</th><td>${history.update_time.strftime("%b %d, %Y")}</td></tr>
+##      <tr><td>Copied from another history?</td><td>${hda.source_library_dataset}</td></tr>
+    <tr><td>Filesize:</th><td>${nice_size(hda.dataset.file_size)}</td></tr>
+    <tr><td>Dbkey:</th><td>${hda.dbkey}</td></tr>
+    <tr><td>Format:</th><td>${hda.ext}</td></tr>
     
 </table><br />
 <table class="tabletip">

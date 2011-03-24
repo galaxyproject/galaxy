@@ -11,9 +11,9 @@ ul{list-style:none;}
 .libraryTitle th{text-align:left;}
 pre.peek{background:white;color:black;width:100%;overflow:auto;}
 pre.peek th{color:white;background:#023858;}
-span.expandLink{padding-left:20px;display:inline-block;vertical-align:middle;background:url(../images/silk/resultset_next.png) no-repeat;}
+span.expandLink{padding-left:12px;display:inline-block;vertical-align:middle;background:url(../images/silk/resultset_next.png) no-repeat;}
 .folderRow.expanded span.expandLink{background:url(../images/silk/resultset_bottom.png) no-repeat;}
-.folderRow span.rowIcon{float:left;width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/folder.png);}
+.folderRow span.rowIcon{float:left;margin-right:5px;width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/folder.png);}
 .libraryItem-error{margin-right:2px;padding:0 2px 0 2px;border:1px solid #AA6666;background:#FFCCCC;}
 .libraryItem-queued{margin-right:2px;padding:0 2px 0 2px;border:1px solid #888888;background:#EEEEEE;}
 .libraryItem-running{margin-right:2px;padding:0 2px 0 2px;border:1px solid #AAAA66;background:#FFFFCC;}
