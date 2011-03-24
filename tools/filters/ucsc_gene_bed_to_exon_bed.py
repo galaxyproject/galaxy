@@ -103,13 +103,12 @@ def main():
                     i+=1
         #for non-intron regions:
             else:
-                shift = 0
                 for start, end in zip( exon_starts, exon_ends ):
                     start = max( start, region_start )
                     end = min( end, region_end )
                     if start < end:
                         if options.region == 'codon':
-                            start += shift
+                            start += (3 - ((start-region_start)%3))%3
                             c_start = start 
                             while c_start+3 <= end:
                                 if strand:
@@ -117,7 +116,6 @@ def main():
                                 else:
                                     print_tab_sep(out_file, chrom, c_start, c_start+3)
                                 c_start += 3
-                            shift = (3 - ((end-start)%3))%3
                         else:
                             if strand:
                                 print_tab_sep(out_file, chrom, start, end, name, "0", strand )
