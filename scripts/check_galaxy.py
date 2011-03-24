@@ -274,7 +274,7 @@ class Browser:
             self.get("/root/delete?id=%s" % did)
 
     def check_if_logged_in(self):
-        self.get("/user")
+        self.get("/user?cntrller=user")
         p = loggedinParser()
         p.feed(tc.browser.get_html())
         return p.logged_in
