@@ -741,9 +741,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         #
         try:
             subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=original_dataset.history )
-        except e:
+        except Exception, e:
             # Lots of things can go wrong when trying to execute tool.
-            return to_json_string( { "error" : True, "message" : e.str() } )
+            return to_json_string( { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) } )
         for output in subset_job_outputs.values():
             output.visible = False
         trans.sa_session.flush()
@@ -760,12 +760,6 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         
         return self.add_track_async( trans, output_dataset.id )
     
-    @web.expose
-    def woot( self, trans, ldda_id, target_type ):
-        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-        converted_dataset = ldda.get_converted_dataset( trans, target_type )
-        raise converted_dataset
-        
     #
     # Helper methods.
     #
