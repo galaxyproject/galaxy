@@ -48,25 +48,3 @@ def get_columns( input ):
     else:
         columns = [('?','?',False),]
     return columns
-
-
-def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
-    """Sets the name of the data
-       <outputs>
-       <data format="pdf" name="allqq" />
-       <data format="pdf" name="lowqq" parent="allqq"/>
-    </outputs>
-    """
-    job_name = param_dict.get( 'name', 'My rgQQplot' )
-    killme = string.punctuation + string.whitespace
-    trantab = string.maketrans(killme,'_'*len(killme))
-    newname = '%s.pdf' % job_name.translate(trantab)
-    lookup={}
-    lookup['allqq'] = newname
-    for aname in lookup.keys():
-       data = out_data[aname]
-       newname = lookup[aname]
-       data.name = newname
-       out_data[aname] = data
-    app.model.context.flush()
-

@@ -1,23 +1,21 @@
 <tool id="rgTDT1" name="Transmission Distortion:">
-    <code file="rgTDT_code.py"/>
-
     <description>for family data</description>
 
     <command interpreter="python">
-        rgTDT.py -i '$i.extra_files_path/$i.metadata.base_name' -o '$title1'
+        rgTDT.py -i '$i.extra_files_path/$i.metadata.base_name' -o '$title'
         -r '$out_file1' -l '$logf'  -g '$gffout'
     </command>
 
     <inputs>
        <param name="i"  type="data" label="Genotypes for analysis from your current history datasets"
           size="132" format="pbed" />
-       <param name='title1' type='text' value='rgTDT'  size="80"/>
+       <param name='title' type='text' value='rgTDT'  label="Title for the output to remind you what you did" size="80"/>
    </inputs>
 
    <outputs>
-       <data format="tabular" name="out_file1" />
-       <data format="gff" name="gffout" />
-       <data format="txt" name="logf" />
+       <data format="tabular" name="out_file1" label="${title}_rgTDT.xls"/>
+       <data format="gff" name="gffout" label="${title}_rgTDT.gff"/>
+       <data format="txt" name="logf" label="${title}_rgTDTlog.txt"/>
    </outputs>
 
 <tests>
@@ -29,7 +27,7 @@
    <composite_data value='tinywga.fam' />
    <edit_attributes type='name' value='tinywga' /> 
  </param>
- <param name='title1' value='rgTDTtest1' />
+ <param name='title' value='rgTDTtest1' />
  <output name='out_file1' file='rgTDTtest1_TDT.xls' ftype='tabular' compare="diff"/>
  <output name='gffout' file='rgTDTtest1_TDT_topTable.gff' ftype='gff' compare="diff" />
  <output name='logf' file='rgTDTtest1_TDT_log.txt' ftype='txt' lines_diff='79'/>
@@ -80,6 +78,31 @@ Finally, if you can't live without
 spreadsheet data, choose the .xls tab delimited format. It's not a stupid binary excel file. Just a plain old tab delimited
 one with a header. Fortunately excel is dumb enough to open these without much protest.
 
+
+----
+
+.. class:: infomark
+
+**Attribution**
+
+This Galaxy tool relies on Plink (see Plinksrc_) to test TDT models. 
+
+So, we rely on the author (Shaun Purcell) for the documentation you need specific to those settings - they are very nicely documented - see
+DOC_
+
+Tool and Galaxy datatypes originally designed and written for the Rgenetics
+series of whole genome scale statistical genetics tools by ross lazarus (ross.lazarus@gmail.com)
+
+Copyright Ross Lazarus March 2007
+This Galaxy wrapper is released licensed under the LGPL_ but is about as useful as a chocolate teapot without Plink which is GPL.
+
+I'm no lawyer, but it looks like you got GPL if you use this software. Good luck.
+
+.. _Plinksrc: http://pngu.mgh.harvard.edu/~purcell/plink/ 
+
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+
+.. _DOC: http://pngu.mgh.harvard.edu/~purcell/plink/anal.shtml#tdt
 
 </help>
 </tool>

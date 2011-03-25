@@ -1,6 +1,5 @@
 <tool id="rgGTOOL1" name="Converter">
-    <code file="listFiles.py"/> 
-    <code file="rgGTOOL_code.py"/> 
+
   
     <description>from linkage format to SNPTEST Marchini files</description>
   

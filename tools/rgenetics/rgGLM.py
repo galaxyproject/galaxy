@@ -95,6 +95,7 @@ def makeGFF(resf='',outfname='',logf=None,twd='.',name='track name',description=
     outf.close()
 
 
+
 def xformQassoc(resf='',outfname='',logf=None,twd='.'):
     """	plink.assoc.linear to gg file
 from the docs

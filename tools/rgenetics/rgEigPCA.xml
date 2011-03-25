@@ -1,5 +1,4 @@
 <tool id="rgEigPCA1" name="Eigensoft:">
-    <code file="rgEigPCA_code.py"/>
     <description>PCA Ancestry using SNP</description>
 
     <command interpreter="python">
@@ -27,11 +26,9 @@
    </inputs>
 
    <outputs>
-       <data name="out_file1" format="html" />
-       <data name="pca" format="txt" />
+       <data name="out_file1" format="html" label="${title}_rgEig.html"/>
+       <data name="pca" format="txt" label="${title}_rgEig.txt"/>
    </outputs>
-
-<!-- python $TOOLPATH/$TOOL.py "$INPATH/tinywga" "$NPRE" ${OUTPATH}/${NPRE}.html $OUTPATH 4 2 2 2 $OUTPATH/pca.out $BINPATH -->
 
 <tests>
  <test>
@@ -59,17 +56,45 @@
 
 **Syntax**
 
-- **Genotype data** is the input genotype file chosen from available library files.
-- **Title** is used to name the output files
-- **Tuning parameters** documented in the Eigensoft documentation - see below
+- **Genotype data** is an input genotype dataset in Plink lped (http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml) format. See below for notes
+- **Title** is used to name the output files so you can remember what the outputs are for
+- **Tuning parameters** are documented in the Eigensoft (http://genepath.med.harvard.edu/~reich/Software.htm) documentation - see below 
 
-(Note that you may need to convert an existing genotype file into that format to use this tool)
 
 -----
 
 **Summary**
 
+Eigensoft requires ld-reduced genotype data. 
+Galaxy has an automatic converter for genotype data in Plink linkage pedigree (lped) format.
+For details of this generic genotype format, please see the Plink documentation at 
+http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml
+
+Reading that documentation, you'll see that the linkage pedigree format is really two related files with the same 
+file base name - a map and ped file - eg 'mygeno.ped' and 'mygeno.map'.
+The map file has the chromosome, offset, genetic offset and snp name corresponding to each
+genotype stored as separate alleles in the ped file. The ped file has family id, individual id, father id (or 0), mother id
+(or 0), gender (1=male, 2=female, 0=unknown) and affection (1=unaffected, 2=affected, 0=unknown), 
+then two separate allele columns for each genotype. 
+
+Once you have your data in the right format, you can upload those into your Galaxy history using the "upload" tool.
+
+To upload your lped data in the upload tool, choose 'lped' as the 'file format'. The tool form will change to 
+allow you to navigate to and select each member of the pair of  ped and map files stored on your local computer
+(or available at a public URL for Galaxy to grab). 
+Give the dataset a meaningful name (replace rgeneticsData with something more useful!) and click execute. 
+
+When the upload is done, your new lped format dataset will appear in your history and then, 
+when you choose the ancestry tool, that history dataset will be available as input.
+
+**Warning for the Impatient**
+
+When you execute the tool, it will look like it has not started running for a while as the automatic converter 
+reduces the amount of LD - otherwise eigenstrat gives biased results.
+
+
 **Attribution**
+
 This tool runs and relies on the work of many others, including the
 maintainers of the Eigensoft program, and the R and
 Bioconductor projects. For full attribution, source code and documentation, please see
@@ -84,7 +109,7 @@ copyright Ross Lazarus 2007
 Licensed under the terms of the LGPL as documented http://www.gnu.org/licenses/lgpl.html
 but is about as useful as a sponge boat without EIGENSOFT pca code.
 
-**README from eigensoft2**
+**README from eigensoft2 distribution at http://genepath.med.harvard.edu/~reich/Software.htm**
 
 [rerla@beast eigensoft2]$ cat README
 EIGENSOFT version 2.0, January 2008 (for Linux only)

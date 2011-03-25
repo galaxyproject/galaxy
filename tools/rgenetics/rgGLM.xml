@@ -1,18 +1,15 @@
 <tool id="rgGLM1" name="Linear Models:" version="0.2">
-    <code file="listFiles.py"/>
-    <code file="rgGLM_code.py"/>
-
     <description>for genotype data</description>
-
+    <code file="rgGLM_code.py"/>
     <command interpreter="python">
         rgGLM.py '$i.extra_files_path/$i.metadata.base_name' '$phef.extra_files_path/$phef.metadata.base_name'
-        "$title1" '$predvar' '$covar' '$out_file1' '$logf' '$i.metadata.base_name'
+        "$title" '$predvar' '$covar' '$out_file1' '$logf' '$i.metadata.base_name'
         '$inter' '$cond' '$gender' '$mind' '$geno' '$maf' '$logistic' '$gffout'
     </command>
 
     <inputs>
       <page>
-       <param name='title1' label='Title for outputs' type='text' value='GLM' size="80" />
+       <param name='title' label='Title for outputs' type='text' value='GLM' size="80" />
        <param name="i" type="data" format="pbed" label="Genotype file" size="80"  />
        <param name="phef"  type="data" format="pphe" label="Phenotype file" size="80"
        help="Dependent variable and covariates will be chosen from this file on the next page"/>
@@ -41,9 +38,9 @@
    </inputs>
 
    <outputs>
-       <data format="tabular" name="out_file1" />
-       <data format="txt" name="logf"  />
-       <data format="gff" name="gffout"  />
+       <data format="tabular" name="out_file1" label="${title}_rgGLM.xls"/>
+       <data format="txt" name="logf" label="${title}_rgGLMlog.txt" />
+       <data format="gff" name="gffout"  label="${title}_rgGLM.gff"/>
    </outputs>
 <tests>
  <test>
@@ -59,7 +56,7 @@
    <composite_data value='tinywga.pphe' />
    <edit_attributes type='name' value='tinywga' /> 
  </param>
- <param name='title1' value='rgGLMtest1' />
+ <param name='title' value='rgGLMtest1' />
  <param name='predvar' value='c1' />
  <param name='covar' value='None' />
  <param name='inter' value='0' />
@@ -124,18 +121,26 @@ one with a header. Fortunately excel is dumb enough to open these without much p
 
 **Attribution**
 
-This tool allows you to control settings for models using Plink linear models. So, we rely on the author (Shaun Purcell)
-for the documentation you need specific to those settings - they are very nicely documented at
-http://pngu.mgh.harvard.edu/~purcell/plink/anal.shtml#glm
+This Galaxy tool relies on Plink (see Plinksrc_) to test GLM models. 
+
+So, we rely on the author (Shaun Purcell) for the documentation you need specific to those settings - they are very nicely documented - see
+DOC_
 
 Tool and Galaxy datatypes originally designed and written for the Rgenetics
 series of whole genome scale statistical genetics tools by ross lazarus (ross.lazarus@gmail.com)
-supported by NIH grant
-Shaun Purcell created and maintains Plink
 
-Please acknowledge your use of this tool, Galaxy and Plink in your publications and let
-us know so we can keep track. These tools all rely on highly competitive grant funding
-so your letting us know about publications is important to our ongoing support.
+Copyright Ross Lazarus March 2007
+This Galaxy wrapper is released licensed under the LGPL_ but is about as useful as a chocolate teapot without Plink which is GPL.
+
+I'm no lawyer, but it looks like you got GPL if you use this software. Good luck.
+
+.. _Plinksrc: http://pngu.mgh.harvard.edu/~purcell/plink/ 
+
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+
+.. _DOC: http://pngu.mgh.harvard.edu/~purcell/plink/anal.shtml#glm
+
 </help>
 </tool>
+
 

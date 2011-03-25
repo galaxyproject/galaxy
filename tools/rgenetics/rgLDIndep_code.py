@@ -15,7 +15,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
     trantab = string.maketrans(killme,'_'*len(killme))
     title = basename.encode().translate(trantab)
     info = '%s filtered by rgLDIndep.py at %s' % (title,timenow())
-    #data.file_name = data.file_name
+    data.file_name = data.file_name
     data.metadata.base_name = title
     data.name = '%s.pbed' % title
     data.info = info

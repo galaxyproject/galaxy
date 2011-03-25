@@ -1,6 +1,4 @@
 <tool id="rgClean1" name="Clean genotypes:">
-    <code file="rgClean_code.py"/>
-
     <description>filter markers, subjects</description>
 
     <command interpreter="python">
@@ -47,7 +45,7 @@
    </inputs>
 
    <outputs>
-       <data format="pbed" name="out_file1" metadata_source="input_file"  />
+       <data format="pbed" name="out_file1" metadata_source="input_file" label="${title}_rgClean.pbed"  />
    </outputs>
 
 <tests>

@@ -26,6 +26,7 @@ myversion = 'v0.003 January 2010'
 verbose = False
 
 
+
 def makeGFF(resf='',outfname='',logf=None,twd='.',name='track name',description='track description',topn=1000):
     """
     score must be scaled to 0-1000
@@ -84,7 +85,7 @@ def makeGFF(resf='',outfname='',logf=None,twd='.',name='track name',description=
     outres = [] # need to resort into chrom offset order
     for i,lrow in enumerate(resfl):
         chrom,snp,offset,p, = [lrow[x] for x in wewant]
-        gff = ('chr%s' % chrom,'rgGLM','variation','%d' % (int(offset)-halfwidth),
+        gff = ('chr%s' % chrom,'rgTDT','variation','%d' % (int(offset)-halfwidth),
                '%d' % (int(offset)+halfwidth),p,'.','.','%s logp=%1.2f' % (snp,pvals[i]))
         outres.append(gff)
     outres = [(x[0],int(x[3]),x) for x in outres] # decorate

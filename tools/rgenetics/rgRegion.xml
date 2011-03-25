@@ -1,24 +1,20 @@
 <tool id="rgRegion" name="Subset:">
-    <code file="rgRegion_code.py"/> 
-    <code file="listFiles.py"/> 
-  
     <description>genotypes from genomic region</description>
   
     <command interpreter="python">
-        rgRegion.py $infile $r $tag $out_file1
+        rgRegion.py $infile $r $title $out_file1
     </command>
     
     <inputs>    
        <page>
        <param name="infile" type="data" format="lped" label="Linkage ped genotype file name from current history" size="80"/>
+       <param name="title" type="text" size="80" label="Title for output files" optional="true"
+        help="Descriptive title for new genotype/map files" value="RGRegion" />
        <param name="r" type="text" label="Region" help="Cut and paste a UCSC browser region" 
         size="80" value="chr9:119,506,000-122,518,000"/>
        <param name="rslist" type="text" area="true" label="List of rs numbers" help="Type (or cut and paste) a space or newline separated list of rs numbers" 
         size="5x20"/>
-
-       <param name="tag" type="text" label="Output file name" value="My_favourite_region" size="80"/>
-       <param name="outformat" type="select" label="Output file format" dynamic_options="get_rgRegionOutFormats()" size="80"/>
-        <param name="dbkey" type="hidden" value="hg18" />
+       <param name="outformat" type="select" label="Output file format" dynamic_options="get_rgRegionOutFormats()" size="80"/> 
 
        </page>
 
@@ -26,7 +22,7 @@
    </inputs>
 
    <outputs>  
-       <data format="lped" name="out_file1" />
+       <data format="lped" name="out_file1" label="${title}.lped" metadata_source=infile />
    </outputs>
 <help>
 

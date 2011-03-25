@@ -20,7 +20,6 @@ All options are placed in a single line separated by spaces:
 import sys,math,shutil,subprocess,os,time,tempfile,string
 from os.path import abspath
 from rgutils import timenow, plinke
-
 imagedir = '/static/rg' # if needed for images
 myversion = 'V000.1 April 2007'
 verbose = False
@@ -82,7 +81,7 @@ def makeGFF(resf='',outfname='',logf=None,twd='.',name='track name',description=
     outres = [] # need to resort into chrom offset order
     for i,lrow in enumerate(resfl):
         chrom,snp,offset,p, = [lrow[x] for x in wewant]
-        gff = ('chr%s' % chrom,'rgGLM','variation','%d' % (int(offset)-halfwidth),
+        gff = ('chr%s' % chrom,'rgCaCo','variation','%d' % (int(offset)-halfwidth),
                '%d' % (int(offset)+halfwidth),p,'.','.','%s logp=%1.2f' % (snp,pvals[i]))
         outres.append(gff)
     outres = [(x[0],int(x[3]),x) for x in outres] # decorate
@@ -92,7 +91,6 @@ def makeGFF(resf='',outfname='',logf=None,twd='.',name='track name',description=
     outf.write('\n'.join(outres))
     outf.write('\n')
     outf.close()
-
 
 
 def plink_assocToGG(plinkout="hm",tag='test'):
@@ -170,14 +168,8 @@ def xformModel(infname='',resf='',outfname='',
     else:
        headl = headl.split()
        delim = None
-    chrpos = headl.index('CHR')
-    rspos = headl.index('SNP')
-    testpos = headl.index('TEST')
-    naffpos = headl.index('AFF')
-    nuaffpos = headl.index('UNAFF')
-    chisqpos = headl.index('CHISQ')
-    ppos = headl.index('P')    
-    wewant = [chrpos,rspos,testpos,naffpos,nuaffpos,chisqpos,ppos]
+    whatwewant = ['CHR','SNP','TEST','AFF','UNAFF','CHISQ','P']
+    wewant = [headl.index(x) for x in whatwewant]
     llen = len(headl)
     lnum = anum = 0
     lastsnp = None # so we know when to write out a gg line
@@ -273,7 +265,7 @@ if __name__ == "__main__":
     retval = p.wait()
     resf = '%s.model' % tname # plink output is here we hope
     xformModel(bfname,resf,outfname,name,amapf,flog) # leaves the desired summary file
-    makeGFF(resf=outfname,outfname=gffout,logf=flog,twd=twd,name='rgGLM_TopTable',description=name,topn=topn)
+    makeGFF(resf=outfname,outfname=gffout,logf=flog,twd=twd,name='rgCaCo_TopTable',description=name,topn=topn)
     flog.write('\n'.join(logme))
     flog.close() # close the log used
     #shutil.copytree(twd,logoutdir)

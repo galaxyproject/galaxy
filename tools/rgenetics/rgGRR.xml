@@ -1,20 +1,19 @@
 <tool id="rgGRR1" name="GRR:">
-    <code file="rgGRR_code.py"/>
     <description>Pairwise Allele Sharing</description>
     <command interpreter="python">
          rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"
-        '$out_file1' '$out_file1.files_path' "$title1"  '$n' '$Z'
+        '$out_file1' '$out_file1.files_path' "$title"  '$n' '$Z'
     </command>
     <inputs>
       <param name="i"  type="data" label="Genotype data file from your current history"
       format="ldindep" />
-       <param name='title1' type='text' size="80" value='rgGRR' label="Title for this job"/>
+       <param name='title' type='text' size="80" value='rgGRR' label="Title for this job"/>
        <param name="n" type="integer" label="N snps to use (0=all)" value="5000" />
        <param name="Z" type="float" label="Z score cutoff for outliers (eg 2)" value="6"
        help="2 works but for very large numbers of pairs, you might want to see less than 5%" />
     </inputs>
     <outputs>
-       <data format="html" name="out_file1" />
+       <data format="html" name="out_file1" label="${title}_rgGRR.html"/>
     </outputs>
 
 <tests>
@@ -26,7 +25,7 @@
     <composite_data value='tinywga.fam' />
     <edit_attributes type='name' value='tinywga' /> 
     </param>
-  <param name='title1' value='rgGRRtest1' />
+  <param name='title' value='rgGRRtest1' />
   <param name='n' value='100' />
   <param name='Z' value='6' />
   <param name='force' value='true' />

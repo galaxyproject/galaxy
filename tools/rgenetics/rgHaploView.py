@@ -105,15 +105,8 @@ class ldPlot:
         self.lf = file(self.log_file,'w')
         s = 'PATH=%s\n' % os.environ.get('PATH','?')
         self.lf.write(s)
-    
-    def setupRegions(self):
-        """
-        """
-        chromosome = ''
-        spos = epos = -9
-        rslist = []
-        rsdict = {}
 
+    def getRs(self):
         if self.region > '':
             useRs = []
             useRsdict={}
@@ -138,6 +131,20 @@ class ldPlot:
         else:
             useRs = self.orslist.split() # galaxy replaces newlines with XX - go figure
             useRsdict = dict(zip(useRs,useRs))
+        return useRs, useRsdict
+
+    
+    def setupRegions(self):
+        """
+        This turns out to be complex because we allow the user
+        flexibility - paste a list of rs or give a region.
+        In most cases, some subset has to be generated correctly before running Haploview
+        """
+        chromosome = ''
+        spos = epos = -9
+        rslist = []
+        rsdict = {}
+        useRs,useRsdict = self.getRs()
         self.useTemp = False
         try:
             dfile = open(self.DATA_FILE, 'r')
@@ -284,7 +291,60 @@ class ldPlot:
             self.lf.write(s)
             print >> sys.stdout,s
             sys.exit(1)
-        
+
+    def run(self,vcl):
+        """
+        """
+        p=subprocess.Popen(vcl,shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
+        retval = p.wait()
+        self.lf.write('## executing %s returned %d\n' % (vcl,retval))
+
+    def plotHmPanels(self,ste):
+        """
+        """
+        sp = '%d' % (self.spos/1000.) # hapmap wants kb
+        ep = '%d' % (self.epos/1000.)
+        fnum=0
+        for panel in self.hmpanels:
+            if panel > '' and panel.lower() <> 'none': # in case someone checks that option too :)
+                ptran = panel.strip()
+                ptran = ptran.replace('+','_')
+                fnum += 1 # preserve an order or else we get sorted
+                vcl = [javabin,'-jar',self.hvbin,'-n','-memory','%d' % self.memSize,
+                  '-chromosome',self.chromosome, '-panel',panel.strip(),
+                  '-hapmapDownload','-startpos',sp,'-endpos',ep,
+                  '-ldcolorscheme',self.ldType]
+                if self.minMaf:
+                    vcl += ['-minMaf','%f' % self.minMaf]
+                if self.maxDist:
+                    vcl += ['-maxDistance',self.maxDist]
+                if self.hiRes:
+                    vcl.append('-png')
+                else:
+                    vcl.append('-compressedpng')
+                if self.infotrack:
+                    vcl.append('-infoTrack')
+                p=subprocess.Popen(' '.join(vcl),shell=True,cwd=self.outfpath,stderr=ste,stdout=self.lf)
+                retval = p.wait()
+                inpng = 'Chromosome%s%s.LD.PNG' % (self.chromosome,panel)
+                inpng = inpng.replace(' ','') # mysterious spaces!
+                outpng = '%d_HapMap_%s_%s.png' % (fnum,ptran,self.chromosome)
+                # hack for stupid chb+jpt
+                outpng = outpng.replace(' ','')
+                tmppng = '%s.tmp.png' % self.title
+                tmppng = tmppng.replace(' ','')
+                outpng = os.path.split(outpng)[-1]
+                vcl = [self.convert, '-resize 800x400!', inpng, tmppng]
+                self.run(' '.join(vcl))
+                s = "text 10,300 'HapMap %s'" % ptran.strip()
+                vcl = [self.convert, '-pointsize 25','-fill maroon',
+                      '-draw "%s"' % s, tmppng, outpng]
+                self.run(' '.join(vcl))
+                try:
+                    os.remove(os.path.join(self.outfpath,tmppng))
+                except:
+                    pass
+
     def doPlots(self):
         """
         """    
@@ -308,15 +368,9 @@ class ldPlot:
             vcl += ['-chromosome',self.chromosome]
         if self.infotrack:
             vcl.append('-infoTrack')
-        p=subprocess.Popen(' '.join(vcl),shell=True,cwd=self.outfpath,stderr=ste,stdout=self.lf)
-        retval = p.wait()
-        s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
-        self.lf.write(s)
+        self.run(' '.join(vcl))
         vcl = [self.mogrify, '-resize 800x400!', '*.PNG']
-        p=subprocess.Popen(' '.join(vcl),shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-        retval = p.wait()
-        s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
-        self.lf.write(s)
+        self.run(' '.join(vcl))
         inpng = '%s.LD.PNG' % DATA_FILE # stupid but necessary - can't control haploview name mangle
         inpng = inpng.replace(' ','')
         inpng = os.path.split(inpng)[-1]
@@ -326,89 +380,29 @@ class ldPlot:
         outpng = outpng.replace(' ','')
         outpng = os.path.split(outpng)[-1]
         vcl = [self.convert, '-resize 800x400!', inpng, tmppng]
-        p=subprocess.Popen(' '.join(vcl),shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-        retval = p.wait()
-        s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
-        self.lf.write(s)
+        self.run(' '.join(vcl))
         s = "text 10,300 '%s'" % self.title[:40]
         vcl = [self.convert, '-pointsize 25','-fill maroon',
               '-draw "%s"' % s, tmppng, outpng]
-        p=subprocess.Popen(' '.join(vcl),shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-        retval = p.wait()
-        s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
-        self.lf.write(s)
+        self.run(' '.join(vcl))
         try:
             os.remove(os.path.join(self.outfpath,tmppng))
         except:
             pass    # label all the plots then delete all the .PNG files before munging
         fnum=1
         if self.hmpanels:
-            sp = '%d' % (self.spos/1000.) # hapmap wants kb
-            ep = '%d' % (self.epos/1000.)
-            for panel in self.hmpanels:
-                if panel > '' and panel.lower() <> 'none': # in case someone checks that option too :)
-                    ptran = panel.strip()
-                    ptran = ptran.replace('+','_')
-                    fnum += 1 # preserve an order or else we get sorted
-                    vcl = [javabin,'-jar',self.hvbin,'-n','-memory','%d' % self.memSize,
-                      '-chromosome',self.chromosome, '-panel',panel.strip(),
-                      '-hapmapDownload','-startpos',sp,'-endpos',ep,
-                      '-ldcolorscheme',self.ldType]
-                    if self.minMaf:
-                        vcl += ['-minMaf','%f' % self.minMaf]
-                    if self.maxDist:
-                        vcl += ['-maxDistance',self.maxDist]
-                    if self.hiRes:
-                        vcl.append('-png')
-                    else:
-                        vcl.append('-compressedpng')
-                    if self.infotrack:
-                        vcl.append('-infoTrack')
-                    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=self.outfpath,stderr=ste,stdout=self.lf)
-                    retval = p.wait()
-                    inpng = 'Chromosome%s%s.LD.PNG' % (self.chromosome,panel)
-                    inpng = inpng.replace(' ','') # mysterious spaces!
-                    outpng = '%d_HapMap_%s_%s.png' % (fnum,ptran,self.chromosome)
-                    # hack for stupid chb+jpt
-                    outpng = outpng.replace(' ','')
-                    tmppng = '%s.tmp.png' % self.title
-                    tmppng = tmppng.replace(' ','')
-                    outpng = os.path.split(outpng)[-1]
-                    vcl = [self.convert, '-resize 800x400!', inpng, tmppng]
-                    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-                    retval = p.wait()
-                    s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
-                    self.lf.write(s)
-                    s = "text 10,300 'HapMap %s'" % ptran.strip()
-                    vcl = [self.convert, '-pointsize 25','-fill maroon',
-                          '-draw "%s"' % s, tmppng, outpng]
-                    p=subprocess.Popen(' '.join(vcl),shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-                    retval = p.wait()
-                    s = '## executing %s returned %d\n' % (' '.join(vcl),retval)
-                    self.lf.write(s)
-                    try:
-                        os.remove(os.path.join(self.outfpath,tmppng))
-                    except:
-                        pass
+            self.plotHmPanels(ste)
         nimages = len(glob.glob(os.path.join(self.outfpath,'*.png'))) # rely on HaploView shouting - PNG @!
         self.lf.write('### nimages=%d\n' % nimages)
         if nimages > 0: # haploview may fail?
             vcl = '%s -format pdf -resize 800x400! *.png' % self.mogrify
-            p=subprocess.Popen(vcl,shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-            retval = p.wait()
-            self.lf.write('## executing %s returned %d\n' % (vcl,retval))
+            self.run(vcl)
             vcl = '%s *.pdf --fitpaper true --outfile alljoin.pdf' % self.pdfjoin
-            p=subprocess.Popen(vcl,shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-            retval = p.wait()
-            self.lf.write('## executing %s returned %d\n' % (vcl,retval))
+            self.run(vcl)
             vcl = '%s alljoin.pdf --nup 1x%d --outfile allnup.pdf' % (self.pdfnup,nimages)
-            p=subprocess.Popen(vcl,shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-            retval = p.wait()
-            self.lf.write('## executing %s returned %d\n' % (vcl,retval))
+            self.run(vcl)
             vcl = '%s -resize x300 allnup.pdf allnup.png' % (self.convert)
-            p=subprocess.Popen(vcl,shell=True,cwd=self.outfpath,stderr=self.lf,stdout=self.lf)
-            retval = p.wait()
-            self.lf.write('## executing %s returned %d\n' % (vcl,retval))
+            self.run(vcl)
         ste.close() # temp file used to catch haploview blather
         hblather = open(blog,'r').readlines() # to catch the blather    
         os.unlink(blog)
@@ -417,6 +411,10 @@ class ldPlot:
            self.lf.write(''.join(hblather))
            self.lf.write('\n')
         self.lf.close()
+        
+    def writeHtml(self):
+        """
+        """
         flist = glob.glob(os.path.join(self.outfpath, '*'))
         flist.sort()
         ts = '!"#$%&\'()*+,-/:;<=>?@[\\]^_`{|}~' + string.whitespace
@@ -509,6 +507,7 @@ if __name__ == "__main__":
         sys.exit(1)
     ld = ldPlot(argv = sys.argv)
     ld.doPlots()
+    ld.writeHtml()
 
 
 

@@ -44,9 +44,9 @@
  <param name='grey' value='0' />
  <output name='out_html' file='rgtestouts/rgManQQ/rgManQQtest1.html' ftype='html' lines_diff='60'>
    <extra_files type="file" name='Allelep_manhattan.png' value='rgtestouts/rgManQQ/Allelep_manhattan.png' compare="sim_size" 
-     delta = "10000"/>
+     delta = "20000"/>
    <extra_files type="file" name='Allelep_qqplot.png' value='rgtestouts/rgManQQ/Allelep_qqplot.png' compare="sim_size"
-     delta = "10000" />
+     delta = "20000" />
    <extra_files type="file" name='rgManQQtest1.R' value='rgtestouts/rgManQQ/rgManQQtest1.R' compare="diff" lines_diff="160"/>
  </output>
  </test>

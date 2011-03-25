@@ -1,21 +1,20 @@
 <tool id="rgQC1" name="QC reports:">
-    <code file="rgQC_code.py"/>
 
     <description>Marker and Subject measures</description>
 
     <command interpreter="python">
-        rgQC.py -i '$input_file.extra_files_path/$input_file.metadata.base_name' -o "$out_prefix"
+        rgQC.py -i '$input_file.extra_files_path/$input_file.metadata.base_name' -o "$title"
         -s '$html_file' -p '$html_file.files_path'
     </command>
 
     <inputs>
           <param name="input_file" type="data" label="RGenetics genotype file in compressed Plink format"
           size="80" format="pbed" />
-       <param name="out_prefix" size="80" type="text" value="RgQC report" label="Descriptive report title"/>
+       <param name="title" size="80" type="text" value="RgQC report" label="Descriptive report title"/>
    </inputs>
 
    <outputs>
-       <data format="html" name="html_file" metadata_source="input_file"/>
+       <data format="html" name="html_file" metadata_source="input_file" label="${title}.html"/>
    </outputs>
 
 <tests>
@@ -27,9 +26,9 @@
     <composite_data value='tinywga.fam' />
     <edit_attributes type='name' value='tinywga' /> 
     </param>
-    <param name='out_prefix' value='rgQCtest1' />
-    <output name='html_file' file='rgtestouts/rgQC/rgQCtest1.html' ftype='html' lines_diff='280'>
-    <extra_files type="file" name='tinywga_All_Paged.pdf' value="rgtestouts/rgQC/tinywga_All_Paged.pdf" compare="sim_size" delta = "5000"/>
+    <param name='title' value='rgQCtest1' />
+    <output name='html_file' file='rgtestouts/rgQC/rgQCtest1.html' ftype='html' lines_diff='300'>
+    <extra_files type="file" name='tinywga_All_Paged.pdf' value="rgtestouts/rgQC/tinywga_All_Paged.pdf" compare="sim_size" delta = "100000"/>
     <extra_files type="file" name='tinywga.log' value="rgtestouts/rgQC/tinywga.log" compare="diff" lines_diff="15"/>
     <extra_files type="file" name='tinywga.frq' value="rgtestouts/rgQC/tinywga.frq" compare="diff" />
     <extra_files type="file" name='tinywga.het' value="rgtestouts/rgQC/tinywga.het" compare="diff" lines_diff="90"/>
@@ -38,7 +37,7 @@
     <extra_files type="file" name='tinywga.imiss' value="rgtestouts/rgQC/tinywga.imiss" compare="diff" />
     <extra_files type="file" name='tinywga.lmendel' value="rgtestouts/rgQC/tinywga.lmendel" compare="diff" />
     <extra_files type="file" name='tinywga.lmiss' value="rgtestouts/rgQC/tinywga.lmiss" compare="diff" />
-    <extra_files type="file" name='tinywga_All_3x3.pdf' value="rgtestouts/rgQC/tinywga_All_3x3.pdf" compare="sim_size" delta="5000"/>
+    <extra_files type="file" name='tinywga_All_3x3.pdf' value="rgtestouts/rgQC/tinywga_All_3x3.pdf" compare="sim_size" delta="100000"/>
     <extra_files type="file" name='ldp_tinywga.bed' value="rgtestouts/rgQC/ldp_tinywga.bed" compare="diff" lines_diff="10" />
     <extra_files type="file" name='ldp_tinywga.bim' value="rgtestouts/rgQC/ldp_tinywga.bim" compare="sim_size" delta="1000" />
     <extra_files type="file" name='ldp_tinywga.fam' value="rgtestouts/rgQC/ldp_tinywga.fam" compare="diff" />
@@ -46,9 +45,9 @@
     <extra_files type="file" name='Ranked_Marker_HWE.xls' value="rgtestouts/rgQC/Ranked_Marker_HWE.xls" compare="diff" />
     <extra_files type="file" name='Ranked_Marker_MAF.xls' value="rgtestouts/rgQC/Ranked_Marker_MAF.xls" compare="diff" />
     <extra_files type="file" name='Ranked_Marker_Missing_Genotype.xls' value="rgtestouts/rgQC/Ranked_Marker_Missing_Genotype.xls" compare="diff" lines_diff="5"/>
-    <extra_files type="file" name='Ranked_Subject_Missing_Genotype.xls' value="rgtestouts/rgQC/Ranked_Subject_Missing_Genotype.xls" compare="diff" lines_diff="10"/>
+    <extra_files type="file" name='Ranked_Subject_Missing_Genotype.xls' value="rgtestouts/rgQC/Ranked_Subject_Missing_Genotype.xls" compare="diff" lines_diff="40"/>
     <extra_files type="file" name='tinywga_fracmiss_cum.jpg' value="rgtestouts/rgQC/tinywga_fracmiss_cum.jpg" compare="sim_size" delta = "20000"/>     
-    <extra_files type="file" name='tinywga_fracmiss_cum.pdf' value="rgtestouts/rgQC/tinywga_fracmiss_cum.pdf" compare="sim_size" delta = "1000"/>     
+    <extra_files type="file" name='tinywga_fracmiss_cum.pdf' value="rgtestouts/rgQC/tinywga_fracmiss_cum.pdf" compare="sim_size" delta = "100000"/>     
  </output>
  </test>
 </tests>

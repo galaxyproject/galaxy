@@ -4,14 +4,14 @@
     <description>for p values from an analysis </description>
 
     <command interpreter="python">
-        rgQQ.py "$input1" "$name" "$sample" "$cols" "$allqq" "$height" "$width" "$logtrans" "$allqq.id" "$__new_file_path__"
+        rgQQ.py "$input1" "$title" "$sample" "$cols" "$allqq" "$height" "$width" "$logtrans" "$allqq.id" "$__new_file_path__"
     </command>
 
     <inputs>
        <page>
        <param name="input1"  type="data" label="Choose the History dataset containing p values to QQ plot"
           size="80" format="tabular" help="Dataset missing? See Tip below" />
-       <param name="name" type="text" size="80" label = "Descriptive title for QQ plot" value="QQ" />
+       <param name="title" type="text" size="80" label = "Descriptive title for QQ plot" value="QQ" />
 
        <param name="logtrans" type="boolean" label = "Use a log scale - recommended for p values in range 0-1.0"
           truevalue="true" falsevalue="false"/>
@@ -28,13 +28,13 @@
    </inputs>
 
    <outputs>
-       <data format="pdf" name="allqq" />
+       <data format="pdf" name="allqq" label="${title}.html"/>
    </outputs>
 
 <tests>
  <test>
  <param name='input1' value='tinywga.pphe' />
- <param name='name' value="rgQQtest1" />
+ <param name='title' value="rgQQtest1" />
  <param name='logtrans' value="false" />
  <param name='sample' value='1.0' />
  <param name='height' value='8' />

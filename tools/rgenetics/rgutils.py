@@ -5,6 +5,7 @@
 #
 
 import subprocess, os, sys, time, tempfile,string,plinkbinJZ
+import datetime
 
 galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -30,6 +31,9 @@ def timenow():
     """
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
+def timestamp():
+    return datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
 def fail( message ):
     print >> sys.stderr, message
     return -1
@@ -40,6 +44,401 @@ def whereis(program):
            not os.path.isdir(os.path.join(path, program)):
             return os.path.join(path, program)
     return None
+
+def makeGFF(resf='',outfname='',logf=None,twd='.',name='track name',description='track description',topn=1000,pname='LOG10ARMITAGEP',rgname='rgGLM'):
+    """
+    score must be scaled to 0-1000
+    
+    Want to make some wig tracks from each analysis
+    Best n -log10(p). Make top hit the window.
+    we use our tab output which has
+    rs	chrom	offset	ADD_stat	ADD_p	ADD_log10p
+    rs3094315	1	792429	1.151	0.2528	0.597223
+
+    """
+
+    def is_number(s):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+    header = 'track name=%s description="%s" visibility=2 useScore=1 color=0,60,120\n' % (name,description)          
+    column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
+    halfwidth=100
+    resfpath = os.path.join(twd,resf)
+    resf = open(resfpath,'r')
+    resfl = resf.readlines() # dumb but convenient for millions of rows
+    resfl = [x.split() for x in resfl]
+    headl = resfl[0]
+    resfl = resfl[1:]
+    headl = [x.strip().upper() for x in headl]
+    headIndex = dict(zip(headl,range(0,len(headl))))
+    chrpos = headIndex.get('CHROM',None)
+    rspos = headIndex.get('RS',None)
+    offspos = headIndex.get('OFFSET',None)
+    ppos = headIndex.get(pname,None)
+    wewant = [chrpos,rspos,offspos,ppos]
+    if None in wewant: # missing something
+       logf.write('### Error missing a required header in makeGFF - headIndex=%s, wewant=%s\n' % (headIndex,wewant))
+       return
+    resfl = [x for x in resfl if x[ppos] > '']
+    resfl = [(float(x[ppos]),x) for x in resfl] # decorate
+    resfl.sort()
+    resfl.reverse() # using -log10 so larger is better
+    resfl = resfl[:topn] # truncate
+    pvals = [x[0] for x in resfl] # need to scale
+    resfl = [x[1] for x in resfl] # drop decoration
+    if len(pvals) == 0:
+        logf.write('### no pvalues found in resfl - %s' % (resfl[:3]))
+        sys.exit(1)
+    maxp = max(pvals) # need to scale
+    minp = min(pvals)
+    prange = abs(maxp-minp) + 0.5 # fudge
+    scalefact = 1000.0/prange
+    logf.write('###maxp=%f,minp=%f,prange=%f,scalefact=%f\n' % (maxp,minp,prange,scalefact))
+    for i,row in enumerate(resfl):
+        row[ppos] = '%d' % (int(scalefact*pvals[i]))
+        resfl[i] = row # replace
+    outf = file(outfname,'w')
+    outf.write(header)
+    outres = [] # need to resort into chrom offset order
+    for i,lrow in enumerate(resfl):
+        chrom,snp,offset,p, = [lrow[x] for x in wewant]
+        gff = ('chr%s' % chrom,rgname,'variation','%d' % (int(offset)-halfwidth),
+               '%d' % (int(offset)+halfwidth),p,'.','.','%s logp=%1.2f' % (snp,pvals[i]))
+        outres.append(gff)
+    outres = [(x[0],int(x[3]),x) for x in outres] # decorate
+    outres.sort() # into chrom offset
+    outres=[x[2] for x in outres] # undecorate
+    outres = ['\t'.join(x) for x in outres]    
+    outf.write('\n'.join(outres))
+    outf.write('\n')
+    outf.close()
+
+
+def bedToPicInterval(infile=None):
+    """
+    Picard tools requiring targets want
+    a sam style header which incidentally, MUST be sorted in natural order - not lexicographic order:
+
+    @SQ     SN:chrM LN:16571
+    @SQ     SN:chr1 LN:247249719
+    @SQ     SN:chr2 LN:242951149
+    @SQ     SN:chr3 LN:199501827
+    @SQ     SN:chr4 LN:191273063
+    added to the start of what looks like a bed style file
+    chr1    67052400        67052451        -       CCDS635.1_cds_0_0_chr1_67052401_r
+    chr1    67060631        67060788        -       CCDS635.1_cds_1_0_chr1_67060632_r
+    chr1    67065090        67065317        -       CCDS635.1_cds_2_0_chr1_67065091_r
+    chr1    67066082        67066181        -       CCDS635.1_cds_3_0_chr1_67066083_r
+
+    see http://genome.ucsc.edu/FAQ/FAQtracks.html#tracks1
+    we need to add 1 to start coordinates on the way through - but length calculations are easier
+    """
+    # bedToPicard.py
+    # ross lazarus October 2010
+    # LGPL
+    # for Rgenetics
+
+    def getFlen(bedfname=None):
+        """
+        find all features in a BED file and sum their lengths
+        """
+        features = {}
+        try:
+            infile = open(bedfname,'r')
+        except:
+            print '###ERROR: getFlen unable to open bedfile %s' % bedfname
+            sys.exit(1)
+        for i,row in enumerate(infile):
+            if row[0] == '@': # shouldn't happen given a bed file!
+                print 'row %d=%s - should NOT start with @!' % (i,row)
+                sys.exit(1)
+        row = row.strip()
+        if len(row) > 0:
+            srow = row.split('\t')
+            f = srow[0]
+            spos = srow[1] # zero based from UCSC so no need to add 1 - eg 0-100 is 100 bases numbered 0-99 (!)
+            epos = srow[2] # see http://genome.ucsc.edu/FAQ/FAQtracks.html#tracks1
+            flen = int(epos) - int(spos)
+            features.setdefault(f,0)
+            features[f] += flen
+        infile.close()
+        return features
+
+    def keynat(string):
+        '''
+        borrowed from http://code.activestate.com/recipes/285264-natural-string-sorting/
+        A natural sort helper function for sort() and sorted()
+        without using regular expressions or exceptions.
+
+        >>> items = ('Z', 'a', '10th', '1st', '9')
+        >>> sorted(items)
+        ['10th', '1st', '9', 'Z', 'a']
+        >>> sorted(items, key=keynat)
+        ['1st', '9', '10th', 'a', 'Z']
+        '''
+        it = type(1)
+        r = []
+        for c in string:
+            if c.isdigit():
+                d = int(c)
+                if r and type( r[-1] ) == it:
+                    r[-1] = r[-1] * 10 + d
+                else:
+                    r.append(d)
+            else:
+                r.append(c.lower())
+        return r
+
+    def writePic(outfname=None,bedfname=None):
+        """
+        collect header info and rewrite bed with header for picard
+        """
+        featlen = getFlen(bedfname=bedfname)
+        try:
+            outf = open(outfname,'w')
+        except:
+            print '###ERROR: writePic unable to open output picard file %s' % outfname
+            sys.exit(1)
+        infile = open(bedfname,'r') # already tested in getFlen
+        k = featlen.keys()
+        fk = sorted(k, key=keynat)
+        header = ['@SQ\tSN:%s\tLN:%d' % (x,featlen[x]) for x in fk]
+        outf.write('\n'.join(header))
+        outf.write('\n')
+        for row in infile:
+            row = row.strip()
+            if len(row) > 0: # convert zero based start coordinate to 1 based
+                srow = row.split('\t')
+                srow[1] = '%d' % (int(srow[1])+1) # see http://genome.ucsc.edu/FAQ/FAQtracks.html#tracks1
+                outf.write('\t'.join(srow))
+                outf.write('\n')
+        outf.close()
+        infile.close()
+
+
+
+    # bedToPicInterval starts here
+    fd,outf = tempfile.mkstemp(prefix='rgPicardHsMetrics')
+    writePic(outfname=outf,bedfname=infile)
+    return outf
+
+
+def getFileString(fpath, outpath):
+    """
+    format a nice file size string
+    """
+    size = ''
+    fp = os.path.join(outpath, fpath)
+    s = '? ?'
+    if os.path.isfile(fp):
+        n = float(os.path.getsize(fp))
+        if n > 2**20:
+            size = ' (%1.1f MB)' % (n/2**20)
+        elif n > 2**10:
+            size = ' (%1.1f KB)' % (n/2**10)
+        elif n > 0:
+            size = ' (%d B)' % (int(n))
+        s = '%s %s' % (fpath, size) 
+    return s
+
+
+def fixPicardOutputs(tempout=None,output_dir=None,log_file=None,html_output=None,progname=None,cl=[],transpose=True):
+    """
+    picard produces long hard to read tab header files
+    make them available but present them transposed for readability
+    """
+    rstyle="""<style type="text/css">
+    tr.d0 td {background-color: oldlace; color: black;}
+    tr.d1 td {background-color: aliceblue; color: black;}
+    </style>"""    
+    cruft = []
+    dat = []    
+    try:
+        r = open(tempout,'r').readlines()
+    except:
+        r = []
+    for row in r:
+        if row.strip() > '':
+            srow = row.split('\t')
+            if row[0] == '#':
+                cruft.append(row.strip()) # want strings
+            else:
+                dat.append(srow) # want lists
+    
+    res = [rstyle,]
+    res.append(galhtmlprefix % progname)   
+    res.append(galhtmlattr % (progname,timenow()))
+    flist = os.listdir(output_dir) 
+    pdflist = [x for x in flist if os.path.splitext(x)[-1].lower() == '.pdf']
+    if len(pdflist) > 0: # assumes all pdfs come with thumbnail .jpgs
+        for p in pdflist:
+            imghref = '%s.jpg' % os.path.splitext(p)[0] # removes .pdf
+            res.append('<table cellpadding="10"><tr><td>\n')
+            res.append('<a href="%s"><img src="%s" alt="Click thumbnail to download %s" hspace="10" align="middle"></a>\n' % (p,imghref,p)) 
+            res.append('</tr></td></table>\n')   
+    res.append('<b>Your job produced the following output files.</b><hr/>\n')
+    res.append('<table>\n')
+    for i,f in enumerate(flist):
+         fn = os.path.split(f)[-1]
+         res.append('<tr><td><a href="%s">%s</a></td></tr>\n' % (fn,fn))
+    res.append('</table><p/>\n') 
+    if len(cruft) + len(dat) > 0:
+        res.append('<b>Picard on line resources</b><ul>\n')
+        res.append('<li><a href="http://picard.sourceforge.net/index.shtml">Click here for Picard Documentation</a></li>\n')
+        res.append('<li><a href="http://picard.sourceforge.net/picard-metric-definitions.shtml">Click here for Picard Metrics definitions</a></li></ul><hr/>\n')
+        if transpose:
+            res.append('<b>Picard output (transposed for readability)</b><hr/>\n')       
+        else:
+            res.append('<b>Picard output</b><hr/>\n')  
+        res.append('<table cellpadding="3" >\n')
+        if len(cruft) > 0:
+            cres = ['<tr class="d%d"><td>%s</td></tr>' % (i % 2,x) for i,x in enumerate(cruft)]
+            res += cres
+        if len(dat) > 0: 
+            maxrows = 100
+            if transpose:
+                tdat = map(None,*dat) # transpose an arbitrary list of lists
+                missing = len(tdat) - maxrows
+                tdat = ['<tr class="d%d"><td>%s</td><td>%s</td></tr>\n' % ((i+len(cruft)) % 2,x[0],x[1]) for i,x in enumerate(tdat) if i < maxrows] 
+                if len(tdat) > maxrows:
+                   tdat.append('<tr><td colspan="2">...WARNING: %d rows deleted for sanity...see raw files for all rows</td></tr>' % missing)
+            else:
+                tdat = ['<tr class="d%d"><td>%s</td></tr>\n' % ((i+len(cruft)) % 2,x) for i,x in enumerate(dat) if i < maxrows] 
+                if len(dat) > maxrows:
+                    missing = len(dat) - maxrows      
+                    tdat.append('<tr><td>...WARNING: %d rows deleted for sanity...see raw files for all rows</td></tr>' % missing)
+            res += tdat
+        res.append('</table>\n')   
+    else:
+        res.append('<b>No Picard output found - please consult the Picard log above for an explanation</b>')
+    l = open(log_file,'r').readlines()
+    if len(l) > 0: 
+        res.append('<b>Picard log</b><hr/>\n') 
+        rlog = ['<pre>',]
+        rlog += l
+        rlog.append('</pre>')
+        res += rlog
+    else:
+        res.append("Odd, Picard left no log file %s - must have really barfed badly?" % log_file)
+    res.append('<hr/>The freely available <a href="http://picard.sourceforge.net/command-line-overview.shtml">Picard software</a> \n') 
+    res.append( 'generated all outputs reported here, using this command line:<br/>\n<pre>%s</pre>\n' % ''.join(cl))   
+    res.append(galhtmlpostfix) 
+    outf = open(html_output,'w')
+    outf.write(''.join(res))   
+    outf.write('\n')
+    outf.close()
+
+def keynat(string):
+    '''
+    borrowed from http://code.activestate.com/recipes/285264-natural-string-sorting/
+    A natural sort helper function for sort() and sorted()
+    without using regular expressions or exceptions.
+
+    >>> items = ('Z', 'a', '10th', '1st', '9')
+    >>> sorted(items)
+    ['10th', '1st', '9', 'Z', 'a']
+    >>> sorted(items, key=keynat)
+    ['1st', '9', '10th', 'a', 'Z']    
+    '''
+    it = type(1)
+    r = []
+    for c in string:
+        if c.isdigit():
+            d = int(c)
+            if r and type( r[-1] ) == it: 
+                r[-1] = r[-1] * 10 + d
+            else: 
+                r.append(d)
+        else:
+            r.append(c.lower())
+    return r
+
+def getFlen(bedfname=None):
+    """
+    find all features in a BED file and sum their lengths
+    """
+    features = {}
+    otherHeaders = []
+    try:
+        infile = open(bedfname,'r')
+    except:
+        print '###ERROR: getFlen unable to open bedfile %s' % bedfname
+        sys.exit(1)
+    for i,row in enumerate(infile):
+        if row.startswith('@'): # add to headers if not @SQ
+            if not row.startswith('@SQ'):
+                otherHeaders.append(row)
+        else:
+            row = row.strip()
+            if row.startswith('#') or row.lower().startswith('browser') or row.lower().startswith('track'):
+                continue # ignore headers
+            srow = row.split('\t')
+            if len(srow) > 3:
+                srow = row.split('\t')
+                f = srow[0]
+                spos = srow[1] # zero based from UCSC so no need to add 1 - eg 0-100 is 100 bases numbered 0-99 (!)
+                epos = srow[2] # see http://genome.ucsc.edu/FAQ/FAQtracks.html#tracks1
+                flen = int(epos) - int(spos)
+                features.setdefault(f,0)
+                features[f] += flen
+    infile.close()
+    fk = features.keys()
+    fk = sorted(fk, key=keynat)
+    return features,fk,otherHeaders
+
+def bedToPicInterval(infile=None,outfile=None):
+    """
+    Picard tools requiring targets want 
+    a sam style header which incidentally, MUST be sorted in natural order - not lexicographic order:
+
+    @SQ     SN:chrM LN:16571
+    @SQ     SN:chr1 LN:247249719
+    @SQ     SN:chr2 LN:242951149
+    @SQ     SN:chr3 LN:199501827
+    @SQ     SN:chr4 LN:191273063
+    added to the start of what looks like a bed style file
+    chr1    67052400        67052451        -       CCDS635.1_cds_0_0_chr1_67052401_r
+    chr1    67060631        67060788        -       CCDS635.1_cds_1_0_chr1_67060632_r
+    chr1    67065090        67065317        -       CCDS635.1_cds_2_0_chr1_67065091_r
+    chr1    67066082        67066181        -       CCDS635.1_cds_3_0_chr1_67066083_r
+
+    see http://genome.ucsc.edu/FAQ/FAQtracks.html#tracks1
+    we need to add 1 to start coordinates on the way through - but length calculations are easier
+    """
+    # bedToPicard.py
+    # ross lazarus October 2010
+    # LGPL 
+    # for Rgenetics
+    """
+    collect header info and rewrite bed with header for picard
+    """
+    featlen,fk,otherHeaders = getFlen(bedfname=infile)
+    try:
+        outf = open(outfile,'w')
+    except:
+        print '###ERROR: writePic unable to open output picard file %s' % outfile
+        sys.exit(1)
+    inf = open(infile,'r') # already tested in getFlen
+    header = ['@SQ\tSN:%s\tLN:%d' % (x,featlen[x]) for x in fk]
+    if len(otherHeaders) > 0:
+        header += otherHeaders
+    outf.write('\n'.join(header))
+    outf.write('\n')
+    for row in inf:
+        row = row.strip()
+        if len(row) > 0: # convert zero based start coordinate to 1 based
+            if row.startswith('@'):
+                continue
+            else:
+                srow = row.split('\t')
+                srow[1] = '%d' % (int(srow[1])+1) # see http://genome.ucsc.edu/FAQ/FAQtracks.html#tracks1
+                outf.write('\t'.join(srow))
+                outf.write('\n')
+    outf.close()
+    inf.close()
 
 
 def oRRun(rcmd=[],outdir=None,title='myR',rexe='R'):
@@ -201,9 +600,12 @@ def pruneLD(plinktasks=[],cd='./',vclbase = []):
     The fine Plink docs at http://pngu.mgh.harvard.edu/~purcell/plink/summary.shtml#prune
     reproduced below
 
-Sometimes it is useful to generate a pruned subset of SNPs that are in approximate linkage equilibrium with each other. This can be achieved via two commands: --indep which prunes based on the variance inflation factor (VIF), which recursively removes SNPs within a sliding window; second, --indep-pairwise which is similar, except it is based only on pairwise genotypic correlation.
+Sometimes it is useful to generate a pruned subset of SNPs that are in approximate linkage equilibrium with each other. This can be achieved via two commands: 
+--indep which prunes based on the variance inflation factor (VIF), which recursively removes SNPs within a sliding window; second, --indep-pairwise which is 
+similar, except it is based only on pairwise genotypic correlation.
 
-Hint The output of either of these commands is two lists of SNPs: those that are pruned out and those that are not. A separate command using the --extract or --exclude option is necessary to actually perform the pruning.
+Hint The output of either of these commands is two lists of SNPs: those that are pruned out and those that are not. A separate command using the --extract or 
+--exclude option is necessary to actually perform the pruning.
 
 The VIF pruning routine is performed:
 plink --file data --indep 50 5 2
@@ -217,16 +619,23 @@ Each is a simlpe list of SNP IDs; both these files can subsequently be specified
 a --extract or --exclude command.
 
 The parameters for --indep are: window size in SNPs (e.g. 50), the number of SNPs to shift the
-window at each step (e.g. 5), the VIF threshold. The VIF is 1/(1-R^2) where R^2 is the multiple correlation coefficient for a SNP being regressed on all other SNPs simultaneously. That is, this considers the correlations between SNPs but also between linear combinations of SNPs. A VIF of 10 is often taken to represent near collinearity problems in standard multiple regression analyses (i.e. implies R^2 of 0.9). A VIF of 1 would imply that the SNP is completely independent of all other SNPs. Practically, values between 1.5 and 2 should probably be used; particularly in small samples, if this threshold is too low and/or the window size is too large, too many SNPs may be removed.
+window at each step (e.g. 5), the VIF threshold. The VIF is 1/(1-R^2) where R^2 is the multiple correlation coefficient for a SNP being regressed on all other 
+SNPs simultaneously. That is, this considers the correlations between SNPs but also between linear combinations of SNPs. A VIF of 10 is often taken to represent 
+near collinearity problems in standard multiple regression analyses (i.e. implies R^2 of 0.9). A VIF of 1 would imply that the SNP is completely independent of 
+all other SNPs. Practically, values between 1.5 and 2 should probably be used; particularly in small samples, if this threshold is too low and/or the window 
+size is too large, too many SNPs may be removed.
 
 The second procedure is performed:
 plink --file data --indep-pairwise 50 5 0.5
 
 This generates the same output files as the first version; the only difference is that a
-simple pairwise threshold is used. The first two parameters (50 and 5) are the same as above (window size and step); the third parameter represents the r^2 threshold. Note: this represents the pairwise SNP-SNP metric now, not the multiple correlation coefficient; also note, this is based on the genotypic correlation, i.e. it does not involve phasing.
+simple pairwise threshold is used. The first two parameters (50 and 5) are the same as above (window size and step); the third parameter represents the r^2 
+threshold. Note: this represents the pairwise SNP-SNP metric now, not the multiple correlation coefficient; also note, this is based on the genotypic 
+correlation, i.e. it does not involve phasing.
 
 To give a concrete example: the command above that specifies 50 5 0.5 would a) consider a
-window of 50 SNPs, b) calculate LD between each pair of SNPs in the window, b) remove one of a pair of SNPs if the LD is greater than 0.5, c) shift the window 5 SNPs forward and repeat the procedure.
+window of 50 SNPs, b) calculate LD between each pair of SNPs in the window, b) remove one of a pair of SNPs if the LD is greater than 0.5, c) shift the window 5 
+SNPs forward and repeat the procedure.
 
 To make a new, pruned file, then use something like (in this example, we also convert the
 standard PED fileset to a binary one):
@@ -275,4 +684,5 @@ def readMap(mapfile=None,allmarkers=False,rsdict={},c=None,spos=None,epos=None):
     rsdict = dict(zip(rslist,rslist))
     mfile.close()
     return markers,snpcols,rslist,rsdict
+
 

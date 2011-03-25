@@ -1,25 +1,19 @@
 <tool id="rgCaCo1" name="Case Control:">
-    <code file="listFiles.py"/>
-    <code file="rgCaCo_code.py"/>
-
     <description>for unrelated subjects</description>
-
     <command interpreter="python">
-        rgCaCo.py '$i.extra_files_path/$i.metadata.base_name' "$name"
-        '$out_file1' '$logf' '$logf.files_path' '$gffout'
+        rgCaCo.py '$i.extra_files_path/$i.metadata.base_name' "$title"  '$out_file1' '$logf' '$logf.files_path' '$gffout'
     </command>
-
     <inputs>
       <param name="i"  type="data" label="RGenetics genotype data from your current history"
       format="pbed" />
-       <param name='name' type='text' size="132" value='CaseControl' label="Title for this job"/>
+       <param name='title' type='text' size="132" value='CaseControl' label="Title for this job"/>
 
     </inputs>
 
    <outputs>
-       <data format="tabular" name="out_file1" />
-       <data format="txt" name="logf" />
-       <data format="gff" name="gffout"  />
+       <data format="tabular" name="out_file1" label="${title}_rgCaCo.xls" />
+       <data format="txt" name="logf" label="${title}_rgCaCo.log"/>
+       <data format="gff" name="gffout" label="${title}_rgCaCoTop.gff" />
    </outputs>
 <tests>
  <test>
@@ -30,7 +24,7 @@
    <composite_data value='tinywga.fam' />
    <edit_attributes type='name' value='tinywga' /> 
  </param>
- <param name='name' value='rgCaCotest1' />
+ <param name='title' value='rgCaCotest1' />
  <output name='out_file1' file='rgCaCotest1_CaCo.xls' ftype='tabular' compare='diff' />
  <output name='logf' file='rgCaCotest1_CaCo_log.txt' ftype='txt' compare='diff' lines_diff='20' />
  <output name='gffout' file='rgCaCotest1_CaCo_topTable.gff' ftype='gff' compare='diff' />
@@ -79,24 +73,31 @@ Finally, if you can't live without
 spreadsheet data, choose the .xls tab delimited format. It's not a stupid binary excel file. Just a plain old tab delimited
 one with a header. Fortunately excel is dumb enough to open these without much protest.
 
+
 -----
+
+.. class:: infomark
 
 **Attribution**
 
-When you click 'execute', this Galaxy tool will run Plink (from Shaun Purcell) for you (which is GPL, so this must be too I guess) for calculations. For full Plink
-attribution, source code and documentation, please see http://pngu.mgh.harvard.edu/~purcell/plink/
+This Galaxy tool relies on Plink (see Plinksrc_) to test Casae Control association models. 
 
-The Plink output files will be adjusted into UCSC compatible tracks - gg or wig, or else as tab delimited
-for you spreadsheet junkies out there. Python is used for all glue and data format yoga.
-Originally designed and written for the Rgenetics Galaxy tools by
-ross lazarus (ross spot lazarus ate gmail spot com), who didn't write
-either Galaxy or Plink but wishes he had.
+So, we rely on the author (Shaun Purcell) for the documentation you need specific to those settings - they are very nicely documented - see
+DOC_
 
-copyright Ross Lazarus 2007
-Licensed under the terms of the LGPL as documented http://www.gnu.org/licenses/lgpl.html
-but is about as useful as a chocolate teapot without Plink which is GPL.
+Tool and Galaxy datatypes originally designed and written for the Rgenetics
+series of whole genome scale statistical genetics tools by ross lazarus (ross.lazarus@gmail.com)
+
+Copyright Ross Lazarus March 2007
+This Galaxy wrapper is released licensed under the LGPL_ but is about as useful as a chocolate teapot without Plink which is GPL.
 
 I'm no lawyer, but it looks like you got GPL if you use this software. Good luck.
+
+.. _Plinksrc: http://pngu.mgh.harvard.edu/~purcell/plink/ 
+
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+
+.. _DOC: http://pngu.mgh.harvard.edu/~purcell/plink/anal.shtml#cc
 
 </help>
 </tool>

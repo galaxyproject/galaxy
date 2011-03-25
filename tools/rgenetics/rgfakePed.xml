@@ -1,14 +1,13 @@
 <tool id="rgfakePed1" name="Null genotypes">
   <description>for testing</description>
-  <code file="rgfakePed_code.py"/>
-  <command interpreter="python">rgfakePed.py --title '$title1'
+  <command interpreter="python">rgfakePed.py --title '$title'
   -o '$out_file1' -p '$out_file1.files_path' -c '$ncases' -n '$ntotal'
   -s '$nsnp'  -w '$lowmaf' -v '$missingValue' -l '$outFormat'
   -d '$mafdist' -m '$missingRate' -M '$mendelRate' </command>
    <inputs>
     <page>
 
-    <param name="title1"
+    <param name="title"
          type="text"
          help="Name for outputs from this job"
          label="Descriptive short name"/>
@@ -60,11 +59,11 @@
 </inputs>
 
  <outputs>
-    <data format="lped" name="out_file1" />
+    <data format="lped" name="out_file1" label="${title}.lped" />
   </outputs>
 <tests>
  <test>
-    <param name='title1' value='rgfakePedtest1' />
+    <param name='title' value='rgfakePedtest1' />
     <param name="ntotal" value="40" />
     <param name="ncases" value="20" />
     <param name="nsnp" value="10" />

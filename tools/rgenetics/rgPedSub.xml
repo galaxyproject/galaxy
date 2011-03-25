@@ -1,5 +1,4 @@
 <tool id="rgPedSub1" name="Subset markers:">
-    <code file="rgPedSub_code.py"/>
 
     <description>region or rs list</description>
 
@@ -44,7 +43,7 @@
    </inputs>
 
    <outputs>
-       <data format="lped" name="output1" metadata_source="input1"/>
+       <data format="lped" name="output1" metadata_source="input1" label="${title}.lped"/>
    </outputs>
 
 <configfiles>
