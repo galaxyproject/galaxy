@@ -62,6 +62,7 @@ def bedToPicInterval(infile=None):
     chr1    67065090        67065317        -       CCDS635.1_cds_2_0_chr1_67065091_r
     chr1    67066082        67066181        -       CCDS635.1_cds_3_0_chr1_67066083_r
 
+
     see http://genome.ucsc.edu/FAQ/FAQtracks.html#tracks1
     we need to add 1 to start coordinates on the way through - but length calculations are easier
     """
