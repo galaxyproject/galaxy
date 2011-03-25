@@ -251,7 +251,7 @@
                   <!-- Coverage search. -->
                   <conditional name="coverage_search">
                     <param name="use_search" type="select" label="Use Coverage Search">
-                        <option value="Yes">Yes</option>
+                        <option selected="true" value="Yes">Yes</option>
                         <option value="No">No</option>
                     </param>
                     <when value="Yes">
@@ -357,7 +357,7 @@
                   <!-- Coverage search. -->
                   <conditional name="coverage_search">
                     <param name="use_search" type="select" label="Use Coverage Search">
-                        <option value="Yes">Yes</option>
+                        <option selected="true" value="Yes">Yes</option>
                         <option value="No">No</option>
                     </param>
                     <when value="Yes">
