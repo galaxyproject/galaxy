@@ -38,7 +38,6 @@
 .top-labeltrack{position:relative;border-bottom:solid #999 1px;}
 .nav-labeltrack{border-top:solid #999 1px;border-bottom:solid #333 1px;}
 input{font:10px verdana;}
-.values{padding-left:0.25em;}
 .dynamic-tool,.filters{width:400px;margin-left:0.25em;padding-bottom:0.5em;}
 .slider-row{margin-top:0.4em;margin-left:1em;}
 .slider-label{float:left;font-weight:bold;}

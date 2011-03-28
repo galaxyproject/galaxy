@@ -11,13 +11,16 @@ if sys.version_info[:2] == (2, 4):
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
 from galaxy.datatypes.util.gff_util import *
+from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.arrays.array_tree import FileArrayTreeDict
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
 from galaxy.datatypes.tabular import Vcf
-from galaxy.datatypes.interval import Bed, Gff
+from galaxy.datatypes.interval import Bed, Gff, Gtf
+from galaxy.datatypes.util.gff_util import parse_gff_attributes
+
 from pysam import csamtools
 
 MAX_VALS = 5000 # only display first MAX_VALS features
@@ -126,7 +129,7 @@ class SummaryTreeDataProvider( TracksDataProvider ):
         return st.chrom_blocks.keys()
         
     
-    def get_summary( self, chrom, start, end, **kwargs):
+    def get_summary( self, chrom, start, end, **kwargs ):
         filename = self.converted_dataset.file_name
         st = self.CACHE[filename]
         if st is None:
@@ -170,7 +173,7 @@ class SummaryTreeDataProvider( TracksDataProvider ):
             self.CACHE[filename] = st
             
         # Check for data.
-        return st.chrom_blocks.get(chrom, None) is not None or st.chrom_blocks.get(chrom[3:], None) is not None
+        return st.chrom_blocks.get(chrom, None) is not None or (chrom and st.chrom_blocks.get(chrom[3:], None) is not None)
 
 class VcfDataProvider( TracksDataProvider ):
     """
@@ -486,7 +489,63 @@ class IntervalIndexDataProvider( TracksDataProvider ):
     def write_data_to_file( self, chrom, start, end, filename ):
         # TODO: write function.
         pass
-    
+        
+    def get_filters( self ):
+        """ Returns a dataset's filters. """
+        
+        # is_ functions taken from Tabular.set_meta
+        def is_int( column_text ):
+            try:
+                int( column_text )
+                return True
+            except: 
+                return False
+        def is_float( column_text ):
+            try:
+                float( column_text )
+                return True
+            except: 
+                if column_text.strip().lower() == 'na':
+                    return True #na is special cased to be a float
+                return False
+        
+        #
+        # Get filters.
+        # TODOs: 
+        # (a) might be useful to move this into each datatype's set_meta method;
+        # (b) could look at first N lines to ensure GTF attribute types are consistent.
+        #
+        filters = []
+        # HACK: first 8 fields are for drawing, so start filter column index at 9.
+        filter_col = 8
+        if isinstance( self.original_dataset.datatype, Gff ):
+            # Can filter by score and GTF attributes.
+            filters = [ { 'name': 'Score', 'type': 'int', 'index': filter_col } ]
+            filter_col += 1
+            if isinstance( self.original_dataset.datatype, Gtf ):
+                for i, line in enumerate( open(self.original_dataset.file_name) ):
+                    if not line.startswith('#'):
+                        # Look at first line for attributes and types.
+                        attributes = parse_gff_attributes( line.split('\t')[8] )
+                        for attr, value in attributes.items():
+                            # Get attribute type.
+                            if is_int( value ):
+                                attr_type = 'int'
+                            elif is_float( value ):
+                                attr_type = 'float'
+                            else:
+                                attr_type = 'str'
+                            # Add to filters.
+                            if attr_type is not 'str':
+                                filters.append( { 'name': attr, 'type': attr_type, 'index': filter_col } )
+                                filter_col += 1
+                        break
+        elif isinstance( self.original_dataset.datatype, Bed ):
+            # Can filter by score column only.
+            filters = [ { 'name': 'Score', 'type': 'int', 'index': filter_col } ]
+        
+        return filters
+        
     def get_data( self, chrom, start, end, **kwargs ):
         start, end = int(start), int(end)
         source = open( self.original_dataset.file_name )
@@ -509,6 +568,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
         # 
         # First three entries are mandatory, others are optional.
         #
+        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
         for start, end, offset in index.find(chrom, start, end):
             if count >= MAX_VALS:
@@ -522,7 +582,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                 # GFF dataset.
                 reader = GFFReaderWrapper( source, fix_strand=True )
                 feature = reader.next()
-                payload = package_gff_feature( feature, no_detail )
+                payload = package_gff_feature( feature, no_detail, filter_cols )
                 payload.insert( 0, offset )
             elif isinstance( self.original_dataset.datatype, Bed ):
                 # BED dataset.
@@ -536,15 +596,11 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                     #end = min( len( feature ), 8 )
                     #payload.extend( feature[ 3:end ] )
                     
-                    # Name, score, strand, thick start, thick end.
+                    # Name, strand, thick start, thick end.
                     if length >= 4:
                         payload.append(feature[3])
-                    if length >= 5:
-                        payload.append( float(feature[4]) )
                     if length >= 6:
                         payload.append(feature[5])
-
-                    # Thick start, end.
                     if length >= 8:
                         payload.append(int(feature[6]))
                         payload.append(int(feature[7]))
@@ -555,7 +611,11 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                         block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
                         blocks = zip( block_sizes, block_starts )
                         payload.append( [ ( start + block[1], start + block[1] + block[0] ) for block in blocks ] )
-
+                    
+                    # Score (filter data)    
+                    if length >= 5 and filter_cols and filter_cols[0] == "Score":
+                        payload.append( float(feature[4]) )
+                    
             results.append( payload )
 
         return { 'data': results, 'message': message }
@@ -644,7 +704,7 @@ def get_data_provider( name=None, original_dataset=None ):
                 pass
     return data_provider
 
-def package_gff_feature( feature, no_detail=False ):
+def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
     """ Package a GFF feature in an array for data providers. """
     feature = convert_gff_coords_to_bed( feature )
     
@@ -656,7 +716,6 @@ def package_gff_feature( feature, no_detail=False ):
     payload = [ feature.start, 
                 feature.end, 
                 feature.name(), 
-                feature.score,
                 feature.strand,
                 # No notion of thick start, end in GFF, so make everything
                 # thick.
@@ -677,4 +736,13 @@ def package_gff_feature( feature, no_detail=False ):
     blocks = zip( block_sizes, block_starts )
     payload.append( [ ( feature.start + block[1], feature.start + block[1] + block[0] ) for block in blocks ] )
     
+    # Add filter data to payload.
+    for col in filter_cols:
+        if col == "Score":
+            payload.append( feature.score )
+        elif col in feature.attributes:
+            payload.append( feature.attributes[col] )
+        else:
+            # Dummy value.
+            payload.append( "na" )
     return payload
