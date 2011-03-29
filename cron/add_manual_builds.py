@@ -21,12 +21,12 @@ def add_manual_builds(input_file, build_file, chr_dir):
     build_file_out = open(build_file,'a')
     for line in open(input_file):
         try:
-            fields = line.split("\t")
+            fields = line.replace("\n","").replace("\r","").split("\t")
             build = fields.pop(0)
             if build in existing_builds: continue # if build exists, leave alone
             name = fields.pop(0)
             try: # get chrom lens if included in file, otherwise still add build
-                chrs = fields.pop(0).replace("\n","").replace("\r","").split(",")
+                chrs = fields.pop(0).split(",")
             except:
                 chrs = []
             print>>build_file_out, build+"\t"+name+" ("+build+")"
