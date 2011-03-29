@@ -1594,10 +1594,10 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             high = this.view.high,
             range = high - low,
             width = this.view.container.width(),
-            resolution = this.view.resolution;
-
-        var parent_element = $("<div style='position: relative;'></div>"),
-            w_scale = width / range;
+            // w_scale units are pixels per base.
+            w_scale = width / range,
+            resolution = this.view.resolution,
+            parent_element = $("<div style='position: relative;'></div>");
         
         if (!clear_after) { this.content_div.children().remove(); }
         this.content_div.append( parent_element );
@@ -3029,8 +3029,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
      */
     draw_element: function(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width, left_offset, ref_seq) {
         // All features need a start, end, and vertical center.
-        var 
-            feature_uid = feature[0],
+        var feature_uid = feature[0],
             feature_start = feature[1],
             feature_end = feature[2],
             feature_name = feature[3],
@@ -3038,8 +3037,14 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
             y_center = (mode === "Dense" ? 1 : (1 + slot)) * y_scale,
             block_color = this.prefs.block_color,
-            label_color = this.prefs.label_color;
-            gap = 0; // Left-gap for label text since we align chrom text to the position tick
+            label_color = this.prefs.label_color,
+            // Left-gap for label text since we align chrom text to the position tick.
+            gap = 0;
+
+        // TODO: fix gap usage; also see note on gap in draw_read.
+        if ((mode === "Pack" || this.mode === "Auto") && w_scale > CHAR_WIDTH_PX) {
+            var gap = Math.round(w_scale/2);
+        }
         
         // Draw read.
         ctx.fillStyle = block_color;
@@ -3061,8 +3066,7 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
             // Draw connector.
             if (b2_start > b1_end) {
                 ctx.fillStyle = CONNECTOR_COLOR;
-                //ctx.fillRect(b1_end + left_offset, y_center + 5, b2_start - b1_end, 1);
-                ctx.dashedLine(b1_end + left_offset, y_center + 5, left_offset + b2_start, y_center + 5);
+                ctx.dashedLine(b1_end + left_offset - gap, y_center + 5, left_offset + b2_start - gap, y_center + 5);
             }
         } else {
             // Read is single.
@@ -3072,9 +3076,6 @@ $.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         if (mode === "Pack" && feature_start > tile_low) {
             // Draw label.
             ctx.fillStyle = this.prefs.label_color;
-            if ( (mode === "Pack" || this.mode === "Auto") && w_scale > CHAR_WIDTH_PX) {
-                var gap = Math.round(w_scale/2);
-            }
             if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
                 ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING - gap, y_center + 8);
