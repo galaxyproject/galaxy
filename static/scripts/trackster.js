@@ -372,6 +372,7 @@ var View = function( container, title, vis_id, dbkey, callback ) {
     this.min_separation = 30;
     this.has_changes = false;
     this.init( callback );
+    this.canvas_manager = new CanvasManager( container.get(0).ownerDocument );
     this.reset();
 };
 $.extend( View.prototype, {
@@ -1945,20 +1946,17 @@ $.extend(ReferenceTrack.prototype, TiledTrack.prototype, {
                 track.content_div.css("height", "0px");
                 return;
             }
-            var canvas = document.createElement("canvas");
-            if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
-            canvas = $(canvas);
-
-            var ctx = canvas.get(0).getContext("2d");
-            canvas.get(0).width = Math.ceil( tile_length * w_scale + track.left_offset);
-            canvas.get(0).height = track.height_px;
+            var canvas = this.view.canvas_manager.new_canvas();
+            var ctx = canvas.getContext("2d");
+            canvas.width = Math.ceil( tile_length * w_scale + track.left_offset);
+            canvas.height = track.height_px;
             ctx.font = DEFAULT_FONT;
             ctx.textAlign = "center";
             for (var c = 0, str_len = seq.length; c < str_len; c++) {
                 var c_start = Math.round(c * w_scale);
                 ctx.fillText(seq[c], c_start + track.left_offset, 10);
             }
-            return canvas;
+            return $(canvas);
         }
         this.content_div.css("height", "0px");
     }
@@ -2249,38 +2247,17 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
      * Draw summary tree on canvas.
      */
     draw_summary_tree: function(canvas, points, delta, max, w_scale, required_height, tile_low, left_offset) {
-        var 
-            // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
-            // start. However, height of each rectangle is relative to required_height; hence, the
-            // max rectangle is required_height.
-            base_y = required_height + LABEL_SPACING + CHAR_HEIGHT_PX;
-            delta_x_px = Math.ceil(delta * w_scale);
         
+	// Add label to container div when displaying summary tree mode
         var max_label = $("<div />").addClass('yaxislabel');
         max_label.text(max);
-        
         max_label.css({ position: "absolute", top: "22px", left: "10px" });
         max_label.prependTo(this.container_div);
             
-        var ctx = canvas.get(0).getContext("2d");
-        for (var i = 0, len = points.length; i < len; i++) {
-            var x = Math.floor( (points[i][0] - tile_low) * w_scale );
-            var y = points[i][1];
-            
-            if (!y) { continue; }
-            var y_px = y / max * required_height;
-            
-            ctx.fillStyle = "black";
-            ctx.fillRect(x + left_offset, base_y - y_px, delta_x_px, y_px);
-            
-            // Draw number count if it can fit the number with some padding, otherwise things clump up
-            var text_padding_req_x = 4;
-            if (this.prefs.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
-                ctx.fillStyle = "#666";
-                ctx.textAlign = "center";
-                ctx.fillText(y, x + left_offset + (delta_x_px/2), 10);
-            }
-        }
+	// Paint summary tree into canvas
+        var ctx = canvas.getContext("2d");
+	var painter = new SummaryTreePainter( points, delta, max, this.prefs.show_counts );
+	painter.draw( ctx, w_scale, required_height, tile_low, left_offset );
     },
     /**
      * Draw feature.
@@ -2459,10 +2436,6 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
             left_offset = this.left_offset,
             slots, required_height;
         
-        var canvas = document.createElement("canvas");
-        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
-        canvas = $(canvas);
-        
         //
         // Set mode if Auto.
         //
@@ -2511,15 +2484,17 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         //
         // Set up for drawing.
         //
-        canvas.get(0).width = width + left_offset;
-        canvas.get(0).height = required_height;
+	var canvas = this.view.canvas_manager.new_canvas();
+	
+        canvas.width = width + left_offset;
+        canvas.height = required_height;
         if (result.dataset_type === "summary_tree") {
             // Increase canvas height in order to display max label.
-            canvas.get(0).height += LABEL_SPACING + CHAR_HEIGHT_PX;
+            canvas.height += LABEL_SPACING + CHAR_HEIGHT_PX;
         }
         parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
-        var ctx = canvas.get(0).getContext("2d");
+        var ctx = canvas.getContext("2d");
         ctx.fillStyle = this.prefs.block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
@@ -2531,14 +2506,14 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         if (mode === "summary_tree") {            
             this.draw_summary_tree(canvas, result.data, result.delta, result.max, w_scale, required_height, 
                                    tile_low, left_offset);
-            return canvas;
+            return $(canvas);
         }
         
         //
         // If there is a message, draw it on canvas so that it moves around with canvas, and make the border red
         // to indicate region where message is applicable
         if (result.message) {
-            canvas.css({
+            $(canvas).css({
                 "border-top": "1px solid red"
             });
 
@@ -2551,7 +2526,7 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
 
             // If there's no data, return.
             if (!result.data) {
-                return canvas;
+                return $(canvas);
             }
         }
 
@@ -2594,7 +2569,7 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
                                   width, left_offset, ref_seq);
             }
         }
-        return canvas;
+        return $(canvas);
     }
 });
 
@@ -2996,6 +2971,20 @@ $.extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prot
 
 // ---- To be extracted ------------------------------------------------------
 
+// ---- Canvas management ----
+
+var CanvasManager = function( document ) {
+    this.document = document;
+}
+
+CanvasManager.prototype.new_canvas = function() {
+    var canvas = this.document.createElement("canvas");
+    if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
+    return canvas;
+}
+
+// ---- Feature Packing ----
+
 /**
  * FeatureSlotter determines slots in which to draw features for vertical
  * packing.
@@ -3145,3 +3134,50 @@ FeatureSlotter.prototype.slot_features = function( features ) {
     */
     return highest_slot + 1;
 }
+
+// ---- Painters ----
+
+/**
+ * SummaryTreePainter, a histogram showing number of intervals in a region
+ */
+var SummaryTreePainter = function( data, delta, max, show_counts ) {
+    this.data = data;
+    this.delta = delta;
+    this.max = max;
+    this.show_counts = show_counts;
+}
+
+SummaryTreePainter.prototype.draw = function( ctx, w_scale, required_height, tile_low, left_offset ) {
+    
+    var
+	points = this.data, delta = this.delta, max = this.max,
+	// Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
+	// start. However, height of each rectangle is relative to required_height; hence, the
+	// max rectangle is required_height.
+	base_y = required_height + LABEL_SPACING + CHAR_HEIGHT_PX;
+	delta_x_px = Math.ceil(delta * w_scale);
+    
+    ctx.save();
+    
+    for (var i = 0, len = points.length; i < len; i++) {
+	var x = Math.floor( (points[i][0] - tile_low) * w_scale );
+	var y = points[i][1];
+	
+	if (!y) { continue; }
+	var y_px = y / max * required_height;
+	
+	ctx.fillStyle = "black";
+	ctx.fillRect(x + left_offset, base_y - y_px, delta_x_px, y_px);
+	
+	// Draw number count if it can fit the number with some padding, otherwise things clump up
+	var text_padding_req_x = 4;
+	if (this.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
+	    ctx.fillStyle = "#666";
+	    ctx.textAlign = "center";
+	    ctx.fillText(y, x + left_offset + (delta_x_px/2), 10);
+	}
+    }
+    
+    ctx.restore();
+}
+
