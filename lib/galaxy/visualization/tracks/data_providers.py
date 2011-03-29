@@ -306,12 +306,12 @@ class BamDataProvider( TracksDataProvider ):
             if read.is_proper_pair:
                 if qname in paired_pending: # one in dict is always first
                     pair = paired_pending[qname]
-                    results.append( [ "%i_%s" % ( read.pos, qname ), 
+                    results.append( [ "%i_%s" % ( pair['start'], qname ), 
                                       pair['start'], 
                                       read.pos + read_len, 
                                       qname, 
                                       [ pair['start'], pair['end'], pair['cigar'], pair['seq'] ], 
-                                      [ read.pos, read.pos + read_len, read.cigar, seq] 
+                                      [ read.pos, read.pos + read_len, read.cigar, seq ] 
                                      ] )
                     del paired_pending[qname]
                 else:
