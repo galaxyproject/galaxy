@@ -2174,22 +2174,6 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
 	return inc_slots.slot_features( features );
     },
     /**
-     * Draw summary tree on canvas.
-     */
-    draw_summary_tree: function(canvas, points, delta, max, w_scale, required_height, tile_low, left_offset) {
-        
-	// Add label to container div when displaying summary tree mode
-        var max_label = $("<div />").addClass('yaxislabel');
-        max_label.text(max);
-        max_label.css({ position: "absolute", top: "22px", left: "10px" });
-        max_label.prependTo(this.container_div);
-            
-	// Paint summary tree into canvas
-        var ctx = canvas.getContext("2d");
-	var painter = new SummaryTreePainter( points, delta, max, this.prefs.show_counts );
-	painter.draw( ctx, w_scale, required_height, tile_low, left_offset );
-    },
-    /**
      * Draw feature.
      */
     draw_element: function(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width, left_offset) {
@@ -2350,25 +2334,18 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
      * Draw FeatureTrack tile.
      */
     draw_tile: function(result, resolution, tile_index, parent_element, w_scale, ref_seq) {
-        var track = this;
-        var tile_low = tile_index * DENSITY * resolution,
+        var track = this,
+	    tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = tile_high - tile_low,
-            params = { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id,
-              resolution: this.view.resolution, mode: this.mode };
-            
-        //
-        // Create/set/compute some useful vars.
-        //
-        var width = Math.ceil( tile_span * w_scale ),
+	    width = Math.ceil( tile_span * w_scale ),
             mode = this.mode,
             min_height = 25,
             left_offset = this.left_offset,
-            slots, required_height;
+            slots,
+	    required_height;
         
-        //
-        // Set mode if Auto.
-        //
+        // Set display mode if Auto.
         if (mode === "Auto") {
             if (result.dataset_type === "summary_tree") {
                 mode = result.dataset_type;
@@ -2393,19 +2370,43 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
                 }
             }            
         }
+	
+	// Drawing the summary tree (feature coverage histogram)
+	if ( mode === "summary_tree" ) {
+	    // Set height of parent_element
+	    required_height = this.summary_draw_height;
+	    parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
+	    // Add label to container div showing maximum count
+	    // TODO: this shouldn't be done at the tile level
+	    this.container_div.find(".yaxislabel").remove();
+	    var max_label = $("<div />").addClass('yaxislabel');
+	    max_label.text( result.max );
+	    max_label.css({ position: "absolute", top: "22px", left: "10px" });
+	    max_label.prependTo(this.container_div);
+	    // Create canvas
+	    var canvas = this.view.canvas_manager.new_canvas();
+	    canvas.width = width + left_offset;
+	    // Extra padding at top of summary tree
+	    canvas.height = required_height + LABEL_SPACING + CHAR_HEIGHT_PX;
+	    // Paint summary tree into canvas
+	    var painter = new SummaryTreePainter( result.data, result.delta, result.max, tile_low, tile_high, this.prefs.show_counts );
+	    var ctx = canvas.getContext("2d");
+	    // Deal with left_offset by translating
+	    ctx.translate( left_offset, 0 );
+	    painter.draw( ctx, width, required_height );
+	    // Wrapped canvas element is returned
+	    return $(canvas);	    
+	}
 
+	// Start dealing with row-by-row tracks
+
+	// y_scale is the height per row
         var y_scale = this.get_y_scale(mode);
 
-        //
         // Pack reads, set required height.
-        //
-        if (mode === "summary_tree") {
-            required_height = this.summary_draw_height;
-        }
         if (mode === "Dense") {
             required_height = min_height;
-        }
-        else if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
+        } else if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
             // Calculate new slots incrementally for this new chunk of data and update height if necessary.
             required_height = this.incremental_slots(w_scale, result.data, mode) * y_scale + min_height;
             slots = this.inc_slots[w_scale].slots;
@@ -2418,10 +2419,7 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
 	
         canvas.width = width + left_offset;
         canvas.height = required_height;
-        if (result.dataset_type === "summary_tree") {
-            // Increase canvas height in order to display max label.
-            canvas.height += LABEL_SPACING + CHAR_HEIGHT_PX;
-        }
+
         parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = canvas.getContext("2d");
@@ -2430,16 +2428,6 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.textAlign = "right";
         this.container_div.find(".yaxislabel").remove();
         
-        //
-        // Draw summary tree. If tree is drawn, canvas is returned.
-        //
-        if (mode === "summary_tree") {            
-            this.draw_summary_tree(canvas, result.data, result.delta, result.max, w_scale, required_height, 
-                                   tile_low, left_offset);
-            return $(canvas);
-        }
-        
-        //
         // If there is a message, draw it on canvas so that it moves around with canvas, and make the border red
         // to indicate region where message is applicable
         if (result.message) {
@@ -3071,41 +3059,50 @@ FeatureSlotter.prototype.slot_features = function( features ) {
 /**
  * SummaryTreePainter, a histogram showing number of intervals in a region
  */
-var SummaryTreePainter = function( data, delta, max, show_counts ) {
+var SummaryTreePainter = function( data, delta, max, view_start, view_end, show_counts ) {
+    // Data and data properties
     this.data = data;
     this.delta = delta;
     this.max = max;
+    // View
+    this.view_start = view_start;
+    this.view_end = view_end;
+    // Drawing prefs
     this.show_counts = show_counts;
 }
 
-SummaryTreePainter.prototype.draw = function( ctx, w_scale, required_height, tile_low, left_offset ) {
+SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
     
-    var
-	points = this.data, delta = this.delta, max = this.max,
+    var view_start = this.view_start,
+	view_range = this.view_end - this.view_start,
+	w_scale = width / view_range;
+    
+    var points = this.data, delta = this.delta, max = this.max,
 	// Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
 	// start. However, height of each rectangle is relative to required_height; hence, the
 	// max rectangle is required_height.
-	base_y = required_height + LABEL_SPACING + CHAR_HEIGHT_PX;
+	base_y = height + LABEL_SPACING + CHAR_HEIGHT_PX;
 	delta_x_px = Math.ceil(delta * w_scale);
     
     ctx.save();
     
     for (var i = 0, len = points.length; i < len; i++) {
-	var x = Math.floor( (points[i][0] - tile_low) * w_scale );
+	
+	var x = Math.floor( (points[i][0] - view_start) * w_scale );
 	var y = points[i][1];
 	
 	if (!y) { continue; }
-	var y_px = y / max * required_height;
+	var y_px = y / max * height;
 	
 	ctx.fillStyle = "black";
-	ctx.fillRect(x + left_offset, base_y - y_px, delta_x_px, y_px);
+	ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
 	
 	// Draw number count if it can fit the number with some padding, otherwise things clump up
 	var text_padding_req_x = 4;
 	if (this.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
 	    ctx.fillStyle = "#666";
 	    ctx.textAlign = "center";
-	    ctx.fillText(y, x + left_offset + (delta_x_px/2), 10);
+	    ctx.fillText(y, x + (delta_x_px/2), 10);
 	}
     }
     
@@ -3113,7 +3110,9 @@ SummaryTreePainter.prototype.draw = function( ctx, w_scale, required_height, til
 }
 
 var LinePainter = function( data, view_start, view_end, min_value, max_value, color, mode ) {
+    // Data and data properties
     this.data = data;
+    // View
     this.view_start = view_start;
     this.view_end = view_end;
     // Drawing prefs
