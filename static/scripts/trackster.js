@@ -1071,6 +1071,15 @@ $.extend( TrackConfig.prototype, {
 });
 
 /**
+ * Tiles for TiledTracks.
+ */
+var Tile = function(track, canvas, histo_max) {
+    this.track = track;
+    this.canvas = canvas;
+    this.histo_max = histo_max;
+};
+
+/**
  * Tracks are objects can be added to the View. 
  * 
  * Track object hierarchy:
@@ -1113,7 +1122,7 @@ var Track = function(name, view, parent_element, data_url, data_query_wait) {
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
     this.parent_element.append(this.container_div);
 };
-$.extend( Track.prototype, {
+$.extend(Track.prototype, {
     /**
      * Initialize and draw the track.
      */
@@ -1476,7 +1485,7 @@ var TiledTrack = function(filters, tool, parent_track) {
     }
     */
 };
-$.extend( TiledTrack.prototype, Track.prototype, {
+$.extend(TiledTrack.prototype, Track.prototype, {
     /**
      * Make popup menu for track name.
      */
@@ -1732,23 +1741,17 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                     // Really draw tile: get data, seq data if available, and draw tile.
                     //
                     $.when(track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
-                                                     resolution, track.data_url_extra_params)).then(function() {
-                        // Data available for track. 
-                        var result = track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
-                                                                resolution, track.data_url_extra_params);
+                                                     resolution, track.data_url_extra_params)).then(function(tile_data) {
                         // If sequence data needed, get that and draw. Otherwise draw.
                         if (view.reference_track && w_scale > CHAR_WIDTH_PX) {
                             $.when(view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
                                                                             track.mode, resolution, 
-                                                                            view.reference_track.data_url_extra_params)).then(function() {
-                                var seq_data = view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
-                                                                                        track.mode, resolution, 
-                                                                                        view.reference_track.data_url_extra_params);
-                                draw_and_show_tile(id, result, resolution, tile_index, parent_element, w_scale, seq_data);
+                                                                            view.reference_track.data_url_extra_params)).then(function(seq_data) {
+                                draw_and_show_tile(id, tile_data, resolution, tile_index, parent_element, w_scale, seq_data);
                             });
                         }
                         else {
-                            draw_and_show_tile(id, result, resolution, tile_index, parent_element, w_scale);
+                            draw_and_show_tile(id, tile_data, resolution, tile_index, parent_element, w_scale);
                         }
                     });              
                 }
