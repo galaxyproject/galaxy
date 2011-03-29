@@ -2004,10 +2004,14 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     this.height_px = this.track_config.values.height;
     this.vertical_range = this.track_config.values.max_value - this.track_config.values.min_value;
 
-    // Add control for resizing
-    // Trickery here to deal with the hovering drag handle, can probably be
-    // pulled out and reused.
-    (function( track ){
+    this.add_resize_handle();
+};
+$.extend(LineTrack.prototype, TiledTrack.prototype, {
+    add_resize_handle: function () {
+	// Add control for resizing
+	// Trickery here to deal with the hovering drag handle, can probably be
+	// pulled out and reused.
+	var track = this;
         var in_handle = false;
         var in_drag = false;
         var drag_control = $( "<div class='track-resize'>" )
@@ -2035,9 +2039,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
             if ( ! in_handle ) { drag_control.hide(); }
             track.track_config.values.height = track.height_px;
         }).appendTo( track.container_div );
-    })(this);
-};
-$.extend(LineTrack.prototype, TiledTrack.prototype, {
+    },
     predraw_init: function() {
         var track = this,
             track_id = track.view.tracks.indexOf(track);
@@ -2078,99 +2080,23 @@ $.extend(LineTrack.prototype, TiledTrack.prototype, {
             return;
         }
         
-        var track = this,
-            tile_low = tile_index * DENSITY * resolution,
+        var tile_low = tile_index * DENSITY * resolution,
             tile_length = DENSITY * resolution,
-            key = resolution + "_" + tile_index,
-            params = { hda_ldda: this.hda_ldda, dataset_id: this.dataset_id, resolution: this.view.resolution };
+	    width = Math.ceil( tile_length * w_scale ),
+	    height = this.height_px;
         
+	// Create canvas
+        var canvas = this.view.canvas_manager.new_canvas();
+        canvas.width = width,
+        canvas.height = height;
         
-        var canvas = document.createElement("canvas"),
-            data = result.data;
-        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
-        canvas = $(canvas);
-    
-        canvas.get(0).width = Math.ceil( tile_length * w_scale );
-        canvas.get(0).height = track.height_px;
-        var ctx = canvas.get(0).getContext("2d"),
-            in_path = false,
-            min_value = track.prefs.min_value,
-            max_value = track.prefs.max_value,
-            vertical_range = track.vertical_range,
-            total_frequency = track.total_frequency,
-            height_px = track.height_px,
-            mode = track.mode;
-
-        // Pixel position of 0 on the y axis
-        var y_zero = Math.round( height_px + min_value / vertical_range * height_px );
-
-        // Line at 0.0
-        ctx.beginPath();
-        ctx.moveTo( 0, y_zero );
-        ctx.lineTo( tile_length * w_scale, y_zero );
-        // ctx.lineWidth = 0.5;
-        ctx.fillStyle = "#aaa";
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.fillStyle = track.prefs.color;
-        var x_scaled, y, delta_x_px;
-        if (data.length > 1) {
-            delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
-        } else {
-            delta_x_px = 10;
-        }
-        for (var i = 0, len = data.length; i < len; i++) {
-            x_scaled = Math.round((data[i][0] - tile_low) * w_scale);
-            y = data[i][1];
-            if (y === null) {
-                if (in_path && mode === "Filled") {
-                    ctx.lineTo(x_scaled, height_px);
-                }
-                in_path = false;
-                continue;
-            }
-            if (y < min_value) {
-                y = min_value;
-            } else if (y > max_value) {
-                y = max_value;
-            }
-        
-            if (mode === "Histogram") {
-                // y becomes the bar height in pixels, which is the negated for canvas coords
-                y = Math.round( y / vertical_range * height_px );
-                ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
-            } else if (mode === "Intensity" ) {
-                y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
-                ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
-                ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
-            } else {
-                // console.log(y, track.min_value, track.vertical_range, (y - track.min_value) / track.vertical_range * track.height_px);
-                y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
-                // console.log(canvas.get(0).height, canvas.get(0).width);
-                if (in_path) {
-                    ctx.lineTo(x_scaled, y);
-                } else {
-                    in_path = true;
-                    if (mode === "Filled") {
-                        ctx.moveTo(x_scaled, height_px);
-                        ctx.lineTo(x_scaled, y);
-                    } else {
-                        ctx.moveTo(x_scaled, y);
-                    }
-                }
-            }
-        }
-        if (mode === "Filled") {
-            if (in_path) {
-                ctx.lineTo( x_scaled, y_zero );
-                ctx.lineTo( 0, y_zero );
-            }
-            ctx.fill();
-        } else {
-            ctx.stroke();
-        }
-        return canvas;
+	// Paint line onto full canvas
+	var ctx = canvas.getContext("2d");
+	var painter = new LinePainter( result.data, tile_low, tile_low + tile_length,
+				       this.prefs.min_value, this.prefs.max_value, this.prefs.color, this.mode );
+	painter.draw( ctx, width, height );
+	
+        return $(canvas);
     } 
 });
 
@@ -3181,3 +3107,103 @@ SummaryTreePainter.prototype.draw = function( ctx, w_scale, required_height, til
     ctx.restore();
 }
 
+var LinePainter = function( data, view_start, view_end, min_value, max_value, color, mode ) {
+    this.data = data;
+    this.view_start = view_start;
+    this.view_end = view_end;
+    // Drawing prefs
+    this.min_value = min_value;
+    this.max_value = max_value;
+    this.color = color;
+    this.mode = mode;
+}
+
+LinePainter.prototype.draw = function( ctx, width, height ) {
+    var 
+	in_path = false,
+	min_value = this.min_value,
+	max_value = this.max_value,
+	vertical_range = max_value - min_value,
+	height_px = height,
+	view_start = this.view_start,
+	view_range = this.view_end - this.view_start,
+	w_scale = width / view_range,
+	mode = this.mode,
+	data = this.data;
+
+    ctx.save();
+
+    // Pixel position of 0 on the y axis
+    var y_zero = Math.round( height + min_value / vertical_range * height );
+
+    // Line at 0.0
+    if ( mode !== "Intensity" ) {
+	ctx.beginPath();
+	ctx.moveTo( 0, y_zero );
+	ctx.lineTo( width, y_zero );
+	// ctx.lineWidth = 0.5;
+	ctx.fillStyle = "#aaa";
+	ctx.stroke();
+    }
+    
+    ctx.beginPath();
+    ctx.fillStyle = this.color;
+    var x_scaled, y, delta_x_px;
+    if (data.length > 1) {
+	delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
+    } else {
+	delta_x_px = 10;
+    }
+    for (var i = 0, len = data.length; i < len; i++) {
+	x_scaled = Math.round((data[i][0] - view_start) * w_scale);
+	y = data[i][1];
+	if (y === null) {
+	    if (in_path && mode === "Filled") {
+		ctx.lineTo(x_scaled, height_px);
+	    }
+	    in_path = false;
+	    continue;
+	}
+	if (y < min_value) {
+	    y = min_value;
+	} else if (y > max_value) {
+	    y = max_value;
+	}
+    
+	if (mode === "Histogram") {
+	    // y becomes the bar height in pixels, which is the negated for canvas coords
+	    y = Math.round( y / vertical_range * height_px );
+	    ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
+	} else if (mode === "Intensity" ) {
+	    y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
+	    ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
+	    ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
+	} else {
+	    // console.log(y, track.min_value, track.vertical_range, (y - track.min_value) / track.vertical_range * track.height_px);
+	    y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
+	    // console.log(canvas.get(0).height, canvas.get(0).width);
+	    if (in_path) {
+		ctx.lineTo(x_scaled, y);
+	    } else {
+		in_path = true;
+		if (mode === "Filled") {
+		    ctx.moveTo(x_scaled, height_px);
+		    ctx.lineTo(x_scaled, y);
+		} else {
+		    ctx.moveTo(x_scaled, y);
+		}
+	    }
+	}
+    }
+    if (mode === "Filled") {
+	if (in_path) {
+	    ctx.lineTo( x_scaled, y_zero );
+	    ctx.lineTo( 0, y_zero );
+	}
+	ctx.fill();
+    } else {
+	ctx.stroke();
+    }
+    
+    ctx.restore();
+}
