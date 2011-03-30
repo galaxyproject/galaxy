@@ -436,7 +436,7 @@ class Text( Data ):
                         #Small dataset, recount all lines and reset peek afterward.
                         lc = self.count_data_lines(dataset)
                         dataset.metadata.data_lines = lc
-                        dataset.blurb = "%s %s" % util.commaify( str(lc) ), inflector.cond_plural(lc, self.line_class)
+                        dataset.blurb = "%s %s" % ( util.commaify( str(lc) ), inflector.cond_plural(lc, self.line_class) )
                     else:
                         est_lines = self.estimate_file_lines(dataset)
                         dataset.blurb = "~%s %s" % ( util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class) )
