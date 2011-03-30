@@ -1960,7 +1960,7 @@ $.extend(ReferenceTrack.prototype, TiledTrack.prototype, {
                 var c_start = Math.round(c * w_scale);
                 ctx.fillText(seq[c], c_start + track.left_offset, 10);
             }
-            return $(canvas);
+            return canvas;
         }
         this.content_div.css("height", "0px");
     }
@@ -2100,7 +2100,7 @@ $.extend(LineTrack.prototype, TiledTrack.prototype, {
                                        this.prefs.min_value, this.prefs.max_value, this.prefs.color, this.mode );
         painter.draw( ctx, width, height );
         
-        return $(canvas);
+        return canvas;
     } 
 });
 
@@ -2150,6 +2150,8 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.data_cache = new DataManager(20, this);
     this.left_offset = 200;
+
+    this.painter = LinkedFeaturePainter;
 };
 $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
     /**
@@ -2172,141 +2174,6 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         }
         
         return inc_slots.slot_features( features );
-    },
-    /**
-     * Draw feature.
-     */
-    draw_element: function(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width, left_offset) {
-        var 
-            feature_uid = feature[0],
-            feature_start = feature[1],
-            // -1 b/c intervals are half-open.
-            feature_end = feature[2] - 1, 
-            feature_name = feature[3],
-            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
-            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = ERROR_PADDING + (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
-            thickness, y_start, thick_start = null, thick_end = null,
-            block_color = this.prefs.block_color,
-            label_color = this.prefs.label_color;
-        
-        // Dense mode displays the same for all data.
-        if (mode === "Dense") {
-            ctx.fillStyle = block_color;
-            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, DENSE_FEATURE_HEIGHT);
-        }
-        else if (mode === "no_detail") {
-            // No details for feature, so only one way to display.
-            ctx.fillStyle = block_color;
-            // TODO: what should width be here?
-            ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, DENSE_FEATURE_HEIGHT);
-        } 
-        else { // Mode is either Squish or Pack:
-            // Feature details.
-            var feature_strand = feature[4],
-                feature_ts = feature[5],
-                feature_te = feature[6],
-                feature_blocks = feature[7];
-            
-            if (feature_ts && feature_te) {
-                thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
-                thick_end = Math.ceil( Math.min(width, Math.max(0, (feature_te - tile_low) * w_scale)) );
-            }
-            
-            // Set vars that depend on mode.
-            var thin_height, thick_height;
-            if (mode === "Squish") {
-                thin_height = 1;
-                thick_height = SQUISH_FEATURE_HEIGHT;
-            } else { // mode === "Pack"
-                thin_height = 5;
-                thick_height = PACK_FEATURE_HEIGHT;
-            }
-            
-            // Draw feature/feature blocks + connectors.
-            if (!feature_blocks) {
-                // If there are no blocks, treat the feature as one big exon.
-                if ( feature.strand ) {
-                    if (feature.strand === "+") {
-                        ctx.fillStyle = RIGHT_STRAND_INV;
-                    } else if (feature.strand === "-") {
-                        ctx.fillStyle = LEFT_STRAND_INV;
-                    }
-                }
-                else { // No strand.
-                    ctx.fillStyle = block_color;
-                }                            
-                ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, thick_height);
-            } else { 
-                // There are feature blocks and mode is either Squish or Pack.
-                //
-                // Approach: (a) draw whole feature as connector/intron and (b) draw blocks as 
-                // needed. This ensures that whole feature, regardless of whether it starts with
-                // a block, is visible.
-                //
-                
-                // Draw whole feature as connector/intron.
-                var cur_y_center, cur_height;
-                if (mode === "Squish") {
-                    ctx.fillStyle = CONNECTOR_COLOR;
-                    cur_y_center = y_center + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
-                    cur_height = 1;
-                }
-                else { // mode === "Pack"
-                    if (feature_strand) {
-                        var cur_y_center = y_center;
-                        var cur_height = thick_height;
-                        if (feature_strand === "+") {
-                            ctx.fillStyle = RIGHT_STRAND;
-                        } else if (feature_strand === "-") {
-                            ctx.fillStyle = LEFT_STRAND;
-                        }
-                    }
-                    else {
-                        ctx.fillStyle = CONNECTOR_COLOR;
-                        cur_y_center += (SQUISH_FEATURE_HEIGHT/2) + 1;
-                        cur_height = 1;
-                    }
-                }
-                ctx.fillRect(f_start + left_offset, cur_y_center, f_end - f_start, cur_height);
-                
-                for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
-                    var block = feature_blocks[k],
-                        block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        // -1 b/c intervals are half-open.
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - 1 - tile_low) * w_scale)) );
-
-                    // Skip drawing if block not on tile.    
-                    if (block_start > block_end) { continue; }
-
-                    // Draw thin block.
-                    ctx.fillStyle = block_color;
-                    ctx.fillRect(block_start + left_offset, y_center + (thick_height-thin_height)/2 + 1, 
-                                 block_end - block_start, thin_height);
-
-                    // If block intersects with thick region, draw block as thick.
-                    if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
-                        var block_thick_start = Math.max(block_start, thick_start),
-                            block_thick_end = Math.min(block_end, thick_end);
-                        ctx.fillRect(block_thick_start + left_offset, y_center + 1,
-                                     block_thick_end - block_thick_start, thick_height);
-                    }
-                }
-            }
-            
-            // Draw label for Pack mode.
-            if (mode === "Pack" && feature_start > tile_low) {
-                ctx.fillStyle = label_color;
-                if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
-                    ctx.textAlign = "left";
-                    ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING, y_center + 8);
-                } else {
-                    ctx.textAlign = "right";
-                    ctx.fillText(feature_name, f_start + left_offset - LABEL_SPACING, y_center + 8);
-                }
-                ctx.fillStyle = block_color;
-            }
-        }
     },
     /**
      * Returns y_scale based on mode.
@@ -2394,27 +2261,44 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // Deal with left_offset by translating
             ctx.translate( left_offset, 0 );
             painter.draw( ctx, width, required_height );
-            // Wrapped canvas element is returned
-            return $(canvas);            
+            // Canvas element is returned
+            return canvas;            
         }
 
         // Start dealing with row-by-row tracks
-
-        // y_scale is the height per row
-        var y_scale = this.get_y_scale(mode);
-
-        // Pack reads, set required height.
-        if (mode === "Dense") {
-            required_height = min_height;
-        } else if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
-            // Calculate new slots incrementally for this new chunk of data and update height if necessary.
-            required_height = this.incremental_slots(w_scale, result.data, mode) * y_scale + min_height;
+        
+        // If working with a mode where slotting is neccesary, update the incremental slotting
+        var slots, slots_required = 1;
+        if ( mode === "no_detail" || mode === "Squish" || mode === "Pack" ) {
+            slots_required = this.incremental_slots(w_scale, result.data, mode);
             slots = this.inc_slots[w_scale].slots;
         }
+
+        // Filter features
+        var filtered = [];
+        if ( result.data ) {
+            for (var i = 0, len = result.data.length; i < len; i++) {
+                var feature = result.data[i];
+                var hide_feature = false;
+                var filter;
+                for (var f = 0, flen = this.filters.length; f < flen; f++) {
+                    filter = this.filters[f];
+                    filter.update_attrs(feature);
+                    if (!filter.keep(feature)) {
+                        hide_feature = true;
+                        break;
+                    }
+                }
+                if (!hide_feature) {
+                    filtered.push( feature );
+                }
+            }
+        }
         
-        //
-        // Set up for drawing.
-        //
+        // Create painter, and canvas of sufficient size to contain all features
+        // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
+        var painter = new (this.painter)( filtered, tile_low, tile_high, this.prefs, mode, ref_seq );
+        var required_height = painter.get_required_height( slots_required );
         var canvas = this.view.canvas_manager.new_canvas();
         
         canvas.width = width + left_offset;
@@ -2444,112 +2328,29 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
 
             // If there's no data, return.
             if (!result.data) {
-                return $(canvas);
+                return canvas;
             }
         }
 
-        //        
         // Set example feature. This is needed so that track can update its UI based on feature attributes.
-        //
         this.example_feature = (result.data.length ? result.data[0] : undefined);
-        
-        //
-        // Draw elements.
-        //
-        var data = result.data;
-        for (var i = 0, len = data.length; i < len; i++) {
-            var feature = data[i],
-                feature_uid = feature[0],
-                feature_start = feature[1],
-                feature_end = feature[2],
-                // Slot valid only if features are slotted and this feature is slotted; 
-                // feature may not be due to lack of space.
-                slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
-                
-            // Apply filters to feature.
-            var hide_feature = false;
-            var filter;
-            for (var f = 0; f < this.filters.length; f++) {
-                filter = this.filters[f];
-                filter.update_attrs(feature);
-                if (!filter.keep(feature)) {
-                    hide_feature = true;
-                    break;
-                }
-            }
-            if (hide_feature) {
-                continue;
-            }
+      
+        // Draw features
+        ctx.translate( left_offset, 0 );
+        painter.draw( ctx, width, required_height, slots );
             
-            // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
-            if (is_overlap([feature_start, feature_end], [tile_low, tile_high]) && (mode == "Dense" || slot !== null)) {
-                this.draw_element(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, 
-                                  width, left_offset, ref_seq);
-            }
-        }
-        return $(canvas);
+        return canvas;
     }
 });
 
 var VcfTrack = function(name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
     this.track_type = "VcfTrack";
+    this.painter = VariantPainter;
 };
 
-$.extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    /**
-     * Draw a VCF entry.
-     */
-    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
-        var feature = data[i],
-            feature_uid = feature[0],
-            feature_start = feature[1],
-            // -1 b/c intervals are half-open.
-            feature_end = feature[2] - 1,
-            feature_name = feature[3],
-            // All features need a start, end, and vertical center.
-            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
-            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = ERROR_PADDING + (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
-            thickness, y_start, thick_start = null, thick_end = null;
-        
-        if (no_label) {
-            ctx.fillStyle = block_color;
-            ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
-        } else { // Show blocks, labels, etc.                        
-            // Unpack.
-            var ref_base = feature[4], alt_base = feature[5], qual = feature[6];
-        
-            // Draw block for entry.
-            thickness = 9;
-            y_start = 1;
-            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, thickness);
-        
-            // Add label for entry.
-            if (mode !== "Dense" && feature_name !== undefined && feature_start > tile_low) {
-                // Draw label
-                ctx.fillStyle = label_color;
-                if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
-                    ctx.textAlign = "left";
-                    ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
-                } else {
-                    ctx.textAlign = "right";
-                    ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
-                }
-                ctx.fillStyle = block_color;
-            }
-        
-            // Show additional data on block.
-            var vcf_label = ref_base + " / " + alt_base;
-            if (feature_start > tile_low && ctx.measureText(vcf_label).width < (f_end - f_start)) {
-                ctx.fillStyle = "white";
-                ctx.textAlign = "center";
-                ctx.fillText(vcf_label, left_offset + f_start + (f_end-f_start)/2, y_center + 8);
-                ctx.fillStyle = block_color;
-            }
-        }
-    }
-});
+$.extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
+
 
 var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
@@ -2573,281 +2374,10 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     this.prefs = this.track_config.values;
     
     this.track_type = "ReadTrack";
+    this.painter = ReadPainter;
     this.make_name_popup_menu();
 };
-$.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    /**
-     * Returns y_scale based on mode.
-     */
-    get_y_scale: function(mode) {
-        var y_scale;
-        if (mode === "summary_tree") {
-            // No scale needed.
-        }
-        if (mode === "Dense") {
-            y_scale = DENSE_TRACK_HEIGHT;            
-        }
-        else if (mode === "Squish") {
-            y_scale = SQUISH_TRACK_HEIGHT;
-        }
-        else { // mode === "Pack"
-            y_scale = PACK_TRACK_HEIGHT;
-            if (this.track_config.values.show_insertions) {
-                y_scale *= 2;
-            }
-        }
-        return y_scale;
-    },
-    /**
-     * Draw a single read.
-     */
-    draw_read: function(ctx, mode, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center, ref_seq) {
-        ctx.textAlign = "center";
-        var track = this,
-            tile_region = [tile_low, tile_high],
-            base_offset = 0,
-            seq_offset = 0,
-            gap = 0;
-            
-        // Keep list of items that need to be drawn on top of initial drawing layer.
-        var draw_last = [];
-        
-        // Gap is needed so that read is offset and hence first base can be drawn on read.
-        // TODO-FIX: using this gap offsets reads so that their start is not visually in sync with other tracks.
-        if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
-            gap = Math.round(w_scale/2);
-        }
-        if (!cigar) {
-            // If no cigar string, then assume all matches
-            cigar = [ [0, orig_seq.length] ]
-        }
-        for (var cig_id = 0, len = cigar.length; cig_id < len; cig_id++) {
-            var cig = cigar[cig_id],
-                cig_op = "MIDNSHP=X"[cig[0]],
-                cig_len = cig[1];
-            
-            if (cig_op === "H" || cig_op === "S") {
-                // Go left if it clips
-                base_offset -= cig_len;
-            }
-            var seq_start = feature_start + base_offset,
-                s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
-                s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
-                
-            switch (cig_op) {
-                case "H": // Hard clipping.
-                    // TODO: draw anything?
-                    // Sequence not present, so do not increment seq_offset.
-                    break;
-                case "S": // Soft clipping.
-                case "M": // Match.
-                case "=": // Equals.
-                    var seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region);
-                    if (seq_tile_overlap !== NO_OVERLAP) {
-                        // Draw.
-                        var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
-                        if (gap > 0) {
-                            ctx.fillStyle = this.prefs.block_color;
-                            ctx.fillRect(s_start + this.left_offset - gap, y_center + 1, s_end - s_start, 9);
-                            ctx.fillStyle = CONNECTOR_COLOR;
-                            // TODO: this can be made much more efficient by computing the complete sequence
-                            // to draw and then drawing it.
-                            for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                if (this.track_config.values.show_differences && ref_seq) {
-                                    var ref_char = ref_seq[seq_start - tile_low + c];
-                                    if (!ref_char || ref_char.toLowerCase() === seq[c].toLowerCase()) {
-                                        continue;
-                                    }
-                                }
-                                if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
-                                    var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
-                                    ctx.fillText(seq[c], c_start + this.left_offset, y_center + 9);
-                                }
-                            }
-                        } else {
-                            ctx.fillStyle = this.prefs.block_color;
-                            // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                            ctx.fillRect(s_start + this.left_offset, 
-                                         y_center + (this.mode !== "Dense" ? 4 : 5), 
-                                         s_end - s_start, 
-                                         (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
-                        }
-                    }
-                    seq_offset += cig_len;
-                    base_offset += cig_len;
-                    break;
-                case "N": // Skipped bases.
-                    ctx.fillStyle = CONNECTOR_COLOR;
-                    ctx.fillRect(s_start + this.left_offset - gap, y_center + 5, s_end - s_start, 1);
-                    //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
-                    // No change in seq_offset because sequence not used when skipping.
-                    base_offset += cig_len;
-                    break;
-                case "D": // Deletion.
-                    ctx.fillStyle = "red";
-                    ctx.fillRect(s_start + this.left_offset - gap, y_center + 4, s_end - s_start, 3);
-                    // TODO: is this true? No change in seq_offset because sequence not used when skipping.
-                    base_offset += cig_len;
-                    break;
-                case "P": // TODO: No good way to draw insertions/padding right now, so ignore
-                    // Sequences not present, so do not increment seq_offset.
-                    break;
-                case "I": // Insertion.
-                    // Check to see if sequence should be drawn at all by looking at the overlap between
-                    // the sequence region and the tile region.
-                    var 
-                        seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region),
-                        insert_x_coord = this.left_offset + s_start - gap;
-                    
-                    if (seq_tile_overlap !== NO_OVERLAP) {
-                        var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
-                        // Insertion point is between the sequence start and the previous base: (-gap) moves
-                        // back from sequence start to insertion point.
-                        if (this.track_config.values.show_insertions) {
-                            //
-                            // Show inserted sequence above, centered on insertion point.
-                            //
-
-                            // Draw sequence.
-                            // X center is offset + start - <half_sequence_length>
-                            var x_center = this.left_offset + s_start - (s_end - s_start)/2;
-                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
-                                // Draw sequence container.
-                                ctx.fillStyle = "yellow";
-                                ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
-                                draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_center + 4, 5]};
-                                ctx.fillStyle = CONNECTOR_COLOR;
-                                // Based on overlap b/t sequence and tile, get sequence to be drawn.
-                                switch(seq_tile_overlap) {
-                                    case(OVERLAP_START):
-                                        seq = seq.slice(tile_low-seq_start);
-                                        break;
-                                    case(OVERLAP_END):
-                                        seq = seq.slice(0, seq_start-tile_high);
-                                        break;
-                                    case(CONTAINED_BY):
-                                        // All of sequence drawn.
-                                        break;
-                                    case(CONTAINS):
-                                        seq = seq.slice(tile_low-seq_start, seq_start-tile_high);
-                                        break;
-                                }
-                                // Draw sequence.
-                                for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                    var c_start = Math.floor( Math.max(0, (seq_start + c -  tile_low) * w_scale) );
-                                    ctx.fillText(seq[c], c_start + this.left_offset - (s_end - s_start)/2, y_center);
-                                }
-                            }
-                            else {
-                                // Draw block.
-                                ctx.fillStyle = "yellow";
-                                // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                                ctx.fillRect(x_center, y_center + (this.mode !== "Dense" ? 2 : 5), 
-                                             s_end - s_start, (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
-                            }
-                        }
-                        else {
-                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
-                                // Show insertions with a single number at the insertion point.
-                                draw_last[draw_last.length] = {type: "text", data: [seq.length, insert_x_coord, y_center + 9]};
-                            }
-                            else {
-                                // TODO: probably can merge this case with code above.
-                            }
-                        }
-                    }
-                    seq_offset += cig_len;
-                    // No change to base offset because insertions are drawn above sequence/read.
-                    break;
-                case "X":
-                    // TODO: draw something?
-                    seq_offset += cig_len;
-                    break;
-            }
-        }
-        
-        //
-        // Draw last items.
-        //
-        ctx.fillStyle = "yellow";
-        var item, type, data;
-        for (var i = 0; i < draw_last.length; i++) {
-            item = draw_last[i];
-            type = item["type"];
-            data = item["data"];
-            if (type === "text") {
-                ctx.font = "bold " + DEFAULT_FONT;
-                ctx.fillText(data[0], data[1], data[2]);
-                ctx.font = DEFAULT_FONT;
-            }
-            else if (type == "triangle") {
-                ctx.drawDownwardEquilateralTriangle(data[0], data[1], data[2]);
-            }
-        }
-    },
-    /**
-     * Draw a complete read.
-     */
-    draw_element: function(ctx, tile_index, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width, left_offset, ref_seq) {
-        // All features need a start, end, and vertical center.
-        var feature_uid = feature[0],
-            feature_start = feature[1],
-            feature_end = feature[2],
-            feature_name = feature[3],
-            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
-            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = (mode === "Dense" ? 1 : (1 + slot)) * y_scale,
-            block_color = this.prefs.block_color,
-            label_color = this.prefs.label_color,
-            // Left-gap for label text since we align chrom text to the position tick.
-            gap = 0;
-
-        // TODO: fix gap usage; also see note on gap in draw_read.
-        if ((mode === "Pack" || this.mode === "Auto") && w_scale > CHAR_WIDTH_PX) {
-            var gap = Math.round(w_scale/2);
-        }
-        
-        // Draw read.
-        ctx.fillStyle = block_color;
-        if (feature[5] instanceof Array) {
-            // Read is paired.
-            var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
-                b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[4][1] - tile_low) * w_scale)) ),
-                b2_start = Math.floor( Math.max(0, (feature[5][0] - tile_low) * w_scale) ),
-                b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
-
-            // Draw left/forward read.
-            if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {
-                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center, ref_seq);
-            }
-            // Draw right/reverse read.
-            if (feature[5][1] >= tile_low && feature[5][0] <= tile_high && feature[5][2]) {
-                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], y_center, ref_seq);
-            }
-            // Draw connector.
-            if (b2_start > b1_end) {
-                ctx.fillStyle = CONNECTOR_COLOR;
-                ctx.dashedLine(b1_end + left_offset - gap, y_center + 5, left_offset + b2_start - gap, y_center + 5);
-            }
-        } else {
-            // Read is single.
-            ctx.fillStyle = block_color;
-            this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center, ref_seq);
-        }
-        if (mode === "Pack" && feature_start > tile_low) {
-            // Draw label.
-            ctx.fillStyle = this.prefs.label_color;
-            if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
-                ctx.textAlign = "left";
-                ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING - gap, y_center + 8);
-            } else {
-                ctx.textAlign = "right";
-                ctx.fillText(feature_name, f_start + left_offset - LABEL_SPACING - gap, y_center + 8);
-            }
-            ctx.fillStyle = block_color;
-        }
-    }
-});
+$.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
 /**
  * Feature track that displays data generated from tool.
@@ -2889,6 +2419,18 @@ $.extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prot
 });
 
 // ---- To be extracted ------------------------------------------------------
+
+// ---- Simple extend function for inheritence ----
+
+var extend = function() {
+    var target = arguments[0];
+    for ( var i = 1; i < arguments.length; i++ ) {
+        var other = arguments[i];
+        for ( key in other ) {
+            target[key] = other[key];
+        }
+    }
+}
 
 // ---- Canvas management ----
 
@@ -3211,3 +2753,561 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     
     ctx.restore();
 }
+
+var FeaturePainter = function( data, view_start, view_end, prefs, mode ) {
+    this.data = data;
+    this.view_start = view_start;
+    this.view_end = view_end;
+    this.prefs = prefs;
+    this.mode = mode;
+}
+
+extend( FeaturePainter.prototype, { 
+
+    get_required_height: function( rows_required ) {
+        // y_scale is the height per row
+        var required_height = y_scale = this.get_row_height(), mode = this.mode;
+        // If using a packing mode, need to multiply by the number of slots used
+        if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
+            // Calculate new slots incrementally for this new chunk of data and update height if necessary.
+            required_height = rows_required * y_scale;
+        }
+        return required_height;
+    },
+
+    draw: function( ctx, width, height, slots ) {
+
+        var data = this.data, view_start = this.view_start, view_end = this.view_end;
+
+        ctx.save();
+
+        ctx.fillStyle = this.prefs.block_color;
+        ctx.textAlign = "right";
+
+        var view_range = this.view_end - this.view_start,
+            w_scale = width / view_range,
+            y_scale = this.get_row_height();
+
+        for (var i = 0, len = data.length; i < len; i++) {
+            var feature = data[i],
+                feature_uid = feature[0],
+                feature_start = feature[1],
+                feature_end = feature[2],
+                // Slot valid only if features are slotted and this feature is slotted; 
+                // feature may not be due to lack of space.
+                slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
+                
+            // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
+            if (is_overlap([feature_start, feature_end], [view_start, view_end]) && (this.mode == "Dense" || slot !== null)) {
+                this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, 
+                                  width );
+            }
+        }
+
+        ctx.restore();
+    }
+});
+
+var LinkedFeaturePainter = function( data, view_start, view_end, prefs, mode ) {
+    FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
+}
+
+extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
+
+    /**
+     * Height of a single row, depends on mode
+     */
+    get_row_height: function() {
+        var mode = this.mode, y_scale;
+        if (mode === "summary_tree") {
+            // No scale needed.
+        }
+        if (mode === "Dense") {
+            y_scale = DENSE_TRACK_HEIGHT;            
+        }
+        else if (mode === "no_detail") {
+            y_scale = NO_DETAIL_TRACK_HEIGHT;
+        }
+        else if (mode === "Squish") {
+            y_scale = SQUISH_TRACK_HEIGHT;
+        }
+        else { // mode === "Pack"
+            y_scale = PACK_TRACK_HEIGHT;
+        }
+        return y_scale;
+    },
+
+    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {
+        var 
+            feature_uid = feature[0],
+            feature_start = feature[1],
+            // -1 b/c intervals are half-open.
+            feature_end = feature[2] - 1, 
+            feature_name = feature[3],
+            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
+            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
+            y_center = ERROR_PADDING + (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
+            thickness, y_start, thick_start = null, thick_end = null,
+            block_color = this.prefs.block_color,
+            label_color = this.prefs.label_color;
+        
+        // Dense mode displays the same for all data.
+        if (mode === "Dense") {
+            ctx.fillStyle = block_color;
+            ctx.fillRect(f_start, y_center, f_end - f_start, DENSE_FEATURE_HEIGHT);
+        }
+        else if (mode === "no_detail") {
+            // No details for feature, so only one way to display.
+            ctx.fillStyle = block_color;
+            // TODO: what should width be here?
+            ctx.fillRect(f_start, y_center + 5, f_end - f_start, DENSE_FEATURE_HEIGHT);
+        } 
+        else { // Mode is either Squish or Pack:
+            // Feature details.
+            var feature_strand = feature[4],
+                feature_ts = feature[5],
+                feature_te = feature[6],
+                feature_blocks = feature[7];
+            
+            if (feature_ts && feature_te) {
+                thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
+                thick_end = Math.ceil( Math.min(width, Math.max(0, (feature_te - tile_low) * w_scale)) );
+            }
+            
+            // Set vars that depend on mode.
+            var thin_height, thick_height;
+            if (mode === "Squish") {
+                thin_height = 1;
+                thick_height = SQUISH_FEATURE_HEIGHT;
+            } else { // mode === "Pack"
+                thin_height = 5;
+                thick_height = PACK_FEATURE_HEIGHT;
+            }
+            
+            // Draw feature/feature blocks + connectors.
+            if (!feature_blocks) {
+                // If there are no blocks, treat the feature as one big exon.
+                if ( feature.strand ) {
+                    if (feature.strand === "+") {
+                        ctx.fillStyle = RIGHT_STRAND_INV;
+                    } else if (feature.strand === "-") {
+                        ctx.fillStyle = LEFT_STRAND_INV;
+                    }
+                }
+                else { // No strand.
+                    ctx.fillStyle = block_color;
+                }                            
+                ctx.fillRect(f_start, y_center, f_end - f_start, thick_height);
+            } else { 
+                // There are feature blocks and mode is either Squish or Pack.
+                //
+                // Approach: (a) draw whole feature as connector/intron and (b) draw blocks as 
+                // needed. This ensures that whole feature, regardless of whether it starts with
+                // a block, is visible.
+                //
+                
+                // Draw whole feature as connector/intron.
+                var cur_y_center, cur_height;
+                if (mode === "Squish") {
+                    ctx.fillStyle = CONNECTOR_COLOR;
+                    cur_y_center = y_center + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
+                    cur_height = 1;
+                }
+                else { // mode === "Pack"
+                    if (feature_strand) {
+                        var cur_y_center = y_center;
+                        var cur_height = thick_height;
+                        if (feature_strand === "+") {
+                            ctx.fillStyle = RIGHT_STRAND;
+                        } else if (feature_strand === "-") {
+                            ctx.fillStyle = LEFT_STRAND;
+                        }
+                    }
+                    else {
+                        ctx.fillStyle = CONNECTOR_COLOR;
+                        cur_y_center += (SQUISH_FEATURE_HEIGHT/2) + 1;
+                        cur_height = 1;
+                    }
+                }
+                ctx.fillRect(f_start, cur_y_center, f_end - f_start, cur_height);
+                
+                for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
+                    var block = feature_blocks[k],
+                        block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
+                        // -1 b/c intervals are half-open.
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - 1 - tile_low) * w_scale)) );
+
+                    // Skip drawing if block not on tile.    
+                    if (block_start > block_end) { continue; }
+
+                    // Draw thin block.
+                    ctx.fillStyle = block_color;
+                    ctx.fillRect(block_start, y_center + (thick_height-thin_height)/2 + 1, 
+                                 block_end - block_start, thin_height);
+
+                    // If block intersects with thick region, draw block as thick.
+                    if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
+                        var block_thick_start = Math.max(block_start, thick_start),
+                            block_thick_end = Math.min(block_end, thick_end);
+                        ctx.fillRect(block_thick_start, y_center + 1,
+                                     block_thick_end - block_thick_start, thick_height);
+                    }
+                }
+            }
+            
+            // Draw label for Pack mode.
+            if (mode === "Pack" && feature_start > tile_low) {
+                ctx.fillStyle = label_color;
+                // FIXME: do this without tile_index
+                var tile_index = 1;
+                if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+                    ctx.textAlign = "left";
+                    ctx.fillText(feature_name, f_end + LABEL_SPACING, y_center + 8);
+                } else {
+                    ctx.textAlign = "right";
+                    ctx.fillText(feature_name, f_start - LABEL_SPACING, y_center + 8);
+                }
+                ctx.fillStyle = block_color;
+            }
+        }
+    }
+});
+
+
+var VariantPainter = function( data, view_start, view_end, prefs, mode ) {
+    FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
+}
+
+extend( VariantPainter.prototype, FeaturePainter.prototype, {
+    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
+        var feature = data[i],
+            feature_uid = feature[0],
+            feature_start = feature[1],
+            // -1 b/c intervals are half-open.
+            feature_end = feature[2] - 1,
+            feature_name = feature[3],
+            // All features need a start, end, and vertical center.
+            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
+            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
+            y_center = ERROR_PADDING + (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
+            thickness, y_start, thick_start = null, thick_end = null;
+        
+        if (no_label) {
+            ctx.fillStyle = block_color;
+            ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
+        } else { // Show blocks, labels, etc.                        
+            // Unpack.
+            var ref_base = feature[4], alt_base = feature[5], qual = feature[6];
+        
+            // Draw block for entry.
+            thickness = 9;
+            y_start = 1;
+            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, thickness);
+        
+            // Add label for entry.
+            if (mode !== "Dense" && feature_name !== undefined && feature_start > tile_low) {
+                // Draw label
+                ctx.fillStyle = label_color;
+                if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+                    ctx.textAlign = "left";
+                    ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
+                } else {
+                    ctx.textAlign = "right";
+                    ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
+                }
+                ctx.fillStyle = block_color;
+            }
+        
+            // Show additional data on block.
+            var vcf_label = ref_base + " / " + alt_base;
+            if (feature_start > tile_low && ctx.measureText(vcf_label).width < (f_end - f_start)) {
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.fillText(vcf_label, left_offset + f_start + (f_end-f_start)/2, y_center + 8);
+                ctx.fillStyle = block_color;
+            }
+        }
+    }
+});
+
+var ReadPainter = function( data, view_start, view_end, prefs, mode, ref_seq ) {
+    FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
+    this.ref_seq = ref_seq;
+}
+
+extend( ReadPainter.prototype, FeaturePainter.prototype, {
+    /**
+     * Returns y_scale based on mode.
+     */
+    get_row_height: function() {
+        var y_scale, mode = this.mode;
+        if (mode === "summary_tree") {
+            // No scale needed.
+        }
+        if (mode === "Dense") {
+            y_scale = DENSE_TRACK_HEIGHT;            
+        }
+        else if (mode === "Squish") {
+            y_scale = SQUISH_TRACK_HEIGHT;
+        }
+        else { // mode === "Pack"
+            y_scale = PACK_TRACK_HEIGHT;
+            if (this.track_config.values.show_insertions) {
+                y_scale *= 2;
+            }
+        }
+        return y_scale;
+    },
+    /**
+     * Draw a single read.
+     */
+    draw_read: function(ctx, mode, w_scale, tile_low, tile_high, feature_start, cigar, orig_seq, y_center) {
+        ctx.textAlign = "center";
+        var track = this,
+            tile_region = [tile_low, tile_high],
+            base_offset = 0,
+            seq_offset = 0,
+            gap = 0
+            ref_seq = this.ref_seq;
+            
+        // Keep list of items that need to be drawn on top of initial drawing layer.
+        var draw_last = [];
+        
+        // Gap is needed so that read is offset and hence first base can be drawn on read.
+        // TODO-FIX: using this gap offsets reads so that their start is not visually in sync with other tracks.
+        if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+            gap = Math.round(w_scale/2);
+        }
+        if (!cigar) {
+            // If no cigar string, then assume all matches
+            cigar = [ [0, orig_seq.length] ]
+        }
+        for (var cig_id = 0, len = cigar.length; cig_id < len; cig_id++) {
+            var cig = cigar[cig_id],
+                cig_op = "MIDNSHP=X"[cig[0]],
+                cig_len = cig[1];
+            
+            if (cig_op === "H" || cig_op === "S") {
+                // Go left if it clips
+                base_offset -= cig_len;
+            }
+            var seq_start = feature_start + base_offset,
+                s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
+                s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
+                
+            switch (cig_op) {
+                case "H": // Hard clipping.
+                    // TODO: draw anything?
+                    // Sequence not present, so do not increment seq_offset.
+                    break;
+                case "S": // Soft clipping.
+                case "M": // Match.
+                case "=": // Equals.
+                    var seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region);
+                    if (seq_tile_overlap !== NO_OVERLAP) {
+                        // Draw.
+                        var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
+                        if (gap > 0) {
+                            ctx.fillStyle = this.prefs.block_color;
+                            ctx.fillRect(s_start + this.left_offset - gap, y_center + 1, s_end - s_start, 9);
+                            ctx.fillStyle = CONNECTOR_COLOR;
+                            // TODO: this can be made much more efficient by computing the complete sequence
+                            // to draw and then drawing it.
+                            for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                                if (this.track_config.values.show_differences && ref_seq) {
+                                    var ref_char = ref_seq[seq_start - tile_low + c];
+                                    if (!ref_char || ref_char.toLowerCase() === seq[c].toLowerCase()) {
+                                        continue;
+                                    }
+                                }
+                                if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
+                                    var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
+                                    ctx.fillText(seq[c], c_start + this.left_offset, y_center + 9);
+                                }
+                            }
+                        } else {
+                            ctx.fillStyle = this.prefs.block_color;
+                            // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
+                            ctx.fillRect(s_start + this.left_offset, 
+                                         y_center + (this.mode !== "Dense" ? 4 : 5), 
+                                         s_end - s_start, 
+                                         (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
+                        }
+                    }
+                    seq_offset += cig_len;
+                    base_offset += cig_len;
+                    break;
+                case "N": // Skipped bases.
+                    ctx.fillStyle = CONNECTOR_COLOR;
+                    ctx.fillRect(s_start + this.left_offset - gap, y_center + 5, s_end - s_start, 1);
+                    //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
+                    // No change in seq_offset because sequence not used when skipping.
+                    base_offset += cig_len;
+                    break;
+                case "D": // Deletion.
+                    ctx.fillStyle = "red";
+                    ctx.fillRect(s_start + this.left_offset - gap, y_center + 4, s_end - s_start, 3);
+                    // TODO: is this true? No change in seq_offset because sequence not used when skipping.
+                    base_offset += cig_len;
+                    break;
+                case "P": // TODO: No good way to draw insertions/padding right now, so ignore
+                    // Sequences not present, so do not increment seq_offset.
+                    break;
+                case "I": // Insertion.
+                    // Check to see if sequence should be drawn at all by looking at the overlap between
+                    // the sequence region and the tile region.
+                    var 
+                        seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region),
+                        insert_x_coord = this.left_offset + s_start - gap;
+                    
+                    if (seq_tile_overlap !== NO_OVERLAP) {
+                        var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
+                        // Insertion point is between the sequence start and the previous base: (-gap) moves
+                        // back from sequence start to insertion point.
+                        if (this.track_config.values.show_insertions) {
+                            //
+                            // Show inserted sequence above, centered on insertion point.
+                            //
+
+                            // Draw sequence.
+                            // X center is offset + start - <half_sequence_length>
+                            var x_center = this.left_offset + s_start - (s_end - s_start)/2;
+                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                                // Draw sequence container.
+                                ctx.fillStyle = "yellow";
+                                ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
+                                draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_center + 4, 5]};
+                                ctx.fillStyle = CONNECTOR_COLOR;
+                                // Based on overlap b/t sequence and tile, get sequence to be drawn.
+                                switch(seq_tile_overlap) {
+                                    case(OVERLAP_START):
+                                        seq = seq.slice(tile_low-seq_start);
+                                        break;
+                                    case(OVERLAP_END):
+                                        seq = seq.slice(0, seq_start-tile_high);
+                                        break;
+                                    case(CONTAINED_BY):
+                                        // All of sequence drawn.
+                                        break;
+                                    case(CONTAINS):
+                                        seq = seq.slice(tile_low-seq_start, seq_start-tile_high);
+                                        break;
+                                }
+                                // Draw sequence.
+                                for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                                    var c_start = Math.floor( Math.max(0, (seq_start + c -  tile_low) * w_scale) );
+                                    ctx.fillText(seq[c], c_start + this.left_offset - (s_end - s_start)/2, y_center);
+                                }
+                            }
+                            else {
+                                // Draw block.
+                                ctx.fillStyle = "yellow";
+                                // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
+                                ctx.fillRect(x_center, y_center + (this.mode !== "Dense" ? 2 : 5), 
+                                             s_end - s_start, (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
+                            }
+                        }
+                        else {
+                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                                // Show insertions with a single number at the insertion point.
+                                draw_last[draw_last.length] = {type: "text", data: [seq.length, insert_x_coord, y_center + 9]};
+                            }
+                            else {
+                                // TODO: probably can merge this case with code above.
+                            }
+                        }
+                    }
+                    seq_offset += cig_len;
+                    // No change to base offset because insertions are drawn above sequence/read.
+                    break;
+                case "X":
+                    // TODO: draw something?
+                    seq_offset += cig_len;
+                    break;
+            }
+        }
+        
+        //
+        // Draw last items.
+        //
+        ctx.fillStyle = "yellow";
+        var item, type, data;
+        for (var i = 0; i < draw_last.length; i++) {
+            item = draw_last[i];
+            type = item["type"];
+            data = item["data"];
+            if (type === "text") {
+                ctx.font = "bold " + DEFAULT_FONT;
+                ctx.fillText(data[0], data[1], data[2]);
+                ctx.font = DEFAULT_FONT;
+            }
+            else if (type == "triangle") {
+                ctx.drawDownwardEquilateralTriangle(data[0], data[1], data[2]);
+            }
+        }
+    },
+    /**
+     * Draw a complete read pair
+     */
+    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {
+        // All features need a start, end, and vertical center.
+        var feature_uid = feature[0],
+            feature_start = feature[1],
+            feature_end = feature[2],
+            feature_name = feature[3],
+            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
+            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
+            y_center = (mode === "Dense" ? 1 : (1 + slot)) * y_scale,
+            block_color = this.prefs.block_color,
+            label_color = this.prefs.label_color,
+            // Left-gap for label text since we align chrom text to the position tick.
+            gap = 0;
+
+        // TODO: fix gap usage; also see note on gap in draw_read.
+        if ((mode === "Pack" || this.mode === "Auto") && w_scale > CHAR_WIDTH_PX) {
+            var gap = Math.round(w_scale/2);
+        }
+        
+        // Draw read.
+        ctx.fillStyle = block_color;
+        if (feature[5] instanceof Array) {
+            // Read is paired.
+            var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
+                b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[4][1] - tile_low) * w_scale)) ),
+                b2_start = Math.floor( Math.max(0, (feature[5][0] - tile_low) * w_scale) ),
+                b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
+
+            // Draw left/forward read.
+            if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {
+                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], y_center);
+            }
+            // Draw right/reverse read.
+            if (feature[5][1] >= tile_low && feature[5][0] <= tile_high && feature[5][2]) {
+                this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], y_center);
+            }
+            // Draw connector.
+            if (b2_start > b1_end) {
+                ctx.fillStyle = CONNECTOR_COLOR;
+                ctx.dashedLine(b1_end + left_offset - gap, y_center + 5, left_offset + b2_start - gap, y_center + 5);
+            }
+        } else {
+            // Read is single.
+            ctx.fillStyle = block_color;
+            this.draw_read(ctx, mode, w_scale, tile_low, tile_high, feature_start, feature[4], feature[5], y_center);
+        }
+        if (mode === "Pack" && feature_start > tile_low) {
+            // Draw label.
+            ctx.fillStyle = this.prefs.label_color;
+            // FIXME: eliminate tile_index
+            var tile_index = 1;
+            if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+                ctx.textAlign = "left";
+                ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING - gap, y_center + 8);
+            } else {
+                ctx.textAlign = "right";
+                ctx.fillText(feature_name, f_start + left_offset - LABEL_SPACING - gap, y_center + 8);
+            }
+            ctx.fillStyle = block_color;
+        }
+    }
+});
