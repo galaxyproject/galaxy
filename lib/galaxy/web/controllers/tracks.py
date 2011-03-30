@@ -724,9 +724,13 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             input_dataset.history.add_dataset( subset_dataset )
             trans.sa_session.add( subset_dataset )
             trans.app.security_agent.set_all_dataset_permissions( subset_dataset.dataset, hda_permissions )
-            if input_dataset.extension == 'bam':
-                data_provider = BamDataProvider( original_dataset=input_dataset, converted_dataset=converted_dataset  )
-                data_provider.write_data_to_file( chrom, low, high, subset_dataset.file_name )
+            
+            # Write data subset to new HDA.
+            data_provider_class = get_data_provider( original_dataset=input_dataset )
+            data_provider = data_provider_class( original_dataset=input_dataset, 
+                                                 converted_dataset=converted_dataset )
+            data_provider.write_data_to_file( chrom, low, high, subset_dataset.file_name )
+            
             # TODO: size not working.
             subset_dataset.set_size()
             subset_dataset.info = "Data subset for trackster"

@@ -28,7 +28,7 @@
       <param format="interval,gff" name="input2" type="data" help="Second dataset">
           <label>that intersect</label>
       </param>
-      <param name="min" size="4" type="integer" value="1" help="(bp)">
+      <param name="min" size="4" type="integer" value="1" min="0" max="600000" help="(bp)">
           <label>for at least</label>
       </param>
   </inputs>

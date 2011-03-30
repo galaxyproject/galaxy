@@ -487,8 +487,19 @@ class IntervalIndexDataProvider( TracksDataProvider ):
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
     
     def write_data_to_file( self, chrom, start, end, filename ):
-        # TODO: write function.
-        pass
+        source = open( self.original_dataset.file_name )
+        index = Indexes( self.converted_dataset.file_name )
+        out = open( filename, 'w' )
+        for start, end, offset in index.find(chrom, start, end):
+            source.seek( offset )
+            if isinstance( self.original_dataset.datatype, Gff ):
+                reader = GFFReaderWrapper( source, fix_strand=True )
+                feature = reader.next()
+                for interval in feature.intervals:
+                    out.write(interval.raw_line + '\n')
+            elif isinstance( self.original_dataset.datatype, Bed ):
+                out.write( source.readline() )
+        out.close()
         
     def get_filters( self ):
         """ Returns a dataset's filters. """

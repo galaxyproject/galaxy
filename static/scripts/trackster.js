@@ -1392,6 +1392,7 @@ var TiledTrack = function(filters, tool, parent_track) {
             // Slider.
             var slider_div = $("<div/>").addClass("slider").appendTo(param_div);
             var slider = $("<div id='" + param.name + "-param-control'>").appendTo(slider_div);
+            // Step must have a value so that (max-min)%step == 0.
             slider.slider({
                 min: param.min,
                 max: param.max,
