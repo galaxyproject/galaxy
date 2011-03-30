@@ -2,7 +2,7 @@
 Support for constructing and viewing custom "track" browsers within Galaxy.
 """
 
-import re, time, pkg_resources
+import re, pkg_resources
 pkg_resources.require( "bx-python" )
 
 from bx.seq.twobit import TwoBitFile
@@ -13,7 +13,6 @@ from galaxy.web.controllers.library import LibraryListGrid
 from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
-from galaxy import util
 from galaxy.datatypes.interval import Gff
 
 from galaxy.visualization.tracks.data_providers import *
@@ -703,7 +702,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Set input datasets for tool. Input datasets are subsets of full 
         # datasets and are based on chrom, low, high.
         #
-        hda_permissions = trans.app.security_agent.history_get_default_permissions( original_dataset.history )
+        job_history = trans.get_history( create=True )
+        hda_permissions = trans.app.security_agent.history_get_default_permissions( job_history )
         messages_list = []
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
@@ -721,7 +721,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                                                                         name="Subset [%s:%i-%i] of data %i" % \
                                                                             ( chrom, low, high, input_dataset.hid ),
                                                                         visible=False )
-            input_dataset.history.add_dataset( subset_dataset )
+            job_history.add_dataset( subset_dataset )
             trans.sa_session.add( subset_dataset )
             trans.app.security_agent.set_all_dataset_permissions( subset_dataset.dataset, hda_permissions )
             
@@ -744,7 +744,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Start tool and handle outputs.
         #
         try:
-            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=original_dataset.history )
+            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=job_history )
         except Exception, e:
             # Lots of things can go wrong when trying to execute tool.
             return to_json_string( { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) } )
