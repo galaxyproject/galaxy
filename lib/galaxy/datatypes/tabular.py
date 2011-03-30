@@ -224,7 +224,6 @@ class Tabular( data.Text ):
             out.append( '%s</td></tr>'  % escape( comments.pop(0) ) )
         return "".join( out )
     def set_peek( self, dataset, line_count=None, is_multi_byte=False):
-        print line_count
         super(Tabular, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % ( dataset.blurb, util.commaify( str( dataset.metadata.comment_lines ) ) )
