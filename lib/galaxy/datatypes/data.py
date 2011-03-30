@@ -441,7 +441,7 @@ class Text( Data ):
                         est_lines = self.estimate_file_lines(dataset)
                         dataset.blurb = "~%s %s" % ( util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class) )
             else:
-                dataset.blurb = "%s %s" % util.commaify( str(line_count) ), inflector.cond_plural(line_count, self.line_class)
+                dataset.blurb = "%s %s" % ( util.commaify( str(line_count) ), inflector.cond_plural(line_count, self.line_class) )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
