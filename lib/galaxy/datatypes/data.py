@@ -354,6 +354,7 @@ class Data( object ):
 
 class Text( Data ):
     file_ext = 'txt'
+    line_class = 'line'
 
     """Add metadata elements"""
     MetadataElement( name="data_lines", default=0, desc="Number of data lines", readonly=True, optional=True, visible=False, no_value=0 )
@@ -417,26 +418,30 @@ class Text( Data ):
                 data_lines += 1
         return data_lines
     def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
+        """
+        Set the peek.  This method is used by various subclasses of Text.
+        """
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
             dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
             if line_count is None:
                 # See if line_count is stored in the metadata
-                if dataset.metadata.data_lines is not None:
-                    dataset.blurb = "%s %s" % ( util.commaify( str(dataset.metadata.data_lines) ), inflector.cond_plural(dataset.metadata.data_lines, "line") )
+                if dataset.metadata.data_lines:
+                    dataset.blurb = "%s %s" % ( util.commaify( str(dataset.metadata.data_lines) ), inflector.cond_plural(dataset.metadata.data_lines, self.line_class) )
                 else:
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
                     # This can happen when the file is larger than max_optional_metadata_filesize.
                     if int(dataset.get_size()) <= 1048576:
                         #Small dataset, recount all lines and reset peek afterward.
-                        dataset.metadata.data_lines = self.count_data_lines(dataset)
-                        self.set_peek(dataset)
+                        lc = self.count_data_lines(dataset)
+                        dataset.metadata.data_lines = lc
+                        dataset.blurb = "%s %s" % util.commaify( str(lc) ), inflector.cond_plural(lc, self.line_class)
                     else:
                         est_lines = self.estimate_file_lines(dataset)
-                        dataset.blurb = "~%s %s" % ( util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, "line") )
+                        dataset.blurb = "~%s %s" % ( util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class) )
             else:
-                dataset.blurb = "%s %s" % util.commaify( str(line_count) ), inflector.cond_plural(line_count, "line")
+                dataset.blurb = "%s %s" % util.commaify( str(line_count) ), inflector.cond_plural(line_count, self.line_class)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
