@@ -2012,10 +2012,10 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
 };
 $.extend(LineTrack.prototype, TiledTrack.prototype, {
     add_resize_handle: function () {
-	// Add control for resizing
-	// Trickery here to deal with the hovering drag handle, can probably be
-	// pulled out and reused.
-	var track = this;
+        // Add control for resizing
+        // Trickery here to deal with the hovering drag handle, can probably be
+        // pulled out and reused.
+        var track = this;
         var in_handle = false;
         var in_drag = false;
         var drag_control = $( "<div class='track-resize'>" )
@@ -2086,20 +2086,20 @@ $.extend(LineTrack.prototype, TiledTrack.prototype, {
         
         var tile_low = tile_index * DENSITY * resolution,
             tile_length = DENSITY * resolution,
-	    width = Math.ceil( tile_length * w_scale ),
-	    height = this.height_px;
+            width = Math.ceil( tile_length * w_scale ),
+            height = this.height_px;
         
-	// Create canvas
+        // Create canvas
         var canvas = this.view.canvas_manager.new_canvas();
         canvas.width = width,
         canvas.height = height;
         
-	// Paint line onto full canvas
-	var ctx = canvas.getContext("2d");
-	var painter = new LinePainter( result.data, tile_low, tile_low + tile_length,
-				       this.prefs.min_value, this.prefs.max_value, this.prefs.color, this.mode );
-	painter.draw( ctx, width, height );
-	
+        // Paint line onto full canvas
+        var ctx = canvas.getContext("2d");
+        var painter = new LinePainter( result.data, tile_low, tile_low + tile_length,
+                                       this.prefs.min_value, this.prefs.max_value, this.prefs.color, this.mode );
+        painter.draw( ctx, width, height );
+        
         return $(canvas);
     } 
 });
@@ -2170,8 +2170,8 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
             inc_slots.mode = mode;
             this.inc_slots[level] = inc_slots;
         }
-	
-	return inc_slots.slot_features( features );
+        
+        return inc_slots.slot_features( features );
     },
     /**
      * Draw feature.
@@ -2335,15 +2335,15 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
      */
     draw_tile: function(result, resolution, tile_index, parent_element, w_scale, ref_seq) {
         var track = this,
-	    tile_low = tile_index * DENSITY * resolution,
+            tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = tile_high - tile_low,
-	    width = Math.ceil( tile_span * w_scale ),
+            width = Math.ceil( tile_span * w_scale ),
             mode = this.mode,
             min_height = 25,
             left_offset = this.left_offset,
             slots,
-	    required_height;
+            required_height;
         
         // Set display mode if Auto.
         if (mode === "Auto") {
@@ -2370,37 +2370,37 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
                 }
             }            
         }
-	
-	// Drawing the summary tree (feature coverage histogram)
-	if ( mode === "summary_tree" ) {
-	    // Set height of parent_element
-	    required_height = this.summary_draw_height;
-	    parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
-	    // Add label to container div showing maximum count
-	    // TODO: this shouldn't be done at the tile level
-	    this.container_div.find(".yaxislabel").remove();
-	    var max_label = $("<div />").addClass('yaxislabel');
-	    max_label.text( result.max );
-	    max_label.css({ position: "absolute", top: "22px", left: "10px" });
-	    max_label.prependTo(this.container_div);
-	    // Create canvas
-	    var canvas = this.view.canvas_manager.new_canvas();
-	    canvas.width = width + left_offset;
-	    // Extra padding at top of summary tree
-	    canvas.height = required_height + LABEL_SPACING + CHAR_HEIGHT_PX;
-	    // Paint summary tree into canvas
-	    var painter = new SummaryTreePainter( result.data, result.delta, result.max, tile_low, tile_high, this.prefs.show_counts );
-	    var ctx = canvas.getContext("2d");
-	    // Deal with left_offset by translating
-	    ctx.translate( left_offset, 0 );
-	    painter.draw( ctx, width, required_height );
-	    // Wrapped canvas element is returned
-	    return $(canvas);	    
-	}
+        
+        // Drawing the summary tree (feature coverage histogram)
+        if ( mode === "summary_tree" ) {
+            // Set height of parent_element
+            required_height = this.summary_draw_height;
+            parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
+            // Add label to container div showing maximum count
+            // TODO: this shouldn't be done at the tile level
+            this.container_div.find(".yaxislabel").remove();
+            var max_label = $("<div />").addClass('yaxislabel');
+            max_label.text( result.max );
+            max_label.css({ position: "absolute", top: "22px", left: "10px" });
+            max_label.prependTo(this.container_div);
+            // Create canvas
+            var canvas = this.view.canvas_manager.new_canvas();
+            canvas.width = width + left_offset;
+            // Extra padding at top of summary tree
+            canvas.height = required_height + LABEL_SPACING + CHAR_HEIGHT_PX;
+            // Paint summary tree into canvas
+            var painter = new SummaryTreePainter( result.data, result.delta, result.max, tile_low, tile_high, this.prefs.show_counts );
+            var ctx = canvas.getContext("2d");
+            // Deal with left_offset by translating
+            ctx.translate( left_offset, 0 );
+            painter.draw( ctx, width, required_height );
+            // Wrapped canvas element is returned
+            return $(canvas);            
+        }
 
-	// Start dealing with row-by-row tracks
+        // Start dealing with row-by-row tracks
 
-	// y_scale is the height per row
+        // y_scale is the height per row
         var y_scale = this.get_y_scale(mode);
 
         // Pack reads, set required height.
@@ -2415,8 +2415,8 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         //
         // Set up for drawing.
         //
-	var canvas = this.view.canvas_manager.new_canvas();
-	
+        var canvas = this.view.canvas_manager.new_canvas();
+        
         canvas.width = width + left_offset;
         canvas.height = required_height;
 
@@ -2934,14 +2934,14 @@ FeatureSlotter.prototype.slot_features = function( features ) {
     // by only having to look at a smaller subset
     // if (this.start_end_dct[0] === undefined) { this.start_end_dct[0] = []; }
     for (var i = 0, len = features.length; i < len; i++) {
-	var feature = features[i],
-	    feature_uid = feature[0];
-	if (inc_slots[feature_uid] !== undefined) {
-	    highest_slot = Math.max(highest_slot, inc_slots[feature_uid]);
-	    slotted.push(inc_slots[feature_uid]);
-	} else {
-	    undone.push(i);
-	}
+        var feature = features[i],
+            feature_uid = feature[0];
+        if (inc_slots[feature_uid] !== undefined) {
+            highest_slot = Math.max(highest_slot, inc_slots[feature_uid]);
+            slotted.push(inc_slots[feature_uid]);
+        } else {
+            undone.push(i);
+        }
     }
     
     // Slot unslotted features.
@@ -2949,106 +2949,106 @@ FeatureSlotter.prototype.slot_features = function( features ) {
     // Find the first slot such that current feature doesn't overlap any other features in that slot.
     // Returns -1 if no slot was found.
     var find_slot = function(f_start, f_end) {
-	// TODO: Fix constants
-	for (var slot_num = 0; slot_num <= MAX_FEATURE_DEPTH; slot_num++) {
-	    var has_overlap = false,
-		slot = start_end_dct[slot_num];
-	    if (slot !== undefined) {
-		// Iterate through features already in slot to see if current feature will fit.
-		for (var k = 0, k_len = slot.length; k < k_len; k++) {
-		    var s_e = slot[k];
-		    if (f_end > s_e[0] && f_start < s_e[1]) {
-			// There is overlap
-			has_overlap = true;
-			break;
-		    }
-		}
-	    }
-	    if (!has_overlap) {
-		return slot_num;
-	    }
-	}
-	return -1;
+        // TODO: Fix constants
+        for (var slot_num = 0; slot_num <= MAX_FEATURE_DEPTH; slot_num++) {
+            var has_overlap = false,
+                slot = start_end_dct[slot_num];
+            if (slot !== undefined) {
+                // Iterate through features already in slot to see if current feature will fit.
+                for (var k = 0, k_len = slot.length; k < k_len; k++) {
+                    var s_e = slot[k];
+                    if (f_end > s_e[0] && f_start < s_e[1]) {
+                        // There is overlap
+                        has_overlap = true;
+                        break;
+                    }
+                }
+            }
+            if (!has_overlap) {
+                return slot_num;
+            }
+        }
+        return -1;
     };
     
     // Do slotting.
     for (var i = 0, len = undone.length; i < len; i++) {
-	var feature = features[undone[i]],
-	    feature_uid = feature[0],
-	    feature_start = feature[1],
-	    feature_end = feature[2],
-	    feature_name = feature[3],
-	    // Where to start, end drawing on screen.
-	    f_start = Math.floor( feature_start * w_scale ),
-	    f_end = Math.ceil( feature_end * w_scale ),
-	    text_len = this.measureText(feature_name).width,
-	    text_align;
-	
-	// Update start, end drawing locations to include feature name.
-	// Try to put the name on the left, if not, put on right.
-	if (feature_name !== undefined && this.include_label ) {
-	    // Add gap for label spacing and extra pack space padding
-	    // TODO: Fix constants
-	    text_len += (LABEL_SPACING + PACK_SPACING);
-	    if (f_start - text_len >= 0) {
-		f_start -= text_len;
-		text_align = "left";
-	    } else {
-		f_end += text_len;
-		text_align = "right";
-	    }
-	}
-		    
-	// Find slot.
-	var slot_num = find_slot(f_start, f_end);
-	/*
-	if (slot_num < 0) {
-	    
-	    TODO: this is not yet working --
-	    console.log(feature_uid, "looking for slot with text on the right");
-	    // Slot not found. If text was on left, try on right and see
-	    // if slot can be found.
-	    // TODO: are there any checks we need to do to ensure that text
-	    // will fit on tile?
-	    if (text_align === "left") {
-		f_start -= text_len;
-		f_end -= text_len;
-		text_align = "right";
-		slot_num = find_slot(f_start, f_end);
-	    }
-	    if (slot_num >= 0) {
-		console.log(feature_uid, "found slot with text on the right");
-	    }
+        var feature = features[undone[i]],
+            feature_uid = feature[0],
+            feature_start = feature[1],
+            feature_end = feature[2],
+            feature_name = feature[3],
+            // Where to start, end drawing on screen.
+            f_start = Math.floor( feature_start * w_scale ),
+            f_end = Math.ceil( feature_end * w_scale ),
+            text_len = this.measureText(feature_name).width,
+            text_align;
+        
+        // Update start, end drawing locations to include feature name.
+        // Try to put the name on the left, if not, put on right.
+        if (feature_name !== undefined && this.include_label ) {
+            // Add gap for label spacing and extra pack space padding
+            // TODO: Fix constants
+            text_len += (LABEL_SPACING + PACK_SPACING);
+            if (f_start - text_len >= 0) {
+                f_start -= text_len;
+                text_align = "left";
+            } else {
+                f_end += text_len;
+                text_align = "right";
+            }
+        }
+                    
+        // Find slot.
+        var slot_num = find_slot(f_start, f_end);
+        /*
+        if (slot_num < 0) {
+            
+            TODO: this is not yet working --
+            console.log(feature_uid, "looking for slot with text on the right");
+            // Slot not found. If text was on left, try on right and see
+            // if slot can be found.
+            // TODO: are there any checks we need to do to ensure that text
+            // will fit on tile?
+            if (text_align === "left") {
+                f_start -= text_len;
+                f_end -= text_len;
+                text_align = "right";
+                slot_num = find_slot(f_start, f_end);
+            }
+            if (slot_num >= 0) {
+                console.log(feature_uid, "found slot with text on the right");
+            }
 
-	}
-	*/
-	// Do slotting.
-	if (slot_num >= 0) {
-	    // Add current feature to slot.
-	    if (start_end_dct[slot_num] === undefined) { 
-		start_end_dct[slot_num] = [];
-	    }
-	    start_end_dct[slot_num].push([f_start, f_end]);
-	    inc_slots[feature_uid] = slot_num;
-	    highest_slot = Math.max(highest_slot, slot_num);
-	}
-	else {
-	    // TODO: remove this warning when skipped features are handled.
-	    // Show warning for skipped feature.
-	    //console.log("WARNING: not displaying feature", feature_uid, f_start, f_end);
-	}
+        }
+        */
+        // Do slotting.
+        if (slot_num >= 0) {
+            // Add current feature to slot.
+            if (start_end_dct[slot_num] === undefined) { 
+                start_end_dct[slot_num] = [];
+            }
+            start_end_dct[slot_num].push([f_start, f_end]);
+            inc_slots[feature_uid] = slot_num;
+            highest_slot = Math.max(highest_slot, slot_num);
+        }
+        else {
+            // TODO: remove this warning when skipped features are handled.
+            // Show warning for skipped feature.
+            //console.log("WARNING: not displaying feature", feature_uid, f_start, f_end);
+        }
     }
     
     // Debugging: view slots data.
     /*
     for (var i = 0; i < MAX_FEATURE_DEPTH; i++) {
-	var slot = start_end_dct[i];
-	if (slot !== undefined) {
-	    console.log(i, "*************");
-	    for (var k = 0, k_len = slot.length; k < k_len; k++) {
-		console.log("\t", slot[k][0], slot[k][1]);
-	    }
-	}
+        var slot = start_end_dct[i];
+        if (slot !== undefined) {
+            console.log(i, "*************");
+            for (var k = 0, k_len = slot.length; k < k_len; k++) {
+                console.log("\t", slot[k][0], slot[k][1]);
+            }
+        }
     }
     */
     return highest_slot + 1;
@@ -3074,36 +3074,36 @@ var SummaryTreePainter = function( data, delta, max, view_start, view_end, show_
 SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
     
     var view_start = this.view_start,
-	view_range = this.view_end - this.view_start,
-	w_scale = width / view_range;
+        view_range = this.view_end - this.view_start,
+        w_scale = width / view_range;
     
     var points = this.data, delta = this.delta, max = this.max,
-	// Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
-	// start. However, height of each rectangle is relative to required_height; hence, the
-	// max rectangle is required_height.
-	base_y = height + LABEL_SPACING + CHAR_HEIGHT_PX;
-	delta_x_px = Math.ceil(delta * w_scale);
+        // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
+        // start. However, height of each rectangle is relative to required_height; hence, the
+        // max rectangle is required_height.
+        base_y = height + LABEL_SPACING + CHAR_HEIGHT_PX;
+        delta_x_px = Math.ceil(delta * w_scale);
     
     ctx.save();
     
     for (var i = 0, len = points.length; i < len; i++) {
-	
-	var x = Math.floor( (points[i][0] - view_start) * w_scale );
-	var y = points[i][1];
-	
-	if (!y) { continue; }
-	var y_px = y / max * height;
-	
-	ctx.fillStyle = "black";
-	ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
-	
-	// Draw number count if it can fit the number with some padding, otherwise things clump up
-	var text_padding_req_x = 4;
-	if (this.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
-	    ctx.fillStyle = "#666";
-	    ctx.textAlign = "center";
-	    ctx.fillText(y, x + (delta_x_px/2), 10);
-	}
+        
+        var x = Math.floor( (points[i][0] - view_start) * w_scale );
+        var y = points[i][1];
+        
+        if (!y) { continue; }
+        var y_px = y / max * height;
+        
+        ctx.fillStyle = "black";
+        ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
+        
+        // Draw number count if it can fit the number with some padding, otherwise things clump up
+        var text_padding_req_x = 4;
+        if (this.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
+            ctx.fillStyle = "#666";
+            ctx.textAlign = "center";
+            ctx.fillText(y, x + (delta_x_px/2), 10);
+        }
     }
     
     ctx.restore();
@@ -3124,16 +3124,16 @@ var LinePainter = function( data, view_start, view_end, min_value, max_value, co
 
 LinePainter.prototype.draw = function( ctx, width, height ) {
     var 
-	in_path = false,
-	min_value = this.min_value,
-	max_value = this.max_value,
-	vertical_range = max_value - min_value,
-	height_px = height,
-	view_start = this.view_start,
-	view_range = this.view_end - this.view_start,
-	w_scale = width / view_range,
-	mode = this.mode,
-	data = this.data;
+        in_path = false,
+        min_value = this.min_value,
+        max_value = this.max_value,
+        vertical_range = max_value - min_value,
+        height_px = height,
+        view_start = this.view_start,
+        view_range = this.view_end - this.view_start,
+        w_scale = width / view_range,
+        mode = this.mode,
+        data = this.data;
 
     ctx.save();
 
@@ -3142,71 +3142,71 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
 
     // Line at 0.0
     if ( mode !== "Intensity" ) {
-	ctx.beginPath();
-	ctx.moveTo( 0, y_zero );
-	ctx.lineTo( width, y_zero );
-	// ctx.lineWidth = 0.5;
-	ctx.fillStyle = "#aaa";
-	ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo( 0, y_zero );
+        ctx.lineTo( width, y_zero );
+        // ctx.lineWidth = 0.5;
+        ctx.fillStyle = "#aaa";
+        ctx.stroke();
     }
     
     ctx.beginPath();
     ctx.fillStyle = this.color;
     var x_scaled, y, delta_x_px;
     if (data.length > 1) {
-	delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
+        delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
     } else {
-	delta_x_px = 10;
+        delta_x_px = 10;
     }
     for (var i = 0, len = data.length; i < len; i++) {
-	x_scaled = Math.round((data[i][0] - view_start) * w_scale);
-	y = data[i][1];
-	if (y === null) {
-	    if (in_path && mode === "Filled") {
-		ctx.lineTo(x_scaled, height_px);
-	    }
-	    in_path = false;
-	    continue;
-	}
-	if (y < min_value) {
-	    y = min_value;
-	} else if (y > max_value) {
-	    y = max_value;
-	}
+        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
+        y = data[i][1];
+        if (y === null) {
+            if (in_path && mode === "Filled") {
+                ctx.lineTo(x_scaled, height_px);
+            }
+            in_path = false;
+            continue;
+        }
+        if (y < min_value) {
+            y = min_value;
+        } else if (y > max_value) {
+            y = max_value;
+        }
     
-	if (mode === "Histogram") {
-	    // y becomes the bar height in pixels, which is the negated for canvas coords
-	    y = Math.round( y / vertical_range * height_px );
-	    ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
-	} else if (mode === "Intensity" ) {
-	    y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
-	    ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
-	    ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
-	} else {
-	    // console.log(y, track.min_value, track.vertical_range, (y - track.min_value) / track.vertical_range * track.height_px);
-	    y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
-	    // console.log(canvas.get(0).height, canvas.get(0).width);
-	    if (in_path) {
-		ctx.lineTo(x_scaled, y);
-	    } else {
-		in_path = true;
-		if (mode === "Filled") {
-		    ctx.moveTo(x_scaled, height_px);
-		    ctx.lineTo(x_scaled, y);
-		} else {
-		    ctx.moveTo(x_scaled, y);
-		}
-	    }
-	}
+        if (mode === "Histogram") {
+            // y becomes the bar height in pixels, which is the negated for canvas coords
+            y = Math.round( y / vertical_range * height_px );
+            ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
+        } else if (mode === "Intensity" ) {
+            y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
+            ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
+            ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
+        } else {
+            // console.log(y, track.min_value, track.vertical_range, (y - track.min_value) / track.vertical_range * track.height_px);
+            y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
+            // console.log(canvas.get(0).height, canvas.get(0).width);
+            if (in_path) {
+                ctx.lineTo(x_scaled, y);
+            } else {
+                in_path = true;
+                if (mode === "Filled") {
+                    ctx.moveTo(x_scaled, height_px);
+                    ctx.lineTo(x_scaled, y);
+                } else {
+                    ctx.moveTo(x_scaled, y);
+                }
+            }
+        }
     }
     if (mode === "Filled") {
-	if (in_path) {
-	    ctx.lineTo( x_scaled, y_zero );
-	    ctx.lineTo( 0, y_zero );
-	}
-	ctx.fill();
+        if (in_path) {
+            ctx.lineTo( x_scaled, y_zero );
+            ctx.lineTo( 0, y_zero );
+        }
+        ctx.fill();
     } else {
-	ctx.stroke();
+        ctx.stroke();
     }
     
     ctx.restore();
