@@ -2298,7 +2298,8 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         // Create painter, and canvas of sufficient size to contain all features
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
         var painter = new (this.painter)( filtered, tile_low, tile_high, this.prefs, mode, ref_seq );
-        var required_height = painter.get_required_height( slots_required );
+        // FIXME: ERROR_PADDING is an ugly gap most of the time
+        var required_height = painter.get_required_height( slots_required ) + ERROR_PADDING;
         var canvas = this.view.canvas_manager.new_canvas();
         
         canvas.width = width + left_offset;
@@ -2336,7 +2337,7 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         this.example_feature = (result.data.length ? result.data[0] : undefined);
       
         // Draw features
-        ctx.translate( left_offset, 0 );
+        ctx.translate( left_offset, ERROR_PADDING );
         painter.draw( ctx, width, required_height, slots );
             
         return canvas;
@@ -2772,7 +2773,8 @@ extend( FeaturePainter.prototype, {
             // Calculate new slots incrementally for this new chunk of data and update height if necessary.
             required_height = rows_required * y_scale;
         }
-        return required_height;
+        // Pad bottom by half a row
+        return required_height + Math.round( y_scale / 2 );
     },
 
     draw: function( ctx, width, height, slots ) {
@@ -2846,11 +2848,11 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             feature_name = feature[3],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = ERROR_PADDING + (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
+            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             thickness, y_start, thick_start = null, thick_end = null,
             block_color = this.prefs.block_color,
             label_color = this.prefs.label_color;
-        
+
         // Dense mode displays the same for all data.
         if (mode === "Dense") {
             ctx.fillStyle = block_color;
@@ -2989,7 +2991,7 @@ extend( VariantPainter.prototype, FeaturePainter.prototype, {
             // All features need a start, end, and vertical center.
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = ERROR_PADDING + (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
+            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             thickness, y_start, thick_start = null, thick_end = null;
         
         if (no_label) {
@@ -3052,7 +3054,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
         }
         else { // mode === "Pack"
             y_scale = PACK_TRACK_HEIGHT;
-            if (this.track_config.values.show_insertions) {
+            if (this.prefs.show_insertions) {
                 y_scale *= 2;
             }
         }
@@ -3109,12 +3111,12 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                         if (gap > 0) {
                             ctx.fillStyle = this.prefs.block_color;
-                            ctx.fillRect(s_start + this.left_offset - gap, y_center + 1, s_end - s_start, 9);
+                            ctx.fillRect(s_start - gap, y_center + 1, s_end - s_start, 9);
                             ctx.fillStyle = CONNECTOR_COLOR;
                             // TODO: this can be made much more efficient by computing the complete sequence
                             // to draw and then drawing it.
                             for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                if (this.track_config.values.show_differences && ref_seq) {
+                                if (this.prefs.show_differences && ref_seq) {
                                     var ref_char = ref_seq[seq_start - tile_low + c];
                                     if (!ref_char || ref_char.toLowerCase() === seq[c].toLowerCase()) {
                                         continue;
@@ -3122,13 +3124,13 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                                 }
                                 if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
                                     var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
-                                    ctx.fillText(seq[c], c_start + this.left_offset, y_center + 9);
+                                    ctx.fillText(seq[c], c_start, y_center + 9);
                                 }
                             }
                         } else {
                             ctx.fillStyle = this.prefs.block_color;
                             // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                            ctx.fillRect(s_start + this.left_offset, 
+                            ctx.fillRect(s_start, 
                                          y_center + (this.mode !== "Dense" ? 4 : 5), 
                                          s_end - s_start, 
                                          (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
@@ -3139,14 +3141,14 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                     break;
                 case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
-                    ctx.fillRect(s_start + this.left_offset - gap, y_center + 5, s_end - s_start, 1);
+                    ctx.fillRect(s_start - gap, y_center + 5, s_end - s_start, 1);
                     //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
                     // No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
                     ctx.fillStyle = "red";
-                    ctx.fillRect(s_start + this.left_offset - gap, y_center + 4, s_end - s_start, 3);
+                    ctx.fillRect(s_start - gap, y_center + 4, s_end - s_start, 3);
                     // TODO: is this true? No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
@@ -3158,20 +3160,20 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                     // the sequence region and the tile region.
                     var 
                         seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region),
-                        insert_x_coord = this.left_offset + s_start - gap;
+                        insert_x_coord = s_start - gap;
                     
                     if (seq_tile_overlap !== NO_OVERLAP) {
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                         // Insertion point is between the sequence start and the previous base: (-gap) moves
                         // back from sequence start to insertion point.
-                        if (this.track_config.values.show_insertions) {
+                        if (this.prefs.show_insertions) {
                             //
                             // Show inserted sequence above, centered on insertion point.
                             //
 
                             // Draw sequence.
                             // X center is offset + start - <half_sequence_length>
-                            var x_center = this.left_offset + s_start - (s_end - s_start)/2;
+                            var x_center = s_start - (s_end - s_start)/2;
                             if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
                                 // Draw sequence container.
                                 ctx.fillStyle = "yellow";
@@ -3196,7 +3198,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                                 // Draw sequence.
                                 for (var c = 0, str_len = seq.length; c < str_len; c++) {
                                     var c_start = Math.floor( Math.max(0, (seq_start + c -  tile_low) * w_scale) );
-                                    ctx.fillText(seq[c], c_start + this.left_offset - (s_end - s_start)/2, y_center);
+                                    ctx.fillText(seq[c], c_start - (s_end - s_start)/2, y_center);
                                 }
                             }
                             else {
@@ -3288,7 +3290,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             // Draw connector.
             if (b2_start > b1_end) {
                 ctx.fillStyle = CONNECTOR_COLOR;
-                ctx.dashedLine(b1_end + left_offset - gap, y_center + 5, left_offset + b2_start - gap, y_center + 5);
+                ctx.dashedLine(b1_end - gap, y_center + 5, b2_start - gap, y_center + 5);
             }
         } else {
             // Read is single.
@@ -3302,10 +3304,10 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             var tile_index = 1;
             if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
-                ctx.fillText(feature_name, f_end + left_offset + LABEL_SPACING - gap, y_center + 8);
+                ctx.fillText(feature_name, f_end + LABEL_SPACING - gap, y_center + 8);
             } else {
                 ctx.textAlign = "right";
-                ctx.fillText(feature_name, f_start + left_offset - LABEL_SPACING - gap, y_center + 8);
+                ctx.fillText(feature_name, f_start - LABEL_SPACING - gap, y_center + 8);
             }
             ctx.fillStyle = block_color;
         }
