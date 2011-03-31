@@ -1268,7 +1268,7 @@ assign_mapper( context, LibraryDatasetDatasetAssociationPermissions, LibraryData
 assign_mapper( context, Library, Library.table,
     properties=dict(
         root_folder=relation( LibraryFolder, backref=backref( "library_root" ) )
-        )
+    )
 )
 
 assign_mapper( context, LibraryInfoAssociation, LibraryInfoAssociation.table,
@@ -1281,26 +1281,26 @@ assign_mapper( context, LibraryInfoAssociation, LibraryInfoAssociation.table,
                               ) )
 
 assign_mapper( context, LibraryFolder, LibraryFolder.table,
-    properties=dict( 
-        folders=relation( 
-            LibraryFolder, 
+    properties=dict(
+        folders=relation(
+            LibraryFolder,
             primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ),
             order_by=asc( LibraryFolder.table.c.name ),
             backref=backref( "parent", primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ), remote_side=[LibraryFolder.table.c.id] ) ),
-        active_folders=relation( LibraryFolder, 
-            primaryjoin=( ( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolder.table.c.deleted ) ) ), 
-            order_by=asc( LibraryFolder.table.c.name ), 
+        active_folders=relation( LibraryFolder,
+            primaryjoin=( ( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolder.table.c.deleted ) ) ),
+            order_by=asc( LibraryFolder.table.c.name ),
             lazy=True, #"""sqlalchemy.exceptions.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
             viewonly=True ),
         datasets=relation( LibraryDataset,
-            primaryjoin=( ( LibraryDataset.table.c.folder_id == LibraryFolder.table.c.id ) ), 
-            order_by=asc( LibraryDataset.table.c._name ), 
-            lazy=False, 
+            primaryjoin=( ( LibraryDataset.table.c.folder_id == LibraryFolder.table.c.id ) ),
+            order_by=asc( LibraryDataset.table.c._name ),
+            lazy=True,
             viewonly=True ),
         active_datasets=relation( LibraryDataset,
             primaryjoin=( ( LibraryDataset.table.c.folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryDataset.table.c.deleted ) ) ),
-            order_by=asc( LibraryDataset.table.c._name ), 
-            lazy=False, 
+            order_by=asc( LibraryDataset.table.c._name ),
+            lazy=True,
             viewonly=True )
     ) )
 
