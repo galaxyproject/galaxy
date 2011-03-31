@@ -57,7 +57,7 @@ class WorkflowsAPIController(BaseController):
         inputs = {}
         for step in latest_workflow.steps:
             if step.type == 'data_input':
-                inputs[step.id] = {'label':"Input Dataset", 'value':""}
+                inputs[step.id] = {'label':step.tool_inputs['name'], 'value':""}
             else:
                 pass
                 # Eventually, allow regular tool parameters to be inserted and modified at runtime.
