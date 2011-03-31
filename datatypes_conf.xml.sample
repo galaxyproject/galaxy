@@ -128,9 +128,9 @@
             <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
             <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
         </datatype>
-        <datatype extension="array_tree" type="galaxy.datatypes.data:Data" />
         <datatype extension="summary_tree" type="galaxy.datatypes.data:Data" />
         <datatype extension="interval_index" type="galaxy.datatypes.data:Data" />
+        <datatype extension="tabix" type="galaxy.datatypes.data:Data" />
         <!-- Start EMBOSS tools -->
         <datatype extension="acedb" type="galaxy.datatypes.data:Text"/>
         <datatype extension="asn1" type="galaxy.datatypes.data:Text"/>
