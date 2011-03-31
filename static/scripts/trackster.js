@@ -817,9 +817,27 @@ $.extend( View.prototype, {
 /**
  * Encapsulation of tools that users can apply to tracks/datasets.
  */
-var Tool = function(name, params) {
-    this.name = name;
-    this.params = params;  
+var Tool = function(tool_dict) {
+    // Unpack tool from dictionary.
+    this.name = tool_dict.name;
+    this.params = [];
+    var params_dict = tool_dict.params;
+    for (var i = 0; i < params_dict.length; i++) {
+        var param_dict = params_dict[i],
+            name = param_dict.name,
+            label = param_dict.label,
+            type = param_dict.type;
+        if (type === "int" || type === "float") {
+            this.params[this.params.length] = 
+                new NumberParameter(name, label, param_dict.min, param_dict.max, param_dict.value);
+        }
+        else if (type == "select") {
+            this.params[this.params.length] = new SelectParameter(name, label, param_dict.options);
+        }
+        else {
+            console.log("WARNING: unrecognized tool parameter type:", name, type);
+        }
+    }
 };
 $.extend(Tool.prototype, {
     // Returns a dictionary of parameter values; key is parameter name, value
@@ -828,7 +846,7 @@ $.extend(Tool.prototype, {
         var param_dict = {};
         for (var i = 0; i < this.params.length; i++) {
             var param = this.params[i];
-            param_dict[param.name] = param.value;
+            param_dict[param.name] = JSON.stringify(param.value);
         }
         return param_dict;
     },
@@ -842,36 +860,22 @@ $.extend(Tool.prototype, {
     }
 });
 
-var NumberToolParameter = function(name, label, min, max, init_value) {
+/**
+ * Tool parameters.
+ */
+var NumberParameter = function(name, label, min, max, init_value) {
     this.name = name;
     this.label = label;
     this.min = min;
     this.max = max;
     this.value = init_value;
-}
+};
 
-// Uses a dictionary to construct a tool object.
-var get_tool_from_dict = function(tool_dict) {
-    if (obj_length(tool_dict) === 0) {
-        return undefined;
-    }
-    
-    // Get tool.
-    var tool_name = tool_dict.name;
-    var params_dict = tool_dict.params;
-    var params = Array();
-    for (var i = 0; i < params_dict.length; i++) {
-        var param_dict = params_dict[i];
-        var 
-            name = param_dict.name,
-            label = param_dict.label,
-            type = param_dict.type,
-            min = param_dict.min,
-            max = param_dict.max,
-            value = param_dict.value;
-        params[params.length] = new NumberToolParameter(name, label, min, max, value);
-    }
-    return new Tool(tool_name, params);
+var SelectParameter = function(name, label, options) {
+    this.name = name;
+    this.label = label;
+    this.options = options;
+    this.value = (options.length !== 0 ? options[0][1] : null);
 };
 
 /**
@@ -1203,7 +1207,7 @@ $.extend(Track.prototype, {
     }
 });
 
-var TiledTrack = function(filters, tool, parent_track) {
+var TiledTrack = function(filters, tool_dict, parent_track) {
     var track = this,
         view = track.view;
     
@@ -1212,7 +1216,7 @@ var TiledTrack = function(filters, tool, parent_track) {
     // filters_available is determined by data, filters_visible is set by user.
     this.filters_available = false;
     this.filters_visible = false;
-    this.tool = (tool !== undefined ? get_tool_from_dict( tool ) : undefined);
+    this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(tool_dict) : undefined);
     
     //
     // TODO: Right now there is only the notion of a parent track and multiple child tracks. However, 
@@ -1381,42 +1385,65 @@ var TiledTrack = function(filters, tool, parent_track) {
         var tool_params = this.tool.params;
         var track = this;
         $.each(this.tool.params, function(index, param) {
-            var param_div = $("<div>").addClass("slider-row").appendTo(track.dynamic_tool_div);
             
-            // Slider label.
-            var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
-            var name_span = $("<span/>").addClass("slider-name").text(param.label + "  ").appendTo(label_div);
-            var values_span = $("<span/>").text(param.value);
-            var values_span_container = $("<span/>").addClass("slider-value").appendTo(label_div).append("[").append(values_span).append("]");
+            if (param instanceof NumberParameter) {
+                var param_div = $("<div>").addClass("slider-row").appendTo(track.dynamic_tool_div);
             
-            // Slider.
-            var slider_div = $("<div/>").addClass("slider").appendTo(param_div);
-            var slider = $("<div id='" + param.name + "-param-control'>").appendTo(slider_div);
-            // Step must have a value so that (max-min)%step == 0.
-            slider.slider({
-                min: param.min,
-                max: param.max,
-                step: get_slider_step(param.min, param.max),
-                value: param.value,
-                slide: function(event, ui) {
-                    var value = ui.value;
-                    param.value = value;
-                    // Set new value in UI.
-                    if (0 < value && value < 1) {
-                        value = parseFloat(value).toFixed(2);
-                    }
-                    values_span.text(value);
-                },
-                change: function(event, ui) {
-                    slider.slider("option", "slide").call(slider, event, ui);
-                }   
-            });
+                // Slider label.
+                var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
+                var name_span = $("<span/>").addClass("slider-name").text(param.label + "  ").appendTo(label_div);
+                var values_span = $("<span/>").text(param.value);
+                var values_span_container = $("<span/>").addClass("slider-value").appendTo(label_div).append("[").append(values_span).append("]");
             
-            // Enable users to edit parameter's value via text box.
-            edit_slider_values(values_span_container, values_span, slider);
+                // Slider.
+                var slider_div = $("<div/>").addClass("slider").appendTo(param_div);
+                var slider = $("<div id='" + param.name + "-param-control'>").appendTo(slider_div);
+                // Step must have a value so that (max-min)%step == 0.
+                slider.slider({
+                    min: param.min,
+                    max: param.max,
+                    step: get_slider_step(param.min, param.max),
+                    value: param.value,
+                    slide: function(event, ui) {
+                        var value = ui.value;
+                        param.value = value;
+                        // Set new value in UI.
+                        if (0 < value && value < 1) {
+                            value = parseFloat(value).toFixed(2);
+                        }
+                        values_span.text(value);
+                    },
+                    change: function(event, ui) {
+                        slider.slider("option", "slide").call(slider, event, ui);
+                    }   
+                });
             
-            // Add to clear floating layout.
-            $("<div style='clear: both;'/>").appendTo(param_div);
+                // Enable users to edit parameter's value via text box.
+                edit_slider_values(values_span_container, values_span, slider);
+            
+                // Add to clear floating layout.
+                $("<div style='clear: both;'/>").appendTo(param_div);
+            }
+            else if (param instanceof SelectParameter) {
+                var param_div = $("<div>").addClass("slider-row").appendTo(track.dynamic_tool_div);
+            
+                // Param label.
+                var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
+                var name_span = $("<span/>").addClass("slider-name").text(param.label + "  ").appendTo(label_div);
+            
+                // Param selector.
+                var select_div = $("<div/>").addClass("slider").appendTo(param_div);
+                var select_obj = $("<select/>").appendTo(select_div);
+                select_obj.change(function() {param.value = $(this).val();} );
+                var options = select_obj.attr("options");
+                for (var i = 0; i < param.options.length; i++) {
+                    var option_data = param.options[i]
+                    options[options.length] = new Option(option_data[0], option_data[1]);
+                }
+                
+                // Add to clear floating layout.
+                $("<div style='clear: both;'/>").appendTo(param_div);
+            }
         });
         
         // Add 'Go' button.

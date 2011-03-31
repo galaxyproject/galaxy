@@ -1,5 +1,5 @@
-from galaxy.tools.parameters.basic import IntegerToolParameter, FloatToolParameter
-
+from galaxy.tools.parameters.basic import IntegerToolParameter, FloatToolParameter, SelectToolParameter
+from galaxy.tools.parameters.dynamic_options import DynamicOptions
 
 def get_dataset_job( hda ):
     # Get dataset's job.
@@ -29,13 +29,16 @@ def get_tool_def( trans, hda ):
     tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
     for name, input in tool.inputs.items():
         if type( input ) == IntegerToolParameter:
-            tool_params.append( { 'name' : name, 'label': input.label, 'type': 'int', \
-                                  'value': tool_param_values.get( name, input.value ), \
-                                  'min' : input.min, 'max' : input.max } )
+            tool_params.append( { 'name' : name, 'label' : input.label, \
+                                  'value' : tool_param_values.get( name, input.value ), \
+                                  'type' : 'int', 'min' : input.min, 'max' : input.max } )
         elif type( input ) == FloatToolParameter:
-            tool_params.append( { 'name' : name, 'label': input.label, 'type': 'float', \
-                                  'value': tool_param_values.get( name, input.value ), \
-                                  'min' : input.min, 'max' : input.max } )
+            tool_params.append( { 'name' : name, 'label' : input.label, \
+                                  'value' : tool_param_values.get( name, input.value ), \
+                                  'type' : 'float', 'min' : input.min, 'max' : input.max } )
+        elif type( input ) == SelectToolParameter and type( input.options ) != DynamicOptions:
+            tool_params.append( { 'name' : name, 'label' : input.label, 'type' : 'select', \
+                                  'options' : [ option[:2] for option in input.get_options( trans, None ) ] } )
         
     # If tool has parameters that can be interactively modified, return tool.
     # Return empty set otherwise.
