@@ -1252,7 +1252,21 @@ class Tool:
         for input in inputs.itervalues():
             # No value, insert the default
             if input.name not in values:
-                messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
+                if isinstance( input, Conditional ):
+                    messages[ input.name ] = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                    test_value = input.test_param.get_initial_value( trans, context )
+                    current_case = input.get_current_case( test_value, trans )
+                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, messages[ input.name ], context, prefix )
+                elif isinstance( input, Repeat ):
+                    if input.min:
+                        messages[ input.name ] = []
+                        for i in range( input.min ):
+                            rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
+                            rep_dict = dict()
+                            messages[ input.name ].append( rep_dict )
+                            self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix )
+                else:
+                    messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
                 values[ input.name ] = input.get_initial_value( trans, context )
             # Value, visit recursively as usual
             else:

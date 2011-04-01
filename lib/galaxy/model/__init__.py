@@ -103,14 +103,14 @@ class Job( object ):
         # For historical reasons state propogates down to datasets
         for da in self.output_datasets:
             da.dataset.state = state
-    def get_param_values( self, app ):
+    def get_param_values( self, app, ignore_errors=False ):
         """
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
         param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
         tool = app.toolbox.tools_by_id[self.tool_id]
-        param_dict = tool.params_from_strings( param_dict, app )
+        param_dict = tool.params_from_strings( param_dict, app, ignore_errors=ignore_errors )
         return param_dict
     def check_if_output_datasets_deleted( self ):
         """
