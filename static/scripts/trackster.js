@@ -2992,7 +2992,8 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                                  block_end - block_start, thin_height);
 
                     // If block intersects with thick region, draw block as thick.
-                    if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
+		    // - No thick is sometimes encoded as thick_start == thick_end, so don't draw in that case
+                    if (thick_start !== undefined && feature_te > feature_ts && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
                             block_thick_end = Math.min(block_end, thick_end);
                         ctx.fillRect(block_thick_start, y_center + 1,
