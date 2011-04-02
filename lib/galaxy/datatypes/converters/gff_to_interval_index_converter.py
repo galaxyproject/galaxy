@@ -32,7 +32,7 @@ def main():
         convert_gff_coords_to_bed( feature )
         index.add( feature.chrom, feature.start, feature.end, offset )
         
-        offset += feature.raw_size()
+        offset += feature.raw_size
             
     index.write( open(out_fname, "w") )
     

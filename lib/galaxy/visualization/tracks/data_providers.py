@@ -658,7 +658,7 @@ class GFFDataProvider( TracksDataProvider ):
             payload = package_gff_feature( feature )
             payload.insert( 0, offset )
             results.append( payload )
-            offset += feature.raw_size()
+            offset += feature.raw_size
             
         return { 'data': results, 'message': message }
        
