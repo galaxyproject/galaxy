@@ -2841,7 +2841,7 @@ extend( FeaturePainter.prototype, {
 
 // Contstants specific to feature tracks moved here (HACKING, these should
 // basically all be configuration options)
-var DENSE_TRACK_HEIGHT = 3,
+var DENSE_TRACK_HEIGHT = 10,
     NO_DETAIL_TRACK_HEIGHT = 3,
     SQUISH_TRACK_HEIGHT = 5,
     PACK_TRACK_HEIGHT = 10,
@@ -2898,11 +2898,18 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             label_color = this.prefs.label_color;
 
         // Dense mode displays the same for all data.
+	/*
         if (mode === "Dense") {
             ctx.fillStyle = block_color;
             ctx.fillRect(f_start, y_center, f_end - f_start, DENSE_FEATURE_HEIGHT);
         }
-        else if (mode === "no_detail") {
+	*/
+	
+	if ( mode == "Dense" ) {
+	    slot = 1;
+	}
+	
+        if (mode === "no_detail") {
             // No details for feature, so only one way to display.
             ctx.fillStyle = block_color;
             // TODO: what should width be here?
@@ -2922,7 +2929,7 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             
             // Set vars that depend on mode.
             var thin_height, thick_height;
-            if (mode === "Squish") {
+            if (mode === "Squish" || mode === "Dense" ) {
                 thin_height = 1;
                 thick_height = SQUISH_FEATURE_HEIGHT;
             } else { // mode === "Pack"
@@ -2954,7 +2961,7 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 
                 // Draw whole feature as connector/intron.
                 var cur_y_center, cur_height;
-                if (mode === "Squish") {
+                if (mode === "Squish" || mode === "Dense") {
                     ctx.fillStyle = CONNECTOR_COLOR;
                     cur_y_center = y_center + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
                     cur_height = 1;
@@ -2998,8 +3005,9 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                             block_thick_end = Math.min(block_end, thick_end); 
                         ctx.fillRect(block_thick_start, y_center + 1,
                                      block_thick_end - block_thick_start, thick_height);
-			if ( feature_blocks.length == 1 ) {
-			    // Exactly one block  means we have no introns, but do have a distinct "thick" region
+			if ( feature_blocks.length == 1 && mode == "Pack") {
+			    // Exactly one block  means we have no introns, but do have a distinct "thick" region,
+			    // draw arrows over it if in pack mode
 			    if (feature_strand === "+") {
 				ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
 			    } else if (feature_strand === "-") {
