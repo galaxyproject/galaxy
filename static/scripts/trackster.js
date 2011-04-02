@@ -2995,9 +2995,24 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     // - No thick is sometimes encoded as thick_start == thick_end, so don't draw in that case
                     if (thick_start !== undefined && feature_te > feature_ts && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
-                            block_thick_end = Math.min(block_end, thick_end);
+                            block_thick_end = Math.min(block_end, thick_end); 
                         ctx.fillRect(block_thick_start, y_center + 1,
                                      block_thick_end - block_thick_start, thick_height);
+			if ( feature_blocks.length == 1 ) {
+			    // Exactly one block  means we have no introns, but do have a distinct "thick" region
+			    if (feature_strand === "+") {
+				ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
+			    } else if (feature_strand === "-") {
+				ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
+			    }
+			    // If region is wide enough in pixels, pad a bit
+			    if ( block_thick_start + 14 < block_thick_end ) {
+				block_thick_start += 2;
+				block_thick_end -= 2;
+			    }
+			    ctx.fillRect( block_thick_start, y_center + 1,
+                                          block_thick_end - block_thick_start, thick_height );
+			}   
                     }
                 }
             }
