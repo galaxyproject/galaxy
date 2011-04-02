@@ -2,6 +2,59 @@
     2010-2011: James Taylor, Kanwei Li, Jeremy Goecks
 */
 
+// Encapsulate -- anything to be availabe outside this block is added to exports
+(function(exports){
+
+// ---- Canvas management and extensions ----
+
+/**
+ * Canvas manager is used to create canvases, for browsers, this deals with
+ * backward comparibility using excanvas, as well as providing a pattern cache
+ */
+var CanvasManager = function( document, default_font ) {
+    this.document = document;
+    this.default_font = default_font !== undefined ? default_font : "9px Monaco, Lucida Console, monospace";
+    
+    this.dummy_canvas = this.new_canvas();
+    this.dummy_context = this.dummy_canvas.getContext('2d');
+    this.dummy_context.font = this.default_font;
+    
+    this.char_width_px = this.dummy_context.measureText("A").width;
+    
+    this.patterns = {};
+
+    // FIXME: move somewhere to make this more general
+    this.load_pattern( 'right_strand', "/visualization/strand_right.png" );
+    this.load_pattern( 'left_strand', "/visualization/strand_left.png" );
+    this.load_pattern( 'right_strand_inv', "/visualization/strand_right_inv.png" );
+    this.load_pattern( 'left_strand_inv', "/visualization/strand_left_inv.png" );
+}
+
+CanvasManager.prototype.load_pattern = function( key, path ) {
+    var patterns = this.patterns,
+	dummy_context = this.dummy_context,
+        image = new Image();
+    // FIXME: where does image_path come from? not in browser.mako...
+    image.src = image_path + path;
+    image.onload = function() {
+	patterns[key] = dummy_context.createPattern( image, "repeat" );
+    }
+}
+
+CanvasManager.prototype.get_pattern = function( key ) {
+    return this.patterns[key];
+}
+
+CanvasManager.prototype.new_canvas = function() {
+    var canvas = this.document.createElement("canvas");
+    // If using excanvas in IE, we need to explicately attach the canvas
+    // methods to the DOM element
+    if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); }
+    // Keep a reference back to the manager
+    canvas.manager = this;
+    return canvas;
+}
+
 /**
  * Draw a dashed line on a canvas using filled rectangles. This function is based on:
  * http://vetruvet.blogspot.com/2010/10/drawing-dashed-lines-on-html5-canvas.html
@@ -48,10 +101,12 @@ var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y
     ctx.closePath();
 };
 
+// ---- Web UI specific utilities ----
+
 /** 
  * Make `element` sortable in parent by dragging `handle` (a selector)
  */
-function sortable( element, handle ) {
+var sortable = function( element, handle ) {
     element.bind( "drag", { handle: handle, relative: true }, function ( e, d ) {
         var parent = $(this).parent();
         var children = parent.children();
@@ -77,53 +132,9 @@ function sortable( element, handle ) {
 }
 
 /**
- * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
- * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
- * region overlaps the start (but not the end) of the second region.
- */
-var NO_OVERLAP = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005;
-function compute_overlap(first_region, second_region) {
-    var 
-        first_start = first_region[0], first_end = first_region[1],
-        second_start = second_region[0], second_end = second_region[1],
-        overlap;
-    if (first_start < second_start) {
-        if (first_end < second_start) {
-            overlap = NO_OVERLAP;
-        }
-        else if (first_end <= second_end) {
-            overlap = OVERLAP_START;
-        }
-        else { // first_end > second_end
-            overlap = CONTAINS;
-        }
-    }
-    else { // first_start >= second_start
-        if (first_start > second_end) {
-            overlap = NO_OVERLAP;
-        }
-        else if (first_end <= second_end) {
-            overlap = CONTAINED_BY;
-        }
-        else {
-            overlap = OVERLAP_END;
-        }
-    }
-    
-    return overlap;
-}
-
-/**
- * Returns true if there is any overlap between regions.
- */
-function is_overlap(first_region, second_region) {
-    return (compute_overlap(first_region, second_region) !== NO_OVERLAP);
-}
-
-/**
  * Calculates step for slider with a given min, max.
  */
-function get_slider_step(min, max) {
+var get_slider_step = function(min, max) {
     var range = max - min;
     return (range <= 1 ? 0.01 : (range <= 1000 ? 1 : 5));
 }
@@ -134,30 +145,20 @@ function get_slider_step(min, max) {
 var 
     // Drawing constants; track height is (constant) height of track, and feature height is the
     // height of individual features within tracks. Feature height, then, should always be less
-    // than track height. 
-    DENSE_TRACK_HEIGHT = 10,
-    NO_DETAIL_TRACK_HEIGHT = 3,
-    SQUISH_TRACK_HEIGHT = 5,
-    PACK_TRACK_HEIGHT = 10,
-    NO_DETAIL_FEATURE_HEIGHT = 1,
-    DENSE_FEATURE_HEIGHT = 1,
-    SQUISH_FEATURE_HEIGHT = 3,
-    PACK_FEATURE_HEIGHT = 9,
+    // than track height.
+    CHAR_HEIGHT_PX = 9, // FIXME: font size may not be static
     ERROR_PADDING = 10, // Padding at the top of tracks for error messages
-    LABEL_SPACING = 2,
-    PACK_SPACING = 5,
+    SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
+
     // Minimum width for window for squish to be used.
     MIN_SQUISH_VIEW_WIDTH = 12000,
     
     // Other constants.
-    DEFAULT_FONT = "9px Monaco, Lucida Console, monospace",
     DENSITY = 200,
     FEATURE_LEVELS = 10,
-    MAX_FEATURE_DEPTH = 100,
     DEFAULT_DATA_QUERY_WAIT = 5000,
     // Maximum number of chromosomes that are selectable at any one time.
     MAX_CHROMS_SELECTABLE = 100,
-    CONNECTOR_COLOR = "#ccc",
     DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
@@ -167,41 +168,7 @@ var
     DATA_OK = "Ready for display",
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 5,
-    CACHED_DATA = 5,
-    DUMMY_CANVAS = document.createElement("canvas"),
-    RIGHT_STRAND, LEFT_STRAND;
-
-// Get information for rendering canvas elements.    
-if (window.G_vmlCanvasManager) {
-    G_vmlCanvasManager.initElement(DUMMY_CANVAS);
-}
-var 
-    CONTEXT = DUMMY_CANVAS.getContext("2d");
-CONTEXT.font = DEFAULT_FONT; // To ensure consistent measureText width
-var 
-    CHAR_WIDTH_PX = CONTEXT.measureText("A").width,
-    CHAR_HEIGHT_PX = 9; // Taken from DEFAULT_FONT.
-    
-var right_img = new Image();
-right_img.src = image_path + "/visualization/strand_right.png";
-right_img.onload = function() {
-    RIGHT_STRAND = CONTEXT.createPattern(right_img, "repeat");
-};
-var left_img = new Image();
-left_img.src = image_path + "/visualization/strand_left.png";
-left_img.onload = function() {
-    LEFT_STRAND = CONTEXT.createPattern(left_img, "repeat");
-};
-var right_img_inv = new Image();
-right_img_inv.src = image_path + "/visualization/strand_right_inv.png";
-right_img_inv.onload = function() {
-    RIGHT_STRAND_INV = CONTEXT.createPattern(right_img_inv, "repeat");
-};
-var left_img_inv = new Image();
-left_img_inv.src = image_path + "/visualization/strand_left_inv.png";
-left_img_inv.onload = function() {
-    LEFT_STRAND_INV = CONTEXT.createPattern(left_img_inv, "repeat");
-};
+    CACHED_DATA = 5;
 
 function round_1000(num) {
     return Math.round(num * 1000) / 1000;    
@@ -1954,7 +1921,6 @@ var ReferenceTrack = function (view) {
     view.reference_track = this;
     this.left_offset = 200;
     this.height_px = 12;
-    this.font = DEFAULT_FONT;
     this.container_div.addClass( "reference-track" );
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
@@ -1981,7 +1947,7 @@ $.extend(ReferenceTrack.prototype, TiledTrack.prototype, {
             var ctx = canvas.getContext("2d");
             canvas.width = Math.ceil( tile_length * w_scale + track.left_offset);
             canvas.height = track.height_px;
-            ctx.font = DEFAULT_FONT;
+            ctx.font = ctx.canvas.manager.default_font;
             ctx.textAlign = "center";
             for (var c = 0, str_len = seq.length; c < str_len; c++) {
                 var c_start = Math.round(c * w_scale);
@@ -2171,7 +2137,6 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.summary_draw_height = 30;
-    this.default_font = DEFAULT_FONT;
     this.inc_slots = {};
     this.start_end_dct = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
@@ -2181,6 +2146,16 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.painter = LinkedFeaturePainter;
 };
 $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
+    update_auto_mode: function( mode ) {
+	if ( this.mode == "Auto" ) {
+	    if ( mode == "no_detail" ) {
+		mode = "reduced to feature spans";
+	    } else if ( mode == "summary_tree" ) {
+		mode = "reduced to foverage histogram";
+	    }
+	    this.mode_div.text( "Auto (" + mode + ")" );
+	}
+    },
     /**
      * Place features in slots for drawing (i.e. pack features).
      * this.inc_slots[level] is created in this method. this.inc_slots[level]
@@ -2193,36 +2168,15 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         // Get/create incremental slots for level. If display mode changed,
         // need to create new slots.
         
-        var inc_slots = this.inc_slots[level];
+        var dummy_context = this.view.canvas_manager.dummy_context,
+	    inc_slots = this.inc_slots[level];
         if (!inc_slots || (inc_slots.mode !== mode)) {
-            inc_slots = new FeatureSlotter( level, mode === "Pack", function ( x ) { return CONTEXT.measureText( x ) } );
+            inc_slots = new FeatureSlotter( level, mode === "Pack", function ( x ) { return dummy_context.measureText( x ) } );
             inc_slots.mode = mode;
             this.inc_slots[level] = inc_slots;
         }
         
         return inc_slots.slot_features( features );
-    },
-    /**
-     * Returns y_scale based on mode.
-     */
-    get_y_scale: function(mode) {
-        var y_scale;
-        if (mode === "summary_tree") {
-            // No scale needed.
-        }
-        if (mode === "Dense") {
-            y_scale = DENSE_TRACK_HEIGHT;            
-        }
-        else if (mode === "no_detail") {
-            y_scale = NO_DETAIL_TRACK_HEIGHT;
-        }
-        else if (mode === "Squish") {
-            y_scale = SQUISH_TRACK_HEIGHT;
-        }
-        else { // mode === "Pack"
-            y_scale = PACK_TRACK_HEIGHT;
-        }
-        return y_scale;
     },
     /**
      * Draw FeatureTrack tile.
@@ -2262,7 +2216,8 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
                 } else {
                     mode = "Pack";
                 }
-            }            
+            }
+	    this.update_auto_mode( mode );
         }
         
         // Drawing the summary tree (feature coverage histogram)
@@ -2281,12 +2236,12 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
             var canvas = this.view.canvas_manager.new_canvas();
             canvas.width = width + left_offset;
             // Extra padding at top of summary tree
-            canvas.height = required_height + LABEL_SPACING + CHAR_HEIGHT_PX;
+            canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
             // Paint summary tree into canvas
             var painter = new SummaryTreePainter( result.data, result.delta, result.max, tile_low, tile_high, this.prefs.show_counts );
             var ctx = canvas.getContext("2d");
             // Deal with left_offset by translating
-            ctx.translate( left_offset, 0 );
+            ctx.translate( left_offset, SUMMARY_TREE_TOP_PADDING );
             painter.draw( ctx, width, required_height );
             // Canvas element is returned
             return canvas;            
@@ -2336,7 +2291,7 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = canvas.getContext("2d");
         ctx.fillStyle = this.prefs.block_color;
-        ctx.font = this.default_font;
+        ctx.font = ctx.canvas.manager.default_font;
         ctx.textAlign = "right";
         this.container_div.find(".yaxislabel").remove();
         
@@ -2446,6 +2401,17 @@ $.extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prot
     }
 });
 
+// Exports
+
+exports.View = View;
+exports.LineTrack = LineTrack;
+exports.FeatureTrack = FeatureTrack;
+exports.ReadTrack = ReadTrack;
+
+// End encapsulation, this line is browser specific, globals are added to the
+// window object
+})(window);
+
 // ---- To be extracted ------------------------------------------------------
 
 // ---- Simple extend function for inheritence ----
@@ -2460,19 +2426,51 @@ var extend = function() {
     }
 }
 
-// ---- Canvas management ----
-
-var CanvasManager = function( document ) {
-    this.document = document;
-}
-
-CanvasManager.prototype.new_canvas = function() {
-    var canvas = this.document.createElement("canvas");
-    if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); } // EXCANVAS HACK
-    return canvas;
-}
-
 // ---- Feature Packing ----
+
+/**
+ * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
+ * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
+ * region overlaps the start (but not the end) of the second region.
+ */
+var NO_OVERLAP = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005;
+var compute_overlap = function(first_region, second_region) {
+    var 
+        first_start = first_region[0], first_end = first_region[1],
+        second_start = second_region[0], second_end = second_region[1],
+        overlap;
+    if (first_start < second_start) {
+        if (first_end < second_start) {
+            overlap = NO_OVERLAP;
+        }
+        else if (first_end <= second_end) {
+            overlap = OVERLAP_START;
+        }
+        else { // first_end > second_end
+            overlap = CONTAINS;
+        }
+    }
+    else { // first_start >= second_start
+        if (first_start > second_end) {
+            overlap = NO_OVERLAP;
+        }
+        else if (first_end <= second_end) {
+            overlap = CONTAINED_BY;
+        }
+        else {
+            overlap = OVERLAP_END;
+        }
+    }
+    
+    return overlap;
+}
+
+/**
+ * Returns true if there is any overlap between regions.
+ */
+var is_overlap = function(first_region, second_region) {
+    return (compute_overlap(first_region, second_region) !== NO_OVERLAP);
+}
 
 /**
  * FeatureSlotter determines slots in which to draw features for vertical
@@ -2651,7 +2649,7 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
         // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
         // start. However, height of each rectangle is relative to required_height; hence, the
         // max rectangle is required_height.
-        base_y = height + LABEL_SPACING + CHAR_HEIGHT_PX;
+        base_y = height;
         delta_x_px = Math.ceil(delta * w_scale);
     
     ctx.save();
@@ -2712,12 +2710,16 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
 
     // Line at 0.0
     if ( mode !== "Intensity" ) {
+	/*
         ctx.beginPath();
         ctx.moveTo( 0, y_zero );
         ctx.lineTo( width, y_zero );
         // ctx.lineWidth = 0.5;
         ctx.fillStyle = "#aaa";
         ctx.stroke();
+	*/
+	ctx.fillStyle = "#aaa";
+	ctx.fillRect( 0, y_zero, width, 1 );
     }
     
     ctx.beginPath();
@@ -2837,6 +2839,21 @@ extend( FeaturePainter.prototype, {
     }
 });
 
+// Contstants specific to feature tracks moved here (HACKING, these should
+// basically all be configuration options)
+var DENSE_TRACK_HEIGHT = 3,
+    NO_DETAIL_TRACK_HEIGHT = 3,
+    SQUISH_TRACK_HEIGHT = 5,
+    PACK_TRACK_HEIGHT = 10,
+    NO_DETAIL_FEATURE_HEIGHT = 1,
+    DENSE_FEATURE_HEIGHT = 3,
+    SQUISH_FEATURE_HEIGHT = 3,
+    PACK_FEATURE_HEIGHT = 9,
+    LABEL_SPACING = 2,
+    PACK_SPACING = 5,
+    MAX_FEATURE_DEPTH = 100,
+    CONNECTOR_COLOR = "#ccc";
+
 var LinkedFeaturePainter = function( data, view_start, view_end, prefs, mode ) {
     FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
 }
@@ -2889,7 +2906,7 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             // No details for feature, so only one way to display.
             ctx.fillStyle = block_color;
             // TODO: what should width be here?
-            ctx.fillRect(f_start, y_center + 5, f_end - f_start, DENSE_FEATURE_HEIGHT);
+            ctx.fillRect(f_start, y_center + 5, f_end - f_start, NO_DETAIL_FEATURE_HEIGHT);
         } 
         else { // Mode is either Squish or Pack:
             // Feature details.
@@ -2918,9 +2935,9 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 // If there are no blocks, treat the feature as one big exon.
                 if ( feature.strand ) {
                     if (feature.strand === "+") {
-                        ctx.fillStyle = RIGHT_STRAND_INV;
+                        ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
                     } else if (feature.strand === "-") {
-                        ctx.fillStyle = LEFT_STRAND_INV;
+                        ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
                     }
                 }
                 else { // No strand.
@@ -2947,9 +2964,9 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                         var cur_y_center = y_center;
                         var cur_height = thick_height;
                         if (feature_strand === "+") {
-                            ctx.fillStyle = RIGHT_STRAND;
+                            ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand' );
                         } else if (feature_strand === "-") {
-                            ctx.fillStyle = LEFT_STRAND;
+                            ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand' );
                         }
                     }
                     else {
@@ -3266,9 +3283,10 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             type = item["type"];
             data = item["data"];
             if (type === "text") {
-                ctx.font = "bold " + DEFAULT_FONT;
+		ctx.save();
+                ctx.font = "bold " + ctx.font;
                 ctx.fillText(data[0], data[1], data[2]);
-                ctx.font = DEFAULT_FONT;
+                ctx.restore();
             }
             else if (type == "triangle") {
                 drawDownwardEquilateralTriangle(ctx, data[0], data[1], data[2]);
