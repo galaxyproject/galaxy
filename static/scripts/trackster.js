@@ -32,12 +32,12 @@ var CanvasManager = function( document, default_font ) {
 
 CanvasManager.prototype.load_pattern = function( key, path ) {
     var patterns = this.patterns,
-	dummy_context = this.dummy_context,
+        dummy_context = this.dummy_context,
         image = new Image();
     // FIXME: where does image_path come from? not in browser.mako...
     image.src = image_path + path;
     image.onload = function() {
-	patterns[key] = dummy_context.createPattern( image, "repeat" );
+        patterns[key] = dummy_context.createPattern( image, "repeat" );
     }
 }
 
@@ -2147,14 +2147,14 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
 };
 $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
     update_auto_mode: function( mode ) {
-	if ( this.mode == "Auto" ) {
-	    if ( mode == "no_detail" ) {
-		mode = "reduced to feature spans";
-	    } else if ( mode == "summary_tree" ) {
-		mode = "reduced to foverage histogram";
-	    }
-	    this.mode_div.text( "Auto (" + mode + ")" );
-	}
+        if ( this.mode == "Auto" ) {
+            if ( mode == "no_detail" ) {
+                mode = "reduced to feature spans";
+            } else if ( mode == "summary_tree" ) {
+                mode = "reduced to foverage histogram";
+            }
+            this.mode_div.text( "Auto (" + mode + ")" );
+        }
     },
     /**
      * Place features in slots for drawing (i.e. pack features).
@@ -2169,7 +2169,7 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
         // need to create new slots.
         
         var dummy_context = this.view.canvas_manager.dummy_context,
-	    inc_slots = this.inc_slots[level];
+            inc_slots = this.inc_slots[level];
         if (!inc_slots || (inc_slots.mode !== mode)) {
             inc_slots = new FeatureSlotter( level, mode === "Pack", function ( x ) { return dummy_context.measureText( x ) } );
             inc_slots.mode = mode;
@@ -2217,7 +2217,7 @@ $.extend(FeatureTrack.prototype, TiledTrack.prototype, {
                     mode = "Pack";
                 }
             }
-	    this.update_auto_mode( mode );
+            this.update_auto_mode( mode );
         }
         
         // Drawing the summary tree (feature coverage histogram)
@@ -2710,16 +2710,16 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
 
     // Line at 0.0
     if ( mode !== "Intensity" ) {
-	/*
+        /*
         ctx.beginPath();
         ctx.moveTo( 0, y_zero );
         ctx.lineTo( width, y_zero );
         // ctx.lineWidth = 0.5;
         ctx.fillStyle = "#aaa";
         ctx.stroke();
-	*/
-	ctx.fillStyle = "#aaa";
-	ctx.fillRect( 0, y_zero, width, 1 );
+        */
+        ctx.fillStyle = "#aaa";
+        ctx.fillRect( 0, y_zero, width, 1 );
     }
     
     ctx.beginPath();
@@ -2992,7 +2992,7 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                                  block_end - block_start, thin_height);
 
                     // If block intersects with thick region, draw block as thick.
-		    // - No thick is sometimes encoded as thick_start == thick_end, so don't draw in that case
+                    // - No thick is sometimes encoded as thick_start == thick_end, so don't draw in that case
                     if (thick_start !== undefined && feature_te > feature_ts && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
                             block_thick_end = Math.min(block_end, thick_end);
@@ -3284,7 +3284,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             type = item["type"];
             data = item["data"];
             if (type === "text") {
-		ctx.save();
+                ctx.save();
                 ctx.font = "bold " + ctx.font;
                 ctx.fillText(data[0], data[1], data[2]);
                 ctx.restore();
