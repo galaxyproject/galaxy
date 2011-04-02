@@ -291,6 +291,8 @@ extend(DataManager.prototype, Cache.prototype, {
         // the data was "index" or "data." Also could slice the data so that
         // only data points in request are returned.
         //
+	
+	/* Disabling for now, more detailed data is never loaded for line tracks
         if (this.subset) {
             var key, split_key, entry_low, entry_high, mode, entry;
             for (var i = 0; i < this.key_ary.length; i++) {
@@ -310,6 +312,7 @@ extend(DataManager.prototype, Cache.prototype, {
                 }
             }
         }
+	*/
                 
         //
         // Load data from server.
