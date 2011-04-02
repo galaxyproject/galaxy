@@ -2776,8 +2776,8 @@ extend( FeaturePainter.prototype, {
             // Calculate new slots incrementally for this new chunk of data and update height if necessary.
             required_height = rows_required * y_scale;
         }
-        // Pad bottom by half a row
-        return required_height + Math.round( y_scale / 2 );
+        // Pad bottom by half a row, at least 5 px
+        return required_height + Math.max( Math.round( y_scale / 2 ), 5 );
     },
 
     draw: function( ctx, width, height, slots ) {
@@ -3000,9 +3000,8 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             // Draw label for Pack mode.
             if (mode === "Pack" && feature_start > tile_low) {
                 ctx.fillStyle = label_color;
-                // FIXME: do this without tile_index
-                var tile_index = 1;
-                if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+		// FIXME: assumption here that the entire view starts at 0
+                if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                     ctx.textAlign = "left";
                     ctx.fillText(feature_name, f_end + LABEL_SPACING, y_center + 8);
                 } else {
