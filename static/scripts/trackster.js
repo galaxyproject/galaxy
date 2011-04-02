@@ -2,6 +2,17 @@
     2010-2011: James Taylor, Kanwei Li, Jeremy Goecks
 */
 
+/** Simple extend function for inheritence */
+var extend = function() {
+    var target = arguments[0];
+    for ( var i = 1; i < arguments.length; i++ ) {
+        var other = arguments[i];
+        for ( key in other ) {
+            target[key] = other[key];
+        }
+    }
+};
+
 // Encapsulate -- anything to be availabe outside this block is added to exports
 (function(exports){
 
@@ -30,30 +41,30 @@ var CanvasManager = function( document, default_font ) {
     this.load_pattern( 'left_strand_inv', "/visualization/strand_left_inv.png" );
 }
 
-CanvasManager.prototype.load_pattern = function( key, path ) {
-    var patterns = this.patterns,
-        dummy_context = this.dummy_context,
-        image = new Image();
-    // FIXME: where does image_path come from? not in browser.mako...
-    image.src = image_path + path;
-    image.onload = function() {
-        patterns[key] = dummy_context.createPattern( image, "repeat" );
+extend( CanvasManager.prototype, {
+    load_pattern: function( key, path ) {
+	var patterns = this.patterns,
+	    dummy_context = this.dummy_context,
+	    image = new Image();
+	// FIXME: where does image_path come from? not in browser.mako...
+	image.src = image_path + path;
+	image.onload = function() {
+	    patterns[key] = dummy_context.createPattern( image, "repeat" );
+	}
+    },
+    get_pattern: function( key ) {
+	return this.patterns[key];
+    },
+    new_canvas: function() {
+	var canvas = this.document.createElement("canvas");
+	// If using excanvas in IE, we need to explicately attach the canvas
+	// methods to the DOM element
+	if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); }
+	// Keep a reference back to the manager
+	canvas.manager = this;
+	return canvas;
     }
-}
-
-CanvasManager.prototype.get_pattern = function( key ) {
-    return this.patterns[key];
-}
-
-CanvasManager.prototype.new_canvas = function() {
-    var canvas = this.document.createElement("canvas");
-    // If using excanvas in IE, we need to explicately attach the canvas
-    // methods to the DOM element
-    if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); }
-    // Keep a reference back to the manager
-    canvas.manager = this;
-    return canvas;
-}
+});
 
 /**
  * Draw a dashed line on a canvas using filled rectangles. This function is based on:
@@ -181,7 +192,7 @@ var Cache = function( num_elements ) {
     this.num_elements = num_elements;
     this.clear();
 };
-$.extend(Cache.prototype, {
+extend(Cache.prototype, {
     get: function(key) {
         var index = this.key_ary.indexOf(key);
         if (index !== -1) {
@@ -225,7 +236,7 @@ var DataManager = function(num_elements, track, subset) {
     this.track = track;
     this.subset = (subset !== undefined ? subset : true);
 };
-$.extend(DataManager.prototype, Cache.prototype, {
+extend(DataManager.prototype, Cache.prototype, {
     /**
      * Load data from server; returns AJAX object so that use of Deferred is possible.
      */
@@ -342,7 +353,7 @@ var View = function( container, title, vis_id, dbkey, callback ) {
     this.canvas_manager = new CanvasManager( container.get(0).ownerDocument );
     this.reset();
 };
-$.extend( View.prototype, {
+extend( View.prototype, {
     init: function( callback ) {
         // Create DOM elements
         var parent_element = this.container,
@@ -807,7 +818,7 @@ var Tool = function(tool_dict) {
         }
     }
 };
-$.extend(Tool.prototype, {
+extend(Tool.prototype, {
     // Returns a dictionary of parameter values; key is parameter name, value
     // is parameter value.
     get_param_values_dict: function() {
@@ -871,7 +882,7 @@ var NumberFilter = function(name, index) {
     this.slider = null;
     this.slider_label = null;
 };
-$.extend(NumberFilter.prototype, {
+extend(NumberFilter.prototype, {
     /** 
      * Returns true if filter can be applied to element.
      */
@@ -963,7 +974,7 @@ var TrackConfig = function( options ) {
     }
     this.onchange = options.onchange
 }
-$.extend( TrackConfig.prototype, {
+extend( TrackConfig.prototype, {
     restore_values: function( values ) {
         var track_config = this;
         $.each( this.params, function( index, param ) {
@@ -1094,7 +1105,7 @@ var Track = function(name, view, parent_element, data_url, data_query_wait) {
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
     this.parent_element.append(this.container_div);
 };
-$.extend(Track.prototype, {
+extend(Track.prototype, {
     /**
      * Initialize and draw the track.
      */
@@ -1481,7 +1492,7 @@ var TiledTrack = function(filters, tool_dict, parent_track) {
     }
     */
 };
-$.extend(TiledTrack.prototype, Track.prototype, {
+extend(TiledTrack.prototype, Track.prototype, {
     /**
      * Make popup menu for track name.
      */
@@ -1890,7 +1901,7 @@ var LabelTrack = function (view, parent_element) {
     Track.call( this, null, view, parent_element );
     this.container_div.addClass( "label-track" );
 };
-$.extend( LabelTrack.prototype, Track.prototype, {
+extend( LabelTrack.prototype, Track.prototype, {
     draw: function() {
         var view = this.view,
             range = view.high - view.low,
@@ -1930,7 +1941,7 @@ var ReferenceTrack = function (view) {
     this.data_cache = new DataManager(CACHED_DATA, this, false);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
-$.extend(ReferenceTrack.prototype, TiledTrack.prototype, {
+extend(ReferenceTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw ReferenceTrack tile.
      */
@@ -2003,7 +2014,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
 
     this.add_resize_handle();
 };
-$.extend(LineTrack.prototype, TiledTrack.prototype, {
+extend(LineTrack.prototype, TiledTrack.prototype, {
     add_resize_handle: function () {
         // Add control for resizing
         // Trickery here to deal with the hovering drag handle, can probably be
@@ -2145,7 +2156,7 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
 
     this.painter = LinkedFeaturePainter;
 };
-$.extend(FeatureTrack.prototype, TiledTrack.prototype, {
+extend(FeatureTrack.prototype, TiledTrack.prototype, {
     update_auto_mode: function( mode ) {
         if ( this.mode == "Auto" ) {
             if ( mode == "no_detail" ) {
@@ -2332,7 +2343,7 @@ var VcfTrack = function(name, view, hda_ldda, dataset_id, prefs, filters) {
     this.painter = VariantPainter;
 };
 
-$.extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
+extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
 
 var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
@@ -2360,7 +2371,7 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     this.painter = ReadPainter;
     this.make_name_popup_menu();
 };
-$.extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
+extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
 /**
  * Feature track that displays data generated from tool.
@@ -2376,7 +2387,7 @@ var ToolDataFeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, fil
     this.dataset_check_url = dataset_state_url;
 };
 
-$.extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     /**
      * For this track type, the predraw init sets up postdraw init. 
      */
@@ -2413,18 +2424,6 @@ exports.ReadTrack = ReadTrack;
 })(window);
 
 // ---- To be extracted ------------------------------------------------------
-
-// ---- Simple extend function for inheritence ----
-
-var extend = function() {
-    var target = arguments[0];
-    for ( var i = 1; i < arguments.length; i++ ) {
-        var other = arguments[i];
-        for ( key in other ) {
-            target[key] = other[key];
-        }
-    }
-}
 
 // ---- Feature Packing ----
 
