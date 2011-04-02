@@ -8,7 +8,7 @@
  * However, that approach uses lines, which don't seem to render as well, so use
  * rectangles instead.
  */
-CanvasRenderingContext2D.prototype.dashedLine = function(x1, y1, x2, y2, dashLen) {
+var dashedLine = function(ctx, x1, y1, x2, y2, dashLen) {
     if (dashLen === undefined) { dashLen = 4; }
     var dX = x2 - x1;
     var dY = y2 - y1;
@@ -21,14 +21,14 @@ CanvasRenderingContext2D.prototype.dashedLine = function(x1, y1, x2, y2, dashLen
         if (q % 2 !== 0) {
             continue;
         }
-        this.fillRect(x1, y1, dashLen, 1);
+        ctx.fillRect(x1, y1, dashLen, 1);
     }
 };
 
 /**
  * Draw an isosceles triangle that points down.
  */
-CanvasRenderingContext2D.prototype.drawDownwardEquilateralTriangle = function(down_vertex_x, down_vertex_y, side_len) {
+var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y, side_len) {
     // Compute other two points of triangle.
     var 
         x1 = down_vertex_x - side_len/2,
@@ -36,16 +36,16 @@ CanvasRenderingContext2D.prototype.drawDownwardEquilateralTriangle = function(do
         y = down_vertex_y - Math.sqrt( side_len*3/2 );
         
     // Draw and fill.
-    this.beginPath();
-    this.moveTo(x1, y);
-    this.lineTo(x2, y);
-    this.lineTo(down_vertex_x, down_vertex_y);
-    this.lineTo(x1, y);
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.lineTo(down_vertex_x, down_vertex_y);
+    ctx.lineTo(x1, y);
 
-    this.strokeStyle = this.fillStyle;
-    this.fill();
-    this.stroke();
-    this.closePath();    
+    ctx.strokeStyle = this.fillStyle;
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
 };
 
 /** 
@@ -3271,7 +3271,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                 ctx.font = DEFAULT_FONT;
             }
             else if (type == "triangle") {
-                ctx.drawDownwardEquilateralTriangle(data[0], data[1], data[2]);
+                drawDownwardEquilateralTriangle(ctx, data[0], data[1], data[2]);
             }
         }
     },
@@ -3317,7 +3317,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             // Draw connector.
             if (b2_start > b1_end) {
                 ctx.fillStyle = CONNECTOR_COLOR;
-                ctx.dashedLine(b1_end - gap, y_center + 5, b2_start - gap, y_center + 5);
+                dashedLine(ctx, b1_end - gap, y_center + 5, b2_start - gap, y_center + 5);
             }
         } else {
             // Read is single.
