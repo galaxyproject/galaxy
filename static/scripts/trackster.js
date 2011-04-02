@@ -14,8 +14,11 @@ var extend = function() {
 };
 
 // Encapsulate -- anything to be availabe outside this block is added to exports
-(function(exports){
+var trackster_module = function(require, exports){
 
+var slotting = require('slotting'),
+    painters = require('painters');
+    
 // ---- Canvas management and extensions ----
 
 /**
@@ -160,7 +163,8 @@ var
     CHAR_HEIGHT_PX = 9, // FIXME: font size may not be static
     ERROR_PADDING = 10, // Padding at the top of tracks for error messages
     SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
-
+    // Maximum number of rows un a slotted track
+    MAX_FEATURE_DEPTH = 100,
     // Minimum width for window for squish to be used.
     MIN_SQUISH_VIEW_WIDTH = 12000,
     
@@ -2100,8 +2104,8 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
         
         // Paint line onto full canvas
         var ctx = canvas.getContext("2d");
-        var painter = new LinePainter( result.data, tile_low, tile_low + tile_length,
-                                       this.prefs.min_value, this.prefs.max_value, this.prefs.color, this.mode );
+        var painter = new painters.LinePainter( result.data, tile_low, tile_low + tile_length,
+					        this.prefs.min_value, this.prefs.max_value, this.prefs.color, this.mode );
         painter.draw( ctx, width, height );
         
         return canvas;
@@ -2154,7 +2158,7 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.data_cache = new DataManager(20, this);
     this.left_offset = 200;
 
-    this.painter = LinkedFeaturePainter;
+    this.painter = painters.LinkedFeaturePainter;
 };
 extend(FeatureTrack.prototype, TiledTrack.prototype, {
     update_auto_mode: function( mode ) {
@@ -2182,11 +2186,11 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         var dummy_context = this.view.canvas_manager.dummy_context,
             inc_slots = this.inc_slots[level];
         if (!inc_slots || (inc_slots.mode !== mode)) {
-            inc_slots = new FeatureSlotter( level, mode === "Pack", function ( x ) { return dummy_context.measureText( x ) } );
-            inc_slots.mode = mode;
+            inc_slots = new (slotting.FeatureSlotter)( level, mode === "Pack", MAX_FEATURE_DEPTH, function ( x ) { return dummy_context.measureText( x ) } );
+	    inc_slots.mode = mode;
             this.inc_slots[level] = inc_slots;
         }
-        
+
         return inc_slots.slot_features( features );
     },
     /**
@@ -2249,7 +2253,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // Extra padding at top of summary tree
             canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
             // Paint summary tree into canvas
-            var painter = new SummaryTreePainter( result.data, result.delta, result.max, tile_low, tile_high, this.prefs.show_counts );
+            var painter = new painters.SummaryTreePainter( result.data, result.delta, result.max, tile_low, tile_high, this.prefs.show_counts );
             var ctx = canvas.getContext("2d");
             // Deal with left_offset by translating
             ctx.translate( left_offset, SUMMARY_TREE_TOP_PADDING );
@@ -2340,7 +2344,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
 var VcfTrack = function(name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
     this.track_type = "VcfTrack";
-    this.painter = VariantPainter;
+    this.painter = painters.VariantPainter;
 };
 
 extend(VcfTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
@@ -2368,7 +2372,7 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     this.prefs = this.track_config.values;
     
     this.track_type = "ReadTrack";
-    this.painter = ReadPainter;
+    this.painter = painters.ReadPainter;
     this.make_name_popup_menu();
 };
 extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
@@ -2419,57 +2423,19 @@ exports.LineTrack = LineTrack;
 exports.FeatureTrack = FeatureTrack;
 exports.ReadTrack = ReadTrack;
 
-// End encapsulation, this line is browser specific, globals are added to the
-// window object
-})(window);
+// End trackster_module encapsulation
+};
 
 // ---- To be extracted ------------------------------------------------------
 
 // ---- Feature Packing ----
 
-/**
- * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
- * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
- * region overlaps the start (but not the end) of the second region.
- */
-var NO_OVERLAP = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005;
-var compute_overlap = function(first_region, second_region) {
-    var 
-        first_start = first_region[0], first_end = first_region[1],
-        second_start = second_region[0], second_end = second_region[1],
-        overlap;
-    if (first_start < second_start) {
-        if (first_end < second_start) {
-            overlap = NO_OVERLAP;
-        }
-        else if (first_end <= second_end) {
-            overlap = OVERLAP_START;
-        }
-        else { // first_end > second_end
-            overlap = CONTAINS;
-        }
-    }
-    else { // first_start >= second_start
-        if (first_start > second_end) {
-            overlap = NO_OVERLAP;
-        }
-        else if (first_end <= second_end) {
-            overlap = CONTAINED_BY;
-        }
-        else {
-            overlap = OVERLAP_END;
-        }
-    }
-    
-    return overlap;
-}
+// Encapsulation
+var slotting_module = function(require, exports) {
 
-/**
- * Returns true if there is any overlap between regions.
- */
-var is_overlap = function(first_region, second_region) {
-    return (compute_overlap(first_region, second_region) !== NO_OVERLAP);
-}
+// HACK: LABEL_SPACING is currently duplicated between here and painters
+var LABEL_SPACING = 2,
+    PACK_SPACING = 5;
 
 /**
  * FeatureSlotter determines slots in which to draw features for vertical
@@ -2478,11 +2444,12 @@ var is_overlap = function(first_region, second_region) {
  * This implementation is incremental, any feature assigned a slot will be
  * retained for slotting future features.
  */
-var FeatureSlotter = function ( w_scale, include_label, measureText ) {
+exports.FeatureSlotter = function ( w_scale, include_label, max_rows, measureText ) {
     this.slots = {};
     this.start_end_dct = {};
     this.w_scale = w_scale;
     this.include_label = include_label;
+    this.max_rows = max_rows;
     this.measureText = measureText;
 }
 
@@ -2490,138 +2457,146 @@ var FeatureSlotter = function ( w_scale, include_label, measureText ) {
  * Slot a set of features, `this.slots` will be updated with slots by id, and
  * the largest slot required for the passed set of features is returned
  */
-FeatureSlotter.prototype.slot_features = function( features ) {
-    var w_scale = this.w_scale, inc_slots = this.slots, start_end_dct = this.start_end_dct,
-        undone = [], slotted = [], highest_slot = 0;
+extend( exports.FeatureSlotter.prototype, {
+    slot_features: function( features ) {
+	var w_scale = this.w_scale, inc_slots = this.slots, start_end_dct = this.start_end_dct,
+	    undone = [], slotted = [], highest_slot = 0, max_rows = this.max_rows;
+	
+	// If feature already exists in slots (from previously seen tiles), use the same slot,
+	// otherwise if not seen, add to "undone" list for slot calculation.
     
-    // If feature already exists in slots (from previously seen tiles), use the same slot,
-    // otherwise if not seen, add to "undone" list for slot calculation.
+	// TODO: Should calculate zoom tile index, which will improve performance
+	// by only having to look at a smaller subset
+	// if (this.start_end_dct[0] === undefined) { this.start_end_dct[0] = []; }
+	for (var i = 0, len = features.length; i < len; i++) {
+	    var feature = features[i],
+		feature_uid = feature[0];
+	    if (inc_slots[feature_uid] !== undefined) {
+		highest_slot = Math.max(highest_slot, inc_slots[feature_uid]);
+		slotted.push(inc_slots[feature_uid]);
+	    } else {
+		undone.push(i);
+	    }
+	}
+		
+	// Slot unslotted features.
+	
+	// Find the first slot such that current feature doesn't overlap any other features in that slot.
+	// Returns -1 if no slot was found.
+	var find_slot = function(f_start, f_end) {
+	    // TODO: Fix constants
+	    for (var slot_num = 0; slot_num <= max_rows; slot_num++) {
+		var has_overlap = false,
+		    slot = start_end_dct[slot_num];
+		if (slot !== undefined) {
+		    // Iterate through features already in slot to see if current feature will fit.
+		    for (var k = 0, k_len = slot.length; k < k_len; k++) {
+			var s_e = slot[k];
+			if (f_end > s_e[0] && f_start < s_e[1]) {
+			    // There is overlap
+			    has_overlap = true;
+			    break;
+			}
+		    }
+		}
+		if (!has_overlap) {
+		    return slot_num;
+		}
+	    }
+	    return -1;
+	};
+	
+	// Do slotting.
+	for (var i = 0, len = undone.length; i < len; i++) {
+	    var feature = features[undone[i]],
+		feature_uid = feature[0],
+		feature_start = feature[1],
+		feature_end = feature[2],
+		feature_name = feature[3],
+		// Where to start, end drawing on screen.
+		f_start = Math.floor( feature_start * w_scale ),
+		f_end = Math.ceil( feature_end * w_scale ),
+		text_len = this.measureText(feature_name).width,
+		text_align;
+	    
+	    // Update start, end drawing locations to include feature name.
+	    // Try to put the name on the left, if not, put on right.
+	    if (feature_name !== undefined && this.include_label ) {
+		// Add gap for label spacing and extra pack space padding
+		// TODO: Fix constants
+		text_len += (LABEL_SPACING + PACK_SPACING);
+		if (f_start - text_len >= 0) {
+		    f_start -= text_len;
+		    text_align = "left";
+		} else {
+		    f_end += text_len;
+		    text_align = "right";
+		}
+	    }
+			
+	    // Find slot.
+	    var slot_num = find_slot(f_start, f_end);
 
-    // TODO: Should calculate zoom tile index, which will improve performance
-    // by only having to look at a smaller subset
-    // if (this.start_end_dct[0] === undefined) { this.start_end_dct[0] = []; }
-    for (var i = 0, len = features.length; i < len; i++) {
-        var feature = features[i],
-            feature_uid = feature[0];
-        if (inc_slots[feature_uid] !== undefined) {
-            highest_slot = Math.max(highest_slot, inc_slots[feature_uid]);
-            slotted.push(inc_slots[feature_uid]);
-        } else {
-            undone.push(i);
-        }
+	    /*
+	    if (slot_num < 0) {
+		
+		TODO: this is not yet working --
+		console.log(feature_uid, "looking for slot with text on the right");
+		// Slot not found. If text was on left, try on right and see
+		// if slot can be found.
+		// TODO: are there any checks we need to do to ensure that text
+		// will fit on tile?
+		if (text_align === "left") {
+		    f_start -= text_len;
+		    f_end -= text_len;
+		    text_align = "right";
+		    slot_num = find_slot(f_start, f_end);
+		}
+		if (slot_num >= 0) {
+		    console.log(feature_uid, "found slot with text on the right");
+		}
+    
+	    }
+	    */
+	    // Do slotting.
+	    if (slot_num >= 0) {
+		// Add current feature to slot.
+		if (start_end_dct[slot_num] === undefined) { 
+		    start_end_dct[slot_num] = [];
+		}
+		start_end_dct[slot_num].push([f_start, f_end]);
+		inc_slots[feature_uid] = slot_num;
+		highest_slot = Math.max(highest_slot, slot_num);
+	    }
+	    else {
+		// TODO: remove this warning when skipped features are handled.
+		// Show warning for skipped feature.
+		//console.log("WARNING: not displaying feature", feature_uid, f_start, f_end);
+	    }
+	}
+	
+	// Debugging: view slots data.
+	/*
+	for (var i = 0; i < MAX_FEATURE_DEPTH; i++) {
+	    var slot = start_end_dct[i];
+	    if (slot !== undefined) {
+		console.log(i, "*************");
+		for (var k = 0, k_len = slot.length; k < k_len; k++) {
+		    console.log("\t", slot[k][0], slot[k][1]);
+		}
+	    }
+	}
+	*/
+	return highest_slot + 1;
     }
-    
-    // Slot unslotted features.
-    
-    // Find the first slot such that current feature doesn't overlap any other features in that slot.
-    // Returns -1 if no slot was found.
-    var find_slot = function(f_start, f_end) {
-        // TODO: Fix constants
-        for (var slot_num = 0; slot_num <= MAX_FEATURE_DEPTH; slot_num++) {
-            var has_overlap = false,
-                slot = start_end_dct[slot_num];
-            if (slot !== undefined) {
-                // Iterate through features already in slot to see if current feature will fit.
-                for (var k = 0, k_len = slot.length; k < k_len; k++) {
-                    var s_e = slot[k];
-                    if (f_end > s_e[0] && f_start < s_e[1]) {
-                        // There is overlap
-                        has_overlap = true;
-                        break;
-                    }
-                }
-            }
-            if (!has_overlap) {
-                return slot_num;
-            }
-        }
-        return -1;
-    };
-    
-    // Do slotting.
-    for (var i = 0, len = undone.length; i < len; i++) {
-        var feature = features[undone[i]],
-            feature_uid = feature[0],
-            feature_start = feature[1],
-            feature_end = feature[2],
-            feature_name = feature[3],
-            // Where to start, end drawing on screen.
-            f_start = Math.floor( feature_start * w_scale ),
-            f_end = Math.ceil( feature_end * w_scale ),
-            text_len = this.measureText(feature_name).width,
-            text_align;
-        
-        // Update start, end drawing locations to include feature name.
-        // Try to put the name on the left, if not, put on right.
-        if (feature_name !== undefined && this.include_label ) {
-            // Add gap for label spacing and extra pack space padding
-            // TODO: Fix constants
-            text_len += (LABEL_SPACING + PACK_SPACING);
-            if (f_start - text_len >= 0) {
-                f_start -= text_len;
-                text_align = "left";
-            } else {
-                f_end += text_len;
-                text_align = "right";
-            }
-        }
-                    
-        // Find slot.
-        var slot_num = find_slot(f_start, f_end);
-        /*
-        if (slot_num < 0) {
-            
-            TODO: this is not yet working --
-            console.log(feature_uid, "looking for slot with text on the right");
-            // Slot not found. If text was on left, try on right and see
-            // if slot can be found.
-            // TODO: are there any checks we need to do to ensure that text
-            // will fit on tile?
-            if (text_align === "left") {
-                f_start -= text_len;
-                f_end -= text_len;
-                text_align = "right";
-                slot_num = find_slot(f_start, f_end);
-            }
-            if (slot_num >= 0) {
-                console.log(feature_uid, "found slot with text on the right");
-            }
+});
 
-        }
-        */
-        // Do slotting.
-        if (slot_num >= 0) {
-            // Add current feature to slot.
-            if (start_end_dct[slot_num] === undefined) { 
-                start_end_dct[slot_num] = [];
-            }
-            start_end_dct[slot_num].push([f_start, f_end]);
-            inc_slots[feature_uid] = slot_num;
-            highest_slot = Math.max(highest_slot, slot_num);
-        }
-        else {
-            // TODO: remove this warning when skipped features are handled.
-            // Show warning for skipped feature.
-            //console.log("WARNING: not displaying feature", feature_uid, f_start, f_end);
-        }
-    }
-    
-    // Debugging: view slots data.
-    /*
-    for (var i = 0; i < MAX_FEATURE_DEPTH; i++) {
-        var slot = start_end_dct[i];
-        if (slot !== undefined) {
-            console.log(i, "*************");
-            for (var k = 0, k_len = slot.length; k < k_len; k++) {
-                console.log("\t", slot[k][0], slot[k][1]);
-            }
-        }
-    }
-    */
-    return highest_slot + 1;
-}
+// End slotting_module encapsulation
+};
 
 // ---- Painters ----
+
+var painters_module = function(require, exports){
 
 /**
  * SummaryTreePainter, a histogram showing number of intervals in a region
@@ -2826,9 +2801,9 @@ extend( FeaturePainter.prototype, {
                 // Slot valid only if features are slotted and this feature is slotted; 
                 // feature may not be due to lack of space.
                 slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
-                
+		
             // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
-            if (is_overlap([feature_start, feature_end], [view_start, view_end]) && (this.mode == "Dense" || slot !== null)) {
+            if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode == "Dense" || slot !== null)) {
                 this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, 
                                   width );
             }
@@ -2849,8 +2824,6 @@ var DENSE_TRACK_HEIGHT = 10,
     SQUISH_FEATURE_HEIGHT = 3,
     PACK_FEATURE_HEIGHT = 9,
     LABEL_SPACING = 2,
-    PACK_SPACING = 5,
-    MAX_FEATURE_DEPTH = 100,
     CONNECTOR_COLOR = "#ccc";
 
 var LinkedFeaturePainter = function( data, view_start, view_end, prefs, mode ) {
@@ -3098,6 +3071,43 @@ extend( VariantPainter.prototype, FeaturePainter.prototype, {
         }
     }
 });
+
+/**
+ * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
+ * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
+ * region overlaps the start (but not the end) of the second region.
+ */
+var NO_OVERLAP = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005;
+var compute_overlap = function(first_region, second_region) {
+    var 
+        first_start = first_region[0], first_end = first_region[1],
+        second_start = second_region[0], second_end = second_region[1],
+        overlap;
+    if (first_start < second_start) {
+        if (first_end < second_start) {
+            overlap = NO_OVERLAP;
+        }
+        else if (first_end <= second_end) {
+            overlap = OVERLAP_START;
+        }
+        else { // first_end > second_end
+            overlap = CONTAINS;
+        }
+    }
+    else { // first_start >= second_start
+        if (first_start > second_end) {
+            overlap = NO_OVERLAP;
+        }
+        else if (first_end <= second_end) {
+            overlap = CONTAINED_BY;
+        }
+        else {
+            overlap = OVERLAP_END;
+        }
+    }
+    
+    return overlap;
+}
 
 var ReadPainter = function( data, view_start, view_end, prefs, mode, ref_seq ) {
     FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
@@ -3381,3 +3391,39 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
         }
     }
 });
+
+exports.SummaryTreePainter = SummaryTreePainter;
+exports.LinePainter = LinePainter;
+exports.LinkedFeaturePainter = LinkedFeaturePainter;
+exports.ReadPainter = ReadPainter;
+exports.VariantPainter = VariantPainter;
+
+// End painters_module encapsulation
+};
+
+// Finally, compose and export trackster module exports into globals
+// These will be replaced with require statements in CommonJS
+(function(target){
+    // Faking up a CommonJS like loader here, each module gets a require and
+    // and exports. We avoid resolution problems by just ordering carefully.
+    var modules = {};
+    // Provide a require function
+    var require = function( name ) {
+	return modules[name];
+    };
+    // Run module will run the module_function provided and store in the
+    // require dict using key
+    var run_module = function( key, module_function ) {
+	var exports = {};
+	module_function( require, exports );
+	modules[key] = exports;
+    };
+    // Run all modules
+    run_module( 'slotting', slotting_module );
+    run_module( 'painters', painters_module );
+    run_module( 'trackster', trackster_module );
+    // Export trackster stuff
+    for ( key in modules.trackster ) {
+	target[key] = modules.trackster[key];
+    }
+})(window);
