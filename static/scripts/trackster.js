@@ -2172,7 +2172,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             if ( mode == "no_detail" ) {
                 mode = "reduced to feature spans";
             } else if ( mode == "summary_tree" ) {
-                mode = "reduced to foverage histogram";
+                mode = "reduced to coverage histogram";
             }
             this.mode_div.text( "Auto (" + mode + ")" );
         }
