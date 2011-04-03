@@ -69,52 +69,6 @@ extend( CanvasManager.prototype, {
     }
 });
 
-/**
- * Draw a dashed line on a canvas using filled rectangles. This function is based on:
- * http://vetruvet.blogspot.com/2010/10/drawing-dashed-lines-on-html5-canvas.html
- * However, that approach uses lines, which don't seem to render as well, so use
- * rectangles instead.
- */
-var dashedLine = function(ctx, x1, y1, x2, y2, dashLen) {
-    if (dashLen === undefined) { dashLen = 4; }
-    var dX = x2 - x1;
-    var dY = y2 - y1;
-    var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
-    var dashX = dX / dashes;
-    var dashY = dY / dashes;
-    var q;
-    
-    for (q = 0; q < dashes; q++, x1 += dashX, y1 += dashY) {
-        if (q % 2 !== 0) {
-            continue;
-        }
-        ctx.fillRect(x1, y1, dashLen, 1);
-    }
-};
-
-/**
- * Draw an isosceles triangle that points down.
- */
-var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y, side_len) {
-    // Compute other two points of triangle.
-    var 
-        x1 = down_vertex_x - side_len/2,
-        x2 = down_vertex_x + side_len/2,
-        y = down_vertex_y - Math.sqrt( side_len*3/2 );
-        
-    // Draw and fill.
-    ctx.beginPath();
-    ctx.moveTo(x1, y);
-    ctx.lineTo(x2, y);
-    ctx.lineTo(down_vertex_x, down_vertex_y);
-    ctx.lineTo(x1, y);
-
-    ctx.strokeStyle = this.fillStyle;
-    ctx.fill();
-    ctx.stroke();
-    ctx.closePath();
-};
-
 // ---- Web UI specific utilities ----
 
 /** 
@@ -1760,7 +1714,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                     $.when(track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
                                                      resolution, track.data_url_extra_params)).then(function(tile_data) {
                         // If sequence data needed, get that and draw. Otherwise draw.
-                        if (view.reference_track && w_scale > CHAR_WIDTH_PX) {
+                        if (view.reference_track && w_scale > view.canvas_manager.char_width_px) {
                             $.when(view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
                                                                             track.mode, resolution, 
                                                                             view.reference_track.data_url_extra_params)).then(function(seq_data) {
@@ -1959,7 +1913,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
         var track = this,
             tile_length = DENSITY * resolution;
         
-        if (w_scale > CHAR_WIDTH_PX) {
+        if (w_scale > this.view.canvas_manager.char_width_px) {
             if (seq === null) {
                 track.content_div.css("height", "0px");
                 return;
@@ -2605,6 +2559,52 @@ extend( exports.FeatureSlotter.prototype, {
 var painters_module = function(require, exports){
 
 /**
+ * Draw a dashed line on a canvas using filled rectangles. This function is based on:
+ * http://vetruvet.blogspot.com/2010/10/drawing-dashed-lines-on-html5-canvas.html
+ * However, that approach uses lines, which don't seem to render as well, so use
+ * rectangles instead.
+ */
+var dashedLine = function(ctx, x1, y1, x2, y2, dashLen) {
+    if (dashLen === undefined) { dashLen = 4; }
+    var dX = x2 - x1;
+    var dY = y2 - y1;
+    var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
+    var dashX = dX / dashes;
+    var dashY = dY / dashes;
+    var q;
+    
+    for (q = 0; q < dashes; q++, x1 += dashX, y1 += dashY) {
+        if (q % 2 !== 0) {
+            continue;
+        }
+        ctx.fillRect(x1, y1, dashLen, 1);
+    }
+};
+
+/**
+ * Draw an isosceles triangle that points down.
+ */
+var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y, side_len) {
+    // Compute other two points of triangle.
+    var 
+        x1 = down_vertex_x - side_len/2,
+        x2 = down_vertex_x + side_len/2,
+        y = down_vertex_y - Math.sqrt( side_len*3/2 );
+        
+    // Draw and fill.
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.lineTo(down_vertex_x, down_vertex_y);
+    ctx.lineTo(x1, y);
+
+    ctx.strokeStyle = this.fillStyle;
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+};
+
+/**
  * SummaryTreePainter, a histogram showing number of intervals in a region
  */
 var SummaryTreePainter = function( data, delta, max, view_start, view_end, show_counts ) {
@@ -3152,14 +3152,15 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             base_offset = 0,
             seq_offset = 0,
             gap = 0
-            ref_seq = this.ref_seq;
+            ref_seq = this.ref_seq,
+	    char_width_px = ctx.canvas.manager.char_width_px;
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
         
         // Gap is needed so that read is offset and hence first base can be drawn on read.
         // TODO-FIX: using this gap offsets reads so that their start is not visually in sync with other tracks.
-        if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+        if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > char_width_px) {
             gap = Math.round(w_scale/2);
         }
         if (!cigar) {
@@ -3256,7 +3257,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                             // Draw sequence.
                             // X center is offset + start - <half_sequence_length>
                             var x_center = s_start - (s_end - s_start)/2;
-                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > char_width_px) {
                                 // Draw sequence container.
                                 ctx.fillStyle = "yellow";
                                 ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
@@ -3292,7 +3293,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                             }
                         }
                         else {
-                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > CHAR_WIDTH_PX) {
+                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > char_width_px) {
                                 // Show insertions with a single number at the insertion point.
                                 draw_last[draw_last.length] = {type: "text", data: [seq.length, insert_x_coord, y_center + 9]};
                             }
@@ -3349,7 +3350,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             gap = 0;
 
         // TODO: fix gap usage; also see note on gap in draw_read.
-        if ((mode === "Pack" || this.mode === "Auto") && w_scale > CHAR_WIDTH_PX) {
+        if ((mode === "Pack" || this.mode === "Auto") && w_scale > ctx.canvas.manager.char_width_px) {
             var gap = Math.round(w_scale/2);
         }
         
