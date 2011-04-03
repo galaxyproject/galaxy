@@ -314,10 +314,11 @@ extend(DataManager.prototype, Cache.prototype, {
         }
 	*/
                 
-        //
-        // Load data from server.
-        //
-        return this.load_data(chrom, low, high, mode, resolution, extra_params);
+        // Load data from server. The deferred is immediately saved until the
+	// data is ready, it then replaces itself with the actual data
+        entry = this.load_data(chrom, low, high, mode, resolution, extra_params);
+	this.set_data( low, high, mode, entry );
+	return entry
     },
     set_data: function(low, high, mode, result) {
         //console.log("set_data", low, high, mode, result);
@@ -1717,6 +1718,8 @@ extend(TiledTrack.prototype, Track.prototype, {
         var track = this;
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var draw_and_show_tile = function(id, result, resolution, tile_index, parent_element, w_scale, seq_data) {
+	    // DEBUG: this is still called too many times when moving slowly,
+	    // console.log( "draw_and_show_tile", resolution, tile_index, w_scale );
             returned_tile = track.draw_tile(result, resolution, tile_index, parent_element, w_scale, seq_data)
             
             // Wrap element in div for background
