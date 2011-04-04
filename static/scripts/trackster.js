@@ -2779,7 +2779,6 @@ extend( FeaturePainter.prototype, {
         var required_height = y_scale = this.get_row_height(), mode = this.mode;
         // If using a packing mode, need to multiply by the number of slots used
         if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
-            // Calculate new slots incrementally for this new chunk of data and update height if necessary.
             required_height = rows_required * y_scale;
         }
         // Pad bottom by half a row, at least 5 px
@@ -2807,7 +2806,7 @@ extend( FeaturePainter.prototype, {
                 // Slot valid only if features are slotted and this feature is slotted; 
                 // feature may not be due to lack of space.
                 slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
-                
+		
             // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
             if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode == "Dense" || slot !== null)) {
                 this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, 
@@ -2843,10 +2842,7 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
      */
     get_row_height: function() {
         var mode = this.mode, y_scale;
-        if (mode === "summary_tree") {
-            // No scale needed.
-        }
-        if (mode === "Dense") {
+           if (mode === "Dense") {
             y_scale = DENSE_TRACK_HEIGHT;            
         }
         else if (mode === "no_detail") {
@@ -3055,7 +3051,7 @@ extend( VariantPainter.prototype, FeaturePainter.prototype, {
             if (mode !== "Dense" && feature_name !== undefined && feature_start > tile_low) {
                 // Draw label
                 ctx.fillStyle = label_color;
-                if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+                if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                     ctx.textAlign = "left";
                     ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
                 } else {
@@ -3125,9 +3121,6 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
      */
     get_row_height: function() {
         var y_scale, mode = this.mode;
-        if (mode === "summary_tree") {
-            // No scale needed.
-        }
         if (mode === "Dense") {
             y_scale = DENSE_TRACK_HEIGHT;            
         }
@@ -3213,10 +3206,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                         } else {
                             ctx.fillStyle = this.prefs.block_color;
                             // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                            ctx.fillRect(s_start, 
-                                         y_center + (this.mode !== "Dense" ? 4 : 5), 
-                                         s_end - s_start, 
-                                         (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT) );
+                            ctx.fillRect(s_start, y_center + 4, s_end - s_start, SQUISH_FEATURE_HEIGHT);
                         }
                     }
                     seq_offset += cig_len;
@@ -3343,7 +3333,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             feature_name = feature[3],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-            y_center = (mode === "Dense" ? 1 : (1 + slot)) * y_scale,
+            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             block_color = this.prefs.block_color,
             label_color = this.prefs.label_color,
             // Left-gap for label text since we align chrom text to the position tick.
