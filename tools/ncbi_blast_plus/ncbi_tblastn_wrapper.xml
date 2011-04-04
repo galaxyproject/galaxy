@@ -138,7 +138,7 @@ $adv_opts.parse_deflines
             <output name="output1" file="tblastn_four_human_vs_rhodopsin.tabular" ftype="tabular" />
         </test>
         <test>
-            <!-- Same as above, but parse deflines -->
+            <!-- Same as above, but parse deflines - on BLAST 2.2.25+ makes no difference -->
             <param name="query" value="four_human_proteins.fasta" ftype="fasta" />
             <param name="db_opts_selector" value="file" />
             <param name="subject" value="rhodopsin_nucs.fasta" ftype="fasta" />
@@ -151,7 +151,7 @@ $adv_opts.parse_deflines
             <param name="max_hits" value="0" />
             <param name="word_size" value="0" />
             <param name="parse_deflines" value="true" />
-            <output name="output1" file="tblastn_four_human_vs_rhodopsin_parse_deflines.tabular" ftype="tabular" />
+            <output name="output1" file="tblastn_four_human_vs_rhodopsin.tabular" ftype="tabular" />
         </test>
     </tests>
     <help>
