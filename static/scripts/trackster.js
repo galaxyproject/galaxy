@@ -2668,6 +2668,7 @@ var LinePainter = function( data, view_start, view_end, min_value, max_value, co
     this.max_value = max_value;
     this.color = color;
     this.mode = mode;
+    this.overflow_color = "#F66";
 }
 
 LinePainter.prototype.draw = function( ctx, width, height ) {
@@ -2690,14 +2691,6 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
 
     // Line at 0.0
     if ( mode !== "Intensity" ) {
-        /*
-        ctx.beginPath();
-        ctx.moveTo( 0, y_zero );
-        ctx.lineTo( width, y_zero );
-        // ctx.lineWidth = 0.5;
-        ctx.fillStyle = "#aaa";
-        ctx.stroke();
-        */
         ctx.fillStyle = "#aaa";
         ctx.fillRect( 0, y_zero, width, 1 );
     }
@@ -2761,6 +2754,37 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
         ctx.stroke();
     }
     
+    // Draw lines at bounderies if overflowing min or max
+    var overflow_min_start = -1,
+        overflow_max_start = -1;
+    ctx.fillStyle = this.overflow_color;
+    for (var i = 0, len = data.length; i < len; i++) {
+        y = data[i][1];
+        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
+        x_minus_scaled = Math.round((data[i][0] - 1 - view_start) * w_scale);
+        
+        // If we are in a min/max run, check if it should be ended
+        if ( overflow_max_start >= 0  && ( y === null || y < max_value ) ) {
+            // Value does not exist or is in valid range, any overflow ends
+            ctx.fillRect( overflow_max_start, 0, x_minus_scaled - overflow_max_start + 1, 2 );
+            overflow_max_start = -1;
+        } else if ( overflow_min_start >= 0 && ( y === null || y > min_value ) ) {
+            // Draw bottom overflow bar
+            ctx.fillRect( overflow_min_start, height - 2, x_minus_scaled - overflow_min_start + 1, 2 );
+            overflow_min_start = -1;
+        }
+        
+        // Now check if we should start a new one (this may happen on the same
+        // base as above if switching between min/max)
+        if ( y !== null && y > max_value && overflow_max_start < 0 ) {
+            // Top overflows and we are not already in a run of overflow
+            overflow_max_start = x_scaled;
+        } else if ( y !== null && y < min_value && overflow_min_start < 0 ) {
+            // Bottom overflows and we are not already in a run
+            overflow_min_start = x_scaled;
+        }
+    }
+    
     ctx.restore();
 }
 
@@ -2806,7 +2830,7 @@ extend( FeaturePainter.prototype, {
                 // Slot valid only if features are slotted and this feature is slotted; 
                 // feature may not be due to lack of space.
                 slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
-		
+                
             // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
             if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode == "Dense" || slot !== null)) {
                 this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, 
@@ -3146,7 +3170,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             seq_offset = 0,
             gap = 0
             ref_seq = this.ref_seq,
-	    char_width_px = ctx.canvas.manager.char_width_px;
+            char_width_px = ctx.canvas.manager.char_width_px;
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
