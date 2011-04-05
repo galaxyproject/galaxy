@@ -1,3 +1,5 @@
+import urllib
+
 from galaxy.tools.parameters.basic import IntegerToolParameter, FloatToolParameter, SelectToolParameter
 from galaxy.tools.parameters.dynamic_options import DynamicOptions
 
@@ -28,17 +30,19 @@ def get_tool_def( trans, hda ):
     tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
     tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
     for name, input in tool.inputs.items():
-        if type( input ) == IntegerToolParameter:
-            tool_params.append( { 'name' : name, 'label' : input.label, \
-                                  'value' : tool_param_values.get( name, input.value ), \
-                                  'type' : 'int', 'min' : input.min, 'max' : input.max } )
-        elif type( input ) == FloatToolParameter:
-            tool_params.append( { 'name' : name, 'label' : input.label, \
-                                  'value' : tool_param_values.get( name, input.value ), \
-                                  'type' : 'float', 'min' : input.min, 'max' : input.max } )
+        if type( input ) == IntegerToolParameter or type( input ) == FloatToolParameter:
+            param_dict = { 'name' : name, 'label' : input.label, \
+                           'value' : tool_param_values.get( name, input.value ), \
+                           'type' : 'number', 'init_value' : input.value,
+                           'html' : urllib.quote( input.get_html() ) }
+            if input.min:
+                param_dict['min'] = input.min
+            if input.max:
+                param_dict['max'] = input.max
+            tool_params.append( param_dict )
         elif type( input ) == SelectToolParameter and type( input.options ) != DynamicOptions:
             tool_params.append( { 'name' : name, 'label' : input.label, 'type' : 'select', \
-                                  'options' : [ option[:2] for option in input.get_options( trans, None ) ] } )
+                                  'html' : urllib.quote( input.get_html() ) } )
         
     # If tool has parameters that can be interactively modified, return tool.
     # Return empty set otherwise.

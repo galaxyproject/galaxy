@@ -42,7 +42,7 @@
     </command>
     <inputs>
         <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
-        <param name="max_intron_len" type="integer" value="300000" min="0" max="600000" label="Max Intron Length" help=""/>
+        <param name="max_intron_len" type="integer" value="300000" min="1" max="600000" label="Max Intron Length" help=""/>
         <param name="min_isoform_fraction" type="float" value="0.05" min="0" max="1" label="Min Isoform Fraction" help=""/>
         <param name="pre_mrna_fraction" type="float" value="0.05" min="0" max="1" label="Pre MRNA Fraction" help=""/>
         <param name="min_map_quality" type="integer" value="0" min="0" max="255" label="Min SAM Map Quality" help=""/>

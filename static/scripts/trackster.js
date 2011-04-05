@@ -104,7 +104,7 @@ var sortable = function( element, handle ) {
  */
 var get_slider_step = function(min, max) {
     var range = max - min;
-    return (range <= 1 ? 0.01 : (range <= 1000 ? 1 : 5));
+    return (range <= 2 ? 0.01 : (range <= 100 ? 1 : (range <= 1000 ? 5 : 10)));
 }
 
 /**
@@ -756,10 +756,13 @@ extend( View.prototype, {
 });
 
 /**
- * Encapsulation of tools that users can apply to tracks/datasets.
+ * Encapsulation of a tool that users can apply to tracks/datasets.
  */
-var Tool = function(tool_dict) {
-    // Unpack tool from dictionary.
+var Tool = function(track, tool_dict) {
+    //
+    // Unpack tool information from dictionary.
+    //
+    this.track = track;
     this.name = tool_dict.name;
     this.params = [];
     var params_dict = tool_dict.params;
@@ -767,56 +770,161 @@ var Tool = function(tool_dict) {
         var param_dict = params_dict[i],
             name = param_dict.name,
             label = param_dict.label,
+            html = unescape(param_dict.html),
             type = param_dict.type;
-        if (type === "int" || type === "float") {
+        if (type === "number") {
             this.params[this.params.length] = 
-                new NumberParameter(name, label, param_dict.min, param_dict.max, param_dict.value);
+                new NumberParameter(name, label, html, param_dict.min, param_dict.max);
         }
         else if (type == "select") {
-            this.params[this.params.length] = new SelectParameter(name, label, param_dict.options);
+            this.params[this.params.length] = new ToolParameter(name, label, html);
         }
         else {
             console.log("WARNING: unrecognized tool parameter type:", name, type);
         }
     }
+    
+    //
+    // Create div elt for tool UI.
+    //
+    this.parent_div = $("<div/>").addClass("dynamic-tool").hide();
+    // Disable dragging, clicking, double clicking on div so that actions on slider do not impact viz.
+    this.parent_div.bind("drag", function(e) {
+        e.stopPropagation();
+    }).bind("click", function(e) {
+        e.stopPropagation();
+    }).bind("dblclick", function(e) {
+        e.stopPropagation();
+    });
+    var name_div = $("<div class='tool-name'>").appendTo(this.parent_div).text(this.name);
+    var tool_params = this.params;
+    var tool = this;
+    $.each(this.params, function(index, param) {
+        var param_div = $("<div>").addClass("param-row").appendTo(tool.parent_div);
+        // Param label.
+        var label_div = $("<div>").addClass("param-label").text(param.label).appendTo(param_div);
+        // Param HTML.
+        // TODO: either generalize .slider CSS attributes or create new rule for tool input div.
+        var html_div = $("<div/>").addClass("slider").html(param.html).appendTo(param_div);
+        
+        // Add to clear floating layout.
+        $("<div style='clear: both;'/>").appendTo(param_div);
+    });
+    
+    // Highlight value for inputs for easy replacement.
+    this.parent_div.find("input").click(function() { $(this).select() });
+    
+    // Add 'Go' button.
+    var run_tool_row = $("<div>").addClass("slider-row").appendTo(this.parent_div);
+    var run_tool_button = $("<input type='submit'>").attr("value", "Run").appendTo(run_tool_row);
+    var tool = this;
+    run_tool_button.click( function() {
+        tool.run();
+    });
 };
 extend(Tool.prototype, {
-    // Returns a dictionary of parameter values; key is parameter name, value
-    // is parameter value.
+    /** 
+     * Returns dictionary of parameter name-values.
+     */
     get_param_values_dict: function() {
         var param_dict = {};
-        for (var i = 0; i < this.params.length; i++) {
-            var param = this.params[i];
-            param_dict[param.name] = JSON.stringify(param.value);
-        }
+        this.parent_div.find(":input").each(function() {
+            var name = $(this).attr("name"), value = $(this).val();
+            param_dict[name] = JSON.stringify(value);
+        });
         return param_dict;
     },
-    // Returns an array of parameter values.
+    /**
+     * Returns array of parameter values.
+     */
     get_param_values: function() {
         var param_values = [];
-        for (var i = 0; i < this.params.length; i++) {
-            param_values[i] = this.params[i].value;
-        }
+        var param_dict = {};
+        this.parent_div.find(":input").each(function() {
+            // Only include inputs with names; this excludes Run button.
+            var name = $(this).attr("name"), value = $(this).val();
+            if (name) {
+                param_values[param_values.length] = value;
+            }
+        });
         return param_values;
+    },
+    /**
+     * Run tool. This creates a new child track, runs tool, and places tool's output in the new track.
+     */
+    run: function() {
+        // Put together params for running tool.
+        var url_params = { 
+            dataset_id: this.track.original_dataset_id,
+            chrom: this.track.view.chrom,
+            low: this.track.view.low,
+            high: this.track.view.high,
+            tool_id: this.name
+        };
+        $.extend(url_params, this.get_param_values_dict());
+        
+        //
+        // Create track for tool's output immediately to provide user feedback.
+        //
+        var 
+            current_track = this.track,
+            // Set name of track to include tool name, parameters, and region used.
+            track_name = url_params.tool_id +
+                         current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
+            new_track;
+            
+        // TODO: add support for other kinds of tool data tracks.
+        if (current_track.track_type === 'FeatureTrack') {
+            new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);    
+        }
+              
+        this.track.add_track(new_track);
+        new_track.content_div.text("Starting job.");
+        
+        // Run tool.
+        var json_run_tool = function() {
+            $.getJSON(run_tool_url, url_params, function(track_data) {
+                if (track_data === "no converter") {
+                    // No converter available for input datasets, so cannot run tool.
+                    new_track.container_div.addClass("error");
+                    new_track.content_div.text(DATA_NOCONVERTER);
+                }
+                else if (track_data.error) {
+                    // General error.
+                    new_track.container_div.addClass("error");
+                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + track_data.message);
+                }
+                else if (track_data === "pending") {
+                    // Converting/indexing input datasets; show message and try again.
+                    new_track.container_div.addClass("pending");
+                    new_track.content_div.text("Converting input data so that it can be easily reused.");
+                    setTimeout(json_run_tool, 2000);
+                }
+                else {
+                    // Job submitted and running.
+                    new_track.dataset_id = track_data.dataset_id;
+                    new_track.content_div.text("Running job.");
+                    new_track.init();
+                }
+            });
+        };
+        json_run_tool();
     }
 });
 
 /**
  * Tool parameters.
  */
-var NumberParameter = function(name, label, min, max, init_value) {
+var ToolParameter = function(name, label, html) {
     this.name = name;
     this.label = label;
-    this.min = min;
-    this.max = max;
-    this.value = init_value;
+    this.html = html;
 };
 
-var SelectParameter = function(name, label, options) {
-    this.name = name;
-    this.label = label;
-    this.options = options;
-    this.value = (options.length !== 0 ? options[0][1] : null);
+var NumberParameter = function(name, label, html, min, max) {
+    ToolParameter.call(this, name, label, html)
+    this.min = min;
+    this.max = max;
 };
 
 /**
@@ -1157,7 +1265,7 @@ var TiledTrack = function(filters, tool_dict, parent_track) {
     // filters_available is determined by data, filters_visible is set by user.
     this.filters_available = false;
     this.filters_visible = false;
-    this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(tool_dict) : undefined);
+    this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(this, tool_dict) : undefined);
     
     //
     // TODO: Right now there is only the notion of a parent track and multiple child tracks. However, 
@@ -1250,7 +1358,7 @@ var TiledTrack = function(filters, tool_dict, parent_track) {
     // Disable dragging, double clicking on div so that actions on slider do not impact viz.
     this.filters_div.bind("drag", function(e) {
         e.stopPropagation();
-    }).bind("click", function( e ) {
+    }).bind("click", function(e) {
         e.stopPropagation();
     }).bind("dblclick", function(e) {
         e.stopPropagation();
@@ -1311,89 +1419,8 @@ var TiledTrack = function(filters, tool_dict, parent_track) {
     // Create dynamic tool div.
     //
     if (this.tool) {  
-        // Create div elt for tool UI.
-        this.dynamic_tool_div = $("<div/>").addClass("dynamic-tool").hide();
+        this.dynamic_tool_div = this.tool.parent_div;
         this.header_div.after(this.dynamic_tool_div);
-        // Disable dragging, clicking, double clicking on div so that actions on slider do not impact viz.
-        this.dynamic_tool_div.bind( "drag", function(e) {
-            e.stopPropagation();
-        }).bind("click", function( e ) {
-            e.stopPropagation();
-        }).bind("dblclick", function( e ) {
-            e.stopPropagation();
-        });
-        var name_div = $("<div class='tool-name'>").appendTo(this.dynamic_tool_div).text(this.tool.name);
-        var tool_params = this.tool.params;
-        var track = this;
-        $.each(this.tool.params, function(index, param) {
-            
-            if (param instanceof NumberParameter) {
-                var param_div = $("<div>").addClass("slider-row").appendTo(track.dynamic_tool_div);
-            
-                // Slider label.
-                var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
-                var name_span = $("<span/>").addClass("slider-name").text(param.label + "  ").appendTo(label_div);
-                var values_span = $("<span/>").text(param.value);
-                var values_span_container = $("<span/>").addClass("slider-value").appendTo(label_div).append("[").append(values_span).append("]");
-            
-                // Slider.
-                var slider_div = $("<div/>").addClass("slider").appendTo(param_div);
-                var slider = $("<div id='" + param.name + "-param-control'>").appendTo(slider_div);
-                // Step must have a value so that (max-min)%step == 0.
-                slider.slider({
-                    min: param.min,
-                    max: param.max,
-                    step: get_slider_step(param.min, param.max),
-                    value: param.value,
-                    slide: function(event, ui) {
-                        var value = ui.value;
-                        param.value = value;
-                        // Set new value in UI.
-                        if (0 < value && value < 1) {
-                            value = parseFloat(value).toFixed(2);
-                        }
-                        values_span.text(value);
-                    },
-                    change: function(event, ui) {
-                        slider.slider("option", "slide").call(slider, event, ui);
-                    }   
-                });
-            
-                // Enable users to edit parameter's value via text box.
-                edit_slider_values(values_span_container, values_span, slider);
-            
-                // Add to clear floating layout.
-                $("<div style='clear: both;'/>").appendTo(param_div);
-            }
-            else if (param instanceof SelectParameter) {
-                var param_div = $("<div>").addClass("slider-row").appendTo(track.dynamic_tool_div);
-            
-                // Param label.
-                var label_div = $("<div>").addClass("slider-label").appendTo(param_div);
-                var name_span = $("<span/>").addClass("slider-name").text(param.label + "  ").appendTo(label_div);
-            
-                // Param selector.
-                var select_div = $("<div/>").addClass("slider").appendTo(param_div);
-                var select_obj = $("<select/>").appendTo(select_div);
-                select_obj.change(function() {param.value = $(this).val();} );
-                var options = select_obj.attr("options");
-                for (var i = 0; i < param.options.length; i++) {
-                    var option_data = param.options[i]
-                    options[options.length] = new Option(option_data[0], option_data[1]);
-                }
-                
-                // Add to clear floating layout.
-                $("<div style='clear: both;'/>").appendTo(param_div);
-            }
-        });
-        
-        // Add 'Go' button.
-        var run_tool_row = $("<div>").addClass("slider-row").appendTo(this.dynamic_tool_div);
-        var run_tool_button = $("<input type='submit'>").attr("value", "Run").appendTo(run_tool_row);
-        var track = this;
-        run_tool_button.click( function() {
-            track.run_tool(); 
-        });
     }
     
     //
@@ -1767,66 +1794,6 @@ extend(TiledTrack.prototype, Track.prototype, {
         }
         $(window).trigger("resize");
     },
-    // Run track's tool.
-    run_tool: function() {
-        // Put together params for running tool.
-        var url_params = { 
-            dataset_id: this.original_dataset_id,
-            chrom: this.view.chrom,
-            low: this.view.low,
-            high: this.view.high,
-            tool_id: this.tool.name
-        };
-        $.extend(url_params, this.tool.get_param_values_dict());
-        
-        //
-        // Create track for tool's output immediately to provide user feedback.
-        //
-        var 
-            current_track = this,
-            // Set name of track to include tool name, parameters, and region used.
-            track_name = url_params.tool_id +
-                         current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
-            new_track;
-            
-        // TODO: add support for other kinds of tool data tracks.
-        if (current_track.track_type === 'FeatureTrack') {
-            new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);    
-        }
-              
-        this.add_track(new_track);
-        new_track.content_div.text("Starting job.");
-        view.has_changes = true;
-        
-        // Run tool.
-        var json_run_tool = function() {
-            $.getJSON(run_tool_url, url_params, function(track_data) {
-                if (track_data === "no converter") {
-                    // No converter available for input datasets, so cannot run tool.
-                    new_track.container_div.addClass("error");
-                    new_track.content_div.text(DATA_NOCONVERTER);
-                }
-                else if (track_data.error) {
-                    // General error.
-                    new_track.container_div.addClass("error");
-                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + track_data.message);
-                }
-                else if (track_data === "pending") {
-                    // Converting/indexing input datasets; show message and try again.
-                    new_track.container_div.addClass("pending");
-                    new_track.content_div.text("Converting input data so that it can be easily reused.");
-                    setTimeout(json_run_tool, 2000);
-                }
-                else {
-                    // Job submitted and running.
-                    new_track.dataset_id = track_data.dataset_id;
-                    new_track.content_div.text("Running job.");
-                    new_track.init();
-                }
-            });
-        };
-        json_run_tool();
-    },
     /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
      */
@@ -1850,6 +1817,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             this.child_tracks_container.show();
         }
         this.child_tracks.push(child_track);
+        this.view.has_changes = true;
     },
     /**
      * Remove a child track from this track.

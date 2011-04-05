@@ -201,7 +201,6 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return trans.fill_template( "tracks/new_browser.mako", dbkeys=self._get_dbkeys( trans ), default_dbkey=kwargs.get("default_dbkey", None) )
             
     @web.json
-    @web.require_login()
     def add_track_async(self, trans, hda_id=None, ldda_id=None):
         if hda_id:
             hda_ldda = "hda"
@@ -707,8 +706,15 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Set input datasets for tool. Input datasets are subsets of full 
         # datasets and are based on chrom, low, high.
         #
-        job_history = trans.get_history( create=True )
-        hda_permissions = trans.app.security_agent.history_get_default_permissions( job_history )
+        
+        # If user is rerunning own tool, put new data in original dataset's 
+        # history. If another user is running tool, put new data in current
+        # history.
+        if original_dataset.history.user == trans.user:
+            working_history = original_dataset.history
+        else:
+            working_history = trans.get_history( create=True )
+        hda_permissions = trans.app.security_agent.history_get_default_permissions( working_history )
         messages_list = []
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
@@ -730,7 +736,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                                                                             name="Subset [%s:%i-%i] of data %i" % \
                                                                                 ( chrom, low, high, input_dataset.hid ),
                                                                             visible=False )
-                job_history.add_dataset( new_dataset )
+                working_history.add_dataset( new_dataset )
                 trans.sa_session.add( new_dataset )
                 trans.app.security_agent.set_all_dataset_permissions( new_dataset.dataset, hda_permissions )
             
@@ -753,14 +759,14 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Start tool and handle outputs.
         #
         try:
-            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=job_history )
+            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=working_history )
         except Exception, e:
             # Lots of things can go wrong when trying to execute tool.
             return to_json_string( { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) } )
         for output in subset_job_outputs.values():
             output.visible = False
         trans.sa_session.flush()
-        
+                
         # Return new track that corresponds to the original dataset.
         output_name = None
         for joda in original_job.output_datasets:
