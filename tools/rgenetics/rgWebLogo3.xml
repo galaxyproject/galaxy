@@ -5,7 +5,7 @@
 #if $range.mode == 'part'
 -l "$range.seqstart" -u "$range.seqend"
 #end if
-   </command>
+    </command>
   <inputs>
    <page>
     <param format="fasta" name="input" type="data" label="Fasta File" />
@@ -71,7 +71,7 @@
       <param name = "mode" value="complete" />
       <param name = "size" value="medium" />      
       <param name = "colours" value="auto" />
-      <output name="output" file="rgWebLogo3_test.jpg" ftype="jpg" />
+      <output name="output" file="rgWebLogo3_test.jpg" ftype="jpg" compare="sim_size" delta="10000" />
     </test>
 
   </tests>
@@ -90,6 +90,15 @@ A typical output looks like this
 
 ----
 
+**Warning about input Fasta format files**
+
+The Weblogo3 program used by this tool will fail if your fasta sequences are not all EXACTLY the same length. 
+
+Fasta alignments from the companion ClustalW Galaxy tool will work but many other fasta files may cause this tool to fail - please do not file 
+a Galaxy bug report - this is a feature of the tool and a problem with your source data - not a tool error - please make certain all your fasta 
+sequences are the same length!
+
+----
 
 **Attribution**
 
