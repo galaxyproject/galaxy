@@ -2092,9 +2092,9 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
     update_auto_mode: function( mode ) {
         if ( this.mode == "Auto" ) {
             if ( mode == "no_detail" ) {
-                mode = "reduced to feature spans";
+                mode = "feature spans";
             } else if ( mode == "summary_tree" ) {
-                mode = "reduced to coverage histogram";
+                mode = "coverage histogram";
             }
             this.mode_div.text( "Auto (" + mode + ")" );
         }
