@@ -169,6 +169,12 @@
     <!-- <tool file="hyphy/hyphy_dnds_wrapper.xml" />  -->
     <tool file="evolution/mutate_snp_codon.xml" />
  </section>
+ <section name="Motif Tools" id="motifs">
+    <tool file="rgenetics/rgWebLogo3.xml" />
+ </section>
+ <section name="Multiple Alignments" id="clustal">
+    <tool file="rgenetics/rgClustalw.xml" />
+ </section>
  <section name="Metagenomic analyses" id="tax_manipulation">
     <tool file="taxonomy/gi2taxonomy.xml" />
     <tool file="taxonomy/t2t_report.xml" />
