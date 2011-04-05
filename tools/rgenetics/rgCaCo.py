@@ -53,28 +53,26 @@ def makeGFF(resf='',outfname='',logf=None,twd='.',name='track name',description=
     resfl = resfl[1:]
     headl = [x.strip().upper() for x in headl]
     headIndex = dict(zip(headl,range(0,len(headl))))
-    chrpos = headIndex.get('CHR',None)
-    rspos = headIndex.get('RS',None)
-    offspos = headIndex.get('OFFSET',None)
-    ppos = headIndex.get('LOG10ARMITAGEP',None)
-    wewant = [chrpos,rspos,offspos,ppos]
+    whatwewant = ['CHR','RS','OFFSET','LOG10ARMITAGEP']
+    wewant = [headIndex.get(x,None) for x in whatwewant]
     if None in wewant: # missing something
-       logf.write('### Error missing a required header in makeGFF - headIndex=%s\n' % headIndex)
+       logf.write('### Error missing a required header from %s in makeGFF - headIndex=%s\n' % (whatwewant,headIndex))
        return
-    resfl = [x for x in resfl if x[ppos] > '']
+    ppos = wewant[3] # last in list
+    resfl = [x for x in resfl if x[ppos] > '' and x[ppos] <> 'NA']
     resfl = [(float(x[ppos]),x) for x in resfl] # decorate
     resfl.sort()
     resfl.reverse() # using -log10 so larger is better
-    resfl = resfl[:topn] # truncate
     pvals = [x[0] for x in resfl] # need to scale
     resfl = [x[1] for x in resfl] # drop decoration  
+    resfl = resfl[:topn] # truncate
     maxp = max(pvals) # need to scale
     minp = min(pvals)
     prange = abs(maxp-minp) + 0.5 # fudge
     scalefact = 1000.0/prange
     logf.write('###maxp=%f,minp=%f,prange=%f,scalefact=%f\n' % (maxp,minp,prange,scalefact))
     for i,row in enumerate(resfl):
-        row[ppos] = '%d' % (int(scalefact*pvals[i]))
+        row[ppos] = '%d' % (int(scalefact*pvals[i])) 
         resfl[i] = row # replace
     outf = file(outfname,'w')
     outf.write(header)
