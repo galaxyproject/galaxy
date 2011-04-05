@@ -146,8 +146,8 @@
 .track-content {
     overflow: hidden;
     text-align: center;
-/*    border-top: 1px solid #eee; */
-    border-bottom: 1px solid #bbb;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
     background: #eee url('/static/images/tracks/diag_bg.gif');
     min-height: 16px;
 }
@@ -228,11 +228,8 @@
 input {
     font: 10px verdana;
 }
-.values {
-    padding-left: 0.25em;
-}
 .dynamic-tool, .filters {
-    width: 400px;
+    width: 410px;
     margin-left: 0.25em;
     padding-bottom:0.5em;
 }
@@ -240,7 +237,7 @@ input {
     margin-top: 0.4em;
     margin-left: 1em;
 }
-.slider-label {
+.param-label, .slider-label {
     float: left;
     font-weight: bold;
 }
@@ -252,6 +249,15 @@ input {
 .tool-name {
     font-size: 110%;
     font-weight: bold;
+}
+.param-row {
+    margin-top: 0.2em;
+    margin-left: 1em;
+}
+.param-label{
+    float: left;
+    font-weight: bold;
+    padding-top: 0.2em;
 }
 .child-track-icon {
     background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;

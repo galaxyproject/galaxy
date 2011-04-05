@@ -2,7 +2,7 @@
 Support for constructing and viewing custom "track" browsers within Galaxy.
 """
 
-import re, time, pkg_resources
+import re, pkg_resources
 pkg_resources.require( "bx-python" )
 
 from bx.seq.twobit import TwoBitFile
@@ -13,7 +13,6 @@ from galaxy.web.controllers.library import LibraryListGrid
 from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
-from galaxy import util
 from galaxy.datatypes.interval import Gff
 
 from galaxy.visualization.tracks.data_providers import *
@@ -202,7 +201,6 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return trans.fill_template( "tracks/new_browser.mako", dbkeys=self._get_dbkeys( trans ), default_dbkey=kwargs.get("default_dbkey", None) )
             
     @web.json
-    @web.require_login()
     def add_track_async(self, trans, hda_id=None, ldda_id=None):
         if hda_id:
             hda_ldda = "hda"
@@ -671,6 +669,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if not tool:
             return messages.NO_TOOL
         tool_params = dict( [ ( p.name, p.value ) for p in original_job.parameters ] )
+        # TODO: need to handle updates to conditional parameters; conditional 
+        # params are stored in dicts (and dicts within dicts).
         tool_params.update( dict( [ ( key, value ) for key, value in kwargs.items() if key in tool.inputs ] ) )
         tool_params = tool.params_from_strings( tool_params, self.app )
         
@@ -686,13 +686,16 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         messages_list = []
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
-            track_type, data_sources = input_dataset.datatype.get_track_type()
-            # Convert to datasource that provides 'data' because we need to
-            # extract the original data.
-            data_source = data_sources[ 'data' ]
-            msg = self._convert_dataset( trans, input_dataset, data_source )
-            if msg is not None:
-                messages_list.append( msg )
+            # TODO: put together more robust way to determine if a dataset can be indexed.
+            if hasattr( input_dataset, 'get_track_type' ):
+                # Can index dataset.
+                track_type, data_sources = input_dataset.datatype.get_track_type()
+                # Convert to datasource that provides 'data' because we need to
+                # extract the original data.
+                data_source = data_sources[ 'data' ]
+                msg = self._convert_dataset( trans, input_dataset, data_source )
+                if msg is not None:
+                    messages_list.append( msg )
 
         # Return any messages generated during conversions.
         return_message = _get_highest_priority_msg( messages_list )
@@ -703,51 +706,67 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Set input datasets for tool. Input datasets are subsets of full 
         # datasets and are based on chrom, low, high.
         #
-        hda_permissions = trans.app.security_agent.history_get_default_permissions( original_dataset.history )
+        
+        # If user is rerunning own tool, put new data in original dataset's 
+        # history. If another user is running tool, put new data in current
+        # history.
+        if original_dataset.history.user == trans.user:
+            working_history = original_dataset.history
+        else:
+            working_history = trans.get_history( create=True )
+        hda_permissions = trans.app.security_agent.history_get_default_permissions( working_history )
         messages_list = []
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
-            track_type, data_sources = input_dataset.datatype.get_track_type()
-            data_source = data_sources[ 'data' ]
-            converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
+            if hasattr( input_dataset, 'get_track_type' ):
+                #
+                # Dataset can be indexed and hence a subset can be extracted.
+                #
+                track_type, data_sources = input_dataset.datatype.get_track_type()
+                data_source = data_sources[ 'data' ]
+                converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
                             
-            #
-            # Create new HDA for input dataset's subset.
-            #
-            subset_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext, \
-                                                                        dbkey=input_dataset.dbkey, \
-                                                                        create_dataset=True, \
-                                                                        sa_session=trans.sa_session,
-                                                                        name="Subset [%s:%i-%i] of data %i" % \
-                                                                            ( chrom, low, high, input_dataset.hid ),
-                                                                        visible=False )
-            input_dataset.history.add_dataset( subset_dataset )
-            trans.sa_session.add( subset_dataset )
-            trans.app.security_agent.set_all_dataset_permissions( subset_dataset.dataset, hda_permissions )
-            if input_dataset.extension == 'bam':
-                data_provider = BamDataProvider( original_dataset=input_dataset, converted_dataset=converted_dataset  )
-                data_provider.write_data_to_file( chrom, low, high, subset_dataset.file_name )
-            # TODO: size not working.
-            subset_dataset.set_size()
-            subset_dataset.info = "Data subset for trackster"
-            subset_dataset.set_dataset_state( trans.app.model.Dataset.states.OK )
-            trans.sa_session.flush()
+                #
+                # Create new HDA for input dataset's subset.
+                #
+                new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext, \
+                                                                            dbkey=input_dataset.dbkey, \
+                                                                            create_dataset=True, \
+                                                                            sa_session=trans.sa_session,
+                                                                            name="Subset [%s:%i-%i] of data %i" % \
+                                                                                ( chrom, low, high, input_dataset.hid ),
+                                                                            visible=False )
+                working_history.add_dataset( new_dataset )
+                trans.sa_session.add( new_dataset )
+                trans.app.security_agent.set_all_dataset_permissions( new_dataset.dataset, hda_permissions )
             
-            # Add dataset to tool's parameters.
-            tool_params[ jida.name ] = subset_dataset
+                # Write subset of data to new dataset
+                data_provider_class = get_data_provider( original_dataset=input_dataset )
+                data_provider = data_provider_class( original_dataset=input_dataset, 
+                                                     converted_dataset=converted_dataset )
+                data_provider.write_data_to_file( chrom, low, high, new_dataset.file_name )
+            
+                # TODO: size not working.
+                new_dataset.set_size()
+                new_dataset.info = "Data subset for trackster"
+                new_dataset.set_dataset_state( trans.app.model.Dataset.states.OK )
+                trans.sa_session.flush()
+            
+                # Add dataset to tool's parameters.
+                tool_params[ jida.name ] = new_dataset
         
         #        
         # Start tool and handle outputs.
         #
         try:
-            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=original_dataset.history )
+            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=working_history )
         except Exception, e:
             # Lots of things can go wrong when trying to execute tool.
             return to_json_string( { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) } )
         for output in subset_job_outputs.values():
             output.visible = False
         trans.sa_session.flush()
-        
+                
         # Return new track that corresponds to the original dataset.
         output_name = None
         for joda in original_job.output_datasets:

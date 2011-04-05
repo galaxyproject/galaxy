@@ -69,6 +69,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
         chrom_url = "${h.url_for( action='chroms' )}",
         dataset_state_url = "${h.url_for( action='dataset_state' )}",
         converted_datasets_state_url = "${h.url_for( action='converted_datasets_state' )}",
+        filters_url = "${h.url_for( action='filters' )}",
         addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
         view;
     

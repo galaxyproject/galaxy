@@ -11,7 +11,7 @@ class GFFInterval( GenomicInterval ):
     only attribute is 'group.'
     """
     def __init__( self, reader, fields, chrom_col, feature_col, start_col, end_col, \
-                  strand_col, score_col, default_strand, fix_strand=False, raw_line='' ):
+                  strand_col, score_col, default_strand, fix_strand=False ):
         # HACK: GFF format allows '.' for strand but GenomicInterval does not. To get around this,
         # temporarily set strand and then unset after initing GenomicInterval.
         unknown_strand = False
@@ -34,8 +34,7 @@ class GFFInterval( GenomicInterval ):
             raise MissingFieldError( "No field for score_col (%d)" % score_col )
         self.score = self.fields[ self.score_col ]
         
-        # Attributes specific to GFF.
-        self.raw_line = raw_line
+        # GFF attributes.
         self.attributes = parse_gff_attributes( fields[8] )
                 
 class GFFFeature( GFFInterval ):
@@ -43,11 +42,13 @@ class GFFFeature( GFFInterval ):
     A GFF feature, which can include multiple intervals.
     """
     def __init__( self, reader, chrom_col, feature_col, start_col, end_col, \
-                  strand_col, score_col, default_strand, fix_strand=False, intervals=[] ):
+                  strand_col, score_col, default_strand, fix_strand=False, intervals=[], \
+                  raw_size=0 ):
         GFFInterval.__init__( self, reader, intervals[0].fields, chrom_col, feature_col, \
                               start_col, end_col, strand_col, score_col, default_strand, \
                               fix_strand=fix_strand )
         self.intervals = intervals
+        self.raw_size = raw_size
         # Use intervals to set feature attributes.
         for interval in self.intervals:
             # Error checking. NOTE: intervals need not share the same strand.
@@ -68,20 +69,6 @@ class GFFFeature( GFFInterval ):
         if not name:
             name = self.attributes.get( 'group', None )
         return name
-        
-    def raw_size( self ):
-        """
-        Returns raw size of feature; raw size is the number of bytes that
-        comprise feature.
-        """
-        # Feature length is all intervals/lines that comprise feature.
-        feature_len = 0
-        for interval in self.intervals:
-            # HACK: +1 for EOL char. Need bx-python to provide raw_line itself 
-            # b/c TableReader strips EOL characters, thus changing the line
-            # length.
-            feature_len += len( interval.raw_line ) + 1
-        return feature_len
                 
 class GFFIntervalToBEDReaderWrapper( NiceReaderWrapper ):
     """ 
@@ -124,7 +111,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
     def parse_row( self, line ):
         interval = GFFInterval( self, line.split( "\t" ), self.chrom_col, self.feature_col, \
                                 self.start_col, self.end_col, self.strand_col, self.score_col, \
-                                self.default_strand, fix_strand=self.fix_strand, raw_line=line )
+                                self.default_strand, fix_strand=self.fix_strand )
         return interval
         
     def next( self ):
@@ -151,7 +138,8 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                
         #
         # Get next GFFFeature
-        # 
+        #
+        raw_size = 0 
 
         # If there is no seed interval, set one. Also, if there are no more 
         # intervals to read, this is where iterator dies.
@@ -161,6 +149,8 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                     self.seed_interval = GenomicIntervalReader.next( self )
                 except ParseError, e:
                     handle_parse_error( e )
+                finally:
+                    raw_size += len( self.current_line )
                     
         # If header or comment, clear seed interval and return it.
         if isinstance( self.seed_interval, ( Header, Comment ) ):
@@ -187,6 +177,9 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                 break
             except ParseError, e:
                 handle_parse_error( e )
+                continue
+            finally:
+                raw_size += len( self.current_line )
             
             # If interval not associated with feature, break.
             group = interval.attributes.get( 'group', None )
@@ -214,7 +207,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         return GFFFeature( self, self.chrom_col, self.feature_col, self.start_col, \
                            self.end_col, self.strand_col, self.score_col, \
                            self.default_strand, fix_strand=self.fix_strand, \
-                           intervals=feature_intervals )
+                           intervals=feature_intervals, raw_size=raw_size )
         
 
 def convert_bed_coords_to_gff( interval ):

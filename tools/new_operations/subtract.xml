@@ -31,7 +31,7 @@
       <option value="-p">Non-overlapping pieces of intervals</option>
     </param>
     
-    <param name="min" size="4" type="integer" value="1" help="(bp)">
+    <param name="min" size="4" type="integer" value="1" min="1" help="(bp)">
       <label>where minimal overlap is</label>
     </param>
    </inputs>

@@ -22,7 +22,7 @@
 .track{background:white;}
 .track-header{text-align:left;padding:4px 0px;color:#666;}
 .track-header .menubutton{margin-left:0px;}
-.track-content{overflow:hidden;text-align:center;border-bottom:1px solid #bbb;background:#eee url('/static/images/tracks/diag_bg.gif');min-height:16px;}
+.track-content{overflow:hidden;text-align:center;border-top:1px solid #eee;border-bottom:1px solid #eee;background:#eee url('/static/images/tracks/diag_bg.gif');min-height:16px;}
 .label-track .track-content{background:white;}
 .track-tile{background:white;}
 .track-tile canvas{position:relative;z-index:100;border:solid white;border-width:2px 0px 0px 0px;}
@@ -38,11 +38,12 @@
 .top-labeltrack{position:relative;border-bottom:solid #999 1px;}
 .nav-labeltrack{border-top:solid #999 1px;border-bottom:solid #333 1px;}
 input{font:10px verdana;}
-.values{padding-left:0.25em;}
-.dynamic-tool,.filters{width:400px;margin-left:0.25em;padding-bottom:0.5em;}
+.dynamic-tool,.filters{width:410px;margin-left:0.25em;padding-bottom:0.5em;}
 .slider-row{margin-top:0.4em;margin-left:1em;}
 .slider-label{float:left;font-weight:bold;}
 .slider{float:right;width:200px;position:relative;}
 .tool-name{font-size:110%;font-weight:bold;}
+.param-row{margin-top:0.2em;margin-left:1em;}
+.param-label{float:left;font-weight:bold;padding-top:0.2em;}
 .child-track-icon{background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;width:30px;cursor:move;}
 .track-resize{background:white url('../images/visualization/draggable_vertical.png') no-repeat top center;position:absolute;right:3px;bottom:-4px;width:14px;height:7px;border:solid #999 1px;z-index:100;}

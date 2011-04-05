@@ -120,7 +120,7 @@ class ToolRunner( BaseController ):
             error( "The '%s' tool does not currently support rerunning." % tool.name )
         # Get the job's parameters
         try:
-            params_objects = job.get_param_values( trans.app )
+            params_objects = job.get_param_values( trans.app, ignore_errors = True )
         except:
             raise Exception( "Failed to get parameters for dataset id %d " % data.id )
         upgrade_messages = tool.check_and_update_param_values( params_objects, trans )

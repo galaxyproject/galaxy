@@ -223,8 +223,8 @@ class Tabular( data.Text ):
                 out.append( '<tr><td>' )
             out.append( '%s</td></tr>'  % escape( comments.pop(0) ) )
         return "".join( out )
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
-        data.Text.set_peek( self, dataset, line_count=line_count, is_multi_byte=is_multi_byte )
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False):
+        super(Tabular, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % ( dataset.blurb, util.commaify( str( dataset.metadata.comment_lines ) ) )
     def display_peek( self, dataset ):
@@ -383,6 +383,7 @@ class Sam( Tabular ):
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
+    line_class = "genomic coordinate"
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -391,24 +392,6 @@ class Pileup( Tabular ):
 
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
-
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
-        """Set the peek and blurb text"""
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
-            if line_count is None:
-                # See if line_count is stored in the metadata
-                if dataset.metadata.data_lines is not None:
-                    dataset.blurb = "%s genomic coordinates" % util.commaify( str( dataset.metadata.data_lines ) )
-                else:
-                    # Number of lines is not known ( this should not happen ), and auto-detect is
-                    # needed to set metadata
-                    dataset.blurb = "? genomic coordinates"
-            else:
-                dataset.blurb = "%s genomic coordinates" % util.commaify( str( line_count ) )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
 
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""

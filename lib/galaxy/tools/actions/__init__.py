@@ -133,16 +133,18 @@ class DefaultToolAction( object ):
                 else:
                     new_list.append( value )
             return new_list
-        def wrap_values( inputs, input_values ):
+        def wrap_values( inputs, input_values, skip_missing_values = False ):
             # Wrap tool inputs as necessary
             for input in inputs.itervalues():
+                if input.name not in input_values and skip_missing_values:
+                    continue
                 if isinstance( input, Repeat ):
                     for d in input_values[ input.name ]:
-                        wrap_values( input.inputs, d )
+                        wrap_values( input.inputs, d, skip_missing_values = skip_missing_values )
                 elif isinstance( input, Conditional ):
                     values = input_values[ input.name ]
                     current = values[ "__current_case__" ]
-                    wrap_values( input.cases[current].inputs, values )
+                    wrap_values( input.cases[current].inputs, values, skip_missing_values = skip_missing_values )
                 elif isinstance( input, DataToolParameter ):
                     input_values[ input.name ] = \
                         galaxy.tools.DatasetFilenameWrapper( input_values[ input.name ],
@@ -254,7 +256,7 @@ class DefaultToolAction( object ):
                     if output.change_format:
                         if params is None:
                             params = make_dict_copy( incoming )
-                            wrap_values( tool.inputs, params )
+                            wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
                         for change_elem in output.change_format:
                             for when_elem in change_elem.findall( 'when' ):
                                 check = when_elem.get( 'input', None )
@@ -304,7 +306,7 @@ class DefaultToolAction( object ):
                         # <outputs>
                         #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
                         # </outputs>
-                        wrap_values( tool.inputs, params )
+                        wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
                     #tool (only needing to be set once) and on_string (set differently for each label) are overwritten for each output dataset label being determined
                     params['tool'] = tool
                     params['on_string'] = on_text
