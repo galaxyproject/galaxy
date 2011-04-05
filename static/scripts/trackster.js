@@ -1126,10 +1126,9 @@ extend( TrackConfig.prototype, {
 /**
  * Tiles for TiledTracks.
  */
-var Tile = function(track, canvas, histo_max) {
+var Tile = function(track, canvas) {
     this.track = track;
     this.canvas = canvas;
-    this.histo_max = histo_max;
 };
 
 /**
@@ -2192,7 +2191,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
 
         // Start dealing with row-by-row tracks
         
-        // If working with a mode where slotting is neccesary, update the incremental slotting
+        // If working with a mode where slotting is necessary, update the incremental slotting
         var slots, slots_required = 1;
         if ( mode === "no_detail" || mode === "Squish" || mode === "Pack" ) {
             slots_required = this.incremental_slots(w_scale, result.data, mode);
@@ -3164,6 +3163,14 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
             var seq_start = feature_start + base_offset,
                 s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
+            
+            // Make sure that read is drawn even if it too small to be rendered officially; in this case,
+            // read is drawn at 1px.
+            // TODO: need to ensure that s_start, s_end are calcuated the same for both slotting
+            // and drawing.
+            if (s_start === s_end) {
+                s_end += 1;
+            }
                 
             switch (cig_op) {
                 case "H": // Hard clipping.
