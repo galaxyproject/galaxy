@@ -1,4 +1,4 @@
-<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.8">
+<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.9">
     <description>Search nucleotide database with nucleotide query sequence(s)</description>
     <command interpreter="python">hide_stderr.py
 ## The command is a Cheetah template which allows some Python based syntax.
@@ -13,7 +13,12 @@ blastn
 -task $blast_type
 -evalue $evalue_cutoff
 -out $output1
--outfmt "$out_format"
+##Set the extended list here so if/when we add things, saved workflows are not affected
+#if str($out_format)=="ext":
+    -outfmt "6 std sallseqid score nident positive gaps ppos qframe sframe qseq sseq qlen slen"
+#else:
+    -outfmt "$out_format"
+#end if
 -num_threads 8
 #if $adv_opts.adv_opts_selector=="advanced":
 $adv_opts.filter_query
@@ -66,7 +71,7 @@ $adv_opts.parse_deflines
         <param name="evalue_cutoff" type="float" size="15" value="0.001" label="Set expectation value cutoff" />
         <param name="out_format" type="select" label="Output format">
             <option value="6" selected="True">Tabular (standard 12 columns)</option>
-            <option value="6 std sallseqid score nident positive gaps ppos qframe sframe qseq sseq">Tabular (extended 22 columns)</option>
+            <option value="ext">Tabular (extended 24 columns)</option>
             <option value="5">BLAST XML</option>
             <option value="0">Pairwise text</option>
             <option value="0 -html">Pairwise HTML</option>
@@ -121,8 +126,6 @@ $adv_opts.parse_deflines
     <requirements>
         <requirement type="binary">blastn</requirement>
     </requirements>
-    <tests>
-    </tests>
     <help>
     
 .. class:: warningmark
@@ -166,7 +169,7 @@ The BLAST+ tools can optionally output additional columns of information,
 but this takes longer to calculate. Most (but not all) of these columns are
 included by selecting the extended tabular output. The extra columns are
 included *after* the standard 12 columns. This is so that you can write
-workflow filtering steps that accept either the 12 or 22 column tabular
+workflow filtering steps that accept either the 12 or 24 column tabular
 BLAST output.
 
 ====== ============= ===========================================
@@ -182,6 +185,8 @@ Column NCBI name     Description
     20 sframe        Subject frame
     21 qseq          Aligned part of query sequence
     22 sseq          Aligned part of subject sequence
+    23 qlen          Query sequence length
+    24 slen          Subject sequence length
 ====== ============= ===========================================
 
 The third option is BLAST XML output, which is designed to be parsed by

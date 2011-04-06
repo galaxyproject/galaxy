@@ -1,4 +1,4 @@
-<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.6">
+<tool id="blastxml_to_tabular" name="BLAST XML to tabular" version="0.0.8">
     <description>Convert BLAST XML output to tabular</description>
     <command interpreter="python">
       blastxml_to_tabular.py $blastxml_file $tabular_file $out_format
@@ -7,7 +7,7 @@
         <param name="blastxml_file" type="data" format="blastxml" label="BLAST results as XML"/> 
         <param name="out_format" type="select" label="Output format">
             <option value="std" selected="True">Tabular (standard 12 columns)</option>
-            <option value="x22">Tabular (extended 22 columns)</option>
+            <option value="ext">Tabular (extended 24 columns)</option>
         </param>
     </inputs>
     <outputs>
@@ -17,10 +17,34 @@
     </requirements>
     <tests>
         <test>
+            <param name="blastxml_file" value="blastp_four_human_vs_rhodopsin.xml" ftype="blastxml" />
+            <param name="out_format" value="std" />
+            <!-- Note this has some white space differences from the actual blastp output blast_four_human_vs_rhodopsin.tabluar -->
+            <output name="tabular_file" file="blastp_four_human_vs_rhodopsin_converted.tabular" ftype="tabular" />
+        </test>
+        <test>
+            <param name="blastxml_file" value="blastp_four_human_vs_rhodopsin.xml" ftype="blastxml" />
+            <param name="out_format" value="ext" />
+            <!-- Note this has some white space differences from the actual blastp output blast_four_human_vs_rhodopsin_22c.tabluar -->
+            <output name="tabular_file" file="blastp_four_human_vs_rhodopsin_converted_ext.tabular" ftype="tabular" />
+        </test>
+        <test>
             <param name="blastxml_file" value="blastp_sample.xml" ftype="blastxml" />
             <param name="out_format" value="std" />
-            <!-- Note this has some white space differences from the actual blastx output -->
+            <!-- Note this has some white space differences from the actual blastp output -->
             <output name="tabular_file" file="blastp_sample_converted.tabular" ftype="tabular" />
+        </test>
+        <test>
+            <param name="blastxml_file" value="blastx_rhodopsin_vs_four_human.xml" ftype="blastxml" />
+            <param name="out_format" value="std" />
+            <!-- Note this has some white space differences from the actual blastx output -->
+            <output name="tabular_file" file="blastx_rhodopsin_vs_four_human_converted.tabular" ftype="tabular" />
+        </test>
+        <test>
+            <param name="blastxml_file" value="blastx_rhodopsin_vs_four_human.xml" ftype="blastxml" />
+            <param name="out_format" value="ext" />
+            <!-- Note this has some white space and XXXX masking differences from the actual blastx output -->
+            <output name="tabular_file" file="blastx_rhodopsin_vs_four_human_converted_ext.tabular" ftype="tabular" />
         </test>
         <test>
             <param name="blastxml_file" value="blastx_sample.xml" ftype="blastxml" />
@@ -36,9 +60,9 @@
         </test>
         <test>
             <param name="blastxml_file" value="blastp_human_vs_pdb_seg_no.xml" ftype="blastxml" />
-            <param name="out_format" value="x22" />
+            <param name="out_format" value="ext" />
             <!-- Note this has some white space differences from the actual blastp output -->
-            <output name="tabular_file" file="blastp_human_vs_pdb_seg_no_converted_x22.tabular" ftype="tabular" />
+            <output name="tabular_file" file="blastp_human_vs_pdb_seg_no_converted_ext.tabular" ftype="tabular" />
         </test>
     </tests>
     <help>
@@ -90,11 +114,14 @@ Column NCBI name     Description
     20 sframe        Subject frame
     21 qseq          Aligned part of query sequence
     22 sseq          Aligned part of subject sequence
+    23 qlen          Query sequence length
+    24 slen          Subject sequence length
 ====== ============= ===========================================
 
-Beware that the XML file (and thus the conversion) contains the original
-aligned sequences, but the tabular output direct from BLAST+ may use XXXX
-masking on regions of low complexity (columns 21 and 22).
+Beware that the XML file (and thus the conversion) and the tabular output
+direct from BLAST+ may differ in the presence of XXXX masking on regions
+low complexity (columns 21 and 22), and thus also calculated figures like
+the percentage idenity (column 3).
 
     </help>
 </tool>

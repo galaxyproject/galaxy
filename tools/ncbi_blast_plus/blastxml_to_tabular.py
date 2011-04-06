@@ -2,11 +2,12 @@
 """Convert a BLAST XML file to 12 column tabular output
 
 Takes three command line options, input BLAST XML filename, output tabular
-BLAST filename, output format (std for standard 12 columns, or x22 for the
-extended 22 columns offered in the BLAST+ wrappers).
+BLAST filename, output format (std for standard 12 columns, or ext for the
+extended 24 columns offered in the BLAST+ wrappers).
 
 The 12 colums output are 'qseqid sseqid pident length mismatch gapopen qstart
-qend sstart send evalue bitscore' which mean:
+qend sstart send evalue bitscore' or 'std' at the BLAST+ command line, which
+mean:
    
 ====== ========= ============================================
 Column NCBI name Description
@@ -25,7 +26,7 @@ Column NCBI name Description
     12 bitscore  Bit score
 ====== ========= ============================================
 
-The additional columns are:
+The additional columns offered in the Galaxy BLAST+ wrappers are:
 
 ====== ============= ===========================================
 Column NCBI name     Description
@@ -40,20 +41,26 @@ Column NCBI name     Description
     20 sframe        Subject frame
     21 qseq          Aligned part of query sequence
     22 sseq          Aligned part of subject sequence
+    23 qlen          Query sequence length
+    24 slen          Subject sequence length
 ====== ============= ===========================================
 
 Most of these fields are given explicitly in the XML file, others some like
 the percentage identity and the number of gap openings must be calculated.
 
+Be aware that the sequence in the extended tabular output or XML direct from
+BLAST+ may or may not use XXXX masking on regions of low complexity. This
+can throw the off the calculation of percentage identity and gap openings.
+[In fact, both BLAST 2.2.24+ and 2.2.25+ have a sutle bug in this regard,
+with these numbers changing depending on whether or not the low complexity
+filter is used.]
+
 This script attempts to produce idential output to what BLAST+ would have done.
 However, check this with "diff -b ..." since BLAST+ sometimes includes an extra
 space character (probably a bug).
-
-Beware that if using the extended output, the XML file contains the original
-aligned sequences, but the tabular output direct from BLAST+ may use XXXX
-masking on regions of low complexity (columns 21 and 22).
 """
 import sys
+import re
 
 assert sys.version_info[:2] >= ( 2, 4 )
 if sys.version_info[:2] >= ( 2, 5 ):
@@ -69,14 +76,16 @@ def stop_err( msg ):
 try:
     in_file, out_file, out_fmt = sys.argv[1:]
 except:
-    stop_err("Expect 3 arguments: input BLAST XML file, output tabular file, out format (std or x22)")
+    stop_err("Expect 3 arguments: input BLAST XML file, output tabular file, out format (std or ext)")
 
 if out_fmt == "std":
     extended = False
 elif out_fmt == "x22":
+    stop_err("Format argument x22 has been replaced with ext (extended 24 columns)")
+elif out_fmt == "ext":
     extended = True
 else:
-    stop_err("Format argument should be std (12 column) or x22 (extended 22 column)")
+    stop_err("Format argument should be std (12 column) or ext (extended 24 columns)")
 
 
 # get an iterable
@@ -92,6 +101,18 @@ try:
 except:
     stop_err( "Invalid data format." )
 
+
+re_default_query_id = re.compile("^Query_\d+$")
+assert re_default_query_id.match("Query_101")
+assert not re_default_query_id.match("Query_101a")
+assert not re_default_query_id.match("MyQuery_101")
+re_default_subject_id = re.compile("^Subject_\d+$")
+assert re_default_subject_id.match("Subject_1")
+assert not re_default_subject_id.match("Subject_")
+assert not re_default_subject_id.match("Subject_12a")
+assert not re_default_subject_id.match("TheSubject_1")
+
+
 outfile = open(out_file, 'w')
 blast_program = None
 for event, elem in context:
@@ -99,10 +120,42 @@ for event, elem in context:
         blast_program = elem.text
     # for every <Iteration> tag
     if event == "end" and elem.tag == "Iteration":
-        qseqid = elem.findtext("Iteration_query-def").split(None,1)[0]
+        #Expecting either this, from BLAST 2.2.25+ using FASTA vs FASTA
+        # <Iteration_query-ID>sp|Q9BS26|ERP44_HUMAN</Iteration_query-ID>
+        # <Iteration_query-def>Endoplasmic reticulum resident protein 44 OS=Homo sapiens GN=ERP44 PE=1 SV=1</Iteration_query-def>
+        # <Iteration_query-len>406</Iteration_query-len>
+        # <Iteration_hits></Iteration_hits>
+        #
+        #Or, from BLAST 2.2.24+ run online
+        # <Iteration_query-ID>Query_1</Iteration_query-ID>
+        # <Iteration_query-def>Sample</Iteration_query-def>
+        # <Iteration_query-len>516</Iteration_query-len>
+        # <Iteration_hits>...
+        qseqid = elem.findtext("Iteration_query-ID")
+        if re_default_query_id.match(qseqid):
+            #Place holder ID, take the first word of the query definition
+            qseqid = elem.findtext("Iteration_query-def").split(None,1)[0]
+        qlen = int(elem.findtext("Iteration_query-len"))
+                                        
         # for every <Hit> within <Iteration>
         for hit in elem.findall("Iteration_hits/Hit/"):
+            #Expecting either this,
+            # <Hit_id>gi|3024260|sp|P56514.1|OPSD_BUFBU</Hit_id>
+            # <Hit_def>RecName: Full=Rhodopsin</Hit_def>
+            # <Hit_accession>P56514</Hit_accession>
+            #or,
+            # <Hit_id>Subject_1</Hit_id>
+            # <Hit_def>gi|57163783|ref|NP_001009242.1| rhodopsin [Felis catus]</Hit_def>
+            # <Hit_accession>Subject_1</Hit_accession>
+            #
+            #apparently depending on the parse_deflines switch
             sseqid = hit.findtext("Hit_id").split(None,1)[0]
+            hit_def = sseqid + " " + hit.findtext("Hit_def")
+            if re_default_subject_id.match(sseqid) \
+            and sseqid == hit.findtext("Hit_accession"):
+                #Place holder ID, take the first word of the subject definition
+                hit_def = hit.findtext("Hit_def")
+                sseqid = hit_def.split(None,1)[0]
             # for every <Hsp> within <Hit>
             for hsp in hit.findall("Hit_hsps/Hsp"):
                 nident = hsp.findtext("Hsp_identity")
@@ -164,7 +217,6 @@ for event, elem in context:
                           ]
 
                 if extended:
-                    hit_def = sseqid + " " + hit.findtext("Hit_def")
                     sallseqid = ";".join(name.split(None,1)[0] for name in hit_def.split(">"))
                     #print hit_def, "-->", sallseqid
                     positive = hsp.findtext("Hsp_positive")
@@ -175,6 +227,7 @@ for event, elem in context:
                         #Probably a bug in BLASTP that they use 0 or 1 depending on format
                         if qframe == "0": qframe = "1"
                         if sframe == "0": sframe = "1"
+                    slen = int(hit.findtext("Hit_len"))
                     values.extend([sallseqid,
                                    hsp.findtext("Hsp_score"), #score,
                                    nident,
@@ -185,7 +238,10 @@ for event, elem in context:
                                    sframe,
                                    #NOTE - for blastp, XML shows original seq, tabular uses XXX masking
                                    q_seq,
-                                   h_seq])
+                                   h_seq,
+                                   str(qlen),
+                                   str(slen),
+                                   ])
                 #print "\t".join(values) 
                 outfile.write("\t".join(values) + "\n")
         # prevents ElementTree from growing large datastructure
