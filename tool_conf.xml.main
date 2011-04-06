@@ -358,6 +358,7 @@
     <tool file="metag_tools/megablast_xml_parser.xml" />
     <label text="AB-SOLiD" id="ab_solid"/>
     <tool file="sr_mapping/bowtie_color_wrapper.xml" />
+    <tool file="sr_mapping/bwa_color_wrapper.xml" />
   </section>
   <section name="NGS: SAM Tools" id="samtools">
    <tool file="samtools/sam_bitwise_flag_filter.xml" />
