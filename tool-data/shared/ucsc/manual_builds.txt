@@ -692,7 +692,7 @@ eschColi_EC4115	Escherichia coli EC4115	chr=5572075,plasmid_pO157=94644,plasmid_
 eschColi_TW14359	Escherichia coli TW14359	chr=5528136,plasmid_pO157=94601
 pUC18	pUC18 Plasmid	plasmid=2686
 nomLeu1	Gibbon	chr1=245538060,chr10=135320619,chr10_random=51011,chr11=134551115,chr12=132397767,chr12_random=336702,chr13=114140689,chr14=106383727,chr15=100373758,chr15_random=814500,chr16=88836341,chr16_random=121782,chr17=78641643,chr17_random=2617017,chr18=76124575,chr19=63791437,chr19_random=297341,chr1_random=3502083,chr2=242756806,chr20=62432189,chr21=47019833,chr22=49520868,chr22_random=31530,chr2_random=335351,chr3=199337376,chr3_random=950829,chr4=191633586,chr4_random=923474,chr5=180612635,chr5_random=150620,chr6=170839170,chr6_random=1837487,chr7=158619002,chr7_random=805938,chr8=146283503,chr8_random=649034,chr9=138402467,chr9_random=1315712,chrUn=217400297,chrX=154793867,chrX_random=1690203,chrY=57470892
-Saccharomcyes_cerevisiae_S288C_SGD2010	S. cerevisae str. S288C	chr1=230218,chr2=813184,chr3=316620,chr4=1531933,chr5=576874,chr6=270161,chr7=1090940,chr8=562643,chr9=439888,chr10=745751,chr11=666816,chr12=1078177,chr13=924431,chr14=784333,chr15=1091291,chr16=948066,chrM=85779
+Saccharomyces_cerevisiae_S288C_SGD2010	S. cerevisae str. S288C	chr1=230218,chr2=813184,chr3=316620,chr4=1531933,chr5=576874,chr6=270161,chr7=1090940,chr8=562643,chr9=439888,chr10=745751,chr11=666816,chr12=1078177,chr13=924431,chr14=784333,chr15=1091291,chr16=948066,chrM=85779
 Spur_v2.6	Purple Sea Urchin (Strongylocentrotus purpuratus) v2.6
 Ptrichocarpa_156	Poplar (Populus trichocarpa)
 Hydra_JCVI	Hydra magnipapillata str. 105
