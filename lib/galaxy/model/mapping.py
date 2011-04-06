@@ -1392,10 +1392,10 @@ assign_mapper( context, Job, Job.table,
                      history=relation( History ),
                      library_folder=relation( LibraryFolder ),
                      parameters=relation( JobParameter, lazy=False ),
-                     input_datasets=relation( JobToInputDatasetAssociation, lazy=False ),
-                     output_datasets=relation( JobToOutputDatasetAssociation, lazy=False ),
+                     input_datasets=relation( JobToInputDatasetAssociation ),
+                     output_datasets=relation( JobToOutputDatasetAssociation ),
                      post_job_actions=relation( PostJobActionAssociation, lazy=False ),
-                     output_library_datasets=relation( JobToOutputLibraryDatasetAssociation, lazy=False ),
+                     output_library_datasets=relation( JobToOutputLibraryDatasetAssociation ),
                      external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
 
 assign_mapper( context, Task, Task.table,
