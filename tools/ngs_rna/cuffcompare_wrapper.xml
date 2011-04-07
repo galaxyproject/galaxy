@@ -130,9 +130,9 @@ There is no such thing (yet) as an automated gearshift in expression analysis. I
 
 **Input format**
 
-Cuffcompare takes Cufflinks' GTF output as input, and optionally can take a "reference" annotation (such as from Ensembl___)
+Cuffcompare takes Cufflinks' GTF output as input, and optionally can take a "reference" annotation (such as from Ensembl_)
 
-.. ___: http://www.todo.org 
+.. _Ensembl: http://www.ensembl.org 
 
 ------
 

@@ -198,8 +198,6 @@ There is no such thing (yet) as an automated gearshift in expression analysis. I
 
 Cuffdiff takes Cufflinks or Cuffcompare GTF files as input along with two SAM files containing the fragment alignments for two or more samples.
 
-.. ___: http://www.todo.org 
-
 ------
 
 **Outputs**
