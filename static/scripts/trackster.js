@@ -11,6 +11,7 @@ var extend = function() {
             target[key] = other[key];
         }
     }
+    return target;
 };
 
 // Encapsulate -- anything to be availabe outside this block is added to exports
@@ -2032,7 +2033,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
         // Paint line onto full canvas
         var ctx = canvas.getContext("2d");
         var painter = new painters.LinePainter( result.data, tile_low, tile_low + tile_length,
-                                                this.prefs.min_value, this.prefs.max_value, this.prefs.color, this.mode );
+                                                this.prefs, this.mode );
         painter.draw( ctx, width, height );
         
         return canvas;
@@ -2180,7 +2181,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // Extra padding at top of summary tree
             canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
             // Paint summary tree into canvas
-            var painter = new painters.SummaryTreePainter( result.data, result.delta, result.max, tile_low, tile_high, this.prefs.show_counts );
+            var painter = new painters.SummaryTreePainter( result, tile_low, tile_high, this.prefs );
             var ctx = canvas.getContext("2d");
             // Deal with left_offset by translating
             ctx.translate( left_offset, SUMMARY_TREE_TOP_PADDING );
@@ -2572,19 +2573,31 @@ var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y
 };
 
 /**
- * SummaryTreePainter, a histogram showing number of intervals in a region
+ * Base class for painters
+ *
+ * -- Mode and prefs are both optional
  */
-var SummaryTreePainter = function( data, delta, max, view_start, view_end, show_counts ) {
+var Painter = function( data, view_start, view_end, prefs, mode ) {
     // Data and data properties
     this.data = data;
-    this.delta = delta;
-    this.max = max;
     // View
     this.view_start = view_start;
     this.view_end = view_end;
     // Drawing prefs
-    this.show_counts = show_counts;
+    this.prefs = extend( {}, this.default_prefs, prefs );
+    this.mode = mode;
 }
+
+Painter.prototype.default_prefs = {};
+
+/**
+ * SummaryTreePainter, a histogram showing number of intervals in a region
+ */
+var SummaryTreePainter = function( data, view_start, view_end, prefs, mode ) {
+    Painter.call( this, data, view_start, view_end, prefs, mode );
+}
+
+SummaryTreePainter.prototype.default_prefis = { show_counts: false };
 
 SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
     
@@ -2592,7 +2605,7 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
         view_range = this.view_end - this.view_start,
         w_scale = width / view_range;
     
-    var points = this.data, delta = this.delta, max = this.max,
+    var points = this.data.data, delta = this.data.delta, max = this.data.max,
         // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
         // start. However, height of each rectangle is relative to required_height; hence, the
         // max rectangle is required_height.
@@ -2614,7 +2627,7 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
         
         // Draw number count if it can fit the number with some padding, otherwise things clump up
         var text_padding_req_x = 4;
-        if (this.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
+        if (this.prefs.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
             ctx.fillStyle = "#666";
             ctx.textAlign = "center";
             ctx.fillText(y, x + (delta_x_px/2), 10);
@@ -2624,25 +2637,17 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
     ctx.restore();
 }
 
-var LinePainter = function( data, view_start, view_end, min_value, max_value, color, mode ) {
-    // Data and data properties
-    this.data = data;
-    // View
-    this.view_start = view_start;
-    this.view_end = view_end;
-    // Drawing prefs
-    this.min_value = min_value;
-    this.max_value = max_value;
-    this.color = color;
-    this.mode = mode;
-    this.overflow_color = "#F66";
-}
+var LinePainter = function( data, view_start, view_end, prefs, mode ) {
+    Painter.call( this, data, view_start, view_end, prefs, mode );
+};
+
+LinePainter.prototype.default_prefs = { min_value: undefined, max_value: undefined, mode: "Histogram", color: "#000", overflow_color: "#F66" };
 
 LinePainter.prototype.draw = function( ctx, width, height ) {
     var 
         in_path = false,
-        min_value = this.min_value,
-        max_value = this.max_value,
+        min_value = this.prefs.min_value,
+        max_value = this.prefs.max_value,
         vertical_range = max_value - min_value,
         height_px = height,
         view_start = this.view_start,
@@ -2663,7 +2668,7 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     }
     
     ctx.beginPath();
-    ctx.fillStyle = this.color;
+    ctx.fillStyle = this.prefs.color;
     var x_scaled, y, delta_x_px;
     if (data.length > 1) {
         delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
@@ -2724,7 +2729,7 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     // Draw lines at bounderies if overflowing min or max
     var overflow_min_start = -1,
         overflow_max_start = -1;
-    ctx.fillStyle = this.overflow_color;
+    ctx.fillStyle = this.prefs.overflow_color;
     for (var i = 0, len = data.length; i < len; i++) {
         y = data[i][1];
         x_scaled = Math.round((data[i][0] - view_start) * w_scale);
@@ -2756,12 +2761,10 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
 }
 
 var FeaturePainter = function( data, view_start, view_end, prefs, mode ) {
-    this.data = data;
-    this.view_start = view_start;
-    this.view_end = view_end;
-    this.prefs = prefs;
-    this.mode = mode;
+    Painter.call( this, data, view_start, view_end, prefs, mode );
 }
+
+FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
 
 extend( FeaturePainter.prototype, { 
 
@@ -3104,7 +3107,9 @@ var compute_overlap = function(first_region, second_region) {
 var ReadPainter = function( data, view_start, view_end, prefs, mode, ref_seq ) {
     FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
     this.ref_seq = ref_seq;
-}
+};
+
+ReadPainter.prototype.default_prefs = extend( {}, FeaturePainter.prototype.default_prefs, { show_insertions: false } );
 
 extend( ReadPainter.prototype, FeaturePainter.prototype, {
     /**
