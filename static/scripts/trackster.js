@@ -2153,8 +2153,9 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
                 //if ( (result.message && result.message.match(/^Only the first [\d]+/)) ||
                 //     (result.data && result.data.length > 2000) ||
                 var data = result.data;
-                if ( (data.length && data.length < 4) ||
-                     (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
+                // if ( (data.length && data.length < 4) ||
+                //      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
+		if ( this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH ) {
                     mode = "Squish";
                 } else {
                     mode = "Pack";
