@@ -1235,7 +1235,10 @@ extend(Track.prototype, {
                     track.content_div.css( "height", track.height_px + "px" );
                     track.enabled = true;
                     // predraw_init may be asynchronous, wait for it and then draw
-                    $.when( track.predraw_init() ).done( function() { track.draw() } );
+                    $.when(track.predraw_init()).done(function() { 
+                        track.container_div.removeClass("nodata error pending");
+                        track.draw()
+                    });
                 }
             }
         });
