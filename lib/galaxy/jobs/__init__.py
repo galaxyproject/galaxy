@@ -306,7 +306,7 @@ class JobWrapper( object ):
         """
         Restore the dictionary of parameters from the database.
         """
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         return param_dict
@@ -320,7 +320,7 @@ class JobWrapper( object ):
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
         # Restore parameters from the database
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         if job.user is None and job.galaxy_session is None:
             raise Exception( 'Job %s has no user and no session.' % job.id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
@@ -395,7 +395,7 @@ class JobWrapper( object ):
         Indicate job failure by setting state and message on all output 
         datasets.
         """
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         self.sa_session.refresh( job )
         # if the job was deleted, don't fail it
         if not job.state == model.Job.states.DELETED:
@@ -439,7 +439,7 @@ class JobWrapper( object ):
         self.cleanup()
         
     def change_state( self, state, info = False ):
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         self.sa_session.refresh( job )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
@@ -456,12 +456,12 @@ class JobWrapper( object ):
         self.sa_session.flush()
 
     def get_state( self ):
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         self.sa_session.refresh( job )
         return job.state
 
     def set_runner( self, runner_url, external_id ):
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         self.sa_session.refresh( job )
         job.job_runner_name = runner_url
         job.job_runner_external_id = external_id
@@ -476,7 +476,7 @@ class JobWrapper( object ):
         """
         # default post job setup
         self.sa_session.expunge_all()
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:
             self.cleanup()
@@ -658,7 +658,7 @@ class JobWrapper( object ):
         return self.session_id
 
     def get_input_fnames( self ):
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         filenames = []
         for da in job.input_datasets: #da is JobToInputDatasetAssociation object
             if da.dataset:
@@ -685,7 +685,7 @@ class JobWrapper( object ):
                 else:
                     return self.false_path
 
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         # Job output datasets are combination of output datasets, library datasets, and jeha datasets.
         jeha = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
         if self.app.config.outputs_to_working_directory:
@@ -757,7 +757,7 @@ class JobWrapper( object ):
 
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         if set_extension:
             for output_dataset_assoc in job.output_datasets:
                 if output_dataset_assoc.dataset.ext == 'auto':
@@ -785,7 +785,7 @@ class JobWrapper( object ):
 
     @property
     def user( self ):
-        job = self.sa_session.query( model.Job ).get( self.job_id )
+        job = self.get_job()
         if job.user is not None:
             return job.user.email
         elif job.galaxy_session is not None and job.galaxy_session.user is not None:
