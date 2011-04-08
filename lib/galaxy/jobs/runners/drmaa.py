@@ -145,8 +145,8 @@ class DRMAAJobRunner( BaseJobRunner ):
         job_wrapper.change_state( model.Job.states.QUEUED )
 
         # define job attributes
-        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_wrapper.get_id_tag())
-        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_wrapper.get_id_tag())
+        ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
+        efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         jt = self.ds.createJobTemplate()
         jt.remoteCommand = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job_wrapper.get_id_tag())
         jt.outputPath = ":%s" % ofile

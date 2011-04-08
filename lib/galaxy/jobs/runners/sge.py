@@ -188,8 +188,8 @@ class SGEJobRunner( BaseJobRunner ):
         sge_extra_params = self.determine_sge_tool_parameters ( runner_url )
 
         # define job attributes
-        ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_wrapper.job_id)
-        efile = "%s/database/pbs/%s.e" % (os.getcwd(), job_wrapper.job_id)
+        ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
+        efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         jt = self.ds.createJobTemplate()
         jt.remoteCommand = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job_wrapper.job_id)
         jt.outputPath = ":%s" % ofile
