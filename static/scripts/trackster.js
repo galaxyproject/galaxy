@@ -208,8 +208,9 @@ extend(DataManager.prototype, Cache.prototype, {
         
         // Add track filters to params.
         var filter_names = [];
-        for (var i = 0; i < this.track.filters.length; i++) {
-            filter_names[filter_names.length] = this.track.filters[i].name;
+        var filters = this.track.filters_manager.filters;
+        for (var i = 0; i < filters.length; i++) {
+            filter_names[filter_names.length] = filters[i].name;
         }
         params.filter_cols = JSON.stringify(filter_names);
                 
@@ -1016,21 +1017,150 @@ extend(NumberFilter.prototype, {
     }
 });
 
-/** 
- * Parse filters dict and return filters.
+/**
+ * Manages a set of filters.
  */
-var get_filters_from_dict = function(filters_dict) {
-    var filters = [];
-    for (var i = 0; i < filters_dict.length; i++) {
-        var filter_dict = filters_dict[i];
+var FiltersManager = function(track, filters_list) {
+    //
+    // Unpack filters from dict.
+    //
+    this.track = track;
+    this.filters = [];
+    for (var i = 0; i < filters_list.length; i++) {
+        var filter_dict = filters_list[i];
         var name = filter_dict.name, type = filter_dict.type, index = filter_dict.index;
         if (type === 'int' || type === 'float') {
-            filters[i] = new NumberFilter(name, index);
+            this.filters[i] = new NumberFilter(name, index);
         } else {
-            filters[i] = new Filter(name, index, type);
+            this.filters[i] = new Filter(name, index, type);
         }
     }
-    return filters;
+    
+    //
+    // Init HTML elements for filters.
+    //
+    
+    // Function that supports inline text editing of slider values for tools, filters.
+    // Enable users to edit parameter's value via a text box.
+    var edit_slider_values = function(container, span, slider) {
+        container.click(function() {
+            var cur_value = span.text();
+                max = parseFloat(slider.slider("option", "max")),
+                input_size = (max <= 1 ? 4 : max <= 1000000 ? max.toString().length : 6),
+                multi_value = false;
+            // Increase input size if there are two values.
+            if (slider.slider("option", "values")) {
+                input_size = 2*input_size + 1;
+                multi_value = true;
+            }
+            span.text("");
+            // Temporary input for changing value.
+            $("<input type='text'/>").attr("size", input_size).attr("maxlength", input_size)
+                                     .attr("value", cur_value).appendTo(span).focus().select()
+                                     .click(function(e) {
+                // Don't want click to propogate up to values_span and restart everything.
+                e.stopPropagation();
+            }).blur(function() {
+                $(this).remove();
+                span.text(cur_value);
+            }).keyup(function(e) {
+                if (e.keyCode === 27) {
+                    // Escape key.
+                    $(this).trigger("blur");
+                } else if (e.keyCode === 13) {
+                    //
+                    // Enter/return key initiates callback. If new value(s) are in slider range, 
+                    // change value (which calls slider's change() function).
+                    //
+                    var slider_min = slider.slider("option", "min"),
+                        slider_max = slider.slider("option", "max"),
+                        invalid = function(a_val) {
+                            return (isNaN(a_val) || a_val > slider_max || a_val < slider_min);
+                        },
+                        new_value = $(this).val();
+                    if (!multi_value) {
+                        new_value = parseFloat(new_value);
+                        if (invalid(new_value)) {
+                            alert("Parameter value must be in the range [" + slider_min + "-" + slider_max + "]");
+                            return $(this);
+                        }
+                    }
+                    else { // Multi value.
+                        new_value = new_value.split("-");
+                        new_value = [parseFloat(new_value[0]), parseFloat(new_value[1])];
+                        if (invalid(new_value[0]) || invalid(new_value[1])) {
+                            alert("Parameter value must be in the range [" + slider_min + "-" + slider_max + "]");
+                            return $(this);
+                        }
+                    }
+                    slider.slider((multi_value ? "values" : "value"), new_value);
+                }
+            });
+        });
+    };
+    
+    // Create filtering div.
+    this.parent_div = $("<div/>").addClass("filters").hide();
+    // Disable dragging, double clicking on div so that actions on slider do not impact viz.
+    this.parent_div.bind("drag", function(e) {
+        e.stopPropagation();
+    }).bind("click", function(e) {
+        e.stopPropagation();
+    }).bind("dblclick", function(e) {
+        e.stopPropagation();
+    });
+    var manager = this;
+    $.each(this.filters, function(index, filter) {
+        var filter_div = $("<div/>").addClass("slider-row").appendTo(manager.parent_div);
+        
+        // Set up filter label (name, values).
+        var filter_label = $("<div/>").addClass("slider-label").appendTo(filter_div)
+        var name_span = $("<span/>").addClass("slider-name").text(filter.name + "  ").appendTo(filter_label);
+        var values_span = $("<span/>");
+        var values_span_container = $("<span/>").addClass("slider-value").appendTo(filter_label).append("[").append(values_span).append("]");
+        
+        // Set up slider for filter.
+        var slider_div = $("<div/>").addClass("slider").appendTo(filter_div);
+        filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
+        var prev_values = [0,0];
+        filter.control_element.slider({
+            range: true,
+            min: Number.MAX_VALUE,
+            max: -Number.MIN_VALUE,
+            values: [0, 0],
+            slide: function(event, ui) {
+                //
+                // Always update UI values, but set timeout for doing more--especially drawing--
+                // so that viz is more responsive.
+                //
+                prev_values = ui.values;
+                values_span.text(ui.values[0] + "-" + ui.values[1]);
+                setTimeout(function() {
+                    if (ui.values[0] == prev_values[0] && ui.values[1] == prev_values[1]) {
+                        var values = ui.values;
+                        // Set new values in UI.
+                        values_span.text(values[0] + "-" + values[1]);
+                        // Set new values in filter.
+                        filter.low = values[0];
+                        filter.high = values[1];                    
+                        // Redraw track.
+                        manager.track.draw(true, true);
+                    }
+                }, 50); 
+            },
+            change: function(event, ui) {
+                filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
+            }
+        });
+        filter.slider = filter.control_element;
+        filter.slider_label = values_span;
+        
+        // Enable users to edit slider values via text box.
+        edit_slider_values(values_span_container, values_span, filter.control_element);
+        
+        // Add to clear floating layout.
+        $("<div style='clear: both;'/>").appendTo(filter_div);
+    });  
 };
 
 /**
@@ -1259,12 +1389,12 @@ extend(Track.prototype, {
     }
 });
 
-var TiledTrack = function(filters, tool_dict, parent_track) {
+var TiledTrack = function(filters_list, tool_dict, parent_track) {
     var track = this,
         view = track.view;
     
     // Attribute init.
-    this.filters = (filters !== undefined ? get_filters_from_dict( filters ) : []);
+    this.filters_manager = (filters_list !== undefined ? new FiltersManager(this, filters_list) : undefined);
     // filters_available is determined by data, filters_visible is set by user.
     this.filters_available = false;
     this.filters_visible = false;
@@ -1282,148 +1412,15 @@ var TiledTrack = function(filters, tool_dict, parent_track) {
     if (track.hidden) { return; }
     
     //
-    // Init HTML elements for tool, filters.
-    //
-    
-    // Function that supports inline text editing of slider values for tools, filters.
-    // Enable users to edit parameter's value via a text box.
-    var edit_slider_values = function(container, span, slider) {
-        container.click(function() {
-            var cur_value = span.text();
-                max = parseFloat(slider.slider("option", "max")),
-                input_size = (max <= 1 ? 4 : max <= 1000000 ? max.toString().length : 6),
-                multi_value = false;
-            // Increase input size if there are two values.
-            if (slider.slider("option", "values")) {
-                input_size = 2*input_size + 1;
-                multi_value = true;
-            }
-            span.text("");
-            // Temporary input for changing value.
-            $("<input type='text'/>").attr("size", input_size).attr("maxlength", input_size)
-                                     .attr("value", cur_value).appendTo(span).focus().select()
-                                     .click(function(e) {
-                // Don't want click to propogate up to values_span and restart everything.
-                e.stopPropagation();
-            }).blur(function() {
-                $(this).remove();
-                span.text(cur_value);
-            }).keyup(function(e) {
-                if (e.keyCode === 27) {
-                    // Escape key.
-                    $(this).trigger("blur");
-                } else if (e.keyCode === 13) {
-                    //
-                    // Enter/return key initiates callback. If new value(s) are in slider range, 
-                    // change value (which calls slider's change() function).
-                    //
-                    var slider_min = slider.slider("option", "min"),
-                        slider_max = slider.slider("option", "max"),
-                        invalid = function(a_val) {
-                            return (isNaN(a_val) || a_val > slider_max || a_val < slider_min);
-                        },
-                        new_value = $(this).val();
-                    if (!multi_value) {
-                        new_value = parseFloat(new_value);
-                        if (invalid(new_value)) {
-                            alert("Parameter value must be in the range [" + slider_min + "-" + slider_max + "]");
-                            return $(this);
-                        }
-                    }
-                    else { // Multi value.
-                        new_value = new_value.split("-");
-                        new_value = [parseFloat(new_value[0]), parseFloat(new_value[1])];
-                        if (invalid(new_value[0]) || invalid(new_value[1])) {
-                            alert("Parameter value must be in the range [" + slider_min + "-" + slider_max + "]");
-                            return $(this);
-                        }
-                    }
-                    slider.slider((multi_value ? "values" : "value"), new_value);
-                }
-            });
-        });
-    };
-    
-    
     // If track has parent:
     //   -replace drag handle with child-track icon button; (TODO: eventually, we'll want to be able 
     //    to make a set of child tracks dragable.)
     //   -remove tool b/c child tracks cannot have tools.
+    //
     if (this.parent_track) {
         this.header_div.find(".draghandle").removeClass('draghandle').addClass('child-track-icon').addClass('icon-button');
         this.parent_element.addClass("child-track");
         this.tool = undefined;
-    }
-    
-    // Create filtering div.
-    this.filters_div = $("<div/>").addClass("filters").hide();
-    this.header_div.after(this.filters_div);
-    // Disable dragging, double clicking on div so that actions on slider do not impact viz.
-    this.filters_div.bind("drag", function(e) {
-        e.stopPropagation();
-    }).bind("click", function(e) {
-        e.stopPropagation();
-    }).bind("dblclick", function(e) {
-        e.stopPropagation();
-    });
-    $.each(this.filters, function(index, filter) {
-        var filter_div = $("<div/>").addClass("slider-row").appendTo(track.filters_div);
-        
-        // Set up filter label (name, values).
-        var filter_label = $("<div/>").addClass("slider-label").appendTo(filter_div)
-        var name_span = $("<span/>").addClass("slider-name").text(filter.name + "  ").appendTo(filter_label);
-        var values_span = $("<span/>");
-        var values_span_container = $("<span/>").addClass("slider-value").appendTo(filter_label).append("[").append(values_span).append("]");
-        
-        // Set up slider for filter.
-        var slider_div = $("<div/>").addClass("slider").appendTo(filter_div);
-        filter.control_element = $("<div/>").attr("id", filter.name + "-filter-control").appendTo(slider_div);
-        var prev_values = [0,0];
-        filter.control_element.slider({
-            range: true,
-            min: Number.MAX_VALUE,
-            max: -Number.MIN_VALUE,
-            values: [0, 0],
-            slide: function(event, ui) {
-                //
-                // Always update UI values, but set timeout for doing more--especially drawing--
-                // so that viz is more responsive.
-                //
-                prev_values = ui.values;
-                values_span.text(ui.values[0] + "-" + ui.values[1]);
-                setTimeout(function() {
-                    if (ui.values[0] == prev_values[0] && ui.values[1] == prev_values[1]) {
-                        var values = ui.values;
-                        // Set new values in UI.
-                        values_span.text(values[0] + "-" + values[1]);
-                        // Set new values in filter.
-                        filter.low = values[0];
-                        filter.high = values[1];                    
-                        // Redraw track.
-                        track.draw(true, true);
-                    }
-                }, 50); 
-            },
-            change: function(event, ui) {
-                filter.control_element.slider("option", "slide").call(filter.control_element, event, ui);
-            }
-        });
-        filter.slider = filter.control_element;
-        filter.slider_label = values_span;
-        
-        // Enable users to edit slider values via text box.
-        edit_slider_values(values_span_container, values_span, filter.control_element);
-        
-        // Add to clear floating layout.
-        $("<div style='clear: both;'/>").appendTo(filter_div);
-    });
-    
-    //
-    // Create dynamic tool div.
-    //
-    if (this.tool) {  
-        this.dynamic_tool_div = this.tool.parent_div;
-        this.header_div.after(this.dynamic_tool_div);
     }
     
     //
@@ -1431,6 +1428,22 @@ var TiledTrack = function(filters, tool_dict, parent_track) {
     //
     track.child_tracks_container = $("<div/>").addClass("child-tracks-container").hide();
     track.container_div.append(track.child_tracks_container);
+    
+    //
+    // Create filters div.
+    //
+    if (this.filters_manager) {
+        this.filters_div = this.filters_manager.parent_div
+        this.header_div.after(this.filters_div);
+    }
+        
+    //
+    // Create dynamic tool div.
+    //
+    if (this.tool) {  
+        this.dynamic_tool_div = this.tool.parent_div;
+        this.header_div.after(this.dynamic_tool_div);
+    }    
     
     //
     // Create modes control.
@@ -1665,15 +1678,16 @@ extend(TiledTrack.prototype, Track.prototype, {
                 //
 
                 // Update filtering UI.
-                for (var f = 0; f < track.filters.length; f++) {
-                    track.filters[f].update_ui_elt();
+                var filters = track.filters_manager.filters;
+                for (var f = 0; f < filters.length; f++) {
+                    filters[f].update_ui_elt();
                 }
 
                 // Determine if filters are available; this is based on the example feature.
                 var filters_available = false;
                 if (track.example_feature) {
-                    for (var f = 0; f < track.filters.length; f++) {
-                        if (track.filters[f].applies_to(track.example_feature)) {
+                    for (var f = 0; f < filters.length; f++) {
+                        if (filters[f].applies_to(track.example_feature)) {
                             filters_available = true;
                             break;
                         }
@@ -2206,12 +2220,13 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         // Filter features
         var filtered = [];
         if ( result.data ) {
+            var filters = this.filters_manager.filters;
             for (var i = 0, len = result.data.length; i < len; i++) {
                 var feature = result.data[i];
                 var hide_feature = false;
                 var filter;
-                for (var f = 0, flen = this.filters.length; f < flen; f++) {
-                    filter = this.filters[f];
+                for (var f = 0, flen = filters.length; f < flen; f++) {
+                    filter = filters[f];
                     filter.update_attrs(feature);
                     if (!filter.keep(feature)) {
                         hide_feature = true;
