@@ -146,7 +146,13 @@ ${tool.get_state_message()}
                 </div>
                 <div class="form-row">
                     <label>Your Rating:</label>
-                    ${render_star_rating( 'rating', tra.rating )}
+                    <%
+                        if tra and tra.rating:
+                            rating = tra.rating
+                        else:
+                            rating = 0
+                    %>
+                    ${render_star_rating( 'rating', rating )}
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
