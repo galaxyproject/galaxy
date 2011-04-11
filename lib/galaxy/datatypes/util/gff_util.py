@@ -281,6 +281,16 @@ def gff_attributes_to_str( attrs, gff_format ):
     """
     if gff_format == 'GTF':
         format_string = '%s "%s"'
+        # Convert group (GFF) and ID, parent (GFF3) attributes to transcript_id, gene_id
+        id_attr = None
+        if 'group' in attrs:
+            id_attr = 'group'
+        elif 'ID' in attrs:
+            id_attr = 'ID'
+        elif 'Parent' in attrs:
+            id_attr = 'Parent'
+        if id_attr:
+            attrs['transcript_id'] = attrs['gene_id'] = attrs[id_attr]
     elif gff_format == 'GFF3':
         format_string = '%s=%s'
     attrs_strs = []
