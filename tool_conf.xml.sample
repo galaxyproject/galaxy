@@ -67,6 +67,7 @@
         <tool file="filters/gff/extract_GFF_Features.xml" />
         <tool file="filters/gff/gff_filter_by_attribute.xml" />
         <tool file="filters/gff/gff_filter_by_feature_count.xml" />
+		<tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
     <tool file="filters/joiner.xml" />

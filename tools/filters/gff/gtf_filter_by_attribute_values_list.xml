@@ -1,0 +1,42 @@
+<tool id="gtf_filter_by_attribute_values_list" name="Filter GTF data by attribute values_list" version="0.1">
+    <description></description>
+    <command interpreter="python">
+      gtf_filter_by_attribute_values_list.py $input $attribute_name $ids $output
+    </command>
+    <inputs>
+        <param format="gtf" name="input" type="data" label="Filter"/>
+        <param name="attribute_name" type="select" label="Using attribute name">
+            <option value="gene_id">gene_id</option>
+            <option value="transcript_id">transcript_id</option>
+            <option value="p_id">p_id</option>
+            <option value="tss_id">tss_id</option>
+        </param>
+        <param format="tabular,txt" name="ids" type="data" label="And attribute values"/>
+    </inputs>
+    <outputs>
+        <data format="input" name="output" metadata_source="input"/>
+    </outputs>
+    <tests>
+        <!-- Test filtering with a simple list of values. -->
+        <test>
+            <param name="input" value="gops_subtract_in1.gff"/>
+            <param name="attribute_name" value="gene_id"/>
+            <param name="ids" value="gtf_filter_by_attribute_values_list_in1.txt"/>
+            <output name="output" file="gtf_filter_by_attribute_values_list_out1.gtf"/>
+        </test>
+        <!-- Test filtering with a more complex tabular file. -->
+        <test>
+            <param name="input" value="gtf_filter_by_attribute_values_list_in2.gtf"/>
+            <param name="attribute_name" value="transcript_id"/>
+            <param name="ids" value="gtf_filter_by_attribute_values_list_in3.tabular"/>
+            <output name="output" file="gtf_filter_by_attribute_values_list_out2.gtf"/>
+        </test>
+    </tests>
+    <help>
+
+This tool filters a GTF file using a list of attribute values. The attribute values are
+taken from the first column in the file; additional columns in the file are ignored. An example
+use of this tool is to filter a GTF file using a list of transcript_ids or gene_ids obtained from Cuffdiff.
+
+    </help>
+</tool>

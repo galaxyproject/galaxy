@@ -1,5 +1,5 @@
 <tool id="Extract_features1" name="Extract features">
-  <description> from GFF file</description>
+  <description> from GFF data</description>
   <command interpreter="python">extract_GFF_Features.py $input1 $out_file1 ${column_choice.col} ${column_choice.feature}</command>
   <inputs>
     <param format="gff" name="input1" type="data" label="Select GFF data"/>
