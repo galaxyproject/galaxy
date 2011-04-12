@@ -149,8 +149,9 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                     self.seed_interval = GenomicIntervalReader.next( self )
                 except ParseError, e:
                     handle_parse_error( e )
-                finally:
-                    raw_size += len( self.current_line )
+                # TODO: When no longer supporting python 2.4 use finally:
+                #finally:
+                raw_size += len( self.current_line )
                     
         # If header or comment, clear seed interval and return it.
         if isinstance( self.seed_interval, ( Header, Comment ) ):
@@ -170,16 +171,20 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         while True:
             try:
                 interval = GenomicIntervalReader.next( self )
+                raw_size += len( self.current_line )
             except StopIteration, e:
                 # No more intervals to read, but last feature needs to be 
                 # returned.
                 interval = None
+                raw_size += len( self.current_line )
                 break
             except ParseError, e:
                 handle_parse_error( e )
-                continue
-            finally:
                 raw_size += len( self.current_line )
+                continue
+            # TODO: When no longer supporting python 2.4 use finally:
+            #finally:
+            #raw_size += len( self.current_line )
             
             # If interval not associated with feature, break.
             group = interval.attributes.get( 'group', None )
