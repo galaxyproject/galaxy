@@ -2,6 +2,10 @@
     2010-2011: James Taylor, Kanwei Li, Jeremy Goecks
 */
 
+var class_module = function(require, exports) {
+    
+// Module is a placeholder for a more complete inheritence approach
+    
 /** Simple extend function for inheritence */
 var extend = function() {
     var target = arguments[0];
@@ -14,11 +18,19 @@ var extend = function() {
     return target;
 };
 
-// Encapsulate -- anything to be availabe outside this block is added to exports
-var trackster_module = function(require, exports){
+exports.extend = extend;
 
-var slotting = require('slotting'),
+// end class_module encapsulation
+};
+
+
+// Encapsulate -- anything to be availabe outside this block is added to exports
+var trackster_module = function(require, exports) {
+
+var extend = require('class').extend,
+    slotting = require('slotting'),
     painters = require('painters');
+    
     
 // ---- Canvas management and extensions ----
 
@@ -2076,7 +2088,6 @@ var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, t
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.zo_slots = {};
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.summary_draw_height = 30;
@@ -2361,6 +2372,8 @@ exports.ReadTrack = ReadTrack;
 
 // Encapsulation
 var slotting_module = function(require, exports) {
+    
+var extend = require('class').extend;
 
 // HACK: LABEL_SPACING is currently duplicated between here and painters
 var LABEL_SPACING = 2,
@@ -2526,6 +2539,8 @@ extend( exports.FeatureSlotter.prototype, {
 // ---- Painters ----
 
 var painters_module = function(require, exports){
+    
+var extend = require('class').extend;
 
 /**
  * Draw a dashed line on a canvas using filled rectangles. This function is based on:
@@ -3420,6 +3435,7 @@ exports.VariantPainter = VariantPainter;
         modules[key] = exports;
     };
     // Run all modules
+    run_module( 'class', class_module );
     run_module( 'slotting', slotting_module );
     run_module( 'painters', painters_module );
     run_module( 'trackster', trackster_module );
