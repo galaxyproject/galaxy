@@ -207,13 +207,15 @@ extend(DataManager.prototype, Cache.prototype, {
         $.extend(params, extra_params);
         
         // Add track filters to params.
-        var filter_names = [];
-        var filters = this.track.filters_manager.filters;
-        for (var i = 0; i < filters.length; i++) {
-            filter_names[filter_names.length] = filters[i].name;
+        if (this.track.filters_manager) {
+            var filter_names = [];
+            var filters = this.track.filters_manager.filters;
+            for (var i = 0; i < filters.length; i++) {
+                filter_names[filter_names.length] = filters[i].name;
+            }
+            params.filter_cols = JSON.stringify(filter_names);
         }
-        params.filter_cols = JSON.stringify(filter_names);
-                
+                        
         // Do request.
         var manager = this;
         return $.getJSON(this.track.data_url, params, function (result) {
@@ -1678,29 +1680,31 @@ extend(TiledTrack.prototype, Track.prototype, {
                 //
 
                 // Update filtering UI.
-                var filters = track.filters_manager.filters;
-                for (var f = 0; f < filters.length; f++) {
-                    filters[f].update_ui_elt();
-                }
-
-                // Determine if filters are available; this is based on the example feature.
-                var filters_available = false;
-                if (track.example_feature) {
+                if (track.filters_manager) {
+                    var filters = track.filters_manager.filters;
                     for (var f = 0; f < filters.length; f++) {
-                        if (filters[f].applies_to(track.example_feature)) {
-                            filters_available = true;
-                            break;
+                        filters[f].update_ui_elt();
+                    }
+
+                    // Determine if filters are available; this is based on the example feature.
+                    var filters_available = false;
+                    if (track.example_feature) {
+                        for (var f = 0; f < filters.length; f++) {
+                            if (filters[f].applies_to(track.example_feature)) {
+                                filters_available = true;
+                                break;
+                            }
                         }
                     }
-                }
 
-                // If filter availability changed, hide filter div if necessary and update menu.
-                if (track.filters_available !== filters_available) {
-                    track.filters_available = filters_available;
-                    if (!track.filters_available) {
-                        track.filters_div.hide();
+                    // If filter availability changed, hide filter div if necessary and update menu.
+                    if (track.filters_available !== filters_available) {
+                        track.filters_available = filters_available;
+                        if (!track.filters_available) {
+                            track.filters_div.hide();
+                        }
+                        track.make_name_popup_menu();
                     }
-                    track.make_name_popup_menu();
                 }
             }
         }, 50);
