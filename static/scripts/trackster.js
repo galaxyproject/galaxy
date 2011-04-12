@@ -14,6 +14,50 @@ var extend = function() {
     return target;
 };
 
+/**
+ * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
+ * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
+ * region overlaps the start (but not the end) of the second region.
+ */
+var BEFORE = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005, AFTER = 1006;
+var compute_overlap = function(first_region, second_region) {
+    var 
+        first_start = first_region[0], first_end = first_region[1],
+        second_start = second_region[0], second_end = second_region[1],
+        overlap;
+    if (first_start < second_start) {
+        if (first_end < second_start) {
+            overlap = BEFORE;
+        }
+        else if (first_end <= second_end) {
+            overlap = OVERLAP_START;
+        }
+        else { // first_end > second_end
+            overlap = CONTAINS;
+        }
+    }
+    else { // first_start >= second_start
+        if (first_start > second_end) {
+            overlap = AFTER;
+        }
+        else if (first_end <= second_end) {
+            overlap = CONTAINED_BY;
+        }
+        else {
+            overlap = OVERLAP_END;
+        }
+    }
+    
+    return overlap;
+};
+/**
+ * Returns true if regions overlap.
+ */
+var is_overlap = function(first_region, second_region) {
+    var overlap = compute_overlap(first_region, second_region);
+    return (overlap !== BEFORE && overlap !== AFTER);
+};
+
 // Encapsulate -- anything to be availabe outside this block is added to exports
 var trackster_module = function(require, exports){
 
@@ -98,7 +142,7 @@ var sortable = function( element, handle ) {
             $(this).insertBefore( children.get( i ) );
         }
     });
-}
+};
 
 /**
  * Calculates step for slider with a given min, max.
@@ -106,7 +150,7 @@ var sortable = function( element, handle ) {
 var get_slider_step = function(min, max) {
     var range = max - min;
     return (range <= 2 ? 0.01 : (range <= 100 ? 1 : (range <= 1000 ? 5 : 10)));
-}
+};
 
 /**
  * Init constants & functions used throughout trackster.
@@ -142,7 +186,7 @@ var
 
 function round_1000(num) {
     return Math.round(num * 1000) / 1000;    
-}
+};
 
 /**
  * Generic cache that handles key/value pairs.
@@ -2061,14 +2105,14 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
     } 
 });
 
-var FeatureTrack = function (name, view, hda_ldda, dataset_id, prefs, filters, tool, parent_track) {
+var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, tool, parent_track) {
     //
     // Preinitialization: do things that need to be done before calling Track and TiledTrack
     // initialization code.
     //
     var track = this;
     this.track_type = "FeatureTrack";
-    this.display_modes = ["Auto", "Dense", "Squish", "Pack"];
+    this.display_modes = ["Auto", "Histogram", "Dense", "Squish", "Pack"];
     // Define and restore track configuration.
     this.track_config = new TrackConfig( {
         track: this,
@@ -2143,6 +2187,84 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         return inc_slots.slot_features( features );
     },
     /**
+     * Given feature data, returns summary tree data. Feature data must be sorted by start 
+     * position. Return value is a dict with keys 'data', 'delta' (bin size) and 'max.' Data
+     * is a two-item list; first item is bin start, second is bin's count.
+     */
+    get_summary_tree_data: function(data, low, high, bin_size) {
+        var num_bins = Math.floor((high - low)/bin_size),
+            bins = [],
+            max_count = 0;
+        
+        /*    
+        // For debugging:
+        for (var i = 0; i < data.length; i++)
+            console.log("\t", data[i][1], data[i][2], data[i][3]);
+        */
+        
+        //
+        // Loop through bins, counting data for each interval.
+        //
+        var data_index_start = 0,
+            data_index = 0,
+            data_interval,
+            bin_index = 0,
+            bin_interval = [], 
+            cur_bin,
+            overlap;
+            
+        // Set bin interval.
+        var set_bin_interval = function(interval, low, bin_index, bin_size) {
+            interval[0] = low + bin_index * bin_size;
+            interval[1] = low + (bin_index + 1) * bin_size;
+        };
+        
+        // Loop through bins, data to compute bin counts. Only compute bin counts as long
+        // as there is data.
+        while (bin_index < num_bins && data_index_start !== data.length) {
+            // Find next bin that has data.
+            var bin_has_data = false;
+            for (; bin_index < num_bins && !bin_has_data; bin_index++) {
+                set_bin_interval(bin_interval, low, bin_index, bin_size);
+                // Loop through data and break if data found that goes in bin.
+                for (data_index = data_index_start; data_index < data.length; data_index++) {
+                    data_interval = data[data_index].slice(1, 3);
+                    if (is_overlap(data_interval, bin_interval)) {
+                        bin_has_data = true;
+                        break;
+                    }
+                }
+                // Break from bin loop if this bin has data.
+                if (bin_has_data) {
+                    break;
+                }
+            }
+            
+            // Set start index to current data, which is the first to overlap with this bin
+            // and perhaps with later bins.
+            data_start_index = data_index;
+            
+            // Count intervals that overlap with bin.
+            bins[bins.length] = cur_bin = [bin_interval[0], 0];
+            for (; data_index < data.length; data_index++) {
+                data_interval = data[data_index].slice(1, 3);
+                if (is_overlap(data_interval, bin_interval)) {
+                    cur_bin[1]++;
+                }
+                else { break; }
+            }
+            
+            // Update max count.
+            if (cur_bin[1] > max_count) {
+                max_count = cur_bin[1];
+            }
+            
+            // Go to next bin.
+            bin_index++;
+        }
+        return {max: max_count, delta: bin_size, data: bins};
+    },
+    /**
      * Draw FeatureTrack tile.
      */
     draw_tile: function(result, resolution, tile_index, parent_element, w_scale, ref_seq) {
@@ -2156,7 +2278,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             left_offset = this.left_offset,
             slots,
             required_height;
-        
+            
         // Set display mode if Auto.
         if (mode === "Auto") {
             if (result.dataset_type === "summary_tree") {
@@ -2210,6 +2332,35 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             painter.draw( ctx, width, required_height );
             // Canvas element is returned
             return canvas;            
+        }
+        
+        // Drawing coverage histogram. This is different from summary tree because data can feature
+        // details, but user has requested a histogram.
+        if (mode === "Histogram") {
+            // Set height of parent_element
+            required_height = this.summary_draw_height;
+            parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
+            // Add label to container div showing maximum count
+            // TODO: this shouldn't be done at the tile level
+            this.container_div.find(".yaxislabel").remove();
+            var max_label = $("<div />").addClass('yaxislabel');
+            max_label.text( result.max );
+            max_label.css({ position: "absolute", top: "22px", left: "10px" });
+            max_label.prependTo(this.container_div);
+            // Create canvas
+            var canvas = this.view.canvas_manager.new_canvas();
+            canvas.width = width + left_offset;
+            // Extra padding at top of summary tree
+            canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
+            // Paint summary tree into canvas.
+            var binned_data = this.get_summary_tree_data(result.data, tile_low, tile_high, 200);
+            var painter = new painters.SummaryTreePainter(binned_data, tile_low, tile_high, this.prefs);
+            var ctx = canvas.getContext("2d");
+            // Deal with left_offset by translating
+            ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
+            painter.draw(ctx, width, required_height);
+            // Canvas element is returned
+            return canvas;
         }
 
         // Start dealing with row-by-row tracks
@@ -3090,43 +3241,6 @@ extend( VariantPainter.prototype, FeaturePainter.prototype, {
     }
 });
 
-/**
- * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
- * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
- * region overlaps the start (but not the end) of the second region.
- */
-var NO_OVERLAP = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005;
-var compute_overlap = function(first_region, second_region) {
-    var 
-        first_start = first_region[0], first_end = first_region[1],
-        second_start = second_region[0], second_end = second_region[1],
-        overlap;
-    if (first_start < second_start) {
-        if (first_end < second_start) {
-            overlap = NO_OVERLAP;
-        }
-        else if (first_end <= second_end) {
-            overlap = OVERLAP_START;
-        }
-        else { // first_end > second_end
-            overlap = CONTAINS;
-        }
-    }
-    else { // first_start >= second_start
-        if (first_start > second_end) {
-            overlap = NO_OVERLAP;
-        }
-        else if (first_end <= second_end) {
-            overlap = CONTAINED_BY;
-        }
-        else {
-            overlap = OVERLAP_END;
-        }
-    }
-    
-    return overlap;
-}
-
 var ReadPainter = function( data, view_start, view_end, prefs, mode, ref_seq ) {
     FeaturePainter.call( this, data, view_start, view_end, prefs, mode );
     this.ref_seq = ref_seq;
@@ -3208,8 +3322,7 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                 case "S": // Soft clipping.
                 case "M": // Match.
                 case "=": // Equals.
-                    var seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region);
-                    if (seq_tile_overlap !== NO_OVERLAP) {
+                    if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                         // Draw.
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                         if (gap > 0) {
@@ -3258,11 +3371,9 @@ extend( ReadPainter.prototype, FeaturePainter.prototype, {
                 case "I": // Insertion.
                     // Check to see if sequence should be drawn at all by looking at the overlap between
                     // the sequence region and the tile region.
-                    var 
-                        seq_tile_overlap = compute_overlap([seq_start, seq_start + cig_len], tile_region),
-                        insert_x_coord = s_start - gap;
+                    var insert_x_coord = s_start - gap;
                     
-                    if (seq_tile_overlap !== NO_OVERLAP) {
+                    if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                         var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
                         // Insertion point is between the sequence start and the previous base: (-gap) moves
                         // back from sequence start to insertion point.
