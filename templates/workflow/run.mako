@@ -2,7 +2,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery.autocomplete" )}
+    ${h.js( "jquery.autocomplete", "jquery.tipsy" )}
     <script type="text/javascript">
         $( function() {
             function show_tool_body(title){
@@ -18,6 +18,21 @@
                     hide_tool_body(title);
                 }else{
                     show_tool_body(title);
+                }
+            }
+            function toggle_multiinput(select) {
+                if (select.attr('multiple')) {
+                    $('.multiinput').removeClass('disabled');
+                    if (select.val()) {
+                        select.val(select.val()[0]);
+                    } else {
+                        select.val($('option:last', select).val());
+                    }
+                    select.removeAttr('multiple');
+                } else {
+                    $('.multiinput').addClass('disabled');
+                    $('.multiinput', select.parent().prev()).removeClass('disabled');
+                    select.attr('multiple', 'multiple');
                 }
             }
             $( "select[refresh_on_change='true']").change( function() {
@@ -40,6 +55,19 @@
             });
             $("#new_history_cbx").click(function(){
                 $("#new_history_input").toggle(this.checked);
+            });
+            $('select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
+                var select = $(s);
+                select.parent().prev().append(
+                    $('<span class="icon-button multiinput"></span>').click(function() {
+                        if ($(this).hasClass('disabled')) return;
+                        toggle_multiinput(select);
+                        select.focus();
+                    }).attr('original-title',
+                            'Enable/disable selection of multiple input ' +
+                            'files. Each selected file will have an ' +
+                            'instance of the workflow.').tipsy({gravity:'s'})
+                );
             });
         });
     </script>

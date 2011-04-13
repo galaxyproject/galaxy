@@ -1421,6 +1421,14 @@ class DataToolParameter( ToolParameter ):
         else:
             return "No dataset"
 
+    def validate( self, value, history=None ):
+        for validator in self.validators:
+            if value and self.multiple and isinstance(value, list):
+                for v in value:
+                    validator.validate( v, history )
+            else:
+                validator.validate( value, history )
+
     def get_dependencies( self ):
         """
         Get the *names* of the other params this param depends on.
