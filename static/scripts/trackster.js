@@ -741,7 +741,7 @@ extend( View.prototype, {
         this.high = Math.ceil(high);
         
         // 10^log10(range / DENSITY) Close approximation for browser window, assuming DENSITY = window width
-        this.resolution = Math.pow( 10, Math.ceil( Math.log( (this.high - this.low) / 200 ) / Math.LN10 ) );
+        this.resolution = Math.pow( 10, Math.ceil( Math.log( (this.high - this.low) / DENSITY ) / Math.LN10 ) );
         this.zoom_res = Math.pow( FEATURE_LEVELS, Math.max(0,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) )));
         
         // Overview
@@ -1016,14 +1016,16 @@ extend(NumberFilter.prototype, {
         return false;
     },
     /**
-     * Returns true iff element is in [low, high]; range is inclusive.
+     * Returns true if (a) element's value is in [low, high] (range is inclusive) 
+     * or (b) if value is non-numeric and hence unfilterable.
      */
     keep: function(element) {
         if ( !this.applies_to( element ) ) {
             // No element to filter on.
             return true;
         }
-        return (element[this.index] >= this.low && element[this.index] <= this.high);
+        var val = parseInt(element[this.index]);
+        return (isNaN(val) || (val >= this.low && val <= this.high));
     },
     /**
      * Update filter's min and max values based on element's values.
@@ -1306,11 +1308,22 @@ extend( TrackConfig.prototype, {
 });
 
 /**
- * Tiles for TiledTracks.
+ * Tiles drawn by tracks.
  */
-var Tile = function(track, canvas) {
-    this.track = track;
-    this.canvas = canvas;
+var Tile = function(index, resolution, canvas) {
+    // Wrap element in div for background
+    this.index = index;
+    this.resolution = resolution;
+    this.canvas = $("<div class='track-tile'/>").append(canvas);
+};
+
+var SummaryTreeTile = function(index, resolution, canvas, max_val) {
+    Tile.call(this, index, resolution, canvas);
+    this.max_val = max_val;
+};
+
+var FeatureTrackTile = function(index, resolution, canvas) {
+    Tile.call(this, index, resolution, canvas);
 };
 
 /**
@@ -1669,30 +1682,33 @@ extend(TiledTrack.prototype, Track.prototype, {
             // w_scale units are pixels per base.
             w_scale = width / range,
             resolution = this.view.resolution,
-            parent_element = $("<div style='position: relative;'></div>");
+            parent_element = $("<div style='position: relative;'></div>"),
+            gen_key = function(width, w_scale, tile_index) { 
+                return width + '_' + w_scale + '_' + tile_index;
+            };
         
         if (!clear_after) { this.content_div.children().remove(); }
         this.content_div.append( parent_element );
         this.max_height = 0;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
-        // A set of setTimeout() ids used when drawing tiles. Each ID indicates
-        // a tile has been requested to be drawn or is being drawn.
-        var draw_tile_dict = {};
+        // A list of tiles drawn/retrieved.
+        var drawn_tiles = [];
+        var tile_count = 0
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
-            var key = width + '_' + w_scale + '_' + tile_index;
+            var key = gen_key(width, w_scale, tile_index);
             var cached = this.tile_cache.get(key);
             var tile_low = tile_index * DENSITY * this.view.resolution;
             var tile_high = tile_low + DENSITY * this.view.resolution;
-            // console.log(cached, this.tile_cache);
             if ( !force && cached ) {
+                drawn_tiles[drawn_tiles.length] = cached;
                 this.show_tile(cached, parent_element, tile_low, w_scale);
             } else {
-                this.delayed_draw(force, key, tile_low, tile_high, tile_index, 
-                                    resolution, parent_element, w_scale, draw_tile_dict);
+                this.delayed_draw(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles);
             }
             tile_index += 1;
+            tile_count++;
         }
                 
         //
@@ -1700,7 +1716,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         //
         var track = this;
         var intervalId = setInterval(function() {
-            if (obj_length(draw_tile_dict) === 0) {
+            if (drawn_tiles.length === tile_count) {
                 // All tiles have been drawn.
                 clearInterval(intervalId);
                 
@@ -1723,6 +1739,29 @@ extend(TiledTrack.prototype, Track.prototype, {
                         }
                     }
                 }
+                
+                //
+                // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
+                //
+                if (track.mode == "Histogram") {
+                    // Get global max.
+                    var global_max = -1;
+                    for (var i = 0; i < drawn_tiles.length; i++) {
+                        var cur_max = drawn_tiles[i].max_val;
+                        if (cur_max > global_max) {
+                            global_max = cur_max;
+                        }
+                    }
+                    
+                    for (var i = 0; i < drawn_tiles.length; i++) {
+                        if (drawn_tiles[i].max_val !== global_max) {
+                            var tile = drawn_tiles[i];
+                            tile.canvas.remove();
+                            track.delayed_draw(true, gen_key(width, w_scale, tile.index), tile.index, 
+                                               tile.resolution, parent_element, w_scale, [], { max: global_max });
+                        }
+                    }
+                }                
                 
                 //
                 // Update filter attributes, UI.
@@ -1755,6 +1794,19 @@ extend(TiledTrack.prototype, Track.prototype, {
                         track.make_name_popup_menu();
                     }
                 }
+                
+                // Store initial canvas in case we need to use it for overview
+                /* This is completely broken, just saves the first tile it sees
+                   regardless of if it should be the overview
+                if (!track.initial_canvas && !window.G_vmlCanvasManager) {
+                    track.initial_canvas = $(tile_element).clone();
+                    var src_ctx = tile_element.get(0).getContext("2d");
+                    var tgt_ctx = track.initial_canvas.get(0).getContext("2d");
+                    var data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
+                    tgt_ctx.putImageData(data, 0, 0);
+                    track.set_overview();
+                }
+                */                
             }
         }, 50);
              
@@ -1765,44 +1817,28 @@ extend(TiledTrack.prototype, Track.prototype, {
             this.child_tracks[i].draw(force, clear_after);
         }
     }, 
-    delayed_draw: function(force, key, tile_low, tile_high, tile_index, resolution, parent_element, w_scale, draw_tile_dict) {
-        var track = this;
-        // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
+    delayed_draw: function(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
+        var track = this,
+            tile_low = tile_index * DENSITY * resolution,
+            tile_high = tile_low + DENSITY * resolution;
+        
+        // Helper method.
         var draw_and_show_tile = function(id, result, resolution, tile_index, parent_element, w_scale, seq_data) {
             // DEBUG: this is still called too many times when moving slowly,
             // console.log( "draw_and_show_tile", resolution, tile_index, w_scale );
-            returned_tile = track.draw_tile(result, resolution, tile_index, parent_element, w_scale, seq_data)
-            
-            // Wrap element in div for background
-            var wrapper_element = $("<div class='track-tile'>").prepend(returned_tile);
-            tile_element = wrapper_element;
-            
-            track.tile_cache.set(key, tile_element);
-            track.show_tile(tile_element, parent_element, tile_low, w_scale);
-            
-            // TODO: this should go in a post-draw function.
-            // Store initial canvas in case we need to use it for overview
-            /* This is completely broken, just saves the first tile it sees
-               regardless of if it should be the overview
-            if (!track.initial_canvas && !window.G_vmlCanvasManager) {
-                track.initial_canvas = $(tile_element).clone();
-                var src_ctx = tile_element.get(0).getContext("2d");
-                var tgt_ctx = track.initial_canvas.get(0).getContext("2d");
-                var data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
-                tgt_ctx.putImageData(data, 0, 0);
-                track.set_overview();
-            }
-            */
-            
-            delete draw_tile_dict[id];
+            var tile = track.draw_tile(result, resolution, tile_index, parent_element, w_scale, seq_data);
+            track.tile_cache.set(key, tile);
+            track.show_tile(tile, parent_element, tile_low, w_scale);
+            drawn_tiles[drawn_tiles.length] = tile;
         };
+        // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
             if (tile_low <= track.view.high && tile_high >= track.view.low) {
                 // Show/draw tile: check cache for tile; if tile not in cache, draw it.
-                var tile_element = (force ? undefined : track.tile_cache.get(key));
-                if (tile_element) { 
-                    track.show_tile(tile_element, parent_element, tile_low, w_scale);
-                    delete draw_tile_dict[id];
+                var tile = (force ? undefined : track.tile_cache.get(key));
+                if (tile) { 
+                    track.show_tile(tile, parent_element, tile_low, w_scale);
+                    drawn_tiles[drawn_tiles.length] = tile;
                 }
                 else {
                     //
@@ -1810,6 +1846,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                     //
                     $.when(track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
                                                      resolution, track.data_url_extra_params)).then(function(tile_data) {
+                        extend(tile_data, more_tile_data);
                         // If sequence data needed, get that and draw. Otherwise draw.
                         if (view.reference_track && w_scale > view.canvas_manager.char_width_px) {
                             $.when(view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
@@ -1825,12 +1862,11 @@ extend(TiledTrack.prototype, Track.prototype, {
                 }
             }
         }, 50);
-        draw_tile_dict[id] = true;
     }, 
     /**
      * Show track tile and perform associated actions.
      */
-    show_tile: function(tile_element, parent_element, tile_low, w_scale) {
+    show_tile: function(tile, parent_element, tile_low, w_scale) {
         // Readability.
         var track = this;
         
@@ -1844,6 +1880,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         if (this.left_offset) {
             left -= this.left_offset;
         }
+        var tile_element = tile.canvas;
         tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
 
         // Setup and show tile element.
@@ -1966,7 +2003,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
                 var c_start = Math.round(c * w_scale);
                 ctx.fillText(seq[c], c_start + track.left_offset, 10);
             }
-            return canvas;
+            return new Tile(tile_index, resolution, canvas);
         }
         this.content_div.css("height", "0px");
     }
@@ -2106,7 +2143,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
                                                 this.prefs, this.mode );
         painter.draw( ctx, width, height );
         
-        return canvas;
+        return new Tile(tile_length, resolution, canvas);
     } 
 });
 
@@ -2196,11 +2233,14 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
      * position. Return value is a dict with keys 'data', 'delta' (bin size) and 'max.' Data
      * is a two-item list; first item is bin start, second is bin's count.
      */
-    get_summary_tree_data: function(data, low, high, bin_size) {
-        var num_bins = Math.floor((high - low)/bin_size),
+    get_summary_tree_data: function(data, low, high, num_bins) {
+        if (num_bins > high - low) {
+            num_bins = high - low;
+        }
+        var bin_size = Math.floor((high - low)/num_bins),
             bins = [],
             max_count = 0;
-        
+            
         /*    
         // For debugging:
         for (var i = 0; i < data.length; i++)
@@ -2335,8 +2375,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // Deal with left_offset by translating
             ctx.translate( left_offset, SUMMARY_TREE_TOP_PADDING );
             painter.draw( ctx, width, required_height );
-            // Canvas element is returned
-            return canvas;            
+            return new SummaryTreeTile(tile_index, resolution, canvas, result.max);
         }
         
         // Drawing coverage histogram. This is different from summary tree because data can feature
@@ -2359,13 +2398,15 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
             // Paint summary tree into canvas.
             var binned_data = this.get_summary_tree_data(result.data, tile_low, tile_high, 200);
+            if (result.max) {
+                binned_data.max = result.max;
+            }
             var painter = new painters.SummaryTreePainter(binned_data, tile_low, tile_high, this.prefs);
             var ctx = canvas.getContext("2d");
             // Deal with left_offset by translating
             ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
             painter.draw(ctx, width, required_height);
-            // Canvas element is returned
-            return canvas;
+            return new SummaryTreeTile(tile_index, resolution, canvas, binned_data.max);
         }
 
         // Start dealing with row-by-row tracks
@@ -2433,7 +2474,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
 
             // If there's no data, return.
             if (!result.data) {
-                return canvas;
+                return new Tile(tile_index, resolution, canvas);
             }
         }
 
@@ -2444,7 +2485,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.translate( left_offset, ERROR_PADDING );
         painter.draw( ctx, width, required_height, slots );
             
-        return canvas;
+        return new FeatureTrackTile(tile_index, resolution, canvas);
     }
 });
 
@@ -2558,7 +2599,7 @@ exports.FeatureSlotter = function ( w_scale, include_label, max_rows, measureTex
     this.include_label = include_label;
     this.max_rows = max_rows;
     this.measureText = measureText;
-}
+};
 
 /**
  * Slot a set of features, `this.slots` will be updated with slots by id, and
@@ -2704,7 +2745,7 @@ extend( exports.FeatureSlotter.prototype, {
 // ---- Painters ----
 
 var painters_module = function(require, exports){
-
+    
 /**
  * Draw a dashed line on a canvas using filled rectangles. This function is based on:
  * http://vetruvet.blogspot.com/2010/10/drawing-dashed-lines-on-html5-canvas.html
@@ -2776,7 +2817,7 @@ var SummaryTreePainter = function( data, view_start, view_end, prefs, mode ) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
 }
 
-SummaryTreePainter.prototype.default_prefis = { show_counts: false };
+SummaryTreePainter.prototype.default_prefs = { show_counts: false };
 
 SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
     
@@ -2790,16 +2831,15 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
         // max rectangle is required_height.
         base_y = height;
         delta_x_px = Math.ceil(delta * w_scale);
-    
     ctx.save();
     
     for (var i = 0, len = points.length; i < len; i++) {
-        
         var x = Math.floor( (points[i][0] - view_start) * w_scale );
         var y = points[i][1];
         
         if (!y) { continue; }
-        var y_px = y / max * height;
+        var y_px = y / max * height
+        if (y !== 0 && y_px < 1) { y_px = 1; }
         
         ctx.fillStyle = "black";
         ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
@@ -2991,7 +3031,7 @@ extend( FeaturePainter.prototype, {
     }
 });
 
-// Contstants specific to feature tracks moved here (HACKING, these should
+// Constants specific to feature tracks moved here (HACKING, these should
 // basically all be configuration options)
 var DENSE_TRACK_HEIGHT = 10,
     NO_DETAIL_TRACK_HEIGHT = 3,
@@ -3034,8 +3074,7 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         var 
             feature_uid = feature[0],
             feature_start = feature[1],
-            // -1 b/c intervals are half-open.
-            feature_end = feature[2] - 1, 
+            feature_end = feature[2], 
             feature_name = feature[3],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
@@ -3134,8 +3173,7 @@ extend( LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
                         block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        // -1 b/c intervals are half-open.
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - 1 - tile_low) * w_scale)) );
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) );
 
                     // Skip drawing if block not on tile.    
                     if (block_start > block_end) { continue; }
@@ -3199,8 +3237,7 @@ extend( VariantPainter.prototype, FeaturePainter.prototype, {
         var feature = data[i],
             feature_uid = feature[0],
             feature_start = feature[1],
-            // -1 b/c intervals are half-open.
-            feature_end = feature[2] - 1,
+            feature_end = feature[2],
             feature_name = feature[3],
             // All features need a start, end, and vertical center.
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
