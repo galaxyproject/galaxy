@@ -1,4 +1,4 @@
-<tool id="gmaj_1" name="GMAJ" Version="2.0.1">
+<tool id="gmaj_1" name="GMAJ" version="2.0.1">
 <description>Multiple Alignment Viewer</description>
   <command interpreter="python">GMAJ.py $out_file1 $maf_input $gmaj_file $filenames_file</command>
   <inputs>

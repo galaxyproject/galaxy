@@ -1,4 +1,4 @@
-<tool id="hgv_funDo" name="FunDO" Version="1.0.0">
+<tool id="hgv_funDo" name="FunDO" version="1.0.0">
   <description>human genes associated with disease terms</description>
 
   <command interpreter="perl">
