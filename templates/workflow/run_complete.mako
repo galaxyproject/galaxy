@@ -18,3 +18,9 @@
         %endfor
     </div>
 </div>
+
+<script type="text/javascript">
+  if ( parent.frames && parent.frames.galaxy_history ) {
+      parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history' )}";
+  }
+</script>
