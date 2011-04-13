@@ -3,7 +3,7 @@
     <version>3</version>
  
     <data_transfer_settings>
-        <data_transfer type='scp' automatic_transfer='False' host='host' user_name='user_name' password='password' data_location='data_location' rename_dataset='rename_dataset' />
+        <data_transfer protocol='scp' automatic_transfer='False' host='host' user_name='user_name' password='password' data_location='data_location' rename_dataset='rename_dataset' />
     </data_transfer_settings>
  
     <run_details>
@@ -31,7 +31,7 @@
             <field name="dataset2_name" type="text" label="Sample run output 2" description="" value="Quality file" required="True" />
             <field name="dataset2_datatype" type="text" label="Sample run datatype 2" description="" value="qual" required="True" />
             <field name="dataset3_name" type="text" label="Sample run output 3" description="" value="STATS file" required="True" />
-            <field name="dataset3_datatype" type="text" label="Sample run datatype 3" description="" value="stats" required="True" />
+            <field name="dataset3_datatype" type="text" label="Sample run datatype 3" description="" value="txt" required="True" />
         </fields>
     </form>
 

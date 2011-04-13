@@ -4,22 +4,17 @@ Downloads files to temp locations.  This script is invoked by the Transfer
 Manager (galaxy.jobs.transfer_manager) and should not normally be invoked by
 hand.
 """
-
-import os, sys, optparse, ConfigParser, socket, SocketServer, threading, logging, random
-
-import urllib2, tempfile
-
-import time
-
-log = logging.getLogger( __name__ )
-log.setLevel( logging.INFO )
-handler = logging.StreamHandler( sys.stdout )
-log.addHandler( handler )
+import os, sys, optparse, ConfigParser, socket, SocketServer, threading, logging, random, urllib2, tempfile, time
 
 galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..' ) )
 sys.path.insert( 0, os.path.abspath( os.path.join( galaxy_root, 'lib' ) ) )
 
 from galaxy import eggs
+
+import pkg_resources
+pkg_resources.require( "pexpect" )
+import pexpect
+
 eggs.require( "SQLAlchemy >= 0.4" )
 
 from sqlalchemy import *
@@ -31,6 +26,11 @@ from galaxy.util import json, bunch
 
 eggs.require( 'python_daemon' )
 from daemon import DaemonContext
+
+log = logging.getLogger( __name__ )
+log.setLevel( logging.DEBUG )
+handler = logging.StreamHandler( sys.stdout )
+log.addHandler( handler )
 
 debug = False
 slow = False
@@ -49,7 +49,7 @@ class ArgHandler( object ):
     def parse( self ):
         self.opts, args = self.parser.parse_args()
         if len( args ) != 1:
-            log.error( 'usage: transfer.py [options] <transfer job id>' )
+            log.error( 'usage: transfer.py <transfer job id>' )
             sys.exit( 1 )
         try:
             self.transfer_job_id = int( args[0] )
@@ -138,57 +138,55 @@ class StateResult( object ):
         self.result = result
 
 def transfer( app, transfer_job_id ):
-
     transfer_job = app.get_transfer_job( transfer_job_id )
     if transfer_job is None:
         log.error( 'Invalid transfer job ID: %s' % transfer_job_id )
         return False
-
     port_range = app.config.get( 'app:main', 'transfer_worker_port_range' )
     try:
         port_range = [ int( p ) for p in port_range.split( '-' ) ]
     except Exception, e:
         log.error( 'Invalid port range set in transfer_worker_port_range: %s: %s' % ( port_range, str( e ) ) )
         return False
-
-    protocol = transfer_job.params['url'].split( '://' )[0]
-    if protocol not in ( 'http', 'https' ):
+    protocol = transfer_job.params[ 'protocol' ]
+    if protocol not in ( 'http', 'https', 'scp' ):
         log.error( 'Unsupported protocol: %s' % protocol )
         return False
-
     state_result = StateResult( result = dict( state = transfer_job.states.RUNNING, info='Transfer process starting up.' ) )
-
     listener_server = ListenerServer( range( port_range[0], port_range[1] + 1 ), ListenerRequestHandler, app, transfer_job, state_result )
-
     # daemonize here (if desired)
     if not debug:
         daemon_context = DaemonContext( files_preserve=[ listener_server.fileno() ], working_directory=os.getcwd() )
         daemon_context.open()
-
         # If this fails, it'll never be detected.  Hopefully it won't fail since it succeeded once.
         app.connect_database() # daemon closed the database fd
         transfer_job = app.get_transfer_job( transfer_job_id )
-
     listener_thread = threading.Thread( target=listener_server.serve_forever )
     listener_thread.setDaemon( True )
     listener_thread.start()
-
     # Store this process' pid so unhandled deaths can be handled by the restarter
     transfer_job.pid = os.getpid()
     app.sa_session.add( transfer_job )
     app.sa_session.flush()
-
     terminal_state = None
-    if protocol in ( 'http', 'https' ):
-        for state in http_transfer( transfer_job ):
-            state_result.result = state
-            if state['state'] in transfer_job.terminal_states:
-                terminal_state = state
+    if protocol in [ 'http', 'https' ]:
+        for transfer_result_dict in http_transfer( transfer_job ):
+            state_result.result = transfer_result_dict
+            if transfer_result_dict[ 'state' ] in transfer_job.terminal_states:
+                terminal_state = transfer_result_dict
+    elif protocol in [ 'scp' ]:
+        # Transfer the file using scp
+        transfer_result_dict = scp_transfer( transfer_job )
+        # Handle the state of the transfer
+        state = transfer_result_dict[ 'state' ]
+        state_result.result = transfer_result_dict
+        if state in transfer_job.terminal_states:
+            terminal_state = transfer_result_dict
     if terminal_state is not None:
-        transfer_job.state = terminal_state['state']
-        for name in ( 'info', 'path' ):
+        transfer_job.state = terminal_state[ 'state' ]
+        for name in [ 'info', 'path' ]:
             if name in terminal_state:
-                transfer_job.__setattr__( name, terminal_state[name] )
+                transfer_job.__setattr__( name, terminal_state[ name ] )
     else:
         transfer_job.state = transfer_job.states.ERROR
         transfer_job.info = 'Unknown error encountered by transfer worker.'
@@ -197,9 +195,7 @@ def transfer( app, transfer_job_id ):
     return True
 
 def http_transfer( transfer_job ):
-    """
-    "Plugin" for handling http(s) transfers.
-    """
+    """Plugin" for handling http(s) transfers."""
     url = transfer_job.params['url']
     try:
         f = urllib2.urlopen( url )
@@ -243,16 +239,41 @@ def http_transfer( transfer_job ):
         return
     return
 
-if __name__ == '__main__':
+def scp_transfer( transfer_job ):
+    """Plugin" for handling scp transfers using pexpect"""
+    def print_ticks( d ):
+        pass
+    host = transfer_job.params[ 'host' ]
+    user_name = transfer_job.params[ 'user_name' ]
+    password = transfer_job.params[ 'password' ]
+    file_path = transfer_job.params[ 'file_path' ]
+    try:
+        fh, fn = tempfile.mkstemp()
+    except Exception, e:
+        return dict( state = transfer_job.states.ERROR, info = 'Unable to create temporary file for transfer: %s' % str( e ) )
+    try:
+        # TODO: add the ability to determine progress of the copy here like we do in the http_transfer above.
+        cmd = "scp %s@%s:'%s' '%s'" % ( user_name,
+                                        host,
+                                        file_path.replace( ' ', '\ ' ),
+                                        fn )
+        output = pexpect.run( cmd, 
+                              events={ '.ssword:*': password + '\r\n', 
+                                       pexpect.TIMEOUT: print_ticks }, 
+                              timeout=10 )
+        return dict( state = transfer_job.states.DONE, path = fn )
+    except Exception, e:
+        return dict( state = transfer_job.states.ERROR, info = 'Error during file transfer: %s' % str( e ) )
 
+if __name__ == '__main__':
     arg_handler = ArgHandler()
     arg_handler.parse()
     app = GalaxyApp( arg_handler.opts.config )
 
-    log.debug( 'Initiating transfer' )
+    log.debug( 'Initiating transfer...' )
     if transfer( app, arg_handler.transfer_job_id ):
         log.debug( 'Finished' )
     else:
-        log.error( 'Error in transfer process' )
+        log.error( 'Error in transfer process...' )
         sys.exit( 1 )
     sys.exit( 0 )

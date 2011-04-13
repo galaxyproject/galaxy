@@ -24,11 +24,20 @@ class TransferManager( object ):
             self.restarter = threading.Thread( target=self.__restarter )
             self.restarter.start()
     def new( self, path=None, **kwd ):
-        if 'url' not in kwd:
-            raise Exception( 'Missing required parameter "url".' )
-        # try: except JSON:
-        transfer_job = self.app.model.TransferJob( state=self.app.model.TransferJob.states.NEW,
-                                                   params=kwd )
+        if 'protocol' not in kwd:
+            raise Exception( 'Missing required parameter "protocol".' )
+        protocol = kwd[ 'protocol' ]
+        if protocol in [ 'http', 'https' ]:
+            if 'url' not in kwd:
+                raise Exception( 'Missing required parameter "url".' )
+            transfer_job = self.app.model.TransferJob( state=self.app.model.TransferJob.states.NEW, params=kwd )
+        elif protocol == 'scp':
+            # TODO: add more checks here?
+            if 'sample_dataset_id' not in kwd:
+                raise Exception( 'Missing required parameter "sample_dataset_id".' )
+            if 'file_path' not in kwd:
+                raise Exception( 'Missing required parameter "file_path".' )
+            transfer_job = self.app.model.TransferJob( state=self.app.model.TransferJob.states.NEW, params=kwd )
         self.sa_session.add( transfer_job )
         self.sa_session.flush()
         return transfer_job
@@ -48,6 +57,8 @@ class TransferManager( object ):
         self.sa_session.add_all( transfer_jobs )
         self.sa_session.flush()
         for tj in transfer_jobs:
+            params_dict = tj.params
+            protocol = params_dict[ 'protocol' ]
             # The transfer script should daemonize fairly quickly - if this is
             # not the case, this process will need to be moved to a
             # non-blocking method.
@@ -101,7 +112,7 @@ class TransferManager( object ):
             if tj_state['state'] in self.app.model.TransferJob.terminal_states:
                 log.debug( 'Transfer job %s is in terminal state: %s' % ( tj_state['transfer_job_id'], tj_state['state'] ) )
             elif tj_state['state'] == self.app.model.TransferJob.states.PROGRESS and 'percent' in tj_state:
-                log.debug( 'Transfer job %s is %s%% complete' % ( tj_state['transfer_job_id'], tj_state['percent'] ) )
+                log.debug( 'Transfer job %s is %s%% complete' % ( tj_state[ 'transfer_job_id' ], tj_state[ 'percent' ] ) )
         if len( rval ) == 1:
             return rval[0]
         return rval

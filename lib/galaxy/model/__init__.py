@@ -1796,7 +1796,9 @@ class RequestEvent( object ):
         self.comment = comment
         
 class ExternalService( object ):
-    data_transfer_types = Bunch( SCP = 'scp' )
+    data_transfer_protocol = Bunch( HTTP = 'http',
+                                    HTTPS = 'https',
+                                    SCP = 'scp' )
     def __init__( self, name=None, description=None, external_service_type_id=None, version=None, form_definition_id=None, form_values_id=None, deleted=None ):
         self.name = name
         self.description = description
@@ -1812,8 +1814,8 @@ class ExternalService( object ):
         trans.app.external_service_types.reload( self.external_service_type_id )
         self.data_transfer = {}
         external_service_type = self.get_external_service_type( trans )
-        for data_transfer_type, data_transfer_obj in external_service_type.data_transfer.items():
-            if data_transfer_type == self.data_transfer_types.SCP:
+        for data_transfer_protocol, data_transfer_obj in external_service_type.data_transfer.items():
+            if data_transfer_protocol == self.data_transfer_protocol.SCP:
                 scp_configs = {}
                 automatic_transfer = data_transfer_obj.config.get( 'automatic_transfer', 'false' )
                 scp_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
@@ -1822,7 +1824,7 @@ class ExternalService( object ):
                 scp_configs[ 'password' ] = self.form_values.content.get( data_transfer_obj.config.get( 'password', '' ), '' )
                 scp_configs[ 'data_location' ] = self.form_values.content.get( data_transfer_obj.config.get( 'data_location', '' ), '' )
                 scp_configs[ 'rename_dataset' ] = self.form_values.content.get( data_transfer_obj.config.get( 'rename_dataset', '' ), '' )
-                self.data_transfer[ self.data_transfer_types.SCP ] = scp_configs
+                self.data_transfer[ self.data_transfer_protocol.SCP ] = scp_configs
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
                 
@@ -1992,14 +1994,14 @@ class Sample( object, APIItem ):
         def print_ticks( d ):
             pass
         error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
-        if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
+        if not scp_configs[ 'host' ] or not scp_configs[ 'user_name' ] or not scp_configs[ 'password' ]:
             return error_msg
         login_str = '%s@%s' % ( scp_configs['user_name'], scp_configs['host'] )
         cmd  = 'ssh %s "du -sh \'%s\'"' % ( login_str, filepath )
         try:
             output = pexpect.run( cmd,
-                                  events={ '.ssword:*': scp_configs['password']+'\r\n', 
-                                           pexpect.TIMEOUT:print_ticks}, 
+                                  events={ '.ssword:*' : scp_configs['password'] + '\r\n', 
+                                           pexpect.TIMEOUT : print_ticks }, 
                                   timeout=10 )
         except Exception, e:
             return error_msg
@@ -2013,7 +2015,7 @@ class Sample( object, APIItem ):
     def run_details( self ):
         # self.runs is a list of SampleRunAssociations ordered descending on update_time.
         if self.runs:
-            # Always use the lates run details template, self.runs[0] is a SampleRunAssociation
+            # Always use the latest run details template, self.runs[0] is a SampleRunAssociation
             return self.runs[0]
         # Inherit this sample's RequestType run details, if one exists.
         return self.request.type.run_details

@@ -14,11 +14,11 @@ class ScpDataTransferFactory( DataTransferFactory ):
         # TODO: The 'automatic_transfer' setting is for future use.  If set to True, we will need to 
         # ensure the sample has an associated destination data library before it moves to a certain state
         # ( e.g., Run started ).
-        self.config['automatic_transfer'] = elem.get( 'automatic_transfer' )
-        self.config['host'] = elem.get( 'host' ) 
-        self.config['user_name'] = elem.get( 'user_name' )
-        self.config['password'] = elem.get( 'password' ) 
-        self.config['data_location'] = elem.get( 'data_location' )
+        self.config[ 'automatic_transfer' ] = elem.get( 'automatic_transfer' )
+        self.config[ 'host' ] = elem.get( 'host' ) 
+        self.config[ 'user_name' ] = elem.get( 'user_name' )
+        self.config[ 'password' ] = elem.get( 'password' ) 
+        self.config[ 'data_location' ] = elem.get( 'data_location' )
         # 'rename_dataset' is optional and it may not be defined in all external types
         # It is only used is AB SOLiD external service type for now
         rename_dataset = elem.get( 'rename_dataset', None )

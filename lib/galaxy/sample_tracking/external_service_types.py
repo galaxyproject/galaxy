@@ -86,17 +86,18 @@ class ExternalServiceType( object ):
         data_transfer_settings_elem = root.find( 'data_transfer_settings' )
         # Currently only data transfer using scp is supported.
         for data_transfer_elem in data_transfer_settings_elem.findall( "data_transfer" ):
-            if data_transfer_elem.get( 'type' ) == model.ExternalService.data_transfer_types.SCP:
-                scp_data_transfer = data_transfer_factories[ model.ExternalService.data_transfer_types.SCP ]
+            if data_transfer_elem.get( 'protocol' ) == model.ExternalService.data_transfer_protocol.SCP:
+                scp_data_transfer = data_transfer_factories[ model.ExternalService.data_transfer_protocol.SCP ]
                 scp_data_transfer.parse( self.config_file, data_transfer_elem  )
-                self.data_transfer[ model.ExternalService.data_transfer_types.SCP ] = scp_data_transfer
+                self.data_transfer[ model.ExternalService.data_transfer_protocol.SCP ] = scp_data_transfer
     def parse_run_details( self, root ):
         self.run_details = {}
         run_details_elem = root.find( 'run_details' )
         if run_details_elem:
             results_elem = run_details_elem.find( 'results' )
             if results_elem:
-                # get the list of resulting datatypes
+                # Get the list of resulting datatypes
+                # TODO: the 'results_urls' attribute is only useful if the transfer protocol is http(s), so check if that is the case.
                 self.run_details[ 'results' ], self.run_details[ 'results_urls' ] = self.parse_run_details_results( results_elem )
     def parse_run_details_results( self, root ):
         datatypes_dict = {}

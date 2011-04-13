@@ -3,7 +3,7 @@
     <version>1</version>
  
     <data_transfer_settings>
-        <data_transfer type='scp' automatic_transfer='False' host='host' user_name='user_name' password='password' data_location='data_location' />
+        <data_transfer protocol='scp' automatic_transfer='False' host='host' user_name='user_name' password='password' data_location='data_location' />
     </data_transfer_settings>
  
     <run_details>
