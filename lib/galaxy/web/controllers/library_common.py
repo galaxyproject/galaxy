@@ -858,7 +858,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                     message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                                     default_action = 'manage_permissions'
                             else:
-                                default_action = 'import_to_histories'
+                                default_action = 'import_to_current_history'
                             trans.response.send_redirect( web.url_for( controller='library_common',
                                                                        action='browse_library',
                                                                        cntrller=cntrller,
@@ -1238,7 +1238,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                     message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                                     default_action = 'manage_permissions'
                             else:
-                                default_action = 'import_to_histories'
+                                default_action = 'import_to_current_history'
                     return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                       action='browse_library',
                                                                       cntrller=cntrller,
@@ -1547,6 +1547,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         error = False
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
+        current_history = trans.get_history()
         if not ldda_ids:
             error = True
             message = 'You must select at least one dataset.'
@@ -1554,16 +1555,27 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             error = True
             message = 'You must select an action to perform on the selected datasets.'
         else:
-            if action == 'import_to_histories':
+            if action in [ 'import_to_current_history', 'import_to_histories' ]:
+                new_kwd = {}
+                if action == 'import_to_current_history':
+                    encoded_current_history_id = trans.security.encode_id( current_history.id )
+                    selected_history_id = encoded_current_history_id
+                    new_kwd[ 'do_action' ] = action
+                    new_kwd[ 'target_history_ids' ] = encoded_current_history_id
+                    new_kwd[ 'import_datasets_to_histories_button' ] = 'Import library datasets'
+                else:
+                    selected_history_id = ''
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='import_datasets_to_histories',
                                                                   cntrller=cntrller,
                                                                   library_id=library_id,
+                                                                  selected_history_id=selected_history_id,
                                                                   ldda_ids=ldda_ids,
                                                                   use_panels=use_panels,
                                                                   show_deleted=show_deleted,
                                                                   message=message,
-                                                                  status=status ) )
+                                                                  status=status,
+                                                                  **new_kwd ) )
             if action == 'move':
                 if library_id in [ 'none', 'None', None ]:
                     source_library_id = ''
@@ -1808,8 +1820,10 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         status = params.get( 'status', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        action = params.get( 'do_action', None )
         user = trans.get_user()
         current_history = trans.get_history()
+        selected_history_id = params.get( 'selected_history_id', trans.security.encode_id( current_history.id ) )
         if library_id:
             library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( library_id ) )
         else:
@@ -1886,11 +1900,20 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         target_histories = [ current_history ]
         if user:
            target_histories = user.active_histories
+        if action == 'import_to_current_history' and library_id:
+            # To streamline this as much as possible, go back to browsing the library.
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              message=util.sanitize_text( message ),
+                                                              status=status ) )
         return trans.fill_template( "/library/common/import_datasets_to_histories.mako",
                                     cntrller=cntrller,
                                     library=library,
-                                    current_history=trans.get_history(),
+                                    current_history=current_history,
                                     ldda_ids=ldda_ids,
+                                    selected_history_id=selected_history_id,
                                     target_history_ids=target_history_ids,
                                     source_lddas=source_lddas,
                                     target_histories=target_histories,

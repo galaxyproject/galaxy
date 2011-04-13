@@ -50,16 +50,19 @@
         <div class="toolFormBody">
             <div class="form-row" id="single-destination">
                 <select id="single-dest-select" name="target_history_ids">
-                    <option value=""></option>
                     %for i, target_history in enumerate( target_histories ):
                         <%
                             encoded_id = trans.security.encode_id( target_history.id )
+                            if encoded_id == selected_history_id:
+                                selected_text = " selected"
+                            else:
+                                selected_text = ""
                             if target_history == current_history:
                                 current_history_text = " (current history)"
                             else:
                                 current_history_text = ""
                         %>
-                        <option value="${encoded_id}">${i + 1}: ${h.truncate( target_history.name, 30 )}${current_history_text}</option>
+                        <option value="${encoded_id}"${selected_text}>${i + 1}: ${h.truncate( target_history.name, 30 )}${current_history_text}</option>
                     %endfor
                 </select>
                 <br/><br/>

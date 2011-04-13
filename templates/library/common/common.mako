@@ -403,11 +403,12 @@
                 For selected datasets:
                 <select name="do_action" id="action_on_selected_items">
                     %if can_import_to_histories:
-                        %if not is_admin and default_action == 'import_to_histories':
-                            <option value="import_to_histories" selected>Import to histories</option>
+                        %if default_action == 'import_to_current_history':
+                            <option value="import_to_current_history" selected>Import to current history</option>
                         %else:
-                            <option value="import_to_histories">Import to histories</option>
+                            <option value="import_to_current_history">Import to current history</option>
                         %endif
+                        <option value="import_to_histories">Import to histories</option>
                     %endif
                     %if can_manage_permissions:
                         %if not is_admin and default_action == 'manage_permissions':
