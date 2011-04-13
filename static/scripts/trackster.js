@@ -244,6 +244,11 @@ extend(DataManager.prototype, Cache.prototype, {
      * Load data from server; returns AJAX object so that use of Deferred is possible.
      */
     load_data: function(chrom, low, high, mode, resolution, extra_params) {
+        if (this.track.track_type == "ReferenceTrack" && resolution > 1) {
+            // Now that data is pre-fetched before draw, we don't load reference tracks
+            // unless it's at the bottom level
+            return;
+        }
         // Setup data request params.
         var params = {"chrom": chrom, "low": low, "high": high, "mode": mode, 
                       "resolution": resolution, "dataset_id" : this.track.dataset_id, 
