@@ -219,7 +219,7 @@ class Egg( object ):
             pkg_resources.working_set.entry_keys[entry] = []
             if entry in sys.path:
                 sys.path.remove(entry)
-        # if the conflict is a dpeendent egg, fetch that specific egg
+        # if the conflict is a dependent egg, fetch that specific egg
         if egg:
             # Store the removed path so the fetch method can use it
             egg.removed_location = location

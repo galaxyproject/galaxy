@@ -15,6 +15,7 @@ lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) 
 sys.path.append( lib )
 
 from galaxy.eggs.dist import DistScrambleCrate, ScrambleFailure
+from galaxy.eggs import EggNotFetchable
 
 if len( sys.argv ) > 3 or len( sys.argv ) < 2:
     print __doc__

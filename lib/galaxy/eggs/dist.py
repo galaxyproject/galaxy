@@ -84,7 +84,7 @@ class DistScrambleCrate( ScrambleCrate ):
             for platform in platforms:
                 if name in self.ignore and platform in self.ignore[name].split():
                     continue
-                egg = DistScrambleEgg( name, version, tag, url, platform )
+                egg = DistScrambleEgg( name, version, tag, url, platform, self )
                 host_info = self.hosts[platform].split()
                 egg.build_host, egg.python = host_info[:2]
                 egg.sources = sources
