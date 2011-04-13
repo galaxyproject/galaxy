@@ -53,6 +53,15 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query } )
         return trans.app.toolbox_search.search( query )
 
+    @web.json
+    def tool_tag_search( self, trans, query ):
+        tag = trans.sa_session.query( trans.app.model.Tag ).filter_by( name=query ).first()
+        tool_ids = []
+        for tagged_tool in tag.tagged_tools:
+            if tagged_tool.tool_id not in tool_ids:
+                tool_ids.append( tagged_tool.tool_id )
+        return tool_ids
+
     @web.expose
     def tool_help( self, trans, id ):
         """Return help page for tool identified by 'id' if available"""

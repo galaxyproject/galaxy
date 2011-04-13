@@ -75,6 +75,27 @@ class ToolBox( object ):
             try:
                 path = elem.get( "file" )
                 tool = self.load_tool( os.path.join( self.tool_root_dir, path ) )
+                if self.app.config.get_bool( 'enable_tool_tags', False ):
+                    tag_names = elem.get( "tags", "" ).split( "," )
+                    for tag_name in tag_names:
+                        if tag_name == '':
+                            continue
+                        tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
+                        if not tag:
+                            tag = self.app.model.Tag( name=tag_name )
+                            self.sa_session.add( tag )
+                            self.sa_session.flush()
+                            tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
+                            self.sa_session.add( tta )
+                            self.sa_session.flush()
+                        else:
+                            for tagged_tool in tag.tagged_tools:
+                                if tagged_tool.tool_id == tool.id:
+                                    break
+                            else:
+                                tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
+                                self.sa_session.add( tta )
+                                self.sa_session.flush()
                 self.tools_by_id[ tool.id ] = tool
                 key = 'tool_' + tool.id
                 panel_dict[ key ] = tool
@@ -181,6 +202,13 @@ class ToolBox( object ):
         if self.app.config.use_tool_dependencies:
             self.dependency_manager = DependencyManager( [ self.app.config.tool_dependency_dir ] )
 
+    @property
+    def sa_session( self ):
+        """
+        Returns a SQLAlchemy session
+        """
+        return self.app.model.context
+    
 class ToolSection( object ):
     """
     A group of tools with similar type/purpose that will be displayed as a

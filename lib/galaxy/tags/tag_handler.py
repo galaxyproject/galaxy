@@ -58,6 +58,15 @@ class TagHandler( object ):
             tag_id = row[0]
             community_tags.append( self.get_tag_by_id( trans, tag_id ) )        
         return community_tags
+    def get_tool_tags( self, trans ):
+        result_set = trans.sa_session.execute( select( columns=[ trans.app.model.ToolTagAssociation.table.c.tag_id ],
+                                                       from_obj=trans.app.model.ToolTagAssociation.table ).distinct() )
+
+        tags = []
+        for row in result_set:
+            tag_id = row[0]
+            tags.append( self.get_tag_by_id( trans, tag_id ) )
+        return tags
     def remove_item_tag( self, trans, user, item, tag_name ):
         """Remove a tag from an item."""
         # Get item tag association.

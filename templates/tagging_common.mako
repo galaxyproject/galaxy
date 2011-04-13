@@ -84,6 +84,20 @@
     </div>
 </%def>
 
+## Render tool tagging elements
+<%def name="render_tool_tagging_elements()">
+    <%
+        elt_id = int ( floor ( random()*maxint ) )
+        tags = trans.app.tag_handler.get_tool_tags( trans )
+    %>
+    ${self.render_tagging_element_html(elt_id=elt_id, \
+                                        tags=tags, \
+                                        editable=False )}
+    <script type="text/javascript">
+        init_tag_click_function($('#${elt_id}'), tool_tag_click);
+    </script>
+</%def>
+
 ## Render community tagging element.
 <%def name="render_community_tagging_element(tagged_item=None, elt_context=None, use_toggle_link=False, tag_click_fn='default_tag_click_fn')">
     ## Build HTML.
