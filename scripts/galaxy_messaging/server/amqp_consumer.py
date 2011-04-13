@@ -3,7 +3,7 @@ Galaxy Messaging with AMQP (RabbitMQ)
 Galaxy uses AMQ protocol to receive messages from external sources like 
 bar code scanners. Galaxy has been tested against RabbitMQ AMQP implementation.
 For Galaxy to receive messages from a message queue the RabbitMQ server has 
-to be set up with a user account and other parameters listed in the [galaxy:amq]
+to be set up with a user account and other parameters listed in the [galaxy_amqp]
 section in the universe_wsgi.ini config file
 Once the RabbitMQ server has been setup and started with the given parameters,
 this script can be run to receive messages and update the Galaxy database accordingly

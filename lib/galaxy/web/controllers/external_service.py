@@ -176,7 +176,6 @@ class ExternalService( BaseController, UsesFormDefinitions ):
             trans.sa_session.add( external_service )
             trans.sa_session.add( external_service.form_values )
             trans.sa_session.flush()
-            external_service.load_data_transfer_settings( trans )
         else:
             # We're saving a newly created external_service
             external_service_type = self.get_external_service_type( trans, external_service_type_id )
