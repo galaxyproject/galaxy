@@ -145,6 +145,22 @@
                     }
                     this.lastValue = this.value;
                 });                
+
+                // Apply stored tags
+                %if trans.user and trans.user.preferences.get( 'selected_tool_tags', '' ):
+                    current_tags = "${trans.user.preferences['selected_tool_tags']}".split(",")
+                    $.get("${h.url_for( controller='root', action='tool_search' )}", { query: "", tags: current_tags }, function (data) {
+                        apply_search_results(data);
+                    }, "json" );
+                    $("span.tag-name").each( function() {
+                        for ( var i in current_tags ) {
+                            if ( $(this).text() == current_tags[i] ) {
+                                $(this).addClass("active-tag-name");
+                                $(this).append("<img class='delete-tag-img' src='${h.url_for('/static/images/delete_tag_icon_gray.png')}'/>")
+                            }
+                        }
+                    });
+                %endif
             });            
 
             var apply_search_results = function (data) {

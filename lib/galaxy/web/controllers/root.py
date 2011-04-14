@@ -60,7 +60,13 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 for tagged_tool in tagged_tool_il:
                     if tagged_tool.tool_id not in results:
                         results.append( tagged_tool.tool_id )
-        if len( query ) > 3:
+            if trans.user:
+                trans.user.preferences['selected_tool_tags'] = ','.join( [ tag.name for tag in tags ] )
+                trans.sa_session.flush()
+        elif trans.user:
+            trans.user.preferences['selected_tool_tags'] = ''
+            trans.sa_session.flush()
+        if len( query ) > 2:
             search_results = trans.app.toolbox_search.search( query )
             if 'tags[]' in kwd:
                 results = filter( lambda x: x in results, search_results )
