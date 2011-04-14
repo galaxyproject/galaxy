@@ -3,6 +3,9 @@ Module for managing jobs in Pacific Bioscience's SMRT Portal and automatically t
 produced by SMRT Portal.
 """
 import logging, urllib2, re, shutil
+from string import Template
+from galaxy.util import json
+
 from data_transfer import *
 
 log = logging.getLogger( __name__ )
@@ -18,9 +21,16 @@ class SMRTPortalPlugin( DataTransfer ):
             sample = kwd[ 'sample' ]
             smrt_job_id = kwd[ 'secondary_analysis_job_id' ]
             external_service = sample.request.type.get_external_service( 'pacific_biosciences_smrt_portal' )
+            external_service.load_data_transfer_settings( trans )
+            http_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_protocol.HTTP ]
+            if not http_configs[ 'automatic_transfer' ]:
+                raise Exception( "Manual data transfer using http is not yet supported." )
             smrt_host = external_service.form_values.content[ 'host' ]
-            external_service_type_id = external_service.external_service_type_id
-            external_service_type = self.app.external_service_types.all_external_service_types[ external_service_type_id ]
+            external_service_type = external_service.get_external_service_type( trans )
+            # TODO: is there a better way to store the protocol?
+            # external_service_type.data_transfer looks somethng like
+            # {'http': <galaxy.sample_tracking.data_transfer.HttpDataTransferFactory object at 0x1064239d0>}
+            protocol = external_service_type.data_transfer.keys()[0]
             results = {}
             for k, v in external_service.form_values.content.items():
                 match = self.dataset_name_re.match( k ) or self.dataset_datatype_re.match( k )
@@ -42,6 +52,7 @@ class SMRTPortalPlugin( DataTransfer ):
             self.sa_session.add(sample)
             self.sa_session.flush()
             params = { 'type' : 'init_transfer',
+                       'protocol' : protocol,
                        'sample_id' : sample.id,
                        'results' : results,
                        'smrt_host' : smrt_host,
@@ -50,6 +61,7 @@ class SMRTPortalPlugin( DataTransfer ):
             self._associate_untransferred_datasets_with_sample( sample, external_service, results )
         elif 'transfer_job_id' in kwd:
             params = { 'type' : 'finish_transfer',
+                       'protocol' : kwd[ 'result' ][ 'protocol' ],
                        'sample_id' : kwd[ 'sample_id' ],
                        'result' : kwd[ 'result' ],
                        'transfer_job_id' : kwd[ 'transfer_job_id' ] }

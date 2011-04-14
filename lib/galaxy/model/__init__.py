@@ -1825,6 +1825,11 @@ class ExternalService( object ):
                 scp_configs[ 'data_location' ] = self.form_values.content.get( data_transfer_obj.config.get( 'data_location', '' ), '' )
                 scp_configs[ 'rename_dataset' ] = self.form_values.content.get( data_transfer_obj.config.get( 'rename_dataset', '' ), '' )
                 self.data_transfer[ self.data_transfer_protocol.SCP ] = scp_configs
+            if data_transfer_protocol == self.data_transfer_protocol.HTTP:
+                http_configs = {}
+                automatic_transfer = data_transfer_obj.config.get( 'automatic_transfer', 'false' )
+                http_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
+                self.data_transfer[ self.data_transfer_protocol.HTTP ] = http_configs
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
                 

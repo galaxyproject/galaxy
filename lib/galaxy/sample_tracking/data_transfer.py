@@ -27,12 +27,23 @@ class ScpDataTransferFactory( DataTransferFactory ):
         # Validate 
         for name, value in self.config.items():
             assert value, "'%s' attribute missing in 'data_transfer' element of type 'scp' in external_service_type xml config file: '%s'." % ( name, config_file )
-        
+
+class HttpDataTransferFactory( DataTransferFactory ):
+    type = 'http'
+    def __init__( self ):
+        pass
+    def parse( self, config_file, elem ):
+        self.config = {}
+        self.config[ 'automatic_transfer' ] = elem.get( 'automatic_transfer' )
+        # Validate 
+        for name, value in self.config.items():
+            assert value, "'%s' attribute missing in 'data_transfer' element of type 'http' in external_service_type xml config file: '%s'." % ( name, config_file )
+
 class FtpDataTransferFactory( DataTransferFactory ):
     type = 'ftp'
     def __init__( self ):
         pass
     def parse( self, elem ):
         pass
-    
-data_transfer_factories = dict( [ ( data_transfer.type, data_transfer() ) for data_transfer in [ ScpDataTransferFactory, FtpDataTransferFactory ] ] )
+
+data_transfer_factories = dict( [ ( data_transfer.type, data_transfer() ) for data_transfer in [ ScpDataTransferFactory, HttpDataTransferFactory, FtpDataTransferFactory ] ] )

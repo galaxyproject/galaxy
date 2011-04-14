@@ -2,9 +2,6 @@
     <description></description>
     <version>1</version>
     <data_transfer_settings>
-        <!--
-        <data_transfer protocol='scp' automatic_transfer='True' host='host' user_name='user_name' password='password' data_location='data_location' />
-        -->
         <data_transfer protocol='http' automatic_transfer='True' />
     </data_transfer_settings>
     <run_details>

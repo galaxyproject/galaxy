@@ -84,12 +84,16 @@ class ExternalServiceType( object ):
     def parse_data_transfer_settings( self, root ):
         self.data_transfer = {}
         data_transfer_settings_elem = root.find( 'data_transfer_settings' )
-        # Currently only data transfer using scp is supported.
+        # Currently only data transfer using scp or http is supported.
         for data_transfer_elem in data_transfer_settings_elem.findall( "data_transfer" ):
             if data_transfer_elem.get( 'protocol' ) == model.ExternalService.data_transfer_protocol.SCP:
                 scp_data_transfer = data_transfer_factories[ model.ExternalService.data_transfer_protocol.SCP ]
                 scp_data_transfer.parse( self.config_file, data_transfer_elem  )
                 self.data_transfer[ model.ExternalService.data_transfer_protocol.SCP ] = scp_data_transfer
+            if data_transfer_elem.get( 'protocol' ) == model.ExternalService.data_transfer_protocol.HTTP:
+                http_data_transfer = data_transfer_factories[ model.ExternalService.data_transfer_protocol.HTTP ]
+                http_data_transfer.parse( self.config_file, data_transfer_elem  )
+                self.data_transfer[ model.ExternalService.data_transfer_protocol.HTTP ] = http_data_transfer
     def parse_run_details( self, root ):
         self.run_details = {}
         run_details_elem = root.find( 'run_details' )

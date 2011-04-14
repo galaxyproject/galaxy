@@ -4,8 +4,6 @@ Module for managing data transfer jobs.
 import logging, urllib2, re, shutil
 
 from galaxy import eggs
-from galaxy.util import json
-from string import Template
 from sqlalchemy import and_
 
 from galaxy.util.odict import odict
@@ -18,6 +16,8 @@ from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.datatypes import sniff
 
 log = logging.getLogger( __name__ )
+
+__all__ = [ 'DataTransfer' ]
 
 class DataTransfer( object ):
     check_interval = 15
@@ -36,7 +36,10 @@ class DataTransfer( object ):
             if job.params[ 'protocol' ] in [ 'http', 'https' ]:
                 results = []
                 for result in job.params[ 'results' ].values():
-                    result[ 'transfer_job' ] = self.app.transfer_manager.new( protocol=job.params[ 'protocol' ], url=result[ 'url' ] )
+                    result[ 'transfer_job' ] = self.app.transfer_manager.new( protocol=job.params[ 'protocol' ],
+                                                                              name=result[ 'name' ],
+                                                                              datatype=result[ 'datatype' ],
+                                                                              url=result[ 'url' ] )
                     results.append( result )
             elif job.params[ 'protocol' ] == 'scp':
                 results = []
@@ -83,9 +86,9 @@ class DataTransfer( object ):
             # Update the state of the relevant SampleDataset
             new_status = self.app.model.SampleDataset.transfer_status.ADD_TO_LIBRARY
             if protocol in [ 'http', 'https' ]:
-                result_dict = job.params[ 'results' ]
-                library_dataset_name = job.params[ 'result' ][ 'name' ]
-                extension = job.params[ 'result' ][ 'datatype' ]
+                result_dict = job.params[ 'result' ]
+                library_dataset_name = result_dict[ 'name' ]
+                extension = result_dict[ 'datatype' ]
             elif protocol in [ 'scp' ]:
                 # In this case, job.params will be a dictionary that contains a key named 'result'.  The value
                 # of the result key is a dictionary that looks something like:

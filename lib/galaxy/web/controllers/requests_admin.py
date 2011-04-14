@@ -671,7 +671,7 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
                 if not scp_configs[ 'automatic_transfer' ]:
                     deferred_plugin = 'ManualDataTransferPlugin'
                 else:
-                    raise Exception( "Automatic data transfer using scp is not yet suppored." )
+                    raise Exception( "Automatic data transfer using scp is not yet supported." )
             trans.app.job_manager.deferred_job_queue.plugins[ deferred_plugin ].create_job( trans,
                                                                                             sample=sample,
                                                                                             sample_datasets=sample_datasets,

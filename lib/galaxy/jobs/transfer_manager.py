@@ -30,14 +30,13 @@ class TransferManager( object ):
         if protocol in [ 'http', 'https' ]:
             if 'url' not in kwd:
                 raise Exception( 'Missing required parameter "url".' )
-            transfer_job = self.app.model.TransferJob( state=self.app.model.TransferJob.states.NEW, params=kwd )
         elif protocol == 'scp':
             # TODO: add more checks here?
             if 'sample_dataset_id' not in kwd:
                 raise Exception( 'Missing required parameter "sample_dataset_id".' )
             if 'file_path' not in kwd:
                 raise Exception( 'Missing required parameter "file_path".' )
-            transfer_job = self.app.model.TransferJob( state=self.app.model.TransferJob.states.NEW, params=kwd )
+        transfer_job = self.app.model.TransferJob( state=self.app.model.TransferJob.states.NEW, params=kwd )
         self.sa_session.add( transfer_job )
         self.sa_session.flush()
         return transfer_job
