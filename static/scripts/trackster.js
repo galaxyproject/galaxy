@@ -2353,7 +2353,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         }
         
         // Drawing the summary tree (feature coverage histogram)
-        if ( mode === "summary_tree" ) {
+        if (mode === "summary_tree" || mode === "Histogram") {
             // Set height of parent_element
             required_height = this.summary_draw_height;
             parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
@@ -2369,44 +2369,22 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             canvas.width = width + left_offset;
             // Extra padding at top of summary tree
             canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
-            // Paint summary tree into canvas
-            var painter = new painters.SummaryTreePainter( result, tile_low, tile_high, this.prefs );
-            var ctx = canvas.getContext("2d");
-            // Deal with left_offset by translating
-            ctx.translate( left_offset, SUMMARY_TREE_TOP_PADDING );
-            painter.draw( ctx, width, required_height );
-            return new SummaryTreeTile(tile_index, resolution, canvas, result.max);
-        }
-        
-        // Drawing coverage histogram. This is different from summary tree because data can feature
-        // details, but user has requested a histogram.
-        if (mode === "Histogram") {
-            // Set height of parent_element
-            required_height = this.summary_draw_height;
-            parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
-            // Add label to container div showing maximum count
-            // TODO: this shouldn't be done at the tile level
-            this.container_div.find(".yaxislabel").remove();
-            var max_label = $("<div />").addClass('yaxislabel');
-            max_label.text( result.max );
-            max_label.css({ position: "absolute", top: "22px", left: "10px" });
-            max_label.prependTo(this.container_div);
-            // Create canvas
-            var canvas = this.view.canvas_manager.new_canvas();
-            canvas.width = width + left_offset;
-            // Extra padding at top of summary tree
-            canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
-            // Paint summary tree into canvas.
-            var binned_data = this.get_summary_tree_data(result.data, tile_low, tile_high, 200);
-            if (result.max) {
-                binned_data.max = result.max;
+            
+            // Get summary tree data if necessary and set max if there is one.
+            if (result.dataset_type != "summary_tree") {
+                var st_data = this.get_summary_tree_data(result.data, tile_low, tile_high, 200);
+                if (result.max) {
+                    st_data.max = result.max;
+                }
+                result = st_data;
             }
-            var painter = new painters.SummaryTreePainter(binned_data, tile_low, tile_high, this.prefs);
+            // Paint summary tree into canvas
+            var painter = new painters.SummaryTreePainter(result, tile_low, tile_high, this.prefs);
             var ctx = canvas.getContext("2d");
             // Deal with left_offset by translating
             ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
             painter.draw(ctx, width, required_height);
-            return new SummaryTreeTile(tile_index, resolution, canvas, binned_data.max);
+            return new SummaryTreeTile(tile_index, resolution, canvas, result.max);
         }
 
         // Start dealing with row-by-row tracks
