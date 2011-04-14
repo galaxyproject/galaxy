@@ -1587,7 +1587,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 for name, val in module.state.inputs.items():
                     input_type = type( val )
                     if input_type == RuntimeValue:
-                        step['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
+                        step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
                     elif input_type == dict:
                         # Input type is described by a dict, e.g. indexed parameters.
                         for partname, partval in val.items():
