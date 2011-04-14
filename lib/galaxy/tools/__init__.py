@@ -130,6 +130,9 @@ class ToolBox( object ):
             key = 'section_' + section.id
             panel_dict[ key ] = section
                 
+        log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")")
+        self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
+        self.sa_session.flush()
         log.info("parsing the tool configuration")
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
