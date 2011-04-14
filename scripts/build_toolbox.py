@@ -2,9 +2,6 @@ import os
 import sys
 from xml.etree import ElementTree as ET
 
-# Todo: Keep order by "prioritizing" tools in sections
-# Todo: Labels (as lower level sections?)
-
 def prettify(elem):
     from xml.dom import minidom
     rough_string = ET.tostring(elem, 'utf-8')
