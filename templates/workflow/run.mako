@@ -63,7 +63,7 @@
             });
             $('select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
                 var select = $(s);
-                var new_width = select.width() + 20;
+                var new_width = Math.max(200, select.width()) + 20;
                 select.parent().prev().append(
                     $('<span class="icon-button multiinput"></span>').click(function() {
                         if ($(this).hasClass('disabled')) return;
