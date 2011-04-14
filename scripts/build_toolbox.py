@@ -4,6 +4,8 @@ from xml.etree import ElementTree as ET
 
 # Todo: Keep order by "prioritizing" tools in sections
 # Todo: Labels (as lower level sections?)
+# Todo: Some tools are switched "off" by default: it must be possible to "off"
+#       a tool without having to remove it?
 
 def prettify(elem):
     from xml.dom import minidom
@@ -70,12 +72,13 @@ def scanfiles(fnl):
             attrib = {'file': fileattrib}
             tags = tool.find('tags')
             if tags:
-                tagra = []
+                tagarray = []
                 for tag in tags.findall('tag'):
-                    tagra.append(tag.text)
-                attrib['tags'] = ",".join(tagra)
+                    tagarray.append(tag.text)
+                attrib['tags'] = ",".join(tagarray)
             toolelement = ET.Element('tool', attrib)
-            ts.add(toolelement, tool.find('section'))
+            if not 'off' in tagarray:
+                ts.add(toolelement, tool.find('section'))
     return ts
 
 def assemble():
