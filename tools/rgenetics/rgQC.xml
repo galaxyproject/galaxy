@@ -28,6 +28,7 @@
     </param>
     <param name='title' value='rgQCtest1' />
     <output name='html_file' file='rgtestouts/rgQC/rgQCtest1.html' ftype='html' lines_diff='300'>
+    <param name="dbkey" value="hg18" />
     <extra_files type="file" name='tinywga_All_Paged.pdf' value="rgtestouts/rgQC/tinywga_All_Paged.pdf" compare="sim_size" delta = "100000"/>
     <extra_files type="file" name='tinywga.log' value="rgtestouts/rgQC/tinywga.log" compare="diff" lines_diff="15"/>
     <extra_files type="file" name='tinywga.frq' value="rgtestouts/rgQC/tinywga.frq" compare="diff" />

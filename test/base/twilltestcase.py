@@ -32,7 +32,14 @@ class TwillTestCase( unittest.TestCase ):
         self.port = os.environ.get( 'GALAXY_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
         self.file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR' )
+        self.keepOutdir = os.environ.get( 'GALAXY_TEST_SAVE', '' )
+        if self.keepOutdir > '':
+           try:
+               os.makedirs(self.keepOutdir)
+           except:
+               pass
         self.home()
+
         #self.set_history()
 
     # Functions associated with files
@@ -632,6 +639,10 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_page( "display?hid=" + hid )
             data = self.last_page()
             file( temp_name, 'wb' ).write(data)
+            if self.keepOutdir > '':
+                ofn = os.path.join(self.keepOutdir,os.path.basename(local_name))
+                shutil.copy(temp_name,ofn)
+                log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
             try:
                 # have to nest try-except in try-finally to handle 2.4
                 try:

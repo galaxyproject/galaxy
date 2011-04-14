@@ -47,6 +47,8 @@ def main():
     
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
+    galaxy_test_save = os.environ.get( 'GALAXY_TEST_SAVE', None)
+
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ['HTTP_ACCEPT_LANGUAGE'] = default_galaxy_locales
     galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
@@ -126,10 +128,14 @@ def main():
             
     print "Database connection:", database_connection
     
-    # What requires these?        
+    # What requires these?
+    # handy for (eg) functional tests to save outputs?        
+    if galaxy_test_save:
+    	os.environ['GALAXY_TEST_SAVE'] = galaxy_test_save
+    # pass in through script setenv
+    # will leave a copy of ALL test validate files        
     os.environ['GALAXY_TEST_HOST'] = galaxy_test_host
     os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
-            
     # ---- Build Application --------------------------------------------------
        
     app = None
