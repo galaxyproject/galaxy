@@ -1311,9 +1311,9 @@ extend( TrackConfig.prototype, {
  * Tiles drawn by tracks.
  */
 var Tile = function(index, resolution, canvas) {
-    // Wrap element in div for background
     this.index = index;
     this.resolution = resolution;
+    // Wrap element in div for background.
     this.canvas = $("<div class='track-tile'/>").append(canvas);
 };
 
@@ -1743,7 +1743,9 @@ extend(TiledTrack.prototype, Track.prototype, {
                 //
                 // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
                 //
-                if (track.mode == "Histogram") {
+                // HACK: use track type b/c LineTrack histograms are different; what's needed is different
+                // post-draw actions for different line tracks.
+                if (track.track_type == "FeatureTrack" && track.mode == "Histogram") {
                     // Get global max.
                     var global_max = -1;
                     for (var i = 0; i < drawn_tiles.length; i++) {
@@ -1826,7 +1828,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         var draw_and_show_tile = function(id, result, resolution, tile_index, parent_element, w_scale, seq_data) {
             // DEBUG: this is still called too many times when moving slowly,
             // console.log( "draw_and_show_tile", resolution, tile_index, w_scale );
-            var tile = track.draw_tile(result, resolution, tile_index, parent_element, w_scale, seq_data);
+            var tile = track.draw_tile(result, resolution, tile_index, w_scale, seq_data);
             track.tile_cache.set(key, tile);
             track.show_tile(tile, parent_element, tile_low, w_scale);
             drawn_tiles[drawn_tiles.length] = tile;
@@ -1882,9 +1884,9 @@ extend(TiledTrack.prototype, Track.prototype, {
         }
         var tile_element = tile.canvas;
         tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
-
-        // Setup and show tile element.
         parent_element.append(tile_element);
+        
+        // Set track height.
         track.max_height = Math.max(track.max_height, tile_element.height());
         track.content_div.css("height", track.max_height + "px");
         parent_element.children().css("height", track.max_height + "px");        
@@ -1984,7 +1986,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(seq, resolution, tile_index, parent_element, w_scale) {
+    draw_tile: function(seq, resolution, tile_index, w_scale) {
         var track = this,
             tile_length = DENSITY * resolution;
         
@@ -2122,7 +2124,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw LineTrack tile.
      */
-    draw_tile: function(result, resolution, tile_index, parent_element, w_scale) {
+    draw_tile: function(result, resolution, tile_index, w_scale) {
         if (this.vertical_range === undefined) {
             return;
         }
@@ -2312,7 +2314,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
     /**
      * Draw FeatureTrack tile.
      */
-    draw_tile: function(result, resolution, tile_index, parent_element, w_scale, ref_seq) {
+    draw_tile: function(result, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
             tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
@@ -2343,7 +2345,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
                 var data = result.data;
                 // if ( (data.length && data.length < 4) ||
                 //      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
-		if ( this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH ) {
+		        if ( this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH ) {
                     mode = "Squish";
                 } else {
                     mode = "Pack";
@@ -2354,9 +2356,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         
         // Drawing the summary tree (feature coverage histogram)
         if (mode === "summary_tree" || mode === "Histogram") {
-            // Set height of parent_element
             required_height = this.summary_draw_height;
-            parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
             // Add label to container div showing maximum count
             // TODO: this shouldn't be done at the tile level
             this.container_div.find(".yaxislabel").remove();
@@ -2428,7 +2428,6 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         canvas.width = width + left_offset;
         canvas.height = required_height;
 
-        parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = canvas.getContext("2d");
         ctx.fillStyle = this.prefs.block_color;
@@ -2452,7 +2451,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
 
             // If there's no data, return.
             if (!result.data) {
-                return new Tile(tile_index, resolution, canvas);
+                return new Tile(tile_index, resolution, canvas, required_height);
             }
         }
 
@@ -2460,8 +2459,8 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         this.example_feature = (result.data.length ? result.data[0] : undefined);
       
         // Draw features
-        ctx.translate( left_offset, ERROR_PADDING );
-        painter.draw( ctx, width, required_height, slots );
+        ctx.translate(left_offset, ERROR_PADDING);
+        painter.draw(ctx, width, required_height, slots);
             
         return new FeatureTrackTile(tile_index, resolution, canvas);
     }
