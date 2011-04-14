@@ -244,11 +244,6 @@ extend(DataManager.prototype, Cache.prototype, {
      * Load data from server; returns AJAX object so that use of Deferred is possible.
      */
     load_data: function(chrom, low, high, mode, resolution, extra_params) {
-        if (this.track.track_type == "ReferenceTrack" && resolution > 1) {
-            // Now that data is pre-fetched before draw, we don't load reference tracks
-            // unless it's at the bottom level
-            return;
-        }
         // Setup data request params.
         var params = {"chrom": chrom, "low": low, "high": high, "mode": mode, 
                       "resolution": resolution, "dataset_id" : this.track.dataset_id, 
@@ -343,6 +338,20 @@ extend(DataManager.prototype, Cache.prototype, {
      */
     split_key: function(key) {
         return key.split("_");
+    }
+});
+
+var ReferenceTrackDataManager = function(num_elements, track, subset) {
+    DataManager.call(this, num_elements, track, subset);
+};
+extend(ReferenceTrackDataManager.prototype, DataManager.prototype, Cache.prototype, {
+    load_data: function(chrom, low, high, mode, resolution, extra_params) {
+        if (resolution > 1) {
+            // Now that data is pre-fetched before draw, we don't load reference tracks
+            // unless it's at the bottom level
+            return;
+        }
+        return DataManager.prototype.load_data.call(this, chrom, low, high, mode, resolution, extra_params);
     }
 });
 
@@ -1979,7 +1988,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
-    this.data_cache = new DataManager(CACHED_DATA, this, false);
+    this.data_cache = new ReferenceTrackDataManager(CACHED_DATA, this, false);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 extend(ReferenceTrack.prototype, TiledTrack.prototype, {
