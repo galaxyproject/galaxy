@@ -2,6 +2,10 @@
     2010-2011: James Taylor, Kanwei Li, Jeremy Goecks
 */
 
+var class_module = function(require, exports) {
+    
+// Module is a placeholder for a more complete inheritence approach
+    
 /** Simple extend function for inheritence */
 var extend = function() {
     var target = arguments[0];
@@ -13,6 +17,12 @@ var extend = function() {
     }
     return target;
 };
+
+exports.extend = extend;
+
+// end class_module encapsulation
+};
+
 
 /**
  * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
@@ -59,10 +69,12 @@ var is_overlap = function(first_region, second_region) {
 };
 
 // Encapsulate -- anything to be availabe outside this block is added to exports
-var trackster_module = function(require, exports){
+var trackster_module = function(require, exports) {
 
-var slotting = require('slotting'),
+var extend = require('class').extend,
+    slotting = require('slotting'),
     painters = require('painters');
+    
     
 // ---- Canvas management and extensions ----
 
@@ -2194,7 +2206,6 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.zo_slots = {};
     this.show_labels_scale = 0.001;
     this.showing_details = false;
     this.summary_draw_height = 30;
@@ -2566,6 +2577,8 @@ exports.ReadTrack = ReadTrack;
 
 // Encapsulation
 var slotting_module = function(require, exports) {
+    
+var extend = require('class').extend;
 
 // HACK: LABEL_SPACING is currently duplicated between here and painters
 var LABEL_SPACING = 2,
@@ -2732,6 +2745,8 @@ extend( exports.FeatureSlotter.prototype, {
 
 var painters_module = function(require, exports){
     
+var extend = require('class').extend;
+
 /**
  * Draw a dashed line on a canvas using filled rectangles. This function is based on:
  * http://vetruvet.blogspot.com/2010/10/drawing-dashed-lines-on-html5-canvas.html
@@ -2935,19 +2950,19 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     var overflow_min_start = -1,
         overflow_max_start = -1;
     ctx.fillStyle = this.prefs.overflow_color;
+    var last_x_scaled;
     for (var i = 0, len = data.length; i < len; i++) {
         y = data[i][1];
         x_scaled = Math.round((data[i][0] - view_start) * w_scale);
-        x_minus_scaled = Math.round((data[i][0] - 1 - view_start) * w_scale);
         
         // If we are in a min/max run, check if it should be ended
         if ( overflow_max_start >= 0  && ( y === null || y < max_value ) ) {
             // Value does not exist or is in valid range, any overflow ends
-            ctx.fillRect( overflow_max_start, 0, x_minus_scaled - overflow_max_start + 1, 2 );
+            ctx.fillRect( overflow_max_start, 0, last_x_scaled + delta_x_px - overflow_max_start, 2 );
             overflow_max_start = -1;
         } else if ( overflow_min_start >= 0 && ( y === null || y > min_value ) ) {
             // Draw bottom overflow bar
-            ctx.fillRect( overflow_min_start, height - 2, x_minus_scaled - overflow_min_start + 1, 2 );
+            ctx.fillRect( overflow_min_start, height - 2, last_x_scaled + delta_x_px - overflow_min_start, 2 );
             overflow_min_start = -1;
         }
         
@@ -2960,6 +2975,7 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
             // Bottom overflows and we are not already in a run
             overflow_min_start = x_scaled;
         }
+        last_x_scaled = x_scaled;
     }
     
     ctx.restore();
@@ -3581,6 +3597,7 @@ exports.VariantPainter = VariantPainter;
         modules[key] = exports;
     };
     // Run all modules
+    run_module( 'class', class_module );
     run_module( 'slotting', slotting_module );
     run_module( 'painters', painters_module );
     run_module( 'trackster', trackster_module );
