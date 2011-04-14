@@ -21,6 +21,7 @@
                 }
             }
             function toggle_multiinput(select) {
+                var placeholder;
                 if (select.attr('multiple')) {
                     $('.multiinput').removeClass('disabled');
                     if (select.val()) {
@@ -28,12 +29,16 @@
                     } else {
                         select.val($('option:last', select).val());
                     }
-                    select.removeAttr('multiple');
+                    select.removeAttr('multiple').removeAttr('size');
+                    placeholder = 'type to filter';
                 } else {
                     $('.multiinput').addClass('disabled');
                     $('.multiinput', select.parent().prev()).removeClass('disabled');
-                    select.attr('multiple', 'multiple');
+                    select.attr('multiple', 'multiple').attr('size', 8);
+                    placeholder = 'type to filter, [enter] to select all';
                 }
+                $('input.multiinput-filter', select.parent()).attr(
+                    'placeholder', placeholder);
             }
             $( "select[refresh_on_change='true']").change( function() {
                 $( "#tool_form" ).submit();
@@ -58,6 +63,7 @@
             });
             $('select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
                 var select = $(s);
+                var new_width = select.width() + 20;
                 select.parent().prev().append(
                     $('<span class="icon-button multiinput"></span>').click(function() {
                         if ($(this).hasClass('disabled')) return;
@@ -68,6 +74,44 @@
                             'files. Each selected file will have an ' +
                             'instance of the workflow.').tipsy({gravity:'s'})
                 );
+                var filter = $('<input type="text" class="multiinput-filter" ' +
+                               'placeholder="type to filter">');
+                var filter_timeout = false;
+                var original_rows = select.find('option');
+                var previous_filter = '';
+                // Todo: might have to choose keypress, depending on browser
+                filter.keydown(function(e) {
+                    var filter_select = function() {
+                        var f = $.trim(filter.val());
+                        var filtered_rows = original_rows;
+                        if (f.length >= 1) {
+                            filtered_rows = original_rows.filter(function() {
+                                return new RegExp(f, 'ig').test($(this).text());
+                            });
+                        }
+                        select.html('');
+                        select.html(filtered_rows);
+                    };
+                    if (e.which == 13) { // 13 = enter key
+                        e.preventDefault();
+                        multi = select.attr('multiple');
+                        if (typeof multi !== 'undefined' && multi !== false) {
+                            if (!select.find('option:not(:selected)').length) {
+                                select.find('option').removeAttr('selected');
+                            } else {
+                                select.find('option').attr('selected', 'selected');
+                            }
+                        }
+                        return;
+                    }
+                    if (filter.val() != previous_filter) {
+                        if (filter_timeout) clearTimeout(filter_timeout);
+                        timeout = setTimeout(filter_select, 300);
+                        previous_filter = filter.val();
+                    }
+                }).width(new_width).css('display', 'block');
+                select.after(filter);
+                select.width(new_width);
             });
         });
     </script>
