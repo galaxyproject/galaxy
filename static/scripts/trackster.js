@@ -2941,19 +2941,19 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     var overflow_min_start = -1,
         overflow_max_start = -1;
     ctx.fillStyle = this.prefs.overflow_color;
+    var last_x_scaled;
     for (var i = 0, len = data.length; i < len; i++) {
         y = data[i][1];
         x_scaled = Math.round((data[i][0] - view_start) * w_scale);
-        x_minus_scaled = Math.round((data[i][0] - 1 - view_start) * w_scale);
         
         // If we are in a min/max run, check if it should be ended
         if ( overflow_max_start >= 0  && ( y === null || y < max_value ) ) {
             // Value does not exist or is in valid range, any overflow ends
-            ctx.fillRect( overflow_max_start, 0, x_minus_scaled - overflow_max_start + 1, 2 );
+            ctx.fillRect( overflow_max_start, 0, last_x_scaled + delta_x_px - overflow_max_start, 2 );
             overflow_max_start = -1;
         } else if ( overflow_min_start >= 0 && ( y === null || y > min_value ) ) {
             // Draw bottom overflow bar
-            ctx.fillRect( overflow_min_start, height - 2, x_minus_scaled - overflow_min_start + 1, 2 );
+            ctx.fillRect( overflow_min_start, height - 2, last_x_scaled + delta_x_px - overflow_min_start, 2 );
             overflow_min_start = -1;
         }
         
@@ -2966,6 +2966,7 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
             // Bottom overflows and we are not already in a run
             overflow_min_start = x_scaled;
         }
+        last_x_scaled = x_scaled;
     }
     
     ctx.restore();
