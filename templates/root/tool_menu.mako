@@ -114,9 +114,16 @@
                     // Remove italics.
                     $(this).css("font-style", "normal");
                     
-                    // Don't update if same value as last time
-                    if ( this.value.length < 3 ) {
+                    // Don't search if the search value is < 3 chars, but clear the search if there was a previous query
+                    if ( this.value.length < 3 && this.lastValue && this.lastValue.length >= 3 ) {
                         reset_tool_search(false);
+                        // Re-apply tags
+                        if ( current_tags.length > 0 ) {
+                            $.get("${h.url_for( controller='root', action='tool_search' )}", { query: "", tags: current_tags }, function (data) {
+                                apply_search_results(data);
+                            }, "json" );
+                        }
+                    // Don't update if same value as last time
                     } else if ( this.value !== this.lastValue ) {
                         // Add class to denote that searching is active.
                         $(this).addClass("search_active");
@@ -130,56 +137,8 @@
                         // Start a new ajax-request in X ms
                         $("#search-spinner").show();
                         this.timer = setTimeout(function () {
-                            $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q }, function (data) {
-                                // input.removeClass(config.loadingClass);
-                                // Show live-search if results and search-term aren't empty
-                                $("#search-no-results").hide();
-                                // Hide all tool sections.
-                                $(".toolSectionWrapper").hide();
-                                // This hides all tools but not workflows link (which is in a .toolTitle div).
-                                $(".toolSectionWrapper").find(".toolTitle").hide();
-                                if ( data.length !== 0 ) {
-                                    // Map tool ids to element ids and join them.
-                                    var s = $.map( data, function( n, i ) { return ".link-" + n.toLowerCase().replace(/[^a-z0-9_]/g,'_'); } ).join( ", " );
-
-                                    // First pass to show matching tools and their parents.
-                                    $(s).each( function() {
-                                        // Add class to denote match.
-                                        $(this).parent().addClass("search_match");
-                                        if ($(this).parents("#recently_used_wrapper").length === 0) {
-                                            // Default behavior.
-                                            $(this).parent().show().parent().parent().show().parent().show();
-                                        } else if ($(this).parents(".user_pref_visible").length !== 0) {
-                                            // RU menu is visible, so filter it as normal.
-                                            $(this).parent().show().parent().parent().show().parent().show();
-                                        } else  {
-                                            // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
-                                            // aleady in place.
-                                            $(this).parent().show();
-                                        }
-                                    });
-                                    
-                                    // Hide labels that have no visible children.
-                                    $(".toolPanelLabel").each( function() {
-                                        var this_label = $(this);                                   
-                                        var next = this_label.next();
-                                        var no_visible_tools = true;
-                                        // Look through tools following label and, if none are visible, hide label.
-                                        while (next.length !== 0 && next.hasClass("toolTitle")) {
-                                            if (next.is(":visible")) {
-                                                no_visible_tools = false;
-                                                break;
-                                            } else {
-                                                next = next.next();
-                                            }
-                                        }
-                                        if (no_visible_tools) {
-                                            this_label.hide();
-                                        }
-                                    });
-                                } else {
-                                    $("#search-no-results").show();
-                                }
+                            $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q, tags: current_tags }, function (data) {
+                                apply_search_results(data);
                                 $("#search-spinner").hide();
                             }, "json" );
                         }, 200 );
@@ -187,6 +146,58 @@
                     this.lastValue = this.value;
                 });                
             });            
+
+            var apply_search_results = function (data) {
+                // input.removeClass(config.loadingClass);
+                // Show live-search if results and search-term aren't empty
+                $("#search-no-results").hide();
+                // Hide all tool sections.
+                $(".toolSectionWrapper").hide();
+                // This hides all tools but not workflows link (which is in a .toolTitle div).
+                $(".toolSectionWrapper").find(".toolTitle").hide();
+                if ( data.length !== 0 ) {
+                    // Map tool ids to element ids and join them.
+                    var s = $.map( data, function( n, i ) { return ".link-" + n.toLowerCase().replace(/[^a-z0-9_]/g,'_'); } ).join( ", " );
+
+                    // First pass to show matching tools and their parents.
+                    $(s).each( function() {
+                        // Add class to denote match.
+                        $(this).parent().addClass("search_match");
+                        if ($(this).parents("#recently_used_wrapper").length === 0) {
+                            // Default behavior.
+                            $(this).parent().show().parent().parent().show().parent().show();
+                        } else if ($(this).parents(".user_pref_visible").length !== 0) {
+                            // RU menu is visible, so filter it as normal.
+                            $(this).parent().show().parent().parent().show().parent().show();
+                        } else  {
+                            // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
+                            // aleady in place.
+                            $(this).parent().show();
+                        }
+                    });
+                    
+                    // Hide labels that have no visible children.
+                    $(".toolPanelLabel").each( function() {
+                        var this_label = $(this);                                   
+                        var next = this_label.next();
+                        var no_visible_tools = true;
+                        // Look through tools following label and, if none are visible, hide label.
+                        while (next.length !== 0 && next.hasClass("toolTitle")) {
+                            if (next.is(":visible")) {
+                                no_visible_tools = false;
+                                break;
+                            } else {
+                                next = next.next();
+                            }
+                        }
+                        if (no_visible_tools) {
+                            this_label.hide();
+                        }
+                    });
+                } else {
+                    $("#search-no-results").show();
+                }
+            }
 
             // Update recently used tools menu. Function inserts a new item and removes the last item.
             function update_recently_used() {
@@ -262,70 +273,18 @@
                 if ( current_tags.length == 0 ) {
                     $("#search-no-results").hide();
                     $(".tool-link").each( function() {
-                        $(this).parent().removeClass("search_match");
-                        if ($(this).parents("#recently_used_wrapper").length === 0) {
-                            // Default behavior.
-                            $(this).parent().show().parent().parent().hide().parent().show();
-                        } else if ($(this).parents(".user_pref_visible").length !== 0) {
-                            // RU menu is visible, so filter it as normal.
-                            $(this).parent().show().parent().parent().show().parent().show();
-                        } else  {
-                            // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
-                            // aleady in place.
-                            $(this).parent().show();
-                        }
+                        reset_tool_search(false);
                     });
                     return;
                 }
-                $.get("${h.url_for( controller='root', action='tool_tag_search' )}", { query: current_tags }, function (data) {
-                    // Show live-search if results and search-term aren't empty
-                    $("#search-no-results").hide();
-                    // Hide all tool sections.
-                    $(".toolSectionWrapper").hide();
-                    // This hides all tools but not workflows link (which is in a .toolTitle div).
-                    $(".toolSectionWrapper").find(".toolTitle").hide();
-                    if ( data.length !== 0 ) {
-                        // Map tool ids to element ids and join them.
-                        var s = $.map( data, function( n, i ) { return ".link-" + n.toLowerCase().replace(/[^a-z0-9_]/g,'_'); } ).join( ", " );
-
-                        // First pass to show matching tools and their parents.
-                        $(s).each( function() {
-                            // Add class to denote match.
-                            $(this).parent().addClass("search_match");
-                            if ($(this).parents("#recently_used_wrapper").length === 0) {
-                                // Default behavior.
-                                $(this).parent().show().parent().parent().show().parent().show();
-                            } else if ($(this).parents(".user_pref_visible").length !== 0) {
-                                // RU menu is visible, so filter it as normal.
-                                $(this).parent().show().parent().parent().show().parent().show();
-                            } else  {
-                                // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
-                                // aleady in place.
-                                $(this).parent().show();
-                            }
-                        });
-                        
-                        // Hide labels that have no visible children.
-                        $(".toolPanelLabel").each( function() {
-                            var this_label = $(this);                                   
-                            var next = this_label.next();
-                            var no_visible_tools = true;
-                            // Look through tools following label and, if none are visible, hide label.
-                            while (next.length !== 0 && next.hasClass("toolTitle")) {
-                                if (next.is(":visible")) {
-                                    no_visible_tools = false;
-                                    break;
-                                } else {
-                                    next = next.next();
-                                }
-                            }
-                            if (no_visible_tools) {
-                                this_label.hide();
-                            }
-                        });
-                    } else {
-                        $("#search-no-results").show();
-                    }
+                var q = $("input#tool-search-query").val();
+                if ( q == "search tools" ) {
+                    q = "";
+                } else if ( q.length > 0 ) {
+                    q = q + '*';
+                }
+                $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q, tags: current_tags }, function (data) {
+                    apply_search_results(data);
                 }, "json" );
             }
 

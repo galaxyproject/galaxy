@@ -49,20 +49,24 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             return trans.fill_template('/root/tool_menu.mako', toolbox=toolbox, recent_tools=recent_tools )
 
     @web.json
-    def tool_search( self, trans, query ):
-        trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query } )
-        return trans.app.toolbox_search.search( query )
-
-    @web.json
-    def tool_tag_search( self, trans, **kwd ):
-        query = util.listify( kwd.get( 'query[]', [] ) )
-        tags = trans.sa_session.query( trans.app.model.Tag ).filter( trans.app.model.Tag.name.in_( query ) ).all()
-        tool_ids = []
-        for tagged_tool_il in [ tag.tagged_tools for tag in tags ]:
-            for tagged_tool in tagged_tool_il:
-                if tagged_tool.tool_id not in tool_ids:
-                    tool_ids.append( tagged_tool.tool_id )
-        return tool_ids
+    def tool_search( self, trans, **kwd ):
+        query = kwd.get( 'query', '' )
+        tags = util.listify( kwd.get( 'tags[]', [] ) )
+        trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query, "tags" : tags } )
+        results = []
+        if tags:
+            tags = trans.sa_session.query( trans.app.model.Tag ).filter( trans.app.model.Tag.name.in_( tags ) ).all()
+            for tagged_tool_il in [ tag.tagged_tools for tag in tags ]:
+                for tagged_tool in tagged_tool_il:
+                    if tagged_tool.tool_id not in results:
+                        results.append( tagged_tool.tool_id )
+        if len( query ) > 3:
+            search_results = trans.app.toolbox_search.search( query )
+            if 'tags[]' in kwd:
+                results = filter( lambda x: x in results, search_results )
+            else:
+                results = search_results
+        return results
 
     @web.expose
     def tool_help( self, trans, id ):
