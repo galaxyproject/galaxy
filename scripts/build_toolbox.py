@@ -4,8 +4,6 @@ from xml.etree import ElementTree as ET
 
 # Todo: Keep order by "prioritizing" tools in sections
 # Todo: Labels (as lower level sections?)
-# Todo: Some tools are switched "off" by default: it must be possible to "off"
-#       a tool without having to remove it?
 
 def prettify(elem):
     from xml.dom import minidom
@@ -14,7 +12,7 @@ def prettify(elem):
     return repaired.toprettyxml(indent='  ')
 
 # Build a list of all toolconf xml files in the tools directory
-def getfnl(startdir):
+def getfilenamelist(startdir):
     filenamelist = []
     for root, dirs, files in os.walk(startdir):
         for fn in files:
@@ -28,82 +26,144 @@ def getfnl(startdir):
                     print "An OOPS on", fullfn
                     raise
                 rootelement = doc.getroot()
+                # Only interpret those 'tool' XML files that have
+                # the 'section' element.
                 if rootelement.tag == 'tool':
-                    if rootelement.findall('section'):
+                    if rootelement.findall('toolboxposition'):
                         filenamelist.append(fullfn)
+                    else:
+                        print "DBG> tool config does not have a <section>:", fullfn
     return filenamelist
 
-class ToolSections(object):
+class ToolBox(object):
     def __init__(self):
-        self.tools = {'':[]}
-        self.sections = [''] # Empty section first
+        from collections import defaultdict
+        self.tools = defaultdict(list)
+        self.sectionorders = {}
 
-    def add(self, el, sectionelement):
-        if sectionelement is not None:
-            section = str(sectionelement.text)
-            section = section.strip()
+    def add(self, toolelement, toolboxpositionelement):
+        section = toolboxpositionelement.attrib.get('section','')
+        label = toolboxpositionelement.attrib.get('label','')
+        order = int(toolboxpositionelement.attrib.get('order', '0'))
+        sectionorder = int(toolboxpositionelement.attrib.get('sectionorder', '0'))
+
+        # If this is the first time we encounter the section, store its order
+        # number. If we have seen it before, ignore the given order and use
+        # the stored one instead
+        if not self.sectionorders.has_key(section):
+            self.sectionorders[section] = sectionorder
         else:
-            section = ''
-        if not self.tools.has_key(section):
-            self.sections.append(section)
-            self.tools[section]= []
-        self.tools[section].append(el)
+            sectionorder = self.sectionorders[section]
 
-# Analyze all the toolconf xml files given in the filenamelist (fnl)
+        # Sortorder: add intelligent mix to the front
+        self.tools[("%05d-%s"%(sectionorder,section), label, order, section)].append(toolelement)
+
+    def addElementsTo(self, rootelement):
+        toolkeys = self.tools.keys()
+        toolkeys.sort()
+
+        # Initialize the loop: IDs to zero, current section and label to ''
+        currentsection = ''
+        sectionnumber = 0
+        currentlabel = ''
+        labelnumber = 0
+        for toolkey in toolkeys:
+            section = toolkey[3]
+            # If we change sections, add the new section to the XML tree,
+            # and start adding stuff to the new section. If the new section
+            # is '', start adding stuff to the root again.
+            if currentsection != section:
+                currentsection = section
+                # Start the section with empty label
+                currentlabel = ''
+                if section:
+                    sectionnumber += 1
+                    attrib = {'name': section,
+                              'id': "section%d"% sectionnumber}
+                    sectionelement = ET.Element('section', attrib)
+                    rootelement.append(sectionelement)
+                    currentelement = sectionelement
+                else:
+                    currentelement = rootelement
+            label = toolkey[1]
+
+            # If we change labels, add the new label to the XML tree
+            if currentlabel != label:
+                currentlabel = label
+                if label:
+                    labelnumber += 1
+                    attrib = {'text': label,
+                              'id': "label%d"% labelnumber}
+                    labelelement = ET.Element('label', attrib)
+                    currentelement.append(labelelement)
+
+            # Add the tools that are in this place
+            for toolelement in self.tools[toolkey]:
+                currentelement.append(toolelement)
+        
+# Analyze all the toolconf xml files given in the filenamelist 
 # Build a list of all sections
-def scanfiles(fnl):
-    ts = ToolSections()
-    for fn in fnl: # specialized toolconf.xml files.
+def scanfiles(filenamelist):
+    # Build an empty tool box
+    toolbox = ToolBox()
+
+    # Read each of the files in the list
+    for fn in filenamelist: 
         doc = ET.parse(fn)
         root = doc.getroot()
         
         if root.tag == 'tool':
-            tools = [root]
+            toolelements = [root]
         else:
-            tools = doc.findall('tool')
+            toolelements = doc.findall('tool')
             
-        for tool in tools:
-            if tool.attrib.has_key('file'):
+        for toolelement in toolelements:
+            # Figure out where the tool XML file is, absolute path.
+            if toolelement.attrib.has_key('file'):
+                # It is mentioned, we need to make it absolute
                 fileattrib = os.path.join(os.getcwd(),
                                           os.path.dirname(fn),
-                                          tool.attrib['file'])
-            else: # It must be the current file
+                                          toolelement.attrib['file'])
+            else:
+                # It is the current file
                 fileattrib = os.path.join(os.getcwd(), fn)
+
+            # Store the file in the attibutes of the new tool element
             attrib = {'file': fileattrib}
-            tags = tool.find('tags')
+
+            # Add the tags into the attributes
+            tags = toolelement.find('tags')
             if tags:
                 tagarray = []
                 for tag in tags.findall('tag'):
                     tagarray.append(tag.text)
                 attrib['tags'] = ",".join(tagarray)
-            toolelement = ET.Element('tool', attrib)
-            if not 'off' in tagarray:
-                ts.add(toolelement, tool.find('section'))
-    return ts
+            else:
+                print "DBG> No tags in",fn
+
+            # Build the tool element
+            newtoolelement = ET.Element('tool', attrib)
+            toolboxpositionelements = toolelement.findall('toolboxposition')
+            if not toolboxpositionelements:
+                print "DBG> %s has no toolboxposition" % fn
+            else:
+                for toolboxpositionelement in toolboxpositionelements:
+                    toolbox.add(newtoolelement, toolboxpositionelement)
+    return toolbox
 
 def assemble():
-    fnl = getfnl('tools')
-    fnl.sort()
+    filenamelist = []
+    for directorytree in ['tools']:
+        filenamelist.extend(getfilenamelist('tools'))
+    filenamelist.sort()
 
-    ts = scanfiles(fnl)
+    toolbox = scanfiles(filenamelist)
 
-    toolbox = ET.Element('toolbox')
+    toolboxelement = ET.Element('toolbox')
 
-    sectionnumber = 0
-    for section in ts.sections:
-        if section:
-            sectionnumber += 1
-            ident = "section%d" % sectionnumber
-            sectionelement = ET.SubElement(toolbox,'section', {'name': section,
-                                                               'id': ident})
-            puttoolsin = sectionelement
-        else:
-            puttoolsin = toolbox
-        for tool in ts.tools[section]:
-            attrib = tool.attrib
-            toolelement = ET.SubElement(puttoolsin, 'tool', attrib)
-
-    print prettify(toolbox)
+    toolbox.addElementsTo(toolboxelement)
+    
+    print prettify(toolboxelement)
     
 if __name__ == "__main__":
     assemble()
