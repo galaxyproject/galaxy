@@ -18,3 +18,4 @@
 .add-tag-button:hover{cursor:pointer;}
 .tag-input{vertical-align:bottom;border:none;outline:none;resize:none;}
 .delete-tag-img{margin-left:0.3em;}
+.active-tag-name{font-weight:bold;}

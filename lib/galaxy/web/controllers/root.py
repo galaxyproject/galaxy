@@ -54,12 +54,14 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         return trans.app.toolbox_search.search( query )
 
     @web.json
-    def tool_tag_search( self, trans, query ):
-        tag = trans.sa_session.query( trans.app.model.Tag ).filter_by( name=query ).first()
+    def tool_tag_search( self, trans, **kwd ):
+        query = util.listify( kwd.get( 'query[]', [] ) )
+        tags = trans.sa_session.query( trans.app.model.Tag ).filter( trans.app.model.Tag.name.in_( query ) ).all()
         tool_ids = []
-        for tagged_tool in tag.tagged_tools:
-            if tagged_tool.tool_id not in tool_ids:
-                tool_ids.append( tagged_tool.tool_id )
+        for tagged_tool_il in [ tag.tagged_tools for tag in tags ]:
+            for tagged_tool in tagged_tool_il:
+                if tagged_tool.tool_id not in tool_ids:
+                    tool_ids.append( tagged_tool.tool_id )
         return tool_ids
 
     @web.expose

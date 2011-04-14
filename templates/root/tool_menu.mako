@@ -23,9 +23,9 @@
             ##   ${tool.description.replace( '[[', '<a href="link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
             <% tool_id = re.sub( '[^a-z0-9_]', '_', tool.id.lower() ) %>
             %if tool.name:
-                <a class="link-${tool_id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${_(tool.name)}</a> ${tool.description} 
+                <a class="link-${tool_id} tool-link" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${_(tool.name)}</a> ${tool.description} 
             %else:
-                <a class="link-${tool_id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
+                <a class="link-${tool_id} tool-link" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
             %endif
         </div>
     %endif
@@ -234,10 +234,52 @@
 
             }
 
+            var current_tags = new Array();
             function tool_tag_click(tag_name, tag_value) {
-                $.get("${h.url_for( controller='root', action='tool_tag_search' )}", { query: tag_name }, function (data) {
+                var add = true;
+                for ( var i = 0 ; i < current_tags.length ; i++ ) {
+                    if ( current_tags[i] == tag_name ) {
+                        current_tags.splice( i, 1 );
+                        add = false;
+                    }
+                }
+                if ( add ) {
+                    current_tags.push( tag_name );
+                    $("span.tag-name").each( function() {
+                        if ( $(this).text() == tag_name ) {
+                            $(this).addClass("active-tag-name");
+                            $(this).append("<img class='delete-tag-img' src='${h.url_for('/static/images/delete_tag_icon_gray.png')}'/>")
+                        }
+                    });
+                } else {
+                    $("span.tag-name").each( function() {
+                        if ( $(this).text() == tag_name ) {
+                            $(this).removeClass("active-tag-name");
+                            $(this).text(tag_name);
+                        }
+                    });
+                }
+                if ( current_tags.length == 0 ) {
+                    $("#search-no-results").hide();
+                    $(".tool-link").each( function() {
+                        $(this).parent().removeClass("search_match");
+                        if ($(this).parents("#recently_used_wrapper").length === 0) {
+                            // Default behavior.
+                            $(this).parent().show().parent().parent().hide().parent().show();
+                        } else if ($(this).parents(".user_pref_visible").length !== 0) {
+                            // RU menu is visible, so filter it as normal.
+                            $(this).parent().show().parent().parent().show().parent().show();
+                        } else  {
+                            // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
+                            // aleady in place.
+                            $(this).parent().show();
+                        }
+                    });
+                    return;
+                }
+                $.get("${h.url_for( controller='root', action='tool_tag_search' )}", { query: current_tags }, function (data) {
                     // Show live-search if results and search-term aren't empty
-                    //$("#search-no-results").hide();
+                    $("#search-no-results").hide();
                     // Hide all tool sections.
                     $(".toolSectionWrapper").hide();
                     // This hides all tools but not workflows link (which is in a .toolTitle div).
@@ -306,7 +348,7 @@
                 %>
                 <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
                     %if trans.app.config.get_bool( 'enable_tool_tags', False ):
-                        Available Tags:
+                        <b>Tags:</b>
                         ${render_tool_tagging_elements()}
                     %endif
                     <input type="text" name="query" value="search tools" id="tool-search-query" autocomplete="off" style="width: 100%; font-style:italic; font-size: inherit"/>
