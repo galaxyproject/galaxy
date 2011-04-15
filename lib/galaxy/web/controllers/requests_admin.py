@@ -425,17 +425,18 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( scp_configs[ 'user_name' ],
                                                  scp_configs[ 'host' ],
                                                  folder_path )
-        # TODO: this currently requires rsh / ssh keys to be set.  If they are not, the process
-        # hangs.  Add an event that handles the authentication message if keys are not set - the
-        # message is something like: "Are you sure you want to continue connecting (yes/no)."
+        # Handle the authentication message if ssh keys are not set - the message is
+        # something like: "Are you sure you want to continue connecting (yes/no)."
         output = pexpect.run( cmd,
-                              events={ '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
+                              events={ '\(yes\/no\)\.*' : 'yes\r\n',
+                                       '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
                                        pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )
-        if 'Password:\r\n' in output:
+        for password_str in [ 'Password:\r\n', 'password:\r\n' ]:
             # Eliminate the output created using ssh from the tree
-            output = output.replace( 'Password:\r\n', '' )
-        return unicode( output.replace( '\n', '<br/>' ) )
+            if password_str in output:
+                output = output.replace( password_str, '' )
+        return unicode( output.replace( '\r\n', '<br/>' ) )
     @web.json
     def open_folder( self, trans, request_id, external_service_id, key ):
         # Avoid caching
@@ -448,15 +449,16 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         folder_contents = []
         for filename in files_list:
             is_folder = False
-            if filename[-1] == os.sep:
+            if filename and filename[-1] == os.sep:
                 is_folder = True
-            full_path = os.path.join( folder_path, filename )
-            node = { "title": filename,
-                     "isFolder": is_folder,
-                     "isLazy": is_folder,
-                     "tooltip": full_path,
-                     "key": full_path }
-            folder_contents.append( node )
+            if filename:
+                full_path = os.path.join( folder_path, filename )
+                node = { "title": filename,
+                         "isFolder": is_folder,
+                         "isLazy": is_folder,
+                         "tooltip": full_path,
+                         "key": full_path }
+                folder_contents.append( node )
         return folder_contents
     def __get_files( self, trans, request, external_service, folder_path ):
         # Retrieves the filenames to be transferred from the remote host.
@@ -470,11 +472,11 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
         def print_ticks( d ):
             pass
         cmd  = 'ssh %s@%s "ls -p \'%s\'"' % ( scp_configs[ 'user_name' ], scp_configs[ 'host' ], folder_path )
-        # TODO: this currently requires rsh / ssh keys to be set.  If they are not, the process
-        # hangs.  Add an event that handles the authentication message if keys are not set - the
-        # message is something like: "Are you sure you want to continue connecting (yes/no)."
+        # Handle the authentication message if keys are not set - the message is
+        # something like: "Are you sure you want to continue connecting (yes/no)."
         output = pexpect.run( cmd,
-                              events={ '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
+                              events={ '\(yes\/no\)\.*' : 'yes\r\n', 
+                                      '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
                                        pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )
         if 'No such file or directory' in output:
@@ -482,10 +484,9 @@ class RequestsAdmin( BaseController, UsesFormDefinitions ):
             message = "No folder named (%s) exists on the external service." % folder_path
             ok = False
         if ok:
-            if 'Password:' in output:
+            if 'assword:' in output:
                 # Eliminate the output created using ssh from the tree
-                output_as_list = output.splitlines()
-                output_as_list.remove( 'Password:' )
+                output_as_list = output.splitlines()[ 1: ]
             else:
                 output_as_list = output.splitlines()
             return output_as_list
