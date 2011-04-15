@@ -1,9 +1,9 @@
-<tool id="plot_for_lda_output1" name="Draw ROC" version="1.0.1">
-	<description>Receiver Operating Characteristic plot</description>
+<tool id="plot_for_lda_output1" name="Draw ROC plot" version="1.0.1">
+	<description>on "Perform LDA" output</description>
 	<command interpreter="sh">r_wrapper.sh $script_file</command>
 
 	<inputs>
-		<param format="text" name="input" type="data" label="Source file"> </param>
+		<param format="txt" name="input" type="data" label="Source file"> </param>
 		<param name="my_title" size="30" type="text" value="My Figure" label="Title of your plot" help="See syntax below"> </param>
 		<param name="X_axis" size="30" type="text" value="Text for X axis" label="Legend of X axis in your plot" help="See syntax below"> </param>
 		<param name="Y_axis" size="30" type="text" value="Text for Y axis" label="Legend of Y axis in your plot" help="See syntax below"> </param>
@@ -235,7 +235,21 @@
 
 
 	<help>
+.. class:: infomark
 
+**What it does**
+
+This tool generates a Receiver Operating Characteristic (ROC) plot that shows LDA classification success rates for different values of the tuning parameter tau as Figure 3 in Carrel et al., 2006 (PMID: 17009873).
+
+*Carrel L, Park C, Tyekucheva S, Dunn J, Chiaromonte F, et al. (2006) Genomic Environment Predicts Expression Patterns on the Human Inactive X Chromosome. PLoS Genet 2(9): e151. doi:10.1371/journal.pgen.0020151*
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+- Output from "Perform LDA" tool is used as input file for this tool.
 
 </help>
 
