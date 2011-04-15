@@ -846,13 +846,14 @@ var Tool = function(track, tool_dict) {
             name = param_dict.name,
             label = param_dict.label,
             html = unescape(param_dict.html),
+            value = param_dict.value,
             type = param_dict.type;
         if (type === "number") {
             this.params[this.params.length] = 
-                new NumberParameter(name, label, html, param_dict.min, param_dict.max);
+                new NumberParameter(name, label, html, value, param_dict.min, param_dict.max);
         }
         else if (type == "select") {
-            this.params[this.params.length] = new ToolParameter(name, label, html);
+            this.params[this.params.length] = new ToolParameter(name, label, html, value);
         }
         else {
             console.log("WARNING: unrecognized tool parameter type:", name, type);
@@ -881,6 +882,8 @@ var Tool = function(track, tool_dict) {
         // Param HTML.
         // TODO: either generalize .slider CSS attributes or create new rule for tool input div.
         var html_div = $("<div/>").addClass("slider").html(param.html).appendTo(param_div);
+        // Set initial value.
+        html_div.find(":input").val(param.value);
         
         // Add to clear floating layout.
         $("<div style='clear: both;'/>").appendTo(param_div);
@@ -990,14 +993,15 @@ extend(Tool.prototype, {
 /**
  * Tool parameters.
  */
-var ToolParameter = function(name, label, html) {
+var ToolParameter = function(name, label, html, value) {
     this.name = name;
     this.label = label;
     this.html = html;
+    this.value = value;
 };
 
-var NumberParameter = function(name, label, html, min, max) {
-    ToolParameter.call(this, name, label, html)
+var NumberParameter = function(name, label, html, value, min, max) {
+    ToolParameter.call(this, name, label, html, value)
     this.min = min;
     this.max = max;
 };

@@ -42,6 +42,7 @@ def get_tool_def( trans, hda ):
             tool_params.append( param_dict )
         elif type( input ) == SelectToolParameter and type( input.options ) != DynamicOptions:
             tool_params.append( { 'name' : name, 'label' : input.label, 'type' : 'select', \
+                                  'value' : tool_param_values.get( name, None ), \
                                   'html' : urllib.quote( input.get_html() ) } )
         
     # If tool has parameters that can be interactively modified, return tool.
