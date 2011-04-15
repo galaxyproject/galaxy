@@ -165,7 +165,7 @@ import random
 
 wf_parms = {}
 for step in steps:
-    for v in step.state.inputs.itervalues():
+    for v in [ActionBox.get_short_str(pja) for pja in step.post_job_actions] + step.state.inputs.values():
         if isinstance(v, basestring):
             for rematch in re.findall('\$\{.+?\}', v):
                 if rematch[2:-1] not in wf_parms:
