@@ -429,7 +429,7 @@ class ldPlot:
             if not os.path.exists(os.path.join(self.outfpath,mainthumb)):
                 outf.write('<table><tr><td colspan="3"><a href="%s">Main combined LD plot</a></td></tr></table>\n' % (mainpdf))
             else:
-                outf.write('<table><tr><td><a href="%s"><img src="%s" alt="Main combined LD image" hspace="10" align="middle">' % (mainpdf,mainthumb))
+                outf.write('<table><tr><td><a href="%s"><img src="%s" title="Main combined LD image" hspace="10" align="middle">' % (mainpdf,mainthumb))
                 outf.write('</td><td>Click the thumbnail at left to download the main combined LD image <a href=%s>%s</a></td></tr></table>\n' % (mainpdf,mainpdf))
         else:
             outf.write('(No main image was generated - this usually means a Haploview error connecting to Hapmap site - please try later)<br/>\n')
