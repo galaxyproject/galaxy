@@ -27,7 +27,7 @@ div.unified-panel-body{position:absolute;top:2em;bottom:0;width:100%;margin-top:
 .dialog-box-container{position:relative;margin-top:80px;margin-right:auto;margin-left:auto;}
 .dialog-box-wrapper{position:relative;padding:1em;background-color:rgba(0,0,0,0.5);-moz-border-radius:1em;-webkit-border-radius:1em;}
 .dialog-box{border:solid #999 1px;background:white;z-index:80000;}
-.dialog-box .body{padding:5px;overflow:auto;max-height:500px;}
+.dialog-box .body{padding:5px;overflow:auto;max-height:500px;min-width:300px;}
 .dialog-box .buttons{padding:5px;}
 .panel-error-message,.panel-warning-message,.panel-done-message,.panel-info-message{height:24px;line-height:24px;color:#303030;padding:0px;padding-left:26px;background-color:#FFCCCC;background-image:url(error_small.png);background-repeat:no-repeat;background-position:6px 50%;}
 .panel-warning-message{background-image:url(warn_small.png);background-color:#FFFFCC;}

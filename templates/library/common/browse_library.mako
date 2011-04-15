@@ -48,14 +48,14 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("json2", "jstorage")}
+    ${h.js("jstorage")}
     ${common_javascripts()}
     ${self.grid_javascripts()}
 </%def>
 
 <%def name="grid_javascripts()">
     <script type="text/javascript">
-        $(function() {
+        var init_libraries = function() {
             var storage_id = "library-expand-state-${trans.security.encode_id(library.id)}";
             
             var restore_folder_state = function() {
@@ -151,6 +151,9 @@
             });
             
             restore_folder_state();
+        };
+        $(function() {
+            init_libraries();
         });
         
         // Looks for changes in dataset state using an async request. Keeps

@@ -60,7 +60,6 @@ class HistorySelectionGrid( grids.Grid ):
     datasets_param = "f-history"
     columns = [
         NameColumn( "History Name", key="name", filterable="standard" ),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
     num_rows_per_page = 10
@@ -80,8 +79,7 @@ class LibrarySelectionGrid( LibraryListGrid ):
     datasets_action = 'list_library_datasets'
     datasets_param = "f-library"
     columns = [
-        NameColumn( "Library Name", key="name", filterable="standard" ),
-        grids.GridColumn( "Description", key="description" )
+        NameColumn( "Library Name", key="name", filterable="standard" )
     ]
     num_rows_per_page = 10
     use_async = True
@@ -601,7 +599,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         """List a library's datasets that can be added to a visualization."""
         
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( kwargs.get('f-library') ) )
-        return trans.fill_template( '/library/common/browse_library.mako',
+        return trans.fill_template( '/tracks/library_datasets_select_grid.mako',
                                     cntrller="library",
                                     use_panels=False,
                                     library=library,

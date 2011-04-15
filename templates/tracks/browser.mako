@@ -12,7 +12,7 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
 
-    ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom" )}
+    ${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom", "library" )}
 
     <style type="text/css">
         #browser-container {
@@ -55,7 +55,7 @@ ${parent.javascripts()}
   <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
 <![endif]-->
 
-${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
+${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.event.drag", "jquery.mousewheel", "jquery.autocomplete", "trackster", "jquery.ui.sortable.slider", "jquery.scrollTo", "farbtastic" )}
 
 <script type="text/javascript">
 
@@ -148,7 +148,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                                         track_data.name, view, track_data.hda_ldda, track_data.dataset_id,
                                         track_data.prefs, track_data.filters, track_data.tool );
                 view.add_track(new_track);
-                ## Should replace with live event but can't get working
+                // Should replace with live event but can't get working
                 sortable( new_track.container_div, ".draghandle" );
                 view.has_changes = true;
                 $("#no-tracks").hide();
@@ -172,9 +172,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jquery.event.drag", 
                     error: function() { alert( "Grid failed" ); },
                     success: function(table_html) {
                         show_modal(
-                            "Add Track &mdash; Select history/library, then datasets", 
-                            table_html, 
-                            {
+                            "Select datasets for new tracks",
+                            table_html, {
                                 "Cancel": function() {
                                     hide_modal();
                                 },

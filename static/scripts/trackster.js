@@ -155,6 +155,7 @@ var sortable = function( element, handle ) {
         }
     });
 };
+exports.sortable = sortable;
 
 /**
  * Calculates step for slider with a given min, max.
