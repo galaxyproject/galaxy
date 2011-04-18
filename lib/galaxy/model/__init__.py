@@ -21,6 +21,18 @@ log = logging.getLogger( __name__ )
 
 datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
 
+class NoConverterException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class ConverterDependencyException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 def set_datatypes_registry( d_registry ):
     """
     Set up datatypes_registry
@@ -709,14 +721,32 @@ class DatasetInstance( object ):
             if not assoc.deleted and assoc.type == file_type:
                 return assoc.dataset
         return None
+    def get_converted_dataset_deps(self, trans, target_ext):
+        """
+        Returns dict of { "dependency" => HDA }
+        """
+        converted_dataset = self.get_converted_files_by_type( target_ext )
+        # List of string of dependencies
+        try:
+            depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
+        except KeyError:
+            depends_list = []
+        return dict([ (dep, self.get_converted_dataset(trans, dep)) for dep in depends_list ])
     def get_converted_dataset(self, trans, target_ext):
         """
-        Return converted dataset(s) if they exist. If not converted yet, do so and return None (the first time).
-        If unconvertible, raise exception.
+        Return converted dataset(s) if they exist, along with a dict of dependencies.
+        If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
         """
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
             raise ValueError("Conversion from '%s' to '%s' not possible", self.extension, target_ext)
+        
+        deps = {}
+        # List of string of dependencies
+        try:
+            depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
+        except KeyError:
+            depends_list = []
         
         # See if converted dataset already exists
         converted_dataset = self.get_converted_files_by_type( target_ext )
@@ -725,20 +755,22 @@ class DatasetInstance( object ):
         
         # Conversion is possible but hasn't been done yet, run converter.
         # Check if we have dependencies
-        deps = {}
+        
         try:
-            fail_dependencies = False
-            depends_on = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
-            for dependency in depends_on:
+            for dependency in depends_list:
                 dep_dataset = self.get_converted_dataset(trans, dependency)
-                if dep_dataset is None or dep_dataset.state != trans.app.model.Job.states.OK:
-                    fail_dependencies = True
-                else:
-                    deps[dependency] = dep_dataset
-            if fail_dependencies:
-                return None
+                if dep_dataset is None:
+                    # None means converter is running first time
+                    return None
+                elif dep_dataset.state == trans.app.model.Job.states.ERROR:
+                    raise ConverterDependencyException("A dependency (%s) was in an error state." % dependency)
+                elif dep_dataset.state != trans.app.model.Job.states.OK:
+                    # Pending
+                    return None                    
+                
+                deps[dependency] = dep_dataset
         except ValueError:
-            raise ValueError("A dependency could not be converted.")
+            raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass # No deps
             

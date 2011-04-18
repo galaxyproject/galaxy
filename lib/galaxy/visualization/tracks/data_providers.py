@@ -21,7 +21,7 @@ from galaxy.datatypes.tabular import Vcf
 from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import parse_gff_attributes
 
-from pysam import csamtools
+from pysam import csamtools, ctabix
 
 MAX_VALS = 5000 # only display first MAX_VALS features
 ERROR_MAX_VALS = "Only the first " + str(MAX_VALS) + " %s in this tile are displayed."
@@ -45,10 +45,11 @@ class TracksDataProvider( object ):
     """
     col_name_data_attr_mapping = {}
     
-    def __init__( self, converted_dataset=None, original_dataset=None ):
+    def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None ):
         """ Create basic data provider. """
         self.converted_dataset = converted_dataset
         self.original_dataset = original_dataset
+        self.dependencies = dependencies
         
     def write_data_to_file( self, chrom, start, end, filename ):
         """
@@ -419,36 +420,27 @@ class ArrayTreeDataProvider( TracksDataProvider ):
         f.close()
         return results
         
-class BigWigDataProvider( TracksDataProvider ):
+class BBIDataProvider( TracksDataProvider ):
     """
-    BigWig data provider for the Galaxy track browser. 
+    BBI data provider for the Galaxy track browser. 
     """
-    def _get_dataset( self ):
-        if self.converted_dataset is not None:
-            f = open( self.converted_dataset.file_name )
-        else:
-            f = open( self.original_dataset.file_name )
-        return f
-        
     def valid_chroms( self ):
         # No way to return this info as of now
         return None
         
     def has_data( self, chrom ):
-        f = self._get_dataset()
-        bw = BigWigFile(file=f)
-        all_dat = bw.query(chrom, 0, 2147483647, 1)
+        f, bbi = self._get_dataset()
+        all_dat = bbi.query(chrom, 0, 2147483647, 1)
         f.close()
         return all_dat is not None
         
     def get_data( self, chrom, start, end, **kwargs ):
         # Bigwig has the possibility of it being a standalone bigwig file, in which case we use
         # original_dataset, or coming from wig->bigwig conversion in which we use converted_dataset
-        f = self._get_dataset()
-        bw = BigWigFile(file=f)
+        f, bbi = self._get_dataset()
         
         if 'stats' in kwargs:
-            all_dat = bw.query(chrom, 0, 2147483647, 1)
+            all_dat = bbi.query(chrom, 0, 2147483647, 1)
             f.close()
             if all_dat is None:
                 return None
@@ -464,7 +456,7 @@ class BigWigDataProvider( TracksDataProvider ):
         if (end - start) < num_points:
             num_points = end - start
 
-        data = bw.query(chrom, start, end, num_points)
+        data = bbi.query(chrom, start, end, num_points)
         f.close()
         
         pos = start
@@ -476,6 +468,20 @@ class BigWigDataProvider( TracksDataProvider ):
                 pos += step_size
             
         return result
+
+class BigBedDataProvider( BBIDataProvider ):
+    def _get_dataset( self ):
+        # Nothing converts to bigBed so we don't consider converted dataset
+        f = open( self.original_dataset.file_name )
+        return f, BigBedFile(file=f)
+
+class BigWigDataProvider (BBIDataProvider ):
+    def _get_dataset( self ):
+        if self.converted_dataset is not None:
+            f = open( self.converted_dataset.file_name )
+        else:
+            f = open( self.original_dataset.file_name )
+        return f, BigWigFile(file=f)
 
 class IntervalIndexDataProvider( TracksDataProvider ):
     """
@@ -557,10 +563,25 @@ class IntervalIndexDataProvider( TracksDataProvider ):
         
         return filters
         
+class TabixDataProvider( IntervalIndexDataProvider ):
+    """
+    Tabix index data provider for the Galaxy track browser.
+
+    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
+    """
+
     def get_data( self, chrom, start, end, **kwargs ):
+        if end >= 2<<29:
+            end = (2<<29 - 1) # Tabix-enforced maximum
         start, end = int(start), int(end)
-        source = open( self.original_dataset.file_name )
-        index = Indexes( self.converted_dataset.file_name )
+        
+        # {'bgzip': (<galaxy.model.HistoryDatasetAssociation object at 0x85fbe90>, {})}
+        bgzip_fname = self.dependencies['bgzip'].file_name
+        
+        # if os.path.getsize(self.converted_dataset.file_name) == 0:
+            # return { 'kind': messages.ERROR, 'message': "Tabix converted size was 0, meaning the input file had invalid values." }
+        tabix = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
+        
         results = []
         count = 0
         message = None
@@ -569,7 +590,7 @@ class IntervalIndexDataProvider( TracksDataProvider ):
         # characters (e.g. 'chr') and see if that works. This enables the
         # provider to handle chrome names defined as chrXXX and as XXX.
         chrom = str(chrom)
-        if chrom not in index.indexes and chrom[3:] in index.indexes:
+        if chrom not in tabix.contigs and ("chr" + chrom[3:]) in tabix.contigs:
             chrom = chrom[3:]
 
         #
@@ -581,12 +602,12 @@ class IntervalIndexDataProvider( TracksDataProvider ):
         #
         filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
-        for start, end, offset in index.find(chrom, start, end):
+        
+        for line in tabix.fetch(reference=chrom, start=start, end=end):
             if count >= MAX_VALS:
                 message = ERROR_MAX_VALS % "features"
                 break
             count += 1
-            source.seek( offset )
             # TODO: can we use column metadata to fill out payload?
             # TODO: use function to set payload data
             if isinstance( self.original_dataset.datatype, Gff ):
@@ -597,35 +618,38 @@ class IntervalIndexDataProvider( TracksDataProvider ):
                 payload.insert( 0, offset )
             elif isinstance( self.original_dataset.datatype, Bed ):
                 # BED dataset.
-                payload = [ offset, start, end ]
-                if not no_detail:
-                    feature = source.readline().split()
-                    length = len(feature)
-                    
-                    # Simpler way to add stuff, but type casting is not done.
-                    # Name, score, strand, thick start, thick end.
-                    #end = min( len( feature ), 8 )
-                    #payload.extend( feature[ 3:end ] )
-                    
-                    # Name, strand, thick start, thick end.
-                    if length >= 4:
-                        payload.append(feature[3])
-                    if length >= 6:
-                        payload.append(feature[5])
-                    if length >= 8:
-                        payload.append(int(feature[6]))
-                        payload.append(int(feature[7]))
+                feature = line.split()
+                length = len(feature)
+                payload = [ feature[1]+"-"+feature[2]+":"+str(count), int(feature[1]), int(feature[2]) ]
+                
+                if no_detail:
+                    results.append( payload )
+                    continue
+                
+                # Simpler way to add stuff, but type casting is not done.
+                # Name, score, strand, thick start, thick end.
+                #end = min( len( feature ), 8 )
+                #payload.extend( feature[ 3:end ] )
+                
+                # Name, strand, thick start, thick end.
+                if length >= 4:
+                    payload.append(feature[3])
+                if length >= 6:
+                    payload.append(feature[5])
+                if length >= 8:
+                    payload.append(int(feature[6]))
+                    payload.append(int(feature[7]))
 
-                    # Blocks.
-                    if length >= 12:
-                        block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
-                        block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
-                        blocks = zip( block_sizes, block_starts )
-                        payload.append( [ ( start + block[1], start + block[1] + block[0] ) for block in blocks ] )
-                    
-                    # Score (filter data)    
-                    if length >= 5 and filter_cols and filter_cols[0] == "Score":
-                        payload.append( float(feature[4]) )
+                # Blocks.
+                if length >= 12:
+                    block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
+                    block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
+                    blocks = zip( block_sizes, block_starts )
+                    payload.append( [ ( int(feature[1]) + block[1], int(feature[1]) + block[1] + block[0] ) for block in blocks ] )
+                
+                # Score (filter data)    
+                if length >= 5 and filter_cols and filter_cols[0] == "Score":
+                    payload.append( float(feature[4]) )
                     
             results.append( payload )
 
@@ -671,10 +695,12 @@ class GFFDataProvider( TracksDataProvider ):
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
     "array_tree": ArrayTreeDataProvider,
+    "tabix": TabixDataProvider,
     "interval_index": { "vcf": VcfDataProvider, "default" : IntervalIndexDataProvider },
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider,
-    "bigwig": BigWigDataProvider
+    "bigwig": BigWigDataProvider,
+    "bigbed": BigBedDataProvider
 }
 
 dataset_type_to_data_provider = {

@@ -14,7 +14,8 @@
         <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
             <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
             <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
-            <converter file="bed_to_interval_index_converter.xml" target_datatype="interval_index"/>
+            <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
+            <converter file="bed_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
             <converter file="bed_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
             <!-- <display file="ucsc/interval_as_bed.xml" /> -->
             <display file="genetrack.xml" />
@@ -131,6 +132,7 @@
         <datatype extension="summary_tree" type="galaxy.datatypes.data:Data" />
         <datatype extension="interval_index" type="galaxy.datatypes.data:Data" />
         <datatype extension="tabix" type="galaxy.datatypes.data:Data" />
+        <datatype extension="bgzip" type="galaxy.datatypes.data:Data" />
         <!-- Start EMBOSS tools -->
         <datatype extension="acedb" type="galaxy.datatypes.data:Text"/>
         <datatype extension="asn1" type="galaxy.datatypes.data:Text"/>

@@ -14,7 +14,7 @@ from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
 from galaxy.datatypes.interval import Gff
-
+from galaxy.model import NoConverterException, ConverterDependencyException
 from galaxy.visualization.tracks.data_providers import *
 from galaxy.visualization.tracks.visual_analytics import get_tool_def, get_dataset_job
 
@@ -458,7 +458,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Check for data in the genome window.
         if data_sources.get( 'index' ):
             tracks_dataset_type = data_sources['index']['name']
-            indexer = get_data_provider( tracks_dataset_type )( dataset.get_converted_dataset( trans, tracks_dataset_type ), dataset )
+            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
+            indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
             if not indexer.has_data( chrom ):
                 return messages.NO_DATA
             valid_chroms = indexer.valid_chroms()
@@ -505,7 +506,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             # 
             # Have to choose between indexer and data provider
             tracks_dataset_type = data_sources['index']['name']
-            indexer = get_data_provider( tracks_dataset_type )( dataset.get_converted_dataset( trans, tracks_dataset_type ), dataset )
+            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
+            indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
             summary = indexer.get_summary( chrom, low, high, **kwargs )
             if summary is None:
                 return { 'dataset_type': tracks_dataset_type, 'data': None }
@@ -525,7 +527,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         else:
             tracks_dataset_type = data_sources['data']['name']
             data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
-            data_provider = data_provider_class( dataset.get_converted_dataset(trans, tracks_dataset_type), dataset )
+            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
+            deps = dataset.get_converted_dataset_deps( trans, tracks_dataset_type )
+            data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
         data = data_provider.get_data( chrom, low, high, **kwargs )
@@ -724,6 +728,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 track_type, data_sources = input_dataset.datatype.get_track_type()
                 data_source = data_sources[ 'data' ]
                 converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
+                deps = input_dataset.get_converted_dataset_deps( trans, data_source )
                             
                 #
                 # Create new HDA for input dataset's subset.
@@ -742,7 +747,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 # Write subset of data to new dataset
                 data_provider_class = get_data_provider( original_dataset=input_dataset )
                 data_provider = data_provider_class( original_dataset=input_dataset, 
-                                                     converted_dataset=converted_dataset )
+                                                     converted_dataset=converted_dataset,
+                                                     deps=deps )
                 data_provider.write_data_to_file( chrom, low, high, new_dataset.file_name )
             
                 # TODO: size not working.
@@ -828,9 +834,11 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # necessary.
         try:
             converted_dataset = dataset.get_converted_dataset( trans, target_type )
-        except ValueError:
+        except NoConverterException:
             return messages.NO_CONVERTER
-
+        except ConverterDependencyException, dep_error:
+            return { 'kind': messages.ERROR, 'message': dep_error.value }
+            
         # Check dataset state and return any messages.
         msg = None
         if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:

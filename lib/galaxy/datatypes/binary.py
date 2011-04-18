@@ -288,3 +288,7 @@ class BigBed(BigWig):
         Binary.__init__( self, **kwd )
         self._magic = 0x8789F2EB
         self._name = "BigBed"
+        
+    def get_track_type( self ):
+        return "LineTrack", {"data_standalone": "bigbed"}
+
