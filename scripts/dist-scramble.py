@@ -34,10 +34,11 @@ failed = []
 for egg in eggs:
     try:
         for dependency in egg.dependencies:
-            print "Checking %s dependency: %s" % ( egg.name, dependency )
+            print "Checking %s on %s dependency: %s" % ( egg.name, egg.platform, dependency )
             # this could be in a better data structure...
             dep = filter( lambda x: x.platform == egg.platform, c[dependency] )[0]
-            dep.resolve()
+            if not os.path.exists( dep.distribution.location ):
+                dep.fetch( dep.distribution.as_requirement() )
     except EggNotFetchable, e:
         degg = e.eggs[0]
         print "%s build dependency %s %s %s couldn't be" % ( egg.name, degg.name, degg.version, degg.platform )
