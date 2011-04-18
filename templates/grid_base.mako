@@ -631,9 +631,11 @@
         }
         .page-link a, .inactive-link {
             padding: 0px 7px 0px 7px;
+            color: #555;
         }
         .inactive-link, .current-filter {
-            font-style: italic;
+            font-weight: bold;
+            color: #000;
         }
         .submit-image {
             background: url(${h.url_for('/static/images/fugue/magnifier-left.png')}) no-repeat right transparent;
@@ -976,6 +978,9 @@
                                 min_page = 1
                     %>
                     Page:
+                    % if min_page > 1:
+                        <span class='page-link'><a href="${url( page=1 )}" page_num="1">1</a></span> ...
+                    % endif
                     %for page_index in range(min_page, max_page + 1):
                         %if page_index == cur_page_num:
                             <span class='page-link inactive-link' id="page-link-${page_index}">${page_index}</span>
@@ -984,16 +989,14 @@
                             <span class='page-link' id="page-link-${page_index}"><a href="${url( args )}" page_num='${page_index}'>${page_index}</a></span>
                         %endif
                     %endfor
-                    %if max_page != num_pages:
+                    %if max_page < num_pages:
                         ...
+                        <span class='page-link'><a href="${url( page=num_pages )}" page_num="${num_pages}">${num_pages}</a></span>
                     %endif
                 </span>
                 
-                ## First, last, all links.
-                |
-                <span class='page-link'><a href="${url( page=1 )}" page_num="1">First</a></span>
-                <span class='page-link'><a href="${url( page=num_pages )}" page_num="${num_pages}">Last</a></span>
-                <span class='page-link' id='show-all-link-span'><a href="${url( page='all' )}" page_num="all">All</a></span>
+                ## Show all link
+                <span class='page-link' id='show-all-link-span'> | <a href="${url( page='all' )}" page_num="all">Show All</a></span>
             </td>
         </tr>    
     %endif

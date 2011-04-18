@@ -28,6 +28,9 @@ ${grid_javascripts()}
         });
     </script>
     <style>
+        .dialog-box .body {
+            overflow-x: hidden;
+        }
         .addtracktab {
             margin: 0px 5px;
             padding: 5px;
@@ -36,6 +39,7 @@ ${grid_javascripts()}
             text-align: center;
             float: left;
             background-color: #ccc;
+            border: 1px solid #ccc;
             border-bottom: 0px;
             -webkit-border-top-left-radius: 10px;
             -webkit-border-top-right-radius: 10px;
