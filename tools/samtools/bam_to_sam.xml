@@ -1,4 +1,4 @@
-<tool id="bam_to_sam" name="BAM-to-SAM" version="1.0.1">
+<tool id="bam_to_sam" name="BAM-to-SAM" version="1.0.2">
   <requirements>
     <requirement type="package">samtools</requirement>
   </requirements>
@@ -7,9 +7,11 @@
     bam_to_sam.py
       --input1=$input1
       --output1=$output1
+      $header
   </command>
   <inputs>
     <param name="input1" type="data" format="bam" label="BAM File to Convert" />
+    <param name="header" type="boolean" truevalue="--header" falsevalue="" checked="False" label="Include header in output" />
   </inputs>
   <outputs>
     <data format="sam" name="output1" label="${tool.name} on ${on_string}: converted SAM" />
@@ -22,6 +24,7 @@
       -->
       <param name="input1" value="1.bam" ftype="bam" />
       <output name="output1" file="bam_to_sam_out1.sam" sorted="True" />
+      <param name="header" value="" />
     </test>
     <test>
       <!--
@@ -30,6 +33,16 @@
       -->
       <param name="input1" value="3unsorted.bam" ftype="bam" />
       <output name="output1" file="bam_to_sam_out2.sam" sorted="True" />
+      <param name="header" value="" />
+    </test>
+    <test>
+      <!--
+      Bam-to-Sam command:
+      samtools view -h -o bam_to_sam_out1.sam test-data/1.bam
+      -->
+      <param name="input1" value="1.bam" ftype="bam" />
+      <output name="output1" file="bam_to_sam_out3.sam" sorted="True" />
+      <param name="header" value="True" />
     </test>
   </tests>
   <help>
