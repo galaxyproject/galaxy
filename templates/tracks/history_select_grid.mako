@@ -12,7 +12,7 @@ ${grid_javascripts()}
     <script type="text/javascript">
         // Handle all label clicks.
         var f = function() {
-            $(".addtracktab, #grid-table-body a").click(function() {
+            $(".addtracktab, #grid-table a").click(function() {
                 var parent_body = $(".divider").parent();
                 if (parent_body.length !== 0) {
                     parent_body.load($(this).attr("href"));

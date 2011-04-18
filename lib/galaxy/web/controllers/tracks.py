@@ -60,6 +60,7 @@ class HistorySelectionGrid( grids.Grid ):
     datasets_param = "f-history"
     columns = [
         NameColumn( "History Name", key="name", filterable="standard" ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
     num_rows_per_page = 10
