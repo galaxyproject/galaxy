@@ -1,4 +1,4 @@
-<tool id="ncbi_blastp_wrapper" name="NCBI BLAST+ blastp" version="0.0.9">
+<tool id="ncbi_blastp_wrapper" name="NCBI BLAST+ blastp" version="0.0.10">
     <description>Search protein database with protein query sequence(s)</description>
     <command interpreter="python">hide_stderr.py
 ## The command is a Cheetah template which allows some Python based syntax.
@@ -17,7 +17,7 @@ blastp
 #if str($out_format)=="ext":
     -outfmt "6 std sallseqid score nident positive gaps ppos qframe sframe qseq sseq qlen slen"
 #else:
-    -outfmt "$out_format"
+    -outfmt $out_format
 #end if
 -num_threads 8
 #if $adv_opts.adv_opts_selector=="advanced":
