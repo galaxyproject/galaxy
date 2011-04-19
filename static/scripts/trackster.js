@@ -2864,6 +2864,20 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
 
 var LinePainter = function( data, view_start, view_end, prefs, mode ) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
+    if ( this.prefs.min_value === undefined ) {
+        var min_value = Infinity;
+        for (var i = 0, len = this.data.length; i < len; i++) {
+            min_value = Math.min( min_value, this.data[i][1] );
+        }
+        this.prefs.min_value = min_value;
+    }
+    if ( this.prefs.max_value === undefined ) {
+        var max_value = -Infinity;
+        for (var i = 0, len = this.data.length; i < len; i++) {
+            max_value = Math.max( max_value, this.data[i][1] );
+        }
+        this.prefs.max_value = max_value;
+    }
 };
 
 LinePainter.prototype.default_prefs = { min_value: undefined, max_value: undefined, mode: "Histogram", color: "#000", overflow_color: "#F66" };
