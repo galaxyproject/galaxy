@@ -188,6 +188,21 @@ $adv_opts.parse_deflines
             <param name="parse_deflines" value="true" />
             <output name="output1" file="tblastn_four_human_vs_rhodopsin.tabular" ftype="tabular" />
         </test>
+        <test>
+            <param name="query" value="four_human_proteins.fasta" ftype="fasta" />
+            <param name="db_opts_selector" value="file" />
+            <param name="subject" value="rhodopsin_nucs.fasta" ftype="fasta" />
+            <param name="database" value="" />
+            <param name="evalue_cutoff" value="1e-10" />
+            <param name="out_format" value="0 -html" />
+            <param name="adv_opts_selector" value="advanced" />
+            <param name="filter_query" value="false" />
+            <param name="matrix" value="BLOSUM80" />
+            <param name="max_hits" value="0" />
+            <param name="word_size" value="0" />
+            <param name="parse_deflines" value="false" />
+            <output name="output1" file="tblastn_four_human_vs_rhodopsin.html" ftype="html" />
+        </test>
     </tests>
     <help>
     
