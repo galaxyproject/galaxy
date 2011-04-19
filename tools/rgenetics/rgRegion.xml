@@ -22,7 +22,7 @@
    </inputs>
 
    <outputs>  
-       <data format="lped" name="out_file1" label="${title}.lped" metadata_source=infile />
+       <data format="lped" name="out_file1" label="${title}.lped" metadata_source="infile" />
    </outputs>
 <help>
 

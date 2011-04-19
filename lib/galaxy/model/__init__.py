@@ -2272,6 +2272,16 @@ class StoredWorkflowTagAssociation ( ItemTagAssociation ):
 class VisualizationTagAssociation ( ItemTagAssociation ):
     pass
     
+class ToolTagAssociation( ItemTagAssociation ):
+    def __init__( self, id=None, user=None, tool_id=None, tag_id=None, user_tname=None, value=None ):
+        self.id = id
+        self.user = user
+        self.tool_id = tool_id
+        self.tag_id = tag_id
+        self.user_tname = user_tname
+        self.value = None
+        self.user_value = None
+
 # Item annotation classes.
     
 class HistoryAnnotationAssociation( object ):

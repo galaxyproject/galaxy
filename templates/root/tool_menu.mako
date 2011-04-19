@@ -2,6 +2,8 @@
     import re
 %>
 
+<%namespace file="/tagging_common.mako" import="render_tool_tagging_elements" />
+
 ## Render a tool
 <%def name="render_tool( tool, section )">
     %if not tool.hidden:
@@ -21,9 +23,9 @@
             ##   ${tool.description.replace( '[[', '<a href="link" target="galaxy_main">' % $tool.id ).replace( "]]", "</a>" )
             <% tool_id = re.sub( '[^a-z0-9_]', '_', tool.id.lower() ) %>
             %if tool.name:
-                <a class="link-${tool_id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${_(tool.name)}</a> ${tool.description} 
+                <a class="link-${tool_id} tool-link" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${_(tool.name)}</a> ${tool.description} 
             %else:
-                <a class="link-${tool_id}" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
+                <a class="link-${tool_id} tool-link" href="${link}" target=${tool.target} minsizehint="${tool.uihints.get( 'minwidth', -1 )}">${tool.description}</a>
             %endif
         </div>
     %endif
@@ -55,9 +57,10 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
         <link href="${h.url_for('/static/style/tool_menu.css')}" rel="stylesheet" type="text/css" />
+        <link href="${h.url_for('/static/style/autocomplete_tagging.css')}" rel="stylesheet" type="text/css" />
 
         ##<script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-        ${h.js( "jquery", "galaxy.base", "json2" )}
+        ${h.js( "jquery", "galaxy.base", "json2", "autocomplete_tagging" )}
 
         <script type="text/javascript">
             // Set up GalaxyAsync object.
@@ -111,9 +114,16 @@
                     // Remove italics.
                     $(this).css("font-style", "normal");
                     
-                    // Don't update if same value as last time
-                    if ( this.value.length < 3 ) {
+                    // Don't search if the search value is < 3 chars, but clear the search if there was a previous query
+                    if ( this.value.length < 3 && this.lastValue && this.lastValue.length >= 3 ) {
                         reset_tool_search(false);
+                        // Re-apply tags
+                        if ( current_tags.length > 0 ) {
+                            $.get("${h.url_for( controller='root', action='tool_search' )}", { query: "", tags: current_tags }, function (data) {
+                                apply_search_results(data);
+                            }, "json" );
+                        }
+                    // Don't update if same value as last time
                     } else if ( this.value !== this.lastValue ) {
                         // Add class to denote that searching is active.
                         $(this).addClass("search_active");
@@ -127,63 +137,83 @@
                         // Start a new ajax-request in X ms
                         $("#search-spinner").show();
                         this.timer = setTimeout(function () {
-                            $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q }, function (data) {
-                                // input.removeClass(config.loadingClass);
-                                // Show live-search if results and search-term aren't empty
-                                $("#search-no-results").hide();
-                                // Hide all tool sections.
-                                $(".toolSectionWrapper").hide();
-                                // This hides all tools but not workflows link (which is in a .toolTitle div).
-                                $(".toolSectionWrapper").find(".toolTitle").hide();
-                                if ( data.length !== 0 ) {
-                                    // Map tool ids to element ids and join them.
-                                    var s = $.map( data, function( n, i ) { return ".link-" + n.toLowerCase().replace(/[^a-z0-9_]/g,'_'); } ).join( ", " );
-
-                                    // First pass to show matching tools and their parents.
-                                    $(s).each( function() {
-                                        // Add class to denote match.
-                                        $(this).parent().addClass("search_match");
-                                        if ($(this).parents("#recently_used_wrapper").length === 0) {
-                                            // Default behavior.
-                                            $(this).parent().show().parent().parent().show().parent().show();
-                                        } else if ($(this).parents(".user_pref_visible").length !== 0) {
-                                            // RU menu is visible, so filter it as normal.
-                                            $(this).parent().show().parent().parent().show().parent().show();
-                                        } else  {
-                                            // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
-                                            // aleady in place.
-                                            $(this).parent().show();
-                                        }
-                                    });
-                                    
-                                    // Hide labels that have no visible children.
-                                    $(".toolPanelLabel").each( function() {
-                                        var this_label = $(this);                                   
-                                        var next = this_label.next();
-                                        var no_visible_tools = true;
-                                        // Look through tools following label and, if none are visible, hide label.
-                                        while (next.length !== 0 && next.hasClass("toolTitle")) {
-                                            if (next.is(":visible")) {
-                                                no_visible_tools = false;
-                                                break;
-                                            } else {
-                                                next = next.next();
-                                            }
-                                        }
-                                        if (no_visible_tools) {
-                                            this_label.hide();
-                                        }
-                                    });
-                                } else {
-                                    $("#search-no-results").show();
-                                }
+                            $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q, tags: current_tags }, function (data) {
+                                apply_search_results(data);
                                 $("#search-spinner").hide();
                             }, "json" );
                         }, 200 );
                     }
                     this.lastValue = this.value;
                 });                
+
+                // Apply stored tags
+                %if trans.user and trans.user.preferences.get( 'selected_tool_tags', '' ):
+                    current_tags = "${trans.user.preferences['selected_tool_tags']}".split(",")
+                    $.get("${h.url_for( controller='root', action='tool_search' )}", { query: "", tags: current_tags }, function (data) {
+                        apply_search_results(data);
+                    }, "json" );
+                    $("span.tag-name").each( function() {
+                        for ( var i in current_tags ) {
+                            if ( $(this).text() == current_tags[i] ) {
+                                $(this).addClass("active-tag-name");
+                                $(this).append("<img class='delete-tag-img' src='${h.url_for('/static/images/delete_tag_icon_gray.png')}'/>")
+                            }
+                        }
+                    });
+                %endif
             });            
+
+            var apply_search_results = function (data) {
+                // input.removeClass(config.loadingClass);
+                // Show live-search if results and search-term aren't empty
+                $("#search-no-results").hide();
+                // Hide all tool sections.
+                $(".toolSectionWrapper").hide();
+                // This hides all tools but not workflows link (which is in a .toolTitle div).
+                $(".toolSectionWrapper").find(".toolTitle").hide();
+                if ( data.length !== 0 ) {
+                    // Map tool ids to element ids and join them.
+                    var s = $.map( data, function( n, i ) { return ".link-" + n.toLowerCase().replace(/[^a-z0-9_]/g,'_'); } ).join( ", " );
+
+                    // First pass to show matching tools and their parents.
+                    $(s).each( function() {
+                        // Add class to denote match.
+                        $(this).parent().addClass("search_match");
+                        if ($(this).parents("#recently_used_wrapper").length === 0) {
+                            // Default behavior.
+                            $(this).parent().show().parent().parent().show().parent().show();
+                        } else if ($(this).parents(".user_pref_visible").length !== 0) {
+                            // RU menu is visible, so filter it as normal.
+                            $(this).parent().show().parent().parent().show().parent().show();
+                        } else  {
+                            // RU menu is not visible, so set up classes and visibility so that if menu shown matching is 
+                            // aleady in place.
+                            $(this).parent().show();
+                        }
+                    });
+                    
+                    // Hide labels that have no visible children.
+                    $(".toolPanelLabel").each( function() {
+                        var this_label = $(this);                                   
+                        var next = this_label.next();
+                        var no_visible_tools = true;
+                        // Look through tools following label and, if none are visible, hide label.
+                        while (next.length !== 0 && next.hasClass("toolTitle")) {
+                            if (next.is(":visible")) {
+                                no_visible_tools = false;
+                                break;
+                            } else {
+                                next = next.next();
+                            }
+                        }
+                        if (no_visible_tools) {
+                            this_label.hide();
+                        }
+                    });
+                } else {
+                    $("#search-no-results").show();
+                }
+            }
 
             // Update recently used tools menu. Function inserts a new item and removes the last item.
             function update_recently_used() {
@@ -228,7 +258,52 @@
                         }
                     }
                 });                
+
             }
+
+            var current_tags = new Array();
+            function tool_tag_click(tag_name, tag_value) {
+                var add = true;
+                for ( var i = 0 ; i < current_tags.length ; i++ ) {
+                    if ( current_tags[i] == tag_name ) {
+                        current_tags.splice( i, 1 );
+                        add = false;
+                    }
+                }
+                if ( add ) {
+                    current_tags.push( tag_name );
+                    $("span.tag-name").each( function() {
+                        if ( $(this).text() == tag_name ) {
+                            $(this).addClass("active-tag-name");
+                            $(this).append("<img class='delete-tag-img' src='${h.url_for('/static/images/delete_tag_icon_gray.png')}'/>")
+                        }
+                    });
+                } else {
+                    $("span.tag-name").each( function() {
+                        if ( $(this).text() == tag_name ) {
+                            $(this).removeClass("active-tag-name");
+                            $(this).text(tag_name);
+                        }
+                    });
+                }
+                if ( current_tags.length == 0 ) {
+                    $("#search-no-results").hide();
+                    $(".tool-link").each( function() {
+                        reset_tool_search(false);
+                    });
+                    return;
+                }
+                var q = $("input#tool-search-query").val();
+                if ( q == "search tools" ) {
+                    q = "";
+                } else if ( q.length > 0 ) {
+                    q = q + '*';
+                }
+                $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q, tags: current_tags }, function (data) {
+                    apply_search_results(data);
+                }, "json" );
+            }
+
         </script>
     </head>
 
@@ -246,6 +321,12 @@
                     else:
                         display = "none"
                 %>
+                %if trans.app.config.get_bool( 'enable_tool_tags', False ):
+                    <div id="tool-tags" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
+                        <b>Tags:</b>
+                        ${render_tool_tagging_elements()}
+                    </div>
+                %endif
                 <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
                     <input type="text" name="query" value="search tools" id="tool-search-query" autocomplete="off" style="width: 100%; font-style:italic; font-size: inherit"/>
                     <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>

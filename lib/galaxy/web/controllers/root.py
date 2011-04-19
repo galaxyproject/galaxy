@@ -49,9 +49,30 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             return trans.fill_template('/root/tool_menu.mako', toolbox=toolbox, recent_tools=recent_tools )
 
     @web.json
-    def tool_search( self, trans, query ):
-        trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query } )
-        return trans.app.toolbox_search.search( query )
+    def tool_search( self, trans, **kwd ):
+        query = kwd.get( 'query', '' )
+        tags = util.listify( kwd.get( 'tags[]', [] ) )
+        trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query, "tags" : tags } )
+        results = []
+        if tags:
+            tags = trans.sa_session.query( trans.app.model.Tag ).filter( trans.app.model.Tag.name.in_( tags ) ).all()
+            for tagged_tool_il in [ tag.tagged_tools for tag in tags ]:
+                for tagged_tool in tagged_tool_il:
+                    if tagged_tool.tool_id not in results:
+                        results.append( tagged_tool.tool_id )
+            if trans.user:
+                trans.user.preferences['selected_tool_tags'] = ','.join( [ tag.name for tag in tags ] )
+                trans.sa_session.flush()
+        elif trans.user:
+            trans.user.preferences['selected_tool_tags'] = ''
+            trans.sa_session.flush()
+        if len( query ) > 2:
+            search_results = trans.app.toolbox_search.search( query )
+            if 'tags[]' in kwd:
+                results = filter( lambda x: x in results, search_results )
+            else:
+                results = search_results
+        return results
 
     @web.expose
     def tool_help( self, trans, id ):

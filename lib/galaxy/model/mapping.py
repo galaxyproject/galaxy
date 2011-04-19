@@ -851,6 +851,15 @@ VisualizationTagAssociation.table = Table( "visualization_tag_association", meta
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
     
+ToolTagAssociation.table = Table( "tool_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "tool_id", TrimmedString(255), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True),
+    Column( "value", TrimmedString(255), index=True),
+    Column( "user_value", TrimmedString(255), index=True) )
+ 
 # Annotation tables.
 
 HistoryAnnotationAssociation.table = Table( "history_annotation_association", metadata,
@@ -1573,6 +1582,10 @@ assign_mapper( context, WorkflowStepTagAssociation, WorkflowStepTagAssociation.t
                     
 assign_mapper( context, VisualizationTagAssociation, VisualizationTagAssociation.table,
     properties=dict( tag=relation(Tag, backref="tagged_visualizations"), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, ToolTagAssociation, ToolTagAssociation.table,
+    properties=dict( tag=relation(Tag, backref="tagged_tools"), user=relation( User ) )
                     )
                     
 # Annotation tables.

@@ -1,4 +1,4 @@
-<tool id="Annotation_Profiler_0" name="Profile Annotations" Version="1.0.0">
+<tool id="Annotation_Profiler_0" name="Profile Annotations" version="1.0.0">
   <description>for a set of genomic intervals</description>
   <command interpreter="python">annotation_profiler_for_interval.py -i $input1 -c ${input1.metadata.chromCol} -s ${input1.metadata.startCol} -e ${input1.metadata.endCol} -o $out_file1 $keep_empty -p ${GALAXY_DATA_INDEX_DIR}/annotation_profiler/$dbkey $summary -b 3 -t $table_names</command>
   <inputs>
