@@ -620,7 +620,8 @@ class TabixDataProvider( IntervalIndexDataProvider ):
                 # BED dataset.
                 feature = line.split()
                 length = len(feature)
-                payload = [ feature[1]+"-"+feature[2]+":"+str(count), int(feature[1]), int(feature[2]) ]
+                # Unique id is just a hash of the line
+                payload = [ hash(line), int(feature[1]), int(feature[2]) ]
                 
                 if no_detail:
                     results.append( payload )
