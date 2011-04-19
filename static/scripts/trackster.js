@@ -1856,6 +1856,10 @@ extend(TiledTrack.prototype, Track.prototype, {
             // console.log( "draw_and_show_tile", resolution, tile_index, w_scale );
             var tile = track.draw_tile(result, resolution, tile_index, w_scale, seq_data);
             track.tile_cache.set(key, tile);
+            // Don't show if no tile
+            if (tile === undefined) {
+                return;
+            }
             track.show_tile(tile, parent_element, tile_low, w_scale);
             drawn_tiles[drawn_tiles.length] = tile;
         };
