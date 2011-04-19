@@ -421,6 +421,11 @@ use_interactive = True
 # Enable the (experimental! beta!) Web API.  Documentation forthcoming.
 #enable_api = False
 
+# Enable tool tags (associating tools with tags).  This has its own option
+# since its implementation has a few performance implications on startup for
+# large servers.
+#enable_tool_tags = False
+
 # Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
 # configure an FTP server (we've used ProFTPd since it can use Galaxy's
 # database for authentication) and set the following two options.
