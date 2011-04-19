@@ -65,8 +65,8 @@ class Tool( object ):
         # xml_files and tool_tags will only be received if we're called from the ToolSuite.verify() method.
         try:
             tar = tarfile.open( f.name )
-        except tarfile.ReadError:
-            raise DatatypeVerificationError( 'The archive is not a readable tar file.' )
+        except tarfile.ReadError, e:
+            raise DatatypeVerificationError( 'Error reading the archive, problem: %s' % str( e ) )
         if not xml_files:
             # Make sure we're not uploading a tool suite
             if filter( lambda x: x.lower().find( 'suite_config.xml' ) >= 0, tar.getnames() ):
@@ -78,9 +78,8 @@ class Tool( object ):
             try:
                 tree = ElementTree.parse( tar.extractfile( xml_file ) )
                 root = tree.getroot()
-            except:
-                log.exception( 'fail:' )
-                continue
+            except Exception, e:
+                raise DatatypeVerificationError( 'Error parsing file "%s", problem: %s' % ( str( xml_file ), str( e ) ) )
             if root.tag == 'tool':
                 if 'id' not in root.keys():
                     raise DatatypeVerificationError( "Tool xml file (%s) does not include the required 'id' attribute in the &lt;tool&gt; tag" % str( xml_file ) )

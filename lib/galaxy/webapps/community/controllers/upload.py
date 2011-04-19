@@ -51,7 +51,7 @@ class UploadController( BaseController ):
                 try:
                     uploaded_file = urllib2.urlopen( url_paste )
                 except ( ValueError, urllib2.HTTPError ), e:
-                    message = 'An error occurred trying to retrieve the URL entered on the upload form: %s' % e
+                    message = 'An error occurred trying to retrieve the URL entered on the upload form: %s' % str( e )
                     status = 'error'
                 except urllib2.URLError, e:
                     message = 'An error occurred trying to retrieve the URL entered on the upload form: %s' % e.reason
