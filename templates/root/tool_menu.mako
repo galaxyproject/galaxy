@@ -321,13 +321,11 @@
                     else:
                         display = "none"
                 %>
-                %if trans.app.config.get_bool( 'enable_tool_tags', False ):
-                    <div id="tool-tags" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
+                <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
+                    %if trans.app.config.get_bool( 'enable_tool_tags', False ):
                         <b>Tags:</b>
                         ${render_tool_tagging_elements()}
-                    </div>
-                %endif
-                <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
+                    %endif
                     <input type="text" name="query" value="search tools" id="tool-search-query" autocomplete="off" style="width: 100%; font-style:italic; font-size: inherit"/>
                     <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>
                 </div>
