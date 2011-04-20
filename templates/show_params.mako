@@ -29,7 +29,6 @@
   </thead>
   <tbody>
     <tr><td>Created:</th><td>${history.create_time.strftime("%b %d, %Y")}</td></tr>
-    <tr><td>Modified:</th><td>${history.update_time.strftime("%b %d, %Y")}</td></tr>
 ##      <tr><td>Copied from another history?</td><td>${hda.source_library_dataset}</td></tr>
     <tr><td>Filesize:</th><td>${nice_size(hda.dataset.file_size)}</td></tr>
     <tr><td>Dbkey:</th><td>${hda.dbkey}</td></tr>
