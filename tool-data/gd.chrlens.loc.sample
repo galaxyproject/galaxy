@@ -1,0 +1,22 @@
+# This is a sample file distributed with Galaxy that enables tools to
+# use a directory of sequence length files.  You will need to create these
+# sequence length files and then create a gd.chrlens.loc file similar to
+# this one (store it in this directory) that points to the directories
+# in which these sequence length files are stored.  The gd.chrlens.loc
+# file has the following format (white space characters are TAB
+# characters):
+#
+#<species>        <reference_species_file_path>
+#
+# So, for example, if you used Monodelphis domestica as the reference
+# species for a collection of Sarcophilus harrisii SNPs, then the
+# gd.chrlens.loc entry would look like this:
+#
+#tasmanian_devil  /galaxy/data/location/gd/chrlens/mondom_chr_lengths.txt
+#
+# Your gd.chrlens.loc file should include an entry for each pair of
+# species SNPs and reference species.  For example:
+#
+#bighorn          /galaxy/data/location/gd/chrlens/cow_chr_lengths.txt
+#tasmanian_devil  /galaxy/data/location/gd/chrlens/mondom_chr_lengths.txt
+#...etc...

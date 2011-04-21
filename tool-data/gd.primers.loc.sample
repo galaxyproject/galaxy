@@ -1,0 +1,22 @@
+# This is a sample file distributed with Galaxy that enables tools to
+# use a directory of primers files.  You will need to create these primers
+# files and then create a gd.primers.loc file similar to this one (store
+# it in this directory) that points to the directories in which these
+# primers files are stored.  The gd.primers.loc file has the following
+# format (white space characters are TAB characters):
+#
+#<species>        <primers_file_path>
+#
+# So, for example, if you had a primers file located at
+# /galaxy/data/location/gd/primers/bighorn_primers.txt for a collection of
+# Ovis canadensis SNPs, then the gd.primers.loc entry would look like
+# this:
+#
+#bighorn          /galaxy/data/location/gd/primers/bighorn_primers.txt
+#
+# Your gd.primers.loc file should include an entry for each pair of
+# species SNPs and primers file.  For example:
+#
+#bighorn          /galaxy/data/location/gd/primers/bighorn_primers.txt
+#tasmanian_devil  /galaxy/data/location/gd/primers/tasmanian_devil_primers.txt
+#...etc...

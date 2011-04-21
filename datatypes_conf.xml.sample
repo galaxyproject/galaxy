@@ -122,6 +122,7 @@
             <converter file="vcf_to_interval_index_converter.xml" target_datatype="interval_index"/>
             <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>    
         </datatype>
+        <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
         <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
         <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
             <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>

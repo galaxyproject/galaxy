@@ -1,0 +1,21 @@
+# This is a sample file distributed with Galaxy that enables tools to
+# use a directory of SNP call files.  You will need to create these SNP
+# call files and then create a gd.snps.loc file similar to this one (store
+# it in this directory) that points to the directories in which these
+# SNP call files are stored.  The gd.snps.loc file has the following
+# format (white space characters are TAB characters):
+#
+#<species>        <SNP_call_file_path>
+#
+# So, for example, if you had a SNP call file located at
+# /galaxy/data/location/gd/snps/bighorn_snps.txt for a collection of
+# Ovis canadensis SNPs, then the gd.snps.loc entry would look like this:
+#
+#bighorn          /galaxy/data/location/gd/snps/bighorn_snps.txt
+#
+# Your gd.snps.loc file should include an entry for each pair of species
+# SNPs and SNP call file.  For example:
+#
+#bighorn          /galaxy/data/location/gd/snps/bighorn_snps.txt
+#tasmanian_devil  /galaxy/data/location/gd/snps/tasmanian_devil_snps.txt
+#...etc...

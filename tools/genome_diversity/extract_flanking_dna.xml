@@ -1,0 +1,91 @@
+<tool id="gd_extract_flanking_dna" name="Extract" version="1.0.0">
+  <description>DNA flanking chosen SNPs</description>
+
+  <command interpreter="python2.5">
+    extract_flanking_dna.py "--input=$input" "--output=$output" "--snps_loc=${GALAXY_DATA_INDEX_DIR}/gd.snps.loc"
+    #if $override_metadata.value == "0":
+      "--scaffold_col=${input.metadata.scaffold}" "--pos_col=${input.metadata.pos}" "--species=${input.metadata.species}"
+    #else
+      "--scaffold_col=$scaf_col" "--pos_col=$pos_col" "--species=$species"
+    #end if
+    "--output_format=$output_format"
+  </command>
+
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Selected SNPS dataset"/>
+    <param name="output_format" type="select" format="integer" label="output format">
+        <option value="fasta" selected="true">FastA format</option>
+        <option value="primer3">Primer3 input</option>
+    </param>
+    <conditional name="override_metadata">
+      <param name="value" type="select" format="integer" label="choose columns">
+        <option value="0" selected="true">No, get columns from metadata</option>
+        <option value="1" >Yes, choose columns</option>
+      </param>
+      <when value="0">
+        <!-- no options -->
+      </when>
+      <when value="1">
+        <param name="scaf_col" type="data_column" data_ref="input" numerical="false" label="Column with scaffold"/>
+        <param name="pos_col" type="data_column" data_ref="input" numerical="true" label="Column with position"/>
+        <param name="species" type="select" label="Choose species">
+          <options from_file="gd.species.txt">
+            <column name="name" index="1"/>
+            <column name="value" index="0"/>
+          </options>
+        </param>
+      </when>
+    </conditional>
+  </inputs>
+
+  <outputs>
+    <data format="txt" name="output"/>
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="gd.sample.wsf"/>
+      <param name="output_format" value="primer3"/>
+      <param name="override_metadata" value="0"/>
+      <output name="output" value="gd.extract_flanking_dna.txt"/>
+    </test>
+  </tests>
+
+  <help>
+**What it does**
+
+  If extracts flanking dna for the SNPs in the dataset.
+
+-----
+
+**Example**
+
+- input file::
+
+    chr2_75111355_75112576    314  A  C  L  F  chr2   75111676  C  F  15  4  53   2   9  48   Y  96   0.369  0.355  0.396  0
+    chr8_93901796_93905612   2471  A  C  A  A  chr8   93904264  A  A  8   0  51   10  2  14   Y  961  0.016  0.534  0.114  2
+    chr10_7434473_7435447    524   T  C  S  S  chr10  7435005   T  S  11  5  90   14  0  69   Y  626  0.066  0.406  0.727  0
+    chr14_80021455_80022064  138   G  A  H  H  chr14  80021593  G  H  14  0  69   9   6  124  Y  377  0.118  0.997  0.195  1
+    chr15_64470252_64471048  89    G  A  Y  Y  chr15  64470341  G  Y  5   6  109  14  0  69   Y  312  0.247  0.998  0.393  0
+    chr18_48070585_48071386  514   C  T  E  K  chr18  48071100  T  K  7   7  46   14  0  69   Y  2    0.200  0.032  0.163  0
+    chr18_50154905_50155664  304   A  G  Y  C  chr18  50155208  A  Y  4   2  17   5   1  22   Y  8    0.022  0.996  0.128  0
+    chr18_57379354_57380496  315   C  T  V  V  chr18  57379669  G  V  11  0  60   9   6  62   Y  726  0.118  0.048  0.014  1
+    chr19_14240610_14242055  232   C  T  A  V  chr19  14240840  C  A  18  8  56   15  5  42   Y  73   0.003  0.153  0.835  0
+    chr19_39866997_39874915  3117  C  T  P  P  chr19  39870110  C  P  3   7  65   14  2  32   Y  6    0.321  0.911  0.462  4
+    etc.
+
+- output file::
+
+    > chr2_75111355_75112576 314 A C
+    TATCTTCATTTTTATTATAGACTCTCTGAACCAATTTGCCCTGAGGCAGACTTTTTAAAGTACTGTGTAATGTATGAAGTCCTTCTGCTCAAGCAAATCATTGGCATGAAAACAGTTGCAAACTTATTGTGAGAGAAGAGTCCAAGAGTTTTAACAGTCTGTAAGTATATAGCCTGTGAGTTTGATTTCCTTCTTGTTTTTnTTCCAGAAACATGATCAGGGGCAAGTTCTATTGGATATAGTCTTCAAGCATCTTGATTTGACTGAGCGTGACTATTTTGGTTTGCAGTTGACTGACGATTCCACTGATAACCCAGTAAGTTTAAGCTGTTGTCTTTCATTGTCATTGCAATTTTTCTGTCTTTATACTAGGTCCTTTCTGATTTACATTGTTCACTGATT
+    > chr8_93901796_93905612 2471 A C
+    GCTGCCGCTGGATTTACTTCTGCTTGGGTCGAGAGCGGGCTGGATGGGTGAAGAGTGGGCTCCCCGGCCCCTGACCAGGCAGGTGCAGACAAGTCGGAAGAAGGCCCGCCGCATCTCCTTGCTGGCCAGCGTGTAGATGACGGGGTTCATGGCAGAGTTGAGCACGGCCAGCACGATGAACCACTGGGCCTTGAACAGGATnGCGCACTCCTTCACCTTGCAGGCCACATCCACAAGGAAAAGGATGAAGAGTGGGGACCAGCAGGCGATGAACACGCTCACCACGATCACCACGGTCCGCAGCAGGGCCATGGACCGCTCTGAGTTGTGCGGGCTGGCCACCCTGCGGCTGCTGGACTTCACCAGGAAGTAGATGCGTGCGTACAGGATCACGATGGTCAC
+    > chr10_7434473_7435447 524 T C
+    ATTATTAACAGAAACATTTCTTTTTCATTACCCAGGGGTTACACTGGTCGTTGATGTTAATCAGTTTTTGGAGAAGGAGAAGCAAAGTGATATTTTGTCTGTTCTGAAGCCTGCCGTTGGTAATACAAATGACGTAATCCCTGAATGTGCTGACAGGTACCATGACGCCCTGGCAAAAGCAAAAGAGCAAAAATCTAGAAGnGGTAAGCATCTTCACTGTTTAGCACAAATTAAATAGCACTTTGAATATGATGATTTCTGTGGTATTGTGTTATCTTACTTTTGAGACAAATAATCGCTTTCAAATGAATATTTCTGAATGTTTGTCATCTCTGGCAAGGAAATTTTTTAGTGTTTCTTTTCCTTTTTTGTCTTTTGGAAATCTGTGATTAACTTGGTGGC
+    > chr14_80021455_80022064 138 G A
+    ACCCAGGGATCAAACCCAGGTCTCCCGCATTGCAGGCGGATTCTTTACTGTCTGAGCCTCCAGGGAAGCCCTCGGGGCTGAAGGGATGGTTATGAAGGTGAGAAACAGGGGCCACCTGTCCCCAAGGTACCTTGCGACnTGCCATCTGCGCTCCACCAGTAAATGGACGTCTTCGATCCTTCTGTTGTTGGCGTAGTGCAAACGTTTGGGAAGGTGCTGTTTCAAGTAAGGCTTAAAGTGCTGGTCTGGTTTTTTACACTGAAATATAAATGGACATTGGATTTTGCAATGGAGAGTCTTCTAGAAGAGTCCAAGACATTCTCTCCAGAAAGCTGAAGG
+    > chr15_64470252_64471048 89 G A
+    TGTGTGTGTGTGTGTGTGTGTGTGCCTGTGTCTGTACATGCACACCACGTGGCCTCACCCAGTGCCCTCAGCTCCATGGTGATGTCCACnTAGCCGTGCTCCGCGCTGTAGTACATGGCCTCCTGGAGGGCCTTGGTGCGCGTCCGGCTCAGGCGCATGGGCCCCTCGCTGCCGCTGCCCTGGCTGGATGCATCGCTCTCTTCCACGCCCTCAGCCAGGATCTCCTCCAGGGACAGCACATCTGCTTTGGCCTGCTGTGGCTGAGTCAGGAGCTTCCTCAGGACGTTCCT
+    etc.
+  </help>
+</tool>
