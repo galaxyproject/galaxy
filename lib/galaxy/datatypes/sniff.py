@@ -1,9 +1,10 @@
 """
 File format detector
 """
-import logging, sys, os, csv, tempfile, shutil, re, zipfile
+import logging, sys, os, csv, tempfile, shutil, re, zipfile, gzip
 import registry
 from galaxy import util
+from galaxy.datatypes.binary import unsniffable_binary_formats
 
 log = logging.getLogger(__name__)
         
@@ -13,9 +14,9 @@ def get_test_fname(fname):
     full_path = os.path.join(path, 'test', fname)
     return full_path
 
-def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
-    """Writes a stream to a temporary file, returns the temporary file's name"""
-    fd, temp_name = tempfile.mkstemp( suffix=suffix, prefix=prefix, dir=dir, text=text )
+def stream_to_open_named_file( stream, fd, filename ):
+    """Writes a stream to the provided file descriptor, returns the file's name and bool( is_multi_byte ). Closes file descriptor"""
+    #signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
     data_checked = False
     is_compressed = False
@@ -27,7 +28,7 @@ def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
             break
         if not data_checked:
             # See if we're uploading a compressed file
-            if zipfile.is_zipfile( temp_name ):
+            if zipfile.is_zipfile( filename ):
                 is_compressed = True
             else:
                 try:
@@ -52,7 +53,12 @@ def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
             # while binary files should not be encoded at all.
             os.write( fd, chunk )
     os.close( fd )
-    return temp_name, is_multi_byte
+    return filename, is_multi_byte
+
+def stream_to_file( stream, suffix='', prefix='', dir=None, text=False ):
+    """Writes a stream to a temporary file, returns the temporary file's name"""
+    fd, temp_name = tempfile.mkstemp( suffix=suffix, prefix=prefix, dir=dir, text=text )
+    return stream_to_open_named_file( stream, fd, temp_name )
 
 def check_newlines( fname, bytes_to_read=52428800 ):
     """
@@ -312,6 +318,133 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     if is_column_based( fname, '\t', 1, is_multi_byte=is_multi_byte ):
         return 'tabular'    #default tabular data type file extension
     return 'txt'            #default text data type file extension
+
+
+#Methods Used below can be used to upload new datasets into Galaxy. Currently used by the data_source.py script/tools.
+#These should be further abstracted and merged with upload.py script/tool functionality.
+def is_gzip( filename ):
+    temp = open( filename, "U" )
+    magic_check = temp.read( 2 )
+    temp.close()
+    if magic_check != util.gzip_magic:
+        return False
+    return True
+
+
+def is_binary( filename ):
+    is_binary = False
+    temp = open( filename, "U" )
+    chars_read = 0
+    for chars in temp:
+        for char in chars:
+            chars_read += 1
+            if ord( char ) > 128:
+                is_binary = True
+                break
+            if chars_read > 100:
+                break
+        if chars_read > 100:
+            break
+    temp.close()
+    return is_binary
+
+def is_html( temp_name, chunk=None ):
+    if chunk is None:
+        temp = open(temp_name, "U")
+    else:
+        temp = chunk
+    regexp1 = re.compile( "<A\s+[^>]*HREF[^>]+>", re.I )
+    regexp2 = re.compile( "<IFRAME[^>]*>", re.I )
+    regexp3 = re.compile( "<FRAMESET[^>]*>", re.I )
+    regexp4 = re.compile( "<META[^>]*>", re.I )
+    regexp5 = re.compile( "<SCRIPT[^>]*>", re.I )
+    lineno = 0
+    for line in temp:
+        lineno += 1
+        matches = regexp1.search( line ) or regexp2.search( line ) or regexp3.search( line ) or regexp4.search( line ) or regexp5.search( line )
+        if matches:
+            if chunk is None:
+                temp.close()
+            return True
+        if lineno > 100:
+            break
+    if chunk is None:
+        temp.close()
+    return False
+
+def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
+    CHUNK_SIZE = 2**20 # 1Mb
+    is_compressed = False
+    compressed_type = None
+    keep_compressed = False
+    is_valid = False
+    for compressed_type, check_compressed_function in COMPRESSION_CHECK_FUNCTIONS:
+        is_compressed = check_compressed_function( filename )
+        if is_compressed:
+            break #found compression type
+    if is_compressed: 
+        if ext in AUTO_DETECT_EXTENSIONS:
+            check_exts = COMPRESSION_DATATYPES[ compressed_type ]
+        elif ext in COMPRESSED_EXTENSIONS:
+            check_exts = [ ext ]
+        else:
+            check_exts = []
+        for compressed_ext in check_exts:
+            compressed_datatype = datatypes_registry.get_datatype_by_extension( compressed_ext )
+            if compressed_datatype.sniff( filename ):
+                ext = compressed_ext
+                keep_compressed = True
+                is_valid = True
+                break
+    
+    if not is_compressed:
+        is_valid = True
+    elif not keep_compressed:
+        is_valid = True
+        fd, uncompressed = tempfile.mkstemp()
+        compressed_file = DECOMPRESSION_FUNCTIONS[ compressed_type ]( filename )
+        while True:
+            try:
+                chunk = compressed_file.read( CHUNK_SIZE )
+            except IOError, e:
+                os.close( fd )
+                os.remove( uncompressed )
+                compressed_file.close()
+                raise IOError, 'Problem uncompressing %s data, please try retrieving the data uncompressed: %s' % ( compressed_type, e )
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        compressed_file.close()
+        # Replace the compressed file with the uncompressed file
+        shutil.move( uncompressed, filename )
+    return is_valid, ext
+
+def handle_uploaded_dataset_file( filename, datatypes_registry, ext = 'auto', is_multi_byte = False ):
+    is_valid, ext = handle_compressed_file( filename, datatypes_registry, ext = ext )
+    
+    if not is_valid:
+        raise InappropriateDatasetContentError, 'The compressed uploaded file contains inappropriate content.'
+    
+    if ext in AUTO_DETECT_EXTENSIONS:
+        ext = guess_ext( filename, sniff_order = datatypes_registry.sniff_order, is_multi_byte=is_multi_byte )
+    
+    if is_binary( filename ):
+        if ext not in unsniffable_binary_formats and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
+            raise InappropriateDatasetContentError, 'The binary uploaded file contains inappropriate content.'
+    elif is_html( filename ):
+        raise InappropriateDatasetContentError, 'The uploaded file contains inappropriate HTML content.'
+    return ext
+
+AUTO_DETECT_EXTENSIONS = [ 'auto' ] #should 'data' also cause auto detect?
+DECOMPRESSION_FUNCTIONS = dict( gzip = gzip.GzipFile )
+COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
+COMPRESSION_DATATYPES = dict( gzip = [ 'bam' ] )
+COMPRESSED_EXTENSIONS = []
+for exts in COMPRESSION_DATATYPES.itervalues(): COMPRESSED_EXTENSIONS.extend( exts )
+
+class InappropriateDatasetContentError( Exception ):
+    pass
 
 if __name__ == '__main__':
     import doctest, sys

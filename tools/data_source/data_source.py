@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # Retrieves data from external data source applications and stores in a dataset file.
 # Data source application parameters are temporarily stored in the dataset file.
-import socket, urllib, sys, os, gzip, tempfile, shutil
-from galaxy import eggs
-from galaxy.util import gzip_magic
+import socket, urllib, sys, os
+from galaxy import eggs #eggs needs to be imported so that galaxy.util can find docutils egg...
+from galaxy.util.json import from_json_string, to_json_string
+import galaxy.model # need to import model before sniff to resolve a circular import dependency
+from galaxy.datatypes import sniff
+from galaxy.datatypes.registry import Registry
+from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_FILE
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -11,14 +15,27 @@ def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
 
-def check_gzip( filename ):
-    # TODO: This needs to check for BAM files since they are compressed and must remain so ( see upload.py )
-    temp = open( filename, "U" )
-    magic_check = temp.read( 2 )
-    temp.close()
-    if magic_check != gzip_magic:
-        return False
-    return True
+GALAXY_PARAM_PREFIX = 'GALAXY'
+GALAXY_ROOT_DIR = os.path.realpath( os.path.join( os.path.split( os.path.realpath( __file__ ) )[0], '..', '..' ) )
+GALAXY_DATATYPES_CONF_FILE = os.path.join( GALAXY_ROOT_DIR, 'datatypes_conf.xml' )
+
+def load_input_parameters( filename, erase_file = True ):
+    datasource_params = {}
+    try:
+        json_params = from_json_string( open( filename, 'r' ).read() )
+        datasource_params = json_params.get( 'param_dict' )
+    except:
+        json_params = None
+        for line in open( filename, 'r' ):
+            try:
+                line = line.strip()
+                fields = line.split( '\t' )
+                datasource_params[ fields[0] ] = fields[1]
+            except:
+                continue
+    if erase_file:
+        open( filename, 'w' ).close() #open file for writing, then close, removes params from file
+    return json_params, datasource_params
 
 def __main__():
     filename = sys.argv[1]
@@ -26,20 +43,25 @@ def __main__():
         max_file_size = int( sys.argv[2] )
     except:
         max_file_size = 0
-    params = {}
-    for line in open( filename, 'r' ):
-        try:
-            line = line.strip()
-            fields = line.split( '\t' )
-            params[ fields[0] ] = fields[1]
-        except:
-            continue
-    URL = params.get( 'URL', None )
-    if not URL:
-        open( filename, 'w' ).write( "" )
-        stop_err( 'The remote data source application has not sent back a URL parameter in the request.' )
+    
+    job_params, params = load_input_parameters( filename )
+    if job_params is None: #using an older tabular file
+        enhanced_handling = False
+        job_params = dict( param_dict = params )
+        job_params[ 'output_data' ] =  [ dict( out_data_name = 'output',
+                                               ext = 'data',
+                                               file_name = filename,
+                                               extra_files_path = None ) ]
+        job_params[ 'job_config' ] = dict( GALAXY_ROOT_DIR=GALAXY_ROOT_DIR, GALAXY_DATATYPES_CONF_FILE=GALAXY_DATATYPES_CONF_FILE, TOOL_PROVIDED_JOB_METADATA_FILE = TOOL_PROVIDED_JOB_METADATA_FILE )
+    else:
+        enhanced_handling = True
+        json_file = open( job_params[ 'job_config' ][ 'TOOL_PROVIDED_JOB_METADATA_FILE' ], 'w' ) #specially named file for output junk to pass onto set metadata
+    
+    datatypes_registry = Registry( root_dir = job_params[ 'job_config' ][ 'GALAXY_ROOT_DIR' ], config = job_params[ 'job_config' ][ 'GALAXY_DATATYPES_CONF_FILE' ] )
+    
+    URL = params.get( 'URL', None ) #using exactly URL indicates that only one dataset is being downloaded
     URL_method = params.get( 'URL_method', None )
-    CHUNK_SIZE = 2**20 # 1Mb
+    
     # The Python support for fetching resources from the web is layered. urllib uses the httplib
     # library, which in turn uses the socket library.  As of Python 2.3 you can specify how long
     # a socket should wait for a response before timing out. By default the socket module has no
@@ -47,43 +69,42 @@ def __main__():
     # levels. However, you can set the default timeout ( in seconds ) globally for all sockets by
     # doing the following.
     socket.setdefaulttimeout( 600 )
-    # The following calls to urllib2.urlopen() will use the above default timeout
-    try:
-        if not URL_method or URL_method == 'get':
-            page = urllib.urlopen( URL )
-        elif URL_method == 'post':
-            page = urllib.urlopen( URL, urllib.urlencode( params ) )
-    except Exception, e:
-        stop_err( 'The remote data source application may be off line, please try again later. Error: %s' % str( e ) )
-    if max_file_size:
-        file_size = int( page.info().get( 'Content-Length', 0 ) )
-        if file_size > max_file_size:
-            stop_err( 'The size of the data (%d bytes) you have requested exceeds the maximum allowed (%d bytes) on this server.' % ( file_size, max_file_size ) )
-    out = open( filename, 'w' )
-    while 1:
-        chunk = page.read( CHUNK_SIZE )
-        if not chunk:
-            break
-        out.write( chunk )
-    out.close()
-    if check_gzip( filename ):
-        # TODO: This needs to check for BAM files since they are compressed and must remain so ( see upload.py )
-        fd, uncompressed = tempfile.mkstemp()
-        gzipped_file = gzip.GzipFile( filename )
-        while 1:
+    
+    for data_dict in job_params[ 'output_data' ]:
+        cur_filename =  data_dict.get( 'file_name', filename )
+        cur_URL =  params.get( '%s|%s|URL' % ( GALAXY_PARAM_PREFIX, data_dict[ 'out_data_name' ] ), URL )
+        if not cur_URL:
+            open( cur_filename, 'w' ).write( "" )
+            stop_err( 'The remote data source application has not sent back a URL parameter in the request.' )
+        
+        # The following calls to urllib.urlopen() will use the above default timeout
+        try:
+            if not URL_method or URL_method == 'get':
+                page = urllib.urlopen( cur_URL )
+            elif URL_method == 'post':
+                page = urllib.urlopen( cur_URL, urllib.urlencode( params ) )
+        except Exception, e:
+            stop_err( 'The remote data source application may be off line, please try again later. Error: %s' % str( e ) )
+        if max_file_size:
+            file_size = int( page.info().get( 'Content-Length', 0 ) )
+            if file_size > max_file_size:
+                stop_err( 'The size of the data (%d bytes) you have requested exceeds the maximum allowed (%d bytes) on this server.' % ( file_size, max_file_size ) )
+        #do sniff stream for multi_byte
+        try:
+            cur_filename, is_multi_byte = sniff.stream_to_open_named_file( page, os.open( cur_filename, os.O_WRONLY | os.O_CREAT ), cur_filename )
+        except Exception, e:
+            stop_err( 'Unable to fetch %s:\n%s' % ( cur_URL, e ) )
+        
+        #here import checks that upload tool performs
+        if enhanced_handling:
             try:
-                chunk = gzipped_file.read( CHUNK_SIZE )
-            except IOError:
-                os.close( fd )
-                os.remove( uncompressed )
-                gzipped_file.close()
-                stop_err( 'Problem uncompressing gzipped data, please try retrieving the data uncompressed.' )
-            if not chunk:
-                break
-            os.write( fd, chunk )
-        os.close( fd )
-        gzipped_file.close()
-        # Replace the gzipped file with the uncompressed file
-        shutil.move( uncompressed, filename )        
+                ext = sniff.handle_uploaded_dataset_file( filename, datatypes_registry, ext = data_dict[ 'ext' ], is_multi_byte = is_multi_byte )
+            except Exception, e:
+                stop_err( str( e ) )
+            info = dict( type = 'dataset',
+                         dataset_id = data_dict[ 'dataset_id' ],
+                         ext = ext)
+            
+            json_file.write( "%s\n" % to_json_string( info ) )
     
 if __name__ == "__main__": __main__()

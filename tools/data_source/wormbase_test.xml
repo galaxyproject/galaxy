@@ -17,11 +17,11 @@
             </append_param>
         </request_param>
         <request_param galaxy_name="URL_method" remote_name="URL_method" missing="post" />
-        <request_param galaxy_name="data_type" remote_name="data_type" missing="txt" />
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="auto" />
     </request_param_translation>
-	<uihints minwidth="800"/>
-	<outputs>
-		<data name="output" format="txt" />
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" label="${tool.name} on $getVar( 'q', 'unknown position' )"/>
 	</outputs>
 	<options sanitize="False" refresh="True"/>
 </tool>

@@ -5,6 +5,13 @@
     <inputs action="http://yeastmine.yeastgenome.org/yeastmine/begin.do" check_values="false" method="get"> 
         <display>go to yeastMine server $GALAXY_URL</display>
     </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="auto" >
+            <value_translation>
+                <value galaxy_value="auto" remote_value="txt" /> <!-- intermine currently always provides 'txt', make this auto detect -->
+            </value_translation>
+        </request_param>
+    </request_param_translation>
     <uihints minwidth="800"/>
     <outputs>
         <data name="output" format="txt" />

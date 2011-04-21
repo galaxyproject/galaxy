@@ -1848,72 +1848,74 @@ class DataSourceTool( Tool ):
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
     
-    def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
-        # TODO: Allow for a generic way for all Tools to have output dataset 
-        #       properties be set to input parameter values as defined in a 
-        #       tool XML
+    def _prepare_datasource_json_list( self, param_list ):
+        rval = []
+        for value in param_list:
+            if isinstance( value, dict ):
+                rval.append( self._prepare_datasource_json_param_dict( value ) )
+            elif isinstance( value, list ):
+                rval.append( self._prepare_datasource_json_list( val ) )
+            else:
+                rval.append( str( value ) )
+        return rval
+    def _prepare_datasource_json_param_dict( self, param_dict ):
+        rval = {}
+        for key, value in param_dict.iteritems():
+            if isinstance( value, dict ):
+                rval[ key ] = self._prepare_datasource_json_param_dict( value )
+            elif isinstance( value, list ):
+                rval[ key ] = self._prepare_datasource_json_list( val )
+            else:
+                rval[ key ] = str( value )
+        return rval
+    
+    def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
+        if param_dict is None:
+            param_dict = {}
         dbkey = param_dict.get( 'dbkey' )
-        organism = param_dict.get( 'organism' )
-        table = param_dict.get( 'table' )
-        description = param_dict.get( 'description' )
         info = param_dict.get( 'info' )
-        if description == 'range':
-            description = param_dict.get( 'position', '' )
-            if not description:
-                description = 'unknown position'
-        gb_landmark_region = param_dict.get( 'q' )
         data_type = param_dict.get( 'data_type' )
-        items = out_data.items()
-        for name, data in items:
-            if organism and table and description:
-                # This is UCSC
-                data.name  = '%s on %s: %s (%s)' % ( data.name, organism, table, description )
-            elif gb_landmark_region:
-                # This is GBrowse
-                data.name = '%s on %s' % ( data.name, gb_landmark_region )
-            data.info = info
-            data.dbkey = dbkey
-            if data_type not in app.datatypes_registry.datatypes_by_extension:
-                # Setting data_type to tabular will force the data to be sniffed in exec_after_process()
-                data_type = 'tabular'
-            data.change_datatype( data_type )
-            # Store external data source's request parameters temporarily in 
-            # output file. In case the config setting for 
-            # "outputs_to_working_directory" is True, we must write to the
-            # DatasetFilenameWrapper object in the param_dict since it's 
-            # "false_path" attribute is the temporary path to the output dataset 
-            # ( until the job is run ).  However, even if the 
-            # "outputs_to_working_directory" setting is False, we can still 
-            # open the file the same way for temporarily storing the request 
-            # parameters.
-            ## TODO: Input parameters should be jsonified and written into a 
-            ##       <configfile> and passed to data_source.py, instead of 
-            ##       writing tab separated key, value pairs to the output file
-            out = open( str( param_dict.get( name ) ), 'w' )
-            for key, value in param_dict.items():
-                print >> out, '%s\t%s' % ( key, value )
-            out.close()
-
-    def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
-        name, data = out_data.items()[0]
-        data.set_size()
-        #TODO: these should be already be set before the tool runs:
-        if data.state == data.states.OK:
-            data.name = param_dict.get( 'name', data.name )
-            data.info = param_dict.get( 'info', data.name )
-            data.dbkey = param_dict.get( 'dbkey', data.dbkey )
-            data.extension = param_dict.get( 'data_type', data.extension )
-        #TODO: these should be possible as part of data_source.py and external set_meta, see the upload tool:
-        if data.extension in [ 'txt', 'tabular' ]:
-            data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order, is_multi_byte=self.is_multi_byte )
-            if data.extension != data_type:
-                data.change_datatype( data_type )
-        elif not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
-            if data.missing_meta(): 
-                data.change_datatype( 'tabular' )
-        data.set_peek()
-        self.sa_session.add( data )
-        self.sa_session.flush()
+        name = param_dict.get( 'name' )
+        
+        json_params = {}
+        json_params[ 'param_dict' ] = self._prepare_datasource_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
+        json_params[ 'output_data' ] = []
+        json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+        json_filename = None
+        for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
+            #use wrapped dataset to access certain values 
+            wrapped_data = param_dict.get( out_name )
+            #allow multiple files to be created
+            cur_base_param_name = 'GALAXY|%s|' % out_name 
+            cur_name = param_dict.get( cur_base_param_name + 'name', name )
+            cur_dbkey = param_dict.get( cur_base_param_name + 'dkey', dbkey )
+            cur_info = param_dict.get( cur_base_param_name + 'info', info )
+            cur_data_type = param_dict.get( cur_base_param_name + 'data_type', data_type )
+            
+            if cur_name:
+                data.name = cur_name
+            if not data.info and cur_info:
+                data.info = cur_info
+            if cur_dbkey:
+                data.dbkey = cur_dbkey
+            if cur_data_type:
+                data.extension = cur_data_type
+            file_name = str( wrapped_data )
+            extra_files_path = str( wrapped_data.files_path )
+            
+            data_dict = dict( out_data_name = out_name,
+                              ext = data.ext,
+                              dataset_id = data.dataset.id,
+                              file_name = file_name,
+                              extra_files_path = extra_files_path )
+            
+            json_params[ 'output_data' ].append( data_dict )
+            
+            if json_filename is None:
+                json_filename = file_name
+        out = open( json_filename, 'w' )
+        out.write( simplejson.dumps( json_params ) )
+        out.close()
 
 class AsyncDataSourceTool( DataSourceTool ):
     tool_type = 'data_source_async'
