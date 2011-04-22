@@ -67,7 +67,7 @@
         <tool file="filters/gff/extract_GFF_Features.xml" />
         <tool file="filters/gff/gff_filter_by_attribute.xml" />
         <tool file="filters/gff/gff_filter_by_feature_count.xml" />
-		<tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
+        <tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
     <tool file="filters/joiner.xml" />
@@ -325,6 +325,13 @@
    <tool file="samtools/pileup_parser.xml" />
    <tool file="samtools/pileup_interval.xml" />
    <tool file="samtools/samtools_flagstat.xml" />
+  </section>
+  <section name="NGS: Picard Tools" id="picard-tools">
+   <tool file="picard/picard_AddOrReplaceReadGroups.xml" />
+   <tool file="picard/picard_BamIndexStats.xml" />
+   <tool file="picard/picard_MarkDuplicates.xml" />
+   <tool file="picard/picard_ReorderSam.xml" />
+   <tool file="picard/picard_ReplaceSamHeader.xml" />
   </section>
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />
