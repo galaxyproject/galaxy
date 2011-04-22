@@ -55,7 +55,7 @@ class WL3:
                     aseq = []
                 else:
                     if i > 0:
-                        print >> sys.stderr,'Invalid fasta file %s - does not start with %s' % (ffile,self.FASTASTARTSYM)
+                        print >> sys.stderr,'Invalid fasta file %s - does not start with %s - please read the tool documentation carefully' % (self.opts.input,self.FASTASTARTSYM)
                         sys.exit(1)
                     else:
                         seqname = row[1:].strip() 
