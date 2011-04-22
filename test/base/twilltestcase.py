@@ -680,9 +680,9 @@ class TwillTestCase( unittest.TestCase ):
         temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
         fd, temp_temp = tempfile.mkstemp( suffix='.sam', prefix='history_bam_converted_to_sam_' )
         os.close( fd )
-        p = subprocess.Popen( args="samtools view %s -o %s" % ( local_name, temp_local.name ), shell=True )
+        p = subprocess.Popen( args="samtools view -h %s -o %s" % ( local_name, temp_local.name ), shell=True )
         assert not p.wait(), 'Converting local (test-data) bam to sam failed'
-        p = subprocess.Popen( args="samtools view %s -o %s" % ( temp_name, temp_temp ), shell=True )
+        p = subprocess.Popen( args="samtools view -h %s -o %s" % ( temp_name, temp_temp ), shell=True )
         assert not p.wait(), 'Converting history bam to sam failed'
         os.remove( temp_name )
         return temp_local, temp_temp
