@@ -65,10 +65,15 @@
         <columns>value, name, path</columns>
         <file path="tool-data/perm_color_index.loc" />
     </table>
+    <!-- Location of Picard dict file and other files -->
+    <table name="picard_indexes" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/srma_index.loc" />
+    </table>
     <!-- Location of SRMA dict file and other files -->
     <table name="srma_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
-        <file path="tool-data/srma_index.loc" />
+        <file path="tool-data/picard_index.loc" />
     </table>
     <!-- Locations of indexes in the Bowtie mapper format for TopHat to use -->
     <table name="tophat_indexes" comment_char="#">
