@@ -17,6 +17,7 @@ from bx.arrays.array_tree import FileArrayTreeDict
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
+import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Vcf
 from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import parse_gff_attributes
@@ -176,53 +177,6 @@ class SummaryTreeDataProvider( TracksDataProvider ):
         # Check for data.
         return st.chrom_blocks.get(chrom, None) is not None or (chrom and st.chrom_blocks.get(chrom[3:], None) is not None)
 
-class VcfDataProvider( TracksDataProvider ):
-    """
-    VCF data provider for the Galaxy track browser.
-
-    Payload format: 
-    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score]
-    """
-
-    col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
-
-    def get_data( self, chrom, start, end, **kwargs ):
-        """ Returns data in region defined by chrom, start, and end. """
-        start, end = int(start), int(end)
-        source = open( self.original_dataset.file_name )
-        index = Indexes( self.converted_dataset.file_name )
-        results = []
-        count = 0
-        message = None
-
-        # If chrom is not found in indexes, try removing the first three 
-        # characters (e.g. 'chr') and see if that works. This enables the
-        # provider to handle chrome names defined as chrXXX and as XXX.
-        chrom = str(chrom)
-        if chrom not in index.indexes and chrom[3:] in index.indexes:
-            chrom = chrom[3:]
-
-        for start, end, offset in index.find(chrom, start, end):
-            if count >= MAX_VALS:
-                message = ERROR_MAX_VALS % "features"
-                break
-            count += 1
-            source.seek(offset)
-            feature = source.readline().split()
-
-            payload = [ offset, start, end, \
-                        # ID: 
-                        feature[2], \
-                        # reference base(s):
-                        feature[3], \
-                        # alternative base(s)
-                        feature[4], \
-                        # phred quality score
-                        int( feature[5] )]
-            results.append(payload)
-
-        return { 'data_type' : 'vcf', 'data': results, 'message': message }
-                
 class BamDataProvider( TracksDataProvider ):
     """
     Provides access to intervals from a sorted indexed BAM file.
@@ -343,83 +297,6 @@ class BamDataProvider( TracksDataProvider ):
         bamfile.close()
         return { 'data': results, 'message': message }
 
-class ArrayTreeDataProvider( TracksDataProvider ):
-    """
-    Array tree data provider for the Galaxy track browser. 
-    """
-    def get_stats( self, chrom ):
-        f = open( self.converted_dataset.file_name )
-        d = FileArrayTreeDict( f )
-        try:
-            chrom_array_tree = d[chrom]
-        except KeyError:
-            f.close()
-            return None
-
-        root_summary = chrom_array_tree.get_summary( 0, chrom_array_tree.levels )
-
-        level = chrom_array_tree.levels - 1
-        desired_summary = chrom_array_tree.get_summary( 0, level )
-        bs = chrom_array_tree.block_size ** level
-
-        frequencies = map(int, desired_summary.frequencies)
-        out = [ (i * bs, freq) for i, freq in enumerate(frequencies) ]
-
-        f.close()
-        return {    'max': float( max(root_summary.maxs) ), \
-                    'min': float( min(root_summary.mins) ), \
-                    'frequencies': out, \
-                    'total_frequency': sum(root_summary.frequencies) }
-
-    # Return None instead of NaN to pass jQuery 1.4's strict JSON
-    def float_nan(self, n):
-        if n != n: # NaN != NaN
-            return None
-        else:
-            return float(n)            
-
-    def get_data( self, chrom, start, end, **kwargs ):
-        if 'stats' in kwargs:
-            return self.get_stats(chrom)
-
-        f = open( self.converted_dataset.file_name )
-        d = FileArrayTreeDict( f )
-
-        # Get the right chromosome
-        try:
-            chrom_array_tree = d[chrom]
-        except:
-            f.close()
-            return None
-
-        block_size = chrom_array_tree.block_size
-        start = int( start )
-        end = int( end )
-        resolution = max(1, ceil(float(kwargs['resolution'])))
-
-        level = int( floor( log( resolution, block_size ) ) )
-        level = max( level, 0 )
-        stepsize = block_size ** level
-
-        # Is the requested level valid?
-        assert 0 <= level <= chrom_array_tree.levels
-
-        results = []
-        for block_start in range( start, end, stepsize * block_size ):
-            # Return either data point or a summary depending on the level
-            indexes = range( block_start, block_start + stepsize * block_size, stepsize )
-            if level > 0:
-                s = chrom_array_tree.get_summary( block_start, level )
-                if s is not None:
-                    results.extend( zip( indexes, map( self.float_nan, s.sums / s.counts ) ) )
-            else:
-                l = chrom_array_tree.get_leaf( block_start )
-                if l is not None:
-                    results.extend( zip( indexes, map( self.float_nan, l ) ) )
-
-        f.close()
-        return results
-        
 class BBIDataProvider( TracksDataProvider ):
     """
     BBI data provider for the Galaxy track browser. 
@@ -483,30 +360,13 @@ class BigWigDataProvider (BBIDataProvider ):
             f = open( self.original_dataset.file_name )
         return f, BigWigFile(file=f)
 
-class IntervalIndexDataProvider( TracksDataProvider ):
+class TabixDataProvider( TracksDataProvider ):
     """
-    Interval index data provider for the Galaxy track browser.
-    
-    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
+    Tabix index data provider for the Galaxy track browser.
     """
     
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
     
-    def write_data_to_file( self, chrom, start, end, filename ):
-        source = open( self.original_dataset.file_name )
-        index = Indexes( self.converted_dataset.file_name )
-        out = open( filename, 'w' )
-        for start, end, offset in index.find(chrom, start, end):
-            source.seek( offset )
-            if isinstance( self.original_dataset.datatype, Gff ):
-                reader = GFFReaderWrapper( source, fix_strand=True )
-                feature = reader.next()
-                for interval in feature.intervals:
-                    out.write(interval.raw_line + '\n')
-            elif isinstance( self.original_dataset.datatype, Bed ):
-                out.write( source.readline() )
-        out.close()
-        
     def get_filters( self ):
         """ Returns a dataset's filters. """
         
@@ -563,36 +423,55 @@ class IntervalIndexDataProvider( TracksDataProvider ):
         
         return filters
         
-class TabixDataProvider( IntervalIndexDataProvider ):
-    """
-    Tabix index data provider for the Galaxy track browser.
-
-    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
-    """
-
-    def get_data( self, chrom, start, end, **kwargs ):
+    def get_iterator( self, chrom, start, end ):
         if end >= 2<<29:
             end = (2<<29 - 1) # Tabix-enforced maximum
         start, end = int(start), int(end)
         
-        # {'bgzip': (<galaxy.model.HistoryDatasetAssociation object at 0x85fbe90>, {})}
         bgzip_fname = self.dependencies['bgzip'].file_name
         
         # if os.path.getsize(self.converted_dataset.file_name) == 0:
             # return { 'kind': messages.ERROR, 'message': "Tabix converted size was 0, meaning the input file had invalid values." }
         tabix = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
         
-        results = []
-        count = 0
-        message = None
-
         # If chrom is not found in indexes, try removing the first three 
         # characters (e.g. 'chr') and see if that works. This enables the
         # provider to handle chrome names defined as chrXXX and as XXX.
         chrom = str(chrom)
-        if chrom not in tabix.contigs and ("chr" + chrom[3:]) in tabix.contigs:
+        if chrom not in tabix.contigs and chrom.startswith("chr") and (chrom[3:] in tabix.contigs):
             chrom = chrom[3:]
-
+        
+        return tabix.fetch(reference=chrom, start=start, end=end)
+        
+    def get_data( self, chrom, start, end, **kwargs ):
+        iterator = self.get_iterator( chrom, start, end )
+        return self.process_data(iterator, **kwargs)
+     
+class GffDataProvider( TabixDataProvider ):
+    # FIXME: Doesn't implement write_data_to_file
+    def process_data( self, iterator, **kwargs ):
+        count = 0
+        rval = []
+        message = None
+        for feature in GFFReaderWrapper( iterator, fix_strand=True ):
+            if count >= MAX_VALS:
+                message = ERROR_MAX_VALS % "features"
+                break
+            count += 1
+            
+            payload = package_gff_feature( feature )
+            hashed = hash("\t".join(feature.fields))
+            payload.insert( 0, hashed )
+            rval.append( payload )
+        
+        return { 'data': rval, 'message': message }
+        
+class BedDataProvider( TabixDataProvider ):
+    """
+    Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
+    """
+        
+    def process_data( self, iterator, **kwargs ):
         #
         # Build data to return. Payload format is:
         # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
@@ -602,60 +481,97 @@ class TabixDataProvider( IntervalIndexDataProvider ):
         #
         filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
-        
-        for line in tabix.fetch(reference=chrom, start=start, end=end):
+        count = 0
+        rval = []
+        message = None
+        for line in iterator:
             if count >= MAX_VALS:
                 message = ERROR_MAX_VALS % "features"
                 break
             count += 1
             # TODO: can we use column metadata to fill out payload?
             # TODO: use function to set payload data
-            if isinstance( self.original_dataset.datatype, Gff ):
-                # GFF dataset.
-                reader = GFFReaderWrapper( source, fix_strand=True )
-                feature = reader.next()
-                payload = package_gff_feature( feature, no_detail, filter_cols )
-                payload.insert( 0, offset )
-            elif isinstance( self.original_dataset.datatype, Bed ):
-                # BED dataset.
-                feature = line.split()
-                length = len(feature)
-                # Unique id is just a hash of the line
-                payload = [ hash(line), int(feature[1]), int(feature[2]) ]
-                
-                if no_detail:
-                    results.append( payload )
-                    continue
-                
-                # Simpler way to add stuff, but type casting is not done.
-                # Name, score, strand, thick start, thick end.
-                #end = min( len( feature ), 8 )
-                #payload.extend( feature[ 3:end ] )
-                
-                # Name, strand, thick start, thick end.
-                if length >= 4:
-                    payload.append(feature[3])
-                if length >= 6:
-                    payload.append(feature[5])
-                if length >= 8:
-                    payload.append(int(feature[6]))
-                    payload.append(int(feature[7]))
+            
+            feature = line.split()
+            length = len(feature)
+            # Unique id is just a hash of the line
+            payload = [ hash(line), int(feature[1]), int(feature[2]) ]
+            
+            if no_detail:
+                rval.append( payload )
+                continue
+            
+            # Simpler way to add stuff, but type casting is not done.
+            # Name, score, strand, thick start, thick end.
+            #end = min( len( feature ), 8 )
+            #payload.extend( feature[ 3:end ] )
+            
+            # Name, strand, thick start, thick end.
+            if length >= 4:
+                payload.append(feature[3])
+            if length >= 6:
+                payload.append(feature[5])
+            if length >= 8:
+                payload.append(int(feature[6]))
+                payload.append(int(feature[7]))
 
-                # Blocks.
-                if length >= 12:
-                    block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
-                    block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
-                    blocks = zip( block_sizes, block_starts )
-                    payload.append( [ ( int(feature[1]) + block[1], int(feature[1]) + block[1] + block[0] ) for block in blocks ] )
+            # Blocks.
+            if length >= 12:
+                block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
+                block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
+                blocks = zip( block_sizes, block_starts )
+                payload.append( [ ( int(feature[1]) + block[1], int(feature[1]) + block[1] + block[0] ) for block in blocks ] )
+            
+            # Score (filter data)    
+            if length >= 5 and filter_cols and filter_cols[0] == "Score":
+                payload.append( float(feature[4]) )
                 
-                # Score (filter data)    
-                if length >= 5 and filter_cols and filter_cols[0] == "Score":
-                    payload.append( float(feature[4]) )
-                    
-            results.append( payload )
+            rval.append( payload )
+            
+        return { 'data': rval, 'message': message }
+        
+    def write_data_to_file( self, chrom, start, end, filename ):
+        iterator = self.get_iterator( chrom, start, end )
+        out = open( filename, "w" )
+        for line in iterator:
+            out.write( line )
+        out.close()
+        
+class VcfDataProvider( TracksDataProvider ):
+    """
+    VCF data provider for the Galaxy track browser.
 
-        return { 'data': results, 'message': message }
-     
+    Payload format: 
+    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score]
+    """
+
+    col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
+
+    def process_data( self, iterator, **kwargs ):
+        rval = []
+        count = 0
+        message = None
+        
+        reader = galaxy_utils.sequence.vcf.Reader( iterator )
+        for line in reader:
+            if count >= MAX_VALS:
+                message = ERROR_MAX_VALS % "features"
+                break
+            count += 1
+            
+            feature = line.split()
+            payload = [ hash(line), vcf_line.pos-1, vcf_line.pos, \
+                        # ID: 
+                        feature[2], \
+                        # reference base(s):
+                        feature[3], \
+                        # alternative base(s)
+                        feature[4], \
+                        # phred quality score
+                        int( feature[5] )]
+            rval.append(payload)
+
+        return { 'data_type' : 'vcf', 'data': rval, 'message': message }
 
 class GFFDataProvider( TracksDataProvider ):
     """
@@ -695,51 +611,41 @@ class GFFDataProvider( TracksDataProvider ):
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
-    "array_tree": ArrayTreeDataProvider,
-    "tabix": TabixDataProvider,
-    "interval_index": { "vcf": VcfDataProvider, "default" : IntervalIndexDataProvider },
+    "tabix": { Vcf: VcfDataProvider, Bed: BedDataProvider, Gff: GffDataProvider, "default" : TabixDataProvider },
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider,
     "bigwig": BigWigDataProvider,
     "bigbed": BigBedDataProvider
 }
 
-dataset_type_to_data_provider = {
-    Vcf : VcfDataProvider,
-}
-
 def get_data_provider( name=None, original_dataset=None ):
     """
     Returns data provider class by name and/or original dataset.
     """
-    data_provider = None
     if name:
         value = dataset_type_name_to_data_provider[ name ]
         if isinstance( value, dict ):
             # Get converter by dataset extension; if there is no data provider,
             # get the default.
-            data_provider = value.get( original_dataset.ext, value.get( "default" ) )
+            data_provider = value.get( original_dataset.datatype.__class__, value.get( "default" ) )
         else:
             data_provider = value
     elif original_dataset:
-        # Look for data provider in mapping.
-        data_provider = dataset_type_to_data_provider.get( original_dataset.datatype.__class__, None )
-        if not data_provider:
-            # Look up data provider from datatype's informaton.
-            try:
-                # Get data provider mapping and data provider for 'data'. If 
-                # provider available, use it; otherwise use generic provider.
-                _ , data_provider_mapping = original_dataset.datatype.get_track_type()
-                if 'data_standalone' in data_provider_mapping:
-                    data_provider_name = data_provider_mapping[ 'data_standalone' ]
-                else:
-                    data_provider_name = data_provider_mapping[ 'data' ]
-                if data_provider_name:
-                    data_provider = get_data_provider( name=data_provider_name, original_dataset=original_dataset )
-                else: 
-                    data_provider = TracksDataProvider
-            except:
-                pass
+        # Look up data provider from datatype's informaton.
+        try:
+            # Get data provider mapping and data provider for 'data'. If 
+            # provider available, use it; otherwise use generic provider.
+            _ , data_provider_mapping = original_dataset.datatype.get_track_type()
+            if 'data_standalone' in data_provider_mapping:
+                data_provider_name = data_provider_mapping[ 'data_standalone' ]
+            else:
+                data_provider_name = data_provider_mapping[ 'data' ]
+            if data_provider_name:
+                data_provider = get_data_provider( name=data_provider_name, original_dataset=original_dataset )
+            else: 
+                data_provider = TracksDataProvider
+        except:
+            pass
     return data_provider
 
 def package_gff_feature( feature, no_detail=False, filter_cols=[] ):

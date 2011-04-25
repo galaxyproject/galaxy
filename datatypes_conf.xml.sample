@@ -20,9 +20,7 @@
             <!-- <display file="ucsc/interval_as_bed.xml" /> -->
             <display file="genetrack.xml" />
         </datatype>
-        <datatype extension="bedgraph" type="galaxy.datatypes.interval:BedGraph" display_in_upload="true">
-            <converter file="bedgraph_to_array_tree_converter.xml" target_datatype="array_tree"/>
-        </datatype>
+        <datatype extension="bedgraph" type="galaxy.datatypes.interval:BedGraph" display_in_upload="true" />
         <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
         <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6">
             <converter file="bed_to_genetrack_converter.xml" target_datatype="genetrack"/>
@@ -68,7 +66,8 @@
         </datatype>
         <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
             <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
-            <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
+            <converter file="gff_to_bgzip_converter.xml" target_datatype="bgzip"/>
+            <converter file="gff_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
             <converter file="gff_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
             <display file="ensembl/ensembl_gff.xml" inherit="True"/>
             <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="True" /> -->
@@ -119,14 +118,14 @@
         <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" display_in_upload="true"/>
         <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" display_in_upload="true"/>
         <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
-            <converter file="vcf_to_interval_index_converter.xml" target_datatype="interval_index"/>
+            <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
+            <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
             <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>    
         </datatype>
         <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
         <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
         <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
             <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
-            <converter file="wiggle_to_array_tree_converter.xml" target_datatype="array_tree"/>
             <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
             <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
         </datatype>

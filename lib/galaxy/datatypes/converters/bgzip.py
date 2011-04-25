@@ -18,6 +18,10 @@ def main():
     
     if filetype == "bed":
         sort_params = ["sort", "-k1,1", "-k2,2n", "-k3,3n"]
+    elif filetype == "vcf":
+        sort_params = ["sort", "-k1,1", "-k2,2n"]
+    elif filetype == "gff":
+        sort_params = ["sort", "-s", "-k1,1", "-k4,4n"] # stable sort on start column
     # Skip any lines starting with "#" and "track"
     grepped = subprocess.Popen(["grep", "-e", "^\"#\"", "-e", "^track", "-v", input_fname], stderr=subprocess.PIPE, stdout=subprocess.PIPE )
     after_sort = subprocess.Popen(sort_params, stdin=grepped.stdout, stderr=subprocess.PIPE, stdout=tmpfile )
