@@ -332,7 +332,7 @@ class RemoveValueFilter( Filter ):
                 value = other_values.get( self.ref_name )
             else:
                 data_ref = other_values.get( self.meta_ref )
-                if not isinstance( data.ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not ( isinstance( data.ref, galaxy.tools.DatasetFilenameWrapper ) ):
+                if not isinstance( data_ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not ( isinstance( data_ref, galaxy.tools.DatasetFilenameWrapper ) ):
                     return options #cannot modify options
                 value = data_ref.metadata.get( self.metadata_key, None )
         return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options if not compare_value( optval, value ) ]
