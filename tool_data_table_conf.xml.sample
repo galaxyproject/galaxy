@@ -68,7 +68,7 @@
     <!-- Location of Picard dict file and other files -->
     <table name="picard_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
-        <file path="tool-data/srma_index.loc" />
+        <file path="tool-data/picard_index.loc" />
     </table>
     <!-- Location of SRMA dict file and other files -->
     <table name="srma_indexes" comment_char="#">
