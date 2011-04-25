@@ -6,6 +6,7 @@ on the values of other parameters or other aspects of the current state)
 import operator, sys, os, logging
 import basic, validation
 from galaxy.util import string_as_bool
+import galaxy.tools
 
 log = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class DataMetaFilter( Filter ):
             return file_value == dataset_value
         assert self.ref_name in other_values or ( trans is not None and trans.workflow_building_mode), "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
-        if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ):
+        if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not ( isinstance( ref, galaxy.tools.DatasetFilenameWrapper ) ):
             return [] #not a valid dataset
         meta_value = ref.metadata.get( self.key, None )
         if meta_value is None: #assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
@@ -331,7 +332,7 @@ class RemoveValueFilter( Filter ):
                 value = other_values.get( self.ref_name )
             else:
                 data_ref = other_values.get( self.meta_ref )
-                if not isinstance( data_ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ):
+                if not isinstance( data.ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not ( isinstance( data.ref, galaxy.tools.DatasetFilenameWrapper ) ):
                     return options #cannot modify options
                 value = data_ref.metadata.get( self.metadata_key, None )
         return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options if not compare_value( optval, value ) ]
