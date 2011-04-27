@@ -1,0 +1,100 @@
+<tool name="Insertion size metrics:" id="rgPicInsertSize" version="0.01">
+  <description>(Picard)</description>
+  <command interpreter="python">
+   picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --taillimit "$tailLimit"
+   --histwidth "$histWidth" --minpct "$minPct"
+   -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/CollectInsertSizeMetrics.jar" -d "$html_file.files_path" -t "$html_file"
+  </command>
+  <requirements><requirement type="package">picard</requirement></requirements>
+  <inputs>
+    <param format="bam,sam" name="input_file" type="data" label="Input: sam or bam format short read data in your current history"
+      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
+    <param name="out_prefix" value="Insertion size metrics" type="text"
+      label="Title for the output file - use this remind you what the job was for" size="120" />
+    <param name="tailLimit" value="10000" type="integer"
+      label="Tail limit" size="5" 
+      help="When calculating mean and stdev stop when the bins in the tail of the distribution contain fewer than mode/TAIL_LIMIT items" />
+     <param name="histWidth" value="0" type="integer"
+      label="Histogram Width" size="5" 
+      help="Explicitly sets the histogram width, overriding the TAIL_LIMIT option - leave 0 to ignore" />
+     <param name="minPct" value="0.01" type="float"
+      label="Minimum percentage" size="5" 
+      help="Discard any data categories (out of FR, TANDEM, RF) that have fewer than this percentage of overall reads" />
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file" label="InsertSize_${out_prefix}.html"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="picard_input_tiny.sam" />
+      <param name="out_prefix" value="Insertion size metrics" />
+      <param name="tailLimit" value="10000" />
+      <param name="histWidth" value="0" />
+      <param name="minPct" value="0.01" />
+      <output name="html_file" file="picard_output_insertsize_tinysam.html" ftype="html" lines_diff="25" />
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**Purpose**
+
+This tool works for PAIRED DATA ONLY and can be expected to fail for single end data.
+
+Reads a SAM or BAM file and describes the distribution 
+of insert size (excluding duplicates). Generates a histogram plot.
+
+-----
+
+.. class:: infomark
+
+**From the Picard documentation**
+
+.. csv-table:: Insert size metrics docs
+   :header-rows: 1
+
+    Option,Description
+    "INPUT=File","SAM or BAM file Required."
+    "OUTPUT=File","File to write insert size metrics to Required."
+    "HISTOGRAM_FILE=File","File to write insert size histogram chart to Required."
+    "TAIL_LIMIT=Integer","When calculating mean and stdev stop when the bins in the tail of the distribution contain fewer than mode/TAIL_LIMIT items. This also limits how much data goes into each data category of the histogram."
+    "HISTOGRAM_WIDTH=Integer","Explicitly sets the histogram width, overriding the TAIL_LIMIT option. Also, when calculating mean and stdev, only bins LE HISTOGRAM_WIDTH will be included. "
+    "MINIMUM_PCT=Float","When generating the histogram, discard any data categories (out of FR, TANDEM, RF) that have fewer than this percentage of overall reads. (Range: 0 to 1) Default value: 0.01."
+    "STOP_AFTER=Integer","Stop after processing N reads, mainly for debugging. Default value: 0."
+    "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false."
+
+
+-----
+
+.. class:: infomark
+
+**Attributions**
+
+Picard is supported through the SamTools project.
+This tool wraps Picard and is supported through the galaxy-bugs mailing list
+or by providing comments through the report form that appears automatically
+if a tool fails unexpectedly when you run it in Galaxy.
+
+All the Picard tools are freely available and are documented
+at http://picard.sourceforge.net/command-line-overview.shtml#CollectInsertSizeMetrics
+
+Here, you can apply Picard tools through Galaxy which might be easier than through the native Picard command line interface.
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
+Code cleaned up and the ugliest hacks repaired by Raphael Lullis
+
+All rgenetics artifacts are available licensed under the LGPL
+Other dependencies are licensed at the author's discretion - please see each individual package for details
+
+  </help>
+</tool>

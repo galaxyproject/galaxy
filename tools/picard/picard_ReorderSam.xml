@@ -1,4 +1,5 @@
 <tool name="Reorder SAM:" id="picard_ReorderSam" version="0.01">
+  <requirements><requirement type="package">picard</requirement></requirements>
   <description>(Picard)</description>
   <command interpreter="python">
     picard_wrapper.py
@@ -19,8 +20,7 @@
       #else if str( $outputFormat ) == "bam"
         --output-sam=$outFileBam
       #end if
-      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/"
-      --picard-jar="picard-1.41.jar"
+      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard-1.41.jar"
       --picard-cmd="ReorderSam"
   </command>
   <inputs>

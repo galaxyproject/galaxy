@@ -1,0 +1,131 @@
+<tool name="Paired Read Mate Fixer:" id="rgPicFixMate" version="0.01">
+  <description>(Picard)</description>
+  <command interpreter="python">
+   picard_wrapper.py -i "$input_file" -o "$out_file" --tmpdir "${__new_file_path__}" -n "$out_prefix" 
+   --newformat "$newformat" -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/FixMateInformation.jar" --sortorder "$sortOrder"
+  </command>
+  <requirements><requirement type="package">picard</requirement></requirements>
+  <inputs>
+    <param format="bam,sam" name="input_file" type="data" label="Input: sam or bam format short read data in your current history"
+      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
+      <param name="sortOrder" type="select" help="If in doubt, leave as default and read Picard/Samtools documentation"
+         label="Sort order">
+        <option value="coordinate" selected ="true">Coordinate sort</option>
+        <option value="queryname">Query name sort</option>
+        <option value="unsorted">Unsorted - docs not clear if this means unchanged or not</option>
+      </param>
+    <param name="out_prefix" value="Fix Mate" type="text"
+      label="Title for the output file - use this remind you what the job was for" size="80" />
+    <param name="newformat" type="select" label="Output file format" size="2">
+      <option value="bam" selected="true">Bam format</option>
+      <option value="sam">Sam format</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="bam" name="out_file" label="SortBam_${out_prefix}.${newformat}">
+    <change_format>
+     <when input="newformat" value="sam" format="sam" />
+    </change_format> 
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="picard_input_sorted_pair.sam" />
+      <param name="sortOrder" value="coordinate" />
+      <param name="newformat" value="bam" />
+      <param name="out_prefix" value="Test FixMate" />
+      <output name="out_file" file="picard_output_fixmate_sorted_pair.bam" ftype="bam" />
+    </test>
+    <test>
+      <param name="input_file" value="picard_input_sorted_pair.sam" />
+      <param name="sortOrder" value="coordinate" />
+      <param name="newformat" value="sam" />
+      <param name="out_prefix" value="Test FixMate" />
+      <output name="out_file" file="picard_output_fixmate_sorted_pair.sam" ftype="sam" />
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**Useful for paired data only**
+
+Likely won't do anything helpful for single end sequence data
+Currently, Galaxy doesn't distinguish paired from single ended sam/bam so make sure
+the data you choose are valid (paired end) sam or bam data - unless you trust this
+tool not to harm your data.
+
+**Purpose**
+
+Ensure that all mate-pair information is in sync between each read and it's mate pair. 
+
+**Why you might want to use this tool**
+
+This tool provides a Galaxy interface to one of the Picard tools.
+If you need to repair broken paired read sam/bam files, the Picard tool may help.
+
+-----
+
+.. class:: infomark
+
+**Syntax**
+
+- **Input** is a paired read sam/bam format aligned short read data in your current history
+- **Sort order** can be used to adjust the ordering of reads 
+- **Title** is the title to use for all output files from this job - use it for high level metadata
+- **Output Format** is either sam or compressed as bam
+
+-----
+
+.. class:: infomark
+
+**From the Picard documentation**
+
+.. csv-table:: GC Bias Doc
+
+   :header-rows: 1
+
+  Option,Description
+  "INPUT=File","The input file to fix. This option may be specified 0 or more times."
+  "OUTPUT=File","The output file to write to"
+  "SORT_ORDER=SortOrder","Optional sort order if the OUTPUT file should be sorted differently than the INPUT file. Default value: null. Possible values: {unsorted, queryname, coordinate}"
+  "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false"
+
+-----
+
+.. class:: infomark
+
+**Attributions**
+
+Picard is supported through the SamTools project.
+This tool wraps Picard and is supported through the galaxy-bugs mailing list
+or by providing comments through the report form that appears automatically
+if a tool fails unexpectedly when you run it in Galaxy.
+
+All the Picard tools are freely available and are documented
+at http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
+
+Here, you can apply Picard tools through Galaxy which might be easier than through the native Picard command line interface.
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
+Code cleaned up and the ugliest hacks repaired by Raphael Lullis.
+Kelly Vincent wrote the first version of picard_wrapper.py that now incorporates that code.
+
+It takes a village of programmers to wrap a picard tool
+
+All rgenetics artifacts are available licensed under the LGPL
+Other dependencies are licensed at the author's discretion - please see each individual package for details
+
+  </help>
+</tool>
+
+

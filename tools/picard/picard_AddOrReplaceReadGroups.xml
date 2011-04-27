@@ -1,4 +1,5 @@
 <tool name="Add or Replace Groups:" id="picard_ARRG" version="0.01">
+  <requirements><requirement type="package">picard</requirement></requirements>
   <description>(Picard)</description>
   <command interpreter="python">
     picard_wrapper.py
@@ -19,8 +20,7 @@
       #else if str( $outputFormat ) == "bam"
         --output-sam=$outFileBam
       #end if
-      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/"
-      --picard-cmd="AddOrReplaceReadGroups"
+      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/AddOrReplaceReadGroups.jar"
   </command>
   <inputs>
     <param format="bam,sam" name="inputFile" type="data" label="Input: sam or bam format short read data in your current history"

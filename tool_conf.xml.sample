@@ -237,7 +237,7 @@
    <tool file="ncbi_blast_plus/blastxml_to_tabular.xml" />
   </section>
   <section name="NGS: QC and manipulation" id="cshl_library_information">
-    <label text="Illumina data" id="illumina" />
+    <label text="Illumina fastq" id="illumina" />
         <tool file="fastq/fastq_groomer.xml" />
         <tool file="fastq/fastq_paired_end_splitter.xml" />
         <tool file="fastq/fastq_paired_end_joiner.xml" />
@@ -326,13 +326,7 @@
    <tool file="samtools/pileup_interval.xml" />
    <tool file="samtools/samtools_flagstat.xml" />
   </section>
-  <section name="NGS: Picard Tools" id="picard-tools">
-   <tool file="picard/picard_AddOrReplaceReadGroups.xml" />
-   <tool file="picard/picard_BamIndexStats.xml" />
-   <tool file="picard/picard_MarkDuplicates.xml" />
-   <tool file="picard/picard_ReorderSam.xml" />
-   <tool file="picard/picard_ReplaceSamHeader.xml" />
-  </section>
+
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />
    <tool file="peak_calling/ccat_wrapper.xml" />
@@ -389,6 +383,26 @@
 <!--
   This section can be uncommented on test, but the tools are not ready
   for main.
+-->
+<!--
+  <section name="NGS: QC and manipulation" id="cshl_library_information">  
+    <label text="FastQC: fastq/sam/bam" />
+        <tool file="rgenetics/rgFastQC.xml" />         
+    <label text="QC/Metrics for sam/bam" />
+       <tool file="picard/picard_BamIndexStats.xml" />
+       <tool file="picard/rgPicardASMetrics.xml" />    
+       <tool file="picard/rgPicardGCBiasMetrics.xml" />     
+       <tool file="picard/rgPicardInsertSize.xml" />
+  </section>
+  <section name="NGS: bam/sam Cleaning" id="picard-tools">
+   <tool file="picard/picard_AddOrReplaceReadGroups.xml" />
+   <tool file="picard/picard_ReorderSam.xml" />
+   <tool file="picard/picard_ReplaceSamHeader.xml" />
+   <tool file="picard/rgPicardFixMate.xml" />          
+   <tool file="picard/rgPicardMarkDups.xml" />
+  </section>
+
+
   <section name="Genome Diversity" id="gd">
     <tool file="genome_diversity/extract_primers.xml" />
     <tool file="genome_diversity/select_snps.xml" />
@@ -396,12 +410,14 @@
     <tool file="genome_diversity/extract_flanking_dna.xml" />
   </section>
 -->
+
   <section name="VCF Tools" id="vcf_tools">
     <tool file="vcf_tools/intersect.xml" />
     <tool file="vcf_tools/annotate.xml" />
     <tool file="vcf_tools/filter.xml" />
     <tool file="vcf_tools/extract.xml" />
   </section>
+
 <!--
   TODO: uncomment the following EMBOSS section whenever
   moving to test, but comment it in .sample to eliminate
