@@ -611,7 +611,7 @@ class GFFDataProvider( TracksDataProvider ):
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
-    "tabix": { Vcf: VcfDataProvider, Bed: BedDataProvider, Gff: GffDataProvider, "default" : TabixDataProvider },
+    "tabix": { Vcf: VcfDataProvider, Bed: BedDataProvider, Gff: GffDataProvider, Gtf: GffDataProvider, "default" : TabixDataProvider },
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider,
     "bigwig": BigWigDataProvider,

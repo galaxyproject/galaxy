@@ -75,7 +75,10 @@
         <datatype extension="gff3" type="galaxy.datatypes.interval:Gff3" display_in_upload="true"/>
         <datatype extension="gif" type="galaxy.datatypes.images:Image" mimetype="image/gif"/>
         <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
-        <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true"/>
+        <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true">
+            <converter file="gff_to_bgzip_converter.xml" target_datatype="bgzip"/>
+            <converter file="gff_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+        </datatype>
         <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
         <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
             <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
