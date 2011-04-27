@@ -424,10 +424,10 @@ class TabixDataProvider( TracksDataProvider ):
         return filters
         
     def get_iterator( self, chrom, start, end ):
-        if end >= 2<<29:
-            end = (2<<29 - 1) # Tabix-enforced maximum
         start, end = int(start), int(end)
-        
+        if end >= (2<<29):
+            end = (2<<29 - 1) # Tabix-enforced maximum
+                    
         bgzip_fname = self.dependencies['bgzip'].file_name
         
         # if os.path.getsize(self.converted_dataset.file_name) == 0:
