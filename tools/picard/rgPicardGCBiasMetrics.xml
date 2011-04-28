@@ -7,7 +7,7 @@
 #if $genomeSource.refGenomeSource == "history":
  --own_ref "$genomeSource.ownFile"
 #else:
- --ref "${ filter( lambda x: str( x[0] ) == str( $genomeSource.index ), $__app__.tool_data_tables[ 'srma_index' ].get_fields() )[0][-1] }"
+ --ref "${ filter( lambda x: str( x[0] ) == str( $genomeSource.index ), $__app__.tool_data_tables[ 'srma_indexes' ].get_fields() )[0][-1] }"
 #end if
 
   </command>
@@ -25,7 +25,7 @@
       </param>
       <when value="indexed">
        <param name="index" type="select" label="Select a reference genome">
-          <options from_data_table="srma_index"> 
+          <options from_data_table="srma_indexes"> 
           <filter type="data_meta" ref="input_file" key="dbkey" column="dbkey" multiple="True" separator=","/>
           <validator type="no_options" message="No reference sequences are available for the build associated with the selected input data"/>
           </options>
