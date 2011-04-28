@@ -41,10 +41,11 @@
     help="For summary metrics, exclude GC windows that include less than this fraction of the genome. Default value: 1.0E-5." />
     <param name="maxheap" type="select" help="If in doubt, choose 8G and read Picard documentation please"
      label="Java heap size. Java is a pig, the art is long but memory is short">
+    <option value="1G">1GB: very small data</option>
+    <option value="2G" selected="true">2GB</option>
     <option value="4G">4GB will work for small sized datasets </option>
     <option value="8G" selected="true" >8GB - should generally work...</option>
     <option value="16G">16GB - try this if 8GB fails</option>
-    <option value="32G">32GB - please use only if absolutely necessary</option>
     </param>
 
   </inputs>
