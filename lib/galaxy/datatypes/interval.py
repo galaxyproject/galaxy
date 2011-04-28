@@ -772,7 +772,7 @@ class Gff( Tabular, _RemoteCallMixin ):
             return False
             
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
+        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree"}
             
 
 class Gff3( Gff ):

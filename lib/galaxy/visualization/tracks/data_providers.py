@@ -360,13 +360,7 @@ class BigWigDataProvider (BBIDataProvider ):
             f = open( self.original_dataset.file_name )
         return f, BigWigFile(file=f)
 
-class TabixDataProvider( TracksDataProvider ):
-    """
-    Tabix index data provider for the Galaxy track browser.
-    """
-    
-    col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
-    
+class FilterableMixin:
     def get_filters( self ):
         """ Returns a dataset's filters. """
         
@@ -422,12 +416,19 @@ class TabixDataProvider( TracksDataProvider ):
             filters = [ { 'name': 'Score', 'type': 'int', 'index': filter_col } ]
         
         return filters
+    
+class TabixDataProvider( TracksDataProvider, FilterableMixin ):
+    """
+    Tabix index data provider for the Galaxy track browser.
+    """
+    
+    col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
         
     def get_iterator( self, chrom, start, end ):
-        if end >= 2<<29:
-            end = (2<<29 - 1) # Tabix-enforced maximum
         start, end = int(start), int(end)
-        
+        if end >= (2<<29):
+            end = (2<<29 - 1) # Tabix-enforced maximum
+                    
         bgzip_fname = self.dependencies['bgzip'].file_name
         
         # if os.path.getsize(self.converted_dataset.file_name) == 0:
@@ -447,24 +448,64 @@ class TabixDataProvider( TracksDataProvider ):
         iterator = self.get_iterator( chrom, start, end )
         return self.process_data(iterator, **kwargs)
      
-class GffDataProvider( TabixDataProvider ):
-    # FIXME: Doesn't implement write_data_to_file
-    def process_data( self, iterator, **kwargs ):
+class GffDataProvider( TracksDataProvider, FilterableMixin ):
+    col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
+    
+    def write_data_to_file( self, chrom, start, end, filename ):
+        source = open( self.original_dataset.file_name )
+        index = Indexes( self.converted_dataset.file_name )
+        out = open( filename, 'w' )
+        for start, end, offset in index.find(chrom, start, end):
+            source.seek( offset )
+            
+            reader = GFFReaderWrapper( source, fix_strand=True )
+            feature = reader.next()
+            for interval in feature.intervals:
+                out.write(interval.raw_line + '\n')
+        out.close()
+    
+    def get_data( self, chrom, start, end, **kwargs ):
+        start, end = int(start), int(end)
+        source = open( self.original_dataset.file_name )
+        index = Indexes( self.converted_dataset.file_name )
+        results = []
         count = 0
-        rval = []
         message = None
-        for feature in GFFReaderWrapper( iterator, fix_strand=True ):
+
+        # If chrom is not found in indexes, try removing the first three 
+        # characters (e.g. 'chr') and see if that works. This enables the
+        # provider to handle chrome names defined as chrXXX and as XXX.
+        chrom = str(chrom)
+        if chrom not in index.indexes and chrom[3:] in index.indexes:
+            chrom = chrom[3:]
+
+        #
+        # Build data to return. Payload format is:
+        # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
+        #   <thick_end>, <blocks> ]
+        # 
+        # First three entries are mandatory, others are optional.
+        #
+        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        no_detail = ( "no_detail" in kwargs )
+        for start, end, offset in index.find(chrom, start, end):
             if count >= MAX_VALS:
                 message = ERROR_MAX_VALS % "features"
                 break
             count += 1
+            source.seek( offset )
+            # TODO: can we use column metadata to fill out payload?
+            # TODO: use function to set payload data
             
-            payload = package_gff_feature( feature )
-            hashed = hash("\t".join(feature.fields))
-            payload.insert( 0, hashed )
-            rval.append( payload )
-        
-        return { 'data': rval, 'message': message }
+            # GFF dataset.
+            reader = GFFReaderWrapper( source, fix_strand=True )
+            feature = reader.next()
+            payload = package_gff_feature( feature, no_detail, filter_cols )
+            payload.insert( 0, offset )
+
+            results.append( payload )
+
+        return { 'data': results, 'message': message }
         
 class BedDataProvider( TabixDataProvider ):
     """
@@ -611,7 +652,8 @@ class GFFDataProvider( TracksDataProvider ):
 # type. First key is converted dataset type; if result is another dict, second key
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
-    "tabix": { Vcf: VcfDataProvider, Bed: BedDataProvider, Gff: GffDataProvider, Gtf: GffDataProvider, "default" : TabixDataProvider },
+    "tabix": { Vcf: VcfDataProvider, Bed: BedDataProvider, "default" : TabixDataProvider },
+    "interval_index": { Gff: GffDataProvider, Gtf: GffDataProvider },
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider,
     "bigwig": BigWigDataProvider,
