@@ -475,6 +475,7 @@ def __main__():
         
     elif pic.picname == 'CollectGcBiasMetrics':
         assert os.path.isfile(ref_file_name),'PicardGC needs a reference sequence - cannot read %s' % ref_file_name
+        """
         fakefasta = os.path.join(opts.outdir,'%s_fake.fasta' % os.path.basename(ref_file_name))
         pic.delme.append(fakefasta)
         try:
@@ -483,13 +484,13 @@ def __main__():
             s = '## unable to symlink %s to %s - different devices? May need to replace with shutil.copy'
             info = s
             shutil.copy(ref_file_name,fakefasta)        
-        
+        """
         x = 'rgPicardGCBiasMetrics'
         pdfname = '%s.pdf' % x
         jpgname = '%s.jpg' % x
         tempout = os.path.join(opts.outdir,'rgPicardGCBiasMetrics.out')
         temppdf = os.path.join(opts.outdir,pdfname)
-        cl.append('R=%s' % fakefasta)                
+        cl.append('R=%s' % ref_file_name)                
         cl.append('WINDOW_SIZE=%s' % opts.windowsize)
         cl.append('MINIMUM_GENOME_FRACTION=%s' % opts.mingenomefrac)
         cl.append('INPUT=%s' % opts.input)
