@@ -149,6 +149,8 @@
             menu_options.append( [ 'Saved Pages', h.url_for( controller='/page', action='list' ), "_top" ] )
         if app.config.enable_api:
             menu_options.append( [ 'API Keys', h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
+        if app.config.use_remote_user:
+            menu_options.append( [ 'Public Name', h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
     
         extra_class = "loggedin-only"
         visible = ( trans.user != None )

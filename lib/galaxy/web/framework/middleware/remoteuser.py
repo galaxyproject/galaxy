@@ -97,6 +97,8 @@ class RemoteUser( object ):
                 pass # admins can create users
             elif path_info.startswith( '/user/api_keys' ):
                 pass # api keys can be managed when remote_user is in use
+            elif path_info.startswith( '/user/edit_username' ):
+                pass # username can be managed when remote_user is in use
             elif path_info.startswith( '/user/dbkeys' ):
                 pass # dbkeys can be managed when remote_user is in use
             elif path_info.startswith( '/user' ):
