@@ -527,7 +527,7 @@ def __main__():
             s,stdouts = pic.runCL(cl=cl2,output_dir=opts.outdir)
         else:
             s = 'Unable to find expected pdf file %s<br/>\n' % pdfpath
-            s += This <b>always happens if single ended data was provided</b> to this tool,\n'
+            s += 'This <b>always happens if single ended data was provided</b> to this tool,\n'
             s += 'so please double check that your input data really is paired-end NGS data.<br/>\n'
             s += 'If your input was paired data this may be a bug worth reporting to the galaxy-bugs list\n<br/>'
             stdouts = ''
