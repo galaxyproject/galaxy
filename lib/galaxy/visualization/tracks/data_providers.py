@@ -417,7 +417,7 @@ class FilterableMixin:
         
         return filters
     
-class TabixDataProvider( TracksDataProvider, FilterableMixin ):
+class TabixDataProvider( FilterableMixin, TracksDataProvider ):
     """
     Tabix index data provider for the Galaxy track browser.
     """
@@ -448,7 +448,7 @@ class TabixDataProvider( TracksDataProvider, FilterableMixin ):
         iterator = self.get_iterator( chrom, start, end )
         return self.process_data(iterator, **kwargs)
      
-class GffDataProvider( TracksDataProvider, FilterableMixin ):
+class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
     
     def write_data_to_file( self, chrom, start, end, filename ):
@@ -653,7 +653,7 @@ class GFFDataProvider( TracksDataProvider ):
 # is original dataset type. TODO: This needs to be more flexible.
 dataset_type_name_to_data_provider = {
     "tabix": { Vcf: VcfDataProvider, Bed: BedDataProvider, "default" : TabixDataProvider },
-    "interval_index": { Gff: GffDataProvider, Gtf: GffDataProvider },
+    "interval_index": IntervalIndexDataProvider,
     "bai": BamDataProvider,
     "summary_tree": SummaryTreeDataProvider,
     "bigwig": BigWigDataProvider,
