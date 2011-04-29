@@ -44,7 +44,7 @@
     <option value="1G">1GB: very small data</option>
     <option value="2G" selected="true">2GB</option>
     <option value="4G">4GB will work for small sized datasets </option>
-    <option value="8G" selected="true" >8GB - should generally work...</option>
+    <option value="8G" >8GB - should generally work...</option>
     <option value="16G">16GB - try this if 8GB fails</option>
     </param>
 
