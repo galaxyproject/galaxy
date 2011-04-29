@@ -90,6 +90,9 @@ class ToolRunner( BaseController ):
             error( "Invalid value for 'id' parameter" )
         # Get the dataset object
         data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
+        #only allow rerunning if user is allowed access to the dataset.
+        if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
+            error( "You are not allowed to access this dataset" )
         # Get the associated job, if any. If this hda was copied from another,
         # we need to find the job that created the origial hda
         job_hda = data
