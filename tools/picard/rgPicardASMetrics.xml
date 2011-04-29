@@ -62,6 +62,7 @@
       <param name="sorted" value="true" />
       <param name="adaptors" value="" />
       <param name="maxinsert" value="100000" />
+      <param name="index" value="hg18" />
       <param name="refGenomeSource" value="indexed" />
       <param name="index" value="hg18" />
       <param name="input_file" value="picard_input_sorted_pair.sam" dbkey="hg18" />
