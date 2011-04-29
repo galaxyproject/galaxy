@@ -361,19 +361,19 @@ def __main__():
     tmp_dir = opts.outdir
 
     # set ref and dict files to use (create if necessary)
-    if opts.ref_file:    
+    ref_file_name = opts.ref
+    if opts.ref_file <> None:    
         csd = 'CreateSequenceDictionary'
         realjarpath = os.path.split(opts.jar)[0]
         jarpath = os.path.join(realjarpath,'%s.jar' % csd) # for refseq        
         tmp_ref_fd, tmp_ref_name = tempfile.mkstemp( dir=opts.tmpdir , prefix = pic.picname)
-        ref_file_name = '%s.fa' % tmp_ref_name
+        ref_file_name = '%s.fasta' % tmp_ref_name
         # build dict
-        ## need to change name of fasta to have fasta ext
-        dict_file_name = ref_file_name.replace( '.fa', '.dict' )
+        dict_file_name = '%s.dict' % tmp_ref_name
         os.symlink( opts.ref_file, ref_file_name )
         cl = ['REFERENCE=%s' % ref_file_name]
         cl.append('OUTPUT=%s' % dict_file_name)
-        cl.append('URI=%s' % os.path.basename( ref_file_name ))
+        cl.append('URI=%s' % os.path.basename( ref_file ))
         cl.append('TRUNCATE_NAMES_AT_WHITESPACE=%s' % opts.trunc_names)
         if opts.species_name:
             cl.append('SPECIES=%s' % opts.species_name)
@@ -381,11 +381,9 @@ def __main__():
             cl.append('GENOME_ASSEMBLY=%s' % opts.build_name)
         pic.delme.append(dict_file_name)
         pic.delme.append(ref_file_name)
+        pic.delme.append(tmp_ref_name)
         s = pic.runPic(jarpath, cl)
-    elif opts.ref:
-        ref_file_name = opts.ref
-
-    # run relevant command(s)
+        # run relevant command(s)
 
     cl = ['VALIDATION_STRINGENCY=LENIENT',]
 
@@ -446,13 +444,15 @@ def __main__():
 
 
     elif pic.picname == 'CollectAlignmentSummaryMetrics':
+        # Why do we do this fakefasta thing? Because we need NO fai to be available or picard barfs unless it has the same length as the input data.
+        # why? Dunno 
         fakefasta = os.path.join(opts.outdir,'%s_fake.fasta' % os.path.basename(ref_file_name))
         try:
             os.symlink(ref_file_name,fakefasta)
         except:
             s = '## unable to symlink %s to %s - different devices? May need to replace with shutil.copy'
             info = s
-            shutil.copy(ref_file_name,fakefasta)               
+            shutil.copy(ref_file_name,fakefasta)       
         pic.delme.append(fakefasta)
         cl.append('ASSUME_SORTED=%s' % opts.assumesorted)
         adaptorseqs = ''.join([' ADAPTER_SEQUENCE=%s' % x for x in opts.adaptors])
@@ -478,13 +478,13 @@ def __main__():
         # sigh. Why do we do this fakefasta thing? Because we need NO fai to be available or picard barfs unless it has the same length as the input data.
         # why? Dunno 
         fakefasta = os.path.join(opts.outdir,'%s_fake.fasta' % os.path.basename(ref_file_name))
-        pic.delme.append(fakefasta)
         try:
             os.symlink(ref_file_name,fakefasta)
         except:
             s = '## unable to symlink %s to %s - different devices? May need to replace with shutil.copy'
             info = s
-            shutil.copy(ref_file_name,fakefasta)        
+            shutil.copy(ref_file_name,fakefasta)       
+        pic.delme.append(fakefasta)
         x = 'rgPicardGCBiasMetrics'
         pdfname = '%s.pdf' % x
         jpgname = '%s.jpg' % x
