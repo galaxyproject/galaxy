@@ -371,7 +371,7 @@ class User( BaseController, UsesFormDefinitions ):
                 redirect_url = url_for( '/' )
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
-                header = require_login_creation_template % web.url_for( action='create' )
+                header = require_login_creation_template % web.url_for( action='create', cntrller='user' )
             else:
                 header = require_login_nocreation_template
         return trans.fill_template( '/user/login.mako',
