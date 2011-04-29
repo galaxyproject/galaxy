@@ -132,7 +132,7 @@
         menu_options = [ [ '<li>Logged in as <span id="user-email">%s</span></li>' %  email ] ]
         if app.config.use_remote_user:
             if app.config.remote_user_logout_href:
-                menu_options.append( [ 'Logout', app.config.remote_user_logout_href, "galaxy_main" ] )
+                menu_options.append( [ 'Logout', app.config.remote_user_logout_href, "_top" ] )
         else:
             menu_options.append( [ 'Preferences', h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
             if app.config.get_bool( 'enable_tracks', False ):
