@@ -44,11 +44,11 @@ def main():
         
     # Set readers to handle either GFF or default format.
     if in1_gff_format:
-        in1_reader_wrapper = GFFIntervalToBEDReaderWrapper
+        in1_reader_wrapper = GFFReaderWrapper
     else:
         in1_reader_wrapper = NiceReaderWrapper
     if in2_gff_format:
-        in2_reader_wrapper = GFFIntervalToBEDReaderWrapper
+        in2_reader_wrapper = GFFReaderWrapper
     else:
         in2_reader_wrapper = NiceReaderWrapper
         
@@ -58,23 +58,31 @@ def main():
                             end_col=end_col_1,
                             strand_col=strand_col_1,
                             fix_strand=True )
+    if in1_gff_format:
+        # Intersect requires coordinates in BED format.
+        g1.convert_to_bed_coord=True
     g2 = in2_reader_wrapper( fileinput.FileInput( in2_fname ),
                             chrom_col=chr_col_2,
                             start_col=start_col_2,
                             end_col=end_col_2,
                             strand_col=strand_col_2,
                             fix_strand=True )
-
+    if in2_gff_format:
+        # Intersect requires coordinates in BED format.
+        g2.convert_to_bed_coord=True
+        
     out_file = open( out_fname, "w" )
-    
     try:
-        for line in intersect( [g1,g2], pieces=pieces, mincols=mincols ):
-            if isinstance( line, GenomicInterval ):
-                if in1_gff_format:
-                    line = convert_bed_coords_to_gff( line )
-                out_file.write( "%s\n" % "\t".join( line.fields ) )
+        for feature in intersect( [g1,g2], pieces=pieces, mincols=mincols ):
+            if isinstance( feature, GFFFeature ):
+                # Convert back to GFF coordinates since reader converted automatically.
+                convert_bed_coords_to_gff( feature )
+                for interval in feature.intervals:
+                    out_file.write( "%s\n" % "\t".join( interval.fields ) )
+            elif isinstance( feature, GenomicInterval ):
+                out_file.write( "%s\n" % "\t".join( feature.fields ) )
             else:
-                out_file.write( "%s\n" % line )
+                out_file.write( "%s\n" % feature )
     except ParseError, e:
         out_file.close()
         fail( "Invalid file format: %s" % str( e ) )
