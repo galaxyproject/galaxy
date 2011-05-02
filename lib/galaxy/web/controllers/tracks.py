@@ -721,7 +721,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         messages_list = []
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
-            if hasattr( input_dataset, 'get_track_type' ):
+            if hasattr( input_dataset.datatype, 'get_track_type' ):
                 #
                 # Dataset can be indexed and hence a subset can be extracted.
                 #
@@ -748,7 +748,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 data_provider_class = get_data_provider( original_dataset=input_dataset )
                 data_provider = data_provider_class( original_dataset=input_dataset, 
                                                      converted_dataset=converted_dataset,
-                                                     deps=deps )
+                                                     dependencies=deps )
                 data_provider.write_data_to_file( chrom, low, high, new_dataset.file_name )
             
                 # TODO: size not working.
