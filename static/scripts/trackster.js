@@ -2391,7 +2391,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             this.container_div.find(".yaxislabel").remove();
             var max_label = $("<div />").addClass('yaxislabel');
             max_label.text( result.max );
-            max_label.css({ position: "absolute", top: "22px", left: "10px" });
+            max_label.css({ position: "absolute", top: "22px", left: "10px", color: this.prefs.label_color });
             max_label.prependTo(this.container_div);
             // Create canvas
             var canvas = this.view.canvas_manager.new_canvas();
@@ -2850,14 +2850,14 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
         if (!y) { continue; }
         var y_px = y / max * height
         if (y !== 0 && y_px < 1) { y_px = 1; }
-        
-        ctx.fillStyle = "black";
+
+        ctx.fillStyle = this.prefs.block_color;        
         ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
         
         // Draw number count if it can fit the number with some padding, otherwise things clump up
         var text_padding_req_x = 4;
         if (this.prefs.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
-            ctx.fillStyle = "#666";
+            ctx.fillStyle = this.prefs.label_color;
             ctx.textAlign = "center";
             ctx.fillText(y, x + (delta_x_px/2), 10);
         }
