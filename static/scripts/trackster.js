@@ -158,14 +158,6 @@ var sortable = function( element, handle ) {
 exports.sortable = sortable;
 
 /**
- * Calculates step for slider with a given min, max.
- */
-var get_slider_step = function(min, max) {
-    var range = max - min;
-    return (range <= 2 ? 0.01 : (range <= 100 ? 1 : (range <= 1000 ? 5 : 10)));
-};
-
-/**
  * Init constants & functions used throughout trackster.
  */
 var 
@@ -1077,6 +1069,11 @@ extend(NumberFilter.prototype, {
      * Update filter's slider.
      */
     update_ui_elt: function () {
+        var get_slider_step = function(min, max) {
+            var range = max - min;
+            return (range <= 2 ? 0.01 : 1);
+        };
+        
         var 
             slider_min = this.slider.slider("option", "min"),
             slider_max = this.slider.slider("option", "max");
@@ -1180,12 +1177,14 @@ var FiltersManager = function(track, filters_list) {
     
     // Create filtering div.
     this.parent_div = $("<div/>").addClass("filters").hide();
-    // Disable dragging, double clicking on div so that actions on slider do not impact viz.
+    // Disable dragging, double clicking, keys on div so that actions on slider do not impact viz.
     this.parent_div.bind("drag", function(e) {
         e.stopPropagation();
     }).bind("click", function(e) {
         e.stopPropagation();
     }).bind("dblclick", function(e) {
+        e.stopPropagation();
+    }).bind("keydown", function(e) {
         e.stopPropagation();
     });
     var manager = this;
