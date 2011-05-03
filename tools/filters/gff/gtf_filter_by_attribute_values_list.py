@@ -54,7 +54,7 @@ def filter( gff_file, attribute_name, ids_file, output_file ):
     for line in open( gff_file ):
         fields = line.split( '\t' )
         attributes = parse_gff_attributes( fields[8] )
-        if attributes[ attribute_name ] in ids_dict:
+        if ( attribute_name in attributes ) and ( attributes[ attribute_name ] in ids_dict ):
             output.write( line )
     output.close()
         
