@@ -84,7 +84,6 @@
         <param name="returntype" value="" />
         <output name="output" file="gops_subtract_out1.gff" />
     </test>
-    
   </tests>
   <help>
 

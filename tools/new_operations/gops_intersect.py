@@ -21,7 +21,7 @@ from bx.intervals.io import *
 from bx.intervals.operations.intersect import *
 from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *
-from galaxy.datatypes.util.gff_util import *
+from galaxy.datatypes.util.gff_util import GFFFeature, GFFReaderWrapper, convert_bed_coords_to_gff
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
