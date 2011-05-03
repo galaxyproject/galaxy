@@ -33,9 +33,13 @@
             #end for
     </command>
     <inputs>
-        <param format="gtf" name="first_input" type="data" label="GTF file produced by Cufflinks" help=""/>
+        <param format="gtf" name="first_input" type="data" label="GTF file produced by Cufflinks" help="">
+            <validator type="unspecified_build" />
+        </param>
         <repeat name="input_files" title="Additional GTF Input Files">
-            <param format="gtf" name="additional_input" type="data" label="GTF file produced by Cufflinks" help=""/>
+            <param format="gtf" name="additional_input" type="data" label="GTF file produced by Cufflinks" help="">
+                <validator type="unspecified_build" />
+            </param>
         </repeat>
         <conditional name="annotation">
             <param name="use_ref_annotation" type="select" label="Use Reference Annotation">
