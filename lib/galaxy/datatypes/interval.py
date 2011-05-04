@@ -5,17 +5,17 @@ Interval datatypes
 import pkg_resources
 pkg_resources.require( "bx-python" )
 
-import logging, os, sys, time, tempfile, shutil
+import logging, os, sys, tempfile
 import data
 from galaxy import util
 from galaxy.datatypes.sniff import *
 from galaxy.web import url_for
-from cgi import escape
 import urllib
 from bx.intervals.io import *
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.util.gff_util import parse_gff_attributes
 import math
 
 log = logging.getLogger(__name__)
@@ -888,6 +888,8 @@ class Gtf( Gff ):
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
     
+    MetadataElement( name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0 )
+    MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
     
     def sniff( self, filename ):
         """
@@ -960,6 +962,42 @@ class Gtf( Gff ):
             return True
         except:
             return False
+            
+    def set_meta( self, dataset, overwrite = True, **kwd ):        
+        # Use first N lines to set metadata for dataset attributes. Attributes 
+        # not found in the first N lines will not have metadata.
+        num_lines = 200
+        attribute_types = {}
+        for i, line in enumerate( file ( dataset.file_name ) ):
+            if line and not line.startswith( '#' ):
+                elems = line.split( '\t' )
+                if len( elems ) == 9:
+                    try:
+                        # Loop through attributes to set types.
+                        for name, value in parse_gff_attributes( elems[8] ).items():
+                            # Default type is string.
+                            value_type = "str"
+                            try:
+                                # Try int.
+                                int( value )
+                                value_type = "int"
+                            except:
+                                try: 
+                                    # Try float.
+                                    float( value )
+                                    value_type = "float"
+                                except:
+                                    pass
+                            attribute_types[ name ] = value_type
+                    except:
+                        pass
+                if i + 1 == num_lines:
+                    break
+        
+        # Set attribute metadata and then set additional metadata.
+        dataset.metadata.attribute_types = attribute_types
+        dataset.metadata.attributes = len( attribute_types )
+        Gff.set_meta( self, dataset, overwrite = overwrite, skip = i )
 
 
 class Wiggle( Tabular, _RemoteCallMixin ):
