@@ -645,16 +645,17 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return self.tracks_grid( trans, **kwargs )
                 
     @web.expose
-    def run_tool( self, trans, dataset_id, chrom, low, high, tool_id, **kwargs ):
+    def run_tool( self, trans, dataset_id, tool_id, chrom=None, low=None, high=None, **kwargs ):
         """ 
         Run a tool on a subset of input data to produce a new output dataset that 
         corresponds to a dataset that a user is currently viewing.
         """
         
-        # Parameter checks.
-        if not chrom or not low or not high:
-            return messages.NO_DATA
-        low, high = int( low ), int( high )
+        # Run tool on region if region is specificied.
+        run_on_region = False
+        if chrom and low and high:
+            run_on_region = True
+            low, high = int( low ), int( high )
         
         # Dataset check.
         original_dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
@@ -678,27 +679,23 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         tool_params = tool.params_from_strings( tool_params, self.app )
         
         #
-        # Convert input datasets so that region of dataset can be quickly 
-        # extracted.
-        # TODO: Is it useful/necessary to create data subsets for all input
-        # datasets or only the original dataset (aka the dataset that the user
-        # is viewing)? Currently we create data subsets for all input datasets 
-        # because this provides the best performance as the tool runs on small 
-        # datasets.
+        # If running tool on region, convert input datasets (create indices) so
+        # that can regions of data can be quickly extracted.
         # 
         messages_list = []
-        for jida in original_job.input_datasets:
-            input_dataset = jida.dataset
-            # TODO: put together more robust way to determine if a dataset can be indexed.
-            if hasattr( input_dataset, 'get_track_type' ):
-                # Can index dataset.
-                track_type, data_sources = input_dataset.datatype.get_track_type()
-                # Convert to datasource that provides 'data' because we need to
-                # extract the original data.
-                data_source = data_sources[ 'data' ]
-                msg = self._convert_dataset( trans, input_dataset, data_source )
-                if msg is not None:
-                    messages_list.append( msg )
+        if run_on_region:
+            for jida in original_job.input_datasets:
+                input_dataset = jida.dataset
+                # TODO: put together more robust way to determine if a dataset can be indexed.
+                if hasattr( input_dataset, 'get_track_type' ):
+                    # Can index dataset.
+                    track_type, data_sources = input_dataset.datatype.get_track_type()
+                    # Convert to datasource that provides 'data' because we need to
+                    # extract the original data.
+                    data_source = data_sources[ 'data' ]
+                    msg = self._convert_dataset( trans, input_dataset, data_source )
+                    if msg is not None:
+                        messages_list.append( msg )
 
         # Return any messages generated during conversions.
         return_message = _get_highest_priority_msg( messages_list )
@@ -706,41 +703,40 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return return_message
             
         #
-        # Set input datasets for tool. Input datasets are subsets of full 
-        # datasets and are based on chrom, low, high.
+        # Set target history (the history that tool will use for inputs/outputs).
+        # If user owns dataset, put new data in original dataset's history; if 
+        # user does not own dataset (and hence is accessing dataset via sharing), 
+        # put new data in user's current history.
         #
-        
-        # If user is rerunning own tool, put new data in original dataset's 
-        # history. If another user is running tool, put new data in current
-        # history.
         if original_dataset.history.user == trans.user:
-            working_history = original_dataset.history
+            target_history = original_dataset.history
         else:
-            working_history = trans.get_history( create=True )
-        hda_permissions = trans.app.security_agent.history_get_default_permissions( working_history )
-        messages_list = []
+            target_history = trans.get_history( create=True )
+        hda_permissions = trans.app.security_agent.history_get_default_permissions( target_history )
+            
+        #
+        # Set input datasets for tool. If running on region, extract and use subset
+        # when possible.
+        #
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
-            if hasattr( input_dataset.datatype, 'get_track_type' ):
-                #
-                # Dataset can be indexed and hence a subset can be extracted.
-                #
+            if run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
+                # Dataset is indexed and hence a subset can be extracted and used
+                # as input.
                 track_type, data_sources = input_dataset.datatype.get_track_type()
                 data_source = data_sources[ 'data' ]
                 converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
                 deps = input_dataset.get_converted_dataset_deps( trans, data_source )
                             
-                #
                 # Create new HDA for input dataset's subset.
-                #
                 new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext, \
-                                                                            dbkey=input_dataset.dbkey, \
-                                                                            create_dataset=True, \
-                                                                            sa_session=trans.sa_session,
-                                                                            name="Subset [%s:%i-%i] of data %i" % \
-                                                                                ( chrom, low, high, input_dataset.hid ),
-                                                                            visible=False )
-                working_history.add_dataset( new_dataset )
+                                                                         dbkey=input_dataset.dbkey, \
+                                                                         create_dataset=True, \
+                                                                         sa_session=trans.sa_session,
+                                                                         name="Subset [%s:%i-%i] of data %i" % \
+                                                                             ( chrom, low, high, input_dataset.hid ),
+                                                                         visible=False )
+                target_history.add_dataset( new_dataset )
                 trans.sa_session.add( new_dataset )
                 trans.app.security_agent.set_all_dataset_permissions( new_dataset.dataset, hda_permissions )
             
@@ -751,7 +747,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                                                      dependencies=deps )
                 data_provider.write_data_to_file( chrom, low, high, new_dataset.file_name )
             
-                # TODO: size not working.
+                # TODO: (a) size not working; (b) need to set peek.
                 new_dataset.set_size()
                 new_dataset.info = "Data subset for trackster"
                 new_dataset.set_dataset_state( trans.app.model.Dataset.states.OK )
@@ -761,18 +757,21 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 tool_params[ jida.name ] = new_dataset
         
         #        
-        # Start tool and handle outputs.
+        # Execute tool and handle outputs.
         #
         try:
-            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=working_history )
+            subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params, history=target_history )
         except Exception, e:
             # Lots of things can go wrong when trying to execute tool.
             return to_json_string( { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) } )
-        for output in subset_job_outputs.values():
-            output.visible = False
-        trans.sa_session.flush()
-                
+        if run_on_region:
+            for output in subset_job_outputs.values():
+                output.visible = False
+            trans.sa_session.flush()
+            
+        #    
         # Return new track that corresponds to the original dataset.
+        #
         output_name = None
         for joda in original_job.output_datasets:
             if joda.dataset == original_dataset:
@@ -784,9 +783,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         
         return self.add_track_async( trans, output_dataset.id )
     
-    #
+    # -----------------
     # Helper methods.
-    #
+    # -----------------
         
     def _check_dataset_state( self, trans, dataset ):
         """
