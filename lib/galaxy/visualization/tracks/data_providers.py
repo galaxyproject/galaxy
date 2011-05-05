@@ -394,6 +394,14 @@ class FilterableMixin:
             filters = [ { 'name': 'Score', 'type': 'int', 'index': filter_col } ]
             filter_col += 1
             if isinstance( self.original_dataset.datatype, Gtf ):
+                # Create filters based on dataset metadata.
+                for name, a_type in self.original_dataset.metadata.attribute_types.items():
+                    if a_type in [ 'int', 'float' ]:
+                        filters.append( { 'name': name, 'type': a_type, 'index': filter_col } )
+                        filter_col += 1
+
+                '''
+                # Old code: use first line in dataset to find attributes.
                 for i, line in enumerate( open(self.original_dataset.file_name) ):
                     if not line.startswith('#'):
                         # Look at first line for attributes and types.
@@ -411,10 +419,11 @@ class FilterableMixin:
                                 filters.append( { 'name': attr, 'type': attr_type, 'index': filter_col } )
                                 filter_col += 1
                         break
+                '''
         elif isinstance( self.original_dataset.datatype, Bed ):
             # Can filter by score column only.
             filters = [ { 'name': 'Score', 'type': 'int', 'index': filter_col } ]
-        
+
         return filters
     
 class TabixDataProvider( FilterableMixin, TracksDataProvider ):
