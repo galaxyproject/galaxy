@@ -889,7 +889,7 @@ class Gtf( Gff ):
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
     
     MetadataElement( name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0 )
-    MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
+    MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[] )
     
     def sniff( self, filename ):
         """

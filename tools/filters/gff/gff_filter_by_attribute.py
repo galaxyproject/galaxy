@@ -5,7 +5,9 @@
 # abstracted and leveraged in each filtering tool.
 
 from __future__ import division
-import sys, re, os.path
+import sys
+from galaxy import eggs
+from galaxy.util.json import to_json_string, from_json_string
 
 # Older py compatibility
 try:
@@ -14,6 +16,10 @@ except:
     from sets import Set as set
 
 assert sys.version_info[:2] >= ( 2, 4 )
+
+#
+# Helper functions.
+#
 
 def get_operands( filter_condition ):
     # Note that the order of all_operators is important
@@ -28,12 +34,31 @@ def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
 
+def check_for_executable( text, description='' ):
+    # Attempt to determine if the condition includes executable stuff and, if so, exit.
+    secured = dir()
+    operands = get_operands( text )
+    for operand in operands:
+        try:
+            check = int( operand )
+        except:
+            if operand in secured:
+                stop_err( "Illegal value '%s' in %s '%s'" % ( operand, description, text ) )
+                
+#
+# Process inputs.
+#
+
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
-attribute_type = sys.argv[3]
-attribute_name = sys.argv[4]
-cond_text = sys.argv[5]
+cond_text = sys.argv[3]
+attribute_types = from_json_string( sys.argv[4] )
 
+# Convert types from str to type objects.
+for name, a_type in attribute_types.items():
+    check_for_executable(a_type)
+    attribute_types[ name ] = eval( a_type )
+    
 # Unescape if input has been escaped
 mapped_str = {
     '__lt__': '<',
@@ -47,26 +72,22 @@ mapped_str = {
 }
 for key, value in mapped_str.items():
     cond_text = cond_text.replace( key, value )
-    
-# Condition text is 'attribute meets condition.'
-cond_text = attribute_name + cond_text
-    
-# Attempt to determine if the condition includes executable stuff and, if so, exit
-secured = dir()
-operands = get_operands(cond_text)
-for operand in operands:
-    try:
-        check = int( operand )
-    except:
-        if operand in secured:
-            stop_err( "Illegal value '%s' in condition '%s'" % ( operand, cond_text ) )
-            
-# Set up assignment.
-assignment = "%s = attributes.get('%s', None)" % ( attribute_name, attribute_name )
-            
-# Set up type casting based on attribute type.
-type_cast = "%s = %s(%s)" % ( attribute_name, attribute_type, attribute_name)
+        
+# Attempt to determine if the condition includes executable stuff and, if so, exit.
+check_for_executable( cond_text, 'condition')
 
+# Prepare the column variable names and wrappers for column data types. Only 
+# prepare columns up to largest column in condition.
+attrs, type_casts = [], []
+for name, attr_type in attribute_types.items():
+    attrs.append( name )
+    type_cast = "get_value('%(name)s', attribute_types['%(name)s'], attribute_values)" % ( {'name': name} )
+    type_casts.append( type_cast )
+    
+attr_str = ', '.join( attrs )    # 'c1, c2, c3, c4'
+type_cast_str = ', '.join( type_casts )  # 'str(c1), int(c2), int(c3), str(c4)'
+wrap = "%s = %s" % ( attr_str, type_cast_str )
+    
 # Stats 
 skipped_lines = 0
 first_invalid_line = 0
@@ -74,6 +95,13 @@ invalid_line = None
 lines_kept = 0
 total_lines = 0
 out = open( out_fname, 'wt' )
+
+# Helper function to safely get and type cast a value in a dict.
+def get_value(name, a_type, values_dict):
+    if name in values_dict:
+        return (a_type)(values_dict[ name ])
+    else:
+        return None
     
 # Read and filter input file, skipping invalid lines
 code = '''
@@ -87,34 +115,30 @@ for i, line in enumerate( file( in_fname ) ):
             invalid_line = line
         continue
     try:
-        # GTF format: chrom source, name, chromStart, chromEnd, score, strand, frame, attributes.
-        # Attributes format: name1 "value1" ; name2 "value2" ; ...
+        # Place attribute values into variables with attribute
+        # name; type casting is done as well.
         elems = line.split( '\t' )
-        attributes_list = elems[8].split(";")
-        attributes = {}
-        for name_value_pair in attributes_list:
+        attribute_values = {}
+        for name_value_pair in elems[8].split(";"):
             pair = name_value_pair.strip().split(" ")
             if pair == '':
                 continue
             name = pair[0].strip()
             if name == '':
                 continue
-            # Need to strip double quote from values
-            value = pair[1].strip(" \\"")
-            attributes[name] = value
+            # Need to strip double quote from value and typecast.
+            attribute_values[name] = pair[1].strip(" \\"")
         %s
         if %s:
-            %s
-            if %s:
-                lines_kept += 1
-                print >> out, line
+            lines_kept += 1
+            print >> out, line
     except Exception, e:
+        print e
         skipped_lines += 1
         if not invalid_line:
             first_invalid_line = i + 1
             invalid_line = line
-''' % ( assignment, attribute_name, type_cast, cond_text )
-
+''' % ( wrap, cond_text )
 
 valid_filter = True
 try:
