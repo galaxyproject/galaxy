@@ -146,13 +146,20 @@ var sortable = function( element, handle ) {
         // to handle the end specially since we don't have 
         // insert at index
         if ( i === children.length ) {
-            if ( this !== children.get( i - 1 ) ) {
-                parent.append( this );
+            if ( this !== children.get(i - 1) ) {
+                parent.append(this);
             }
         }
-        else if ( this !== children.get( i ) ) {
-            $(this).insertBefore( children.get( i ) );
+        else if ( this !== children.get(i) ) {
+            $(this).insertBefore( children.get(i) );
         }
+    }).bind("dragstart", function() {
+        $(this).css({
+            "border-top": "1px solid blue",
+            "border-bottom": "1px solid blue"
+        });
+    }).bind("dragend", function() {
+        $(this).css("border", "0px");
     });
 };
 exports.sortable = sortable;
@@ -2428,7 +2435,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             this.container_div.find(".yaxislabel").remove();
             var max_label = $("<div />").addClass('yaxislabel');
             max_label.text( result.max );
-            max_label.css({ position: "absolute", top: "22px", left: "10px", color: this.prefs.label_color });
+            max_label.css({ position: "absolute", top: "24px", left: "10px", color: this.prefs.label_color });
             max_label.prependTo(this.container_div);
             // Create canvas
             var canvas = this.view.canvas_manager.new_canvas();
