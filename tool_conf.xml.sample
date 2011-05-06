@@ -319,7 +319,7 @@
   <section name="NGS: Indel Analysis" id="indel_analysis">
    <tool file="indels/sam_indel_filter.xml" />
    <tool file="indels/indel_sam2interval.xml" />
-   <tool file="indels/indel_table.xml" />"
+   <tool file="indels/indel_table.xml" />
    <tool file="indels/indel_analysis.xml" />
   </section>
   <section name="NGS: RNA Analysis" id="ngs-rna-tools">
