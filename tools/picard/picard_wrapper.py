@@ -8,7 +8,7 @@ code Ross wrote licensed under the LGPL
 see http://www.gnu.org/copyleft/lesser.html
 """
 
-import optparse, os, sys, subprocess, tempfile, shutil, time
+import optparse, os, sys, subprocess, tempfile, shutil, time, pysam
 
 galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -52,11 +52,10 @@ class PicardBase():
         if self.opts.outdir == None:
              self.opts.outdir = self.opts.tmpdir # fixmate has no html file eg
         assert self.opts.outdir <> None,'## PicardBase needs a temp directory if no output directory passed in'
-        self.maxloglines = 100
-        self.picname = self.nameMunge(opts.jar)
+        self.picname = self.baseName(opts.jar)
         if self.picname.startswith('picard'):
-	    self.picname = opts.picard_cmd # special case for some tools like replaceheader?
-        self.progname = self.nameMunge(arg0)
+            self.picname = opts.picard_cmd # special case for some tools like replaceheader?
+        self.progname = self.baseName(arg0)
         self.version = '0.002'
         self.delme = [] # list of files to destroy
         self.title = opts.title
@@ -72,7 +71,7 @@ class PicardBase():
         self.log_filename = '%s.log' % self.picname
         self.metricsOut =  os.path.join(opts.outdir,'%s.metrics.txt' % self.picname)
  
-    def nameMunge(self,name=None):
+    def baseName(self,name=None):
         return os.path.splitext(os.path.basename(name))[0]
 
     def readLarge(self,fname=None):
@@ -172,7 +171,7 @@ class PicardBase():
             except:
                 pass
                     
-    def prettyPicout(self,transpose=True,maxrows=100):
+    def prettyPicout(self,transpose,maxrows):
         """organize picard outpouts into a report html page
         """
         res = []
@@ -181,7 +180,7 @@ class PicardBase():
         except:
             r = []        
         if len(r) > 0:
-            res.append('<b>Picard on line resources</b><ul>\n')
+            res.append('<b>Picard on line resources - maxrows=%d</b><ul>\n' % maxrows)
             res.append('<li><a href="http://picard.sourceforge.net/index.shtml">Click here for Picard Documentation</a></li>\n')
             res.append('<li><a href="http://picard.sourceforge.net/picard-metric-definitions.shtml">Click here for Picard Metrics definitions</a></li></ul><hr/>\n')
             if transpose:
@@ -221,19 +220,18 @@ class PicardBase():
                             tdat = ['<tr class="d%d"><td>%s</td></tr>\n' % ((i+len(heads)) % 2,x) for i,x in enumerate(dat) if i < maxrows] 
                             missing = len(tdat) - maxrows
                             if missing > 0:      
-                                tdat.append('<tr><td>...WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (missing,os.path.basename(picout)))
+                                tdat.append('<tr><td>...WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (missing,os.path.basename(self.metricsOut)))
                         res += tdat
                         dat = []
             res.append('</table>\n')   
         return res
 
-    def fixPicardOutputs(self,transpose=True,maxloglines=100):
+    def fixPicardOutputs(self,transpose,maxloglines):
         """
         picard produces long hard to read tab header files
         make them available but present them transposed for readability
         """
         self.cleanup() # remove temp files stored in delme
-        self.maxloglines = maxloglines
         rstyle="""<style type="text/css">
         tr.d0 td {background-color: oldlace; color: black;}
         tr.d1 td {background-color: aliceblue; color: black;}
@@ -256,7 +254,7 @@ class PicardBase():
                 fn = os.path.split(f)[-1]
                 res.append('<tr><td><a href="%s">%s</a></td></tr>\n' % (fn,fn))
             res.append('</table><p/>\n') 
-        pres = self.prettyPicout(transpose=transpose,maxrows=self.maxloglines)
+        pres = self.prettyPicout(transpose,maxloglines)
         if len(pres) > 0:
             res += pres
         l = open(self.log_filename,'r').readlines()
@@ -264,9 +262,9 @@ class PicardBase():
         if llen > 0: 
             res.append('<b>Picard log</b><hr/>\n') 
             rlog = ['<pre>',]
-            if llen > self.maxloglines:
-                rlog += l[:self.maxloglines]                
-                rlog.append('\n<b>## WARNING - %d log lines truncated - %s contains entire output' % (llen - self.maxloglines,self.log_filename))
+            if llen > maxloglines:
+                rlog += l[:maxloglines]                
+                rlog.append('\n<b>## WARNING - %d log lines truncated - %s contains entire output' % (llen - maxloglines,self.log_filename))
             else:
                 rlog += l
             rlog.append('</pre>')
@@ -281,12 +279,82 @@ class PicardBase():
         outf.write('\n')
         outf.close()
 
+    def makePicInterval(self,inbed=None,outf=None):
+        """
+        picard wants bait and target files to have the same header length as the incoming bam/sam 
+        a meaningful (ie accurate) representation will fail because of this - so this hack
+        it would be far better to be able to supply the original bed untouched
+        """
+        assert inbed <> None
+        bed = open(inbed,'r').readlines()
+        thead = os.path.join(self.opts.outdir,'tempSamHead.txt')
+        if self.opts.datatype == 'sam':
+            cl = ['samtools view -H -S',self.opts.input,'>',thead]
+        else:
+            cl = ['samtools view -H',self.opts.input,'>',thead]
+        self.runCL(cl=cl,output_dir=self.opts.outdir)
+        head = open(thead,'r').readlines()
+        s = '## got %d rows of header\n' % (len(head))
+        lf = open(self.log_filename,'a')
+        lf.write(s)
+        lf.close()
+        o = open(outf,'w')
+        o.write(''.join(head))
+        o.write(''.join(bed))
+        o.close()
+        return outf                 
 
+
+    def cleanSam(self, insam=None, newsam=None, picardErrors=[],outformat=None):
+        """
+        interesting problem - if paired, must remove mate pair of errors too or we have a new set of errors after cleaning - missing mate pairs!
+        Do the work of removing all the error sequences
+        pysam is cool
+        infile = pysam.Samfile( "-", "r" )
+        outfile = pysam.Samfile( "-", "w", template = infile )
+        for s in infile: outfile.write(s)
+
+        errors from ValidateSameFile.jar look like
+        WARNING: Record 32, Read name SRR006041.1202260, NM tag (nucleotide differences) is missing
+        ERROR: Record 33, Read name SRR006041.1042721, Empty sequence dictionary.
+        ERROR: Record 33, Read name SRR006041.1042721, RG ID on SAMRecord not found in header: SRR006041
+
+        """
+        assert os.path.isfile(insam), 'rgPicardValidate cleansam needs an input sam file - cannot find %s' % insam
+        assert newsam <> None, 'rgPicardValidate cleansam needs an output new sam file path'
+        removeNames = [x.split(',')[1].replace(' Read name ','') for x in picardErrors if len(x.split(',')) > 2]
+        remDict = dict(zip(removeNames,range(len(removeNames))))
+        infile = pysam.Samfile(insam,'rb')
+        info = 'found %d error sequences in picardErrors, %d unique' % (len(removeNames),len(remDict))
+        if len(removeNames) > 0:
+            outfile = pysam.Samfile(newsam,'wb',template=infile) # template must be an open file
+            i = 0
+            j = 0
+            for row in infile:
+                dropme = remDict.get(row.qname,None) # keep if None
+                if not dropme:
+                    outfile.write(row)
+                    j += 1
+                else: # discard
+                    i += 1
+            info = '%s\n%s' % (info, 'Discarded %d lines writing %d to %s from %s' % (i,j,newsam,insam))
+            outfile.close()
+            infile.close()
+        else: # we really want a nullop or a simple pointer copy
+            infile.close()
+            if newsam:
+                shutil.copy(insam,newsam)
+        lf = open(self.log_filename,'a')
+        lf.write(info)
+        lf.write('\n')
+        lf.close()
+                
 
 
 def __main__():
     doFix = False # tools returning htmlfile don't need this
     doTranspose = True # default
+    maxloglines = 100 # default 
     #Parse Command Line
     op = optparse.OptionParser()
     # All tools
@@ -323,7 +391,7 @@ def __main__():
     # CollectAlignmentSummaryMetrics
     op.add_option('', '--maxinsert', default="20")
     op.add_option('', '--adaptors', action='append', type="string")
-    # FixMateInformation
+    # FixMateInformation and validate
     op.add_option('','--newformat', default='bam')
     # CollectGcBiasMetrics
     op.add_option('', '--windowsize', default='100')
@@ -349,16 +417,25 @@ def __main__():
     op.add_option('','--minid', default="5")
     op.add_option('','--maxdiff', default="0.03")
     op.add_option('','--minmeanq', default="20")
-
+    #hsmetrics
+    op.add_option('','--baitbed', default=None)
+    op.add_option('','--targetbed', default=None)
+    #validate
+    op.add_option('','--ignoreflags', action='append', type="string")
+    op.add_option('','--maxerrors', default=None)
+    op.add_option('','--datatype', default=None)
+    op.add_option('','--bamout', default=None)
+    op.add_option('','--samout', default=None)
 
     opts, args = op.parse_args()
     opts.sortme = opts.assumesorted == 'false'
     assert opts.input <> None
     # need to add
-    # output version # of tool
+    # instance that does all the work
     pic = PicardBase(opts,sys.argv[0])
 
     tmp_dir = opts.outdir
+    haveTempout = False # we use this where sam output is an option
 
     # set ref and dict files to use (create if necessary)
     ref_file_name = opts.ref
@@ -373,7 +450,7 @@ def __main__():
         os.symlink( opts.ref_file, ref_file_name )
         cl = ['REFERENCE=%s' % ref_file_name]
         cl.append('OUTPUT=%s' % dict_file_name)
-        cl.append('URI=%s' % os.path.basename( ref_file ))
+        cl.append('URI=%s' % os.path.basename( opts.ref_file ))
         cl.append('TRUNCATE_NAMES_AT_WHITESPACE=%s' % opts.trunc_names)
         if opts.species_name:
             cl.append('SPECIES=%s' % opts.species_name)
@@ -429,7 +506,7 @@ def __main__():
     elif pic.picname == 'EstimateLibraryComplexity':
         cl.append('I=%s' % opts.input)
         cl.append('O=%s' % pic.metricsOut)
-        if float(sopts.minid) > 0:
+        if float(opts.minid) > 0:
             cl.append('MIN_IDENTICAL_BASES=%s' % opts.minid)
         if float(opts.maxdiff) > 0.0:
             cl.append('MAX_DIFF_RATE=%s' % opts.maxdiff)
@@ -439,13 +516,11 @@ def __main__():
             cl.append('READ_NAME_REGEX="%s"' % opts.readregex)
         if float(opts.optdupdist) > 0:
             cl.append('OPTICAL_DUPLICATE_PIXEL_DISTANCE=%s' % opts.optdupdist)
-        self.runPic(opts.jar,cl)
-
-
+        pic.runPic(opts.jar,cl)
 
     elif pic.picname == 'CollectAlignmentSummaryMetrics':
         # Why do we do this fakefasta thing? Because we need NO fai to be available or picard barfs unless it has the same length as the input data.
-        # why? Dunno 
+        # why? Dunno Seems to work without complaining if the .bai file is AWOL....
         fakefasta = os.path.join(opts.outdir,'%s_fake.fasta' % os.path.basename(ref_file_name))
         try:
             os.symlink(ref_file_name,fakefasta)
@@ -468,8 +543,7 @@ def __main__():
             pic.delme.append(fakeinput)
             cl.append('INPUT=%s' % fakeinput)
         else:
-            cl.append('INPUT=%s' % os.path.abspath(opts.input))          
-
+            cl.append('INPUT=%s' % os.path.abspath(opts.input)) 
         pic.runPic(opts.jar,cl)
        
         
@@ -539,8 +613,7 @@ def __main__():
            lf.write(stdouts)
            lf.write('\n')
         lf.close()
-  
-      
+        
     elif pic.picname == 'MarkDuplicates':
         # assume sorted even if header says otherwise
         cl.append('ASSUME_SORTED=%s' % (opts.assumesorted))
@@ -563,14 +636,7 @@ def __main__():
         cl.append('O=%s' % tempout)
         cl.append('SORT_ORDER=%s' % opts.sortorder)
         pic.runPic(opts.jar,cl)
-        # Picard tool produced intermediate bam file. Depending on the
-        # desired format, we either just move to final location or create
-        # a sam version of it.
-        if opts.newformat == 'sam':
-            tlog, tempsam = pic.bamToSam( tempout, opts.outdir )
-            shutil.move(tempsam,os.path.abspath(opts.output))
-        else:
-            shutil.move(tempout, os.path.abspath(opts.output))       
+        haveTempout = True
         
     elif pic.picname == 'ReorderSam':
         # input
@@ -596,13 +662,84 @@ def __main__():
         if opts.output_format == 'sam':
             tlog,newsam = pic.bamToSam(tempout,opts.tmpdir)
             shutil.move(newsam,opts.output)
-	else:
-	    shutil.move(tempout,opts.output)
+        else:
+            shutil.move(tempout,opts.output)
+            
+    elif pic.picname == "CalculateHsMetrics":
+        maxloglines = 100
+        baitfname = os.path.join(opts.outdir,'rgPicardHsMetrics.bait')
+        targetfname = os.path.join(opts.outdir,'rgPicardHsMetrics.target')
+        baitf = pic.makePicInterval(opts.baitbed,baitfname)
+        if opts.targetbed == opts.baitbed: # same file sometimes
+            targetf = baitf
+        else:
+            targetf = pic.makePicInterval(opts.targetbed,targetfname)   
+        cl.append('BAIT_INTERVALS=%s' % baitf)
+        cl.append('TARGET_INTERVALS=%s' % targetf)
+        cl.append('INPUT=%s' % os.path.abspath(opts.input))
+        cl.append('OUTPUT=%s' % pic.metricsOut)
+        cl.append('TMP_DIR=%s' % opts.tmpdir)
+        pic.runPic(opts.jar,cl)     
+           
+    elif pic.picname == "ValidateSamFile":
+        doTranspose = False
+        sortedfile = os.path.join(opts.outdir,'rgValidate.sorted')
+        stf = open(pic.log_filename,'w')
+        tlog = None
+        if opts.datatype == 'sam': # need to work with a bam 
+            tlog,tempbam = pic.samToBam(opts.input,opts.outdir)
+            try:
+                tlog = pic.sortSam(tempbam,sortedfile,opts.outdir)
+            except:
+                print '## exception on sorting sam file %s' % opts.input
+        else: # is already bam
+            try:
+                tlog = pic.sortSam(opts.input,sortedfile,opts.outdir)
+            except: # bug - [bam_sort_core] not being ignored - TODO fixme
+                print '## exception on sorting bam file %s' % opts.input
+        if tlog:
+            print '##tlog=',tlog
+            stf.write(tlog)
+            stf.write('\n')
+        sortedfile = '%s.bam' % sortedfile # samtools does that      
+        cl.append('O=%s' % pic.metricsOut)
+        cl.append('TMP_DIR=%s' % opts.tmpdir)
+        cl.append('I=%s' % sortedfile)
+        opts.maxerrors = '99999999'
+        cl.append('MAX_OUTPUT=%s' % opts.maxerrors)
+        if opts.ignoreflags[0] <> 'None': # picard error values to ignore
+            igs = ['IGNORE=%s' % x for x in opts.ignoreflags if x <> 'None']
+            cl.append(' '.join(igs))
+        if opts.bisulphite.lower() <> 'false':
+            cl.append('IS_BISULFITE_SEQUENCED=true')
+        if opts.ref <> None or opts.ref_file <> None:
+            cl.append('R=%s' %  ref_file_name)            
+        pic.runPic(opts.jar,cl)         
+        if opts.datatype == 'sam': 
+            pic.delme.append(tempbam)
+        newsam = opts.output
+        outformat = 'bam'            
+        if opts.newformat == 'sam':
+            outformat = 'sam'
+        pe = open(pic.metricsOut,'r').readlines()
+        pic.cleanSam(insam=sortedfile, newsam=newsam, picardErrors=pe,outformat=outformat)
+        pic.delme.append(sortedfile) # not wanted
+        stf.close()
+        pic.cleanup()
     else:
         print >> sys.stderr,'picard.py got an unknown tool name - %s' % pic.picname
         sys.exit(1)
+    if haveTempout:
+        # Some Picard tools produced a potentially intermediate bam file. 
+        # Either just move to final location or create sam
+        if opts.newformat == 'sam':
+            tlog, tempsam = pic.bamToSam( tempout, opts.outdir )
+            shutil.move(tempsam,os.path.abspath(opts.output))
+        else:
+            shutil.move(tempout, os.path.abspath(opts.output))       
 
     if opts.htmlout <> None or doFix: # return a pretty html page
-        pic.fixPicardOutputs(transpose=doTranspose,maxloglines=100)
+        pic.fixPicardOutputs(transpose=doTranspose,maxloglines=maxloglines)
 
 if __name__=="__main__": __main__()
+

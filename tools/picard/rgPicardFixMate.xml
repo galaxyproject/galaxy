@@ -1,5 +1,5 @@
 <tool name="Paired Read Mate Fixer:" id="rgPicFixMate" version="0.01">
-  <description>(Picard)</description>
+  <description>for paired data</description>
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -o "$out_file" --tmpdir "${__new_file_path__}" -n "$out_prefix" 
    --newformat "$newformat" -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/FixMateInformation.jar" --sortorder "$sortOrder"
@@ -82,7 +82,7 @@ If you need to repair broken paired read sam/bam files, the Picard tool may help
 
 **From the Picard documentation**
 
-.. csv-table:: GC Bias Doc
+.. csv-table:: Fixmate
 
    :header-rows: 1
 
@@ -106,7 +106,11 @@ if a tool fails unexpectedly when you run it in Galaxy.
 All the Picard tools are freely available and are documented
 at http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
 
-Here, you can apply Picard tools through Galaxy which might be easier than through the native Picard command line interface.
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
+Code cleaned up and the ugliest hacks repaired by Raphael Lullis.
+Kelly Vincent wrote the first version of picard_wrapper.py that now incorporates that code.
+
+It takes a village of programmers to wrap a picard tool
 
 -----
 
@@ -116,14 +120,10 @@ Here, you can apply Picard tools through Galaxy which might be easier than throu
 
 This Galaxy tool is a component of the rgenetics toolkit.
 
-Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
-Code cleaned up and the ugliest hacks repaired by Raphael Lullis.
-Kelly Vincent wrote the first version of picard_wrapper.py that now incorporates that code.
-
-It takes a village of programmers to wrap a picard tool
-
-All rgenetics artifacts are available licensed under the LGPL
+All rgenetics artefacts are available licensed under the LGPL_
 Other dependencies are licensed at the author's discretion - please see each individual package for details
+ 
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
 
   </help>
 </tool>

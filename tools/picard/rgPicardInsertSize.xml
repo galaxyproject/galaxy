@@ -1,5 +1,5 @@
 <tool name="Insertion size metrics:" id="rgPicInsertSize" version="0.01">
-  <description>(Picard)</description>
+  <description>for PAIRED data</description>
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --taillimit "$tailLimit"
    --histwidth "$histWidth" --minpct "$minPct"

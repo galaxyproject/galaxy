@@ -17,18 +17,24 @@
       help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
     <param name="out_prefix" value="Short Read GC Bias Metrics" type="text"
       label="Title for the output file - use this remind you what the job was for" size="80" />
-    <conditional name="genomeSource">
-      <param name="refGenomeSource" type="select" help="If in doubt, choose built-in and read Picard/Samtools documentation"
-         label="Align to reference genome - built-in or from current history?">
-        <option value="indexed">Align to input data 'dbkey' reference genome</option>
-        <option value="history">Use a genome (fasta format) from my history</option>
+    <conditional name="genomeSource"> 
+      <param name="refGenomeSource" type="select" help="This tool needs a reference genome. Default is usually right"
+         label="Align to which reference genome? - default, built-in or choose from current history">
+        <option value="default" selected="true">Default - use the input data genome build</option>
+        <option value="indexed">Select a different built-in genome </option>
+        <option value="history">Use a genome (fasta format) from my history </option>
       </param>
-      <when value="indexed">
-       <param name="index" type="select" label="Select a reference genome">
-          <options from_data_table="all_fasta"> 
+      <when value="default">
+        <param name="index" type="select" label="Select a default reference genome">
+          <options from_data_table="all_fasta">
           <filter type="data_meta" ref="input_file" key="dbkey" column="dbkey" multiple="True" separator=","/>
-          <validator type="no_options" message="No reference sequences are available for the build associated with the selected input data"/>
+          <validator type="no_options" message="No reference build available for the selected input data" />
           </options>
+        </param>
+      </when>
+      <when value="indexed">
+        <param name="index" type="select" label="Select a built-in reference genome">
+          <options from_data_table="all_fasta"/>
         </param>
       </when>
       <when value="history">
@@ -168,9 +174,10 @@ Here, you can apply Picard tools through Galaxy which might be easier than throu
 This Galaxy tool is a component of the rgenetics toolkit.
 
 Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
-
-All rgenetics artifacts are available licensed under the LGPL
+All rgenetics artefacts are available licensed under the LGPL_
 Other dependencies are licensed at the author's discretion - please see each individual package for details
+ 
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
 
   </help>
 </tool>

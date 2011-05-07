@@ -1,10 +1,10 @@
 <tool name="Sam/bam Hybrid Selection Metrics:" id="PicardHsMetrics" version="0.01">
-  <description>(Picard)</description>
+  <description>For (eg exome) targetted data</description>
   <command interpreter="python">
 
-    rgPicardHsMetrics.py -i $input_file -d $html_file.files_path -o $html_file
-    -b $bait_bed -t $target_bed -n "$out_prefix" --tmpdir "${__new_file_path__}"
-    -j ${GALAXY_DATA_INDEX_DIR}/shared/jars/CalculateHsMetrics.jar -y $input_file.ext
+    picard_wrapper.py -i "$input_file" -d "$html_file.files_path" -t "$html_file" --datatype "$input_file.ext"
+    --baitbed "$bait_bed" --targetbed "$target_bed" -n "$out_prefix" --tmpdir "${__new_file_path__}"
+    -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/CalculateHsMetrics.jar" -x "$maxheap"
 
   </command>
   <requirements><requirement type="package">picard</requirement></requirements>
@@ -13,6 +13,13 @@
     <param name="out_prefix" value="Picard HS Metrics" type="text" label="Title for the output file - to remind you what the job was for" size="80" />
     <param name="bait_bed" type="data" format="interval" label="Bait intervals: Sequences for bait in the design - ucsc BED" size="80" />
     <param name="target_bed" type="data" format="interval" label="Target intervals: Sequences for targets in the design - ucsc BED" size="80" />
+    <param name="maxheap" type="select" 
+       help="If in doubt, try the default. If it fails with a complaint about java heap size, try increasing it please - larger jobs will require your own hardware."
+     label="Java heap size">
+    <option value="4G" selected = "true">4GB default </option>
+    <option value="8G" >8GB use if 4GB fails</option>
+    <option value="16G">16GB - try this if 8GB fails</option>
+    </param>  
   </inputs>
   <outputs>
     <data format="html" name="html_file" label="${out_prefix}.html" />
@@ -23,6 +30,7 @@
       <param name="input_file" value="picard_input_summary_alignment_stats.sam" ftype="sam" />
       <param name="bait_bed" value="picard_input_bait.bed" />
       <param name="target_bed" value="picard_input_bait.bed"  />
+      <param name="maxheap" value="8G"  />
       <output name="html_file" file="picard_output_hs_transposed_summary_alignment_stats.html" ftype="html" lines_diff="212"/>
     </test>
   </tests>
@@ -140,10 +148,10 @@ Target and bait files must be selected from the UCSC BED format in your current 
 This is part of the rgenetics toolkit.
 
 Written by Ross Lazarus 2010
-
-Licensed under the LGPL
-All rgenetics artifacts are available licensed under the LGPL
+All rgenetics artefacts are available licensed under the LGPL_
 Other dependencies are licensed at the author's discretion - please see each individual package for details
+ 
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
 
   </help>
 </tool>
