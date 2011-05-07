@@ -8,7 +8,7 @@ code Ross wrote licensed under the LGPL
 see http://www.gnu.org/copyleft/lesser.html
 """
 
-import optparse, os, sys, subprocess, tempfile, shutil, time, pysam
+import optparse, os, sys, subprocess, tempfile, shutil, time
 
 galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -682,6 +682,7 @@ def __main__():
         pic.runPic(opts.jar,cl)     
            
     elif pic.picname == "ValidateSamFile":
+        import pysam
         doTranspose = False
         sortedfile = os.path.join(opts.outdir,'rgValidate.sorted')
         stf = open(pic.log_filename,'w')
