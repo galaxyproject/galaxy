@@ -5,9 +5,8 @@
     --assumesorted "$sorted" -b "$bisulphite" --adaptors "$adaptors" --maxinsert "$maxinsert" -n "$out_prefix"
     -j ${GALAXY_DATA_INDEX_DIR}/shared/jars/CollectAlignmentSummaryMetrics.jar
 #if $genomeSource.refGenomeSource == "history":
-    --ref "$genomeSource.ownFile"
-#end if
-#if $genomeSource.refGenomeSource == "indexed":
+    --ref-file "$genomeSource.ownFile"
+#else
     --ref "${ filter( lambda x: str( x[0] ) == str( $genomeSource.index ), $__app__.tool_data_tables[ 'all_fasta' ].get_fields() )[0][-1] }"
 #end if
   </command>

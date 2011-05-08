@@ -5,7 +5,7 @@
     --windowsize "$windowsize" --mingenomefrac "$mingenomefrac" -n "$out_prefix" --tmpdir "${__new_file_path__}"
     -j ${GALAXY_DATA_INDEX_DIR}/shared/jars/CollectGcBiasMetrics.jar -x "$maxheap"
 #if $genomeSource.refGenomeSource == "history":
- --own_ref "$genomeSource.ownFile"
+ --ref-file "$genomeSource.ownFile"
 #else:
  --ref "${ filter( lambda x: str( x[0] ) == str( $genomeSource.index ), $__app__.tool_data_tables[ 'all_fasta' ].get_fields() )[0][-1] }"
 #end if
