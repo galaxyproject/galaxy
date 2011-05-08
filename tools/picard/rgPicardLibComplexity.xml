@@ -47,7 +47,7 @@
       <param name="minMeanQ" value="20" />
       <param name="readRegex" value="[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*" />
       <param name="optDupeDist" value="100" />      
-      <output name="html_file" file="picard_output_estlibcomplexity_tinysam.html" ftype="html" lines_diff="25" />
+      <output name="html_file" file="picard_output_estlibcomplexity_tinysam.html" ftype="html" lines_diff="30" />
     </test>
   </tests>
   <help>
