@@ -180,7 +180,7 @@ class PicardBase():
         except:
             r = []        
         if len(r) > 0:
-            res.append('<b>Picard on line resources - maxrows=%d</b><ul>\n' % maxrows)
+            res.append('<b>Picard on line resources:</b><ul>\n')
             res.append('<li><a href="http://picard.sourceforge.net/index.shtml">Click here for Picard Documentation</a></li>\n')
             res.append('<li><a href="http://picard.sourceforge.net/picard-metric-definitions.shtml">Click here for Picard Metrics definitions</a></li></ul><hr/>\n')
             if transpose:
