@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool id="freebayes_wrapper" name="Call SNPS with Freebayes" version="0.4.2">
+<tool id="freebayes_wrapper" name="Call SNPS with Freebayes" version="0.5.0">
   <requirements>
     <requirement type="package">freebayes</requirement>
   </requirements>
@@ -39,7 +39,7 @@
             #end if
   </command>
   <inputs>
-    <param format="fasta" name="reference" type="data" label="Reference File"/>
+    <param format="fasta" name="reference" type="data" metadata_name="dbkey" label="Reference File"/>
     <param format="bam" name="bamfile" type="data" label="Bam Alignment File"/>
     <conditional name="params">
       <param name="source_select" type="select" label="Freebayes Settings to Use" help="For straight forward mapping needs use Commonly Used settings. If you want full control use Full Parameter List">
@@ -108,7 +108,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="vcf" name="output"/>
+    <data format="vcf" name="output" metadata_source="reference" />
   </outputs>
   <tests>
     <test>
