@@ -53,6 +53,7 @@ LINKS="
 /galaxy/data/location/perm_base_index.loc
 /galaxy/data/location/perm_color_index.loc
 /galaxy/data/location/phastOdds.loc
+/galaxy/data/location/picard_index.loc
 /galaxy/data/location/quality_scores.loc
 /galaxy/data/location/regions.loc
 /galaxy/data/location/sam_fa_indices.loc
