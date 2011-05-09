@@ -7,7 +7,6 @@
         cuffdiff_wrapper.py
             --FDR=$fdr
             --num-threads="4"
-            --min-mapqual=$min_mapqual
             --min-alignment-count=$min_alignment_count
 
             --isoforms_fpkm_tracking_output=$isoforms_fpkm_tracking
@@ -36,7 +35,7 @@
             
             ## Bias correction?
             #if $bias_correction.do_bias_correction == "Yes":
-	        -r
+	        -b
                 #if $bias_correction.seq_source.index_source == "history":
                     --ref_file=$bias_correction.seq_source.ref_file
                 #else:
@@ -97,7 +96,6 @@
         </conditional>
 
         <param name="fdr" type="float" value="0.05" label="False Discovery Rate" help="The allowed false discovery rate."/>
-        <param name="min_mapqual" type="integer" value="0" label="Min SAM Mapping Quality" help="Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number."/>
         <param name="min_alignment_count" type="integer" value="1000" label="Min Alignment Count" help="The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples."/>
         <param name="do_normalization" type="select" label="Perform quartile normalization" help="Removes top 25% of genes from FPKM denominator to improve accuracy of differential expression calls for low abundance transcripts.">
             <option value="No">No</option>
@@ -169,8 +167,8 @@
                     Line diffs are needed because cuffdiff does not produce deterministic output.
                     TODO: can we find datasets that lead to deterministic behavior?
                 -->
-                <output name="isoforms_exp" file="cuffdiff_out1.txt" lines_diff="14"/>
-                <output name="genes_exp" file="cuffdiff_out2.txt" lines_diff="10"/>
+                <output name="isoforms_exp" file="cuffdiff_out1.txt" lines_diff="56"/>
+                <output name="genes_exp" file="cuffdiff_out2.txt" lines_diff="30"/>
                 <output name="tss_groups_exp" file="cuffdiff_out3.txt"/>
                 <output name="cds_exp_fpkm_tracking" file="cuffdiff_out4.txt"/>
                 <output name="isoforms_fpkm_tracking" file="cuffdiff_out5.txt" lines_diff="16"/>
@@ -238,7 +236,6 @@ This is a list of implemented Cuffdiff options::
 
   -m INT                         This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments selected at 300bp, where each end is 50bp, you should set -r to be 200. The default is 45bp.
   -s INT                         The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
-  -Q	                         Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number. The default is 0.
   -c INT                         The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not significant, and the locus' observed changes don't contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).
   --FDR FLOAT                    The allowed false discovery rate. The default is 0.05.
   --num-importance-samples INT   Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000

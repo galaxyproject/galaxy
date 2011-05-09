@@ -57,7 +57,6 @@ def __main__():
     parser.add_option( '-m', '--inner-mean-dist', dest='inner_mean_dist', help='This is the expected (mean) inner distance between mate pairs. \
                                                                                 For, example, for paired end runs with fragments selected at 300bp, \
                                                                                 where each end is 50bp, you should set -r to be 200. The default is 45bp.')
-    parser.add_option( '-Q', '--min-mapqual', dest='min_mapqual', help='Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number. The default is 0.' )
     parser.add_option( '-c', '--min-alignment-count', dest='min_alignment_count', help='The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not signficant, and the locus\' observed changes don\'t contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).' )
     parser.add_option( '--FDR', dest='FDR', help='The allowed false discovery rate. The default is 0.05.' )
 
@@ -78,7 +77,7 @@ def __main__():
     parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
 
     # Bias correction options.
-    parser.add_option( '-r', dest='do_bias_correction', action="store_true", help='Providing Cufflinks with a multifasta file via this option instructs it to run our new bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates.')
+    parser.add_option( '-b', dest='do_bias_correction', action="store_true", help='Providing Cufflinks with a multifasta file via this option instructs it to run our new bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates.')
     parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
     parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
     parser.add_option( '', '--ref_file', dest='ref_file', help='The reference dataset from the history' )
@@ -145,8 +144,6 @@ def __main__():
         cmd += ( " -p %i" % int ( options.num_threads ) )
     if options.inner_mean_dist:
         cmd += ( " -m %i" % int ( options.inner_mean_dist ) )
-    if options.min_mapqual:
-        cmd += ( " -Q %i" % int ( options.min_mapqual ) )
     if options.min_alignment_count:
         cmd += ( " -c %i" % int ( options.min_alignment_count ) )
     if options.FDR:
@@ -158,7 +155,7 @@ def __main__():
     if options.do_normalization:
         cmd += ( " -N" )
     if options.do_bias_correction:
-        cmd += ( " -r %s" % seq_path )
+        cmd += ( " -b %s" % seq_path )
             
     # Add inputs.
     # For replicate analysis: group1_rep1,group1_rep2 groupN_rep1,groupN_rep2
