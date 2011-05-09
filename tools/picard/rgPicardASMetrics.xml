@@ -61,7 +61,7 @@
       <param name="refGenomeSource" value="history" />
       <param name="ownFile" value="picard_input_hg18.trimmed.fasta" />
       <param name="input_file" value="picard_input_tiny.sam" dbkey="hg18" />
-      <output name="html_file" file="picard_output_alignment_summary_metrics.html" ftype="html" lines_diff="50"/>
+      <output name="html_file" file="picard_output_alignment_summary_metrics.html" ftype="html" lines_diff="55"/>
     </test>
     <test>
       <param name="out_prefix" value="AsMetricsIndexed" />
@@ -69,7 +69,6 @@
       <param name="sorted" value="true" />
       <param name="adaptors" value="" />
       <param name="maxinsert" value="100000" />
-      <param name="index" value="hg18" />
       <param name="refGenomeSource" value="indexed" />
       <param name="index" value="hg18" />
       <param name="input_file" value="picard_input_sorted_pair.sam" dbkey="hg18" />
