@@ -1,4 +1,4 @@
-<tool id="bfast_wrapper" name="Map with BFAST" version="0.1.2">
+<tool id="bfast_wrapper" name="Map with BFAST" version="0.1.3">
   <description></description>
   <command interpreter="python">bfast_wrapper.py
     --numThreads="4" ##HACK: hardcode numThreads for now, should come from a location file
@@ -64,7 +64,7 @@
           <options from_data_table="bfast_indexes">
             <filter type="multiple_splitter" column="2" separator=","/>
             <filter type="param_value" column="2" ref="input1" ref_attribute="extension"/>
-            <filter type="sort_by" column="1"/>
+            <filter type="sort_by" column="3"/>
             <validator type="no_options" message="No indexes are available for the selected input dataset"/>
           </options>
         </param>
@@ -112,11 +112,11 @@
         <param name="keySize" type="integer" value="-1" label="Truncate key size in 'match'" help="Set this to reduce the effective key size of all indexes in 'bfast match' (advanced users only)" />
         <param name="maxKeyMatches" type="integer" value="8" label="The maximum number of matches to allow before a key is ignored" help="Lower values will result in more unique regions being examined, while larger values will allow include repetitive regions" />
         <param name="maxNumMatches" type="integer" value="384" label="The maximum number of matches to allow before a read is discarded" help="Larger values will allow more hits to be examined" />
-		<param name="whichStrand" type="select" label="The strands to consider" help="Both strands, forward strand only, or reverse strand only">
-			<option value="0">Both strands</option>
-			<option value="1">Forward strand only</option>
-			<option value="2">Reverse strand only</option>
-		</param>
+        <param name="whichStrand" type="select" label="The strands to consider" help="Both strands, forward strand only, or reverse strand only">
+          <option value="0">Both strands</option>
+          <option value="1">Forward strand only</option>
+          <option value="2">Reverse strand only</option>
+        </param>
         
         <param name="scoringMatrixFileName" type="data" format="text" optional="True" label="Scoring Matrix file used to score the alignments" help="See BFAST manual for file format requirements. (advanced users only)"/>
         <param name="ungapped" type="boolean" truevalue="--ungapped" falsevalue="" checked="no" label="Perform ungapped local alignment" help="Performing ungapped local alignment will not consider indels while providing a significant speed increase" />
@@ -124,8 +124,8 @@
         <param name="offset" type="integer" value="20" label="The number of bases before and after each hit to consider in local alignment" help="Larger values will allow for larger insertions and deletions to be detected at the cost of speed" />
         <param name="avgMismatchQuality" type="integer" value="10" label="The average mismatch quality" help="This can be used as a scaling factor for mapping quality (advanced users only)" />
         
-	    <conditional name="localalign_params">
-	      <param name="algorithm" type="select" label="The post processing algorithm" help="This determines how reads with multiple candidate alignments are returned.  Unique alignments will return an alignment if the read has only one candidate alignment.  Uniquely best scoring alignments will return one alignment for a read if that alignment has a better alignment score than the rest of the candidate alignments.  All best scoring alignments will return all alignments that have the best alignment score for a read.">
+        <conditional name="localalign_params">
+          <param name="algorithm" type="select" label="The post processing algorithm" help="This determines how reads with multiple candidate alignments are returned.  Unique alignments will return an alignment if the read has only one candidate alignment.  Uniquely best scoring alignments will return one alignment for a read if that alignment has a better alignment score than the rest of the candidate alignments.  All best scoring alignments will return all alignments that have the best alignment score for a read.">
               <option value="0" selected="True">No filtering</option>
               <option value="1">All alignments that pass filtering</option>
               <option value="2">Unique alignments</option>
@@ -154,17 +154,22 @@
         
       </when>
     </conditional>
-    <param name="suppressHeader" type="boolean" truevalue="--suppressHeader" falsevalue="" checked="True" label="Suppress the header in the output SAM file" help="BFAST produces SAM with several lines of header information" />
+    <param name="suppressHeader" type="boolean" truevalue="--suppressHeader" falsevalue="" checked="False" label="Suppress the header in the output SAM file" help="BFAST produces SAM with several lines of header information" />
   </inputs>
   <outputs>
-    <data format="sam" name="output">
+    <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
       <actions>
         <conditional name="refGenomeSource.refGenomeSource_type">
           <when value="indexed">
             <action type="metadata" name="dbkey">
               <option type="from_data_table" column="1" name="bfast_indexes">
-                <filter type="param_value" ref="refGenomeSource.indices" column="0"/>
+                <filter type="param_value" ref="refGenomeSource.indices" column="0" />
               </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
             </action>
           </when>
         </conditional>
@@ -332,9 +337,9 @@ For **postprocess**::
       <param name="mask" value="111111111111111111" />
       <param name="hash_width" value="14" />
       <param name="source_select" value="pre_set" />
-      <param name="suppressHeader" value="False" />
       <param name="indexing_repeatmasker" value="False" />
       <param name="indexing_option_selector" value="default" />
+      <param name="suppressHeader" value="" />
       <output name="output" ftype="sam" file="bfast_out1.sam" />
     </test>
     <test>
@@ -344,10 +349,10 @@ For **postprocess**::
       <param name="mask" value="111111111111111111" />
       <param name="hash_width" value="14" />
       <param name="source_select" value="pre_set" />
-      <param name="suppressHeader" value="True" />
       <param name="indexing_repeatmasker" value="False" />
       <param name="indexing_option_selector" value="default" />
-      <output name="output" ftype="sam" file="bfast_out1.sam" lines_diff="3" /><!-- 3 headers exist in compare file, but headers are suppressed -->
+      <param name="suppressHeader" value="--suppressHeader" />
+      <output name="output" ftype="sam" file="bfast_out1.sam" lines_diff="3" /><!--  3 headers exist in compare file, but headers are suppressed -->
     </test>
     <test>
       <param name="input1" ftype="fastqcssanger" value="random_phiX_1.fastqcssanger" />
@@ -356,9 +361,9 @@ For **postprocess**::
       <param name="mask" value="111111111111111111" />
       <param name="hash_width" value="14" />
       <param name="source_select" value="pre_set" />
-      <param name="suppressHeader" value="False" />
       <param name="indexing_repeatmasker" value="False" />
       <param name="indexing_option_selector" value="default" />
+      <param name="suppressHeader" value="" />
       <output name="output" ftype="sam" file="bfast_out2.sam" />
     </test>
     <!-- test of pre-indexed data now -->
@@ -367,7 +372,7 @@ For **postprocess**::
       <param name="refGenomeSource_type" value="indexed" />
       <param name="indices" value="phiX_nt_50" />
       <param name="source_select" value="pre_set" />
-      <param name="suppressHeader" value="False" />
+      <param name="suppressHeader" value="" />
       <output name="output" ftype="sam" file="bfast_out3.sam" lines_diff="2" /><!-- MD:Z:11T38 instead of MD:Z:50 on one line-->
     </test>
   </tests>

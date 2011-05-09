@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool id="mosaik_wrapper" name="Map with Mosaik" version="1.1.0021">
+<tool id="mosaik_wrapper" name="Map with Mosaik" version="1.1.1">
   <description/>
   <requirements><requirement type="package">mosaik</requirement></requirements>
   <command>
@@ -38,13 +38,13 @@
       <when value="indexed">
         <param name="indexReference" type="select" label="Select a reference genome">
           <options from_data_table="mosaik_indexes">
-            <filter type="sort_by" column="3"/>
-            <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+            <filter type="sort_by" column="2"/>
+            <validator type="no_options" message="No indexes are available" />
           </options>
         </param>
       </when>
       <when value="history">
-        <param format="fasta" name="historyReference" type="data" label="Select a reference from history"/>
+        <param format="fasta" name="historyReference" type="data" metadata_name="dbkey" label="Select a reference from history"/>
       </when>
     </conditional>
     <param format="fastq" name="reads" type="data" label="Fastq Reads File"/>
@@ -77,9 +77,26 @@
   </inputs>
   <outputs>
     <data format="sam" name="output">
-       <change_format>
-           <when input="outFormat" value="bam" format="bam"/>
-       </change_format>
+      <change_format>
+        <when input="outFormat" value="bam" format="bam" />
+      </change_format>
+      <actions>
+        <conditional name="genomeSource.refGenomeSource">
+          <when value="indexed">
+            <action type="metadata" name="dbkey">
+              <option type="from_data_table" name="mosaik_indexes" column="1">
+                <filter type="param_value" column="0" value="#" compare="startswith" keep="False" />
+                <filter type="param_value" ref="genomeSource.indexReference" column="0" />
+              </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="genomeSource.historyReference" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
    </data>
   </outputs>
   <tests>

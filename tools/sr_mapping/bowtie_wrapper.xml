@@ -1,4 +1,4 @@
-<tool id="bowtie_wrapper" name="Map with Bowtie for Illumina" version="1.1.1">
+<tool id="bowtie_wrapper" name="Map with Bowtie for Illumina" version="1.1.2">
   <requirements><requirement type='package'>bowtie</requirement></requirements>
   <description></description>
   <parallelism method="basic"></parallelism>
@@ -136,7 +136,10 @@
       </param>
       <when value="indexed">
         <param name="index" type="select" label="Select a reference genome" help="if your genome of interest is not listed - contact Galaxy team">
-          <options from_data_table="bowtie_indexes"/>
+          <options from_data_table="bowtie_indexes">
+            <filter type="sort_by" column="2" />
+            <validator type="no_options" message="No indexes are available" />
+          </options>
         </param>
       </when>
       <when value="history">
@@ -325,7 +328,7 @@
         </conditional> <!-- pParams -->
       </when> <!-- paired -->
     </conditional> <!-- singlePaired -->
-    <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="True" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information by default" />
+    <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information by default" />
   </inputs>
   <outputs>
     <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
@@ -333,10 +336,15 @@
         <conditional name="refGenomeSource.genomeSource">
           <when value="indexed">
             <action type="metadata" name="dbkey">
-              <option type="from_file" name="bowtie_indices.loc" column="1" offset="0">
+              <option type="from_data_table" name="bowtie_indexes" column="1" offset="0">
                 <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                 <filter type="param_value" ref="refGenomeSource.index" column="0"/>
               </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
             </action>
           </when>
         </conditional>

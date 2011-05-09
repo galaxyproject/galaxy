@@ -37,6 +37,7 @@ usage: bfast_wrapper.py [options]
     -R, --reverse=R: paired end reads are given on reverse strands
     -z, --random=z: output a random best scoring alignment
     -D, --dbkey=D: Dbkey for reference genome
+    -H, --suppressHeader=H: Suppress the sam header
 """
 
 import optparse, os, shutil, subprocess, sys, tempfile
