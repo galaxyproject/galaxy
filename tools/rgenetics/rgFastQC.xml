@@ -1,0 +1,69 @@
+<tool name="Fastqc: Fastqc QC" id="fastqc" version="0.1">
+  <description>using FastQC from Babraham</description>
+  <command interpreter="python">
+    rgFastQC.py -i $input_file -d $html_file.files_path -o $html_file -n "$out_prefix" -f $input_file.ext -e ${GALAXY_DATA_INDEX_DIR}/shared/jars/FastQC/fastqc
+#if $contaminants.dataset and str($contaminants) > ''
+-c "$contaminants"
+#end if
+  </command>
+<requirements><requirement type="package">FastQC</requirement></requirements>
+  <inputs>
+    <param format="fastqsanger,fastq,bam,sam" name="input_file" type="data" label="Short read data from your current history" />
+    <param name="out_prefix" value="FastQC" type="text" label="Title for the output file - to remind you what the job was for" size="80" />
+    <param name="contaminants" type="data" format="tabular" optional="true" label="Contaminant list" 
+           help="tab delimited file with 2 columns: name and sequence.  For example: Illumina Small RNA RT Primer	CAAGCAGAAGACGGCATACGA"/>
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file"  label="${out_prefix}.html" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="1000gsample.fastq" />
+      <param name="out_prefix" value="fastqc_out" />
+      <param name="contaminants" value="fastqc_contaminants.txt" ftype="tabular" />
+      <output name="html_file" file="fastqc_report.html" ftype="html" lines_diff="100"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**Purpose**
+
+FastQC aims to provide a simple way to do some quality control checks on raw sequence data coming from high throughput sequencing pipelines. 
+It provides a modular set of analyses which you can use to give a quick impression of whether your data has any problems of 
+which you should be aware before doing any further analysis.
+
+The main functions of FastQC are
+
+Import of data from BAM, SAM or FastQ files (any variant)
+Providing a quick overview to tell you in which areas there may be problems
+Summary graphs and tables to quickly assess your data
+Export of results to an HTML based permanent report
+Offline operation to allow automated generation of reports without running the interactive application
+
+-----
+
+.. class:: infomark
+
+**Attribution**
+
+FastQC comes from http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
+Please see that site for all documentation - this is just a Galaxy wrapper.
+This tool wraps the fastqc package to report some QC metrics on fastq, groomed fastq (fastqsanger) in Galaxy
+
+This Galaxy tool wrapper is part of the rgenetics toolkit.
+
+Contaminants file parameter borrowed from the independently
+developed fastqcwrapper contributed to the galaxy community tool shed 
+by j johnson
+
+copyright Ross Lazarus at g mail dot com 2011
+Licensed under the LGPL_
+
+.. _fastqcwrapper: http%3A//community.g2.bx.psu.edu/tool/browse_tools%3F%26webapp%3Dcommunity%26operation%3Dview_tool%26id%3D256f9f17b153ce60
+
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+
+</help>
+</tool>

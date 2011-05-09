@@ -507,7 +507,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
-            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image):
+            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image)  or isinstance(dataset.datatype, datatypes.images.Html):
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( dataset.extension.lower() )
                 trans.response.set_content_type( mime )
                 return open( dataset.file_name )

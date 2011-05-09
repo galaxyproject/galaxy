@@ -371,7 +371,7 @@ class User( BaseController, UsesFormDefinitions ):
                 redirect_url = url_for( '/' )
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
-                header = require_login_creation_template % web.url_for( action='create' )
+                header = require_login_creation_template % web.url_for( action='create', cntrller='user' )
             else:
                 header = require_login_nocreation_template
         return trans.fill_template( '/user/login.mako',
@@ -735,6 +735,38 @@ class User( BaseController, UsesFormDefinitions ):
                                         webapp=webapp,
                                         message=message,
                                         status=status )
+    # For REMOTE_USER, we need the ability to just edit the username
+    @web.expose
+    @web.require_login( "to manage the public name" )
+    def edit_username( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        webapp = params.get( 'webapp', 'galaxy' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        user_id = params.get( 'user_id', None )
+        if user_id and is_admin:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+        if user and params.get( 'change_username_button', False ):
+            username = kwd.get( 'username', '' )
+            if username:
+                message = self.__validate_username( trans, username, user )
+            if message:
+                status = 'error'
+            else:
+                user.username = username
+                trans.sa_session.add( user )
+                trans.sa_session.flush()
+                message = 'The username has been updated with the changes.'
+        return trans.fill_template( '/user/username.mako',
+                                    cntrller=cntrller,
+                                    user=user,
+                                    username=user.username,
+                                    webapp=webapp,
+                                    message=message,
+                                    status=status )
     @web.expose
     def edit_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -743,12 +775,15 @@ class User( BaseController, UsesFormDefinitions ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         user_id = params.get( 'user_id', None )
-        #new_kwd = dict( webapp=webapp )
-        if user_id:
+        if user_id and is_admin:
             user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        elif user_id and ( not trans.user or trans.user.id != trans.security.decode_id( user_id ) ):
+            message = 'Invalid user id'
+            status = 'error'
+            user = None
         else:
             user = trans.user
-        if params.get( 'login_info_button', False ):
+        if user and params.get( 'login_info_button', False ):
             # Editing email and username
             email = util.restore_text( params.get( 'email', '' ) )
             username = util.restore_text( params.get( 'username', '' ) ).lower()
@@ -769,7 +804,7 @@ class User( BaseController, UsesFormDefinitions ):
                 trans.sa_session.add_all( ( user, private_role ) )
                 trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
-        elif params.get( 'change_password_button', False ):
+        elif user and params.get( 'change_password_button', False ):
             # Editing password.  Do not sanitize passwords, so get from kwd 
             # and not params (which were sanitized).
             password = kwd.get( 'password', '' )
@@ -794,7 +829,7 @@ class User( BaseController, UsesFormDefinitions ):
                     trans.sa_session.flush()
                     trans.log_event( "User change password" )
                     message = 'The password has been changed.'
-        elif params.get( 'edit_user_info_button', False ):
+        elif user and params.get( 'edit_user_info_button', False ):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id not in [ 'none' ]:
@@ -809,7 +844,7 @@ class User( BaseController, UsesFormDefinitions ):
             else:
                 values = {}
             flush_needed = False
-            if user.values:  
+            if user.values:
                 # Editing the user info of an existing user with existing user info
                 user.values.content = values
                 trans.sa_session.add( user.values )
@@ -823,7 +858,7 @@ class User( BaseController, UsesFormDefinitions ):
                 trans.sa_session.add( user )
                 trans.sa_session.flush()
             message = "The user information has been updated with the changes."
-        if webapp == 'galaxy' and is_admin:
+        if user and webapp == 'galaxy' and is_admin:
             kwd[ 'user_id' ] = trans.security.encode_id( user.id )
         kwd[ 'id' ] = user_id
         if message:

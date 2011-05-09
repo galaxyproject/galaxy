@@ -437,10 +437,21 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             if not user.default_permissions:
                 self.app.security_agent.user_set_default_permissions( user, history=True, dataset=True )
         elif user is None:
+            username = remote_user_email.split( '@', 1 )[0].lower()
             random.seed()
             user = self.app.model.User( email=remote_user_email )
             user.set_password_cleartext( ''.join( random.sample( string.letters + string.digits, 12 ) ) )
             user.external = True
+            # Replace invalid characters in the username
+            for char in filter( lambda x: x not in string.ascii_lowercase + string.digits + '-', username ):
+                username = username.replace( char, '-' )
+            # Find a unique username - user can change it later
+            if ( self.sa_session.query( self.app.model.User ).filter_by( username=username ).first() ):
+                i = 1
+                while ( self.sa_session.query( self.app.model.User ).filter_by( username=(username + '-' + str(i) ) ).first() ):
+                    i += 1
+                username += '-' + str(i)
+            user.username = username
             self.sa_session.add( user )
             self.sa_session.flush()
             self.app.security_agent.create_private_user_role( user )

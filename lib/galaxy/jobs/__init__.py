@@ -352,8 +352,8 @@ class JobWrapper( object ):
         else:
             userId = 'Anonymous'
             userEmail = 'Anonymous'
-        incoming['userId'] = userId
-        incoming['userEmail'] = userEmail
+        incoming['__user_id__'] = incoming['userId'] = userId
+        incoming['__user_email__'] = incoming['userEmail'] = userEmail
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
         # Certain tools require tasks to be completed prior to job execution

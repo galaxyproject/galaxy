@@ -1,6 +1,5 @@
 <tool id="fakePhe1" name="Null phenotypes">
   <description>for testing</description>
-   <code file="rgfakePhe_code.py"/>
    <command interpreter="python">rgfakePhe.py '$infile1.extra_files_path/$infile1.metadata.base_name'
    "$title1" '$ppheout' '$ppheout.files_path' '$script_file'
    </command>

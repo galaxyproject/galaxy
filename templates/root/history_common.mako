@@ -83,15 +83,30 @@
             <div>Dataset is uploading</div>
         %elif data_state == "queued":
             <div>${_('Job is waiting to run')}</div>
+            <div>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                %if for_editing:
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                %endif
+            </div>
         %elif data_state == "running":
             <div>${_('Job is currently running')}</div>
+            <div>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                %if for_editing:
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                %endif
+            </div>
         %elif data_state == "error":
             <div>
                 An error occurred running this job: <i>${data.display_info().strip()}</i>
             </div>
             <div>
                 <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main" title="View or report this error" class="icon-button bug tooltip"></a>
-                <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                %if for_editing:
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                %endif
             </div>
         %elif data_state == "discarded":
             <div>
@@ -101,6 +116,12 @@
             <div>${_('Metadata is being Auto-Detected.')}</div>
         %elif data_state == "empty":
             <div>${_('No data: ')}<i>${data.display_info()}</i></div>
+            <div>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
+                %if for_editing:
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                %endif
+            </div>
         %elif data_state in [ "ok", "failed_metadata" ]:
             %if data_state == "failed_metadata":
                 <div class="warningmessagesmall" style="margin: 4px 0 4px 0">

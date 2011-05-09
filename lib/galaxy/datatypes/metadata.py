@@ -358,6 +358,11 @@ class ColumnTypesParameter( MetadataParameter ):
     
     def to_string( self, value ):
         return ",".join( map( str, value ) )
+        
+class DictParameter( MetadataParameter ):
+    
+    def to_string( self, value ):
+        return  simplejson.dumps( value )
 
 class PythonObjectParameter( MetadataParameter ):
     

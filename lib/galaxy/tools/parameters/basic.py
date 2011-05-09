@@ -576,7 +576,7 @@ class SelectToolParameter( ToolParameter ):
                 value = option.get( "value" )
                 self.legal_values.add( value )
                 selected = string_as_bool( option.get( "selected", False ) )
-                self.static_options.append( ( option.text, value, selected ) )
+                self.static_options.append( ( option.text or value, value, selected ) )
         self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) )
     def get_options( self, trans, other_values ):
         if self.options:

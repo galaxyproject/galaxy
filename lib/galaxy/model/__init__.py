@@ -739,7 +739,7 @@ class DatasetInstance( object ):
         """
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
-            raise ValueError("Conversion from '%s' to '%s' not possible", self.extension, target_ext)
+            raise NoConverterException("Conversion from '%s' to '%s' not possible" % (self.extension, target_ext) )
         
         deps = {}
         # List of string of dependencies
@@ -769,7 +769,7 @@ class DatasetInstance( object ):
                     return None                    
                 
                 deps[dependency] = dep_dataset
-        except ValueError:
+        except NoConverterException:
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass # No deps

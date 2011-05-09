@@ -68,7 +68,9 @@
 
     </command>
     <inputs>
-        <param format="gtf" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source."/>
+        <param format="gtf" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source.">
+            <validator type="unspecified_build" />
+        </param>
         <conditional name="group_analysis"> 
             <param name="do_groups" type="select" label="Perform replicate analysis" help="Perform cuffdiff with replicates in each group.">
                 <option value="No">No</option>
@@ -78,13 +80,19 @@
                 <repeat name="groups" title="Group">
                     <param name="group" title="Group name" type="text" label="Group name (no spaces or commas)"/>
                     <repeat name="files" title="Replicate">
-                        <param name="file" label="Add file" type="data" format="sam,bam"/>
+                        <param name="file" label="Add file" type="data" format="sam,bam">
+                            <validator type="unspecified_build" />
+                        </param>
                     </repeat>
                 </repeat>
             </when>
             <when value="No">
-                <param format="sam,bam" name="aligned_reads1" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
-                <param format="sam,bam" name="aligned_reads2" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
+                <param format="sam,bam" name="aligned_reads1" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help="">
+                    <validator type="unspecified_build" />
+                </param>
+                <param format="sam,bam" name="aligned_reads2" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help="">
+                    <validator type="unspecified_build" />
+                </param>
             </when>
         </conditional>
 

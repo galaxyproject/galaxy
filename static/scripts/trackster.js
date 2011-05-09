@@ -146,24 +146,23 @@ var sortable = function( element, handle ) {
         // to handle the end specially since we don't have 
         // insert at index
         if ( i === children.length ) {
-            if ( this !== children.get( i - 1 ) ) {
-                parent.append( this );
+            if ( this !== children.get(i - 1) ) {
+                parent.append(this);
             }
         }
-        else if ( this !== children.get( i ) ) {
-            $(this).insertBefore( children.get( i ) );
+        else if ( this !== children.get(i) ) {
+            $(this).insertBefore( children.get(i) );
         }
+    }).bind("dragstart", function() {
+        $(this).css({
+            "border-top": "1px solid blue",
+            "border-bottom": "1px solid blue"
+        });
+    }).bind("dragend", function() {
+        $(this).css("border", "0px");
     });
 };
 exports.sortable = sortable;
-
-/**
- * Calculates step for slider with a given min, max.
- */
-var get_slider_step = function(min, max) {
-    var range = max - min;
-    return (range <= 2 ? 0.01 : (range <= 100 ? 1 : (range <= 1000 ? 5 : 10)));
-};
 
 /**
  * Init constants & functions used throughout trackster.
@@ -893,11 +892,15 @@ var Tool = function(track, tool_dict) {
     this.parent_div.find("input").click(function() { $(this).select() });
     
     // Add 'Go' button.
-    var run_tool_row = $("<div>").addClass("slider-row").appendTo(this.parent_div);
-    var run_tool_button = $("<input type='submit'>").attr("value", "Run").appendTo(run_tool_row);
+    var run_tool_row = $("<div>").addClass("param-row").appendTo(this.parent_div);
+    var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_tool_row);
+    var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").css("margin-left", "3em").appendTo(run_tool_row);
     var tool = this;
-    run_tool_button.click( function() {
-        tool.run();
+    run_on_region_button.click( function() {
+        tool.run_on_region();
+    });
+    run_on_dataset_button.click( function() {
+        tool.run_on_dataset();
     });
 };
 extend(Tool.prototype, {
@@ -928,51 +931,87 @@ extend(Tool.prototype, {
         return param_values;
     },
     /**
-     * Run tool. This creates a new child track, runs tool, and places tool's output in the new track.
+     * Run tool on dataset. Output is placed in dataset's history and no changes to viz are made.
      */
-    run: function() {
-        // Put together params for running tool.
-        var url_params = { 
-            dataset_id: this.track.original_dataset_id,
-            chrom: this.track.view.chrom,
-            low: this.track.view.low,
-            high: this.track.view.high,
-            tool_id: this.name
-        };
-        $.extend(url_params, this.get_param_values_dict());
+    run_on_dataset: function() {
+        var tool = this;
+        tool.run(
+                 // URL params.
+                 { 
+                     dataset_id: this.track.original_dataset_id,
+                     tool_id: tool.name
+                 },
+                 // Success callback.
+                 function(track_data) {
+                     show_modal(tool.name + " is Running", 
+                                tool.name + " is running on the complete dataset. Tool outputs are in dataset's history.", 
+                                { "Close" : hide_modal } );
+                 }
+                );
         
+    },
+    /**
+     * Run dataset on visible region. This creates a new track and sets the track's contents
+     * to the tool's output.
+     */
+    run_on_region: function() {
         //
         // Create track for tool's output immediately to provide user feedback.
         //
         var 
+            url_params = 
+            { 
+                dataset_id: this.track.original_dataset_id,
+                chrom: this.track.view.chrom,
+                low: this.track.view.low,
+                high: this.track.view.high,
+                tool_id: this.name
+            },
             current_track = this.track,
             // Set name of track to include tool name, parameters, and region used.
             track_name = url_params.tool_id +
                          current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
             new_track;
             
+        // Create and add track.
         // TODO: add support for other kinds of tool data tracks.
         if (current_track.track_type === 'FeatureTrack') {
             new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);    
         }
-              
         this.track.add_track(new_track);
         new_track.content_div.text("Starting job.");
         
         // Run tool.
+        this.run(url_params,
+                 // Success callback.
+                 function(track_data) {
+                     new_track.dataset_id = track_data.dataset_id;
+                     new_track.content_div.text("Running job.");
+                     new_track.init();
+                 }
+                );
+    },
+    /**
+     * Run tool using a set of URL params and a success callback.
+     */
+    run: function(url_params, success_callback) {
+        // Add tool params to URL params.
+        $.extend(url_params, this.get_param_values_dict());
+        
+        // Run tool.
         var json_run_tool = function() {
-            $.getJSON(run_tool_url, url_params, function(track_data) {
-                if (track_data === "no converter") {
+            $.getJSON(run_tool_url, url_params, function(response) {
+                if (response === "no converter") {
                     // No converter available for input datasets, so cannot run tool.
                     new_track.container_div.addClass("error");
                     new_track.content_div.text(DATA_NOCONVERTER);
                 }
-                else if (track_data.error) {
+                else if (response.error) {
                     // General error.
                     new_track.container_div.addClass("error");
-                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + track_data.message);
+                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + response.message);
                 }
-                else if (track_data === "pending") {
+                else if (response === "pending") {
                     // Converting/indexing input datasets; show message and try again.
                     new_track.container_div.addClass("pending");
                     new_track.content_div.text("Converting input data so that it can be easily reused.");
@@ -980,9 +1019,7 @@ extend(Tool.prototype, {
                 }
                 else {
                     // Job submitted and running.
-                    new_track.dataset_id = track_data.dataset_id;
-                    new_track.content_div.text("Running job.");
-                    new_track.init();
+                    success_callback(response);
                 }
             });
         };
@@ -1077,6 +1114,11 @@ extend(NumberFilter.prototype, {
      * Update filter's slider.
      */
     update_ui_elt: function () {
+        var get_slider_step = function(min, max) {
+            var range = max - min;
+            return (range <= 2 ? 0.01 : 1);
+        };
+        
         var 
             slider_min = this.slider.slider("option", "min"),
             slider_max = this.slider.slider("option", "max");
@@ -1180,12 +1222,14 @@ var FiltersManager = function(track, filters_list) {
     
     // Create filtering div.
     this.parent_div = $("<div/>").addClass("filters").hide();
-    // Disable dragging, double clicking on div so that actions on slider do not impact viz.
+    // Disable dragging, double clicking, keys on div so that actions on slider do not impact viz.
     this.parent_div.bind("drag", function(e) {
         e.stopPropagation();
     }).bind("click", function(e) {
         e.stopPropagation();
     }).bind("dblclick", function(e) {
+        e.stopPropagation();
+    }).bind("keydown", function(e) {
         e.stopPropagation();
     });
     var manager = this;
@@ -2391,7 +2435,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             this.container_div.find(".yaxislabel").remove();
             var max_label = $("<div />").addClass('yaxislabel');
             max_label.text( result.max );
-            max_label.css({ position: "absolute", top: "22px", left: "10px" });
+            max_label.css({ position: "absolute", top: "24px", left: "10px", color: this.prefs.label_color });
             max_label.prependTo(this.container_div);
             // Create canvas
             var canvas = this.view.canvas_manager.new_canvas();
@@ -2850,14 +2894,14 @@ SummaryTreePainter.prototype.draw = function( ctx, width, height ) {
         if (!y) { continue; }
         var y_px = y / max * height
         if (y !== 0 && y_px < 1) { y_px = 1; }
-        
-        ctx.fillStyle = "black";
+
+        ctx.fillStyle = this.prefs.block_color;        
         ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
         
         // Draw number count if it can fit the number with some padding, otherwise things clump up
         var text_padding_req_x = 4;
         if (this.prefs.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
-            ctx.fillStyle = "#666";
+            ctx.fillStyle = this.prefs.label_color;
             ctx.textAlign = "center";
             ctx.fillText(y, x + (delta_x_px/2), 10);
         }

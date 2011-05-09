@@ -10,7 +10,6 @@
             -I $max_intron_len
             -F $min_isoform_fraction
             -j $pre_mrna_fraction
-            -Q $min_map_quality
             
             ## Include reference annotation?
             #if $reference_annotation.use_ref == "Yes":
@@ -30,7 +29,7 @@
             
             ## Bias correction?
             #if $bias_correction.do_bias_correction == "Yes":
-	        -r
+	        -b
                 #if $bias_correction.seq_source.index_source == "history":
                     --ref_file=$bias_correction.seq_source.ref_file
                 #else:
@@ -41,11 +40,12 @@
             #end if
     </command>
     <inputs>
-        <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
+        <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help="">
+            <validator type="unspecified_build" />
+        </param>    
         <param name="max_intron_len" type="integer" value="300000" min="1" max="600000" label="Max Intron Length" help=""/>
         <param name="min_isoform_fraction" type="float" value="0.05" min="0" max="1" label="Min Isoform Fraction" help=""/>
         <param name="pre_mrna_fraction" type="float" value="0.05" min="0" max="1" label="Pre MRNA Fraction" help=""/>
-        <param name="min_map_quality" type="integer" value="0" min="0" max="255" label="Min SAM Map Quality" help=""/>
         <param name="do_normalization" type="select" label="Perform quartile normalization" help="Removes top 25% of genes from FPKM denominator to improve accuracy of differential expression calls for low abundance transcripts.">
             <option value="No">No</option>
             <option value="Yes">Yes</option>
@@ -57,7 +57,7 @@
             </param>
             <when value="No"></when>
             <when value="Yes">
-                <param format="gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
+                <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>
             </when>
         </conditional>
         <conditional name="bias_correction">
@@ -93,8 +93,8 @@
     </inputs>
 
     <outputs>
-        <data format="tabular" name="genes_expression" label="${tool.name} on ${on_string}: gene expression" from_work_dir="genes.expr"/>
-        <data format="tabular" name="transcripts_expression" label="${tool.name} on ${on_string}: transcript expression" from_work_dir="transcripts.expr"/>
+        <data format="tabular" name="genes_expression" label="${tool.name} on ${on_string}: gene expression" from_work_dir="genes.fpkm_tracking"/>
+        <data format="tabular" name="transcripts_expression" label="${tool.name} on ${on_string}: transcript expression" from_work_dir="isoforms.fpkm_tracking"/>
         <data format="gtf" name="assembled_isoforms" label="${tool.name} on ${on_string}: assembled transcripts" from_work_dir="transcripts.gtf"/>
     </outputs>
 
@@ -104,7 +104,7 @@
         -->
         <test>
             <param name="sPaired" value="No"/>
-            <param name="input" value="cufflinks_in.sam"/>
+            <param name="input" value="cufflinks_in.bam"/>
             <param name="max_intron_len" value="300000"/>
             <param name="min_isoform_fraction" value="0.05"/>
             <param name="pre_mrna_fraction" value="0.05"/>
@@ -112,8 +112,8 @@
             <param name="use_ref" value="No"/>
             <param name="do_normalization" value="No" />
             <param name="do_bias_correction" value="No"/>
-            <output name="genes_expression" format="tabular" file="cufflinks_out3.expr"/>
-            <output name="transcripts_expression" format="tabular" file="cufflinks_out2.expr"/>
+            <output name="genes_expression" format="tabular" lines_diff="2" file="cufflinks_out3.fpkm_tracking"/>
+            <output name="transcripts_expression" format="tabular" lines_diff="2" file="cufflinks_out2.fpkm_tracking"/>
             <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>
         </test>
     </tests>

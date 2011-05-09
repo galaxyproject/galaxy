@@ -1,0 +1,14 @@
+<tool id="CONVERTER_gff_to_bgzip_0" name="Convert GFF to BGZIP" version="1.0.0" hidden="true">
+<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <command interpreter="python">bgzip.py gff $input1 $output1</command>
+  <inputs>
+    <page>
+        <param format="gff" name="input1" type="data" label="Choose GFF file"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="bgzip" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

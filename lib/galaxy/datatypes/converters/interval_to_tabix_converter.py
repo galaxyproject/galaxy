@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-Uses pysam to bgzip a file
+Uses pysam to index a bgzipped interval file with tabix
+Supported presets: bed, gff, vcf
 
 usage: %prog in_file out_file
 """

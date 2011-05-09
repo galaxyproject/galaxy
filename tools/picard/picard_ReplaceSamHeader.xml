@@ -1,31 +1,35 @@
 <tool name="Replace Sam Header:" id="picard_ReplaceSamHeader" version="0.0.1">
+  <requirements><requirement type="package">picard</requirement></requirements>
   <description>(Picard)</description>
   <command interpreter="python">
     picard_wrapper.py
-      --input="$inputFile"
+      --input "$inputFile"
       #if str( $outputFormat ) == "sam"
-        --output-sam=$outFileSam
+        -o "$outFileSam"
       #else if str( $outputFormat ) == "bam"
-        --output-sam=$outFileBam
+        -o "$outFileBam"
       #end if
-      --header-file=$headerFile
-      --output-format=$outputFormat
-      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/"
-      --picard-cmd="ReplaceSamHeader"
+      --header-file $headerFile
+      --output-format $outputFormat
+      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/ReplaceSamHeader.jar"
+      --tmpdir "${__new_file_path__}" 
   </command>
   <inputs>
     <param format="bam,sam" name="inputFile" type="data" label="Input: sam or bam format short read data in your current history whose header will be replaced"
       help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
     <param format="bam,sam" name="headerFile" type="data" label="sam or bam file from which header will be read"
       help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
-    <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output bam instead of sam" help="Uncheck for sam output" />
+    <param name="outputFormat" type="select" label="Output format - use bam to save space please"> 
+           <option value="bam" selected="true">Binary (compressed) bam</option>
+           <option value="sam">Uncompressed, space hungry sam</option>
+    </param>
   </inputs>
   <outputs>
     <data name="outFileSam" format="sam" label="${tool.name} on ${on_string}: sam with replaced header">
-      <filter>outputFormat is False</filter>
+      <filter>outputFormat == 'sam'</filter>
     </data>
     <data name="outFileBam" format="bam" label="${tool.name} on ${on_string}: bam with replaced header">
-      <filter>outputFormat is True</filter>
+      <filter>outputFormat == 'bam'</filter>
     </data>
   </outputs>
   <tests>
