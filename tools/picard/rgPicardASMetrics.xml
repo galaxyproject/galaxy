@@ -70,7 +70,8 @@
       <param name="adaptors" value="" />
       <param name="maxinsert" value="100000" />
       <param name="refGenomeSource" value="indexed" />
-      <param name="input_file" value="picard_input_sorted_pair.sam" dbkey="hg18" />
+      <param name="index" value="hg19" />
+      <param name="input_file" value="picard_input_sorted_pair.sam" dbkey="hg19" />
       <output name="html_file" file="picard_output_AsMetrics_indexed_hg18_sorted_pair.html" ftype="html" lines_diff="50"/>
     </test>
   </tests>
