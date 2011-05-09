@@ -22,7 +22,7 @@ galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <body>
 <div class="document">
 """
-galhtmlattr = """Galaxy tool wrapper run %s at %s</b><br/>"""
+galhtmlattr = """Galaxy tool wrapper %s at %s</b><br/>"""
 galhtmlpostfix = """</div></body></html>\n"""
 
 
@@ -68,7 +68,7 @@ class PicardBase():
             os.makedirs(opts.tmpdir)
         except:
             pass
-        self.log_filename = '%s.log' % self.picname
+        self.log_filename = os.path.join(opts.outdir,'%s.log' % self.picname)
         self.metricsOut =  os.path.join(opts.outdir,'%s.metrics.txt' % self.picname)
  
     def baseName(self,name=None):
@@ -237,7 +237,7 @@ class PicardBase():
         tr.d1 td {background-color: aliceblue; color: black;}
         </style>"""    
         res = [rstyle,]
-        res.append(galhtmlprefix % self.progname)   
+        res.append(galhtmlprefix % self.picname)   
         res.append(galhtmlattr % (self.progname,timenow()))
         flist = [x for x in os.listdir(self.opts.outdir) if not x.startswith('.')] 
         pdflist = [x for x in flist if os.path.splitext(x)[-1].lower() == '.pdf']
