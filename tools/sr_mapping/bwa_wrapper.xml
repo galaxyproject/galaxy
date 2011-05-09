@@ -1,5 +1,5 @@
-<tool id="bwa_wrapper" name="Map with BWA" version="1.2.1">
-  <description>for Illumina</description>
+<tool id="bwa_wrapper" name="Map with BWA for Illumina" version="1.2.2">
+  <description></description>
   <parallelism method="basic"></parallelism>
   <command interpreter="python">
     bwa_wrapper.py 
@@ -44,15 +44,30 @@
         --suboptAlign=$params.suboptAlign
         --noIterSearch=$params.noIterSearch
         --outputTopN=$params.outputTopN
+        --outputTopNDisc=$params.outputTopNDisc
         --maxInsertSize=$params.maxInsertSize
         --maxOccurPairing=$params.maxOccurPairing
+        #if $params.readGroup.specReadGroup == "yes"
+          --rgid="$params.readGroup.rgid"
+          --rgcn="$params.readGroup.rgcn"
+          --rgds="$params.readGroup.rgds"
+          --rgdt="$params.readGroup.rgdt"
+          --rgfo="$params.readGroup.rgfo"
+          --rgks="$params.readGroup.rgks"
+          --rglb="$params.readGroup.rglb"
+          --rgpg="$params.readGroup.rgpg"
+          --rgpi="$params.readGroup.rgpi"
+          --rgpl="$params.readGroup.rgpl"
+          --rgpu="$params.readGroup.rgpu"
+          --rgsm="$params.readGroup.rgsm"
+        #end if
       #end if
 
       ## suppress output SAM header
       --suppressHeader=$suppressHeader
   </command>
   <requirements>
-    <requirement type='package'>bwa</requirement>
+    <requirement type="package">bwa</requirement>
   </requirements>
   <inputs>
     <conditional name="genomeSource">
@@ -63,8 +78,8 @@
       <when value="indexed">
         <param name="indices" type="select" label="Select a reference genome">
           <options from_data_table="bwa_indexes">
-            <filter type="sort_by" column="3" />
-            <validator type="no_options" message="No indexes are available for the selected input dataset" />
+            <filter type="sort_by" column="2" />
+            <validator type="no_options" message="No indexes are available" />
           </options>
         </param>
       </when>
@@ -92,25 +107,52 @@
       </param>
       <when value="pre_set" />
       <when value="full">
-        <param name="maxEditDist" type="integer" value="0" label="Maximum edit distance (-n)" help="Enter this value OR a fraction of missing alignments, not both" />
-        <param name="fracMissingAligns" type="float" value="0.04" label="Fraction of missing alignments given 2% uniform base error rate (-n)" help="Enter this value OR maximum edit distance, not both" />
-        <param name="maxGapOpens" type="integer" value="1" label="Maximum number of gap opens (-o)" />
-        <param name="maxGapExtens" type="integer" value="-1" label="Maximum number of gap extensions (-e)" help="-1 for k-difference mode (disallowing long gaps)" />
-        <param name="disallowLongDel" type="integer" value="16" label="Disallow long deletion within [value] bp towards the 3'-end (-d)" />
-        <param name="disallowIndel" type="integer" value="5" label="Disallow insertion/deletion within [value] bp towards the end (-i)" />
-        <param name="seed" type="integer" value="-1" label="Number of first subsequences to take as seed (-l)" help="Enter -1 for infinity" />
-        <param name="maxEditDistSeed" type="integer" value="2" label="Maximum edit distance in the seed (-k)" />
-        <param name="mismatchPenalty" type="integer" value="3" label="Mismatch penalty (-M)" help="BWA will not search for suboptimal hits with a score lower than [value]" />
-        <param name="gapOpenPenalty" type="integer" value="11" label="Gap open penalty (-O)" />
-        <param name="gapExtensPenalty" type="integer" value="4" label="Gap extension penalty (-E)" />
-        <param name="suboptAlign" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Proceed with suboptimal alignments even if the top hit is a repeat" help="By default, BWA only searches for suboptimal alignments if the top hit is unique. Using this option has no effect on accuracy for single-end reads. It is mainly designed for improving the alignment accuracy of paired-end reads. However, the pairing procedure will be slowed down, especially for very short reads (~32bp) (-R)" />
-        <param name="noIterSearch" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Disable iterative search" help="All hits with no more than maxDiff differences will be found. This mode is much slower than the default (-N)" />
-        <param name="outputTopN" type="integer" value="-1" label="Output top [value] hits" help="For single-end reads only. Enter -1 to disable outputting multiple hits. NOTE: If you put in a positive value here, your output will NOT be in SAM format (-n)" />
-        <param name="maxInsertSize" type="integer" value="500" label="Maximum insert size for a read pair to be considered as being mapped properly" help="For paired-end reads only. Only used when there are not enough good alignments to infer the distribution of insert sizes (-a)" />
-        <param name="maxOccurPairing" type="integer" value="100000" label="Maximum occurrences of a read for pairing" help="For paired-end reads only. A read with more occurrences will be treated as a single-end read. Reducing this parameter helps faster pairing (-o)" />
+        <param name="maxEditDist" type="integer" value="0" label="Maximum edit distance (aln -n)" help="Enter this value OR a fraction of missing alignments, not both" />
+        <param name="fracMissingAligns" type="float" value="0.04" label="Fraction of missing alignments given 2% uniform base error rate (aln -n)" help="Enter this value OR maximum edit distance, not both" />
+        <param name="maxGapOpens" type="integer" value="1" label="Maximum number of gap opens (aln -o)" />
+        <param name="maxGapExtens" type="integer" value="-1" label="Maximum number of gap extensions (aln -e)" help="-1 for k-difference mode (disallowing long gaps)" />
+        <param name="disallowLongDel" type="integer" value="16" label="Disallow long deletion within [value] bp towards the 3'-end (aln -d)" />
+        <param name="disallowIndel" type="integer" value="5" label="Disallow insertion/deletion within [value] bp towards the end (aln -i)" />
+        <param name="seed" type="integer" value="-1" label="Number of first subsequences to take as seed (aln -l)" help="Enter -1 for infinity" />
+        <param name="maxEditDistSeed" type="integer" value="2" label="Maximum edit distance in the seed (aln -k)" />
+        <param name="mismatchPenalty" type="integer" value="3" label="Mismatch penalty (aln -M)" help="BWA will not search for suboptimal hits with a score lower than [value]" />
+        <param name="gapOpenPenalty" type="integer" value="11" label="Gap open penalty (aln -O)" />
+        <param name="gapExtensPenalty" type="integer" value="4" label="Gap extension penalty (aln -E)" />
+        <param name="suboptAlign" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Proceed with suboptimal alignments even if the top hit is a repeat (aln -R)" help="For paired-end reads only. By default, BWA only searches for suboptimal alignments if the top hit is unique. Using this option has no effect on accuracy for single-end reads. It is mainly designed for improving the alignment accuracy of paired-end reads. However, the pairing procedure will be slowed down, especially for very short reads (~32bp)" />
+        <param name="noIterSearch" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Disable iterative search (aln -N)" help="All hits with no more than maxDiff differences will be found. This mode is much slower than the default" />
+        <param name="outputTopN" type="integer" value="3" label="Maximum number of alignments to output in the XA tag for reads paired properly (samse/sampe -n)" help="If a read has more than INT hits, the XA tag will not be written" />
+        <param name="outputTopNDisc" type="integer" value="10" label="Maximum number of alignments to output in the XA tag for disconcordant read pairs (excluding singletons) (sampe -N)" help="For paired-end reads only. If a read has more than INT hits, the XA tag will not be written" />
+        <param name="maxInsertSize" type="integer" value="500" label="Maximum insert size for a read pair to be considered as being mapped properly (sampe -a)" help="For paired-end reads only. Only used when there are not enough good alignments to infer the distribution of insert sizes" />
+        <param name="maxOccurPairing" type="integer" value="100000" label="Maximum occurrences of a read for pairing (sampe -o)" help="For paired-end reads only. A read with more occurrences will be treated as a single-end read. Reducing this parameter helps faster pairing" />
+        <conditional name="readGroup">
+          <param name="specReadGroup" type="select" label="Specify the read group for this file? (samse/sampe -r)">
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </param>
+          <when value="yes">
+            <param name="rgid" type="text" size="25" label="Read group identiﬁer. Each @RG line must have a unique ID. The value of ID is used in the RG 
+tags of alignment records. Must be unique among all read groups in header section." help="Required if RG specified. Read group 
+IDs may be modiﬁed when merging SAM ﬁles in order to handle collisions." />
+            <param name="rgcn" type="text" size="25" label="Sequencing center that produced the read" help="Optional" />
+            <param name="rgds" type="text" size="25" label="Description" help="Optional" />
+            <param name="rgdt" type="text" size="25" label="Date that run was produced (ISO8601 format date or date/time, like YYYY-MM-DD)" help="Optional" />
+            <param name="rgfo" type="text" size="25" label="Flow order. The array of nucleotide bases that correspond to the nucleotides used for each 
+ﬂow of each read." help="Optional. Multi-base ﬂows are encoded in IUPAC format, and non-nucleotide ﬂows by 
+various other characters. Format : /\*|[ACMGRSVTWYHKDBN]+/" />
+            <param name="rgks" type="text" size="25" label="The array of nucleotide bases that correspond to the key sequence of each read" help="Optional" />
+            <param name="rglb" type="text" size="25" label="Library name" help="Required if RG specified" />
+            <param name="rgpg" type="text" size="25" label="Programs used for processing the read group" help="Optional" />
+            <param name="rgpi" type="text" size="25" label="Predicted median insert size" help="Optional" />
+            <param name="rgpl" type="text" size="25" label="Platform/technology used to produce the reads. Valid values : CAPILLARY, LS454, ILLUMINA, 
+SOLID, HELICOS, IONTORRENT and PACBIO" help="Required if RG specified" />
+            <param name="rgpu" type="text" size="25" label="Platform unit (e.g. ﬂowcell-barcode.lane for Illumina or slide for SOLiD). Unique identiﬁer." help="Optional" />
+            <param name="rgsm" type="text" size="25" label="Sample. Use pool name where a pool is being sequenced" help="Required if RG specified" />
+          </when>
+          <when value="no" />
+        </conditional>
       </when>
     </conditional>
-    <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="BWA produces SAM with several lines of header information" />
+    <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Suppress the header in the output SAM file" help="BWA produces SAM with several lines of header information" />
   </inputs>
   <outputs>
     <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
@@ -118,9 +160,15 @@
         <conditional name="genomeSource.refGenomeSource">
           <when value="indexed">
             <action type="metadata" name="dbkey">
-              <option type="from_data_table" name="bwa_indexes" column="0">
-                <filter type="param_value" ref="genomeSource.indices" column="1"/>
+              <option type="from_data_table" name="bwa_indexes" column="1">
+                <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+                <filter type="param_value" ref="genomeSource.indices" column="0"/>
               </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="genomeSource.ownFile" param_attribute="dbkey" />
             </action>
           </when>
         </conditional>
@@ -152,7 +200,7 @@
       cp test-data/phiX.fasta phiX.fasta
       bwa index -a is phiX.fasta
       bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in1.fastqsanger > bwa_wrapper_out2.sai
-      bwa samse phiX.fasta bwa_wrapper_out2.sai test-data/bwa_wrapper_in1.fastqsanger > bwa_wrapper_out2.u.sam
+      bwa samse -n 3 phiX.fasta bwa_wrapper_out2.sai test-data/bwa_wrapper_in1.fastqsanger > bwa_wrapper_out2.u.sam
       phiX.fasta is the prefix for the reference files (phiX.fasta.amb, phiX.fasta.ann, phiX.fasta.bwt, ...)
       remove the comment lines (beginning with '@') from the resulting sam file
       plain old sort doesn't handle underscores like python:
@@ -176,9 +224,11 @@
       <param name="gapExtensPenalty" value="4" />
       <param name="suboptAlign" value="true" />
       <param name="noIterSearch" value="true" />
-      <param name="outputTopN" value="-1" />
+      <param name="outputTopN" value="3" />
+      <param name="outputTopNDisc" value="10" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
+      <param name="specReadGroup" value="no" />
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out2.sam" ftype="sam" sort="True" />
     </test>
@@ -187,9 +237,8 @@
       BWA commands:
       bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in2.fastqsanger > bwa_wrapper_out3a.sai
       bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in3.fastqsanger > bwa_wrapper_out3b.sai
-      bwa sampe -a 500 -o 100000 phiX.fasta bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastqsanger test-data/bwa_wrapper_in3.fastqsanger > bwa_wrapper_out3.u.sam
+      bwa sampe -a 500 -o 100000 -n 3 -N 10 -r "@RG\tID:abcdefg\tDS:descrip\tDT:2010-11-01\tLB:lib-mom-A\tPI:400\tPL:ILLUMINA\tSM:mom" phiX.fasta bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastqsanger test-data/bwa_wrapper_in3.fastqsanger > bwa_wrapper_out3.u.sam
       phiX.fasta is the prefix for the reference
-      remove the comment lines (beginning with '@') from the resulting sam file
       plain old sort doesn't handle underscores like python:
       python -c "import sys; lines=file(sys.argv[1],'rb').readlines(); lines.sort(); file(sys.argv[2],'wb').write(''.join(lines))" bwa_wrapper_out3.u.sam bwa_wrapper_out3.sam
       -->
@@ -212,11 +261,25 @@
       <param name="gapExtensPenalty" value="4" />
       <param name="suboptAlign" value="true" />
       <param name="noIterSearch" value="true" />
-      <param name="outputTopN" value="-1" />
+      <param name="outputTopN" value="3" />
+      <param name="outputTopNDisc" value="10" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
-      <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" sort="True" />
+      <param name="specReadGroup" value="yes" />
+      <param name="rgid" value="abcdefg" />
+      <param name="rgcn" value="" />
+      <param name="rgds" value="descrip" />
+      <param name="rgdt" value="2010-11-01" />
+      <param name="rgfo" value="" />
+      <param name="rgks" value="" />
+      <param name="rglb" value="lib-mom-A" />
+      <param name="rgpg" value="" />
+      <param name="rgpi" value="400" />
+      <param name="rgpl" value="ILLUMINA" />
+      <param name="rgpu" value="" />
+      <param name="rgsm" value="mom" />
+      <param name="suppressHeader" value="false" />
+      <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" sort="True" lines_diff="2" />
     </test>
     <test>
       <!--
@@ -355,11 +418,10 @@ For **aln**::
 
 For **samse**::
 
-  -n INT  Output up to INT top hits. Value -1 to disable outputting multiple
-          hits. NOTE: Entering a value other than -1 will result in output that
-          is not in SAM format, and therefore not usable further down the
-          pipeline. Check the BWA documentation for details on the format of
-          the output. [-1]
+  -n INT  Maximum number of alignments to output in the XA tag for reads paired
+          properly. If a read has more than INT hits, the XA tag will not be
+          written. [3]
+  -r STR  Specify the read group in a format like '@RG\tID:foo\tSM:bar' [null]
 
 For **sampe**::
 
@@ -367,9 +429,40 @@ For **sampe**::
           properly. Since version 0.4.5, this option is only used when there
           are not enough good alignment to infer the distribution of insert
           sizes. [500]
+  -n INT  Maximum number of alignments to output in the XA tag for reads paired
+          properly. If a read has more than INT hits, the XA tag will not be
+          written. [3]
+  -N INT  Maximum number of alignments to output in the XA tag for disconcordant
+          read pairs (excluding singletons). If a read has more than INT hits,
+          the XA tag will not be written. [10]
   -o INT  Maximum occurrences of a read for pairing. A read with more
           occurrences will be treated as a single-end read. Reducing this
           parameter helps faster pairing. [100000]
+  -r STR  Specify the read group in a format like '@RG\tID:foo\tSM:bar' [null]
+
+For specifying the read group in **samse** or **sampe**, use the following::
+
+  @RG   Read group. Unordered multiple @RG lines are allowed. 
+  ID    Read group identiﬁer. Each @RG line must have a unique ID. The value of
+        ID is used in the RG tags of alignment records. Must be unique among all
+        read groups in header section. Read group IDs may be modiﬁed when
+        merging SAM ﬁles in order to handle collisions. 
+  CN    Name of sequencing center producing the read. 
+  DS    Description. 
+  DT    Date the run was produced (ISO8601 date or date/time). 
+  FO    Flow order. The array of nucleotide bases that correspond to the
+        nucleotides used for each ﬂow of each read. Multi-base ﬂows are encoded
+        in IUPAC format, and non-nucleotide ﬂows by various other characters.
+        Format : /\*|[ACMGRSVTWYHKDBN]+/ 
+  KS    The array of nucleotide bases that correspond to the key sequence of each read. 
+  LB    Library. 
+  PG    Programs used for processing the read group. 
+  PI    Predicted median insert size. 
+  PL    Platform/technology used to produce the reads. Valid values : CAPILLARY,
+        LS454, ILLUMINA, SOLID, HELICOS, IONTORRENT and PACBIO. 
+  PU    Platform unit (e.g. ﬂowcell-barcode.lane for Illumina or slide for
+        SOLiD). Unique identiﬁer. 
+  SM    Sample. Use pool name where a pool is being sequenced. 
 
   </help>
 </tool>

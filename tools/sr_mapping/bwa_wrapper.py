@@ -3,36 +3,11 @@
 """
 Runs BWA on single-end or paired-end data.
 Produces a SAM file containing the mappings.
-Works with BWA version 0.5.3-0.5.5.
+Works with BWA version 0.5.9.
 
 usage: bwa_wrapper.py [options]
-    -t, --threads=t: The number of threads to use
-    -r, --ref=r: The reference genome to use or index
-    -f, --fastq=f: The (forward) fastq file to use for the mapping
-    -F, --rfastq=F: The reverse fastq file to use for mapping if paired-end data
-    -u, --output=u: The file to save the output (SAM format)
-    -g, --genAlignType=g: The type of pairing (single or paired)
-    -p, --params=p: Parameter setting to use (pre_set or full)
-    -s, --fileSource=s: Whether to use a previously indexed reference sequence or one from history (indexed or history)
-    -n, --maxEditDist=n: Maximum edit distance if integer
-    -m, --fracMissingAligns=m: Fraction of missing alignments given 2% uniform base error rate if fraction
-    -o, --maxGapOpens=o: Maximum number of gap opens
-    -e, --maxGapExtens=e: Maximum number of gap extensions
-    -d, --disallowLongDel=d: Disallow a long deletion within specified bps
-    -i, --disallowIndel=i: Disallow indel within specified bps
-    -l, --seed=l: Take the first specified subsequences
-    -k, --maxEditDistSeed=k: Maximum edit distance to the seed
-    -M, --mismatchPenalty=M: Mismatch penalty
-    -O, --gapOpenPenalty=O: Gap open penalty
-    -E, --gapExtensPenalty=E: Gap extension penalty
-    -R, --suboptAlign=R: Proceed with suboptimal alignments even if the top hit is a repeat
-    -N, --noIterSearch=N: Disable iterative search
-    -T, --outputTopN=T: Output top specified hits
-    -S, --maxInsertSize=S: Maximum insert size for a read pair to be considered mapped good
-    -P, --maxOccurPairing=P: Maximum occurrences of a read for pairings
-    -H, --suppressHeader=h: Suppress header
-    -D, --dbkey=D: Dbkey for reference genome
-    -X, --do_not_build_index: Flag to specify that provided file is already indexed and to just use 'as is'
+
+See below for options
 """
 
 import optparse, os, shutil, subprocess, sys, tempfile
@@ -81,9 +56,22 @@ def __main__():
     parser.add_option( '-E', '--gapExtensPenalty', dest='gapExtensPenalty', help='Gap extension penalty' )
     parser.add_option( '-R', '--suboptAlign', dest='suboptAlign', help='Proceed with suboptimal alignments even if the top hit is a repeat' )
     parser.add_option( '-N', '--noIterSearch', dest='noIterSearch', help='Disable iterative search' )
-    parser.add_option( '-T', '--outputTopN', dest='outputTopN', help='Output top specified hits' )
+    parser.add_option( '-T', '--outputTopN', dest='outputTopN', help='Maximum number of alignments to output in the XA tag for reads paired properly' )
+    parser.add_option( '', '--outputTopNDisc', dest='outputTopNDisc', help='Maximum number of alignments to output in the XA tag for disconcordant read pairs (excluding singletons)' )
     parser.add_option( '-S', '--maxInsertSize', dest='maxInsertSize', help='Maximum insert size for a read pair to be considered mapped good' )
     parser.add_option( '-P', '--maxOccurPairing', dest='maxOccurPairing', help='Maximum occurrences of a read for pairings' )
+    parser.add_option( '', '--rgid', dest='rgid', help='Read group identifier' )
+    parser.add_option( '', '--rgcn', dest='rgcn', help='Sequencing center that produced the read' )
+    parser.add_option( '', '--rgds', dest='rgds', help='Description' )
+    parser.add_option( '', '--rgdt', dest='rgdt', help='Date that run was produced (ISO8601 format date or date/time, like YYYY-MM-DD)' )
+    parser.add_option( '', '--rgfo', dest='rgfo', help='Flow order' )
+    parser.add_option( '', '--rgks', dest='rgks', help='The array of nucleotide bases that correspond to the key sequence of each read' )
+    parser.add_option( '', '--rglb', dest='rglb', help='Library name' )
+    parser.add_option( '', '--rgpg', dest='rgpg', help='Programs used for processing the read group' )
+    parser.add_option( '', '--rgpi', dest='rgpi', help='Predicted median insert size' )
+    parser.add_option( '', '--rgpl', dest='rgpl', choices=[ 'CAPILLARY', 'LS454', 'ILLUMINA', 'SOLID', 'HELICOS', 'IONTORRENT' and 'PACBIO' ], help='Platform/technology used to produce the reads' )
+    parser.add_option( '', '--rgpu', dest='rgpu', help='Platform unit (e.g. flowcell-barcode.lane for Illumina or slide for SOLiD)' )
+    parser.add_option( '', '--rgsm', dest='rgsm', help='Sample' )
     parser.add_option( '-D', '--dbkey', dest='dbkey', help='Dbkey for reference genome' )
     parser.add_option( '-X', '--do_not_build_index', dest='do_not_build_index', action='store_true', help="Don't build index" )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
@@ -202,13 +190,35 @@ def __main__():
                           options.disallowIndel, seed, options.maxEditDistSeed, options.threads,
                           options.mismatchPenalty, options.gapOpenPenalty, options.gapExtensPenalty,
                           suboptAlign, noIterSearch, color_space )
-        if options.genAlignType == 'single':
-            if options.outputTopN != '-1':
-                gen_alignment_cmds = '-n %s' % options.outputTopN
-            else:
-                gen_alignment_cmds = ''
-        elif options.genAlignType == 'paired':
+        if options.genAlignType == 'paired':
             gen_alignment_cmds = '-a %s -o %s' % ( options.maxInsertSize, options.maxOccurPairing )
+            if options.outputTopNDisc:
+                gen_alignment_cmds += ' -N %s' % options.outputTopNDisc
+        else:
+            gen_alignment_cmds = ''
+        if options.rgid:
+            if not options.rglb or not options.rgpl or not options.rgsm:
+                stop_err( 'If you want to specify read groups, you must include the ID, LB, PL, and SM tags.' )
+            readGroup = '@RG\tID:%s\tLB:%s\tPL:%s\tSM:%s' % ( options.rgid, options.rglb, options.rgpl, options.rgsm )
+            if options.rgcn:
+                readGroup += '\tCN:%s' % options.rgcn
+            if options.rgds:
+                readGroup += '\tDS:%s' % options.rgds
+            if options.rgdt:
+                readGroup += '\tDT:%s' % options.rgdt
+            if options.rgfo:
+                readGroup += '\tFO:%s' % options.rgfo
+            if options.rgks:
+                readGroup += '\tKS:%s' % options.rgks
+            if options.rgpg:
+                readGroup += '\tPG:%s' % options.rgpg
+            if options.rgpi:
+                readGroup += '\tPI:%s' % options.rgpi
+            if options.rgpu:
+                readGroup += '\tPU:%s' % options.rgpu
+            gen_alignment_cmds += ' -r "%s"' % readGroup
+        if options.outputTopN:
+            gen_alignment_cmds += ' -n %s' % options.outputTopN
     # set up output files
     tmp_align_out = tempfile.NamedTemporaryFile( dir=tmp_dir )
     tmp_align_out_name = tmp_align_out.name
