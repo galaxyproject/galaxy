@@ -1,4 +1,4 @@
-<tool id="sam_to_bam" name="SAM-to-BAM" version="1.1.1">
+<tool id="sam_to_bam" name="SAM-to-BAM" version="1.1.2">
   <description>converts SAM format to BAM format</description>
   <requirements>
     <requirement type="package">samtools</requirement>
@@ -6,11 +6,11 @@
   <command interpreter="python">
     sam_to_bam.py
       --input1=$source.input1
-      --dbkey=${input1.metadata.dbkey} 
       #if $source.index_source == "history":
+        --dbkey=${ref_file.metadata.dbkey} 
         --ref_file=$source.ref_file
       #else
-        --ref_file="None"
+        --dbkey=${input1.metadata.dbkey} 
       #end if
       --output1=$output1
       --index_dir=${GALAXY_DATA_INDEX_DIR}
@@ -22,44 +22,60 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input1" type="data" format="sam" label="SAM File to Convert">
+        <param name="input1" type="data" format="sam" metadata_name="dbkey" label="SAM File to Convert">
            <validator type="unspecified_build" />
            <validator type="dataset_metadata_in_file" filename="sam_fa_indices.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="index" />
         </param>
       </when>
       <when value="history">
         <param name="input1" type="data" format="sam" label="Convert SAM file" />
-        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+        <param name="ref_file" type="data" format="fasta" metadata_name="dbkey" label="Using reference file" />
       </when>
     </conditional>
   </inputs>
   <outputs>
-    <data format="bam" name="output1" label="${tool.name} on ${on_string}: converted BAM" />
+    <data format="bam" name="output1" label="${tool.name} on ${on_string}: converted BAM">
+      <actions>
+        <conditional name="source.index_source">
+          <when value="cached">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="source.input1" param_attribute="dbkey" />
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="source.ref_file" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
+    </data>
   </outputs>
   <tests>
     <test>
       <!--
       Sam-to-Bam command:
+      cp test-data/chr_m.fasta .
       samtools faidx chr_m.fasta
-      samtools view -bt chr_m.fasta.fai -o unsorted.bam test-data/3.sam
+      samtools view -hbt chr_m.fasta.fai -o unsorted.bam test-data/sam_to_bam_in1.sam
       samtools sort unsorted.bam sam_to_bam_out1
-      chr_m.fasta is the reference file
+      chr_m.fasta is the reference file (chrM from equCab2)
       -->
       <param name="index_source" value="history" /> 
-      <param name="input1" value="3.sam" ftype="sam" />
+      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" />
       <param name="ref_file" value="chr_m.fasta" ftype="fasta" dbkey="equCab2" />
-      <output name="output1" file="sam_to_bam_out1.bam" />
+      <output name="output1" file="sam_to_bam_out1.bam" ftype="bam" />
     </test>
     <test>
       <!--
       Sam-to-Bam command:
-      samtools view -bt chr_m.fasta.fai -o unsorted.bam test-data/3.sam
+      samtools view -hbt chr_m.fasta.fai -o unsorted.bam test-data/sam_to_bam_in1.sam
       samtools sort unsorted.bam sam_to_bam_out2
       chr_m.fasta is the reference file and the index chr_m.fasta.fai 
-      should be in the same directory
+      these should be in the same directory, and chrM is from equCab2
       -->
       <param name="index_source" value="cached" />
-      <param name="input1" value="3.sam" ftype="sam" dbkey="equCab2" />
+      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" dbkey="chrM" />
       <output name="output1" file="sam_to_bam_out2.bam" ftype="bam" />
     </test>
   </tests>

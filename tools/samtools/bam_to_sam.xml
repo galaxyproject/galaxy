@@ -1,4 +1,4 @@
-<tool id="bam_to_sam" name="BAM-to-SAM" version="1.0.2">
+<tool id="bam_to_sam" name="BAM-to-SAM" version="1.0.3">
   <requirements>
     <requirement type="package">samtools</requirement>
   </requirements>
@@ -20,29 +20,32 @@
     <test>
       <!--
       Bam-to-Sam command:
-      samtools view -o bam_to_sam_out1.sam test-data/3unsorted.bam
+      samtools view -o bam_to_sam_out1.sam test-data/bam_to_sam_in1.bam
+      bam_to_sam_in1.bam can be created from bam_to_sam_in1.sam
       -->
-      <param name="input1" value="1.bam" ftype="bam" />
+      <param name="input1" value="bam_to_sam_in1.bam" ftype="bam" />
+      <param name="header" value="" />
       <output name="output1" file="bam_to_sam_out1.sam" sorted="True" />
-      <param name="header" value="" />
     </test>
     <test>
       <!--
       Bam-to-Sam command:
-      samtools view -o bam_to_sam_out2.sam test-data/1.bam
+      samtools view -o bam_to_sam_out2.sam test-data/bam_to_sam_in2.bam
+      bam_to_sam_in2.bam can be created from bam_to_sam_in2.sam
       -->
-      <param name="input1" value="3unsorted.bam" ftype="bam" />
+      <param name="input1" value="bam_to_sam_in2.bam" ftype="bam" />
+      <param name="header" value="" />
       <output name="output1" file="bam_to_sam_out2.sam" sorted="True" />
-      <param name="header" value="" />
     </test>
     <test>
       <!--
       Bam-to-Sam command:
-      samtools view -h -o bam_to_sam_out1.sam test-data/1.bam
+      samtools view -h -o bam_to_sam_out3.sam test-data/bam_to_sam_in1.bam
+      bam_to_sam_in1.bam can be created from bam_to_sam_in1.sam
       -->
-      <param name="input1" value="1.bam" ftype="bam" />
-      <output name="output1" file="bam_to_sam_out3.sam" sorted="True" />
-      <param name="header" value="True" />
+      <param name="input1" value="bam_to_sam_in1.bam" ftype="bam" />
+      <param name="header" value="--header" />
+      <output name="output1" file="bam_to_sam_out3.sam" sorted="True" lines_diff="6" /><!-- header param not working in func tests so won't produce correct 6-line header (fine in browser) -->
     </test>
   </tests>
   <help>

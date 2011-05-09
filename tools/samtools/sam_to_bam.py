@@ -68,7 +68,7 @@ def __main__():
     # and the equCab2.fa file will contain fasta sequences.
     seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
     tmp_dir = tempfile.mkdtemp()
-    if options.ref_file == 'None':
+    if not options.ref_file or options.ref_file == 'None':
         # We're using locally cached reference sequences( e.g., /galaxy/data/equCab2/sam_index/equCab2.fa ).
         # The indexes for /galaxy/data/equCab2/sam_index/equCab2.fa will be contained in
         # a file named /galaxy/data/equCab2/sam_index/equCab2.fa.fai
