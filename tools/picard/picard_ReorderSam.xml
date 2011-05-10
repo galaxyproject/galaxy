@@ -16,11 +16,11 @@
       --allow-contig-len-discord=$allowContigLenDiscord
       --output-format=$outputFormat
       #if str( $outputFormat ) == "sam"
-        --output-sam=$outFileSam
+        --output=$outFileSam
       #else if str( $outputFormat ) == "bam"
-        --output-sam=$outFileBam
+        --output=$outFileBam
       #end if
-      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/picard-1.41.jar"
+      -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/ReorderSam.jar"
       --picard-cmd="ReorderSam"
   </command>
   <inputs>
