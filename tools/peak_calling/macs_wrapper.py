@@ -5,8 +5,6 @@ pkg_resources.require( "simplejson" )
 import simplejson
 
 CHUNK_SIZE = 1024
-ERROR_LINES = [ 'ERROR', 'command not found' ] #'Fatal' errors that should be passed back to stderr
-WARNING_LINE_START = 'WARNING @' 
 
 def gunzip_cat_glob_path( glob_path, target_filename, delete = False ):
     out = open( target_filename, 'wb' )
@@ -70,17 +68,16 @@ def main():
     stderr_name = tempfile.NamedTemporaryFile().name # redirect stderr here, macs provides lots of info via stderr, make it into a report
     proc = subprocess.Popen( args=cmdline, shell=True, cwd=tmp_dir, stderr=open( stderr_name, 'wb' ) )
     proc.wait()
-    
-    #Need to lightly parse stderr file to see if there is a fatal error (e.g. macs is not installed on system)
-    #We don't want to set tool run to error state if only warnings or info, e.g. mfold needs to be decreased, rather create empty outputs, but let user view macs log
-    for line in open( stderr_name ):
-        for err_text in ERROR_LINES:
-            if err_text in line:
-                #print error, but don't quit, allow cleanup to occur at end
-                print >> sys.stderr, line.rstrip( '\n\r' )
-        if line.startswith( WARNING_LINE_START ):
-            #print warnings so they are viewable from info
-            print line.split( ':' )[-1].strip()
+    #We don't want to set tool run to error state if only warnings or info, e.g. mfold could be decreased to improve model, but let user view macs log
+    #Do not terminate if error code, allow dataset (e.g. log) creation and cleanup
+    if proc.returncode:
+        stderr_f = open( stderr_name )
+        while True:
+            chunk = stderr_f.read( CHUNK_SIZE )
+            if not chunk:
+                stderr_f.close()
+                break
+            sys.stderr.write( chunk )
     
     #run R to create pdf from model script
     if os.path.exists( os.path.join( tmp_dir, "%s_model.r" % experiment_name ) ):

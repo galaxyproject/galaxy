@@ -1,4 +1,4 @@
-<tool id="peakcalling_macs" name="MACS" version="1.0.0">
+<tool id="peakcalling_macs" name="MACS" version="1.0.1">
   <description>Model-based Analysis of ChIP-Seq</description>
   <command interpreter="python">macs_wrapper.py $options_file $output_bed_file $output_extra_files $output_extra_files.files_path</command>
   <requirements>
