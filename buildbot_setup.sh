@@ -28,6 +28,7 @@ esac
 
 LINKS="
 /galaxy/data/location/add_scores.loc
+/galaxy/data/location/all_fasta.loc
 /galaxy/data/location/alignseq.loc
 /galaxy/data/annotation_profiler
 /galaxy/data/annotation_profiler/annotation_profiler.loc
