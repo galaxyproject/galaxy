@@ -31,7 +31,7 @@
       <param name="tailLimit" value="10000" />
       <param name="histWidth" value="0" />
       <param name="minPct" value="0.01" />
-      <output name="html_file" file="picard_output_insertsize_tinysam.html" ftype="html" lines_diff="30" />
+      <output name="html_file" file="picard_output_insertsize_tinysam.html" ftype="html" lines_diff="35" />
     </test>
   </tests>
   <help>
