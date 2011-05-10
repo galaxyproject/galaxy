@@ -119,6 +119,8 @@ class ToolTestCase( TwillTestCase ):
 	                    if prefix:
 	                        new_prefix = "%s|%s" % ( prefix, new_prefix )
 	                    expanded_inputs.update( self.__expand_grouping( { new_prefix : r_value }, declared_inputs, prefix = new_prefix ) )
+            elif value.name not in declared_inputs:
+                print "%s not declared in tool test, will not change default value." % value.name
             elif isinstance(declared_inputs[value.name], str):
                 if prefix:
                     expanded_inputs["%s|%s" % ( prefix, value.name ) ] = declared_inputs[value.name].split(",")
