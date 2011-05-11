@@ -3,23 +3,10 @@
 """
 Runs SRMA on a SAM/BAM file;
 TODO: more documentation
-TODO: Allow use of fastq file in user's history, will need to index on-the-fly
 
 usage: srma_wrapper.py [options]
-    -r, --ref=r: The reference genome to use or index
-    -i, --input=i: The SAM/BAM input file
-    -o, --output=o: The SAM/BAM output file
-    -O, --offset=O: The alignment offset
-    -Q, --minMappingQuality=Q: The minimum mapping quality
-    -P, --minAlleleProbability=P: The minimum allele probability conditioned on coverage (for the binomial quantile).
-    -C, --minAlleleCoverage=C: The minimum haploid coverage for the consensus. Default value: 3. This option can be set 
-    -R, --range=R: A range to examine
-    -c, --correctBases=c: Correct bases 
-    -q, --useSequenceQualities=q: Use sequence qualities 
-    -M, --maxHeapSize=M: The maximum number of nodes on the heap before re-alignment is ignored
-    -s, --fileSource=s: Whether to use a previously indexed reference sequence or one from history (indexed or history)
-    -p, --params=p: Parameter setting to use (pre_set or full)
-    -D, --dbkey=D: Dbkey for reference genome
+
+See below for options
 """
 
 import optparse, os, shutil, subprocess, sys, tempfile

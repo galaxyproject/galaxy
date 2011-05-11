@@ -1,4 +1,4 @@
-<tool id="srma_wrapper" name="Re-align with SRMA" version="0.2.1">
+<tool id="srma_wrapper" name="Re-align with SRMA" version="0.2.5">
   <description></description>
   <command interpreter="python">srma_wrapper.py 
     #if $refGenomeSource.refGenomeSource_type == "history":
@@ -34,7 +34,10 @@
       </param>
       <when value="built-in">
         <param name="ref" type="select" label="Select a reference genome">
-          <options from_data_table="srma_indexes" />
+          <options from_data_table="srma_indexes">
+            <filter type="sort_by" column="2" />
+            <validator type="no_options" message="No indexes are available" />
+          </options>
         </param>
       </when>
       <when value="history">
@@ -66,10 +69,15 @@
         <conditional name="refGenomeSource.refGenomeSource_type">
           <when value="built-in">
             <action type="metadata" name="dbkey">
-              <option type="from_file" name="srma_index.loc" column="0" offset="0">
+              <option type="from_data_table" name="srma_indexes" column="1" offset="0">
                 <filter type="param_value" column="0" value="#" compare="startswith" keep="False" />
-                <filter type="param_value" ref="refGenomeSource.ref" column="1" />
+                <filter type="param_value" ref="refGenomeSource.ref" column="0" />
               </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
             </action>
           </when>
         </conditional>
@@ -91,7 +99,7 @@
           <param name="ref" value="hg18chr21" />
           <param name="input" value="srma_in1.bam" type="bam" />
           <param name="source_select" value="pre_set" />
-          <output name="output" file="srma_out1.bam" ftype="bam"/> 
+          <output name="output" file="srma_out1.bam" ftype="bam" lines_diff="2" /><!-- allows tag with version number to be different -->
       </test>
       <test>
           <!-- Commands to run to prepare test files (uses custom genome):
@@ -107,8 +115,8 @@
           samtools sort srma_in3.u.bam srma_in3
           -->
           <param name="refGenomeSource_type" value="history" />
-          <param name="ownFile" value="srma_in2.fa" />
-          <param name="input" value="srma_in3.bam" type="bam" />
+          <param name="ownFile" value="srma_in2.fa" ftype="fasta" />
+          <param name="input" value="srma_in3.bam" ftype="bam" />
           <param name="source_select" value="full" />
           <param name="offset" value="20" />
           <param name="minMappingQuality" value="0" />
@@ -118,7 +126,7 @@
           <param name="correctBases" value="true" />
           <param name="useSequenceQualities" value="true" />
           <param name="maxHeapSize" value="8192" />
-          <output name="output" file="srma_out2.bam" ftype="bam"/> 
+          <output name="output" file="srma_out2.bam" ftype="bam" lines_diff="2" /><!-- allows tag with version number to be different -->
       </test>
   </tests>
   <help>
