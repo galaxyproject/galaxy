@@ -2418,7 +2418,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
                 var data = result.data;
                 // if ( (data.length && data.length < 4) ||
                 //      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
-		        if ( this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH ) {
+                if ( this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH ) {
                     mode = "Squish";
                 } else {
                     mode = "Pack";
@@ -2511,15 +2511,12 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         // If there is a message, draw it on canvas so that it moves around with canvas, and make the border red
         // to indicate region where message is applicable
         if (result.message) {
-            $(canvas).css({
-                "border-top": "1px solid red"
-            });
-
             ctx.fillStyle = "red";
             ctx.textAlign = "left";
             var old_base = ctx.textBaseline;
             ctx.textBaseline = "top";
-            ctx.fillText(result.message, left_offset, 0);
+            ctx.fillRect(left_offset, 0, canvas.width - left_offset, 1);
+            ctx.fillText(result.message, left_offset, 2);
             ctx.textBaseline = old_base;
 
             // If there's no data, return.

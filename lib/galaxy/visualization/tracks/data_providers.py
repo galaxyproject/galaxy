@@ -25,7 +25,7 @@ from galaxy.datatypes.util.gff_util import parse_gff_attributes
 from pysam import csamtools, ctabix
 
 MAX_VALS = 5000 # only display first MAX_VALS features
-ERROR_MAX_VALS = "Only the first " + str(MAX_VALS) + " %s in this tile are displayed."
+ERROR_MAX_VALS = "Only the first " + str(MAX_VALS) + " %s in the region denoted by the red line are displayed."
 
 # Return None instead of NaN to pass jQuery 1.4's strict JSON
 def float_nan(n):
