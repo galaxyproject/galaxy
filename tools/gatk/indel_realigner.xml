@@ -277,8 +277,8 @@
           <param name="knowns_only" />
           <param name="gatk_param_type_selector" value="basic" />
           <param name="analysis_param_type_selector" value="basic" />
-          <output name="output_bam" file="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam"/> 
-          <output name="output_log" file="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.log.contains" compare="contains"/>
+          <output name="output_bam" file="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam" lines_diff="2" /> 
+          <output name="output_log" file="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.log.contains" compare="contains" />
       </test>
   </tests>
   <help>

@@ -9,7 +9,7 @@
     -outputDir "${output_html.files_path}"
     ##-log "${output_log}"
     ##-Rscript,--path_to_Rscript path_to_Rscript; on path is good enough
-    -resources "${GALAXY_DATA_INDEX_DIR}/shared/gatk/R"         
+    -resources "${GALAXY_DATA_INDEX_DIR}/gatk/R"         
     #if $analysis_param_type.analysis_param_type_selector == "advanced":
         --ignoreQ "${analysis_param_type.ignore_q}"
         --numRG "${analysis_param_type.num_read_groups}"

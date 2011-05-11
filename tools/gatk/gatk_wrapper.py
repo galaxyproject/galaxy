@@ -86,7 +86,7 @@ def __main__():
             stderr_target.write( chunk )
         else:
             break
-    
+    stderr.close()
     #generate html reports
     if options.html_report_from_directory:
         for ( html_filename, html_dir ) in options.html_report_from_directory:
