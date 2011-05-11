@@ -23,17 +23,16 @@ def main():
     index = Indexes()
     offset = 0
     reader_wrapper = GFFReaderWrapper( fileinput.FileInput( input_fname ), fix_strand=True )
-    for feature in list( reader_wrapper ):
-        # TODO: need to address comments:
-        # if comment:
-        #   increment_offset.
-        
+    for feature in list( reader_wrapper ):        
         # Add feature; index expects BED coordinates.
-        convert_gff_coords_to_bed( feature )
-        index.add( feature.chrom, feature.start, feature.end, offset )
-        
-        offset += feature.raw_size
+        if isinstance( feature, GenomicInterval ):
+            convert_gff_coords_to_bed( feature )
+            index.add( feature.chrom, feature.start, feature.end, offset )
             
+        # Always increment offset, even if feature is not an interval and hence
+        # not included in the index.
+        offset += feature.raw_size
+
     index.write( open(out_fname, "w") )
     
 if __name__ == "__main__": 

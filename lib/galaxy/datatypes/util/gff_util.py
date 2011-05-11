@@ -165,9 +165,10 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                 #finally:
                 raw_size += len( self.current_line )
                     
-        # If header or comment, clear seed interval and return it.
+        # If header or comment, clear seed interval and return it with its size.
         if isinstance( self.seed_interval, ( Header, Comment ) ):
             return_val = self.seed_interval
+            return_val.raw_size = len( self.current_line )
             self.seed_interval = None
             return return_val
     
@@ -225,7 +226,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                               self.end_col, self.strand_col, self.score_col, \
                               self.default_strand, fix_strand=self.fix_strand, \
                               intervals=feature_intervals, raw_size=raw_size )
-        
+
         # Convert to BED coords?
         if self.convert_to_bed_coord:
             convert_gff_coords_to_bed( feature )
