@@ -167,12 +167,12 @@
                     Line diffs are needed because cuffdiff does not produce deterministic output.
                     TODO: can we find datasets that lead to deterministic behavior?
                 -->
-                <output name="isoforms_exp" file="cuffdiff_out1.txt" lines_diff="56"/>
-                <output name="genes_exp" file="cuffdiff_out2.txt" lines_diff="30"/>
+                <output name="isoforms_exp" file="cuffdiff_out1.txt" lines_diff="200"/>
+                <output name="genes_exp" file="cuffdiff_out2.txt" lines_diff="200"/>
                 <output name="tss_groups_exp" file="cuffdiff_out3.txt"/>
                 <output name="cds_exp_fpkm_tracking" file="cuffdiff_out4.txt"/>
-                <output name="isoforms_fpkm_tracking" file="cuffdiff_out5.txt" lines_diff="16"/>
-                <output name="genes_fpkm_tracking" file="cuffdiff_out6.txt" lines_diff="8"/>
+                <output name="isoforms_fpkm_tracking" file="cuffdiff_out5.txt" lines_diff="200"/>
+                <output name="genes_fpkm_tracking" file="cuffdiff_out6.txt" lines_diff="200"/>
                 <output name="tss_groups_fpkm_tracking" file="cuffdiff_out7.txt"/>
                 <output name="cds_fpkm_tracking" file="cuffdiff_out8.txt"/>
                 <output name="splicing_diff" file="cuffdiff_out9.txt"/>
