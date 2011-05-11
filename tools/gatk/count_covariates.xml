@@ -356,7 +356,6 @@
       <test>
           <param name="reference_source_selector" value="history" />
           <param name="ref_file" value="phiX.fasta" ftype="fasta" />
-          <param name="target_intervals" value="gatk/gatk_realigner_target_creator/gatk_realigner_target_creator_out_1.gatk_interval" ftype="gatk_interval" />
           <param name="input_bam" value="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam" />
           <param name="input_dbsnp_rod"  />
           <param name="rod_bind_type_selector" value="snps" />

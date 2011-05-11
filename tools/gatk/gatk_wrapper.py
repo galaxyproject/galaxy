@@ -8,8 +8,6 @@ A wrapper script for running the GenomeAnalysisTK.jar commands.
 import sys, optparse, os, tempfile, subprocess, shutil
 from string import Template
 
-assert sys.version_info[:2] >= ( 2, 6 )
-
 GALAXY_EXT_TO_GATK_EXT = { 'gatk_interval':'intervals', 'bam_index':'bam.bai', 'gatk_dbsnp':'dbsnp', 'picard_interval_list':'interval_list' } #items not listed here, will use the galaxy extension as-is
 GALAXY_EXT_TO_GATK_FILE_TYPE = GALAXY_EXT_TO_GATK_EXT #for now, these are the same, but could be different if needed
 DEFAULT_GATK_PREFIX = "gatk_file"
@@ -69,7 +67,9 @@ def __main__():
     stderr = open_file_from_option( options.stderr, mode = 'wb' )
     #if no stderr file is specified, we'll use our own
     if stderr is None:
-        stderr = tempfile.NamedTemporaryFile( dir=tmp_dir, delete=False )
+        stderr = tempfile.NamedTemporaryFile( dir=tmp_dir )
+        stderr.close()
+        stderr = open( stderr.name, 'w+b' )
     
     proc = subprocess.Popen( args=cmd, stdout=stdout, stderr=stderr, shell=True, cwd=tmp_dir )
     return_code = proc.wait()
