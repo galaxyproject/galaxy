@@ -145,6 +145,20 @@ class TwillTestCase( unittest.TestCase ):
         #lines_diff not applicable to multiline matching
         assert re.match( local_file, history_data, re.MULTILINE ), "Multiline Regular expression did not match data file"
 
+    def files_contains( self, file1, file2, attributes=None ):
+        """Checks the contents of file2 for substrings found in file1, on a per-line basis"""
+        local_file = open( file1, 'U' ).readlines() #regex file
+        #TODO: allow forcing ordering of contains
+        history_data = open( file2, 'U' ).read()
+        lines_diff = int( attributes.get( 'lines_diff', 0 ) )
+        line_diff_count = 0
+        while local_file:
+            contains = local_file.pop( 0 ).rstrip( '\n\r' )
+            if contains not in history_data:
+                line_diff_count += 1
+            if line_diff_count > lines_diff:
+                raise AssertionError, "Failed to find '%s' in history data. (lines_diff=%i):\n" % ( contains, lines_diff )
+
     def get_filename( self, filename ):
         full = os.path.join( self.file_dir, filename)
         return os.path.abspath(full)
@@ -665,6 +679,8 @@ class TwillTestCase( unittest.TestCase ):
     	                s2 = os.path.getsize(local_name)
     	                if abs(s1-s2) > int(delta):
     	                   raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
+                    elif compare == "contains":
+                        self.files_contains( local_name, temp_name, attributes=attributes )
                     else:
                         raise Exception, 'Unimplemented Compare type: %s' % compare
                     if extra_files:
