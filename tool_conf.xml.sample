@@ -344,7 +344,17 @@
    <tool file="samtools/pileup_interval.xml" />
    <tool file="samtools/samtools_flagstat.xml" />
   </section>
-
+  <section name="NGS: GATK Tools" id="gatk">
+   <label text="Realignment" id="gatk_realignment" />
+     <tool file="gatk/realigner_target_creator.xml" />
+     <tool file="gatk/indel_realigner.xml" />
+   <label text="Base Recalibration" id="gatk_recalibration" />
+     <tool file="gatk/count_covariates.xml" />
+     <tool file="gatk/table_recalibration.xml" />
+     <tool file="gatk/analyze_covariates.xml" />
+   <label text="Genotyping" id="gatk_genotyping" />
+     <tool file="gatk/unified_genotyper.xml" />
+  </section>
   <section name="NGS: Peak Calling" id="peak_calling">
    <tool file="peak_calling/macs_wrapper.xml" />
    <tool file="peak_calling/ccat_wrapper.xml" />

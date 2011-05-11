@@ -42,7 +42,7 @@
             <indexer file="coverage.xml" />
         </datatype>
         <!-- MSI added Datatypes -->
-        <datatype extension="csv" type="galaxy.datatypes.tabular:Tabular"/>
+        <datatype extension="csv" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true" /> <!-- FIXME: csv is 'tabular'ized data, but not 'tab-delimited'; the class used here is intended for 'tab-delimited' -->
         <!-- End MSI added Datatypes -->
         <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
         <datatype extension="bowtie_color_index" type="galaxy.datatypes.ngsindex:BowtieColorIndex" mimetype="text/html" display_in_upload="False"/>
@@ -87,6 +87,9 @@
             <display file="ensembl/ensembl_interval_as_bed.xml" inherit="True"/>
             <display file="gbrowse/gbrowse_interval_as_bed.xml" inherit="True"/>
         </datatype>
+        <datatype extension="picard_interval_list" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
+        <datatype extension="gatk_interval" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
+        <datatype extension="gatk_dbsnp" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="True"/>
         <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
         <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
         <datatype extension="lav" type="galaxy.datatypes.sequence:Lav" display_in_upload="true"/>

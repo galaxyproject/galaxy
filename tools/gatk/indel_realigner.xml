@@ -1,0 +1,332 @@
+<tool id="gatk_indel_realigner" name="Indel Realigner" version="0.0.1">
+  <description>- perform local realignment</description>
+  <command interpreter="python">gatk_wrapper.py
+   --stdout "${output_log}"
+   -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
+   -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
+   -p 'java 
+    -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
+    -T "IndelRealigner"
+    ##-quiet ##this appears to have no effect...confirmed by gatk programmers
+    -o "${output_bam}"
+    -et "NO_ET" ##ET no phone home
+    ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
+    #if $reference_source.reference_source_selector != "history":
+        -R "${reference_source.ref_file.fields.path}"
+    #end if
+   -LOD "${lod_threshold}"
+    ${knowns_only}
+   '
+   
+    #set $rod_binding_names = dict()
+    #if str( $input_dbsnp_rod ) != "None":
+        -d "-D" "${input_dbsnp_rod}" "${input_dbsnp_rod.ext}" "dbsnp_rod"
+    #end if
+    #for $rod_binding in $rod_bind:
+        #if str( $rod_binding.rod_bind_type.rod_bind_type_selector ) == 'custom':
+            #set $rod_bind_name = $rod_binding.rod_bind_type.custom_rod_name
+        #else
+            #set $rod_bind_name = $rod_binding.rod_bind_type.rod_bind_type_selector
+        #end if
+        #set $rod_binding_names[$rod_bind_name] = $rod_binding_names.get( $rod_bind_name, -1 ) + 1
+        -d "-B:${rod_bind_name},%(file_type)s" "${rod_binding.rod_bind_type.input_rod}" "${rod_binding.rod_bind_type.input_rod.ext}" "input_${rod_bind_name}_${rod_binding_names[$rod_bind_name]}"
+        #if str( $rod_binding.rod_bind_type.rodToIntervalTrackName ):
+            -p '--rodToIntervalTrackName "${rod_bind_name}"'
+        #end if
+    #end for
+   
+    ##start standard gatk options
+    #if $gatk_param_type.gatk_param_type_selector == "advanced":
+        #for $sample_metadata in $gatk_param_type.sample_metadata:
+            -p '--sample_metadata "${sample_metadata.sample_metadata_file}"'
+        #end for
+        #for $read_filter in $gatk_param_type.read_filter:
+            -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
+            ###raise Exception( str( dir( $read_filter ) ) )
+            #for $name, $param in $read_filter.read_filter_type.iteritems():
+                #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
+                    --${name} "${param}"
+                #end if
+            #end for
+            '
+        #end for
+        #if str( $gatk_param_type.input_intervals ) != "None":
+            -d "-L" "${gatk_param_type.input_intervals}" "${gatk_param_type.input_intervals.ext}" "input_intervals"
+        #end if
+        #if str( $gatk_param_type.input_exclude_intervals ) != "None":
+            -d "-XL" "${gatk_param_type.input_exclude_intervals}" "${gatk_param_type.input_exclude_intervals.ext}" "input_intervals"
+        #end if
+        -p '--BTI_merge_rule "${gatk_param_type.BTI_merge_rule}"'
+        -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
+        #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
+            -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
+        #end if
+        -p '
+        --baq "${gatk_param_type.baq}"
+        --baqGapOpenPenalty "${gatk_param_type.baq_gap_open_penalty}"
+        ${gatk_param_type.use_original_qualities}
+        --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
+        --validation_strictness "${gatk_param_type.validation_strictness}"
+        --interval_merging "${gatk_param_type.interval_merging}"
+        '
+        #if str( $gatk_param_type.read_group_black_list ) != "None":
+            -d "-read_group_black_list" "${gatk_param_type.read_group_black_list}" "txt" "input_read_group_black_list"
+        #end if
+    #end if
+    #if $reference_source.reference_source_selector == "history":
+        -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
+    #end if
+    ##end standard gatk options
+    ##start analysis specific options
+    -d "-targetIntervals" "${target_intervals}" "${target_intervals.ext}" "gatk_target_intervals"
+    -p '
+    -targetNotSorted ##always resort input intervals
+    --disable_bam_indexing
+    '
+    #if $analysis_param_type.analysis_param_type_selector == "advanced":
+        -p '
+        --entropyThreshold "${analysis_param_type.entropy_threshold}"
+        ${analysis_param_type.simplify_bam}
+        --maxIsizeForMovement "${analysis_param_type.max_insert_size_for_movement}"
+        --maxPositionalMoveAllowed "${analysis_param_type.max_positional_move_allowed}"
+        --maxConsensuses "${analysis_param_type.max_consensuses}"
+        --maxReadsForConsensuses "${analysis_param_type.max_reads_for_consensuses}"
+        --maxReadsForRealignment "${analysis_param_type.max_reads_for_realignment}"
+        "${analysis_param_type.no_original_alignment_tags}"
+        '
+    #end if
+  </command>
+  <inputs>
+    
+    <conditional name="reference_source">
+      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <param name="input_bam" type="data" format="bam" label="BAM file">
+          <validator type="unspecified_build" />
+          <validator type="dataset_metadata_in_file" filename="picard_index.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+        </param>
+        <param name="ref_file" type="select" label="Using reference genome">
+          <options from_data_table="picard_indexes">
+            <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
+          </options>
+        </param>
+      </when>
+      <when value="history"> <!-- FIX ME!!!! -->
+        <param name="input_bam" type="data" format="bam" label="BAM file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+      </when>
+    </conditional>
+    <param name="target_intervals" type="data" format="gatk_interval,bed,picard_interval_list" label="Restrict realignment to provided intervals" />
+    <param name="input_dbsnp_rod" type="data" format="gatk_dbsnp" optional="True" label="dbSNP reference ordered data (ROD)" />
+    <repeat name="rod_bind" title="Binding for reference-ordered data">
+        <conditional name="rod_bind_type">
+	      <param name="rod_bind_type_selector" type="select" label="Binding Type">
+	        <option value="snps" selected="True">SNPs</option>
+	        <option value="indels">INDELs</option>
+	        <option value="custom">Custom</option>
+	      </param>
+          <when value="snps">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="indels">
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+          <when value="custom">
+              <param name="custom_rod_name" type="text" value="Unknown" label="ROD Name"/>
+              <param name="input_rod" type="data" format="vcf,gatk_dbsnp,bed" label="ROD file" />
+              <param name="rodToIntervalTrackName" type="boolean" truevalue="--rodToIntervalTrackName" falsevalue="" label="Use ROD as interval List (-BTI, --rodToIntervalTrackName)" help="Only one ROD may have this option specified" />
+          </when>
+        </conditional>
+    </repeat>
+    <param name="lod_threshold" type="float" value="5.0" label="LOD threshold above which the realigner will proceed to realign" />
+    <param name="knowns_only" type="boolean" checked="False" truevalue="-knownsOnly" falsevalue="" label="Use only known indels provided as RODs"/>
+    
+    <conditional name="gatk_param_type">
+      <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <repeat name="sample_metadata" title="Sample Metadata">
+            <param name="sample_metadata_file" type="data" format="txt" label="Sample file(s) in JSON format" />
+        </repeat>
+        <repeat name="read_filter" title="Read Filter">
+            <conditional name="read_filter_type">
+		      <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+		        <option value="MaxReadLength" selected="True">MaxReadLength</option>
+		        <option value="ZeroMappingQualityRead">ZeroMappingQualityRead</option>
+		      </param>
+	          <when value="ZeroMappingQualityRead">
+	              <!-- no extra options -->
+	          </when>
+	          <when value="MaxReadLength">
+	              <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+	          </when>
+            </conditional>
+        </repeat>
+        <param name="input_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals over which to operate" />
+        <param name="input_exclude_intervals" type="data" format="picard_interval_list" optional="True" label="A list of genomic intervals to exclude from processing" />
+        <param name="BTI_merge_rule" type="select" label="BTI merge rule">
+          <option value="UNION" selected="True">UNION</option>
+          <option value="INTERSECTION">INTERSECTION</option>
+        </param>
+        <conditional name="downsampling_type">
+          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+            <option value="NONE" selected="True">NONE</option>
+            <option value="ALL_READS">ALL_READS</option>
+            <option value="BY_SAMPLE">BY_SAMPLE</option>
+          </param>
+          <when value="NONE">
+	          <!-- no more options here -->
+	      </when>
+          <when value="ALL_READS">
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
+          <when value="BY_SAMPLE">
+	          <conditional name="downsample_to_type">
+	              <param name="downsample_to_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="Downsampling Type">
+	                  <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+	                  <option value="downsample_to_coverage">Downsample by Coverage</option>
+	              </param>
+	              <when value="downsample_to_fraction">
+	                  <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="0.1"/>
+	              </when>
+	              <when value="downsample_to_coverage">
+	                  <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0"/>
+	              </when>
+	          </conditional>
+	      </when>
+        </conditional>
+        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine">
+          <option value="OFF" selected="True">OFF</option>
+          <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
+          <option value="RECALCULATE">RECALCULATE</option>
+        </param>
+        <param name="baq_gap_open_penalty" type="integer" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets."/>
+        <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" />
+        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1"/>
+        <param name="validation_strictness" type="select" label="How strict should we be with validation">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="LENIENT">LENIENT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
+        <param name="interval_merging" type="select" label="Interval merging rule">
+          <option value="ALL" selected="True">ALL</option>
+          <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
+        </param>
+        <param name="read_group_black_list" type="data" format="txt" optional="True" label="Read group black list" />
+      </when>
+    </conditional>
+    
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        
+        <param name="entropy_threshold" type="float" value="0.15" label="percentage of mismatching base quality scores at a position to be considered having high entropy" />
+        <param name="simplify_bam" type="boolean" checked="False" truevalue="-simplifyBAM" falsevalue="" label="Simplify BAM"/>
+        
+        <param name="max_insert_size_for_movement" type="integer" value="3000" label="Maximum insert size of read pairs that we attempt to realign" />
+        <param name="max_positional_move_allowed" type="integer" value="200" label="Maximum positional move in basepairs that a read can be adjusted during realignment" />
+        <param name="max_consensuses" type="integer" value="30" label="Max alternate consensuses to try" />
+        <param name="max_reads_for_consensuses" type="integer" value="120" label="Max reads (chosen randomly) used for finding the potential alternate consensuses" />
+        <param name="max_reads_for_realignment" type="integer" value="20000" label="Max reads allowed at an interval for realignment" />
+        <param name="no_original_alignment_tags" type="boolean" checked="False" truevalue="--noOriginalAlignmentTags" falsevalue="" label="Don't output the original cigar or alignment start tags for each realigned read in the output bam"/> 
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="bam" name="output_bam" label="${tool.name} on ${on_string} (BAM)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <test>
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="target_intervals" value="gatk/gatk_realigner_target_creator/gatk_realigner_target_creator_out_1.gatk_interval" ftype="gatk_interval" />
+          <param name="input_bam" value="gatk/fake_phiX_reads_1.bam" ftype="bam" />
+          <param name="input_dbsnp_rod"  />
+          <param name="rod_bind_type_selector" value="snps" />
+          <param name="rodToIntervalTrackName" />
+          <param name="input_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <param name="lod_threshold" value="5.0" />
+          <param name="knowns_only" />
+          <param name="gatk_param_type_selector" value="basic" />
+          <param name="analysis_param_type_selector" value="basic" />
+          <output name="output_bam" file="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam"/> 
+          <output name="output_log" file="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.log.contains" compare="contains"/>
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+     Performs local realignment of reads based on misalignments due to the presence of indels. Unlike most mappers, this 
+     walker uses the full alignment context to determine whether an appropriate alternate reference (i.e. indel) exists 
+     and updates SAMRecords accordingly.
+
+------
+
+Please cite the website "http://addlink.here" as well as:
+
+Add citation here 2011.
+
+------
+
+**Input formats**
+
+GenomeAnalysisTK: IndelRealigner accepts an aligned BAM and a list of intervals to realign as input files.
+
+------
+
+**Outputs**
+
+The output is in the BAM format, see http://addlink.here for more details.
+
+-------
+
+**Settings**::
+
+ targetIntervals                intervals file output from RealignerTargetCreator
+ LODThresholdForCleaning            LOD threshold above which the cleaner will clean
+ entropyThreshold                      percentage of mismatches at a locus to be considered having high entropy
+ out                                                      Output bam
+ bam_compression                       Compression level to use for writing BAM files
+ disable_bam_indexing                                              Turn off on-the-fly creation of indices for output BAM files.
+ simplifyBAM                                          If provided, output BAM files will be simplified to include just key reads for downstream variation discovery analyses (removing duplicates, PF-, non-primary reads), as well stripping all extended tags from the kept reads except the read group identifier
+ useOnlyKnownIndels                                    Don't run 'Smith-Waterman' to generate alternate consenses; use only known indels provided as RODs for constructing the alternate references.
+ maxReadsInMemory                  max reads allowed to be kept in memory at a time by the SAMFileWriter. Keep it low to minimize memory consumption (but the tool may skip realignment on regions with too much coverage.  If it is too low, it may generate errors during realignment); keep it high to maximize realignment (but make sure to give Java enough memory).
+ maxIsizeForMovement               maximum insert size of read pairs that we attempt to realign
+ maxPositionalMoveAllowed   maximum positional move in basepairs that a read can be adjusted during realignment
+ maxConsensuses                   max alternate consensuses to try (necessary to improve performance in deep coverage)
+ maxReadsForConsensuses           max reads used for finding the alternate consensuses (necessary to improve performance in deep coverage)
+ maxReadsForRealignment         max reads allowed at an interval for realignment; if this value is exceeded, realignment is not attempted and the reads are passed to the output file(s) as-is
+ noOriginalAlignmentTags                                   Don't output the original cigar or alignment start tags for each realigned read in the output bam.
+ targetIntervalsAreNotSorted                      This tool assumes that the target interval list is sorted; if the list turns out to be unsorted, it will throw an exception.  Use this argument when your interval list is not sorted to instruct the Realigner to first sort it in memory.
+
+
+  </help>
+</tool>

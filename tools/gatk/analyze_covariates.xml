@@ -1,0 +1,92 @@
+<tool id="gatk_analyze_covariates" name="Analyze Covariates" version="0.0.1">
+  <description>- perform local realignment</description>
+<command interpreter="python">gatk_wrapper.py
+   --stdout "${output_log}"
+   --html_report_from_directory "${output_html}" "${output_html.files_path}"
+   -p 'java 
+    -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/AnalyzeCovariates.jar"
+    -recalFile "${input_recal}"
+    -outputDir "${output_html.files_path}"
+    ##-log "${output_log}"
+    ##-Rscript,--path_to_Rscript path_to_Rscript; on path is good enough
+    -resources "${GALAXY_DATA_INDEX_DIR}/shared/gatk/R"         
+    #if $analysis_param_type.analysis_param_type_selector == "advanced":
+        --ignoreQ "${analysis_param_type.ignore_q}"
+        --numRG "${analysis_param_type.num_read_groups}"
+        --max_quality_score "${analysis_param_type.max_quality_score}"
+        --max_histogram_value "${analysis_param_type.max_histogram_value}"
+         ${analysis_param_type.do_indel_quality}
+    #end if
+   '
+  </command>
+  <inputs>
+    <param name="input_recal" type="data" format="csv" label="Covariates table recalibration file" />
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <param name="ignore_q" type="integer" value="5" label="Ignore bases with reported quality less than this number."/>
+        <param name="num_read_groups" type="integer" value="-1" label="Only process N read groups."/>
+        <param name="max_quality_score" type="integer" value="50" label="Max quality score"/>
+        <param name="max_histogram_value" type="integer" value="0" label="Max quality score"/>
+        <param name="do_indel_quality" type="boolean" truevalue="--do_indel_quality" falsevalue="" label="Max quality score"/>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="html" name="output_html" label="${tool.name} on ${on_string} (HTML)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <test>
+          <param name="input_recal" value="gatk/gatk_count_covariates/gatk_count_covariates_out_1.csv" ftype="csv" /> 
+          <param name="analysis_param_type_selector" value="basic" />
+          <output name="output_html" file="gatk/gatk_analyze_covariates/gatk_analyze_covariates_out_1.html" />
+          <output name="output_log" file="gatk/gatk_analyze_covariates/gatk_analyze_covariates_out_1.log.contains" compare="contains" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+     Create collapsed versions of the recal csv file and call R scripts to plot residual error versus the various covariates.
+
+
+------
+
+Please cite the website "http://addlink.here" as well as:
+
+Add citation here 2011.
+
+------
+
+**Input formats**
+
+GenomeAnalysisTK: AnalyzeCovariates accepts an recal CSV file.
+
+------
+
+**Outputs**
+
+The output is in and HTML file with links to PDF graphs and a data files, see http://addlink.here for more details.
+
+-------
+
+**Settings**::
+
+ recal_file                   The input recal csv file to analyze
+ output_dir                   The directory in which to output all the plots and intermediate data files
+ path_to_Rscript           The path to your implementation of Rscript. For Broad users this is maybe /broad/tools/apps/R-2.6.0/bin/Rscript
+ path_to_resources     Path to resources folder holding the Sting R scripts.
+ ignoreQ                           Ignore bases with reported quality less than this number.
+ numRG                                 Only process N read groups. Default value: -1 (process all read groups)
+ max_quality_score          The integer value at which to cap the quality scores, default is 50
+ max_histogram_value   If supplied, this value will be the max value of the histogram plots
+ do_indel_quality                             If supplied, this value will be the max value of the histogram plots
+
+  </help>
+</tool>
