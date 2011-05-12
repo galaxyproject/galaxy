@@ -61,6 +61,7 @@ LINKS="
 /galaxy/data/location/srma_index.loc
 /galaxy/data/taxonomy
 /galaxy/data/location/twobit.loc
+/galaxy/software/tool-data/gatk
 "
 
 SAMPLES="
