@@ -63,7 +63,7 @@
       <param name="rgsm" value="sam1" />
       <param name="rgOpts" value="preSet" />
       <param name="outputFormat" value="sam" />
-      <output name="outFileSam" ftype="picard_ARRG_output1.sam" />
+      <output name="outFileSam" file="picard_ARRG_output1.sam" />
     </test>
     <!-- Functional tests with Picard bam outputs currently aren't working
     <test>
