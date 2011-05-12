@@ -917,7 +917,7 @@ class Tool:
             else:
                 input.visit_inputs( "", value[input.name], callback )
 
-    def handle_input( self, trans, incoming ):
+    def handle_input( self, trans, incoming, history=None ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -966,7 +966,7 @@ class Tool:
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
-                _, out_data = self.execute( trans, incoming=params )
+                _, out_data = self.execute( trans, incoming=params, history=history )
                 try:
                     assert isinstance( out_data, odict )
                     return 'tool_executed.mako', dict( out_data=out_data )

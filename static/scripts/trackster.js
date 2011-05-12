@@ -999,8 +999,9 @@ extend(Tool.prototype, {
         $.extend(url_params, this.get_param_values_dict());
         
         // Run tool.
+        // TODO: rewrite to use $.when():
         var json_run_tool = function() {
-            $.getJSON(run_tool_url, url_params, function(response) {
+            $.getJSON(rerun_tool_url, url_params, function(response) {
                 if (response === "no converter") {
                     // No converter available for input datasets, so cannot run tool.
                     new_track.container_div.addClass("error");
@@ -1046,18 +1047,19 @@ var NumberParameter = function(name, label, html, value, min, max) {
 /**
  * Filters that enable users to show/hide data points dynamically.
  */
-var Filter = function(name, index, value) {
+var Filter = function(name, index, tool_id, tool_exp_name) {
     this.name = name;
+    // Index into payload to filter.
     this.index = index;
-    this.value = value;
+    this.tool_id = tool_id;
+    // Name to use for filter when building expression for tool.
+    this.tool_exp_name = tool_exp_name;
 };
 /**
  * Number filters have a min, max as well as a low, high; low and high are used 
  */
-var NumberFilter = function(name, index) {
-    this.name = name;
-    // Index into payload to filter.
-    this.index = index;
+var NumberFilter = function(name, index, tool_id, tool_exp_name) {
+    Filter.call(this, name, index, tool_id, tool_exp_name);
     // Filter low/high. These values are used to filter elements.
     this.low = -Number.MAX_VALUE;
     this.high = Number.MAX_VALUE;
@@ -1148,12 +1150,18 @@ var FiltersManager = function(track, filters_list) {
     this.track = track;
     this.filters = [];
     for (var i = 0; i < filters_list.length; i++) {
-        var filter_dict = filters_list[i];
-        var name = filter_dict.name, type = filter_dict.type, index = filter_dict.index;
+        var 
+            filter_dict = filters_list[i], 
+            name = filter_dict.name, 
+            type = filter_dict.type, 
+            index = filter_dict.index,
+            tool_id = filter_dict.tool_id,
+            tool_exp_name = filter_dict.tool_exp_name;
         if (type === 'int' || type === 'float') {
-            this.filters[i] = new NumberFilter(name, index);
+            this.filters[i] = 
+                new NumberFilter(name, index, tool_id, tool_exp_name);
         } else {
-            this.filters[i] = new Filter(name, index, type);
+            console.log("ERROR: unsupported filter: ", name, type)
         }
     }
     
@@ -1283,8 +1291,83 @@ var FiltersManager = function(track, filters_list) {
         
         // Add to clear floating layout.
         $("<div style='clear: both;'/>").appendTo(filter_div);
-    });  
+    });
+    
+    // Add button to filter complete dataset.
+    if (this.filters.length != 0) {
+        var run_buttons_row = $("<div>").addClass("param-row").appendTo(this.parent_div);
+        var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_buttons_row);
+        var filter_manager = this;
+        run_on_dataset_button.click( function() {
+            filter_manager.run_on_dataset();
+        });
+    }
 };
+
+extend( FiltersManager.prototype, {
+    run_on_dataset: function() {
+        // Get or create dictionary item.
+        var get_or_create_dict_item = function(dict, key, new_item) {
+            // Add new item to dict if 
+            if (!(key in dict)) {
+                dict[key] = new_item;
+            }
+            return dict[key];
+        };
+        
+        //
+        // Find and group active filters. Active filters are those being used to hide data.
+        // Filters with the same tool id are grouped.
+        //
+        var active_filters = {},
+            filter, 
+            tool_filter_conditions,
+            operation;
+        for (var i = 0; i < this.filters.length; i++) {
+            filter = this.filters[i];
+            if (filter.tool_id) {
+                // Add filtering conditions if filter low/high are set.
+                if (filter.min != filter.low) {
+                    tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
+                    tool_filter_conditions[tool_filter_conditions.length] = filter.tool_exp_name + " >= " + filter.min;
+                }
+                if (filter.max != filter.high) {
+                    tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
+                    tool_filter_conditions[tool_filter_conditions.length] = filter.tool_exp_name + " <= " + filter.max;
+                }
+            }
+        }
+        
+        //
+        // Use tools to run filters.
+        //
+        for (var tool_id in active_filters) {
+            var 
+                tool_filters = active_filters[tool_id],
+                tool_filter_str = "(" + tool_filters.join(") and (") + ")",
+                url_params = {
+                    cond: tool_filter_str,
+                    input: this.track.dataset_id,
+                    target_dataset_id: this.track.dataset_id,
+                    tool_id: tool_id
+                };
+
+            $.getJSON(run_tool_url, url_params, function(response) {
+                if (response.error) {
+                    // General error.
+                    new_track.container_div.addClass("error");
+                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + response.message);
+                }
+                else {
+                    // Job submitted and running.
+                    show_modal("Filter Dataset", 
+                               tool_id + " is running on the complete dataset. Tool outputs are in dataset's history.", 
+                               { "Close" : hide_modal } );
+                }
+            });
+        }
+    }
+});
 
 /**
  * Container for track configuration data.
