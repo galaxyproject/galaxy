@@ -37,10 +37,10 @@ def open_file_from_option( filename, mode = 'rb' ):
     return None
 
 def html_report_from_directory( html_out, dir ):
-    html_out.write( '<html><head><title>Galaxy - GATK Output</title></head><body><p/><ul>' )
-    for fname in os.listdir( dir ):
-        html_out.write(  '<li><a href="%s">%s</a></li>' % ( fname, fname ) )
-    html_out.write( '</ul></body></html>' )
+    html_out.write( '<html>\n<head>\n<title>Galaxy - GATK Output</title>\n</head>\n<body>\n<p/>\n<ul>\n' )
+    for fname in sorted( os.listdir( dir ) ):
+        html_out.write(  '<li><a href="%s">%s</a></li>\n' % ( fname, fname ) )
+    html_out.write( '</ul>\n</body>\n</html>\n' )
 
 def __main__():
     #Parse Command Line
