@@ -130,23 +130,23 @@
             <option value="no">No</option>
           </param>
           <when value="yes">
-            <param name="rgid" type="text" size="25" label="Read group identiﬁer. Each @RG line must have a unique ID. The value of ID is used in the RG 
+            <param name="rgid" type="text" size="25" label="Read group identiﬁer (ID). Each @RG line must have a unique ID. The value of ID is used in the RG 
 tags of alignment records. Must be unique among all read groups in header section." help="Required if RG specified. Read group 
 IDs may be modiﬁed when merging SAM ﬁles in order to handle collisions." />
-            <param name="rgcn" type="text" size="25" label="Sequencing center that produced the read" help="Optional" />
-            <param name="rgds" type="text" size="25" label="Description" help="Optional" />
-            <param name="rgdt" type="text" size="25" label="Date that run was produced (ISO8601 format date or date/time, like YYYY-MM-DD)" help="Optional" />
-            <param name="rgfo" type="text" size="25" label="Flow order. The array of nucleotide bases that correspond to the nucleotides used for each 
+            <param name="rgcn" type="text" size="25" label="Sequencing center that produced the read (CN)" help="Optional" />
+            <param name="rgds" type="text" size="25" label="Description (DS)" help="Optional" />
+            <param name="rgdt" type="text" size="25" label="Date that run was produced (DT)" help="Optional. ISO8601 format date or date/time, like YYYY-MM-DD" />
+            <param name="rgfo" type="text" size="25" label="Flow order (FO). The array of nucleotide bases that correspond to the nucleotides used for each 
 ﬂow of each read." help="Optional. Multi-base ﬂows are encoded in IUPAC format, and non-nucleotide ﬂows by 
 various other characters. Format : /\*|[ACMGRSVTWYHKDBN]+/" />
-            <param name="rgks" type="text" size="25" label="The array of nucleotide bases that correspond to the key sequence of each read" help="Optional" />
-            <param name="rglb" type="text" size="25" label="Library name" help="Required if RG specified" />
-            <param name="rgpg" type="text" size="25" label="Programs used for processing the read group" help="Optional" />
-            <param name="rgpi" type="text" size="25" label="Predicted median insert size" help="Optional" />
-            <param name="rgpl" type="text" size="25" label="Platform/technology used to produce the reads. Valid values : CAPILLARY, LS454, ILLUMINA, 
-SOLID, HELICOS, IONTORRENT and PACBIO" help="Required if RG specified" />
-            <param name="rgpu" type="text" size="25" label="Platform unit (e.g. ﬂowcell-barcode.lane for Illumina or slide for SOLiD). Unique identiﬁer." help="Optional" />
-            <param name="rgsm" type="text" size="25" label="Sample. Use pool name where a pool is being sequenced" help="Required if RG specified" />
+            <param name="rgks" type="text" size="25" label="The array of nucleotide bases that correspond to the key sequence of each read (KS)" help="Optional" />
+            <param name="rglb" type="text" size="25" label="Library name (LB)" help="Required if RG specified" />
+            <param name="rgpg" type="text" size="25" label="Programs used for processing the read group (PG)" help="Optional" />
+            <param name="rgpi" type="text" size="25" label="Predicted median insert size (PI)" help="Optional" />
+            <param name="rgpl" type="text" size="25" label="Platform/technology used to produce the reads (PL)" help="Required if RG specified. Valid values : CAPILLARY, LS454, ILLUMINA, 
+SOLID, HELICOS, IONTORRENT and PACBIO" />
+            <param name="rgpu" type="text" size="25" label="Platform unit (PU)" help="Optional. Unique identiﬁer (e.g. ﬂowcell-barcode.lane for Illumina or slide for SOLiD)" />
+            <param name="rgsm" type="text" size="25" label="Sample (SM)" help="Required if RG specified. Use pool name where a pool is being sequenced" />
           </when>
           <when value="no" />
         </conditional>
