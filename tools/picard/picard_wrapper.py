@@ -8,7 +8,7 @@ code Ross wrote licensed under the LGPL
 see http://www.gnu.org/copyleft/lesser.html
 """
 
-import optparse, os, sys, subprocess, tempfile, shutil, time
+import optparse, os, sys, subprocess, tempfile, shutil, time, logging
 
 galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -22,7 +22,7 @@ galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <body>
 <div class="document">
 """
-galhtmlattr = """Galaxy tool wrapper %s at %s</b><br/>"""
+galhtmlattr = """Galaxy tool %s run at %s</b><br/>"""
 galhtmlpostfix = """</div></body></html>\n"""
 
 
@@ -68,11 +68,23 @@ class PicardBase():
             os.makedirs(opts.tmpdir)
         except:
             pass
-        self.log_filename = os.path.join(opts.outdir,'%s.log' % self.picname)
+        self.log_filename = os.path.join(self.opts.outdir,'%s.log' % self.picname)
         self.metricsOut =  os.path.join(opts.outdir,'%s.metrics.txt' % self.picname)
+        self.setLogging(logfname=self.log_filename)
  
     def baseName(self,name=None):
         return os.path.splitext(os.path.basename(name))[0]
+
+    def setLogging(self,logfname="picard_wrapper.log"):
+        """setup a logger
+        """
+        today=timenow()
+        logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(levelname)s\n %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    filename=logfname,
+                    filemode='a')
+
 
     def readLarge(self,fname=None):
         """ read a potentially huge file..
@@ -120,6 +132,7 @@ class PicardBase():
             s = '## executing %s returned status %d and stderr: \n%s\n' % (cl,rval,stderrs)
         else:
             s = '## executing %s returned status %d and nothing on stderr\n' % (cl,rval)
+        logging.info(s)
         os.unlink(templog) # always
         os.unlink(temperr) # always
         return s, stdouts # sometimes this is an output
@@ -132,10 +145,6 @@ class PicardBase():
         runme.append('-jar %s' % jar)
         runme += cl
         s,stdout = self.runCL(cl=runme, output_dir=self.opts.outdir)
-        lf = open(self.log_filename,'a')
-        lf.write(s)
-        lf.write('\n')
-        lf.close()
         return stdout
 
     def samToBam(self,infile=None,outdir=None):
@@ -180,7 +189,7 @@ class PicardBase():
         except:
             r = []        
         if len(r) > 0:
-            res.append('<b>Picard on line resources:</b><ul>\n')
+            res.append('<b>Picard on line resources</b><ul>\n')
             res.append('<li><a href="http://picard.sourceforge.net/index.shtml">Click here for Picard Documentation</a></li>\n')
             res.append('<li><a href="http://picard.sourceforge.net/picard-metric-definitions.shtml">Click here for Picard Metrics definitions</a></li></ul><hr/>\n')
             if transpose:
@@ -204,20 +213,20 @@ class PicardBase():
                         thist = True
                 if row.strip() == '' or i == lastr: # last line or blank means write a segment
                     if len(heads) > 0:
-                        hres = ['<tr class="d%d"><td>%s</td></tr>' % (i % 2,x) for i,x in enumerate(heads)]
+                        hres = ['<tr class="d%d"><td colspan="2">%s</td></tr>' % (i % 2,x) for i,x in enumerate(heads)]
                         res += hres
                         heads = []
                     if len(dat) > 0:  
                         if transpose and not thist:
                             tdat = map(None,*dat) # transpose an arbitrary list of lists
-                            tdat = ['<tr class="d%d"><td>%s</td><td>%s</td></tr>\n' % ((i+len(heads)) % 2,x[0],x[1]) for i,x in enumerate(tdat) if i < maxrows] 
+                            tdat = ['<tr class="d%d"><td>%s</td><td>%s&nbsp;</td></tr>\n' % ((i+len(heads)) % 2,x[0],x[1]) for i,x in enumerate(tdat) if i < maxrows] 
                             missing = len(tdat) - maxrows
                             if missing > 0:
                                tdat.append('<tr><td colspan="2">...WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (missing,os.path.basename(picout)))
                         else:
                             if thist or not transpose:
                                 dat = ['\t'.join(x).strip() for x in dat] # back to strings :(
-                            tdat = ['<tr class="d%d"><td>%s</td></tr>\n' % ((i+len(heads)) % 2,x) for i,x in enumerate(dat) if i < maxrows] 
+                            tdat = ['<tr class="d%d"><td colspan="2">%s</td></tr>\n' % ((i+len(heads)) % 2,x) for i,x in enumerate(dat) if i < maxrows] 
                             missing = len(tdat) - maxrows
                             if missing > 0:      
                                 tdat.append('<tr><td>...WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (missing,os.path.basename(self.metricsOut)))
@@ -231,14 +240,15 @@ class PicardBase():
         picard produces long hard to read tab header files
         make them available but present them transposed for readability
         """
+        logging.shutdown()
         self.cleanup() # remove temp files stored in delme
         rstyle="""<style type="text/css">
         tr.d0 td {background-color: oldlace; color: black;}
         tr.d1 td {background-color: aliceblue; color: black;}
         </style>"""    
         res = [rstyle,]
-        res.append(galhtmlprefix % self.picname)   
-        res.append(galhtmlattr % (self.progname,timenow()))
+        res.append(galhtmlprefix % self.progname)   
+        res.append(galhtmlattr % (self.picname,timenow()))
         flist = [x for x in os.listdir(self.opts.outdir) if not x.startswith('.')] 
         pdflist = [x for x in flist if os.path.splitext(x)[-1].lower() == '.pdf']
         if len(pdflist) > 0: # assumes all pdfs come with thumbnail .jpgs
@@ -260,7 +270,7 @@ class PicardBase():
         l = open(self.log_filename,'r').readlines()
         llen = len(l)
         if llen > 0: 
-            res.append('<b>Picard log</b><hr/>\n') 
+            res.append('<b>Picard Tool Run Log</b><hr/>\n') 
             rlog = ['<pre>',]
             if llen > maxloglines:
                 rlog += l[:maxloglines]                
@@ -295,9 +305,7 @@ class PicardBase():
         self.runCL(cl=cl,output_dir=self.opts.outdir)
         head = open(thead,'r').readlines()
         s = '## got %d rows of header\n' % (len(head))
-        lf = open(self.log_filename,'a')
-        lf.write(s)
-        lf.close()
+        logging.info(s)
         o = open(outf,'w')
         o.write(''.join(head))
         o.write(''.join(bed))
@@ -344,10 +352,7 @@ class PicardBase():
             infile.close()
             if newsam:
                 shutil.copy(insam,newsam)
-        lf = open(self.log_filename,'a')
-        lf.write(info)
-        lf.write('\n')
-        lf.close()
+        logging.info(info)
                 
 
 
@@ -606,13 +611,9 @@ def __main__():
             s += 'so please double check that your input data really is paired-end NGS data.<br/>\n'
             s += 'If your input was paired data this may be a bug worth reporting to the galaxy-bugs list\n<br/>'
             stdouts = ''
-        lf = open(pic.log_filename,'a')
-        lf.write(s)
-        lf.write('\n')
+        logging.info(s)
         if len(stdouts) > 0:
-           lf.write(stdouts)
-           lf.write('\n')
-        lf.close()
+           logging.info(stdouts)
         
     elif pic.picname == 'MarkDuplicates':
         # assume sorted even if header says otherwise
