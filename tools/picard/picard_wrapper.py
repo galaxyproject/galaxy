@@ -50,7 +50,7 @@ class PicardBase():
         assert opts <> None, 'PicardBase needs opts at init'
         self.opts = opts
         if self.opts.outdir == None:
-             self.opts.outdir = self.opts.tmpdir # fixmate has no html file eg
+             self.opts.outdir = os.getcwd() # fixmate has no html file eg so use temp dir
         assert self.opts.outdir <> None,'## PicardBase needs a temp directory if no output directory passed in'
         self.picname = self.baseName(opts.jar)
         if self.picname.startswith('picard'):
@@ -78,10 +78,7 @@ class PicardBase():
     def setLogging(self,logfname="picard_wrapper.log"):
         """setup a logger
         """
-        today=timenow()
         logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(levelname)s\n %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
                     filename=logfname,
                     filemode='a')
 
@@ -145,6 +142,7 @@ class PicardBase():
         runme.append('-jar %s' % jar)
         runme += cl
         s,stdout = self.runCL(cl=runme, output_dir=self.opts.outdir)
+        print '##s=',s,'\n##stdout=',stdout
         return stdout
 
     def samToBam(self,infile=None,outdir=None):
@@ -211,27 +209,39 @@ class PicardBase():
                         dat.append(srow) # want lists
                     if row.startswith('## HISTOGRAM'):
                         thist = True
-                if row.strip() == '' or i == lastr: # last line or blank means write a segment
-                    if len(heads) > 0:
-                        hres = ['<tr class="d%d"><td colspan="2">%s</td></tr>' % (i % 2,x) for i,x in enumerate(heads)]
-                        res += hres
-                        heads = []
-                    if len(dat) > 0:  
-                        if transpose and not thist:
-                            tdat = map(None,*dat) # transpose an arbitrary list of lists
-                            tdat = ['<tr class="d%d"><td>%s</td><td>%s&nbsp;</td></tr>\n' % ((i+len(heads)) % 2,x[0],x[1]) for i,x in enumerate(tdat) if i < maxrows] 
-                            missing = len(tdat) - maxrows
-                            if missing > 0:
-                               tdat.append('<tr><td colspan="2">...WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (missing,os.path.basename(picout)))
-                        else:
-                            if thist or not transpose:
-                                dat = ['\t'.join(x).strip() for x in dat] # back to strings :(
-                            tdat = ['<tr class="d%d"><td colspan="2">%s</td></tr>\n' % ((i+len(heads)) % 2,x) for i,x in enumerate(dat) if i < maxrows] 
-                            missing = len(tdat) - maxrows
-                            if missing > 0:      
-                                tdat.append('<tr><td>...WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (missing,os.path.basename(self.metricsOut)))
-                        res += tdat
-                        dat = []
+            if len(heads) > 0:
+                hres = ['<tr class="d%d"><td colspan="2">%s</td></tr>' % (i % 2,x) for i,x in enumerate(heads)]
+                res += hres
+                heads = []
+            if len(dat) > 0:
+                dropRows = len(dat) - maxrows
+                n = 0
+                if dropRows > 0: 
+                    n = int(maxrows/2)               
+                if transpose and not thist:
+                    tdat = map(None,*dat) # transpose an arbitrary list of lists
+                    if dropRows > 0:
+                        dat = tdat[:n]
+                        dat.append(('<b>...%d rows not shown - see log...</b>',''))
+                        dat += tdat[-n:]
+                    else:
+                        dat = tdat
+                    tdat = ['<tr class="d%d"><td>%s</td><td>%s&nbsp;</td></tr>\n' % ((i+len(heads)) % 2,x[0],x[1]) for i,x in enumerate(dat)] 
+                    if dropRows > 0:
+                        tdat.append('<tr><td colspan="2">## WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (dropRows,os.path.basename(picout)))
+                else:
+                    if dropRows > 0:
+                        tdat = dat[:n]
+                        tdat.append(('<b>...%d rows not shown - see log...</b>' % dropRows,''))
+                        tdat += dat[-n:]
+                    else:
+                        tdat = dat
+                    dat = ['\t'.join(x).strip() for x in tdat] # back to strings :(
+                    tdat = ['<tr class="d%d"><td colspan="2">%s</td></tr>\n' % ((i+len(heads)) % 2,x) for i,x in enumerate(dat)]
+                    if dropRows > 0:
+                        tdat.append('<tr><td>## WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (dropRows,os.path.basename(self.metricsOut)))
+            res += tdat
+            dat = []
             res.append('</table>\n')   
         return res
 
@@ -273,11 +283,15 @@ class PicardBase():
             res.append('<b>Picard Tool Run Log</b><hr/>\n') 
             rlog = ['<pre>',]
             if llen > maxloglines:
-                rlog += l[:maxloglines]                
-                rlog.append('\n<b>## WARNING - %d log lines truncated - %s contains entire output' % (llen - maxloglines,self.log_filename))
+                n = min(50,int(maxloglines/2))
+                rlog += l[:n]
+                rlog.append('------------ ## %d rows deleted ## --------------\n' % (llen-maxloglines))                
+                rlog += l[-n:]
             else:
                 rlog += l
             rlog.append('</pre>')
+            if llen > maxloglines:
+                rlog.append('\n<b>## WARNING - %d log lines truncated - <a href="%s">%s</a> contains entire output</b>' % (llen - maxloglines,self.log_filename,self.log_filename))
             res += rlog
         else:
             res.append("### Odd, Picard left no log file %s - must have really barfed badly?\n" % self.log_filename)

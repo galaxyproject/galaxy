@@ -1,11 +1,11 @@
-<tool name="Insertion size metrics:" id="rgPicInsertSize" version="0.01">
+<tool name="Insertion size metrics:" id="PicardInsertSize" version="0.02">
   <description>for PAIRED data</description>
+  <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --taillimit "$tailLimit"
    --histwidth "$histWidth" --minpct "$minPct"
    -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/CollectInsertSizeMetrics.jar" -d "$html_file.files_path" -t "$html_file"
   </command>
-  <requirements><requirement type="package">picard</requirement></requirements>
   <inputs>
     <param format="bam,sam" name="input_file" type="data" label="Input: sam or bam format short read data in your current history"
       help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>

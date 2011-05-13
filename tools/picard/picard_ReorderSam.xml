@@ -1,9 +1,8 @@
-<tool name="Reorder SAM:" id="picard_ReorderSam" version="0.01">
+<tool name="Reorder SAM:" id="picard_ReorderSam" version="0.02">
   <requirements><requirement type="package">picard</requirement></requirements>
   <description>(Picard)</description>
   <command interpreter="python">
-    picard_wrapper.py
-      --input=$inputFile
+    picard_wrapper.py  -d "$html_file.files_path" -t "$html_file" --input=$inputFile
       #if $source.indexSource == "built-in"
         --ref="${ filter( lambda x: str( x[0] ) == str( $source.ref ), $__app__.tool_data_tables[ 'picard_indexes' ].get_fields() )[0][-1] }"
       #else
@@ -15,11 +14,7 @@
       --allow-inc-dict-concord=$allowIncDictConcord
       --allow-contig-len-discord=$allowContigLenDiscord
       --output-format=$outputFormat
-      #if str( $outputFormat ) == "sam"
-        --output=$outFileSam
-      #else if str( $outputFormat ) == "bam"
-        --output=$outFileBam
-      #end if
+      --output="$out_file"
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/ReorderSam.jar"
       --picard-cmd="ReorderSam"
   </command>
@@ -47,12 +42,12 @@
     <param name="allowContigLenDiscord" type="boolean" checked="False" truevalue="true" falsevalue="false" label="Allow contig length discordance?" help="This is dangerous--don't check it unless you know exactly what you're doing!" />
     <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output bam instead of sam" help="Uncheck for sam output" />
   </inputs>
-  <outputs>
-    <data name="outFileSam" format="sam" label="${tool.name} on ${on_string}: reordered sam">
-      <filter>outputFormat is False</filter>
-    </data>
-    <data name="outFileBam" format="bam" label="${tool.name} on ${on_string}: reordered bam">
-      <filter>outputFormat is True</filter>
+ <outputs>
+    <data format="html" name="html_file" label="ReorderBam_on_${on_string}.html" />
+    <data format="bam" name="out_file" label="ReorderBam_on_${on_string}.${outputFormat}">
+    <change_format>
+     <when input="outputFormat" value="sam" format="sam" />
+    </change_format> 
     </data>
   </outputs>
   <tests>
