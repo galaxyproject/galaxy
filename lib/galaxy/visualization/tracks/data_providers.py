@@ -332,10 +332,11 @@ class BBIDataProvider( TracksDataProvider ):
         # The first zoom level for BBI files is 640. If too much is requested, it will look at each block instead
         # of summaries. The calculation done is: zoom <> (end-start)/num_points/2.
         # Thus, the optimal number of points is (end-start)/num_points/2 = 640
-        # num_points = (end-start) / 1280 
+        # num_points = (end-start) / 1280
         num_points = (end-start) / 1280
-        if (end - start) < num_points:
+        if num_points < 1:
             num_points = end - start
+        num_points = max(num_points, 10)
 
         data = bbi.query(chrom, start, end, num_points)
         f.close()
