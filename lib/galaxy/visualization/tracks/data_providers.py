@@ -395,13 +395,22 @@ class FilterableMixin:
         filter_col = 8
         if isinstance( self.original_dataset.datatype, Gff ):
             # Can filter by score and GTF attributes.
-            filters = [ { 'name': 'Score', 'type': 'int', 'index': filter_col } ]
+            filters = [ { 'name': 'Score', 
+                          'type': 'int', 
+                          'index': filter_col, 
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c5' } ]
             filter_col += 1
             if isinstance( self.original_dataset.datatype, Gtf ):
                 # Create filters based on dataset metadata.
                 for name, a_type in self.original_dataset.metadata.attribute_types.items():
                     if a_type in [ 'int', 'float' ]:
-                        filters.append( { 'name': name, 'type': a_type, 'index': filter_col } )
+                        filters.append( 
+                            { 'name': name,
+                              'type': a_type, 
+                              'index': filter_col, 
+                              'tool_id': 'gff_filter_by_attribute',
+                              'tool_exp_name': name } )
                         filter_col += 1
 
                 '''
@@ -426,7 +435,12 @@ class FilterableMixin:
                 '''
         elif isinstance( self.original_dataset.datatype, Bed ):
             # Can filter by score column only.
-            filters = [ { 'name': 'Score', 'type': 'int', 'index': filter_col } ]
+            filters = [ { 'name': 'Score', 
+                          'type': 'int', 
+                          'index': filter_col, 
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c5'
+                           } ]
 
         return filters
     

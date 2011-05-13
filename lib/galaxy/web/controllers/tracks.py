@@ -26,7 +26,8 @@ messages = Bunch(
     NO_CONVERTER = "no converter",
     NO_TOOL = "no tool",
     DATA = "data",
-    ERROR = "error"
+    ERROR = "error",
+    OK = "ok"
 )
 
 class NameColumn( grids.TextColumn ):
@@ -643,13 +644,60 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     @web.expose
     def list_tracks( self, trans, **kwargs ):
         return self.tracks_grid( trans, **kwargs )
+            
+    @web.expose
+    def run_tool( self, trans, tool_id, target_dataset_id, **kwargs ):
+        """
+        Run a tool. This method serves as a general purpose way to run tools asynchronously.
+        """
+        
+        #
+        # Set target history (the history that tool will use for outputs) using
+        # target dataset. If user owns dataset, put new data in original 
+        # dataset's history; if user does not own dataset (and hence is accessing
+        # dataset via sharing), put new data in user's current history.
+        #
+        target_dataset = self.get_dataset( trans, target_dataset_id, check_ownership=False, check_accessible=True )
+        if target_dataset.history.user == trans.user:
+            target_history = target_dataset.history
+        else:
+            target_history = trans.get_history( create=True )
+        
+        # HACK: tools require unencoded parameters but kwargs are typically 
+        # encoded, so try decoding all parameter values.
+        for key, value in kwargs.items():
+            try:
+                value = trans.security.decode_id( value )
+                kwargs[ key ] = value
+            except:
+                pass
+        
+        #        
+        # Execute tool.
+        #
+        tool = trans.app.toolbox.tools_by_id.get( tool_id, None )
+        if not tool:
+            return messages.NO_TOOL
+        
+        # HACK: add run button so that tool.handle_input will run tool.
+        kwargs['runtool_btn'] = 'Execute'
+        params = util.Params( kwargs, sanitize = False )
+        print target_history.name
+        template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
+        
+        # TODO: parse output and send response.
+        return messages.OK
                 
     @web.expose
-    def run_tool( self, trans, dataset_id, tool_id, chrom=None, low=None, high=None, **kwargs ):
-        """ 
-        Run a tool on a subset of input data to produce a new output dataset that 
-        corresponds to a dataset that a user is currently viewing.
+    def rerun_tool( self, trans, dataset_id, tool_id, chrom=None, low=None, high=None, **kwargs ):
         """
+        Rerun a tool to produce a new output dataset that corresponds to a 
+        dataset that a user is currently viewing.
+        """
+        
+        #
+        # TODO: refactor to use same code as run_tool.
+        #        
         
         # Run tool on region if region is specificied.
         run_on_region = False

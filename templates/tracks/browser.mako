@@ -65,6 +65,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     var default_data_url = "${h.url_for( action='data' )}",
         raw_data_url = "${h.url_for( action='raw_data' )}",
         run_tool_url = "${h.url_for( action='run_tool' )}",
+        rerun_tool_url = "${h.url_for( action='rerun_tool' )}",
         reference_url = "${h.url_for( action='reference' )}",
         chrom_url = "${h.url_for( action='chroms' )}",
         dataset_state_url = "${h.url_for( action='dataset_state' )}",
