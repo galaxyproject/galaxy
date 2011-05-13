@@ -1304,7 +1304,16 @@ var FiltersManager = function(track, filters_list) {
     }
 };
 
-extend( FiltersManager.prototype, {
+extend(FiltersManager.prototype, {
+    /**
+     * Reset filters to min and max.
+     */
+    reset_filters: function() {
+        for (var i = 0; i < this.filters.length; i++) {
+            filter = this.filters[i];
+            filter.slider.slider("option", "values", [filter.min, filter.max]);
+        }
+    },
     run_on_dataset: function() {
         // Get or create dictionary item.
         var get_or_create_dict_item = function(dict, key, new_item) {
@@ -1329,11 +1338,11 @@ extend( FiltersManager.prototype, {
                 // Add filtering conditions if filter low/high are set.
                 if (filter.min != filter.low) {
                     tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
-                    tool_filter_conditions[tool_filter_conditions.length] = filter.tool_exp_name + " >= " + filter.min;
+                    tool_filter_conditions[tool_filter_conditions.length] = filter.tool_exp_name + " >= " + filter.low;
                 }
                 if (filter.max != filter.high) {
                     tool_filter_conditions = get_or_create_dict_item(active_filters, filter.tool_id, []);
-                    tool_filter_conditions[tool_filter_conditions.length] = filter.tool_exp_name + " <= " + filter.max;
+                    tool_filter_conditions[tool_filter_conditions.length] = filter.tool_exp_name + " <= " + filter.high;
                 }
             }
         }
@@ -1766,8 +1775,11 @@ extend(TiledTrack.prototype, Track.prototype, {
             // Show/hide filters menu item.
             var text = (track.filters_div.is(":visible") ? "Hide filters" : "Show filters");
             track_dropdown[text] = function() {
-                // Toggle filtering div and remake menu.
+                // Toggle filtering div, reset filters, and remake menu.
                 track.filters_visible = (track.filters_div.is(":visible"));
+                if (track.filters_visible) {
+                    track.filters_manager.reset_filters();
+                }
                 track.filters_div.toggle();
                 track.make_name_popup_menu();
             };
