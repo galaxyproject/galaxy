@@ -181,6 +181,7 @@ var
     
     // Other constants.
     DENSITY = 200,
+    RESOLUTION = 5,
     FEATURE_LEVELS = 10,
     DEFAULT_DATA_QUERY_WAIT = 5000,
     // Maximum number of chromosomes that are selectable at any one time.
@@ -762,7 +763,7 @@ extend( View.prototype, {
         this.high = Math.ceil(high);
         
         // 10^log10(range / DENSITY) Close approximation for browser window, assuming DENSITY = window width
-        this.resolution = Math.pow( 10, Math.ceil( Math.log( (this.high - this.low) / DENSITY ) / Math.LN10 ) );
+        this.resolution = Math.pow( RESOLUTION, Math.ceil( Math.log( (this.high - this.low) / DENSITY ) / Math.log(RESOLUTION) ) );
         this.zoom_res = Math.pow( FEATURE_LEVELS, Math.max(0,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) )));
         
         // Overview
