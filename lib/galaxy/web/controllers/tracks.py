@@ -682,11 +682,11 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # HACK: add run button so that tool.handle_input will run tool.
         kwargs['runtool_btn'] = 'Execute'
         params = util.Params( kwargs, sanitize = False )
-        print target_history.name
         template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
         
-        # TODO: parse output and send response.
-        return messages.OK
+        # TODO: check for errors and ensure that output dataset is available.
+        output_datasets = vars[ 'out_data' ].values()
+        return self.add_track_async( trans, output_datasets[0].id )
                 
     @web.expose
     def rerun_tool( self, trans, dataset_id, tool_id, chrom=None, low=None, high=None, **kwargs ):

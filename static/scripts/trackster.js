@@ -1350,31 +1350,52 @@ extend(FiltersManager.prototype, {
         //
         // Use tools to run filters.
         //
+        
+        // Create list of (tool_id, tool_filters) tuples.
+        var active_filters_list = [];
         for (var tool_id in active_filters) {
+            active_filters_list[active_filters_list.length] = [tool_id, active_filters[tool_id]];
+        }
+        
+        // Invoke recursive function to run filters; this enables chaining of filters via
+        // iteratively application.
+        var num_filters = active_filters_list.length;
+        (function run_filter(input_dataset_id, filters) {
             var 
-                tool_filters = active_filters[tool_id],
+                // Set up filtering info and params.
+                filter_tuple = filters[0],
+                tool_id = filter_tuple[0],
+                tool_filters = filter_tuple[1],
                 tool_filter_str = "(" + tool_filters.join(") and (") + ")",
                 url_params = {
                     cond: tool_filter_str,
-                    input: this.track.dataset_id,
-                    target_dataset_id: this.track.dataset_id,
+                    input: input_dataset_id,
+                    target_dataset_id: input_dataset_id,
                     tool_id: tool_id
-                };
-
+                },
+                // Remove current filter.
+                filters = filters.slice(1);
+                
             $.getJSON(run_tool_url, url_params, function(response) {
                 if (response.error) {
                     // General error.
-                    new_track.container_div.addClass("error");
-                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + response.message);
-                }
-                else {
-                    // Job submitted and running.
-                    show_modal("Filter Dataset", 
-                               tool_id + " is running on the complete dataset. Tool outputs are in dataset's history.", 
+                    show_modal("Filter Dataset",
+                               "Error running tool " + tool_id,
                                { "Close" : hide_modal } );
                 }
+                else if (filters.length === 0) {
+                    // No more filters to run.
+                    show_modal("Filtering Dataset", 
+                               "Filter(s) are running on the complete dataset. Outputs are in dataset's history.", 
+                               { "Close" : hide_modal } );
+                }
+                else {
+                    // More filters to run.
+                    run_filter(response.dataset_id, filters);
+                }
             });
-        }
+              
+        })(this.track.dataset_id, active_filters_list);        
     }
 });
 
