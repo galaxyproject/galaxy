@@ -6,14 +6,14 @@
       #if $source.indexSource == "built-in"
         --ref="${ filter( lambda x: str( x[0] ) == str( $source.ref ), $__app__.tool_data_tables[ 'picard_indexes' ].get_fields() )[0][-1] }"
       #else
-        --ref-file=$refFile
+        --ref-file=$source.refFile
         --species-name=$source.speciesName
         --build-name=$source.buildName
         --trunc-names=$source.truncateSeqNames
       #end if
       --allow-inc-dict-concord=$allowIncDictConcord
       --allow-contig-len-discord=$allowContigLenDiscord
-      --output-format=$outputFormat
+      --newformat=$outputFormat
       --output="$out_file"
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/ReorderSam.jar"
       --picard-cmd="ReorderSam"

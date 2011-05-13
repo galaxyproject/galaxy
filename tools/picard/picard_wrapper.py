@@ -142,7 +142,6 @@ class PicardBase():
         runme.append('-jar %s' % jar)
         runme += cl
         s,stdout = self.runCL(cl=runme, output_dir=self.opts.outdir)
-        print '##s=',s,'\n##stdout=',stdout
         return stdout
 
     def samToBam(self,infile=None,outdir=None):
@@ -214,32 +213,12 @@ class PicardBase():
                 res += hres
                 heads = []
             if len(dat) > 0:
-                dropRows = len(dat) - maxrows
-                n = 0
-                if dropRows > 0: 
-                    n = int(maxrows/2)               
                 if transpose and not thist:
                     tdat = map(None,*dat) # transpose an arbitrary list of lists
-                    if dropRows > 0:
-                        dat = tdat[:n]
-                        dat.append(('<b>...%d rows not shown - see log...</b>',''))
-                        dat += tdat[-n:]
-                    else:
-                        dat = tdat
-                    tdat = ['<tr class="d%d"><td>%s</td><td>%s&nbsp;</td></tr>\n' % ((i+len(heads)) % 2,x[0],x[1]) for i,x in enumerate(dat)] 
-                    if dropRows > 0:
-                        tdat.append('<tr><td colspan="2">## WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (dropRows,os.path.basename(picout)))
+                    tdat = ['<tr class="d%d"><td>%s</td><td>%s&nbsp;</td></tr>\n' % ((i+len(heads)) % 2,x[0],x[1]) for i,x in enumerate(tdat)] 
                 else:
-                    if dropRows > 0:
-                        tdat = dat[:n]
-                        tdat.append(('<b>...%d rows not shown - see log...</b>' % dropRows,''))
-                        tdat += dat[-n:]
-                    else:
-                        tdat = dat
-                    dat = ['\t'.join(x).strip() for x in tdat] # back to strings :(
-                    tdat = ['<tr class="d%d"><td colspan="2">%s</td></tr>\n' % ((i+len(heads)) % 2,x) for i,x in enumerate(dat)]
-                    if dropRows > 0:
-                        tdat.append('<tr><td>## WARNING: %d rows deleted..see raw file %s for entire output</td></tr>' % (dropRows,os.path.basename(self.metricsOut)))
+                    tdat = ['\t'.join(x).strip() for x in dat] # back to strings :(
+                    tdat = ['<tr class="d%d"><td colspan="2">%s</td></tr>\n' % ((i+len(heads)) % 2,x) for i,x in enumerate(tdat)]
             res += tdat
             dat = []
             res.append('</table>\n')   
@@ -654,10 +633,11 @@ def __main__():
         haveTempout = True
         
     elif pic.picname == 'ReorderSam':
+        tmp_fd, tempout = tempfile.mkstemp( dir=opts.tmpdir,prefix='ReOrderTempOut')        
         # input
         cl.append('INPUT=%s' % opts.input)
         # output
-        cl.append('OUTPUT=%s' % opts.output)
+        cl.append('OUTPUT=%s' % tempout)
         # reference
         cl.append('REFERENCE=%s' % ref_file_name)
         # incomplete dict concordance
@@ -667,6 +647,7 @@ def __main__():
         if opts.allow_contig_len_discord == 'true':
             cl.append('ALLOW_CONTIG_LENGTH_DISCORDANCE=true')
         pic.runPic(opts.jar, cl)
+        haveTempout = True
 
     elif pic.picname == 'ReplaceSamHeader':
         tmp_fd, tempout = tempfile.mkstemp( dir=opts.tmpdir,prefix='RSHTempOut')        
