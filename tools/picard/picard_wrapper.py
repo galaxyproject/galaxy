@@ -219,8 +219,8 @@ class PicardBase():
                 else:
                     tdat = ['\t'.join(x).strip() for x in dat] # back to strings :(
                     tdat = ['<tr class="d%d"><td colspan="2">%s</td></tr>\n' % ((i+len(heads)) % 2,x) for i,x in enumerate(tdat)]
-            res += tdat
-            dat = []
+                res += tdat
+                dat = []
             res.append('</table>\n')   
         return res
 
