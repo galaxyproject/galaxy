@@ -1,4 +1,6 @@
-#! /usr/local/bin/python2.4
+# modified may 2011 to name components (map/ped) as RgeneticsData to align with default base_name
+# otherwise downstream tools fail
+# modified march  2011 to remove post execution hook  
 # pedigree data faker
 # specifically designed for scalability testing of
 # Shaun Purcel's PLINK package
