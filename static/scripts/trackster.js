@@ -3062,14 +3062,13 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     // Pixel position of 0 on the y axis
     var y_zero = Math.round( height + min_value / vertical_range * height );
 
-    // Line at 0.0
+    // Horizontal line to denote x-axis
     if ( mode !== "Intensity" ) {
         ctx.fillStyle = "#aaa";
         ctx.fillRect( 0, y_zero, width, 1 );
     }
     
     ctx.beginPath();
-    ctx.fillStyle = this.prefs.color;
     var x_scaled, y, delta_x_px;
     if (data.length > 1) {
         delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
@@ -3077,8 +3076,10 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
         delta_x_px = 10;
     }
     for (var i = 0, len = data.length; i < len; i++) {
+        ctx.fillStyle = this.prefs.color;
         x_scaled = Math.round((data[i][0] - view_start) * w_scale);
         y = data[i][1];
+        var top_overflow = false, bot_overflow = false;
         if (y === null) {
             if (in_path && mode === "Filled") {
                 ctx.lineTo(x_scaled, height_px);
@@ -3087,8 +3088,10 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
             continue;
         }
         if (y < min_value) {
+            bot_overflow = true;
             y = min_value;
         } else if (y > max_value) {
+            top_overflow = true;
             y = max_value;
         }
     
@@ -3116,6 +3119,24 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
                 }
             }
         }
+        // Draw lines at boundaries if overflowing min or max
+        ctx.fillStyle = this.prefs.overflow_color;
+        if (top_overflow || bot_overflow) {
+            var overflow_x;
+            if (mode === "Histogram" || mode === "Intensity") {
+                overflow_x = delta_x_px;
+            } else { // Line and Filled, which are points
+                x_scaled -= 2; // Move it over to the left so it's centered on the point
+                overflow_x = 4;
+            }
+            if (top_overflow) {
+                ctx.fillRect(x_scaled, 0, overflow_x, 3);
+            }
+            if (bot_overflow) {
+                ctx.fillRect(x_scaled, height_px - 3, overflow_x, 3);
+            }
+        }
+        ctx.fillStyle = this.prefs.color;
     }
     if (mode === "Filled") {
         if (in_path) {
@@ -3125,38 +3146,6 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
         ctx.fill();
     } else {
         ctx.stroke();
-    }
-    
-    // Draw lines at bounderies if overflowing min or max
-    var overflow_min_start = -1,
-        overflow_max_start = -1;
-    ctx.fillStyle = this.prefs.overflow_color;
-    var last_x_scaled;
-    for (var i = 0, len = data.length; i < len; i++) {
-        y = data[i][1];
-        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
-        
-        // If we are in a min/max run, check if it should be ended
-        if ( overflow_max_start >= 0  && ( y === null || y < max_value ) ) {
-            // Value does not exist or is in valid range, any overflow ends
-            ctx.fillRect( overflow_max_start, 0, last_x_scaled + delta_x_px - overflow_max_start, 2 );
-            overflow_max_start = -1;
-        } else if ( overflow_min_start >= 0 && ( y === null || y > min_value ) ) {
-            // Draw bottom overflow bar
-            ctx.fillRect( overflow_min_start, height - 2, last_x_scaled + delta_x_px - overflow_min_start, 2 );
-            overflow_min_start = -1;
-        }
-        
-        // Now check if we should start a new one (this may happen on the same
-        // base as above if switching between min/max)
-        if ( y !== null && y > max_value && overflow_max_start < 0 ) {
-            // Top overflows and we are not already in a run of overflow
-            overflow_max_start = x_scaled;
-        } else if ( y !== null && y < min_value && overflow_min_start < 0 ) {
-            // Bottom overflows and we are not already in a run
-            overflow_min_start = x_scaled;
-        }
-        last_x_scaled = x_scaled;
     }
     
     ctx.restore();

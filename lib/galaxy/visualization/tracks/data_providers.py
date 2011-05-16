@@ -336,7 +336,8 @@ class BBIDataProvider( TracksDataProvider ):
         num_points = (end-start) / 1280
         if num_points < 1:
             num_points = end - start
-        num_points = max(num_points, 10)
+        else:
+            num_points = min(num_points, 500)
 
         data = bbi.query(chrom, start, end, num_points)
         f.close()
