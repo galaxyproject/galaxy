@@ -25,7 +25,7 @@ import random,sys,time,os,string
 
 from optparse import OptionParser
 
-    
+defbasename="RgeneticsData"    
 width = 500000
 ALLELES = ['1','2','3','4']
 prog = os.path.split(sys.argv[0])[-1]
@@ -515,16 +515,16 @@ if __name__ == "__main__":
         fbathead = makeFbathead(rslist=rslist, chromlist=chromlist, poslist=poslist, width=options.width)
     else:
         fbatstyle = False
-        writeMap(fprefix=title, rslist=rslist, fpath=options.outpath,
+        writeMap(fprefix=defbasename, rslist=rslist, fpath=options.outpath,
                  chromlist=chromlist, poslist=poslist, width=options.width)
     if options.Naff > 0: # make case control data
-        makeIndep(fprefix = title, fpath=options.outpath,
+        makeIndep(fprefix = defbasename, fpath=options.outpath,
                   width=options.width, Nunaff=options.Ntot-options.Naff,
                   Naff=options.Naff, MAFdistribution=mafDist,alleles=alleles, freqs=freqs,
                   fbatstyle=fbatstyle, missrate=options.missrate, missval=options.missval,
                   fbathead=fbathead)
     else:
-        makePed(fprefix=options.fprefix, fpath=options.fpath,
+        makePed(fprefix=defbasename, fpath=options.fpath,
             width=options.width, MAFdistribution=mafDist, nsubj=options.Ntot,
             alleles=alleles, freqs=freqs, fbatstyle=fbatstyle, missrate=options.missrate,
             mendrate=options.mendrate, missval=options.missval,

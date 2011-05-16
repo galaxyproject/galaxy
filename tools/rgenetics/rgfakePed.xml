@@ -1,14 +1,13 @@
-<tool id="rgfakePed1" name="Null genotypes">
+<tool id="rgfakePed1" name="Null genotypes" version="0.02">
   <description>for testing</description>
   <command interpreter="python">rgfakePed.py --title '$title'
   -o '$out_file1' -p '$out_file1.files_path' -c '$ncases' -n '$ntotal'
   -s '$nsnp'  -w '$lowmaf' -v '$missingValue' -l '$outFormat'
   -d '$mafdist' -m '$missingRate' -M '$mendelRate' </command>
    <inputs>
-    <page>
 
     <param name="title"
-         type="text"
+         type="text" value="Fake_test_geno_data"
          help="Name for outputs from this job"
          label="Descriptive short name"/>
     <param name="ntotal"
@@ -55,11 +54,10 @@
          help = "Missing allele value"
          label="Missing value for an allele for the output ped file"/>
 
-    </page>
 </inputs>
 
  <outputs>
-    <data format="lped" name="out_file1" label="${title}.lped" />
+    <data format="lped" name="out_file1" label="${title}.lped"/>
   </outputs>
 <tests>
  <test>
@@ -74,8 +72,8 @@
     <param name="mendelRate" value="0" />
     <param name="missingValue" value="0" />
     <output name='out_file1' file='rgtestouts/rgfakePed/rgfakePedtest1.lped' ftype='lped' compare="diff" lines_diff='5'>
-    <extra_files type="file" name='rgfakePedtest1.ped' value="rgtestouts/rgfakePed/rgfakePedtest1.ped" compare="diff" lines_diff='80'/>
-    <extra_files type="file" name='rgfakePedtest1.map' value="rgtestouts/rgfakePed/rgfakePedtest1.map" compare="diff" />
+    <extra_files type="file" name='RgeneticsData.ped' value="rgtestouts/rgfakePed/rgfakePedtest1.ped" compare="diff" lines_diff='80'/>
+    <extra_files type="file" name='RgeneticsData.map' value="rgtestouts/rgfakePed/rgfakePedtest1.map" compare="diff" />
     </output>
  </test>
 </tests>
@@ -100,11 +98,15 @@ A better simulator can easily be swapped in with this tool interface.
 
 This tool is very experimental
 
-**Attribution**
+.. class:: infomark
+
+**Attribution and Licensing**
+
 Designed and written for the Rgenetics Galaxy tools
 copyright Ross Lazarus 2007 (ross.lazarus@gmail.com)
-Licensed under the terms of the LGPL
-as documented http://www.gnu.org/licenses/lgpl.html
+Licensed under the terms of the _LGPL
+ 
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
 
 </help>
 </tool>
