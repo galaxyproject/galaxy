@@ -1,6 +1,5 @@
-<tool name="BAM Index Statistics:" id="picard_BamIndexStats" version="0.2.0">
+<tool name="BAM Index Statistics" id="picard_BamIndexStats" version="0.2.0">
   <requirements><requirement type="package">picard</requirement></requirements>
-  <description>(Picard)</description>
   <command interpreter="python">
     picard_wrapper.py
       --input "$input_file"

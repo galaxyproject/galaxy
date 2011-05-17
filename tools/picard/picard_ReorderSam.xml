@@ -1,6 +1,5 @@
-<tool name="Reorder SAM:" id="picard_ReorderSam" version="0.3.0">
+<tool name="Reorder SAM" id="picard_ReorderSam" version="0.3.0">
   <requirements><requirement type="package">picard</requirement></requirements>
-  <description>(Picard)</description>
   <command interpreter="python">
     picard_wrapper.py
       --input=$inputFile

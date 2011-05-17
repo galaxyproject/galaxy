@@ -1,6 +1,5 @@
-<tool name="Replace Sam Header:" id="picard_ReplaceSamHeader" version="0.2.0">
+<tool name="Replace Sam Header" id="picard_ReplaceSamHeader" version="0.2.0">
   <requirements><requirement type="package">picard</requirement></requirements>
-  <description>(Picard)</description>
   <command interpreter="python">
     picard_wrapper.py
       --input "$inputFile"

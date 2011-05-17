@@ -1,5 +1,4 @@
-<tool name="Estimate Library Complexity:" id="rgEstLibComp" version="0.01">
-  <description>(Picard)</description>
+<tool name="Estimate Library Complexity" id="rgEstLibComp" version="0.01">
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" --minid "$minIDbases"
    --maxdiff "$maxDiff" --minmeanq "$minMeanQ" --readregex "$readRegex" --optdupdist "$optDupeDist"

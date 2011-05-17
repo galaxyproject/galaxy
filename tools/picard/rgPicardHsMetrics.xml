@@ -1,4 +1,4 @@
-<tool name="Sam/bam Hybrid Selection Metrics:" id="PicardHsMetrics" version="0.01">
+<tool name="Sam/bam Hybrid Selection Metrics" id="PicardHsMetrics" version="0.01">
   <description>For (eg exome) targeted data</description>
   <command interpreter="python">
 

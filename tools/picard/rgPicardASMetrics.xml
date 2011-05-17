@@ -1,5 +1,4 @@
-<tool name="Sam/bam Alignment Summary Metrics:" id="PicardASMetrics" version="0.03">
-  <description>(Picard)</description>
+<tool name="Sam/bam Alignment Summary Metrics" id="PicardASMetrics" version="0.03">
   <command interpreter="python">
     picard_wrapper.py -i "$input_file" -d "$html_file.files_path" -t "$html_file"
     --assumesorted "$sorted" -b "$bisulphite" --adaptors "$adaptors" --maxinsert "$maxinsert" -n "$out_prefix"

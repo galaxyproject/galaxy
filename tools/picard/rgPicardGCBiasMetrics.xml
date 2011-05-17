@@ -1,5 +1,4 @@
-<tool name="Sam/bam GC Bias Metrics:" id="PicardGCBiasMetrics" version="0.01">
-  <description>(Picard)</description>
+<tool name="Sam/bam GC Bias Metrics" id="PicardGCBiasMetrics" version="0.01">
   <command interpreter="python">
     picard_wrapper.py -i "$input_file" -d "$html_file.files_path" -t "$html_file"
     --windowsize "$windowsize" --mingenomefrac "$mingenomefrac" -n "$out_prefix" --tmpdir "${__new_file_path__}"

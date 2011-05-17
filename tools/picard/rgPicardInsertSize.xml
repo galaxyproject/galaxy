@@ -1,4 +1,4 @@
-<tool name="Insertion size metrics:" id="PicardInsertSize" version="0.3.0">
+<tool name="Insertion size metrics" id="PicardInsertSize" version="0.3.0">
   <description>for PAIRED data</description>
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">

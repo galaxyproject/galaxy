@@ -1,5 +1,4 @@
-<tool name="Mark Duplicates:" id="rgPicardMarkDups" version="0.01">
-  <description>(Picard)</description>
+<tool name="Mark Duplicate reads" id="rgPicardMarkDups" version="0.01">
   <command interpreter="python">
    picard_wrapper.py -i "$input_file" -n "$out_prefix" --tmpdir "${__new_file_path__}" -o "$out_file"
    --remdups "$remDups" --assumesorted "$assumeSorted" --readregex "$readRegex" --optdupdist "$optDupeDist"
