@@ -103,13 +103,6 @@ if a tool fails unexpectedly when you run it in Galaxy.
 All the Picard tools are freely available and are documented
 at http://picard.sourceforge.net/command-line-overview.shtml
 
-Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
-Code cleaned up and the ugliest hacks repaired by Raphael Lullis.
-Kelly Vincent wrote the first version of picard_wrapper.py that now incorporates that code.
-
-It takes a village of programmers to wrap a picard tool
-
-
   </help>
 </tool>
 
