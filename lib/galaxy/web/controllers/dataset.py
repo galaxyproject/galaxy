@@ -267,17 +267,18 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                     log.exception( "Unable to add composite parent %s to temporary library download archive" % data.file_name)
                     msg = "Unable to create archive for download, please report this error"
                     messagetype = 'error'
-                flist = glob.glob(os.path.join(efp,'*.*')) # glob returns full paths
-                for fpath in flist:
-                    efp,fname = os.path.split(fpath)
-                    try:
-                        archive.add( fpath,fname )
-                    except IOError:
-                        error = True
-                        log.exception( "Unable to add %s to temporary library download archive" % fname)
-                        msg = "Unable to create archive for download, please report this error"
-                        messagetype = 'error'
-                        continue
+                for root, dirs, files in os.walk(efp):
+                    for fname in files:
+                        fpath = os.path.join(root,fname) 
+                        rpath = os.path.relpath(fpath,efp)
+                        try:
+                            archive.add( fpath,rpath )
+                        except IOError:
+                            error = True
+                            log.exception( "Unable to add %s to temporary library download archive" % rpath)
+                            msg = "Unable to create archive for download, please report this error"
+                            messagetype = 'error'
+                            continue
                 if not error:    
                     if params.do_action == 'zip':
                         archive.close()
