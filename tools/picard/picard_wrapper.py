@@ -36,7 +36,7 @@ def timenow():
     """
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
-    
+
 class PicardBase():
     """
     simple base class with some utilities for Picard
@@ -84,7 +84,7 @@ class PicardBase():
 
 
     def readLarge(self,fname=None):
-        """ read a potentially huge file..
+        """ read a potentially huge file.
         """
         try:
             # get stderr, allowing for case where it's very large
@@ -152,15 +152,15 @@ class PicardBase():
         cl = ['samtools view -h -b -S -o ',tempbam,infile]
         tlog,stdouts = self.runCL(cl,outdir)
         return tlog,tempbam
-    
-    def bamToSam(self,infile=None,outdir=None):
-        """
-        use samtools view to convert bam to sam
-        """
-        fd,tempsam = tempfile.mkstemp(dir=outdir,suffix='rgutilsTemp.sam')
-        cl = ['samtools view -h -o ',tempsam,infile]
-        tlog,stdouts = self.runCL(cl,outdir)
-        return tlog,tempsam
+
+    #def bamToSam(self,infile=None,outdir=None):
+    #    """
+    #    use samtools view to convert bam to sam
+    #    """
+    #    fd,tempsam = tempfile.mkstemp(dir=outdir,suffix='rgutilsTemp.sam')
+    #    cl = ['samtools view -h -o ',tempsam,infile]
+    #    tlog,stdouts = self.runCL(cl,outdir)
+    #    return tlog,tempsam
 
     def sortSam(self, infile=None,outfile=None,outdir=None):
         """
@@ -264,7 +264,7 @@ class PicardBase():
             if llen > maxloglines:
                 n = min(50,int(maxloglines/2))
                 rlog += l[:n]
-                rlog.append('------------ ## %d rows deleted ## --------------\n' % (llen-maxloglines))                
+                rlog.append('------------ ## %d rows deleted ## --------------\n' % (llen-maxloglines))
                 rlog += l[-n:]
             else:
                 rlog += l
@@ -303,8 +303,7 @@ class PicardBase():
         o.write(''.join(head))
         o.write(''.join(bed))
         o.close()
-        return outf                 
-
+        return outf
 
     def cleanSam(self, insam=None, newsam=None, picardErrors=[],outformat=None):
         """
@@ -369,9 +368,7 @@ def __main__():
     op.add_option('-j','--jar',default='')    
     op.add_option('','--picard-cmd',default=None)    
     # Many tools
-    op.add_option( '', '--output-txt', dest='output_txt', help='Output file in text format' )
     op.add_option( '', '--output-format', dest='output_format', help='Output format' )
-    op.add_option( '', '--output-sam', dest='output_sam', help='Output file in SAM or BAM format' )
     op.add_option( '', '--bai-file', dest='bai_file', help='The path to the index file for the input bam file' )
     op.add_option( '', '--ref', dest='ref', help='Built-in reference with fasta and dict file', default=None )
     # CreateSequenceDictionary
@@ -390,7 +387,6 @@ def __main__():
     op.add_option('', '--maxinsert', default="20")
     op.add_option('', '--adaptors', action='append', type="string")
     # FixMateInformation and validate
-    op.add_option('','--newformat', default='bam')
     # CollectGcBiasMetrics
     op.add_option('', '--windowsize', default='100')
     op.add_option('', '--mingenomefrac', default='0.00001')    
@@ -437,10 +433,10 @@ def __main__():
 
     # set ref and dict files to use (create if necessary)
     ref_file_name = opts.ref
-    if opts.ref_file <> None:    
+    if opts.ref_file <> None:
         csd = 'CreateSequenceDictionary'
         realjarpath = os.path.split(opts.jar)[0]
-        jarpath = os.path.join(realjarpath,'%s.jar' % csd) # for refseq        
+        jarpath = os.path.join(realjarpath,'%s.jar' % csd) # for refseq
         tmp_ref_fd, tmp_ref_name = tempfile.mkstemp( dir=opts.tmpdir , prefix = pic.picname)
         ref_file_name = '%s.fasta' % tmp_ref_name
         # build dict
@@ -460,6 +456,15 @@ def __main__():
         s = pic.runPic(jarpath, cl)
         # run relevant command(s)
 
+    # define temporary output
+    # if output is sam, it must have that extension, otherwise bam will be produced
+    # specify sam or bam file with extension
+    if opts.output_format == 'sam':
+        suff = '.sam'
+    else:
+        suff = ''
+    tmp_fd, tempout = tempfile.mkstemp( dir=opts.tmpdir, suffix=suff )
+
     cl = ['VALIDATION_STRINGENCY=LENIENT',]
 
     if pic.picname == 'AddOrReplaceReadGroups':
@@ -468,22 +473,22 @@ def __main__():
         # input
         cl.append('INPUT=%s' % opts.input)
         # outputs
-        cl.append('OUTPUT=%s' % opts.output)
+        cl.append('OUTPUT=%s' % tempout)
         # required read groups
         cl.append('RGLB="%s"' % opts.rg_library)
         cl.append('RGPL="%s"' % opts.rg_platform)
         cl.append('RGPU="%s"' % opts.rg_plat_unit)
         cl.append('RGSM="%s"' % opts.rg_sample)
+        if opts.rg_id:
+            cl.append('RGID="%s"' % opts.rg_id)
         # optional read groups
-        if opts.rg_opts == 'full':
-            if opts.rg_id:
-                cl.append('RGID="%s"' % opts.rg_id)
-            if opts.rg_seq_center:
-                cl.append('RGCN="%s"' % opts.rg_seq_center)
-            if opts.rg_desc:
-                cl.append('RGDS="%s"' % opts.rg_desc)
-        s = pic.runPic(opts.jar, cl)
-        
+        if opts.rg_seq_center:
+            cl.append('RGCN="%s"' % opts.rg_seq_center)
+        if opts.rg_desc:
+            cl.append('RGDS="%s"' % opts.rg_desc)
+        pic.runPic(opts.jar, cl)
+        haveTempout = True
+
     elif pic.picname == 'BamIndexStats':
         tmp_fd, tmp_name = tempfile.mkstemp( dir=tmp_dir )
         tmp_bam_name = '%s.bam' % tmp_name
@@ -494,7 +499,7 @@ def __main__():
         pic.delme.append(tmp_bam_name)
         pic.delme.append(tmp_bai_name)
         pic.delme.append(tmp_name)
-        s = pic.runPic( opts.jar, cl  )
+        s = pic.runPic( opts.jar, cl )
         f = open(pic.metricsOut,'a')
         f.write(s) # got this on stdout from runCl
         f.write('\n')
@@ -525,7 +530,7 @@ def __main__():
         except:
             s = '## unable to symlink %s to %s - different devices? May need to replace with shutil.copy'
             info = s
-            shutil.copy(ref_file_name,fakefasta)       
+            shutil.copy(ref_file_name,fakefasta)
         pic.delme.append(fakefasta)
         cl.append('ASSUME_SORTED=%s' % opts.assumesorted)
         adaptorseqs = ''.join([' ADAPTER_SEQUENCE=%s' % x for x in opts.adaptors])
@@ -555,14 +560,14 @@ def __main__():
         except:
             s = '## unable to symlink %s to %s - different devices? May need to replace with shutil.copy'
             info = s
-            shutil.copy(ref_file_name,fakefasta)       
+            shutil.copy(ref_file_name,fakefasta)
         pic.delme.append(fakefasta)
         x = 'rgPicardGCBiasMetrics'
         pdfname = '%s.pdf' % x
         jpgname = '%s.jpg' % x
         tempout = os.path.join(opts.outdir,'rgPicardGCBiasMetrics.out')
         temppdf = os.path.join(opts.outdir,pdfname)
-        cl.append('R=%s' % fakefasta)                
+        cl.append('R=%s' % fakefasta)
         cl.append('WINDOW_SIZE=%s' % opts.windowsize)
         cl.append('MINIMUM_GENOME_FRACTION=%s' % opts.mingenomefrac)
         cl.append('INPUT=%s' % opts.input)
@@ -587,7 +592,7 @@ def __main__():
         histpdf = 'InsertSizeHist.pdf'
         cl.append('I=%s' % opts.input)
         cl.append('O=%s' % pic.metricsOut)
-        cl.append('HISTOGRAM_FILE=%s' % histpdf)       
+        cl.append('HISTOGRAM_FILE=%s' % histpdf)
         if opts.taillimit <> '0':
             cl.append('TAIL_LIMIT=%s' % opts.taillimit)
         if  opts.histwidth <> '0':
@@ -623,9 +628,8 @@ def __main__():
         # maximum offset between two duplicate clusters
         cl.append('OPTICAL_DUPLICATE_PIXEL_DISTANCE=%s' % opts.optdupdist)
         pic.runPic(opts.jar, cl)
-        
+
     elif pic.picname == 'FixMateInformation':
-        tmp_fd, tempout = tempfile.mkstemp( dir=opts.tmpdir,prefix='FixMateTempOut')        
         cl.append('I=%s' % opts.input)
         cl.append('O=%s' % tempout)
         cl.append('SORT_ORDER=%s' % opts.sortorder)
@@ -633,7 +637,6 @@ def __main__():
         haveTempout = True
         
     elif pic.picname == 'ReorderSam':
-        tmp_fd, tempout = tempfile.mkstemp( dir=opts.tmpdir,prefix='ReOrderTempOut')        
         # input
         cl.append('INPUT=%s' % opts.input)
         # output
@@ -650,18 +653,13 @@ def __main__():
         haveTempout = True
 
     elif pic.picname == 'ReplaceSamHeader':
-        tmp_fd, tempout = tempfile.mkstemp( dir=opts.tmpdir,prefix='RSHTempOut')        
         cl.append('INPUT=%s' % opts.input)
         cl.append('OUTPUT=%s' % tempout)
         cl.append('HEADER=%s' % opts.header_file)
-        s = pic.runPic(opts.jar, cl)
-        if opts.output_format == 'sam':
-            tlog,newsam = pic.bamToSam(tempout,opts.tmpdir)
-            shutil.move(newsam,opts.output)
-        else:
-            shutil.move(tempout,opts.output)
-            
-    elif pic.picname == "CalculateHsMetrics":
+        pic.runPic(opts.jar, cl)
+        haveTempout = True
+
+    elif pic.picname == 'CalculateHsMetrics':
         maxloglines = 100
         baitfname = os.path.join(opts.outdir,'rgPicardHsMetrics.bait')
         targetfname = os.path.join(opts.outdir,'rgPicardHsMetrics.target')
@@ -675,9 +673,9 @@ def __main__():
         cl.append('INPUT=%s' % os.path.abspath(opts.input))
         cl.append('OUTPUT=%s' % pic.metricsOut)
         cl.append('TMP_DIR=%s' % opts.tmpdir)
-        pic.runPic(opts.jar,cl)     
+        pic.runPic(opts.jar,cl)
            
-    elif pic.picname == "ValidateSamFile":
+    elif pic.picname == 'ValidateSamFile':
         import pysam
         doTranspose = False
         sortedfile = os.path.join(opts.outdir,'rgValidate.sorted')
@@ -710,14 +708,12 @@ def __main__():
         if opts.bisulphite.lower() <> 'false':
             cl.append('IS_BISULFITE_SEQUENCED=true')
         if opts.ref <> None or opts.ref_file <> None:
-            cl.append('R=%s' %  ref_file_name)            
-        pic.runPic(opts.jar,cl)         
-        if opts.datatype == 'sam': 
+            cl.append('R=%s' %  ref_file_name)
+        pic.runPic(opts.jar,cl)
+        if opts.datatype == 'sam':
             pic.delme.append(tempbam)
         newsam = opts.output
-        outformat = 'bam'            
-        if opts.newformat == 'sam':
-            outformat = 'sam'
+        outformat = 'bam'
         pe = open(pic.metricsOut,'r').readlines()
         pic.cleanSam(insam=sortedfile, newsam=newsam, picardErrors=pe,outformat=outformat)
         pic.delme.append(sortedfile) # not wanted
@@ -729,11 +725,7 @@ def __main__():
     if haveTempout:
         # Some Picard tools produced a potentially intermediate bam file. 
         # Either just move to final location or create sam
-        if opts.newformat == 'sam':
-            tlog, tempsam = pic.bamToSam( tempout, opts.outdir )
-            shutil.move(tempsam,os.path.abspath(opts.output))
-        else:
-            shutil.move(tempout, os.path.abspath(opts.output))       
+        shutil.move(tempout, os.path.abspath(opts.output))
 
     if opts.htmlout <> None or doFix: # return a pretty html page
         pic.fixPicardOutputs(transpose=doTranspose,maxloglines=maxloglines)

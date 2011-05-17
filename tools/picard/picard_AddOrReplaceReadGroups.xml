@@ -1,4 +1,4 @@
-<tool name="Add or Replace Groups:" id="picard_ARRG" version="0.01">
+<tool name="Add or Replace Groups:" id="picard_ARRG" version="0.2.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <description>(Picard)</description>
   <command interpreter="python">
@@ -8,18 +8,14 @@
       --rg-pl="$rgpl"
       --rg-pu="$rgpu"
       --rg-sm="$rgsm"
+      --rg-id="$rgid"
       --rg-opts=${readGroupOpts.rgOpts}
       #if $readGroupOpts.rgOpts == "full"
-        --rg-id="$readGroupOpts.rgid"
         --rg-cn="$readGroupOpts.rgcn"
         --rg-ds="$readGroupOpts.rgds"
       #end if
       --output-format=$outputFormat
-      #if str( $outputFormat ) == "sam"
-        --output-sam=$outFileSam
-      #else if str( $outputFormat ) == "bam"
-        --output-sam=$outFileBam
-      #end if
+      --output=$outFile
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/AddOrReplaceReadGroups.jar"
   </command>
   <inputs>
@@ -29,14 +25,14 @@
     <param name="rgpl" value="" type="text" label="Read group platform" help="illumina, solid, etc." />
     <param name="rgpu" value="" type="text" label="Read group platform unit" help="like run barcode, etc." />
     <param name="rgsm" value="" type="text" label="Read group sample name" />
+    <param name="rgid" value="1" type="text" label="Read group ID" help="Picard will use a value of '1' if nothing provided" />
     <conditional name="readGroupOpts">
-      <param name="rgOpts" type="select" label="Specify additional (optional) arguments" help="Allows you to set RGID, RGCN, and RGDS">
+      <param name="rgOpts" type="select" label="Specify additional (optional) arguments" help="Allows you to set RGCN and RGDS.">
         <option value="preSet">Use pre-set defaults</option>
         <option value="full">Set optional arguments</option>
       </param>
       <when value="preSet" />
       <when value="full">
-        <param name="rgid" value="" type="text" label="Read group ID" />
         <param name="rgcn" value="" type="text" label="Read group sequencing center name" help="Leave set to &lt;null&gt; for default (none)" />
         <param name="rgds" value="" type="text" label="Read group description" help="Leave set to &lt;null&gt; for default (none)" />
       </when>
@@ -44,70 +40,58 @@
     <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output bam instead of sam" help="Uncheck for sam output" />
   </inputs>
   <outputs>
-    <data name="outFileSam" format="sam" label="${tool.name} on ${on_string}: sam with read groups replaced">
-      <filter>outputFormat is False</filter>
-    </data>
-    <data name="outFileBam" format="bam" label="${tool.name} on ${on_string}: bam with read groups replaced">
-      <filter>outputFormat is True</filter>
+    <data name="outFile" format="bam" label="${tool.name} on ${on_string}: ${outputFormat} with read groups replaced">
+      <change_format>
+        <when input="outputFormat" value="sam" format="sam" />
+      </change_format>
     </data>
   </outputs>
   <tests>
     <test>
-      <!-- Command:
-      java -jar AddOrReplaceReadGroups.jar VALIDATION_STRINGENCY=LENIENT I=picard_input_input1.sam O=picard_ARG_output1.sam RGLB=lib RGPL=illumina RGPU=plat RGSM=sam1
+      <!-- Command for replacing read groups in bam:
+      java -jar AddOrReplaceReadGroups.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_ARRG_input1.bam O=picard_ARRG_output1.sam RGID=one RGLB=lib RGPL=illumina RGPU=peaewe RGSM=sam1
       -->
-      <param name="inputFile" value="picard_ARRG_input1.sam" />
+      <param name="inputFile" value="picard_ARRG_input1.bam" />
       <param name="rglb" value="lib" />
       <param name="rgpl" value="illumina" />
-      <param name="rgpu" value="plat" />
+      <param name="rgpu" value="peaewe" />
       <param name="rgsm" value="sam1" />
+      <param name="rgid" value="one" />
       <param name="rgOpts" value="preSet" />
-      <param name="outputFormat" value="sam" />
-      <output name="outFileSam" file="picard_ARRG_output1.sam" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_ARRG_output1.sam" ftype="sam" />
     </test>
-    <!-- Functional tests with Picard bam outputs currently aren't working
     <test>
-    -->
-      <!-- Command:
-      java -jar AddOrReplaceReadGroups.jar VALIDATION_STRINGENCY=LENIENT I=picard_ARRG_input1.bam O=picard_ARRG_output2.sam RGLB=LIB RGPL=IL RGPU=PLAT RGSM=smp RGID=M5 RGCN=FamousCenter RGDS="description with spaces"
+      <!-- Command for replacing read groups in sam:
+      java -jar AddOrReplaceReadGroups.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_ARRG_input1.sam O=picard_ARRG_output2.sam RGLB=LIB RGPL=IL RGPU=PLAT RGSM=smp RGID=M5 RGCN=FamousCenter RGDS="description with spaces"
       picard_ARRG_input1.bam can be created from picard_ARRG_input1.sam
       -->
-    <!--
-      <param name="inputFile" value="picard_ARRG_input1.bam" />
-      <param name="sortOrder" value="" />
-      <param name="rglb" value="LIB" />
-      <param name="rgpl" value="IL" />
-      <param name="rgpu" value="PLAT" />
-      <param name="rgsm" value="smp" />
-      <param name="rgOpts" value="full" />
-      <param name="rgid" value="M5" />
-      <param name="rgcn" value="FamousCenter" />
-      <param name="rgds" value="description with spaces" />
-      <param name="outputFormat" value="sam" />
-      <output name="outFileSam" ftype="picard_ARRG_output2.sam" />
-    </test>
-    -->
-    <!-- Functional tests with Picard bam outputs currently aren't working
-    <test>
-    -->
-      <!-- Command:
-      java -jar AddOrReplaceReadGroups.jar VALIDATION_STRINGENCY=LENIENT I=picard_ARRG_input1.sam O=picard_ARRG_output2.bam RGLB=LIB RGPL=IL RGPU=PLAT RGSM=smp RGID=M5 RGCN=FamousCenter RGDS="description with spaces"
-      -->
-    <!--
       <param name="inputFile" value="picard_ARRG_input1.sam" />
-      <param name="sortOrder" value="" />
       <param name="rglb" value="LIB" />
       <param name="rgpl" value="IL" />
       <param name="rgpu" value="PLAT" />
       <param name="rgsm" value="smp" />
-      <param name="rgOpts" value="full" />
       <param name="rgid" value="M5" />
+      <param name="rgOpts" value="full" />
       <param name="rgcn" value="FamousCenter" />
       <param name="rgds" value="description with spaces" />
-      <param name="outputFormat" value="bam" />
-      <output name="outFileBam" ftype="picard_ARRG_output2.bam" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_ARRG_output2.sam" ftype="sam" />
     </test>
-    -->
+    <test>
+      <!-- Command for adding read groups in sam:
+      java -jar AddOrReplaceReadGroups.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_ARRG_input2.sam O=picard_ARRG_output3.bam RGID=M6 RGLB=LIB RGPL=IL RGPU=PLAT RGSM=smp1
+      -->
+      <param name="inputFile" value="picard_ARRG_input2.sam" />
+      <param name="rglb" value="LIB" />
+      <param name="rgpl" value="IL" />
+      <param name="rgpu" value="PLAT" />
+      <param name="rgsm" value="smp1" />
+      <param name="rgid" value="M6" />
+      <param name="rgOpts" value="preSet" />
+      <param name="outputFormat" value="True" />
+      <output name="outFile" file="picard_ARRG_output3.bam" ftype="bam" />
+    </test>
   </tests>
   <help>
 

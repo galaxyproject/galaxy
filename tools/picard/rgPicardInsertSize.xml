@@ -1,4 +1,4 @@
-<tool name="Insertion size metrics:" id="PicardInsertSize" version="0.02">
+<tool name="Insertion size metrics:" id="PicardInsertSize" version="0.3.0">
   <description>for PAIRED data</description>
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
@@ -31,7 +31,7 @@
       <param name="tailLimit" value="10000" />
       <param name="histWidth" value="0" />
       <param name="minPct" value="0.01" />
-      <output name="html_file" file="picard_output_insertsize_tinysam.html" ftype="html" lines_diff="35" />
+      <output name="html_file" file="picard_output_insertsize_tinysam.html" ftype="html" compare="contains" lines_diff="40" />
     </test>
   </tests>
   <help>

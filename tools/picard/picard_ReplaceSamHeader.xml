@@ -1,14 +1,10 @@
-<tool name="Replace Sam Header:" id="picard_ReplaceSamHeader" version="0.0.1">
+<tool name="Replace Sam Header:" id="picard_ReplaceSamHeader" version="0.2.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <description>(Picard)</description>
   <command interpreter="python">
     picard_wrapper.py
       --input "$inputFile"
-      #if str( $outputFormat ) == "sam"
-        -o "$outFileSam"
-      #else if str( $outputFormat ) == "bam"
-        -o "$outFileBam"
-      #end if
+      -o $outFile
       --header-file $headerFile
       --output-format $outputFormat
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/ReplaceSamHeader.jar"
@@ -19,17 +15,13 @@
       help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
     <param format="bam,sam" name="headerFile" type="data" label="sam or bam file from which header will be read"
       help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
-    <param name="outputFormat" type="select" label="Output format - use bam to save space please"> 
-           <option value="bam" selected="true">Binary (compressed) bam</option>
-           <option value="sam">Uncompressed, space hungry sam</option>
-    </param>
+    <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output bam instead of sam" help="Uncheck for sam output" />
   </inputs>
   <outputs>
-    <data name="outFileSam" format="sam" label="${tool.name} on ${on_string}: sam with replaced header">
-      <filter>outputFormat == 'sam'</filter>
-    </data>
-    <data name="outFileBam" format="bam" label="${tool.name} on ${on_string}: bam with replaced header">
-      <filter>outputFormat == 'bam'</filter>
+    <data name="outFile" format="bam" label="${tool.name} on ${on_string}: ${outputFormat} with replaced header">
+      <change_format>
+        <when input="outputFormat" value="sam" format="sam" />
+      </change_format>
     </data>
   </outputs>
   <tests>
@@ -40,8 +32,8 @@
       -->
       <param name="inputFile" value="picard_input_tiny_coord.bam" ftype="bam" />
       <param name="headerFile" value="picard_RSH_input1.bam" ftype="bam" />
-      <param name="outputFormat" value="sam" />
-      <output name="outFileSam" file="picard_RSH_output1.sam" ftype="sam" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_RSH_output1.sam" ftype="sam" />
     </test>
     <test>
       <!-- Command:
@@ -50,22 +42,18 @@
       -->
       <param name="inputFile" value="picard_input_tiny_coord.sam" ftype="sam" />
       <param name="headerFile" value="picard_RSH_input1.bam" ftype="bam" />
-      <param name="outputFormat" value="sam" />
-      <output name="outFileSam" file="picard_RSH_output2.sam" ftype="sam" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_RSH_output2.sam" ftype="sam" />
     </test>
-    <!-- Functional tests with Picard bam outputs currently aren't working
     <test>
-    -->
       <!-- Command:
       java -jar ReplaceSamHeader.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_input_tiny_coord.sam HEADER=test-data/picard_RSH_input1.sam O=picard_RSH_output2.bam
       -->
-    <!--
       <param name="inputFile" value="picard_input_tiny_coord.sam" ftype="sam" />
       <param name="headerFile" value="picard_RSH_input1.sam" ftype="sam" />
-      <param name="outputFormat" value="bam" />
-      <output name="outFileBam" file="picard_RSH_output2.bam" ftype="bam" />
+      <param name="outputFormat" value="True" />
+      <output name="outFile" file="picard_RSH_output2.bam" ftype="bam" />
     </test>
-    -->
   </tests>
   <help>
 

@@ -1,4 +1,4 @@
-<tool name="BAM Index Statistics:" id="picard_BamIndexStats" version="0.01">
+<tool name="BAM Index Statistics:" id="picard_BamIndexStats" version="0.2.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <description>(Picard)</description>
   <command interpreter="python">
@@ -23,7 +23,7 @@
       picard_input_tiny_coord.bam can be created from picard_input_tiny_coord.sam
       -->
       <param name="input_file" value="picard_input_tiny_coord.bam" ftype="bam" />
-      <output name="htmlfile" file="picard_BIS_output1.txt" ftype="html" lines_diff="12"/>
+      <output name="htmlfile" file="picard_BIS_output1.txt" ftype="html" compare="contains" lines_diff="12"/>
     </test>
     <test>
       <!-- Command
@@ -31,7 +31,7 @@
       picard_BIS_input1.bam can be created from picard_BIS_input1.sam
       -->
       <param name="input_file" value="picard_BIS_input1.bam" ftype="bam" />
-      <output name="htmlfile" file="picard_BIS_output2.txt" ftype="html" lines_diff="12" />
+      <output name="htmlfile" file="picard_BIS_output2.txt" ftype="html" compare="contains" lines_diff="12" />
     </test>
   </tests>
   <help>

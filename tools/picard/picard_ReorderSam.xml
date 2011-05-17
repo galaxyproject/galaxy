@@ -1,22 +1,22 @@
-<tool name="Reorder SAM:" id="picard_ReorderSam" version="0.02">
+<tool name="Reorder SAM:" id="picard_ReorderSam" version="0.3.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <description>(Picard)</description>
   <command interpreter="python">
-    picard_wrapper.py  -d "$html_file.files_path" -t "$html_file" --input=$inputFile
+    picard_wrapper.py
+      --input=$inputFile
       #if $source.indexSource == "built-in"
         --ref="${ filter( lambda x: str( x[0] ) == str( $source.ref ), $__app__.tool_data_tables[ 'picard_indexes' ].get_fields() )[0][-1] }"
       #else
-        --ref-file=$source.refFile
+        --ref-file=$refFile
         --species-name=$source.speciesName
         --build-name=$source.buildName
         --trunc-names=$source.truncateSeqNames
       #end if
       --allow-inc-dict-concord=$allowIncDictConcord
       --allow-contig-len-discord=$allowContigLenDiscord
-      --newformat=$outputFormat
-      --output="$out_file"
+      --output-format=$outputFormat
+      --output=$outFile
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/ReorderSam.jar"
-      --picard-cmd="ReorderSam"
   </command>
   <inputs>
     <param format="bam,sam" name="inputFile" type="data" label="The sam or bam file in your current history whose header you want to replace"
@@ -42,25 +42,21 @@
     <param name="allowContigLenDiscord" type="boolean" checked="False" truevalue="true" falsevalue="false" label="Allow contig length discordance?" help="This is dangerous--don't check it unless you know exactly what you're doing!" />
     <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output bam instead of sam" help="Uncheck for sam output" />
   </inputs>
- <outputs>
-    <data format="html" name="html_file" label="ReorderBam_on_${on_string}.html" />
-    <data format="bam" name="out_file" label="ReorderBam_on_${on_string}.${outputFormat}">
-    <change_format>
-     <when input="outputFormat" value="sam" format="sam" />
-    </change_format> 
+  <outputs>
+    <data name="outFile" format="bam" label="${tool.name} on ${on_string}: reordered ${outputFormat}">
+      <change_format>
+        <when input="outputFormat" value="sam" format="sam" />
+      </change_format>
     </data>
   </outputs>
   <tests>
-    <!-- Functional tests with Picard bam outputs currently aren't working
     <test>
-    -->
       <!-- Commands:
       cp test-data/phiX.fasta .
       samtools faidx phiX.fasta
       java -jar CreateSequenceDictionary.jar R=phiX.fasta O=phiX.dict URI=phiX.fasta TRUNCATE_NAMES_AT_WHITESPACE=false SPECIES=phiX174
       java -jar ReorderSam.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_RS_input1.bam O=picard_RS_output1.bam REFERENCE=phiX.fasta ALLOW_INCOMPLETE_DICT_CONCORDANCE=false ALLOW_CONTIG_LENGTH_DISCORDANCE=false
     -->
-    <!--
       <param name="inputFile" value="picard_RS_input1.bam" />
       <param name="indexSource" value="history" />
       <param name="refFile" value="phiX.fasta" />
@@ -69,10 +65,9 @@
       <param name="truncateSeqNames" value="false" />
       <param name="allowIncDictConcord" value="false" />
       <param name="allowContigLenDiscord" value="false" />
-      <param name="outputFormat" value="bam" />
-      <output name="outFileBam" file="picard_RS_output1.bam" ftype="bam" lines_diff="2" />
+      <param name="outputFormat" value="True" />
+      <output name="outFile" file="picard_RS_output1.bam" ftype="bam" lines_diff="4" compare="contains" />
     </test>
-    -->
     <test>
       <!-- Command:
       java -jar ReorderSam.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_RS_input2.sam O=picard_RS_output2.sam REFERENCE=/path/to/phiX/picard_index/phiX.fa ALLOW_INCOMPLETE_DICT_CONCORDANCE=false ALLOW_CONTIG_LENGTH_DISCORDANCE=false
@@ -83,8 +78,8 @@
       <param name="ref" value="phiX" />
       <param name="allowIncDictConcord" value="false" />
       <param name="allowContigLenDiscord" value="false" />
-      <param name="outputFormat" value="sam" />
-      <output name="outFileSam" file="picard_RS_output2.sam" ftype="sam" lines_diff="2" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_RS_output2.sam" ftype="sam" lines_diff="4" sort="True" />
     </test>
     <test>
       <!-- Commands:
@@ -102,8 +97,8 @@
       <param name="truncateSeqNames" value="true" />
       <param name="allowIncDictConcord" value="true" />
       <param name="allowContigLenDiscord" value="false" />
-      <param name="outputFormat" value="sam" />
-      <output name="outFileSam" file="picard_RS_output3.sam" ftype="sam" lines_diff="12" sort="True" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_RS_output3.sam" ftype="sam" lines_diff="12" sort="True" />
     </test>
   </tests>
   <help>
