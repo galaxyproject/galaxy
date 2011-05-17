@@ -1,5 +1,5 @@
 <tool id="MAF_To_Fasta1" name="MAF to FASTA" version="1.0.1">
-  <description>Converts a MAF formated file to FASTA format</description>
+  <description>Converts a MAF formatted file to FASTA format</description>
   <command interpreter="python">
     #if $fasta_target_type.fasta_type == "multiple" #maf_to_fasta_multiple_sets.py $input1 $out_file1 $fasta_target_type.species $fasta_target_type.complete_blocks
     #else                                           #maf_to_fasta_concat.py $fasta_target_type.species $input1 $out_file1
