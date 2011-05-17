@@ -34,8 +34,11 @@ def __main__():
                                                                                 where each end is 50bp, you should set -r to be 200. The default is 45bp.')
     parser.add_option( '-G', '--GTF', dest='GTF', help='Tells Cufflinks to use the supplied reference annotation to estimate isoform expression. It will not assemble novel transcripts, and the program will ignore alignments not structurally compatible with any reference transcript.' )
     
-	# Normalization options.
+    # Normalization options.
     parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
+
+    # Wrapper / Galaxy options.
+    parser.add_option( '-A', '--assembled-isoforms-output', dest='assembled_isoforms_output_file', help='Assembled isoforms output file; formate is GTF.' )
 
     # Advanced Options:	
     parser.add_option( '--num-importance-samples', dest='num_importance_samples', help='Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000' )
@@ -136,6 +139,9 @@ def __main__():
         except OverflowError:
             pass
         tmp_stderr.close()
+
+        # Copy outputs.
+        shutil.copyfile( "transcripts.gtf" , options.assembled_isoforms_output_file )
         
         # Error checking.
         if returncode != 0:
