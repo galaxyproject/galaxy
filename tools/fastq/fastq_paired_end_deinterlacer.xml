@@ -1,4 +1,4 @@
-<tool id="fastq_paired_end_deinterlacer" name="FASTQ de-interlacer" version="1.0.0">
+<tool id="fastq_paired_end_deinterlacer" name="FASTQ de-interlacer" version="1.1">
   <description>on paired end reads</description>
   <command interpreter="python">fastq_paired_end_deinterlacer.py '$input_file' '${input_file.extension[len( 'fastq' ):]}' '$output1_pairs_file' '$output2_pairs_file' '$output1_singles_file' '$output2_singles_file'</command>
   <inputs>

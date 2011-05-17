@@ -1,4 +1,4 @@
-<tool id="fastq_paired_end_interlacer" name="FASTQ interlacer" version="1.0.0">
+<tool id="fastq_paired_end_interlacer" name="FASTQ interlacer" version="1.1">
   <description>on paired end reads</description>
   <command interpreter="python">fastq_paired_end_interlacer.py '$input1_file' '${input1_file.extension[len( 'fastq' ):]}' '$input2_file' '${input2_file.extension[len( 'fastq' ):]}' '$outfile_pairs' '$outfile_singles'</command>
   <inputs>
