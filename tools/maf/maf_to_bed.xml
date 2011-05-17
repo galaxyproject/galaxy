@@ -1,5 +1,5 @@
 <tool id="MAF_To_BED1" name="Maf to BED" force_history_refresh="True">
-  <description>Converts a MAF formated file to the BED format</description>
+  <description>Converts a MAF formatted file to the BED format</description>
   <command interpreter="python">maf_to_bed.py $input1 $out_file1 $species $complete_blocks $__new_file_path__</command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file to convert"/>

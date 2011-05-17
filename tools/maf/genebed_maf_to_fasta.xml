@@ -8,6 +8,7 @@
   <inputs>
     <param name="input1" type="data" format="bed" label="Gene BED File">
       <validator type="unspecified_build" />
+      <validator type="expression" message="Input must be in BED12 format.">value.metadata.columns &gt;= 12</validator> <!-- allow 12+ columns, not as strict as possible. TODO: only list bed files with 12+ columns -->
     </param>
     <conditional name="maf_source_type">
       <param name="maf_source" type="select" label="MAF Source">
