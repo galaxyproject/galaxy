@@ -162,22 +162,5 @@ Picard and Samtools go together.
 They are external to and completely independent of Galaxy. We acknowledge that all credit for
 their methods and contribution are due to them.
 
-Here, you can apply Picard tools through Galaxy which might be easier than through the native Picard command line interface.
-
-
------
-
-.. class:: infomark
-
-**Copyright**
-
-This Galaxy tool is a component of the rgenetics toolkit.
-
-Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
-All rgenetics artefacts are available licensed under the LGPL_
-Other dependencies are licensed at the author's discretion - please see each individual package for details
- 
- .. _LGPL: http://www.gnu.org/copyleft/lesser.html
-
   </help>
 </tool>

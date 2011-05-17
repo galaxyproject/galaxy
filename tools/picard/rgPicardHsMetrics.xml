@@ -1,5 +1,5 @@
 <tool name="Sam/bam Hybrid Selection Metrics:" id="PicardHsMetrics" version="0.01">
-  <description>For (eg exome) targetted data</description>
+  <description>For (eg exome) targeted data</description>
   <command interpreter="python">
 
     picard_wrapper.py -i "$input_file" -d "$html_file.files_path" -t "$html_file" --datatype "$input_file.ext"
@@ -139,19 +139,6 @@ This Galaxy tool uses part of Picard to report measures of hybridization selecti
 aligned short read sequence data. Sequence data must be chosen from the sam/bam format files in your current history.
 Target and bait files must be selected from the UCSC BED format in your current history.
 
------
-
-.. class:: infomark
-
-**Copyright**
-
-This is part of the rgenetics toolkit.
-
-Written by Ross Lazarus 2010
-All rgenetics artefacts are available licensed under the LGPL_
-Other dependencies are licensed at the author's discretion - please see each individual package for details
- 
- .. _LGPL: http://www.gnu.org/copyleft/lesser.html
 
   </help>
 </tool>

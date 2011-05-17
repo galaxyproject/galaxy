@@ -78,23 +78,8 @@ or by providing comments through the report form that appears automatically
 if a tool fails unexpectedly when you run it in Galaxy.
 
 All the Picard tools are freely available and are documented
-at http://picard.sourceforge.net/command-line-overview.shtml#CollectInsertSizeMetrics
+at http://picard.sourceforge.net/command-line-overview.shtml
 
-Here, you can apply Picard tools through Galaxy which might be easier than through the native Picard command line interface.
-
------
-
-.. class:: infomark
-
-**Copyright**
-
-This Galaxy tool is a component of the rgenetics toolkit.
-
-Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
-Code cleaned up and the ugliest hacks repaired by Raphael Lullis
-
-All rgenetics artifacts are available licensed under the LGPL
-Other dependencies are licensed at the author's discretion - please see each individual package for details
 
   </help>
 </tool>
