@@ -84,7 +84,7 @@ class Data( object ):
     def get_raw_data( self, dataset ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         try:
-            return file(datset.file_name, 'rb').read(-1)
+            return file(dataset.file_name, 'rb').read(-1)
         except OSError, e:
             log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
             return ''
