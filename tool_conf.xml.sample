@@ -242,19 +242,6 @@
   <section name="NGS: QC and manipulation" id="NGS_QC">
    <label text="FastQC: fastq/sam/bam" id="fastqcsambam" />
     <tool file="rgenetics/rgFastQC.xml" />         
-  <label text="QC/Metrics for sam/bam" id="qcsambam"/>
-    <tool file="picard/picard_BamIndexStats.xml" />
-    <tool file="picard/rgPicardASMetrics.xml" />    
-    <tool file="picard/rgPicardGCBiasMetrics.xml" />     
-    <tool file="picard/rgPicardLibComplexity.xml" />     
-    <tool file="picard/rgPicardInsertSize.xml" />
-    <tool file="picard/rgPicardHsMetrics.xml" />
-  <label text="bam/sam Cleaning" id="picard-tools" />
-    <tool file="picard/picard_AddOrReplaceReadGroups.xml" />
-    <tool file="picard/picard_ReorderSam.xml" />
-    <tool file="picard/picard_ReplaceSamHeader.xml" />
-    <tool file="picard/rgPicardFixMate.xml" />          
-    <tool file="picard/rgPicardMarkDups.xml" />
    <label text="Illumina fastq" id="illumina" />
     <tool file="fastq/fastq_groomer.xml" />
     <tool file="fastq/fastq_paired_end_splitter.xml" />
@@ -292,6 +279,21 @@
     <tool file="fastx_toolkit/fastx_renamer.xml" />
     <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
      <tool file="fastx_toolkit/fastx_trimmer.xml" />  
+  </section>
+  <section name="NGS: Picard (beta)" id="picard_beta">
+    <label text="QC/Metrics for sam/bam" id="qcsambam"/>
+    <tool file="picard/picard_BamIndexStats.xml" />
+    <tool file="picard/rgPicardASMetrics.xml" />    
+    <tool file="picard/rgPicardGCBiasMetrics.xml" />     
+    <tool file="picard/rgPicardLibComplexity.xml" />     
+    <tool file="picard/rgPicardInsertSize.xml" />
+    <tool file="picard/rgPicardHsMetrics.xml" />
+  <label text="bam/sam Cleaning" id="picard-clean" />
+    <tool file="picard/picard_AddOrReplaceReadGroups.xml" />
+    <tool file="picard/picard_ReorderSam.xml" />
+    <tool file="picard/picard_ReplaceSamHeader.xml" />
+    <tool file="picard/rgPicardFixMate.xml" />          
+    <tool file="picard/rgPicardMarkDups.xml" />
   </section>
   <!--
   Keep this section commented until it includes tools that

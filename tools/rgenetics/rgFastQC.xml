@@ -55,15 +55,10 @@ This tool wraps the fastqc package to report some QC metrics on fastq, groomed f
 This Galaxy tool wrapper is part of the rgenetics toolkit.
 
 Contaminants file parameter borrowed from the independently
-developed fastqcwrapper contributed to the galaxy community tool shed 
+developed fastqcwrapper_ contributed to the galaxy community tool shed 
 by j johnson
 
-copyright Ross Lazarus at g mail dot com 2011
-Licensed under the LGPL_
-
 .. _fastqcwrapper: http%3A//community.g2.bx.psu.edu/tool/browse_tools%3F%26webapp%3Dcommunity%26operation%3Dview_tool%26id%3D256f9f17b153ce60
-
-.. _LGPL: http://www.gnu.org/copyleft/lesser.html
 
 </help>
 </tool>
