@@ -72,26 +72,9 @@ then removed from the histogram as outliers before library size is estimated.
 
 **Picard documentation**
 
-This is a Galaxy wrapper for EstimateLibraryComplexity_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
+This is a Galaxy wrapper for EstimateLibraryComplexity, a part of the external package Picard-tools_.
 
- .. _EstimateLibraryComplexity: http://picard.sourceforge.net/command-line-overview.shtml#EstimateLibraryComplexity
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
- .. _SAMTools: http://samtools.sourceforge.net/
-
-
-**Why you might want to use this tool**
-
-This tool provides a Galaxy interface to one of the Picard tools.
-If you need to estimate library complexity from sequences, the Picard tool may help.
-
-
-**Note on the Regular Expression**
-
-(from the Picard docs)
-This tool requires a valid regular expression to parse out the read names in the incoming SAM or BAM file. 
-These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. 
-The regular expression should contain three capture groups for the three variables, in order. 
-Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*.
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
 
 -----
 
@@ -113,6 +96,26 @@ Picard documentation says (reformatted for Galaxy):
     "READ_NAME_REGEX=String","Regular expression that can be used to parse read names in the incoming SAM file. Read names are parsed to extract three variables: tile/region, x coordinate and y coordinate. These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. The regular expression should contain three capture groups for the three variables, in order. Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*. This option can be set to 'null' to clear the default value."
     "OPTICAL_DUPLICATE_PIXEL_DISTANCE=Integer","The maximum offset between two duplicte clusters in order to consider them optical duplicates. This should usually be set to some fairly small number (e.g. 5-10 pixels) unless using later versions of the Illumina pipeline that multiply pixel values by 10, in which case 50-100 is more normal. Default value: 100"
     "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false. This option can be set to 'null' to clear the default value. "
+
+.. class:: warningmark
+
+**Warning on Sam quality**
+
+Unfortunately some packages seem perfectly capable of producing sam and bam files
+that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
+flag, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with sam that cannot be parsed.
+
+.. class:: infomark
+
+**Note on the Regular Expression**
+
+(from the Picard docs)
+This tool requires a valid regular expression to parse out the read names in the incoming SAM or BAM file. 
+These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. 
+The regular expression should contain three capture groups for the three variables, in order. 
+Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*.
+
 
   </help>
 </tool>

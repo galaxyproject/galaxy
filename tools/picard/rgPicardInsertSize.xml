@@ -44,19 +44,17 @@
 Reads a SAM or BAM file and describes the distribution 
 of insert size (excluding duplicates) with metrics and a histogram plot.
 
+**Picard documentation**
+
+This is a Galaxy wrapper for CollectInsertSizeMetrics, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
 .. class:: warningmark
 
 **Useful for paired data only**
 
 This tool works for paired data only and can be expected to fail for single end data.
-
-**Picard documentation**
-
-This is a Galaxy wrapper for CollectInsertSizeMetrics_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
-
- .. _CollectInsertSizeMetrics: http://picard.sourceforge.net/command-line-overview.shtml#CollectInsertSizeMetrics
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
- .. _SAMTools: http://samtools.sourceforge.net/
 
 -----
 
@@ -78,6 +76,15 @@ Picard documentation says (reformatted for Galaxy):
     "MINIMUM_PCT=Float","When generating the histogram, discard any data categories (out of FR, TANDEM, RF) that have fewer than this percentage of overall reads. (Range: 0 to 1) Default value: 0.01."
     "STOP_AFTER=Integer","Stop after processing N reads, mainly for debugging. Default value: 0."
     "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false."
+
+.. class:: warningmark
+
+**Warning on Sam quality**
+
+Unfortunately some packages seem perfectly capable of producing sam and bam files
+that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
+flag, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with sam that cannot be parsed.
 
   </help>
 </tool>

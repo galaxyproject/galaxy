@@ -114,22 +114,23 @@ Output Column Definitions
 #. HS_PENALTY_20X: The "hybrid selection penalty" incurred to get 80% of target bases to 20X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 20X coverage I need to sequence until PF_ALIGNED_BASES = 10^6 * 20 * HS_PENALTY_20X.
 #. HS_PENALTY_30X: The "hybrid selection penalty" incurred to get 80% of target bases to 10X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 30X coverage I need to sequence until PF_ALIGNED_BASES = 10^6 * 30 * HS_PENALTY_30X.
 
+.. class:: warningmark
+
+**Warning on Sam quality**
+
+Unfortunately some packages seem perfectly capable of producing sam and bam files
+that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
+flag, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with sam that cannot be parsed.
+
 -----
 
 .. class:: infomark
 
-
-*Typical tool invocation without Galaxy is on a command line - eg:*
+**Typical tool invocation without Galaxy is on a command line - eg:**
 
 java -jar /share/shared/galaxy/tool-data/shared/jars/CalculateHsMetrics.jar BAIT_INTERVALS=test.pic TARGET_INTERVALS=test.pic INPUT=test.bam
 OUTPUT=picardHsMetrics.txt VALIDATION_STRINGENCY=LENIENT
-
-Note that last parameter - your life will be far easier if you use it as some of the external packages that
-Galaxy relies upon are capable of producing sam/bam
-files that Picard will refuse to parse.
-
-The lenient flag means reads are discarded if empty or off the end of the map - or whatever. Suggestions for
-improvement are welcome.
 
   </help>
 </tool>
