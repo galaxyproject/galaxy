@@ -102,23 +102,22 @@ Add or Replace Read Groups in an input bam or sam file.
 
 **Picard documentation**
 
-This is a Galaxy interface for the external package Picard-tools_ tool AddOrReplaceReadGroups_. Picard-tools is supported through the SAMTools_ project.
+This is a Galaxy wrapper for AddOrReplaceReadGroups, a part of the external package Picard-tools_.
 
- .. _AddOrReplaceReadGroups: http://picard.sourceforge.net/command-line-overview.shtml#AddOrReplaceReadGroups
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
- .. _SAMTools: http://samtools.sourceforge.net/
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
 
 ------
 
-**Inputs**
+.. class:: infomark
 
-Either a sam file or a bam file must be supplied. If a bam file is used, it must be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
+**Inputs, outputs, and parameters**
 
-**Outputs**
+Either a sam file or a bam file must be supplied. If a bam file is used, it must
+be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
 
-The output file is either bam (the default) or sam, according to user selection, and contains the same information as the input file except for the appropraite additional (or modified) read group tags. Bam is recommended since it is smaller.
-
-**AddOrReplaceReadGroups parameters**
+The output file is either bam (the default) or sam, according to user selection,
+and contains the same information as the input file except for the appropraite
+additional (or modified) read group tags. Bam is recommended since it is smaller.
 
 From the Picard documentation.
 
@@ -139,7 +138,17 @@ AddOrReplaceReadGroups OPTIONAL parameters::
   RGCN=String      Read Group sequencing center name; Default value: null (empty)
   RGDS=String      Read Group description Default value: null (empty)
 
-One parameter that Picard's AddOrReplaceReadGroups offers that is automatically set by Galaxy is the SORT_ORDER, which is set to coordinate.
+One parameter that Picard's AddOrReplaceReadGroups offers that is automatically
+set by Galaxy is the SORT_ORDER, which is set to coordinate.
+
+.. class:: warningmark
+
+**Warning on Sam quality**
+
+Unfortunately some packages seem perfectly capable of producing sam and bam files
+that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
+flag, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with sam that cannot be parsed.
 
 
   </help>

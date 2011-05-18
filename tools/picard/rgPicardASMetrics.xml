@@ -76,6 +76,19 @@
   </tests>
   <help>
 
+.. class:: infomark
+
+**Summary**
+
+This Galaxy tool uses Picard to report high-level measures of alignment based on a provided sam or bam file.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for CollectAlignmentSummaryMetrics, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+-----
 
 .. class:: infomark
 
@@ -88,23 +101,6 @@
 - **Bisulphite data** see Picard documentation http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
 - **Maximum acceptable insertion length** See Picard documentation at http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
 
-
------
-
-.. class:: infomark
-
-**Summary**
-
-This Galaxy tool uses Picard to report measures of alignment. 
-
-**Picard documentation**
-
-This is a Galaxy wrapper for CollectAlignmentSummaryMetrics_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
-
- .. _CollectAlignmentSummaryMetrics: http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
- .. _SAMTools: http://samtools.sourceforge.net/
-
 -----
 
 .. class:: infomark
@@ -112,10 +108,6 @@ This is a Galaxy wrapper for CollectAlignmentSummaryMetrics_, a part of the exte
 **Inputs, outputs, and parameters**
 
 The Picard documentation (reformatted for Galaxy) says:
-
-**Collect Alignment Summary Metrics**
-
-Reads a SAM or BAM file and writes a file containing summary alignment metrics.
 
 .. csv-table:: ASMDoc
    :header-rows: 1
@@ -130,13 +122,7 @@ Reads a SAM or BAM file and writes a file containing summary alignment metrics.
     "IS_BISULFITE_SEQUENCED=Boolean","Whether the SAM or BAM file consists of bisulfite sequenced reads. Default value: false. "
     "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created."
 
-
-AlignmentSummaryMetrics
-
-High level metrics about the alignment of reads within a SAM file, produced by the CollectAlignmentSummaryMetrics program and usually stored in a file 
-with the extension ".alignment_summary_metrics".
-
-Output Column Definitions
+The output produced by the tool has the following columns:
 
 #. CATEGORY: One of either UNPAIRED (for a fragment run), FIRST_OF_PAIR when metrics are for only the first read in a paired run, SECOND_OF_PAIR when the metrics are for only the second read in a paired run or PAIR when the metrics are aggregeted for both first and second reads in a pair.
 #. TOTAL_READS: The total number of reads including all PF and non-PF reads. When CATEGORY equals PAIR this value will be 2x the number of clusters.
@@ -158,6 +144,15 @@ Output Column Definitions
 #. PCT_CHIMERAS: The percentage of reads that map outside of a maximum insert size (usually 100kb) or that have the two ends mapping to different chromosomes.
 #. PCT_ADAPTER: The percentage of PF reads that are unaligned and match to a known adapter sequence right from the start of the read.
 
+.. class:: warningmark
+
+**Warning on Sam quality**
+
+Unfortunately some packages seem perfectly capable of producing sam and bam files
+that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
+flag, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with sam that cannot be parsed.
+
 -----
 
 .. class:: infomark
@@ -168,9 +163,6 @@ java -jar /share/shared/galaxy/tool-data/shared/jars/CollectAlignmentSummaryMetr
 
 Note that last parameter - your life will be far easier if you use it.
 
-Unfortunately some packages seem perfectly capable of producing sam and bam files that Picard will be picky about otherwise.
-There is a clean sam tool - but only filters what it ignores. The lenient flag allows reads to be discarded if they're empty or don't map.
-This seems an awful strategy but unfortunately may be needed to run an analysis using badly behaved external packages.
 
   </help>
 </tool>

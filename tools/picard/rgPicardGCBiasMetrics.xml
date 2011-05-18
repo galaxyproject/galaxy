@@ -74,6 +74,20 @@
 
 .. class:: infomark
 
+**Summary**
+
+This Galaxy tool uses Picard to report detailed metrics about reads that fall within windows of a certain GC bin on the reference genome.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for CollectGcBiasMetrics, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+-----
+
+.. class:: infomark
+
 **Syntax**
 
 - **Input** is sam/bam format aligned short read data in your current history
@@ -81,23 +95,6 @@
 - **Refseq** is the sequence you want to interogate - eg hg19 - can be Galaxy built-in or a special one from your history
 - **Window Size** see Picard documentation http://picard.sourceforge.net/command-line-overview.shtml#CollectGCBiasMetrics
 - **Minimum Genome Fraction** See Picard documentation at http://picard.sourceforge.net/command-line-overview.shtml#CollectGCBiasMetrics
-
------
-
-.. class:: infomark
-
-**Summary**
-
-This Galaxy tool uses Picard to report measures of GC bias.
-
-**Picard documentation**
-
-This is a Galaxy wrapper for CollectGcBiasMetrics_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
-
- .. _CollectGcBiasMetrics: http://picard.sourceforge.net/command-line-overview.shtml#CollectGcBiasMetrics
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
- .. _SAMTools: http://samtools.sourceforge.net/
-
 
 -----
 
@@ -120,11 +117,7 @@ The Picard documentation (reformatted for Galaxy) says:
     "MINIMUM_GENOME_FRACTION=Double","For summary metrics, exclude GC windows that include less than this fraction of the genome. Default value: 1.0E-5."
     "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false."
 
-GcBiasDetailMetrics
-
- Class that holds detailed metrics about reads that fall within windows of a certain GC bin on the reference genome.
-
-Output Column Definitions
+The output produced by the tool has the following columns:
 
 #. GC: The G+C content of the reference sequence represented by this bin. Values are from 0% to 100%
 #. WINDOWS: The number of windows on the reference genome that have this G+C content.
@@ -132,6 +125,15 @@ Output Column Definitions
 #. MEAN_BASE_QUALITY: The mean quality (determined via the error rate) of all bases of all reads that are assigned to windows of this GC.
 #. NORMALIZED_COVERAGE: The ration of "coverage" in this GC bin vs. the mean coverage of all GC bins. A number of 1 represents mean coverage, a number less than one represents lower than mean coverage (e.g. 0.5 means half as much coverage as average) while a number greater than one represents higher than mean coverage (e.g. 3.1 means this GC bin has 3.1 times more reads per window than average).
 #. ERROR_BAR_WIDTH: The radius of error bars in this bin based on the number of observations made. For example if the normalized coverage is 0.75 and the error bar width is 0.1 then the error bars would be drawn from 0.65 to 0.85.
+
+.. class:: warningmark
+
+**Warning on Sam quality**
+
+Unfortunately some packages seem perfectly capable of producing sam and bam files
+that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
+flag, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with sam that cannot be parsed.
 
 -----
 
@@ -142,14 +144,6 @@ Output Column Definitions
 java -jar /share/shared/galaxy/tool-data/shared/jars/CollectGcBiasMetrics.jar REFERENCE_SEQUENCE="hg18.fasta"
 MINIMUM_GENOME_FRACTION=0.00001 INPUT=test.bam OUTPUT=picardASMetrics.txt OUTPUT=test.txt CHART_OUTPUT=test.pdf
 WINDOW_SIZE=100 VALIDATION_STRINGENCY=LENIENT
-
-Note that last parameter - your life will be far easier if you use it.
-Unfortunately some packages seem perfectly capable of producing sam and bam
-files that Picard will be picky about otherwise.
-There is a clean sam tool - but only filters what it ignores. The lenient
-flag allows reads to be discarded if they're empty or don't map.
-This seems an awful strategy but unfortunately may be needed to run an analysis
-using badly behaved external packages.
 
   </help>
 </tool>

@@ -39,26 +39,34 @@
 
 **Purpose**
 
-Generate Bam Index Stats for a provided bam file
+Generate Bam Index Stats for a provided bam file.
 
 **Picard documentation**
 
-This is a Galaxy wrapper for BamIndexStats_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
+This is a Galaxy wrapper for BamIndexStats, a part of the external package Picard-tools_.
 
- .. _BamIndexStats: http://picard.sourceforge.net/command-line-overview.shtml#BamIndexStats
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
- .. _SAMTools: http://samtools.sourceforge.net/
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
 
 ------
 
-**Inputs**
+.. class:: infomark
 
-The only input is the bam file you wish to obtain statistics for, which is required. Note that it must be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
+**Inputs and outputs**
 
-**Outputs**
+The only input is the bam file you wish to obtain statistics for, which is required.
+Note that it must be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
 
 This tool outputs an HTML file that contains links to the actual metrics results, as well
 as a log file with info on the exact command run.
+
+.. class:: warningmark
+
+**Warning on Sam quality**
+
+Unfortunately some packages seem perfectly capable of producing sam and bam files
+that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
+flag, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with sam that cannot be parsed.
 
 ------
 
