@@ -158,7 +158,6 @@
                 <param name="aligned_reads2" value="cuffdiff_in2.sam" ftype="sam" />
                 <!-- Defaults. -->
                 <param name="fdr" value="0.05" />
-                <param name="min_mapqual" value="0" ftype="sam" />
                 <param name="min_alignment_count" value="0" ftype="sam" />
                 <param name="do_bias_correction" value="No" />
                 <param name="do_normalization" value="No" />

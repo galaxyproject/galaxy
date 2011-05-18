@@ -109,7 +109,6 @@
             <param name="max_intron_len" value="300000"/>
             <param name="min_isoform_fraction" value="0.05"/>
             <param name="pre_mrna_fraction" value="0.05"/>
-            <param name="min_map_quality" value="0"/>
             <param name="use_ref" value="No"/>
             <param name="do_normalization" value="No" />
             <param name="do_bias_correction" value="No"/>
