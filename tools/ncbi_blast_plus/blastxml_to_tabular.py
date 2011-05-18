@@ -176,16 +176,19 @@ for event, elem in context:
                 expected_mismatch = len(q_seq) \
                                   - sum(1 for q,h in zip(q_seq, h_seq) \
                                         if q == h or q == "-" or h == "-")
-                assert expected_mismatch - q_seq.count("X") <= int(mismatch) <= expected_mismatch, \
-                       "%s vs %s mismatches, expected %i <= %i <= %i" \
-                       % (qseqid, sseqid, expected_mismatch - q_seq.count("X"), int(mismatch), expected_mismatch)
+                xx = sum(1 for q,h in zip(q_seq, h_seq) if q=="X" and h=="X")
+                if not (expected_mismatch - q_seq.count("X") <= int(mismatch) <= expected_mismatch + xx):
+                    stop_err("%s vs %s mismatches, expected %i <= %i <= %i" \
+                             % (qseqid, sseqid, expected_mismatch - q_seq.count("X"),
+                                int(mismatch), expected_mismatch))
 
                 #TODO - Remove this alternative identity calculation and test
                 #once satisifed there are no problems
-                expected_idendity = sum(1 for q,h in zip(q_seq, h_seq) if q == h)
-                assert expected_idendity <= int(nident) <= expected_idendity + q_seq.count("X"), \
-                       "%s vs %s identities, expected %i <= %i <= %i" \
-                       % (qseqid, sseqid, expected_idendity, int(identity), expected_idendity + q_seq.count("X"))
+                expected_identity = sum(1 for q,h in zip(q_seq, h_seq) if q == h)
+                if not (expected_identity - xx <= int(nident) <= expected_identity + q_seq.count("X")):
+                    stop_err("%s vs %s identities, expected %i <= %i <= %i" \
+                             % (qseqid, sseqid, expected_identity, int(nident),
+                                expected_identity + q_seq.count("X")))
                 
 
                 evalue = hsp.findtext("Hsp_evalue")
