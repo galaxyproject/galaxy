@@ -1469,7 +1469,12 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
                      latest_workflow=relation( Workflow, post_update=True,
                                                primaryjoin=( StoredWorkflow.table.c.latest_workflow_id == Workflow.table.c.id ),
                                                lazy=False ),
-                     tags=relation( StoredWorkflowTagAssociation, order_by=StoredWorkflowTagAssociation.table.c.id, backref="stored_workflows" ),
+                     tags=relation( StoredWorkflowTagAssociation, order_by=StoredWorkflowTagAssociation.table.c.id, backref="stored_workflows" ),                          
+                     owner_tags=relation( StoredWorkflowTagAssociation, 
+                                    primaryjoin=and_( StoredWorkflow.table.c.id == StoredWorkflowTagAssociation.table.c.stored_workflow_id,
+                                                      StoredWorkflow.table.c.user_id == StoredWorkflowTagAssociation.table.c.user_id ),
+                                    foreign_keys=[StoredWorkflowTagAssociation.table.c.user_id],                  
+                                    order_by=StoredWorkflowTagAssociation.table.c.id ),
                      annotations=relation( StoredWorkflowAnnotationAssociation, order_by=StoredWorkflowAnnotationAssociation.table.c.id, backref="stored_workflows" ),
                      ratings=relation( StoredWorkflowRatingAssociation, order_by=StoredWorkflowRatingAssociation.table.c.id, backref="stored_workflows" ) )
                    )

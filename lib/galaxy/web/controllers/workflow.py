@@ -586,6 +586,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def clone( self, trans, id ):
+        # Get workflow to clone.
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
         if stored.user == user:
@@ -595,9 +596,24 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                     .filter_by( user=user, stored_workflow=stored ).count() == 0:
                 error( "Workflow is not owned by or shared with current user" )
             owner = False
+            
+        # Clone.
         new_stored = model.StoredWorkflow()
         new_stored.name = "Clone of '%s'" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
+        # Clone annotation.
+        annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
+        if annotation_obj:
+            self.add_item_annotation( trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation )
+        # Clone tags.
+        for swta in stored.owner_tags:
+            new_swta = model.StoredWorkflowTagAssociation()
+            new_swta.tag = swta.tag
+            new_swta.user = trans.user
+            new_swta.user_tname = swta.user_tname
+            new_swta.user_value = swta.user_value
+            new_swta.value = swta.value
+            new_stored.tags.append( new_swta )         
         if not owner:
             new_stored.name += " shared by '%s'" % stored.user.email
         new_stored.user = user
