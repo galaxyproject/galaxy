@@ -95,30 +95,29 @@
 
 **Summary**
 
-This Galaxy tool uses Picard to report measures of alignment
-Picard is supported through the SamTools project.
-This tool wraps Picard and is supported through the galaxy-bugs mailing list
-or by providing comments through the report form that appears automatically
-if a tool fails unexpectedly when you run it in Galaxy.
+This Galaxy tool uses Picard to report measures of alignment. 
 
-All the Picard tools are freely available and are documented
-at http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
-Some of that material is consolidated below from the Picard documentation
+**Picard documentation**
+
+This is a Galaxy wrapper for CollectAlignmentSummaryMetrics_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
+
+ .. _CollectAlignmentSummaryMetrics: http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+ .. _SAMTools: http://samtools.sourceforge.net/
 
 -----
 
 .. class:: infomark
 
-**Picard Documentation**
+**Inputs, outputs, and parameters**
 
 The Picard documentation (reformatted for Galaxy) says:
 
-***Collect Alignment Summary Metrics***
+**Collect Alignment Summary Metrics**
 
-   Reads a SAM or BAM file and writes a file containing summary alignment metrics.
+Reads a SAM or BAM file and writes a file containing summary alignment metrics.
 
 .. csv-table:: ASMDoc
-
    :header-rows: 1
 
     Option,Description
@@ -172,16 +171,6 @@ Note that last parameter - your life will be far easier if you use it.
 Unfortunately some packages seem perfectly capable of producing sam and bam files that Picard will be picky about otherwise.
 There is a clean sam tool - but only filters what it ignores. The lenient flag allows reads to be discarded if they're empty or don't map.
 This seems an awful strategy but unfortunately may be needed to run an analysis using badly behaved external packages.
-
------
-
-.. class:: infomark
-
-**Attribution**
-
-Picard and Samtools go together. They are external to and completely independent of Galaxy. We acknowledge that all credit for
-their methods and contribution are due to them.
-
 
   </help>
 </tool>

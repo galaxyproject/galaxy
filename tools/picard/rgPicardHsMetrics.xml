@@ -40,20 +40,26 @@
 
 **Summary**
 
-This tool provides a Galaxy interface to one of the Picard tools freely
-available at http://picard.sourceforge.net/command-line-overview.shtml#CalculateHsMetrics
+Calculates a set of Hybrid Selection specific metrics from an aligned SAM or BAM file.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for CalculateHsMetrics_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
+
+ .. _CalculateHsMetrics: http://picard.sourceforge.net/command-line-overview.shtml#CalculateHsMetrics
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+ .. _SAMTools: http://samtools.sourceforge.net/
+
 
 -----
 
 .. class:: infomark
 
-**Picard Documentation**
+**Inputs, outputs, and parameters**
 
-Picard documentation says:
-
+Picard documentation says (reformatted for Galaxy):
 
 Calculates a set of Hybrid Selection specific metrics from an aligned SAM or BAM file.
-
 
 .. csv-table:: HsDoc
    :header-rows: 1
@@ -124,21 +130,6 @@ files that Picard will refuse to parse.
 
 The lenient flag means reads are discarded if empty or off the end of the map - or whatever. Suggestions for
 improvement are welcome.
-
------
-
-.. class:: infomark
-
-**Attribution**
-
-This tool takes interval files in the usual Galaxy interval (bed) format as bait and target sequences rather than
-the special format Picard requires - the tool provides reliable reformatting for Picard.
-
-Picard is a project associated with the SamTools project.
-This Galaxy tool uses part of Picard to report measures of hybridization selection in your
-aligned short read sequence data. Sequence data must be chosen from the sam/bam format files in your current history.
-Target and bait files must be selected from the UCSC BED format in your current history.
-
 
   </help>
 </tool>

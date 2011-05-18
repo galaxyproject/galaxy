@@ -98,12 +98,13 @@
 
 **Purpose**
 
-Add or Replace Read Groups in an input bam or sam file
+Add or Replace Read Groups in an input bam or sam file.
 
 **Picard documentation**
 
-This is a Galaxy interface for the Picard-tools_ tool AddOrReplaceReadGroups. Picard-tools is supported through the SAMTools_ project.
+This is a Galaxy interface for the external package Picard-tools_ tool AddOrReplaceReadGroups_. Picard-tools is supported through the SAMTools_ project.
 
+ .. _AddOrReplaceReadGroups: http://picard.sourceforge.net/command-line-overview.shtml#AddOrReplaceReadGroups
  .. _Picard-tools: http://picard.sourceforge.net/index.shtml
  .. _SAMTools: http://samtools.sourceforge.net/
 
@@ -129,12 +130,12 @@ AddOrReplaceReadGroups REQUIRED parameters::
   RGPL=String      Read Group platform (e.g. illumina, solid)
   RGPU=String      Read Group platform unit (eg. run barcode)
   RGSM=String      Read Group sample name
+  RGID=String      Read Group ID; Default value: null (empty)
 
 AddOrReplaceReadGroups OPTIONAL parameters::
 
   Option (Type)    Description
   
-  RGID=String      Read Group ID; Default value: null (empty)
   RGCN=String      Read Group sequencing center name; Default value: null (empty)
   RGDS=String      Read Group description Default value: null (empty)
 

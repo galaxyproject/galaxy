@@ -46,6 +46,12 @@
 
 .. class:: infomark
 
+**Purpose**
+
+Ensure that all mate-pair information is in sync between each read and it's mate pair.
+
+.. class:: warningmark
+
 **Useful for paired data only**
 
 Likely won't do anything helpful for single end sequence data
@@ -53,9 +59,14 @@ Currently, Galaxy doesn't distinguish paired from single ended sam/bam so make s
 the data you choose are valid (paired end) sam or bam data - unless you trust this
 tool not to harm your data.
 
-**Purpose**
+**Picard documentation**
 
-Ensure that all mate-pair information is in sync between each read and it's mate pair. 
+This is a Galaxy wrapper for FixMateInformation_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
+
+ .. _FixMateInformation: http://picard.sourceforge.net/command-line-overview.shtml#FixMateInformation
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+ .. _SAMTools: http://samtools.sourceforge.net/
+
 
 **Why you might want to use this tool**
 
@@ -77,7 +88,7 @@ If you need to repair broken paired read sam/bam files, the Picard tool may help
 
 .. class:: infomark
 
-**From the Picard documentation**
+**Inputs, outputs, and parameters**
 
 .. csv-table:: Fixmate
 
@@ -88,20 +99,6 @@ If you need to repair broken paired read sam/bam files, the Picard tool may help
   "OUTPUT=File","The output file to write to"
   "SORT_ORDER=SortOrder","Optional sort order if the OUTPUT file should be sorted differently than the INPUT file. Default value: null. Possible values: {unsorted, queryname, coordinate}"
   "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false"
-
------
-
-.. class:: infomark
-
-**Attributions**
-
-Picard is supported through the SamTools project.
-This tool wraps Picard and is supported through the galaxy-bugs mailing list
-or by providing comments through the report form that appears automatically
-if a tool fails unexpectedly when you run it in Galaxy.
-
-All the Picard tools are freely available and are documented
-at http://picard.sourceforge.net/command-line-overview.shtml
 
   </help>
 </tool>

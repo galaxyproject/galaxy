@@ -56,7 +56,7 @@
       <param name="remDups" value="true" />
       <param name="assumeSorted" value="true" />
       <param name="readRegex" value="[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*" />
-      <param name="optDupeDist" value="100" />      
+      <param name="optDupeDist" value="100" />
       <output name="out_file" file="picard_output_markdups_remdupes.bam" ftype="bam" compare="diff" />
       <output name="html_file" file="picard_output_markdups_sortedpairsam.html" ftype="html" lines_diff="75" />
     </test>
@@ -68,9 +68,19 @@
 
 **Purpose**
 
-MarkDuplicates
+Marks all duplicate reads in a provided sam or bam file and either removes them or flags them.
 
-**From the Picard documentation**
+**Picard documentation**
+
+This is a Galaxy interface to the external package Picard-tools_ tool MarkDuplicates, which is supported by the SAMTools_ project.
+
+ .. _MarkDuplicates: http://picard.sourceforge.net/command-line-overview.shtml#MarkDuplicates
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+ .. _SAMTools: http://samtools.sourceforge.net/
+
+**Inputs, outputs, and parameters**
+
+Picard documentation says (reformatted for Galaxy):
 
 .. csv-table:: Mark Duplicates docs
    :header-rows: 1
@@ -85,7 +95,6 @@ MarkDuplicates
     "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=Integer","Maximum number of file handles to keep open when spilling read ends to disk."
     "READ_NAME_REGEX=String","Regular expression that can be used to parse read names in the incoming SAM file. Read names are parsed to extract three variables: tile/region, x coordinate and y coordinate. "
     "OPTICAL_DUPLICATE_PIXEL_DISTANCE=Integer","The maximum offset between two duplicte clusters in order to consider them optical duplicates. This should usually be set to some fairly small number (e.g. 5-10 pixels) unless using later versions of the Illumina pipeline that multiply pixel values by 10, in which case 50-100 is more normal. Default value: 100"
-
 
 **Note on the Regular Expression**
 
@@ -105,19 +114,6 @@ MarkDuplicates
     This tool provides a Galaxy interface to one of the Picard tools.
     If you need to estimate library complexity from sequences, the Picard tool may help.
 
------
-
-.. class:: infomark
-
-**Attributions**
-
-Picard is supported through the SamTools project.
-This tool wraps Picard and is supported through the galaxy-bugs mailing list
-or by providing comments through the report form that appears automatically
-if a tool fails unexpectedly when you run it in Galaxy.
-
-All the Picard tools are freely available and are documented
-at http://picard.sourceforge.net/command-line-overview.shtml#CollectInsertSizeMetrics
 
   </help>
 </tool>

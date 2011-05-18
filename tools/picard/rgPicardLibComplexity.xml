@@ -55,42 +55,51 @@
 
 **Purpose**
 
-    EstimateLibraryComplexity
-    Attempts to estimate library complexity from sequence alone. 
-    Does so by sorting all reads by the first N bases (5 by default) of each read and then 
-    comparing reads with the first N bases identical to each other for duplicates. Reads are considered to be 
-    duplicates if they match each other with no gaps and an overall mismatch rate less than or equal to MAX_DIFF_RATE (0.03 by default).
+Attempts to estimate library complexity from sequence alone. 
+Does so by sorting all reads by the first N bases (5 by default) of each read and then 
+comparing reads with the first N bases identical to each other for duplicates. Reads are considered to be 
+duplicates if they match each other with no gaps and an overall mismatch rate less than or equal to MAX_DIFF_RATE (0.03 by default).
 
-    Reads of poor quality are filtered out so as to provide a more accurate estimate. 
-    The filtering removes reads with any no-calls in the first N bases or with a mean base quality lower than 
-    MIN_MEAN_QUALITY across either the first or second read.
+Reads of poor quality are filtered out so as to provide a more accurate estimate. 
+The filtering removes reads with any no-calls in the first N bases or with a mean base quality lower than 
+MIN_MEAN_QUALITY across either the first or second read.
 
-    The algorithm attempts to detect optical duplicates separately from PCR duplicates and excludes these in the 
-    calculation of library size. Also, since there is no alignment to screen out technical reads one 
-    further filter is applied on the data. After examining all reads a histogram is built of 
-    [#reads in duplicate set -> #of duplicate sets]; 
-    all bins that contain exactly one duplicate set are then removed from the histogram as outliers before library size is estimated.
+The algorithm attempts to detect optical duplicates separately from PCR duplicates and excludes these in the 
+calculation of library size. Also, since there is no alignment to screen out technical reads one 
+further filter is applied on the data. After examining all reads a histogram is built of 
+[#reads in duplicate set -> #of duplicate sets]; all bins that contain exactly one duplicate set are
+then removed from the histogram as outliers before library size is estimated.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for EstimateLibraryComplexity_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
+
+ .. _EstimateLibraryComplexity: http://picard.sourceforge.net/command-line-overview.shtml#EstimateLibraryComplexity
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+ .. _SAMTools: http://samtools.sourceforge.net/
+
 
 **Why you might want to use this tool**
 
-    This tool provides a Galaxy interface to one of the Picard tools.
-    If you need to estimate library complexity from sequences, the Picard tool may help.
+This tool provides a Galaxy interface to one of the Picard tools.
+If you need to estimate library complexity from sequences, the Picard tool may help.
 
 
 **Note on the Regular Expression**
 
-    (from the Picard docs)
-    This tool requires a valid regular expression to parse out the read names in the incoming SAM or BAM file. 
-    These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. 
-    The regular expression should contain three capture groups for the three variables, in order. 
-    Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*.
-    
+(from the Picard docs)
+This tool requires a valid regular expression to parse out the read names in the incoming SAM or BAM file. 
+These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. 
+The regular expression should contain three capture groups for the three variables, in order. 
+Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*.
 
 -----
 
 .. class:: infomark
 
-**From the Picard documentation**
+**Inputs, outputs, and parameters**
+
+Picard documentation says (reformatted for Galaxy):
 
 .. csv-table:: Estimate complexity docs
    :header-rows: 1
@@ -104,21 +113,6 @@
     "READ_NAME_REGEX=String","Regular expression that can be used to parse read names in the incoming SAM file. Read names are parsed to extract three variables: tile/region, x coordinate and y coordinate. These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. The regular expression should contain three capture groups for the three variables, in order. Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*. This option can be set to 'null' to clear the default value."
     "OPTICAL_DUPLICATE_PIXEL_DISTANCE=Integer","The maximum offset between two duplicte clusters in order to consider them optical duplicates. This should usually be set to some fairly small number (e.g. 5-10 pixels) unless using later versions of the Illumina pipeline that multiply pixel values by 10, in which case 50-100 is more normal. Default value: 100"
     "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false. This option can be set to 'null' to clear the default value. "
-
-
------
-
-.. class:: infomark
-
-**Attributions**
-
-Picard is supported through the SamTools project.
-This tool wraps Picard and is supported through the galaxy-bugs mailing list
-Please help us by completing the report form that appears automatically
-if a tool fails unexpectedly when you run it in Galaxy.
-
-All the Picard tools are freely available and are documented
-at http://picard.sourceforge.net/command-line-overview.shtml#CollectInsertSizeMetrics
 
   </help>
 </tool>

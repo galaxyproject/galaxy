@@ -41,16 +41,30 @@
 
 **Purpose**
 
-This tool works for PAIRED DATA ONLY and can be expected to fail for single end data.
-
 Reads a SAM or BAM file and describes the distribution 
-of insert size (excluding duplicates). Generates a histogram plot.
+of insert size (excluding duplicates) with metrics and a histogram plot.
+
+.. class:: warningmark
+
+**Useful for paired data only**
+
+This tool works for paired data only and can be expected to fail for single end data.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for CollectInsertSizeMetrics_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
+
+ .. _CollectInsertSizeMetrics: http://picard.sourceforge.net/command-line-overview.shtml#CollectInsertSizeMetrics
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+ .. _SAMTools: http://samtools.sourceforge.net/
 
 -----
 
 .. class:: infomark
 
-**From the Picard documentation**
+**Inputs, outputs, and parameters**
+
+Picard documentation says (reformatted for Galaxy):
 
 .. csv-table:: Insert size metrics docs
    :header-rows: 1
@@ -64,22 +78,6 @@ of insert size (excluding duplicates). Generates a histogram plot.
     "MINIMUM_PCT=Float","When generating the histogram, discard any data categories (out of FR, TANDEM, RF) that have fewer than this percentage of overall reads. (Range: 0 to 1) Default value: 0.01."
     "STOP_AFTER=Integer","Stop after processing N reads, mainly for debugging. Default value: 0."
     "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false."
-
-
------
-
-.. class:: infomark
-
-**Attributions**
-
-Picard is supported through the SamTools project.
-This tool wraps Picard and is supported through the galaxy-bugs mailing list
-or by providing comments through the report form that appears automatically
-if a tool fails unexpectedly when you run it in Galaxy.
-
-All the Picard tools are freely available and are documented
-at http://picard.sourceforge.net/command-line-overview.shtml
-
 
   </help>
 </tool>

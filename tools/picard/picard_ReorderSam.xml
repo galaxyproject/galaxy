@@ -110,8 +110,9 @@ Reorder Sam to match contig ordering in a particular reference file. Note that t
 
 **Picard documentation**
 
-This is a Galaxy interface for Picard-tools_'s ReorderSam tool, a part of Picard-tools_, which is supported by SAMTools_.
+This is a Galaxy interface for Picard-tools_ tool ReorderSam_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
 
+ .. _ReorderSam: http://picard.sourceforge.net/command-line-overview.shtml#ReorderSam
  .. _Picard-tools: http://picard.sourceforge.net/index.shtml
  .. _SAMTools: http://samtools.sourceforge.net/
 

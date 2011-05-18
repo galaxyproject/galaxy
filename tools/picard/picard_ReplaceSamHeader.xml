@@ -67,8 +67,9 @@ Replace the SAMFileHeader in a SAM file with the given header. Validation is min
 
 **Picard documentation**
 
-This is a Galaxy interface to the Picard-tools_'s ReplaceSamHeader tools, which is supported by SAMTools_.
+This is a Galaxy interface to the external package Picard-tools_ tool ReplaceSamHeader_, which is supported by the SAMTools_ project.
 
+ .. _ReplaceSamHeader: http://picard.sourceforge.net/command-line-overview.shtml#ReplaceSamHeader
  .. _Picard-tools: http://picard.sourceforge.net/index.shtml
  .. _SAMTools: http://samtools.sourceforge.net/
 

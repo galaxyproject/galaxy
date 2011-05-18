@@ -43,8 +43,9 @@ Generate Bam Index Stats for a provided bam file
 
 **Picard documentation**
 
-This is a Galaxy wrapper for BamIndexStats, a part of Picard-tools_, which is closely related to SAMTools_.
+This is a Galaxy wrapper for BamIndexStats_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
 
+ .. _BamIndexStats: http://picard.sourceforge.net/command-line-overview.shtml#BamIndexStats
  .. _Picard-tools: http://picard.sourceforge.net/index.shtml
  .. _SAMTools: http://samtools.sourceforge.net/
 
@@ -56,7 +57,8 @@ The only input is the bam file you wish to obtain statistics for, which is requi
 
 **Outputs**
 
-The output from this tool is a simple text file.
+This tool outputs an HTML file that contains links to the actual metrics results, as well
+as a log file with info on the exact command run.
 
 ------
 
@@ -83,13 +85,13 @@ Given a bam file created from the following::
   read7    163    chr7    302    255    10M1D10M5I76M    =         1    -201    NCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA    I/15445666651/566666553+2/14/I/555512+3/)-'/-I-'*+))*''13+3)'//++''/'))/3+I*5++)I'2+I+/*I-II*)I-./1'1    RG:Z:0
   read8    165       *      0      0    *                chr7      1       0    NCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA    I/15445666651/566666553+2/14/I/555512+3/)-'/-I-'*+))*''13+3)'//++''/'))/3+I*5++)I'2+I+/*I-II*)I-./1'1    RG:Z:0
 
-The following file will be produced::
+The following metrics file will be produced::
 
-  chr1 length=    101    Aligned= 0	Unaligned= 0
-  chr7 length=    404    Aligned= 7	Unaligned= 0
-  chr8 length=    202    Aligned= 0	Unaligned= 0
-  chr10 length=   303    Aligned= 0	Unaligned= 0
-  chr14 length=   505    Aligned= 0	Unaligned= 0
+  chr1 length=    101    Aligned= 0    Unaligned= 0
+  chr7 length=    404    Aligned= 7    Unaligned= 0
+  chr8 length=    202    Aligned= 0    Unaligned= 0
+  chr10 length=   303    Aligned= 0    Unaligned= 0
+  chr14 length=   505    Aligned= 0    Unaligned= 0
   NoCoordinateCount= 1
 
   </help>

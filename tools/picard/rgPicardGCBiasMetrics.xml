@@ -89,35 +89,36 @@
 **Summary**
 
 This Galaxy tool uses Picard to report measures of GC bias.
-Picard is supported through the SamTools project.
-This tool wraps Picard and is supported through the galaxy-bugs mailing list
-or by providing comments through the report form that appears automatically
-if a tool fails unexpectedly when you run it in Galaxy.
 
-All the Picard tools are freely available and are documented
-at http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
+**Picard documentation**
+
+This is a Galaxy wrapper for CollectGcBiasMetrics_, a part of the external package Picard-tools_, which is supported by the SAMTools_ project.
+
+ .. _CollectGcBiasMetrics: http://picard.sourceforge.net/command-line-overview.shtml#CollectGcBiasMetrics
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+ .. _SAMTools: http://samtools.sourceforge.net/
+
 
 -----
 
 .. class:: infomark
 
-**Picard Documentation**
+**Inputs, outputs, and parameters**
 
 The Picard documentation (reformatted for Galaxy) says:
 
 .. csv-table:: GC Bias Doc
    :header-rows: 1
 
-  Option,Description
-  "REFERENCE_SEQUENCE=File","The reference sequence fasta file. Required."
-  "INPUT=File","The BAM or SAM file containing aligned reads. Required."
-  "OUTPUT=File","The text file to write the metrics table to. Required."
-  "CHART_OUTPUT=File","The PDF file to render the chart to. Required."
-  "SUMMARY_OUTPUT=File","The text file to write summary metrics to. Default value: null."
-  "WINDOW_SIZE=Integer","The size of windows on the genome that are used to bin reads. Default value: 100."
-  "MINIMUM_GENOME_FRACTION=Double","For summary metrics, exclude GC windows that include less than this fraction of the genome. Default value: 1.0E-5."
-  "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false."
-
+    Option,Description
+    "REFERENCE_SEQUENCE=File","The reference sequence fasta file. Required."
+    "INPUT=File","The BAM or SAM file containing aligned reads. Required."
+    "OUTPUT=File","The text file to write the metrics table to. Required."
+    "CHART_OUTPUT=File","The PDF file to render the chart to. Required."
+    "SUMMARY_OUTPUT=File","The text file to write summary metrics to. Default value: null."
+    "WINDOW_SIZE=Integer","The size of windows on the genome that are used to bin reads. Default value: 100."
+    "MINIMUM_GENOME_FRACTION=Double","For summary metrics, exclude GC windows that include less than this fraction of the genome. Default value: 1.0E-5."
+    "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false."
 
 GcBiasDetailMetrics
 
@@ -136,7 +137,6 @@ Output Column Definitions
 
 .. class:: infomark
 
-
 **Typical tool invocation without Galaxy is on a command line - eg:**
 
 java -jar /share/shared/galaxy/tool-data/shared/jars/CollectGcBiasMetrics.jar REFERENCE_SEQUENCE="hg18.fasta"
@@ -150,16 +150,6 @@ There is a clean sam tool - but only filters what it ignores. The lenient
 flag allows reads to be discarded if they're empty or don't map.
 This seems an awful strategy but unfortunately may be needed to run an analysis
 using badly behaved external packages.
-
------
-
-.. class:: infomark
-
-**Attributions**
-
-Picard and Samtools go together.
-They are external to and completely independent of Galaxy. We acknowledge that all credit for
-their methods and contribution are due to them.
 
   </help>
 </tool>
