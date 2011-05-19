@@ -977,7 +977,8 @@ extend(Tool.prototype, {
         // Create and add track.
         // TODO: add support for other kinds of tool data tracks.
         if (current_track.track_type === 'FeatureTrack') {
-            new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);    
+            new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);  
+            new_track.change_mode(current_track.mode);
         }
         this.track.add_track(new_track);
         new_track.content_div.text("Starting job.");
@@ -1704,19 +1705,11 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
             track.mode = init_mode;
             track.mode_div.text(init_mode);
         
-            var change_mode = function(name) {
-                track.mode_div.text(name);
-                // TODO: is it necessary to store the mode in two places (.mode and track_config)?
-                track.mode = name;
-                track.track_config.values['mode'] = name;
-                track.tile_cache.clear();
-                track.draw();
-            };
             var mode_mapping = {};
             for (var i = 0, len = track.display_modes.length; i < len; i++) {
                 var mode = track.display_modes[i];
                 mode_mapping[mode] = function(mode) {
-                    return function() { change_mode(mode); };
+                    return function() { track.change_mode(mode); };
                 }(mode);
             }
             make_popupmenu(track.mode_div, mode_mapping);
@@ -1746,6 +1739,18 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     */
 };
 extend(TiledTrack.prototype, Track.prototype, {
+    /**
+     * Change track's mode.
+     */
+    change_mode: function(name) {
+        var track = this;
+        track.mode_div.text(name);
+        // TODO: is it necessary to store the mode in two places (.mode and track_config)?
+        track.mode = name;
+        track.track_config.values['mode'] = name;
+        track.tile_cache.clear();
+        track.draw();
+     },
     /**
      * Make popup menu for track name.
      */
