@@ -64,7 +64,7 @@
         var default_data_url = "${h.url_for( controller='/tracks', action='data' )}",
             raw_data_url = "${h.url_for( controller='/tracks', action='raw_data' )}",
             run_tool_url = "${h.url_for( controller='/tracks', action='run_tool' )}",
-            rerun_tool_url = "${h.url_for( controller='/tracks', action='run_tool' )}",
+            rerun_tool_url = "${h.url_for( controller='/tracks', action='rerun_tool' )}",
             reference_url = "${h.url_for( controller='/tracks', action='reference' )}",
             chrom_url = "${h.url_for( controller='/tracks', action='chroms' )}",
             dataset_state_url = "${h.url_for( controller='/tracks', action='dataset_state' )}",

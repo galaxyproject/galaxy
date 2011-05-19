@@ -292,7 +292,7 @@ extend(DataManager.prototype, Cache.prototype, {
         }
         */
         
-        // Look for key in cache and, if found, do callback.
+        // Look for entry and return if found.
         var entry = this.get(this.gen_key(low, high, mode));
         if (entry) {
             return entry;
@@ -1867,6 +1867,10 @@ extend(TiledTrack.prototype, Track.prototype, {
      * tiles after drawing new tiles.
      */
     draw: function(force, clear_after) {
+        // Cannot draw without dataset_id; dataset_id may not be set if track dynamically created
+        // and is waiting for dataset.
+        if (!this.dataset_id) { return; }
+        
         var low = this.view.low,
             high = this.view.high,
             range = high - low,
