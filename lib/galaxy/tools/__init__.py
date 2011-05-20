@@ -1854,7 +1854,7 @@ class DataSourceTool( Tool ):
             if isinstance( value, dict ):
                 rval.append( self._prepare_datasource_json_param_dict( value ) )
             elif isinstance( value, list ):
-                rval.append( self._prepare_datasource_json_list( val ) )
+                rval.append( self._prepare_datasource_json_list( value ) )
             else:
                 rval.append( str( value ) )
         return rval
@@ -1864,7 +1864,7 @@ class DataSourceTool( Tool ):
             if isinstance( value, dict ):
                 rval[ key ] = self._prepare_datasource_json_param_dict( value )
             elif isinstance( value, list ):
-                rval[ key ] = self._prepare_datasource_json_list( val )
+                rval[ key ] = self._prepare_datasource_json_list( value )
             else:
                 rval[ key ] = str( value )
         return rval
