@@ -24,7 +24,7 @@
       --picard-cmd="MarkDuplicates"
   </command>
   <inputs>
-    <param format="bam,sam" name="input_file" type="data" label="The sam- or bam-format short read data in your current history"
+    <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset to mark duplicates in"
       help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
     <param name="remDups" type="boolean" label="Remove duplicates from output file" truevalue="true" falsevalue="false" checked="False" 
       help="If true do not write duplicates to the output file instead of writing them with appropriate flags set" />

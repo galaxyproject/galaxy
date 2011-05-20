@@ -1,4 +1,4 @@
-<tool name="Reorder SAM" id="picard_ReorderSam" version="0.3.0">
+<tool name="Reorder SAM/BAM" id="picard_ReorderSam" version="0.3.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
     picard_wrapper.py
@@ -18,10 +18,10 @@
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/ReorderSam.jar"
   </command>
   <inputs>
-    <param format="bam,sam" name="inputFile" type="data" label="The sam or bam file in your current history whose header you want to replace"
-           help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
+    <param format="bam,sam" name="inputFile" type="data" label="SAM/BAM dataset to be reordered"
+           help="If empty, upload or import a SAM/BAM dataset." />
     <conditional name="source">
-      <param name="indexSource" type="select" label="Choose the source for the reference list">
+      <param name="indexSource" type="select" label="Select Reference Genome" help="This tool will re-order SAM/BAM in the same order as reference selected below.">
         <option value="built-in">Locally cached</option>
         <option value="history">History</option>
       </param>
@@ -39,7 +39,7 @@
     </conditional>
     <param name="allowIncDictConcord" type="boolean" checked="False" truevalue="true" falsevalue="false" label="Allow incomplete dict concordance?" help="Allows a partial overlap of the BAM contigs with the new reference sequence contigs." />
     <param name="allowContigLenDiscord" type="boolean" checked="False" truevalue="true" falsevalue="false" label="Allow contig length discordance?" help="This is dangerous--don't check it unless you know exactly what you're doing!" />
-    <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output bam instead of sam" help="Uncheck for sam output" />
+    <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output BAM instead of SAM" help="Uncheck for SAM output" />
   </inputs>
   <outputs>
     <data name="outFile" format="bam" label="${tool.name} on ${on_string}: reordered ${outputFormat}">
@@ -106,10 +106,10 @@
 
 **Purpose**
 
-Reorder Sam to match contig ordering in a particular reference file. Note that this is
+Reorder SAM/BAM to match contig ordering in a particular reference file. Note that this is
 not the same as sorting as done by the SortSam tool, which sorts by either coordinate
 values or query name. The ordering in ReorderSam is based on exact name matching of
-contigs. Reads that are mapped to a contig that is not in the new reference file are
+contigs/chromosomes. Reads that are mapped to a contig that is not in the new reference file are
 not included in the output.
 
 **Picard documentation**
@@ -142,12 +142,11 @@ good idea, unless you know exactly what you're doing. It's off by default.
 
 .. class:: warningmark
 
-**Warning on Sam quality**
+**Warning on SAM/BAM quality**
 
-Unfortunately some packages seem perfectly capable of producing sam and bam files
-that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
-flag, which allows reads to be discarded if they're empty or don't map. This appears
-to be the only way to deal with sam that cannot be parsed.
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
 
 
   </help>

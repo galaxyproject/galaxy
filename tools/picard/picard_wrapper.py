@@ -361,7 +361,7 @@ def __main__():
     op.add_option('-n', '--title', default="Pick a Picard Tool")
     op.add_option('-t', '--htmlout', default=None)
     op.add_option('-d', '--outdir', default=None)
-    op.add_option('-x', '--maxjheap', default='2g')
+    op.add_option('-x', '--maxjheap', default='4g')
     op.add_option('-b', '--bisulphite', default='false')
     op.add_option('-s', '--sortorder', default='query')     
     op.add_option('','--tmpdir', default='/tmp')

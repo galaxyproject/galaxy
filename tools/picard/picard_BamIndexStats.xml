@@ -9,8 +9,8 @@
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/BamIndexStats.jar"
   </command>
   <inputs>
-    <param format="bam" name="input_file" type="data"  label="Input: sam or bam format short read data in your current history"
-      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
+    <param format="bam" name="input_file" type="data"  label="BAM dataset to generate statistics for"
+      help="If empty, upload or import a BAM dataset" />
   </inputs>
   <outputs>
     <data format="html" name="htmlfile" label="${tool.name}_on_${on_string}.html" />
@@ -39,7 +39,7 @@
 
 **Purpose**
 
-Generate Bam Index Stats for a provided bam file.
+Generate Bam Index Stats for a provided BAM file.
 
 **Picard documentation**
 
@@ -53,26 +53,25 @@ This is a Galaxy wrapper for BamIndexStats, a part of the external package Picar
 
 **Inputs and outputs**
 
-The only input is the bam file you wish to obtain statistics for, which is required.
-Note that it must be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
+The only input is the BAM file you wish to obtain statistics for, which is required.
+Note that it must be coordinate-sorted. Galaxy currently coordinate-sorts all BAM files.
 
 This tool outputs an HTML file that contains links to the actual metrics results, as well
 as a log file with info on the exact command run.
 
 .. class:: warningmark
 
-**Warning on Sam quality**
+**Warning on SAM/BAM quality**
 
-Unfortunately some packages seem perfectly capable of producing sam and bam files
-that Picard will be picky about otherwise. Galaxy deals with this by using the lenient
-flag, which allows reads to be discarded if they're empty or don't map. This appears
-to be the only way to deal with sam that cannot be parsed.
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
 
 ------
 
 **Example**
 
-Given a bam file created from the following::
+Given a BAM file created from the following::
 
   @HD    VN:1.0     SO:coordinate
   @SQ    SN:chr1    LN:101
