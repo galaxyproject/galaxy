@@ -431,7 +431,7 @@ class CommonController( BaseController, ItemRatings ):
                                                               cntrller=cntrller,
                                                               message='You are not allowed to upload a new version of this tool',
                                                               status='error' ) )
-        return trans.response.send_redirect( web.url_for( controller='upload',
+        return trans.response.send_redirect( web.url_for( controller='tool_upload',
                                                           action='upload',
                                                           message=message,
                                                           status=status,
@@ -566,3 +566,14 @@ def get_event( trans, id ):
 def get_user( trans, id ):
     """Get a user from the database"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
+def get_repository( trans, id ):
+    """Get a repository from the database via id"""
+    return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
+def get_repository_by_name( trans, name ):
+    """Get a repository from the database via name"""
+    return trans.sa_session.query( app.model.Repository ).filter_by( name=name ).one()
+def get_repository_tip( repository ):
+    # The received repository must be a mercurial repository, not a db record.
+    tip_changeset = repository.changelog.tip()
+    tip_ctx = repository.changectx( tip_changeset )
+    return "%s:%s" % ( str( tip_ctx.rev() ), tip_ctx.parents()[0] )

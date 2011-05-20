@@ -25,11 +25,11 @@
 </%def>
 
 <%def name="init()">
-<%
-    self.has_left_panel=True
-    self.has_right_panel=False
-    self.active_view="admin"
-%>
+    <%
+        self.has_left_panel=True
+        self.has_right_panel=False
+        self.active_view="admin"
+    %>
 </%def>
 
 <%def name="left_panel()">

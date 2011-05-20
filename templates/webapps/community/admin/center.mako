@@ -6,24 +6,26 @@
 
 <p>The menu on the left provides the following features</p>
 <ul>
-    <li>
-        <strong>Tools</strong>
-        <p/>
-        <ul>
-            <li>
-                <strong>Tools awaiting approval</strong>
-            </li>
+    %if not trans.app.config.enable_next_gen_tool_shed:
+        <li>
+            <strong>Tools</strong>
             <p/>
-            <li>
-                <strong>Browse by category</strong>
-            </li>
-            <p/>
-            <li>
-                <strong>Browse all tools</strong>
-            </li>
-            <p/>
-        </ul>
-    </li>
+            <ul>
+                <li>
+                    <strong>Tools awaiting approval</strong>
+                </li>
+                <p/>
+                <li>
+                    <strong>Browse by category</strong>
+                </li>
+                <p/>
+                <li>
+                    <strong>Browse all tools</strong>
+                </li>
+                <p/>
+            </ul>
+        </li>
+    %endif
     <li>
         <strong>Categories</strong>
         <p/>

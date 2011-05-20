@@ -4,6 +4,7 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
+# TODO: the following is bad because it imports the common controller.
 from common import *
 
 log = logging.getLogger( __name__ )

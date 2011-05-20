@@ -12,6 +12,9 @@ threadpool_workers = 10
 
 [app:main]
 
+# Enable next-gen tool shed features
+#enable_next_gen_tool_shed = True
+
 # Specifies the factory for the universe WSGI application
 paste.app_factory = galaxy.webapps.community.buildapp:app_factory
 log_level = DEBUG

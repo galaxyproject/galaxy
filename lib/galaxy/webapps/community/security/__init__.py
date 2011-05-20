@@ -1,7 +1,7 @@
 """
 Galaxy Tool Shed Security
 """
-import logging, socket, operator
+import os, logging, ConfigParser
 from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify
@@ -79,6 +79,8 @@ class CommunityRBACAgent( RBACAgent ):
                 return self.associate_group_role( kwd['group'], kwd['role'] )
         elif 'tool' in kwd:
             return self.associate_tool_category( kwd['tool'], kwd['category'] )
+        elif 'repository' in kwd:
+            return self.associate_repository_category( kwd[ 'repository' ], kwd[ 'category' ] )
         raise 'No valid method of associating provided components: %s' % kwd
     def associate_group_role( self, group, role ):
         assoc = self.model.GroupRoleAssociation( group, role )
@@ -97,6 +99,11 @@ class CommunityRBACAgent( RBACAgent ):
         return assoc
     def associate_tool_category( self, tool, category ):
         assoc = self.model.ToolCategoryAssociation( tool, category )
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
+        return assoc
+    def associate_repository_category( self, repository, category ):
+        assoc = self.model.RepositoryCategoryAssociation( repository, category )
         self.sa_session.add( assoc )
         self.sa_session.flush()
         return assoc
@@ -226,6 +233,19 @@ class CommunityRBACAgent( RBACAgent ):
         if cntrller in [ 'tool' ] and item.is_approved or item.is_archived or item.is_deleted:
             return True
         return user and user==item.user
+    def can_push( self, user, repository ):
+        # TODO: handle this via the mercurial api.
+        if not user:
+            return False
+        # Read the repository's hgrc file
+        hgrc_file = os.path.abspath( os.path.join( repository.repo_path, ".hg", "hgrc" ) )
+        config = ConfigParser.ConfigParser()
+        config.read( hgrc_file )
+        for option in config.options( "web" ):
+            if option == 'allow_push':
+                allowed = config.get( "web", option )
+                return user.username in allowed
+        return False
     def get_all_action_permissions( self, user, user_is_admin, cntrller, item ):
         """Get all permitted actions on item for the current user"""
         can_edit = self.can_edit( cntrller, user, user_is_admin, item )

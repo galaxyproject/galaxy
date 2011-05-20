@@ -3,6 +3,7 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from common import ToolListGrid, CategoryListGrid, get_category, get_event, get_tool, get_versions
+from repository import RepositoryListGrid, RepositoryCategoryListGrid
 import logging
 log = logging.getLogger( __name__ )
 
@@ -44,9 +45,6 @@ class UserListGrid( grids.Grid ):
             elif user.deleted:
                 return "deleted"
             return ""
-    class ToolsColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, user ):
-            return len( user.tools )
     class EmailColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
@@ -74,10 +72,6 @@ class UserListGrid( grids.Grid ):
         ExternalColumn( "External", attach_popup=False ),
         LastLoginColumn( "Last Login", format=time_ago ),
         StatusColumn( "Status", attach_popup=False ),
-        ToolsColumn( "Uploaded Tools",
-                     link=( lambda item: dict( operation="tools_by_user", id=item.id, webapp="community" ) ),
-                     attach_popup=False,
-                     filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
                      key="email",
@@ -380,8 +374,10 @@ class AdminController( BaseController, Admin ):
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     manage_category_list_grid = ManageCategoryListGrid()
-    category_list_grid = AdminCategoryListGrid()
+    tool_category_list_grid = AdminCategoryListGrid()
     tool_list_grid = AdminToolListGrid()
+    repository_list_grid = RepositoryListGrid()
+    repository_category_list_grid = RepositoryCategoryListGrid()
 
     @web.expose
     @web.require_admin
@@ -446,19 +442,72 @@ class AdminController( BaseController, Admin ):
         return self.tool_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
-    def browse_categories( self, trans, **kwd ):
+    def browse_repositories( self, trans, **kwd ):
+        # We add params to the keyword dict in this method in order to rename the param
+        # with an "f-" prefix, simulating filtering by clicking a search link.  We have
+        # to take this approach because the "-" character is illegal in HTTP requests.
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
-            if operation in [ "tools_by_category", "tools_by_state", "tools_by_user" ]:
+            if operation == "view_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_repository',
+                                                                  **kwd ) )
+            elif operation == "edit_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='edit_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='browse_tools',
-                                                                  **kwd ) )
+                if 'user_id' in kwd:
+                    user = get_user( trans, kwd[ 'user_id' ] )
+                    kwd[ 'f-email' ] = user.email
+                    del kwd[ 'user_id' ]
+                else:
+                    # The received id is the repository id, so we need to get the id of the user
+                    # that uploaded the repository.
+                    repository_id = kwd.get( 'id', None )
+                    repository = get_repository( trans, repository_id )
+                    kwd[ 'f-email' ] = repository.user.email
+            elif operation == "repositories_by_category":
+                # Eliminate the current filters if any exist.
+                for k, v in kwd.items():
+                    if k.startswith( 'f-' ):
+                        del kwd[ k ]
+                category_id = kwd.get( 'id', None )
+                category = get_category( trans, category_id )
+                kwd[ 'f-Category.name' ] = category.name
         # Render the list view
-        return self.category_list_grid( trans, **kwd )
+        return self.repository_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def browse_categories( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if trans.app.config.enable_next_gen_tool_shed:
+                if operation in [ "repositories_by_category", "repositories_by_user" ]:
+                    # Eliminate the current filters if any exist.
+                    for k, v in kwd.items():
+                        if k.startswith( 'f-' ):
+                            del kwd[ k ]
+                    return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                      action='browse_repositories',
+                                                                      **kwd ) )
+            else:
+                if operation in [ "tools_by_category", "tools_by_state", "tools_by_user" ]:
+                    # Eliminate the current filters if any exist.
+                    for k, v in kwd.items():
+                        if k.startswith( 'f-' ):
+                            del kwd[ k ]
+                    return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                      action='browse_tools',
+                                                                      **kwd ) )
+        if trans.app.config.enable_next_gen_tool_shed:
+            return self.repository_category_list_grid( trans, **kwd )
+        else:
+            return self.tool_category_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def manage_categories( self, trans, **kwd ):
@@ -755,6 +804,9 @@ class AdminController( BaseController, Admin ):
     def purge_category( self, trans, **kwd ):
         # This method should only be called for a Category that has previously been deleted.
         # Purging a deleted Category deletes all of the following from the database:
+        # If trans.app.config.enable_next_gen_tool_shed:
+        # - RepoitoryCategoryAssociations where category_id == Category.id
+        # Otherwise:
         # - ToolCategoryAssociations where category_id == Category.id
         params = util.Params( kwd )
         id = kwd.get( 'id', None )
@@ -774,9 +826,14 @@ class AdminController( BaseController, Admin ):
                                                            action='manage_categories',
                                                            message=util.sanitize_text( message ),
                                                            status='error' ) )
-            # Delete ToolCategoryAssociations
-            for tca in category.tools:
-                trans.sa_session.delete( tca )
+            if trans.app.config.enable_next_gen_tool_shed:
+                # Delete RepositoryCategoryAssociations
+                for rca in category.repositories:
+                    trans.sa_session.delete( rca )
+            else:
+                # Delete ToolCategoryAssociations
+                for tca in category.tools:
+                    trans.sa_session.delete( tca )
             trans.sa_session.flush()
             message += " %s " % category.name
         trans.response.send_redirect( web.url_for( controller='admin',

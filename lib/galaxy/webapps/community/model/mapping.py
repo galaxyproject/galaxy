@@ -98,6 +98,30 @@ GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "prev_session_id", Integer ) # saves a reference to the previous session so we have a way to chain them together
     )
 
+Repository.table = Table( "repository", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), index=True ),
+    Column( "description" , TEXT ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "private", Boolean, default=False ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+RepositoryRatingAssociation.table = Table( "repository_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True ),
+    Column( "comment", TEXT ) )
+
+RepositoryCategoryAssociation.table = Table( "repository_category_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+    Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
+
 Tool.table = Table( "tool", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
@@ -175,6 +199,7 @@ ToolAnnotationAssociation.table = Table( "tool_annotation_association", metadata
 assign_mapper( context, User, User.table, 
     properties=dict( tools=relation( Tool, primaryjoin=( Tool.table.c.user_id == User.table.c.id ), order_by=( Tool.table.c.name ) ),               
                      active_tools=relation( Tool, primaryjoin=( ( Tool.table.c.user_id == User.table.c.id ) & ( not_( Tool.table.c.deleted ) ) ), order_by=( Tool.table.c.name ) ),
+                     active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ) ) )
 
 assign_mapper( context, Group, Group.table,
@@ -183,9 +208,7 @@ assign_mapper( context, Group, Group.table,
 assign_mapper( context, Role, Role.table,
     properties=dict(
         users=relation( UserRoleAssociation ),
-        groups=relation( GroupRoleAssociation )
-    )
-)
+        groups=relation( GroupRoleAssociation ) ) )
 
 assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
     properties=dict( user=relation( User, backref = "groups" ),
@@ -197,16 +220,12 @@ assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
         non_private_roles=relation( User, 
                                     backref="non_private_roles",
                                     primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.name == User.table.c.email ) ) ),
-        role=relation( Role )
-    )
-)
+        role=relation( Role ) ) )
 
 assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
     properties=dict(
         group=relation( Group, backref="roles" ),
-        role=relation( Role )
-    )
-)
+        role=relation( Role ) ) )
 
 assign_mapper( context, GalaxySession, GalaxySession.table,
     properties=dict( user=relation( User.mapper ) ) )
@@ -237,30 +256,40 @@ assign_mapper( context, Tool, Tool.table,
             backref=backref( "newer_version", primaryjoin=( Tool.table.c.newer_version_id == Tool.table.c.id ), remote_side=[Tool.table.c.id] ) )
         ) )
 
+
+assign_mapper( context, ToolCategoryAssociation, ToolCategoryAssociation.table,
+    properties=dict(
+        category=relation( Category ),
+        tool=relation( Tool ) ) )
+
+assign_mapper( context, ToolRatingAssociation, ToolRatingAssociation.table,
+    properties=dict( tool=relation( Tool ), user=relation( User ) ) )
+
 assign_mapper( context, Event, Event.table,
                properties=None )
 
 assign_mapper( context, ToolEventAssociation, ToolEventAssociation.table,
     properties=dict(
         tool=relation( Tool ),
-        event=relation( Event )
-    )
-)
+        event=relation( Event ) ) )
 
 assign_mapper( context, Category, Category.table,
-    properties=dict( tools=relation( ToolCategoryAssociation ) ) )
+    properties=dict( tools=relation( ToolCategoryAssociation ),
+                     repositories=relation( RepositoryCategoryAssociation ) ) )
 
-assign_mapper( context, ToolCategoryAssociation, ToolCategoryAssociation.table,
+assign_mapper( context, Repository, Repository.table, 
+    properties = dict(
+        categories=relation( RepositoryCategoryAssociation ),
+        ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
+        user=relation( User.mapper ) ) )
+
+assign_mapper( context, RepositoryRatingAssociation, RepositoryRatingAssociation.table,
+    properties=dict( repository=relation( Repository ), user=relation( User ) ) )
+
+assign_mapper( context, RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
     properties=dict(
         category=relation( Category ),
-        tool=relation( Tool )
-    )
-)
-
-assign_mapper( context, ToolRatingAssociation, ToolRatingAssociation.table,
-    properties=dict( tool=relation( Tool ), user=relation( User ) )
-                    )
-
+        repository=relation( Repository ) ) )
 
 def guess_dialect_for_url( url ):
     return (url.split(':', 1))[0]
@@ -280,10 +309,11 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False ):
+def init( enable_next_gen_tool_shed, file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
-    # Connect dataset to the file path
-    Tool.file_path = file_path
+    if not enable_next_gen_tool_shed:
+        # Connect tool archive location to the file path
+        Tool.file_path = file_path
     # Load the appropriate db module
     load_egg_for_url( url )
     # Create the database engine

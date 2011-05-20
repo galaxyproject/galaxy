@@ -4,10 +4,11 @@ Galaxy Tool Shed data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile, mimetypes
+import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile, mimetypes, ConfigParser
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
+from mercurial import hg, ui
 log = logging.getLogger( __name__ )
 
 class User( object ):
@@ -83,8 +84,40 @@ class GalaxySession( object ):
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
 
+class Repository( object ):
+    file_states = Bunch( NORMAL = 'n',
+                         NEEDS_MERGING = 'm',
+                         MARKED_FOR_REMOVAL = 'r',
+                         MARKED_FOR_ADDITION = 'a',
+                         NOT_TRACKED = '?' )
+    def __init__( self, name=None, description=None, user_id=None, private=False ):
+        self.name = name or "Unnamed repository"
+        self.description = description
+        self.user_id = user_id
+        self.private = private
+    @property
+    def repo_path( self ):
+        # Repository locations on disk are defined in the hgweb.config file
+        # in the Galaxy install directory.  An entry looks something like:
+        # repos/test/mira_assembler = database/community_files/000/repo_123
+        # TODO: handle this using the mercurial api.
+        lhs = "repos/%s/%s" % ( self.user.username, self.name )
+        hgweb_config = "%s/hgweb.config" %  os.getcwd()
+        if not os.path.exists( hgweb_config ):
+            raise Exception( "Required file hgweb.config does not exist in directory %s" % os.getcwd() )
+        config = ConfigParser.ConfigParser()
+        config.read( hgweb_config )
+        for option in config.options( "paths" ):
+            if option == lhs:
+                return config.get( "paths", option )
+        raise Exception( "Entry for repository %s missing in %s/hgweb.config file." % ( lhs, os.getcwd() ) )
+    @property
+    def is_new( self ):
+        repo = hg.repository( ui.ui(), self.repo_path )
+        tip_ctx = repo.changectx( repo.changelog.tip() )
+        return tip_ctx.rev() < 0
 class Tool( object ):
-    file_path = '/tmp'
+    file_path = '/tmp' # Overridden in mapping.__init__()
     states = Bunch( NEW = 'new',
                     ERROR = 'error',
                     DELETED = 'deleted',
@@ -256,6 +289,10 @@ class ToolRatingAssociation( ItemRatingAssociation ):
     def set_item( self, tool ):
         self.tool = tool
 
+class RepositoryRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, repository ):
+        self.repository = repository
+
 class Category( object ):
     def __init__( self, name=None, description=None, deleted=False ):
         self.name = name
@@ -265,6 +302,11 @@ class Category( object ):
 class ToolCategoryAssociation( object ):
     def __init__( self, tool=None, category=None ):
         self.tool = tool
+        self.category = category
+
+class RepositoryCategoryAssociation( object ):
+    def __init__( self, repository=None, category=None ):
+        self.repository = repository
         self.category = category
 
 class Tag ( object ):

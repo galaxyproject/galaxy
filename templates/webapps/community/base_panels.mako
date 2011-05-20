@@ -26,7 +26,11 @@
         <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></td>
     </%def>
 
-    ${tab( "tools", "Tools", h.url_for( controller='/tool', action='index', webapp='community' ) )}
+    %if trans.app.config.enable_next_gen_tool_shed:
+        ${tab( "repositories", "Repositories", h.url_for( controller='/repository', action='index', webapp='community' ) )}
+    %else:
+        ${tab( "tools", "Tools", h.url_for( controller='/tool', action='index', webapp='community' ) )}
+    %endif
     ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index', webapp='community' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
     
     <td class="tab">

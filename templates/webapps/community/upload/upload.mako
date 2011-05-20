@@ -44,7 +44,7 @@
     <div class="toolFormTitle">${title}</div>
     <div class="toolFormBody">
     ## TODO: nginx
-    <form id="upload_form" name="upload_form" action="${h.url_for( controller='upload', action='upload' )}" enctype="multipart/form-data" method="post">
+    <form id="upload_form" name="upload_form" action="${h.url_for( controller='tool_upload', action='upload' )}" enctype="multipart/form-data" method="post">
     %if replace_id is not None:
         <input type='hidden' name="replace_id" value="${replace_id}"/>
     %endif

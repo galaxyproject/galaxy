@@ -2,8 +2,7 @@
 Provides factory methods to assemble the Galaxy web application
 """
 
-import logging, atexit
-import os, os.path, sys
+import logging, atexit, os, os.path, sys, config
 
 from inspect import isclass
 
@@ -11,14 +10,15 @@ from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
 from paste.deploy.converters import asbool
+
 import pkg_resources
 
-log = logging.getLogger( __name__ )
-
-import config
 import galaxy.webapps.community.model
 import galaxy.webapps.community.model.mapping
 import galaxy.web.framework
+from galaxy.webapps.community.framework.middleware import hg
+
+log = logging.getLogger( __name__ )
 
 def add_controllers( webapp, app ):
     """
@@ -31,6 +31,12 @@ def add_controllers( webapp, app ):
     controller_dir = galaxy.webapps.community.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):
         if not fname.startswith( "_" ) and fname.endswith( ".py" ):
+            if app.config.enable_next_gen_tool_shed and fname.startswith( 'tool_upload' ):
+                # The tool_upload controller is for the old version of the tool shed
+                continue
+            if not app.config.enable_next_gen_tool_shed and fname.startswith( 'upload' ):
+                # The upload controller is for the next gen tool shed
+                continue
             name = fname[:-3]
             module_name = "galaxy.webapps.community.controllers." + name
             module = __import__( module_name )
@@ -45,7 +51,7 @@ def add_controllers( webapp, app ):
     controller_dir = galaxy.web.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):
         # TODO: fix this if we decide to use, we don't need to inspect all controllers...
-        if fname.startswith( 'user'  ) and fname.endswith( ".py" ):
+        if fname.startswith( 'user' ) and fname.endswith( ".py" ):
             name = fname[:-3]
             module_name = "galaxy.web.controllers." + name
             module = __import__( module_name )
@@ -59,13 +65,13 @@ def add_controllers( webapp, app ):
 
 def app_factory( global_conf, **kwargs ):
     """Return a wsgi application serving the root object"""
-    # Create the Galaxy application unless passed in
+    # Create the Galaxy tool shed application unless passed in
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
     else:
         try:
             from galaxy.webapps.community.app import UniverseApplication
-            app = UniverseApplication( global_conf = global_conf, **kwargs )
+            app = UniverseApplication( global_conf=global_conf, **kwargs )
         except:
             import traceback, sys
             traceback.print_exc()
@@ -74,9 +80,12 @@ def app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxycommunitysession' )
     add_controllers( webapp, app )
-    # These two routes handle our simple needs at the moment
     webapp.add_route( '/:controller/:action', action='index' )
-    webapp.add_route( '/:action', controller='tool', action='index' )
+    if app.config.enable_next_gen_tool_shed:
+        webapp.add_route( '/:action', controller='repository', action='index' )
+        webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
+    else:
+        webapp.add_route( '/:action', controller='tool', action='index' )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
@@ -90,12 +99,12 @@ def app_factory( global_conf, **kwargs ):
         pass
     # Return
     return webapp
-    
+
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """Based on the configuration wrap `app` in a set of common and useful middleware."""
     # Merge the global and local configurations
     conf = global_conf.copy()
-    conf.update(local_conf)
+    conf.update( local_conf )
     debug = asbool( conf.get( 'debug', False ) )
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
@@ -156,6 +165,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
     log.debug( "Enabling 'x-forwarded-host' middleware" )
+    app = hg.Hg( app, conf )
+    log.debug( "Enabling hg middleware" )
     return app
     
 def wrap_in_static( app, global_conf, **local_conf ):
