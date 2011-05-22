@@ -178,6 +178,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                     hide_modal();
                                 },
                                 "Insert": function() {
+                                    var requests = [];
                                     $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
                                         var data,
                                             id = $(this).val();
@@ -186,13 +187,25 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                                         } else {
                                             data = { ldda_id: id};
                                         }
-                                        $.ajax( {
-                                            url: "${h.url_for( action='add_track_async' )}",
-                                            data: data,
-                                            dataType: "json",
-                                            success: add_async_success
-                                        });
-
+                                        requests[requests.length] = $.ajax({
+                                                url: "${h.url_for( action='add_track_async' )}",
+                                                data: data,
+                                                dataType: "json",
+                                            });
+                                    });
+                                    // To preserve order, wait until there are definitions for all tracks and then add 
+                                    // them sequentially.
+                                    $.when.apply($, requests).then(function() {
+                                        // jQuery always returns an Array for arguments, so need to look at first element
+                                        // to determine whether multiple requests were made and consequently how to 
+                                        // map arguments to track definitions.
+                                        var track_defs = (arguments[0] instanceof Array ?  
+                                                          $.map(arguments, function(arg) { return arg[0]; }) :
+                                                          [ arguments[0] ]
+                                                          );
+                                        for (var i= 0; i < track_defs.length; i++) {
+                                                add_async_success(track_defs[i]); 
+                                        }
                                     });
                                     hide_modal();
                                 }
