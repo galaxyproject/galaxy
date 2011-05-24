@@ -176,12 +176,23 @@ class Task( object ):
         self.parameters = []
         self.state = Task.states.NEW
         self.info = None
+        # TODO: Rename this to working_directory
+        # Does this necessitate a DB migration step?
         self.part_file = part_file
         self.task_runner_name = None
         self.task_runner_external_id = None
         self.job = job
         self.stdout = None
         self.stderr = None
+    
+    @property
+    def working_directory(self):
+        if self.part_file is not None:
+            if not os.path.isdir(self.part_file):
+                return os.path.dirname(self.part_file)
+            else:
+                return self.part_file
+        return None
 
     def set_state( self, state ):
         self.state = state

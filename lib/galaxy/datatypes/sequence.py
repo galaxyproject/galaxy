@@ -49,6 +49,95 @@ class Sequence( data.Text ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+    
+    def split( input_files, subdir_generator_function, split_params):
+        """
+        FASTQ files are split on cluster boundaries, in increments of 4 lines
+        """
+        if split_params is None:
+            return
+        
+        def split_one( input_file, get_dir, clusters_per_file,  default_clusters=None):
+            in_file = open(input_file, 'rt')
+            part_file = None
+            part = 0
+            if clusters_per_file is None:
+                local_clusters_per_file = [default_clusters]
+            else:
+                local_clusters_per_file = [x for x in clusters_per_file] 
+                
+            for i, line in enumerate(in_file):
+                cluster_number,  line_in_cluster = divmod(i, 4)
+                current_part, remainder = divmod(cluster_number, local_clusters_per_file[part])
+                
+                if (current_part != part or part_file is None):
+                    if (part_file):
+                        part_file.close()
+                    part = current_part
+                    part_dir = get_dir()
+                    part_path = os.path.join(part_dir, os.path.basename(input_file))
+                    part_file = open(part_path, 'w')
+                    if clusters_per_file is None:
+                        local_clusters_per_file.append(default_clusters)
+                part_file.write(line)
+            if (part_file):
+                part_file.close()
+            in_file.close()
+            local_clusters_per_file[part] = remainder + 1
+            return local_clusters_per_file
+    
+        directories = []
+        def create_subdir():
+            dir = subdir_generator_function()
+            directories.append(dir)
+            return dir
+        
+        clusters_per_file = None
+        if split_params['split_mode'] == 'number_of_parts':
+            # legacy splitting. To keep things simple, just scan the 0th file and count the clusters,
+            # then split it
+            clusters_per_file = []
+            in_file = open(input_files[0], 'rt')
+            for i, line in enumerate(in_file):
+                pass
+            in_file.close()
+            length = (i+1)/4
+            
+            if length <= 0:
+                raise Exception('Invalid sequence file %s' % input_files[0])
+            parts = int(split_params['split_size'])
+            if length < parts:
+                parts = length
+            len_each, remainder = divmod(length, parts)
+            while length > 0:
+                chunk = len_each
+                if remainder > 0:
+                    chunk += 1
+                clusters_per_file.append(chunk)
+                remainder=- 1
+                length -= chunk
+            split_one(input_files[0],  create_subdir,  clusters_per_file)
+        elif split_params['split_mode'] == 'to_size':
+            # split one file and see what the cluster sizes turn out to be
+            clusters_per_file = split_one(input_files[0],  create_subdir,  None,  int(split_params['split_size']))
+        else:
+            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+        
+        # split the rest, using the same number of clusters for each file
+        current_dir_idx = [0] # use a list to get around Python 2.x lame closure support
+        def get_subdir():
+            if len(directories) <= current_dir_idx[0]:
+                raise Exception('FASTQ files do not have the same number of clusters - splitting failed')
+            result = directories[current_dir_idx[0]]
+            current_dir_idx[0] = current_dir_idx[0] + 1
+            return result
+            
+        for i in range(1,  len(input_files)):
+            current_dir_idx[0] = 0
+            split_one(input_files[i],  get_subdir,  clusters_per_file)
+    split = staticmethod(split)
+
+
 
 class Alignment( data.Text ):
     """Class describing an alignment"""

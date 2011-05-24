@@ -60,71 +60,58 @@ class TaskedJobRunner( object ):
         if command_line:
             try:
                 # DBTODO read tool info and use the right kind of parallelism.  
-                # For now, the only splitter is the 'basic' one, n-ways split on one input, one output.
-                # This is incredibly simplified.  Parallelism ultimately needs to describe which inputs, how, etc.
+                # For now, the only splitter is the 'basic' one
                 job_wrapper.change_state( model.Job.states.RUNNING )
                 self.sa_session.flush()
-                parent_job = job_wrapper.get_job()
                 # Split with the tool-defined method.
-                if job_wrapper.tool.parallelism == "basic":
-                    from galaxy.jobs.splitters import basic
-                    if len(job_wrapper.get_input_fnames()) > 1 or len(job_wrapper.get_output_fnames()) > 1:
-                        log.error("The basic splitter is not capable of handling jobs with multiple inputs or outputs.")
-                        job_wrapper.change_state( model.Job.states.ERROR )
-                        job_wrapper.fail("Job Splitting Failed, the basic splitter only handles tools with one input and one output")
-                        # Requeue as a standard job?
-                        return
-                    input_file = job_wrapper.get_input_fnames()[0]
-                    working_directory = job_wrapper.working_directory
-                    # DBTODO execute an external task to do the splitting, this should happen at refactor.
-                    # Regarding number of ways split, use "hints" in tool config?
-                    # If the number of tasks is sufficiently high, we can use it to calculate job completion % and give a running status.
-                    basic.split(input_file, working_directory, 
-                                        20, #Needs serious experimentation to find out what makes the most sense.
-                                        parent_job.input_datasets[0].dataset.ext)
-                    # Tasks in this parts list are in alphabetical listdir order (15 before 5), but that should not matter.
-                    parts = [os.path.join(os.path.abspath(job_wrapper.working_directory), p, os.path.basename(input_file)) 
-                                for p in os.listdir(job_wrapper.working_directory) 
-                                if p.startswith('task_')]
-                else:
+                try:
+                    splitter = getattr(__import__('galaxy.jobs.splitters',  globals(),  locals(),  [job_wrapper.tool.parallelism.method]),  job_wrapper.tool.parallelism.method)
+                except:   
                     job_wrapper.change_state( model.Job.states.ERROR )
                     job_wrapper.fail("Job Splitting Failed, no match for '%s'" % job_wrapper.tool.parallelism)
-                # Assemble parts into task_wrappers
+                    return
+                tasks = splitter.do_split(job_wrapper)
 
                 # Not an option for now.  Task objects don't *do* anything useful yet, but we'll want them tracked outside this thread to do anything.
                 # if track_tasks_in_database:
-                tasks = []
                 task_wrappers = []
-                for part in parts:
-                    task = model.Task(parent_job, part)
+                for task in tasks:
                     self.sa_session.add(task)
-                    tasks.append(task)
                 self.sa_session.flush()
+                
                 # Must flush prior to the creation and queueing of task wrappers.
                 for task in tasks:
                     tw = TaskWrapper(task, job_wrapper.queue)
                     task_wrappers.append(tw)
                     self.app.job_manager.dispatcher.put(tw)
                 tasks_incomplete = False
+                count_complete = 0
                 sleep_time = 1
+                # sleep/loop until no more progress can be made. That is when
+                # all tasks are one of { OK, ERROR, DELETED }
+                completed_states = [ model.Task.states.OK, \
+                                    model.Task.states.ERROR, \
+                                    model.Task.states.DELETED ]
+                # TODO: Should we report an error (and not merge outputs) if one of the subtasks errored out?
+                # Should we prevent any that are pending from being started in that case?
                 while tasks_incomplete is False:
+                    count_complete = 0
                     tasks_incomplete = True
                     for tw in task_wrappers:
-                        if not tw.get_state() == model.Task.states.OK:
+                        task_state = tw.get_state()
+                        if not task_state in completed_states:
                             tasks_incomplete = False
-                    sleep( sleep_time )
-                    if sleep_time < 8:
-                        sleep_time *= 2
-                output_filename = job_wrapper.get_output_fnames()[0].real_path
-                basic.merge(working_directory, output_filename)
-                log.debug('execution finished: %s' % command_line)
-                for tw in task_wrappers:
-                    # Prevent repetitive output, e.g. "Sequence File Aligned"x20
-                    # Eventually do a reduce for jobs that output "N reads mapped", combining all N for tasks.
-                    if stdout.strip() != tw.get_task().stdout.strip():
-                        stdout += tw.get_task().stdout
-                    if stderr.strip() != tw.get_task().stderr.strip():                        
-                        stderr += tw.get_task().stderr
+                        else:
+                            count_complete = count_complete + 1
+                    if tasks_incomplete is False:
+                        # log.debug('Tasks complete: %s. Sleeping %s' % (count_complete, sleep_time))
+                        sleep( sleep_time )
+                        if sleep_time < 8:
+                            sleep_time *= 2
+                
+                log.debug('execution finished - beginning merge: %s' % command_line)
+                stdout,  stderr = splitter.do_merge(job_wrapper,  task_wrappers)
+                
             except Exception:
                 job_wrapper.fail( "failure running job", exception=True )
                 log.exception("failure running job %d" % job_wrapper.job_id)

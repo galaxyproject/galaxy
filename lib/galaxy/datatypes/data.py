@@ -1,4 +1,4 @@
-import logging, os, sys, time, tempfile
+import logging, os, sys, time, tempfile,  gzip
 from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
@@ -351,6 +351,32 @@ class Data( object ):
     @property
     def has_resolution(self):
         return False
+    
+    
+
+    def merge( split_files, output_file): 
+        """
+        Export files are usually compressed, but it doesn't have to be so. In the case that they are, use
+        zcat to cat the files and gzip -c to recompress the result, otherwise use cat
+        TODO: Move to a faster gzjoin-based technique
+        """
+        #TODO: every time I try to import this from sniff, the parser dies
+        def is_gzip( filename ):
+            temp = open( filename, "U" )
+            magic_check = temp.read( 2 )
+            temp.close()
+            if magic_check != util.gzip_magic:
+                return False
+            return True
+        
+        if len(split_files) == 1:
+            os.system( 'mv -f %s %s' % ( split_files[0], output_file ) )
+            return
+        if is_gzip(split_files[0]):
+            os.system( 'zcat %s | gzip -c > %s' % ( ' '.join(split_files), output_file ) )
+        else:
+            os.system( 'cat %s > %s' % ( ' '.join(split_files), output_file ) )
+    merge = staticmethod(merge)
 
 class Text( Data ):
     file_ext = 'txt'
@@ -445,6 +471,80 @@ class Text( Data ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
+    def split( input_files, subdir_generator_function, split_params): 
+        """
+        Split the input files by line.
+        """
+        if split_params is None:
+            return
+            
+        if len(input_files) > 1:
+            raise Exception("Text file splitting does not support multiple files")
+        
+        lines_per_file = None
+        chunk_size = None
+        if split_params['split_mode'] == 'number_of_parts':
+            lines_per_file = []
+            # Computing the length is expensive!
+            def _file_len(fname):
+                i = 0
+                f = open(fname)
+                for i, l in enumerate(f):
+                    pass
+                f.close()
+                return i + 1
+            length = _file_len(input_files[0])
+            parts = int(split_params['split_size'])
+            if length < parts:
+                parts = length
+            len_each, remainder = divmod(length, parts)
+            while length > 0:
+                chunk = len_each
+                if remainder > 0:
+                    chunk += 1
+                lines_per_file.append(chunk)
+                remainder=- 1
+                length -= chunk
+        elif split_params['split_mode'] == 'to_size':
+            chunk_size = int(split_params['split_size'])
+        else:
+            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+        
+        f = open(input_files[0], 'rt')
+        try:
+            chunk_idx = 0
+            file_done = False
+            part_file = None
+            while not file_done:
+                if lines_per_file is None:
+                    this_chunk_size = chunk_size
+                elif chunk_idx < len(lines_per_file):
+                    this_chunk_size = lines_per_file[chunk_idx]
+                    chunk_idx += 1
+                lines_remaining = this_chunk_size
+                part_file = None
+                while lines_remaining > 0:
+                    a_line = f.readline()
+                    if a_line == '':
+                        file_done = True
+                        break
+                    if part_file is None:
+                        part_dir = subdir_generator_function()
+                        part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
+                        part_file = open(part_path, 'w')
+                    part_file.write(a_line)
+                    lines_remaining -= 1
+                if part_file is not None:
+                    part_file.close()
+        except Exception,  e:
+            log.error('Unable to split files: %s' % str(e))
+            f.close()
+            if part_file is not None:
+                part_file.close()
+            raise
+        f.close()
+    split = staticmethod(split)
 
 class Newick( Text ):
     pass
