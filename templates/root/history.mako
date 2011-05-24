@@ -22,6 +22,89 @@ ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "jstorage", "jquery.au
 <% TERMINAL_STATES = ["ok", "error", "empty", "deleted", "discarded", "failed_metadata"] %>
 TERMINAL_STATES = ${ h.to_json_string(TERMINAL_STATES) };
 
+// Tag handling.
+function tag_handling(parent_elt) {
+    $(parent_elt).find("a.icon-button.tags").each( function() {
+        // Use links parameters but custom URL as ajax URL.
+        $(this).click( function() {
+            // Get tag area, tag element.
+            var history_item = $(this).parents(".historyItem");
+            var tag_area = history_item.find(".tag-area");
+            var tag_elt = history_item.find(".tag-elt");
+
+            // Show or hide tag area; if showing tag area and it's empty, fill it.
+            if ( tag_area.is( ":hidden" ) ) {
+                if (!tag_elt.html()) {
+                    // Need to fill tag element.
+                    var href_parms = $(this).attr("href").split("?")[1];
+                    var ajax_url = "${h.url_for( controller='tag', action='get_tagging_elt_async' )}?" + href_parms;
+                    $.ajax({
+                        url: ajax_url,
+                        error: function() { alert( "Tagging failed" ) },
+                        success: function(tag_elt_html) {
+                            tag_elt.html(tag_elt_html);
+                            tag_elt.find(".tooltip").tipsy( { gravity: 's' } );
+                            tag_area.slideDown("fast");
+                        }
+                    });
+                } else {
+                    // Tag element is filled; show.
+                    tag_area.slideDown("fast");
+                }
+            } else {
+                // Hide.
+                tag_area.slideUp("fast");
+            }
+            return false;        
+        });
+    });
+};
+
+// Annotation handling.
+function annotation_handling(parent_elt) {
+    $(parent_elt).find("a.icon-button.annotate").each( function() {
+        // Use links parameters but custom URL as ajax URL.
+        $(this).click( function() {
+            // Get tag area, tag element.
+            var history_item = $(this).parents(".historyItem");
+            var annotation_area = history_item.find(".annotation-area");
+            var annotation_elt = history_item.find(".annotation-elt");
+
+            // Show or hide annotation area; if showing annotation area and it's empty, fill it.
+            if ( annotation_area.is( ":hidden" ) ) {
+                if (!annotation_elt.html()) {
+                    // Need to fill annotation element.
+                    var href_parms = $(this).attr("href").split("?")[1];
+                    var ajax_url = "${h.url_for( controller='dataset', action='get_annotation_async' )}?" + href_parms;
+                    $.ajax({
+                        url: ajax_url,
+                        error: function() { alert( "Annotations failed" ) },
+                        success: function(annotation) {
+                            if (annotation == "") {
+                                annotation = "<em>Describe or add notes to dataset</em>";
+                            }
+                            annotation_elt.html(annotation);
+                            annotation_area.find(".tooltip").tipsy( { gravity: 's' } );
+                            async_save_text(
+                                annotation_elt.attr("id"), annotation_elt.attr("id"),
+                                "${h.url_for( controller='/dataset', action='annotate_async')}?" + href_parms,
+                                "new_annotation", 18, true, 4);
+                            annotation_area.slideDown("fast");
+                        }
+                    });
+                } else {
+                    // Annotation element is filled; show.
+                    annotation_area.slideDown("fast");
+                }
+            } else {
+                // Hide.
+                annotation_area.slideUp("fast");
+            }
+            return false;        
+        });
+    });
+};
+
 $(function() {
     var historywrapper = $("div.historyItemWrapper");
     init_history_items(historywrapper);
@@ -91,84 +174,8 @@ $(function() {
         $(this).find("a.show-details").bind("click", function() { return false; });
         */
         
-        // Tag handling.
-        $(this).find("a.icon-button.tags").each( function() {
-            // Use links parameters but custom URL as ajax URL.
-            $(this).click( function() {
-                // Get tag area, tag element.
-                var history_item = $(this).parents(".historyItem");
-                var tag_area = history_item.find(".tag-area");
-                var tag_elt = history_item.find(".tag-elt");
-
-                // Show or hide tag area; if showing tag area and it's empty, fill it.
-                if ( tag_area.is( ":hidden" ) ) {
-                    if (!tag_elt.html()) {
-                        // Need to fill tag element.
-                        var href_parms = $(this).attr("href").split("?")[1];
-                        var ajax_url = "${h.url_for( controller='tag', action='get_tagging_elt_async' )}?" + href_parms;
-                        $.ajax({
-                            url: ajax_url,
-                            error: function() { alert( "Tagging failed" ) },
-                            success: function(tag_elt_html) {
-                                tag_elt.html(tag_elt_html);
-                                tag_elt.find(".tooltip").tipsy( { gravity: 's' } );
-                                tag_area.slideDown("fast");
-                            }
-                        });
-                    } else {
-                        // Tag element is filled; show.
-                        tag_area.slideDown("fast");
-                    }
-                } else {
-                    // Hide.
-                    tag_area.slideUp("fast");
-                }
-                return false;        
-            });
-        });
-
-        // Annotation handling.
-        $(this).find("a.icon-button.annotate").each( function() {
-            // Use links parameters but custom URL as ajax URL.
-            $(this).click( function() {
-                // Get tag area, tag element.
-                var history_item = $(this).parents(".historyItem");
-                var annotation_area = history_item.find(".annotation-area");
-                var annotation_elt = history_item.find(".annotation-elt");
-
-                // Show or hide annotation area; if showing annotation area and it's empty, fill it.
-                if ( annotation_area.is( ":hidden" ) ) {
-                    if (!annotation_elt.html()) {
-                        // Need to fill annotation element.
-                        var href_parms = $(this).attr("href").split("?")[1];
-                        var ajax_url = "${h.url_for( controller='dataset', action='get_annotation_async' )}?" + href_parms;
-                        $.ajax({
-                            url: ajax_url,
-                            error: function() { alert( "Annotations failed" ) },
-                            success: function(annotation) {
-                                if (annotation == "") {
-                                    annotation = "<em>Describe or add notes to dataset</em>";
-                                }
-                                annotation_elt.html(annotation);
-                                annotation_area.find(".tooltip").tipsy( { gravity: 's' } );
-                                async_save_text(
-                                    annotation_elt.attr("id"), annotation_elt.attr("id"),
-                                    "${h.url_for( controller="/dataset", action="annotate_async")}?" + href_parms,
-                                    "new_annotation", 18, true, 4);
-                                annotation_area.slideDown("fast");
-                            }
-                        });
-                    } else {
-                        // Annotation element is filled; show.
-                        annotation_area.slideDown("fast");
-                    }
-                } else {
-                    // Hide.
-                    annotation_area.slideUp("fast");
-                }
-                return false;        
-            });
-        });
+        tag_handling(document);
+        annotation_handling(document);
     });
     
     // Trackster links
@@ -277,6 +284,8 @@ var updater_callback = function ( tracked_datasets ) {
                 var container = $("#historyItemContainer-" + id);
                 container.html( val.html );
                 init_history_items( $("div.historyItemWrapper"), "noinit" );
+                tag_handling(container);
+                annotation_handling(container);
                 // If new state is terminal, stop tracking
                 if (TERMINAL_STATES.indexOf(val.state) !== -1) {
                     if ( val.force_history_refresh ){
