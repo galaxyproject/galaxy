@@ -431,7 +431,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
         return ' '.join(clean)
 
 
-def sanitize_html(htmlSource, encoding, type):
+def sanitize_html(htmlSource, encoding="utf-8", type="text/html"):
     p = _HTMLSanitizer(encoding, type)
     p.feed(htmlSource)
     data = p.output()
