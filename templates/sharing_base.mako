@@ -274,5 +274,5 @@
     %endif
 
     <p><br><br>
-    <a href=${h.url_for( action="list" )}>Back to ${item_class_plural_name} List</a>
+    <a href="${h.url_for( action="list" )}">Back to ${item_class_plural_name} List</a>
 </%def>
