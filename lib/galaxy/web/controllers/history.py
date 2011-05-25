@@ -462,7 +462,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         else:
             assert history.user == trans.user
         # Rename
-        history.name = new_name
+        history.name = sanitize_html( new_name )
         trans.sa_session.add( history )
         trans.sa_session.flush()
         return history.name
@@ -1129,7 +1129,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                     change_msg = change_msg + "<p>History: "+cur_names[i]+" is already named: "+name[i]+"</p>"
                 elif name[i] not in [None,'',' ']:
                     name[i] = escape(name[i])
-                    histories[i].name = name[i]
+                    histories[i].name = sanitize_html( name[i] )
                     trans.sa_session.add( histories[i] )
                     trans.sa_session.flush()
                     change_msg = change_msg + "<p>History: "+cur_names[i]+" renamed to: "+name[i]+"</p>"

@@ -364,7 +364,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Update workflow attributes if new values submitted.
         if 'name' in kwargs:
             # Rename workflow.
-            stored.name = kwargs[ 'name' ]
+            stored.name = sanitize_html( kwargs['name'] )
         if 'annotation' in kwargs:
             # Set workflow annotation; sanitize annotation before adding it.
             annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
@@ -380,7 +380,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     def rename( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name is not None:
-            stored.name = new_name
+            stored.name = sanitize_html( new_name )
             trans.sa_session.flush()
             # For current workflows grid:
             trans.set_message ( "Workflow renamed to '%s'." % new_name )

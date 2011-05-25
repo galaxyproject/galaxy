@@ -56,7 +56,7 @@
                         <tr>
                             <td>
                                 <div class="menubutton" style="float: left;" id="wf-${i}-popup">
-                                ${h.to_unicode( workflow.name )}
+                                ${h.to_unicode( workflow.name ) | h}
                                 </div>
                             </td>
                             <td>${len(workflow.latest_workflow.steps)}</td>
