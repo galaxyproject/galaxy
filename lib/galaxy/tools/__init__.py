@@ -379,15 +379,10 @@ class Tool:
         command = root.find("command")
         if command is not None and command.text is not None:
             self.command = command.text.lstrip() # get rid of leading whitespace
-            interpreter  = command.get("interpreter")
-            if interpreter:
-                # TODO: path munging for cluster/dataset server relocatability
-                executable = self.command.split()[0]
-                abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
-                self.command = self.command.replace(executable, abs_executable, 1)
-                self.command = interpreter + " " + self.command
         else:
             self.command = ''
+        # Must pre-pend this AFTER processing the cheetah command template
+        self.interpreter = command.get("interpreter", None)
         # Parameters used to build URL for redirection to external app
         redirect_url_params = root.find( "redirect_url_params" )
         if redirect_url_params is not None and redirect_url_params.text is not None:
@@ -1588,12 +1583,18 @@ class Tool:
         try:                
             # Substituting parameters into the command
             command_line = fill_template( self.command, context=param_dict )
-            # Remove newlines from command line
-            command_line = command_line.replace( "\n", " " ).replace( "\r", " " )
+            # Remove newlines from command line, and any leading/trailing white space
+            command_line = command_line.replace( "\n", " " ).replace( "\r", " " ).strip()
         except Exception, e:
             # Modify exception message to be more clear
             #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ) )
             raise
+        if self.interpreter:
+            # TODO: path munging for cluster/dataset server relocatability
+            executable = command_line.split()[0]
+            abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
+            command_line = command_line.replace(executable, abs_executable, 1)
+            command_line = self.interpreter + " " + command_line
         return command_line
 
     def build_dependency_shell_commands( self ):
