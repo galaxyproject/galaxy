@@ -437,7 +437,6 @@ class User( BaseController, UsesFormDefinitions ):
                                     active_view="user" )
     @web.expose
     def create( self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd ):
-        print cntrller
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
