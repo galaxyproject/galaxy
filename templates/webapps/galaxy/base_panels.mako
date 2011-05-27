@@ -7,9 +7,9 @@
 <%def name="masthead()">
 
     ## Tab area, fills entire width
-    <div style="position: absolute; top: 0; left: 0; width: 100%; text-align: center">
+    <div style="position: relative; right: -50%; float: left; text-align: center;">
     
-    <table class="tab-group" border="0" cellspacing="0" style="margin: auto;">
+    <table class="tab-group" border="0" cellspacing="0" style="position: relative; right: 50%;">
     <tr>
     
     <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
