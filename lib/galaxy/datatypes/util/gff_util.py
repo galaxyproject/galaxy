@@ -67,11 +67,18 @@ class GFFFeature( GFFInterval ):
                 
     def name( self ):
         """ Returns feature's name. """
-        name = self.attributes.get( 'transcript_id', None )
-        if not name:
-            name = self.attributes.get( 'id', None )
-        if not name:
-            name = self.attributes.get( 'group', None )
+        name = None
+        # Preference for name: GTF, GFF3, GFF.
+        for attr_name in [ 
+                           # GTF: 
+                           'transcript_id', 'gene_id', 
+                           # GFF3:
+                           'ID', 'id',
+                           # GFF (TODO):
+                           'group' ]:
+            name = self.attributes.get( attr_name, None )
+            if name is not None:
+                break
         return name
         
     def copy( self ):
@@ -172,11 +179,14 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             self.seed_interval = None
             return return_val
     
-        # Initialize feature name from seed.
+        # Initialize feature identifier from seed.
         feature_group = self.seed_interval.attributes.get( 'group', None ) # For GFF
-        feature_id = self.seed_interval.attributes.get( 'ID', None ) # For GFF3
-        feature_gene_id = self.seed_interval.attributes.get( 'gene_id', None ) # For GTF
-        feature_transcript_id = self.seed_interval.attributes.get( 'transcript_id', None ) # For GTF
+        # For GFF3
+        feature_id = self.seed_interval.attributes.get( 'ID', None )
+        feature_parent_id = self.seed_interval.attributes.get( 'Parent', None )
+        # For GTF.
+        feature_gene_id = self.seed_interval.attributes.get( 'gene_id', None )
+        feature_transcript_id = self.seed_interval.attributes.get( 'transcript_id', None )
 
         # Read all intervals associated with seed.
         feature_intervals = []
@@ -205,8 +215,9 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             if group and feature_group != group:
                 break
             # GFF3 test:
-            parent = interval.attributes.get( 'Parent', None )
-            if feature_id and feature_id != parent:
+            parent_id = interval.attributes.get( 'Parent', None )
+            cur_id = interval.attributes.get( 'ID', None )
+            if feature_id and parent_id != feature_parent_id and feature_id != cur_id:
                 break
             # GTF test:
             gene_id = interval.attributes.get( 'gene_id', None )
@@ -230,7 +241,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
         # Convert to BED coords?
         if self.convert_to_bed_coord:
             convert_gff_coords_to_bed( feature )
-    
+
         return feature
         
 
@@ -280,10 +291,11 @@ def parse_gff_attributes( attr_str ):
     attributes_list = attr_str.split(";")
     attributes = {}
     for name_value_pair in attributes_list:
-        # Try splitting by space and, if necessary, by '=' sign.
-        pair = name_value_pair.strip().split(" ")
+        # Try splitting by '=' (GFF3) first because spaces are allowed in GFF3
+        # attribute; next, try double quotes for GTF.
+        pair = name_value_pair.strip().split("=")
         if len( pair ) == 1:
-            pair = name_value_pair.strip().split("=")
+            pair = name_value_pair.strip().split("\"")
         if len( pair ) == 1:
             # Could not split for some reason -- raise exception?
             continue
