@@ -57,7 +57,9 @@
   <help>
 **What it does**
 
-  It selects SNPs in the dataset by restriction enzyme.
+  It selects the SNPs that are differentially cut by at least one of the
+  specified restriction enzymes. The enzymes are required to cut the amplified
+  segment (for the specified PCR primers) only at the SNP.
 
 -----
 

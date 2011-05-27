@@ -51,7 +51,9 @@
   <help>
 **What it does**
 
-  If selects a specified number of SNPs from the dataset.
+  It attempts to select a specified number of SNPs from the dataset, making them
+  approximately uniformly spaced relative to the reference genome. The number
+  actually selected may be slightly more than the specified number.
 
 -----
 

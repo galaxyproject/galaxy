@@ -54,7 +54,9 @@
   <help>
 **What it does**
 
-  If extracts flanking dna for the SNPs in the dataset.
+  It reports a DNA segment containing each SNP, with up to 200 nucleotides on
+  either side of the SNP position, which is indicated by "n". Fewer nucleotides
+  are reported if the SNP is near an end of the assembled genome fragment.
 
 -----
 
