@@ -1850,8 +1850,9 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     new_history.user = user
                     trans.sa_session.add( new_history )
                     trans.sa_session.flush()
-                    target_history_ids.append( new_history.id )
-                if user:
+                    target_history_ids = [ new_history.id ]
+                    target_histories = [ new_history ]
+                elif user:
                     target_histories = [ hist for hist in map( trans.sa_session.query( trans.app.model.History ).get, target_history_ids ) if ( hist is not None and hist.user == user )]
                 else:
                     target_histories = [ current_history ]
