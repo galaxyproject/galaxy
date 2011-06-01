@@ -2,7 +2,7 @@
 #See: http://1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:vcf3.3
 #See: http://1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:variant_call_format
 
-NOT_A_NUMBER = float( 'NaN ')
+NOT_A_NUMBER = float( 'NaN' )
 
 class VariantCall( object ):
     version = None
