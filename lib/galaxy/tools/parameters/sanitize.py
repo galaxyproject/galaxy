@@ -19,7 +19,7 @@ class ToolParameterSanitizer( object ):
     ...   <valid initial="string.letters"/>
     ... </sanitizer>
     ... ''' ) )
-    >>> sanitizer.sanitize_param( string.printable ) == string.letters
+    >>> sanitizer.sanitize_param( ''.join( sorted( [ c for c in string.printable ] ) ) ) == ''.join( sorted( [ c for c in string.letters ] ) )
     True
     >>> slash = chr( 92 )
     >>> sanitizer = ToolParameterSanitizer.from_element( XML( 
