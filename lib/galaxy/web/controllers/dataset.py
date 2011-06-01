@@ -316,6 +316,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+        trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, metadata_type)
         return open(data.metadata.get(metadata_type).file_name)
         
