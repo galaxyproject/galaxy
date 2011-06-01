@@ -1278,20 +1278,23 @@ class Admin( object ):
             if not new_name:
                 message = 'Enter a valid name'
                 status='error'
-            elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==new_name ).first():
-                message = 'A role with that name already exists'
-                status = 'error'
             else:
-                role.name = new_name
-                role.description = new_description
-                trans.sa_session.add( role )
-                trans.sa_session.flush()
-                message = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='roles',
-                                                                  webapp=webapp,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='done' ) )
+                existing_role = trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==new_name ).first()
+                if existing_role and existing_role.id != role.id:
+                    message = 'A role with that name already exists'
+                    status = 'error'
+                else:
+                    if not ( role.name == new_name and role.description == new_description ):
+                        role.name = new_name
+                        role.description = new_description
+                        trans.sa_session.add( role )
+                        trans.sa_session.flush()
+                        message = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
+                    return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                      action='roles',
+                                                                      webapp=webapp,
+                                                                      message=util.sanitize_text( message ),
+                                                                      status='done' ) )
         return trans.fill_template( '/admin/dataset_security/role/role_rename.mako',
                                     role=role,
                                     webapp=webapp,
@@ -1556,19 +1559,22 @@ class Admin( object ):
             if not new_name:
                 message = 'Enter a valid name'
                 status = 'error'
-            elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==new_name ).first():
-                message = 'A group with that name already exists'
-                status = 'error'
             else:
-                group.name = new_name
-                trans.sa_session.add( group )
-                trans.sa_session.flush()
-                message = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='groups',
-                                                                  webapp=webapp,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='done' ) )
+                existing_group = trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==new_name ).first()
+                if existing_group and existing_group.id != group.id:
+                    message = 'A group with that name already exists'
+                    status = 'error'
+                else:
+                    if group.name != new_name:
+                        group.name = new_name
+                        trans.sa_session.add( group )
+                        trans.sa_session.flush()
+                        message = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
+                    return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                      action='groups',
+                                                                      webapp=webapp,
+                                                                      message=util.sanitize_text( message ),
+                                                                      status='done' ) )
         return trans.fill_template( '/admin/dataset_security/group/group_rename.mako',
                                     group=group,
                                     webapp=webapp,
