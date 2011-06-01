@@ -11,6 +11,7 @@ from galaxy.util import inflector
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
 import logging, tempfile, zipfile, tarfile, os, sys, operator
 from galaxy.eggs import require
+from galaxy.security import Action
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
     require( "Whoosh" )
@@ -829,7 +830,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                                                                                     **kwd )
                 if created_outputs_dict:
                     if cntrller == 'api':
-                        # created_outputs_dict can only ever be a string if cntrller == 'api'
+                        # created_outputs_dict can be a string only if cntrller == 'api'
                         if type( created_outputs_dict ) == str:
                             return 400, created_outputs_dict
                         return 200, created_outputs_dict
@@ -1211,6 +1212,27 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                         # LDDA and LibraryDataset.
                         trans.app.security_agent.copy_library_permissions( folder, ldda )
                         trans.app.security_agent.copy_library_permissions( folder, ldda.library_dataset )
+                    # Make sure to apply any defined dataset permissions, allowing the permissions inherited from the folder to
+                    # over-ride the same permissions on the dataset, if they exist.
+                    dataset_permissions_dict = trans.app.security_agent.get_permissions( hda.dataset )
+                    current_library_dataset_actions = [ permission.action for permission in ldda.library_dataset.actions ]
+                    # The DATASET_MANAGE_PERMISSIONS permission on a dataset is a special case because if
+                    # it exists, then we need to apply the LIBRARY_MANAGE permission to the library dataset.
+                    dataset_manage_permissions_action = trans.app.security_agent.get_action( 'DATASET_MANAGE_PERMISSIONS' ).action
+                    flush_needed = False
+                    for action, roles in dataset_permissions_dict.items():
+                        if isinstance( action, Action ):
+                            action = action.action
+                        if action == dataset_manage_permissions_action:
+                            # Apply the LIBRARY_MANAGE permission to the library dataset.
+                            action = trans.app.security_agent.get_action( 'LIBRARY_MANAGE' ).action
+                        # Allow the permissions inherited from the folder to over-ride the same permissions on the dataset.
+                        if action not in current_library_dataset_actions:
+                            for ldp in [ trans.model.LibraryDatasetPermissions( action, ldda.library_dataset, role ) for role in roles ]:
+                                trans.sa_session.add( ldp )
+                                flush_needed = True
+                    if flush_needed:
+                        trans.sa_session.flush()
                     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
                     trans.app.security_agent.copy_library_permissions( ldda.library_dataset, ldda )
                 if created_ldda_ids:
@@ -1605,7 +1627,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                 valid_lddas = []
                 invalid_lddas = []
                 for ldda in lddas:
-                    if trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ):
+                    if is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ):
                         valid_lddas.append( ldda )
                         valid_ldda_ids.append( ldda.id )
                     else:
@@ -1634,7 +1656,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                 valid_lddas = []
                 invalid_lddas = []
                 for ldda in lddas:
-                    if trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
+                    if is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
                         valid_lddas.append( ldda )
                     else:
                         invalid_lddas.append( ldda )
@@ -1859,6 +1881,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                 if len( target_histories ) != len( target_history_ids ):
                     message += "You do not have permission to add datasets to %i requested histories.  " % ( len( target_history_ids ) - len( target_histories ) )
                     status = 'error'
+                flush_needed = False
                 for ldda in map( trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get, ldda_ids ):
                     if ldda is None:
                         message += "You tried to import a dataset that does not exist.  "
@@ -1875,15 +1898,18 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     else:
                         for target_history in target_histories:
                             hda = ldda.to_history_dataset_association( target_history=target_history, add_to_history=True )
-                trans.sa_session.flush()
-                hist_names_str = ", ".join( [ target_history.name for target_history in target_histories ] )
-                num_source = len( ldda_ids ) - invalid_datasets
-                num_target = len( target_histories )
-                message = "%i %s imported into %i %s: %s" % ( num_source,
-                                                              inflector.cond_plural( num_source, "dataset" ),
-                                                              num_target,
-                                                              inflector.cond_plural( num_target, "history" ),
-                                                              hist_names_str )
+                            if not flush_needed:
+                                flush_needed = True
+                if flush_needed:
+                    trans.sa_session.flush()
+                    hist_names_str = ", ".join( [ target_history.name for target_history in target_histories ] )
+                    num_source = len( ldda_ids ) - invalid_datasets
+                    num_target = len( target_histories )
+                    message += "%i %s imported into %i %s: %s" % ( num_source,
+                                                                   inflector.cond_plural( num_source, "dataset" ),
+                                                                   num_target,
+                                                                   inflector.cond_plural( num_target, "history" ),
+                                                                   hist_names_str )
                 trans.sa_session.refresh( current_history )
         current_user_roles = trans.get_current_user_roles()
         source_lddas = []

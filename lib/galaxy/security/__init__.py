@@ -287,8 +287,12 @@ class GalaxyRBACAgent( RBACAgent ):
             if self.can_access_library_item( roles, library_dataset, user ):
                 return True
         if search_downward:
-            for folder in folder.active_folders:
-                return self.has_accessible_library_datasets( trans, folder, user, roles, search_downward=search_downward )
+            return self.__active_folders_have_accessible_library_datasets( trans, folder, user, roles )
+        return False
+    def __active_folders_have_accessible_library_datasets( self, trans, folder, user, roles ):
+        for active_folder in folder.active_folders:
+            if self.has_accessible_library_datasets( trans, active_folder, user, roles ):
+                return True
         return False
     def can_access_library_item( self, roles, item, user ):
         if type( item ) == self.model.Library:

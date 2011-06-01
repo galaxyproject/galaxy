@@ -314,6 +314,7 @@
         from galaxy.web.controllers.library_common import active_folders, active_folders_and_library_datasets, activatable_folders_and_library_datasets, branch_deleted
         
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        has_accessible_library_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, folder, trans.user, current_user_roles, search_downward=False )
         
         if root_folder:
             pad = folder_pad
@@ -380,7 +381,7 @@
                             <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add sub-folder</a>
                         %endif
                         %if not branch_deleted( folder ):
-                            %if self.has_accessible_datasets:
+                            %if has_accessible_library_datasets:
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select datasets for import into selected histories</a>
                             %endif
                             %if can_modify:
@@ -488,6 +489,7 @@
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
 
         self.has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles )
+        root_folder_has_accessible_library_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles, search_downward=False )
         has_accessible_folders = is_admin or trans.app.security_agent.has_accessible_folders( trans, library.root_folder, trans.user, current_user_roles )
         
         tracked_datasets = {}
@@ -500,7 +502,7 @@
             def __str__( self ):
                 return str( self.count )
     %>
- 
+
     <h2>Data Library &ldquo;${library.name}&rdquo;</h2>
 
      <ul class="manage-table-actions">
@@ -534,7 +536,7 @@
                          %endif
                          <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                      %endif
-                     %if self.has_accessible_datasets:
+                     %if root_folder_has_accessible_library_datasets:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='import_datasets_to_histories', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Select datasets for import into selected histories</a>
                      %endif
                  %elif can_modify and not library.purged:
