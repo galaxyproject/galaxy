@@ -2,6 +2,8 @@
 #See: http://1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:vcf3.3
 #See: http://1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:variant_call_format
 
+NOT_A_NUMBER = float( 'NaN ')
+
 class VariantCall( object ):
     version = None
     header_startswith = None
@@ -40,7 +42,10 @@ class VariantCall33( VariantCall ):
         self.chrom, self.pos, self.id, self.ref, self.alt, self.qual, self.filter, self.info = self.fields[ :self.required_header_length ]
         self.pos = int( self.pos )
         self.alt = self.alt.split( ',' )
-        self.qual = float( self.qual )
+        try:
+            self.qual = float( self.qual )
+        except:
+            self.qual = NOT_A_NUMBER #Missing data can be denoted as a '.'
         if len( self.fields ) > self.required_header_length:
             self.format = self.fields[ self.required_header_length ].split( ':' )
             for sample_value in self.fields[ self.required_header_length + 1: ]:
