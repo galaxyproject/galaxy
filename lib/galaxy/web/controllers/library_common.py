@@ -905,7 +905,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         dbkeys = get_dbkey_options( last_used_build )
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
-        trans.sa_session.refresh( history )
+        if history is not None:
+            trans.sa_session.refresh( history )
         if upload_option == 'upload_file' and trans.app.config.nginx_upload_path:
             # If we're using nginx upload, override the form action -
             # url_for is intentionally not used on the base URL here -
