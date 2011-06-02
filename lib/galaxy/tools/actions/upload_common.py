@@ -322,9 +322,13 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, ret
     if folder:
         for i, dataset in enumerate( data_list ):
             job.add_output_library_dataset( 'output%i' % i, dataset )
+            # Create an empty file immediately
+            open( dataset.file_name, "w" ).close()
     else:
         for i, dataset in enumerate( data_list ):
             job.add_output_dataset( 'output%i' % i, dataset )
+            # Create an empty file immediately
+            open( dataset.file_name, "w" ).close()
     job.state = job.states.NEW
     trans.sa_session.add( job )
     trans.sa_session.flush()
