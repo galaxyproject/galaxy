@@ -801,10 +801,15 @@ class GenomeBuildParameter( SelectToolParameter ):
     hg17
     """
     def get_options( self, trans, other_values ):
-        last_used_build = trans.history.genome_build
-        for dbkey, build_name in trans.db_builds:
-            yield build_name, dbkey, ( dbkey == last_used_build )
+        if not trans.history:
+            yield 'unspecified', '?', False
+        else:
+            last_used_build = trans.history.genome_build
+            for dbkey, build_name in trans.db_builds:
+                yield build_name, dbkey, ( dbkey == last_used_build )
     def get_legal_values( self, trans, other_values ):
+        if not trans.history:
+            return set( '?' )
         return set( dbkey for dbkey, _ in trans.db_builds )
 
 class ColumnListParameter( SelectToolParameter ):
