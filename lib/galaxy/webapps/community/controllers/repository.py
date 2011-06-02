@@ -14,7 +14,12 @@ from mercurial import hg, ui, patch
 log = logging.getLogger( __name__ )
 
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
-
+# Characters that are valid
+VALID_CHARS = set( string.letters + string.digits )
+# Characters that must be html escaped
+MAPPED_CHARS = { '>' :'&gt;', 
+                 '<' :'&lt;' }
+    
 class CategoryListGrid( grids.Grid ):
     # TODO rename this class to be categoryListGrid when we eliminate all the tools stuff.
     class NameColumn( grids.TextColumn ):
@@ -167,7 +172,18 @@ class RepositoryController( BaseController, ItemRatings ):
 
     repository_list_grid = RepositoryListGrid()
     category_list_grid = CategoryListGrid()
-    
+
+    # TODO: These translations are costly, so figure out a better way...
+    def from_html_escaped( self, text ):
+        """Restores sanitized text"""
+        for key, value in MAPPED_CHARS.items():
+            text = text.replace( value, key )
+        return text
+    def to_html_escape_code( self, text ):
+        """Restricts the characters that are allowed in a text"""
+        for key, value in MAPPED_CHARS.items():
+            text = text.replace( key, value )
+        return text
     @web.expose
     def index( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -564,7 +580,7 @@ class RepositoryController( BaseController, ItemRatings ):
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             if not util.is_multi_byte( diff ) and not is_binary( diff ):
                 # TODO: is there a better way?
-                diffs.append( diff )
+                diffs.append( self.to_html_escape_code( diff ) )
             else:
                 fixed_diff = diff.split( '\n' )[0] + '\nFile contains non-ascii characters that cannot be displayed\n'
                 diffs.append( fixed_diff )
@@ -679,6 +695,7 @@ class RepositoryController( BaseController, ItemRatings ):
         output = pexpect.run( cmd,
                               events={ pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )
+        output = self.to_html_escape_code( output )
         return unicode( output.replace( '\r\n', '<br/>' ).replace( ' ', '&nbsp;' ) )
     @web.expose
     def help( self, trans, **kwd ):
