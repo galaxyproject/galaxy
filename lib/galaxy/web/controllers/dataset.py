@@ -348,17 +348,18 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             # For files in extra_files_path
             file_path = os.path.join( data.extra_files_path, filename )
             if os.path.exists( file_path ):
+                if os.path.isdir( file_path ):
+                    return trans.show_error_message( "Directory listing is not allowed." ) #TODO: Reconsider allowing listing of directories?
                 mime, encoding = mimetypes.guess_type( file_path )
                 if not mime:
                     try:
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
                     except:
                         mime = "text/plain"
-            
                 trans.response.set_content_type( mime )
                 return open( file_path )
             else:
-                return "Could not find '%s' on the extra files path %s." % (filename,file_path)
+                return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         
         mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
         trans.response.set_content_type(mime)
