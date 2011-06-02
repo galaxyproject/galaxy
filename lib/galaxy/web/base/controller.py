@@ -2026,16 +2026,6 @@ class Admin( object ):
                                                                       **kwd ) )
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user( trans, **kwd )
-            elif operation == "tools_by_user":
-                # This option is called via the ToolsColumn link in a grid subclass,
-                # so we need to add user_id to kwd since id in the subclass is tool.id,
-                # and update the current sort filter, using the grid subclass's default
-                # sort filter instead of this class's.
-                kwd[ 'user_id' ] = kwd[ 'id' ]
-                kwd[ 'sort' ] = 'name'
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='browse_tools',
-                                                                  **kwd ) )
         # Render the list view
         return self.user_list_grid( trans, **kwd )
     @web.expose

@@ -43,22 +43,8 @@
     <div class="page-container" style="padding: 10px;">
         <div class="toolMenu">
             <div class="toolSectionList">
-                %if trans.app.config.enable_next_gen_tool_shed:
-                    <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_categories', webapp='community' )}">Browse by category</a></div>
-                    <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repositories', webapp='community' )}">Browse all repositories</a></div>
-                %else:
-                    <div class="toolSectionTitle">
-                      <span>Tools</span>
-                    </div>
-                    <div class="toolSectionBody">
-                        <div class="toolSectionBg">
-                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_tools', operation='tools_by_state', state=trans.model.Tool.states.WAITING, webapp='community' )}">Tools awaiting approval</a></div>
-                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_categories', webapp='community' )}">Browse by category</a></div>
-                            <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_tools', webapp='community' )}">Browse all tools</a></div>
-                        </div>
-                    </div>
-                    <div class="toolSectionPad"></div>
-                %endif
+                <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_categories', webapp='community' )}">Browse by category</a></div>
+                <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repositories', webapp='community' )}">Browse all repositories</a></div>
                 <div class="toolSectionTitle">
                     Categories
                 </div>

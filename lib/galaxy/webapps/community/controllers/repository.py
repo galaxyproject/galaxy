@@ -15,7 +15,7 @@ log = logging.getLogger( __name__ )
 
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
 
-class RepositoryCategoryListGrid( grids.Grid ):
+class CategoryListGrid( grids.Grid ):
     # TODO rename this class to be categoryListGrid when we eliminate all the tools stuff.
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
@@ -166,7 +166,7 @@ class RepositoryListGrid( grids.Grid ):
 class RepositoryController( BaseController, ItemRatings ):
 
     repository_list_grid = RepositoryListGrid()
-    category_list_grid = RepositoryCategoryListGrid()
+    category_list_grid = CategoryListGrid()
     
     @web.expose
     def index( self, trans, **kwd ):

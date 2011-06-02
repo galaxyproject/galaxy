@@ -31,12 +31,6 @@ def add_controllers( webapp, app ):
     controller_dir = galaxy.webapps.community.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):
         if not fname.startswith( "_" ) and fname.endswith( ".py" ):
-            if app.config.enable_next_gen_tool_shed and fname.startswith( 'tool_upload' ):
-                # The tool_upload controller is for the old version of the tool shed
-                continue
-            if not app.config.enable_next_gen_tool_shed and fname.startswith( 'upload' ):
-                # The upload controller is for the next gen tool shed
-                continue
             name = fname[:-3]
             module_name = "galaxy.webapps.community.controllers." + name
             module = __import__( module_name )
@@ -81,11 +75,8 @@ def app_factory( global_conf, **kwargs ):
     webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxycommunitysession' )
     add_controllers( webapp, app )
     webapp.add_route( '/:controller/:action', action='index' )
-    if app.config.enable_next_gen_tool_shed:
-        webapp.add_route( '/:action', controller='repository', action='index' )
-        webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
-    else:
-        webapp.add_route( '/:action', controller='tool', action='index' )
+    webapp.add_route( '/:action', controller='repository', action='index' )
+    webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):

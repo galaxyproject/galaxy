@@ -11,14 +11,6 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
-        if self.config.enable_next_gen_tool_shed:
-            # We don't need a datatypes_registry since we have no datatypes
-            pass
-        else:
-            import galaxy.webapps.community.datatypes
-            # Set up datatypes registry
-            self.datatypes_registry = galaxy.webapps.community.datatypes.Registry( self.config.root, self.config.datatypes_config )
-            galaxy.model.set_datatypes_registry( self.datatypes_registry )
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection
@@ -29,8 +21,7 @@ class UniverseApplication( object ):
         create_or_verify_database( db_url, self.config.database_engine_options )
         # Setup the database engine and ORM
         from galaxy.webapps.community.model import mapping
-        self.model = mapping.init( self.config.enable_next_gen_tool_shed,
-                                   self.config.file_path,
+        self.model = mapping.init( self.config.file_path,
                                    db_url,
                                    self.config.database_engine_options )
         # Security helper
