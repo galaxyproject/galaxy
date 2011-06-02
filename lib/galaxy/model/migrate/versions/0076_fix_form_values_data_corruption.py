@@ -32,7 +32,7 @@ def _sniffnfix_pg9_hex(value):
 def upgrade():
     print __doc__
     metadata.reflect()
-    cmd = "SELECT form_values.id as id, form_values.content as field_values, form_definition.fields as fields " \
+    cmd = "SELECT form_values.id as id, form_values.content as field_values, form_definition.fields as fdfields " \
           + " FROM form_definition, form_values " \
           + " WHERE form_values.form_definition_id=form_definition.id " \
           + " ORDER BY form_values.id"
@@ -46,7 +46,7 @@ def upgrade():
         except Exception, e:
             corrupted_rows = corrupted_rows + 1
             # content field is corrupted
-            fields_list = from_json_string( _sniffnfix_pg9_hex( str( row['fields'] ) ) )
+            fields_list = from_json_string( _sniffnfix_pg9_hex( str( row['fdfields'] ) ) )
             field_values_str = _sniffnfix_pg9_hex( str( row['field_values'] ) )
             try:
                 #Encoding errors?  Just to be safe.
