@@ -4,7 +4,7 @@ Classes for generating HTML forms
 
 import logging, sys, os, time
 from cgi import escape
-from galaxy.util import restore_text, relpath, nice_size, string_as_bool
+from galaxy.util import restore_text, relpath, nice_size
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -112,8 +112,6 @@ class CheckboxField(BaseField):
         # above for clarification.  Basically, if value is not True, then it will always be a list with
         # 2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
         # checked, then value will be only the hidden field.
-        if isinstance( value, basestring ):
-            return string_as_bool( value )
         return isinstance( value, list ) and len( value ) == 2
     def set_checked(self, value):
         if isinstance( value, basestring ):
