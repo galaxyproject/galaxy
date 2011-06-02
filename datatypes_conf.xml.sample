@@ -117,8 +117,8 @@
         <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
         <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
         <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
-        <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" display_in_upload="true"/>
-        <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" display_in_upload="true"/>
+        <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" mimetype="application/xml" display_in_upload="true"/>
+        <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" mimetype="application/xml" display_in_upload="true"/>
         <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
             <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
             <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
