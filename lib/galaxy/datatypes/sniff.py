@@ -4,6 +4,7 @@ File format detector
 import logging, sys, os, csv, tempfile, shutil, re, zipfile, gzip
 import registry
 from galaxy import util
+from galaxy.datatypes.checkers import *
 from galaxy.datatypes.binary import unsniffable_binary_formats
 
 log = logging.getLogger(__name__)
@@ -319,59 +320,6 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
         return 'tabular'    #default tabular data type file extension
     return 'txt'            #default text data type file extension
 
-
-#Methods Used below can be used to upload new datasets into Galaxy. Currently used by the data_source.py script/tools.
-#These should be further abstracted and merged with upload.py script/tool functionality.
-def is_gzip( filename ):
-    temp = open( filename, "U" )
-    magic_check = temp.read( 2 )
-    temp.close()
-    if magic_check != util.gzip_magic:
-        return False
-    return True
-
-
-def is_binary( filename ):
-    is_binary = False
-    temp = open( filename, "U" )
-    chars_read = 0
-    for chars in temp:
-        for char in chars:
-            chars_read += 1
-            if ord( char ) > 128:
-                is_binary = True
-                break
-            if chars_read > 100:
-                break
-        if chars_read > 100:
-            break
-    temp.close()
-    return is_binary
-
-def is_html( temp_name, chunk=None ):
-    if chunk is None:
-        temp = open(temp_name, "U")
-    else:
-        temp = chunk
-    regexp1 = re.compile( "<A\s+[^>]*HREF[^>]+>", re.I )
-    regexp2 = re.compile( "<IFRAME[^>]*>", re.I )
-    regexp3 = re.compile( "<FRAMESET[^>]*>", re.I )
-    regexp4 = re.compile( "<META[^>]*>", re.I )
-    regexp5 = re.compile( "<SCRIPT[^>]*>", re.I )
-    lineno = 0
-    for line in temp:
-        lineno += 1
-        matches = regexp1.search( line ) or regexp2.search( line ) or regexp3.search( line ) or regexp4.search( line ) or regexp5.search( line )
-        if matches:
-            if chunk is None:
-                temp.close()
-            return True
-        if lineno > 100:
-            break
-    if chunk is None:
-        temp.close()
-    return False
-
 def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
     CHUNK_SIZE = 2**20 # 1Mb
     is_compressed = False
@@ -429,10 +377,10 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext = 'auto', is
     if ext in AUTO_DETECT_EXTENSIONS:
         ext = guess_ext( filename, sniff_order = datatypes_registry.sniff_order, is_multi_byte=is_multi_byte )
     
-    if is_binary( filename ):
+    if check_binary( filename ):
         if ext not in unsniffable_binary_formats and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
             raise InappropriateDatasetContentError, 'The binary uploaded file contains inappropriate content.'
-    elif is_html( filename ):
+    elif check_html( filename ):
         raise InappropriateDatasetContentError, 'The uploaded file contains inappropriate HTML content.'
     return ext
 
@@ -449,4 +397,3 @@ class InappropriateDatasetContentError( Exception ):
 if __name__ == '__main__':
     import doctest, sys
     doctest.testmod(sys.modules[__name__])
-    
