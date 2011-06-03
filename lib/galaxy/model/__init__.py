@@ -1353,7 +1353,7 @@ class ImplicitlyConvertedDatasetAssociation( object ):
         elif isinstance(parent, LibraryDatasetDatasetAssociation):
             self.parent_ldda = parent
         else:
-            raise AttributeError
+            raise AttributeError, 'Unknown dataset type provided for parent: %s' % type( parent )
         self.type = file_type
         self.deleted = deleted
         self.purged = purged
