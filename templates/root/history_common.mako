@@ -29,7 +29,6 @@
         </div>
     %endif
 
-
     ## Header row for history items (name, state, action buttons)
     <div style="overflow: hidden;" class="historyItemTitleBar">     
         <div class="historyItemButtons">
@@ -70,7 +69,6 @@
                 <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
             %endif
         </div>
-        <span class="state-icon"></span>
         <span class="historyItemTitle">${hid}: ${data.display_name()}</span>
     </div>
         
@@ -192,7 +190,7 @@
                         ## icons.
                         <div style="clear: both"></div>
                     %endif
-    		        <div style="clear: both"></div>
+                    <div style="clear: both"></div>
                     %for display_app in data.datatype.get_display_types():
                         <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                         %if len( display_links ) > 0:
