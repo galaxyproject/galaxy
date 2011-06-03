@@ -15,7 +15,7 @@ from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
-import os.path, os, errno, codecs, operator, smtplib, socket, pexpect, logging, time
+import os.path, os, errno, codecs, operator, socket, pexpect, logging, time
 
 log = logging.getLogger( __name__ )
 
@@ -1803,12 +1803,8 @@ All samples in state:     %(sample_state)s
             to = self.notification['email']
             frm = 'galaxy-no-reply@' + host
             subject = "Galaxy Sample Tracking notification: '%s' sequencing request" % self.name
-            message = "From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" % ( frm, ", ".join( to ), subject, body )
             try:
-                s = smtplib.SMTP()
-                s.connect( trans.app.config.smtp_server )
-                s.sendmail( frm, to, message )
-                s.quit()
+                util.send_mail( frm, to, subject, body, trans.app.config )
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
             except Exception,e:
                 comments = "Email notification failed. (%s)" % str(e)

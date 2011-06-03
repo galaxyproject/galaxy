@@ -1,4 +1,4 @@
-import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib, tempfile, zipfile, glob, sys
+import logging, os, string, shutil, re, socket, mimetypes, urllib, tempfile, zipfile, glob, sys
 
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
@@ -10,7 +10,6 @@ from galaxy.util import inflector
 from galaxy.model.item_attrs import *
 from galaxy.model import LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
-from email.MIMEText import MIMEText
 import pkg_resources; 
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
@@ -174,7 +173,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         host = trans.request.host
         history_view_link = "%s/history/view?id=%s" % ( str( host ), trans.security.encode_id( hda.history_id ) )
         # Build the email message
-        msg = MIMEText( string.Template( error_report_template )
+        body = string.Template( error_report_template ) \
             .safe_substitute( host=host,
                               dataset_id=hda.dataset_id,
                               history_id=hda.history_id,
@@ -189,7 +188,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                               job_info=job.info,
                               job_traceback=job.traceback,
                               email=email, 
-                              message=message ) )
+                              message=message )
         frm = to_address
         # Check email a bit
         email = email.strip()
@@ -198,15 +197,10 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             to = to_address + ", " + email
         else:
             to = to_address
-        msg[ 'To' ] = to
-        msg[ 'From' ] = frm
-        msg[ 'Subject' ] = "Galaxy tool error report from " + email
+        subject = "Galaxy tool error report from " + email
         # Send it
         try:
-            s = smtplib.SMTP()
-            s.connect( smtp_server )
-            s.sendmail( frm, [ to ], msg.as_string() )
-            s.close()
+            util.send_mail( frm, to, subject, body, trans.app.config )
             return trans.show_ok_message( "Your error report has been sent" )
         except Exception, e:
             return trans.show_error_message( "An error occurred sending the report by email: %s" % str( e ) )

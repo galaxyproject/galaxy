@@ -1,5 +1,5 @@
-import logging, datetime, smtplib
-from email.MIMEText import MIMEText
+import logging, datetime
+from galaxy.util import send_mail
 from galaxy.util.json import to_json_string
 
 log = logging.getLogger( __name__ )
@@ -58,35 +58,17 @@ class EmailAction(DefaultJobAction):
     
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
-        smtp_server = app.config.smtp_server
         if action.action_arguments and action.action_arguments.has_key('host'):
             host = action.action_arguments['host']
         else:
             host = 'usegalaxy.org'
-        if smtp_server is None:
-            log.error("Mail is not configured for this galaxy instance.  Workflow action aborting after logging mail to info.")
-            frm = 'galaxy-noreply@%s' % host
-            to  = job.user.email
-            outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-            msg = MIMEText( "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" )))
-            msg[ 'To' ] = to
-            msg[ 'From' ] = frm
-            msg[ 'Subject' ] = "Galaxy notification regarding history '%s'" % (job.history.name)
-            log.info(msg)
-            return
-        # Build the email message
         frm = 'galaxy-noreply@%s' % host
         to  = job.user.email
+        subject = "Galaxy workflow step notification '%s'" % (job.history.name)
         outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-        msg = MIMEText( "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" )))
-        msg[ 'To' ] = to
-        msg[ 'From' ] = frm
-        msg[ 'Subject' ] = "Galaxy workflow step notification '%s'" % (job.history.name)
+        body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" ))
         try:
-            s = smtplib.SMTP()
-            s.connect( smtp_server )
-            s.sendmail( frm, [ to ], msg.as_string() )
-            s.close()
+            send_mail( frm, to, subject, body, app.config )
         except Exception, e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
             

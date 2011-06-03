@@ -2,7 +2,8 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp
+import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib
+from email.MIMEText import MIMEText
 
 # Older py compatibility
 try:
@@ -539,6 +540,51 @@ def nice_size(size):
                 return "%d bytes" % size
             return "%.1f %s" % (size, word)
     return '??? bytes'
+
+def send_mail( frm, to, subject, body, config ):
+    """
+    Sends an email.
+    """
+    msg = MIMEText( body )
+    msg[ 'To' ] = to
+    msg[ 'From' ] = frm
+    msg[ 'Subject' ] = subject
+    if config.smtp_server is None:
+        log.error( "Mail is not configured for this Galaxy instance." )
+        log.info( msg )
+        return
+    s = smtplib.SMTP()
+    s.connect( config.smtp_server )
+    try:
+        s.starttls()
+        log.debug( 'Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server )
+    except RuntimeError, e:
+        log.warning( 'SSL/TLS support is not available to your Python interpreter: %s' % e )
+    except smtplib.SMTPHeloError, e:
+        log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
+        s.close()
+        raise
+    except smtplib.SMTPException, e:
+        log.warning( 'The server does not support the STARTTLS extension: %s' % e )
+    if config.smtp_username and config.smtp_password:
+        try:
+            s.login( config.smtp_username, config.smtp_password )
+        except smtplib.SMTPHeloError, e:
+            log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
+            s.close()
+            raise
+        except smtplib.SMTPAuthenticationError, e:
+            log.error( "The server didn't accept the username/password combination: %s" % e )
+            s.close()
+            raise
+        except smtplib.SMTPError, e:
+            log.error( "No suitable authentication method was found: %s" % e )
+            s.close()
+            raise
+    if isinstance( to, basestring ):
+        to = [ to ]
+    s.sendmail( frm, to, msg.as_string() )
+    s.quit()
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 # The dbnames list is used in edit attributes and the upload tool

@@ -76,6 +76,8 @@ class Configuration( object ):
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
+        self.smtp_username = kwargs.get( 'smtp_username', None )
+        self.smtp_password = kwargs.get( 'smtp_password', None )
         self.start_job_runners = kwargs.get( 'start_job_runners', None )
         # External Service types used in sample tracking
         self.external_service_type_config_file = resolve_path( kwargs.get( 'external_service_type_config_file', 'external_service_types_conf.xml' ), self.root )

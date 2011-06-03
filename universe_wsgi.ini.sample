@@ -161,8 +161,15 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy sends mail for various things: Subscribing users to the mailing list
 # if they request it, emailing password resets, notification from the Galaxy
 # Sample Tracking system, and reporting dataset errors.  To do this, it needs
-# to send mail through an SMTP server, which you may define here.
+# to send mail through an SMTP server, which you may define here (host:port).
+# Galaxy will automatically try STARTTLS but will continue upon failure.
 #smtp_server = None
+
+# If your SMTP server requires a username and password, you can provide them
+# here (password in cleartext here, but if your server supports STARTTLS it
+# will be sent over the network encrypted).
+#smtp_username = None
+#smtp_password = None
 
 # On the user registration form, users may choose to join the mailing list.
 # This is the address of the list they'll be subscribed to.
