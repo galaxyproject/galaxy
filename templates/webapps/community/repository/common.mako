@@ -42,7 +42,6 @@
                     document.upload_form.upload_point.value = selKeys[0];
                 },
                 onActivate: function(dtnode) {
-                    // TODO: certainly not ideal - find a better way to display the file contents.
                     var cell = $("#file_contents");
                     var selected_value;
                     if (dtnode.data.key == 'root') {

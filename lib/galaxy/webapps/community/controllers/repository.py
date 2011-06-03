@@ -3,6 +3,7 @@ from time import strftime
 from datetime import *
 
 from galaxy import util
+from galaxy.datatypes.checkers import *
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.webapps.community.model import directory_hash_id
@@ -13,12 +14,12 @@ from mercurial import hg, ui, patch
 
 log = logging.getLogger( __name__ )
 
-VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
-# Characters that are valid
-VALID_CHARS = set( string.letters + string.digits )
 # Characters that must be html escaped
 MAPPED_CHARS = { '>' :'&gt;', 
                  '<' :'&lt;' }
+MAX_CONTENT_SIZE = 32768
+VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;" )
+VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
     
 class CategoryListGrid( grids.Grid ):
     # TODO rename this class to be categoryListGrid when we eliminate all the tools stuff.
@@ -173,17 +174,6 @@ class RepositoryController( BaseController, ItemRatings ):
     repository_list_grid = RepositoryListGrid()
     category_list_grid = CategoryListGrid()
 
-    # TODO: These translations are costly, so figure out a better way...
-    def from_html_escaped( self, text ):
-        """Restores sanitized text"""
-        for key, value in MAPPED_CHARS.items():
-            text = text.replace( value, key )
-        return text
-    def to_html_escape_code( self, text ):
-        """Restricts the characters that are allowed in a text"""
-        for key, value in MAPPED_CHARS.items():
-            text = text.replace( key, value )
-        return text
     @web.expose
     def index( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -567,23 +557,9 @@ class RepositoryController( BaseController, ItemRatings ):
         ctx_parent = ctx.parents()[0]
         modified, added, removed, deleted, unknown, ignored, clean = repo.status( node1=ctx_parent.node(), node2=ctx.node() )
         anchors = modified + added + removed + deleted + unknown + ignored + clean
-        def is_binary( chars ):
-            is_binary = False
-            chars_read = 0
-            for char in chars:
-                chars_read += 1
-                if ord( char ) > 128:
-                    is_binary = True
-                    break
-            return is_binary
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
-            if not util.is_multi_byte( diff ) and not is_binary( diff ):
-                # TODO: is there a better way?
-                diffs.append( self.to_html_escape_code( diff ) )
-            else:
-                fixed_diff = diff.split( '\n' )[0] + '\nFile contains non-ascii characters that cannot be displayed\n'
-                diffs.append( fixed_diff )
+            diffs.append( self.to_html_escaped( diff ) )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
                                     repository=repository,
                                     ctx=ctx,
@@ -681,28 +657,60 @@ class RepositoryController( BaseController, ItemRatings ):
                                                           message=message ) )
     @web.json
     def get_file_contents( self, trans, file_path ):
-        def print_ticks( d ):
-            # pexpect timeout method
-            pass
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        if os.stat( file_path ).st_size > 32768:
-            return 'File size larger than maximum viewing size of 32 kb'
-        cmd  = "cat %s" % file_path
-        # Handle the authentication message if ssh keys are not set - the message is
-        # something like: "Are you sure you want to continue connecting (yes/no)."
-        output = pexpect.run( cmd,
-                              events={ pexpect.TIMEOUT : print_ticks }, 
-                              timeout=10 )
-        output = self.to_html_escape_code( output )
-        return unicode( output.replace( '\r\n', '<br/>' ).replace( ' ', '&nbsp;' ) )
+        if is_gzip( file_path ):
+            to_html = self.to_html_str( '\ngzip compressed file\n' )
+        elif is_bz2( file_path ):
+            to_html = self.to_html_str( '\nbz2 compressed file\n' )
+        elif check_zip( file_path ):
+            to_html = self.to_html_str( '\nzip compressed file\n' )
+        elif check_binary( file_path ):
+            to_html = self.to_html_str( '\nBinary file\n' )
+        else:
+            to_html = ''
+            for i, line in enumerate( open( file_path ) ):
+                to_html = '%s%s' % ( to_html, self.to_html_str( line ) )
+                if len( to_html ) > MAX_CONTENT_SIZE:
+                    large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %d\n' % MAX_CONTENT_SIZE
+                    to_html = '%s%s' % ( to_html, self.to_html_str( large_str ) )
+                    break
+        return to_html
     @web.expose
     def help( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         return trans.fill_template( '/webapps/community/repository/help.mako', message=message, status=status, **kwd )
+    def to_html_escaped( self, text ):
+        """Translates the characters in text to html values"""
+        translated = []
+        for c in text:
+            if c in [ '\r\n', '\n', ' ', '\t' ] or c in VALID_CHARS:
+                translated.append( c )
+            elif c in MAPPED_CHARS:
+                translated.append( MAPPED_CHARS[ c ] )
+            else:
+                translated.append( 'X' )
+        return ''.join( translated )
+    def to_html_str( self, text ):
+        """Translates the characters in text to sn html string"""
+        translated = []
+        for c in text:
+            if c in VALID_CHARS:
+                translated.append( c )
+            elif c in MAPPED_CHARS:
+                translated.append( MAPPED_CHARS[ c ] )
+            elif c == ' ':
+                translated.append( '&nbsp;' )
+            elif c == '\t':
+                translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
+            elif c in [ '\r\n', '\n' ]:
+                translated.append( '<br/>' )
+            else:
+                translated.append( 'X' )
+        return ''.join( translated )
     def __build_allow_push_select_field( self, trans, current_push_list, selected_value='none' ):
         options = []
         for user in trans.sa_session.query( trans.model.User ):

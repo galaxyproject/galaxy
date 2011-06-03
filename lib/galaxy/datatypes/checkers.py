@@ -25,9 +25,13 @@ def check_html( file_path, chunk=None ):
         temp.close()
     return False
 
-def check_binary( file_path ):
+def check_binary( name, file_path=True ):
+    # Handles files if file_path is True or text if file_path is False
     is_binary = False
-    temp = open( file_path, "U" )
+    if file_path:
+        temp = open( name, "U" )
+    else:
+        temp = name
     chars_read = 0
     for chars in temp:
         for char in chars:
@@ -39,7 +43,8 @@ def check_binary( file_path ):
                 break
         if chars_read > 100:
             break
-    temp.close()
+    if file_path:
+        temp.close()
     return is_binary
 
 def check_gzip( file_path ):
@@ -94,6 +99,10 @@ def check_zip( file_path ):
         return True
     return False
 
+def is_bz2( file_path ):
+    is_bz2, is_valid = check_bz2( file_path )
+    return is_bz2
+
 def is_gzip( file_path ):
     is_gzipped, is_valid = check_gzip( file_path )
-    return is_gzipped and is_valid
+    return is_gzipped
