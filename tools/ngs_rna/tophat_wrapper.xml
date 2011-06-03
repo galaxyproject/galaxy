@@ -513,7 +513,7 @@
             <param name="sPaired" value="single"/>
             <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
             <param name="sSettingsType" value="full"/>
-	    <param name="library_type" value="FR Unstranded"/>
+            <param name="library_type" value="FR Unstranded"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
             <param name="min_intron_length" value="70"/>
@@ -525,8 +525,8 @@
             <param name="seg_mismatches" value="2"/>
             <param name="seg_length" value="25"/>
             <param name="allow_indel_search" value="Yes"/>
-	    <param name="max_insertion_length" value="3"/>
-	    <param name="max_deletion_length" value="3"/>
+            <param name="max_insertion_length" value="3"/>
+            <param name="max_deletion_length" value="3"/>
             <param name="use_junctions" value="Yes" />
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
@@ -557,7 +557,7 @@
             <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger"/>
             <param name="mate_inner_distance" value="20"/>
             <param name="pSettingsType" value="full"/>
-	    <param name="library_type" value="FR Unstranded"/>
+            <param name="library_type" value="FR Unstranded"/>
             <param name="mate_std_dev" value="20"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
@@ -637,13 +637,13 @@ This is a list of implemented Tophat options::
   -r                                This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments 
                                     selected at 300bp, where each end is 50bp, you should set -r to be 200. There is no default, and this parameter 
                                     is required for paired end runs.
-  --mate-std-dev INT	            The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
-  -a/--min-anchor-length INT	    The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction. Note that individual spliced     
+  --mate-std-dev INT                The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
+  -a/--min-anchor-length INT        The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction. Note that individual spliced     
                                     alignments may span a junction with fewer than this many bases on one side. However, every junction involved in spliced alignments is supported by at least one 
-                                    read with this many bases on each side.	 This must be at least 3 and the default is 8.
-  -m/--splice-mismatches INT	    The maximum number of mismatches that may appear in the "anchor" region of a spliced alignment. The default is 0.
-  -i/--min-intron-length INT	    The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart. The default is 70.
-  -I/--max-intron-length INT	    The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read. The default is 500000.
+                                    read with this many bases on each side.  This must be at least 3 and the default is 8.
+  -m/--splice-mismatches INT        The maximum number of mismatches that may appear in the "anchor" region of a spliced alignment. The default is 0.
+  -i/--min-intron-length INT        The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart. The default is 70.
+  -I/--max-intron-length INT        The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read. The default is 500000.
   -F/--min-isoform-fraction 0.0-1.0 TopHat filters out junctions supported by too few alignments. Suppose a junction spanning two exons, is supported by S reads. Let the average depth of coverage of 
                                     exon A be D, and assume that it is higher than B. If S / D is less than the minimum isoform fraction, the junction is not reported. A value of zero disables the 
                                     filter. The default is 0.15.
@@ -652,20 +652,20 @@ This is a list of implemented Tophat options::
   -G/--GTF [GTF 2.2 file]           Supply TopHat with a list of gene model annotations. TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping.
   -j/--raw-juncs [juncs file]       Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-], left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive.
   -no-novel-juncs                   Only look for junctions indicated in the supplied GFF file. (ignored without -G)
-  --no-closure-search	            Disables the mate pair closure-based search for junctions. Currently, has no effect - closure search is off by default.
-  --closure-search	            Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (about or less than 50bp)
-  --no-coverage-search	            Disables the coverage based search for junctions.
-  --coverage-search	                Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.
-  --microexon-search	            With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.
-  --butterfly-search	            TopHat will use a slower but potentially more sensitive algorithm to find junctions in addition to its standard search. Consider using this if you expect that your experiment produced a lot of reads from pre-mRNA, that fall within the introns of your transcripts.
-  --segment-mismatches	            Read segments are mapped independently, allowing up to this many mismatches in each segment alignment. The default is 2.
-  --segment-length	            Each read is cut up into segments, each at least this long. These segments are mapped independently. The default is 25.
-  --min-closure-exon	            During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50.
-  --min-closure-intron	            The minimum intron length that may be found during closure search. The default is 50.
-  --max-closure-intron	            The maximum intron length that may be found during closure search. The default is 5000.
-  --min-coverage-intron	            The minimum intron length that may be found during coverage search. The default is 50.
-  --max-coverage-intron	            The maximum intron length that may be found during coverage search. The default is 20000.
-  --min-segment-intron	            The minimum intron length that may be found during split-segment search. The default is 50.
-  --max-segment-intron	            The maximum intron length that may be found during split-segment search. The default is 500000.
+  --no-closure-search               Disables the mate pair closure-based search for junctions. Currently, has no effect - closure search is off by default.
+  --closure-search                  Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (about or less than 50bp)
+  --no-coverage-search              Disables the coverage based search for junctions.
+  --coverage-search                 Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.
+  --microexon-search                With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.
+  --butterfly-search                TopHat will use a slower but potentially more sensitive algorithm to find junctions in addition to its standard search. Consider using this if you expect that your experiment produced a lot of reads from pre-mRNA, that fall within the introns of your transcripts.
+  --segment-mismatches              Read segments are mapped independently, allowing up to this many mismatches in each segment alignment. The default is 2.
+  --segment-length                  Each read is cut up into segments, each at least this long. These segments are mapped independently. The default is 25.
+  --min-closure-exon                During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50.
+  --min-closure-intron              The minimum intron length that may be found during closure search. The default is 50.
+  --max-closure-intron              The maximum intron length that may be found during closure search. The default is 5000.
+  --min-coverage-intron             The minimum intron length that may be found during coverage search. The default is 50.
+  --max-coverage-intron             The maximum intron length that may be found during coverage search. The default is 20000.
+  --min-segment-intron              The minimum intron length that may be found during split-segment search. The default is 50.
+  --max-segment-intron              The maximum intron length that may be found during split-segment search. The default is 500000.
     </help>
 </tool>
