@@ -752,7 +752,10 @@ class JobWrapper( object ):
         sizes = []
         output_paths = self.get_output_fnames()
         for outfile in [ str( o ) for o in output_paths ]:
-            sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            if os.path.exists( outfile ):
+                sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            else:
+                sizes.append( ( outfile, 0 ) )
         return sizes
 
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
@@ -999,7 +1002,10 @@ class TaskWrapper(JobWrapper):
         sizes = []
         output_paths = self.get_output_fnames()
         for outfile in [ str( o ) for o in output_paths ]:
-            sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            if os.path.exists( outfile ):
+                sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            else:
+                sizes.append( ( outfile, 0 ) )
         return sizes
 
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
