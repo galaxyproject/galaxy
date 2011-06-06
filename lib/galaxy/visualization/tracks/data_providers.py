@@ -607,12 +607,12 @@ class BedDataProvider( TabixDataProvider ):
             out.write( line )
         out.close()
         
-class VcfDataProvider( TracksDataProvider ):
+class VcfDataProvider( TabixDataProvider ):
     """
     VCF data provider for the Galaxy track browser.
 
     Payload format: 
-    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score]
+    [ uid (offset), start, end, ID, reference base(s), alternate base(s), quality score ]
     """
 
     col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
@@ -622,21 +622,20 @@ class VcfDataProvider( TracksDataProvider ):
         count = 0
         message = None
         
-        reader = galaxy_utils.sequence.vcf.Reader( iterator )
-        for line in reader:
+        for line in iterator:
             if count >= MAX_VALS:
                 message = ERROR_MAX_VALS % "features"
                 break
             count += 1
             
             feature = line.split()
-            payload = [ hash(line), vcf_line.pos-1, vcf_line.pos, \
+            payload = [ hash(line), int(feature[1])-1, int(feature[1]),
                         # ID: 
-                        feature[2], \
+                        feature[2],
                         # reference base(s):
-                        feature[3], \
+                        feature[3],
                         # alternative base(s)
-                        feature[4], \
+                        feature[4],
                         # phred quality score
                         int( feature[5] )]
             rval.append(payload)
