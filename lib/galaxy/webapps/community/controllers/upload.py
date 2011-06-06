@@ -60,12 +60,9 @@ class UploadController( BaseController ):
             elif file_data not in ( '', None ):
                 uploaded_file = file_data.file
             if uploaded_file:
-                # TODO: our current support for browsing repo contents requires a copy
-                # of the repository files in the repo root directory.  To produce these
-                # copies, we update without passing the -r null flag (see below).  When
-                # we're uploading more files, we have to clean out the repo root directory
-                # so we can move them into it.  We need to eliminate all this when we figure
-                # out how to browse the repository files.
+                # Our current support for browsing repo contents requires a copy of the
+                # repository files in the repo root directory.  To produce these copies,
+                # we update without passing the "-r null" flag.
                 os.chdir( repo_dir )
                 os.system( 'hg update -r null > /dev/null 2>&1' )
                 os.chdir( current_working_dir )
@@ -76,16 +73,16 @@ class UploadController( BaseController ):
                     tar = tarfile.open( uploaded_file.name )
                     istar = True
                 except tarfile.ReadError, e:
+                    tar = None
                     istar = False
-                if istar:
-                    ok, message = self.__check_archive( tar )
-                    if ok:
-                        if repository.is_new:
+                if repository.is_new:
+                    if istar:
+                        # We have an archive ( a tarball )
+                        ok, message = self.__check_archive( tar )
+                        if ok:
                             tar.extractall( path=repo_dir )
                             tar.close()
                             uploaded_file.close()
-                            # TODO: The following will only work on new, empty repos, 
-                            # need to also handle repos with existing contents
                             for root, dirs, files in os.walk( repo_dir, topdown=False ):
                                 # Don't visit .hg directories and don't include hgrc files in commit.
                                 if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
@@ -109,78 +106,9 @@ class UploadController( BaseController ):
                                             repo.dirstate.add( file_path )
                                             files_to_commit.append( file_path )
                         else:
-                            # The repo already contains the file, so we need to make sure the file being
-                            # uploaded is different from the file in the repo.  This is a temporary brute-
-                            # force method.
-                            # Make a clone of the repository in a temporary location
-                            tmp_dir = tempfile.mkdtemp()
-                            tmp_archive_dir = os.path.join( tmp_dir, 'tmp_archive_dir' )
-                            if not os.path.exists( tmp_archive_dir ):
-                                os.makedirs( tmp_archive_dir )
-                            cmd = "hg clone %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-                            os.chdir( tmp_archive_dir )
-                            os.system( cmd )
-                            os.chdir( current_working_dir )
-                            cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
-                            if upload_point is not None:
-                                full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point, file_data.filename ) )
-                            else:
-                                full_path = os.path.abspath( os.path.join( cloned_repo_dir, file_data.filename ) )
-                            # Extract the uploaded tarball to the load_point within the cloned repository hierarchy
-                            tar.extractall( path=full_path )
                             tar.close()
-                            uploaded_file.close()
-                            # We want these change sets to be associated with the owner of the repository, so we'll
-                            # set the HGUSER environment variable accordingly.
-                            os.environ[ 'HGUSER' ] = trans.user.username
-                            # Add the file to the cloned repository.  If it's already tracked, this should do nothing.
-                            os.chdir( cloned_repo_dir )
-                            os.system( 'hg add > /dev/null 2>&1' )
-                            os.chdir( current_working_dir )
-                            os.chdir( cloned_repo_dir )
-                            # Commit the change set to the cloned repository
-                            os.system( "hg commit -m '%s' > /dev/null 2>&1" % commit_message )
-                            os.chdir( current_working_dir )
-                            # Push the change set to the master repository
-                            cmd = "hg push %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-                            os.chdir( cloned_repo_dir )
-                            os.system( cmd )
-                            # Change the current working directory to the original
-                            os.chdir( current_working_dir )
-                            # Since we extracted the archive into repo_dir, a copy of the archive's
-                            # files remains there.  The following will remove them.  It would be
-                            # more ideal if we could use the mercurial api to do this, but I haven't
-                            # yet discovered a way to pass the -r null flag to repo.update().
-                            # TODO: our current support for browsing repo contents requires a copy
-                            # of the repository files in the repo root directory.  To produce these
-                            # copies, we'll update without passing the -r null flag.  When we figure
-                            # out how to browse the repository files, uncomment the -r flag below.
-                            os.chdir( repo_dir )
-                            os.system( 'hg update > /dev/null 2>&1' )
-                            os.chdir( current_working_dir )
-                            # Remove tmp directory
-                            shutil.rmtree( tmp_dir )
-                            message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
-                            trans.response.send_redirect( web.url_for( controller='repository',
-                                                                       action='browse_repository',
-                                                                       message=message,
-                                                                       id=trans.security.encode_id( repository.id ) ) )
-
-
                     else:
-                        tar.close()
-                else:
-                    """
-                    # TODO: This segment uses the mercurial api (and works), but we need the
-                    # api section below to be functional in order for this segment to be used.
-                    # In the meantime, we use the repository.is_new check below...
-                    repo_contains = file_path in [ i for i in ctx.manifest() ]
-                    if not repo_contains:
-                        repo.dirstate.add( file_path )
-                        files_to_commit.append( file_path )
-                    """
-                    if repository.is_new:
-                        # We're uploading a single file
+                        # We have a single file
                         if upload_point is not None:
                             full_path = os.path.abspath( os.path.join( upload_point, file_data.filename ) )
                             file_path = os.path.join( upload_point, file_data.filename )
@@ -190,98 +118,18 @@ class UploadController( BaseController ):
                         shutil.move( uploaded_file.name, full_path )
                         repo.dirstate.add( file_path )
                         files_to_commit.append( file_path )
-                    else:
-                        """
-                        # TODO: This segment attempts to use the mercurial api, but is not functional.
-                        # Until we get it working, we're using the brute force method below it.
-                        fctx = None
-                        for changeset in repo.changelog:
-                            ctx = repo.changectx( changeset )
-                            if file_path not in ctx.files():
-                                continue
-                            fctx = ctx[ file_path ]
-                            break
-                        # We now have the parent version of the upload file.
-                        if fctx:
-                            data = fctx.data()
-                            # TODO: obviously very bad way of comparing files...
-                            file_path_data = open( full_path ).read()
-                            different = data != file_path_data
-                            if different:
-                                # TODO: how do you insert a new version of an existing file using the mercurial api???
-                                # the follwoin gis not correct!
-                                #repo.dirstate.normallookup( file_path )
-                                #files_to_commit.append( file_path )
-                                pass
-                        """
-                        # The repo already contains the file, so we need to make sure the file being
-                        # uploaded is different from the file in the repo.  This is a temporary brute-
-                        # force method.
-                        # Make a clone of the repository in a temporary location
-                        tmp_dir = tempfile.mkdtemp()
-                        tmp_archive_dir = os.path.join( tmp_dir, 'tmp_archive_dir' )
-                        if not os.path.exists( tmp_archive_dir ):
-                            os.makedirs( tmp_archive_dir )
-                        cmd = "hg clone %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-                        os.chdir( tmp_archive_dir )
-                        os.system( cmd )
-                        os.chdir( current_working_dir )
-                        cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
-                        if upload_point is not None:
-                            full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point, file_data.filename ) )
-                        else:
-                            full_path = os.path.abspath( os.path.join( cloned_repo_dir, file_data.filename ) )
-                        # Move the uploaded file to the load_point within the cloned repository hierarchy
-                        shutil.move( uploaded_file.name, full_path )
-                        # We want these change sets to be associated with the owner of the repository, so we'll
-                        # set the HGUSER environment variable accordingly.
-                        os.environ[ 'HGUSER' ] = trans.user.username
-                        # Add the file to the cloned repository.  If it's already tracked, this should do nothing.
-                        os.chdir( cloned_repo_dir )
-                        os.system( 'hg add > /dev/null 2>&1' )
-                        os.chdir( current_working_dir )
-                        os.chdir( cloned_repo_dir )
-                        # Commit the change set to the cloned repository
-                        os.system( "hg commit -m '%s' > /dev/null 2>&1" % commit_message )
-                        os.chdir( current_working_dir )
-                        # Push the change set to the master repository
-                        cmd = "hg push %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-                        os.chdir( cloned_repo_dir )
-                        os.system( cmd )
-                        os.chdir( current_working_dir )
-                        # Since we extracted the archive into repo_dir, a copy of the archive's
-                        # files remains there.  The following will remove them.  It would be
-                        # more ideal if we could use the mercurial api to do this, but I haven't
-                        # yet discovered a way to pass the -r null flag to repo.update().
-                        # TODO: our current support for browsing repo contents requires a copy
-                        # of the repository files in the repo root directory.  To produce these
-                        # copies, we'll update without passing the -r null flag.  When we figure
-                        # out how to browse the repository files, uncomment the -r flag below.
-                        os.chdir( repo_dir )
-                        os.system( 'hg update > /dev/null 2>&1' )
-                        os.chdir( current_working_dir )
-                        # Remove tmp directory
-                        shutil.rmtree( tmp_dir )
-                        message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
-                        trans.response.send_redirect( web.url_for( controller='repository',
-                                                                   action='browse_repository',
-                                                                   message=message,
-                                                                   id=trans.security.encode_id( repository.id ) ) )
+                else:
+                    # We're uploading files to a repository with existing
+                    # contents, so clone the repository to a temporary location.
+                    tmp_dir, cloned_repo_dir = self.__handle_hg_clone( trans, repository, upload_point, uploaded_file, file_data, repo_dir, current_working_dir, istar, tar=tar )
+                    # Commit and push the changes from the cloned repo to the master repo.
+                    self.__handle_hg_push( trans, repository, file_data, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir )
                 if ok:
                     if files_to_commit:
                         repo.dirstate.write()
                         repo.commit( text=commit_message )
-                        # Since we extracted the archive into repo_dir, a copy of the archive's
-                        # files remains there.  The following will remove them.  It would be
-                        # more ideal if we could use the mercurial api to do this, but I haven't
-                        # yet discovered a way to pass the -r null flag to repo.update().
-                        # TODO: our current support for browsing repo contents requires a copy
-                        # of the repository files in the repo root directory.  To produce these
-                        # copies, we'll update without passing the -r null flag.  When we figure
-                        # out how to browse the repository files, uncomment the -r flag below.
                         os.chdir( repo_dir )
                         os.system( 'hg update > /dev/null 2>&1' )
-                        #os.system( 'hg update -r null' )
                         os.chdir( current_working_dir )
                         message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
                         trans.response.send_redirect( web.url_for( controller='repository',
@@ -290,17 +138,8 @@ class UploadController( BaseController ):
                                                                    id=trans.security.encode_id( repository.id ) ) )
                 else:
                     status = 'error'
-                # Since we extracted the archive into repo_dir, a copy of the archive's
-                # files remains there.  The following will remove them.  It would be
-                # more ideal if we could use the mercurial api to do this, but I haven't
-                # yet discovered a way to pass the -r null flag to repo.update().
-                # TODO: our current support for browsing repo contents requires a copy
-                # of the repository files in the repo root directory.  To produce these
-                # copies, we'll update without passing the -r null flag.  When we figure
-                # out how to browse the repository files, uncomment the -r flag below.
                 os.chdir( repo_dir )
                 os.system( 'hg update > /dev/null 2>&1' )
-                #os.system( 'hg update -r null' )
                 os.chdir( current_working_dir )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/community/repository/upload.mako',
@@ -308,6 +147,57 @@ class UploadController( BaseController ):
                                     commit_message=commit_message,
                                     message=message,
                                     status=status )
+    def __handle_hg_clone( self, trans, repository, upload_point, uploaded_file, file_data, repo_dir, current_working_dir, istar, tar=None ):
+        tmp_dir = tempfile.mkdtemp()
+        tmp_archive_dir = os.path.join( tmp_dir, 'tmp_archive_dir' )
+        if not os.path.exists( tmp_archive_dir ):
+            os.makedirs( tmp_archive_dir )
+        # Make a clone of the repository in a temporary location
+        cmd = "hg clone %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
+        os.chdir( tmp_archive_dir )
+        os.system( cmd )
+        os.chdir( current_working_dir )
+        cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
+        if upload_point is not None:
+            full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point, file_data.filename ) )
+        else:
+            full_path = os.path.abspath( os.path.join( cloned_repo_dir, file_data.filename ) )
+        if istar:
+            # Extract the uploaded tarball to the load_point within the cloned repository hierarchy
+            tar.extractall( path=full_path )
+            tar.close()
+            uploaded_file.close()
+        else:
+            # Move the uploaded file to the load_point within the cloned repository hierarchy
+            shutil.move( uploaded_file.name, full_path )
+        return tmp_dir, cloned_repo_dir
+    def __handle_hg_push( self, trans, repository, file_data, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir ):
+        # We want these change sets to be associated with the owner of the repository, so we'll
+        # set the HGUSER environment variable accordingly.
+        os.environ[ 'HGUSER' ] = trans.user.username
+        # Add the file to the cloned repository.  If it's already tracked, this should do nothing.
+        os.chdir( cloned_repo_dir )
+        os.system( 'hg add > /dev/null 2>&1' )
+        os.chdir( current_working_dir )
+        os.chdir( cloned_repo_dir )
+        # Commit the change set to the cloned repository
+        os.system( "hg commit -m '%s' > /dev/null 2>&1" % commit_message )
+        os.chdir( current_working_dir )
+        # Push the change set to the master repository
+        cmd = "hg push %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
+        os.chdir( cloned_repo_dir )
+        os.system( cmd )
+        os.chdir( current_working_dir )
+        # Make a copy of the updated repository files for browsing.
+        os.chdir( repo_dir )
+        os.system( 'hg update > /dev/null 2>&1' )
+        os.chdir( current_working_dir )
+        shutil.rmtree( tmp_dir )
+        message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
+        trans.response.send_redirect( web.url_for( controller='repository',
+                                                   action='browse_repository',
+                                                   message=message,
+                                                   id=trans.security.encode_id( repository.id ) ) )
     def __check_archive( self, archive ):
         for member in archive.getmembers():
             # Allow regular files and directories only

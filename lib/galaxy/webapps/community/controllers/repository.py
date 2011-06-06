@@ -16,9 +16,12 @@ log = logging.getLogger( __name__ )
 
 # Characters that must be html escaped
 MAPPED_CHARS = { '>' :'&gt;', 
-                 '<' :'&lt;' }
+                 '<' :'&lt;',
+                 '"' : '&quot;',
+                 '&' : '&amp;',
+                 '\'' : '&apos;' }
 MAX_CONTENT_SIZE = 32768
-VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;" )
+VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
     
 class CategoryListGrid( grids.Grid ):
@@ -673,7 +676,7 @@ class RepositoryController( BaseController, ItemRatings ):
             for i, line in enumerate( open( file_path ) ):
                 to_html = '%s%s' % ( to_html, self.to_html_str( line ) )
                 if len( to_html ) > MAX_CONTENT_SIZE:
-                    large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %d\n' % MAX_CONTENT_SIZE
+                    large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
                     to_html = '%s%s' % ( to_html, self.to_html_str( large_str ) )
                     break
         return to_html
@@ -706,9 +709,9 @@ class RepositoryController( BaseController, ItemRatings ):
                 translated.append( '&nbsp;' )
             elif c == '\t':
                 translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
-            elif c in [ '\r\n', '\n' ]:
+            elif c == '\n':
                 translated.append( '<br/>' )
-            else:
+            elif c not in [ '\r' ]:
                 translated.append( 'X' )
         return ''.join( translated )
     def __build_allow_push_select_field( self, trans, current_push_list, selected_value='none' ):
