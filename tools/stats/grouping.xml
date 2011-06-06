@@ -88,7 +88,11 @@
 
 **Syntax**
 
-This tool allows you to group the input dataset by a particular column and perform aggregate functions: Mean, Median, Mode, Sum, Max, Min, Count, Randomly pick, and Concatenate on any column.
+This tool allows you to group the input dataset by a particular column and perform aggregate functions: Mean, Median, Mode, Sum, Max, Min, Count, Concatenate, and Randomly pick on any column(s).
+
+The Concatenate function will take, for each group, each item in the specified column and build a comma delimited list. Concatenate Unique will do the same but will build a list of unique items with no repetition.
+
+Count and Count Unique are equivalent to Concatenate and Concatenate Unique, but will only count the number of items and will return an integer.
 
 - If multiple modes are present, all are reported.
 
