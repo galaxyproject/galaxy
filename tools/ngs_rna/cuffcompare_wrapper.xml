@@ -33,9 +33,7 @@
             #end for
     </command>
     <inputs>
-        <param format="gtf" name="first_input" type="data" label="GTF file produced by Cufflinks" help="">
-            <validator type="unspecified_build" />
-        </param>
+        <param format="gtf" name="first_input" type="data" label="GTF file produced by Cufflinks" help=""/>
         <repeat name="input_files" title="Additional GTF Input Files">
             <param format="gtf" name="additional_input" type="data" label="GTF file produced by Cufflinks" help="">
                 <validator type="unspecified_build" />
