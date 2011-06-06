@@ -101,7 +101,7 @@ def __main__():
     try:
         tmp = tempfile.NamedTemporaryFile().name
         tmp_stdout = open( tmp, 'wb' )
-        proc = subprocess.Popen( args='cuffdiff 2>&1', shell=True, stdout=tmp_stdout )
+        proc = subprocess.Popen( args='cuffdiff --no-update-check 2>&1', shell=True, stdout=tmp_stdout )
         tmp_stdout.close()
         returncode = proc.wait()
         stdout = None
@@ -135,7 +135,7 @@ def __main__():
     # Build command.
     
     # Base; always use quiet mode to avoid problems with storing log output.
-    cmd = "cuffdiff -q"
+    cmd = "cuffdiff --no-update-check -q"
     
     # Add options.
     if options.inner_dist_std_dev:
