@@ -217,7 +217,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             # GFF3 test:
             parent_id = interval.attributes.get( 'Parent', None )
             cur_id = interval.attributes.get( 'ID', None )
-            if feature_id and parent_id != feature_parent_id and feature_id != cur_id:
+            if ( cur_id and cur_id != feature_id ) or ( parent_id and parent_id != feature_id ):
                 break
             # GTF test:
             gene_id = interval.attributes.get( 'gene_id', None )
