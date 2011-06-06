@@ -69,6 +69,7 @@
                 <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
             %endif
         </div>
+        <span class="state-icon"></span>
         <span class="historyItemTitle">${hid}: ${data.display_name()}</span>
     </div>
         
