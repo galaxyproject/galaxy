@@ -172,7 +172,7 @@ var
     // height of individual features within tracks. Feature height, then, should always be less
     // than track height.
     CHAR_HEIGHT_PX = 9, // FIXME: font size may not be static
-    ERROR_PADDING = 10, // Padding at the top of tracks for error messages
+    ERROR_PADDING = 15, // Padding at the top of tracks for error messages
     SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
     // Maximum number of rows un a slotted track
     MAX_FEATURE_DEPTH = 100,
@@ -1507,8 +1507,9 @@ var SummaryTreeTile = function(index, resolution, canvas, max_val) {
     this.max_val = max_val;
 };
 
-var FeatureTrackTile = function(index, resolution, canvas) {
+var FeatureTrackTile = function(index, resolution, canvas, message) {
     Tile.call(this, index, resolution, canvas);
+    this.message = message;
 };
 
 /**
@@ -1990,6 +1991,27 @@ extend(TiledTrack.prototype, Track.prototype, {
                             track.filters_div.hide();
                         }
                         track.make_name_popup_menu();
+                    }
+                }
+                
+                //
+                // If some tiles have messages, set padding of tiles without messages
+                // so features and rows align.
+                //
+                var messages_to_show = false;
+                for (var tile_index = 0; tile_index < drawn_tiles.length; tile_index++) {
+                    if (drawn_tiles[tile_index].message) {
+                        messages_to_show = true;
+                        break;
+                    }
+                }
+                if (messages_to_show) {
+                    for (var tile_index = 0; tile_index < drawn_tiles.length; tile_index++) {
+                        tile = drawn_tiles[tile_index];
+                        if (!tile.message) {
+                            // Need to align with other tile(s) that have message(s).
+                            tile.canvas.css("padding-top", ERROR_PADDING);
+                        }
                     }
                 }
                 
@@ -2620,8 +2642,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         // Create painter, and canvas of sufficient size to contain all features
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
         var painter = new (this.painter)( filtered, tile_low, tile_high, this.prefs, mode, ref_seq );
-        // FIXME: ERROR_PADDING is an ugly gap most of the time
-        var required_height = painter.get_required_height( slots_required ) + ERROR_PADDING;
+        var required_height = painter.get_required_height(slots_required);
         var canvas = this.view.canvas_manager.new_canvas();
         
         canvas.width = width + left_offset;
@@ -2634,31 +2655,26 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.textAlign = "right";
         this.container_div.find(".yaxislabel").remove();
         
-        // If there is a message, draw it on canvas so that it moves around with canvas, and make the border red
-        // to indicate region where message is applicable
-        if (result.message) {
-            ctx.fillStyle = "red";
-            ctx.textAlign = "left";
-            var old_base = ctx.textBaseline;
-            ctx.textBaseline = "top";
-            ctx.fillRect(left_offset, 0, canvas.width - left_offset, 1);
-            ctx.fillText(result.message, left_offset, 2);
-            ctx.textBaseline = old_base;
+        if (result.data) {
+            // Set example feature. This is needed so that track can update its UI based on feature attributes.
+            this.example_feature = (result.data.length ? result.data[0] : undefined);
 
-            // If there's no data, return.
-            if (!result.data) {
-                return new Tile(tile_index, resolution, canvas, required_height);
-            }
+            // Draw features.
+            painter.draw(ctx, width, required_height, slots);
+        }
+        
+        // If tile has a message, create container div with both a message div and the canvas.
+        if (result.message) {
+            var container_div = $("<div/>");
+            var message_div = $("<div/>").addClass("tile-message").text(result.message).css('width', canvas.width);
+            message_div.css({position: 'absolute', top: 0});
+            $(canvas).css("top", 15);
+            container_div.append(message_div);
+            container_div.append(canvas);
+            canvas = container_div;
         }
 
-        // Set example feature. This is needed so that track can update its UI based on feature attributes.
-        this.example_feature = (result.data.length ? result.data[0] : undefined);
-      
-        // Draw features
-        ctx.translate(left_offset, ERROR_PADDING);
-        painter.draw(ctx, width, required_height, slots);
-            
-        return new FeatureTrackTile(tile_index, resolution, canvas);
+        return new FeatureTrackTile(tile_index, resolution, canvas, result.message);        
     }
 });
 
