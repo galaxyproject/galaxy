@@ -1221,7 +1221,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     # it exists, then we need to apply the LIBRARY_MANAGE permission to the library dataset.
                     dataset_manage_permissions_action = trans.app.security_agent.get_action( 'DATASET_MANAGE_PERMISSIONS' ).action
                     flush_needed = False
-                    for action, roles in dataset_permissions_dict.items():
+                    for action, dataset_permissions_roles in dataset_permissions_dict.items():
                         if isinstance( action, Action ):
                             action = action.action
                         if action == dataset_manage_permissions_action:
@@ -1229,7 +1229,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                             action = trans.app.security_agent.get_action( 'LIBRARY_MANAGE' ).action
                         # Allow the permissions inherited from the folder to over-ride the same permissions on the dataset.
                         if action not in current_library_dataset_actions:
-                            for ldp in [ trans.model.LibraryDatasetPermissions( action, ldda.library_dataset, role ) for role in roles ]:
+                            for ldp in [ trans.model.LibraryDatasetPermissions( action, ldda.library_dataset, role ) for role in dataset_permissions_roles ]:
                                 trans.sa_session.add( ldp )
                                 flush_needed = True
                     if flush_needed:
