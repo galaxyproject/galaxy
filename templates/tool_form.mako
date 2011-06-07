@@ -51,7 +51,7 @@ $(function() {
     });
     
     function checkUncheckAll( name, check ) {
-        $("input[name=" + name + "][type='checkbox']").attr('checked', !!check);
+        $("input[name='" + name + "'][type='checkbox']").attr('checked', !!check);
     }
     
     // Inserts the Select All / Unselect All buttons for checkboxes
