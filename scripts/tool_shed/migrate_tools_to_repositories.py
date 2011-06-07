@@ -59,12 +59,12 @@ def get_versions( app, item ):
     this_item = item
     while item.newer_version:
         if item.newer_version.state in valid_states:
-            versions.insert( 0, item.newer_version )
+            versions.append( item.newer_version )
         item = item.newer_version
     item = this_item
     while item.older_version:
         if item.older_version[ 0 ].state in valid_states:
-            versions.append( item.older_version[ 0 ] )
+            versions.insert( 0, item.older_version[ 0 ] )
         item = item.older_version[ 0 ]
     return versions
 
