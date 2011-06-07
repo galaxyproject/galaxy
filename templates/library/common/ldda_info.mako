@@ -136,20 +136,22 @@
             <div>${ldda.blurb}</div>
         </div>
         %for name, spec in ldda.metadata.spec.items():
-            <div class="form-row">
-                <label>${spec.desc.replace( ' (click box & select)', '' )}:</label>
-                <%
-                    metadata_val = ldda.metadata.get( name )
-                    if isinstance( metadata_val, trans.model.MetadataFile ):
-                        metadata_val = metadata_val.file_name
-                    elif isinstance( metadata_val, list ):
-                        # Make sure list items are strings
-                        metadata_val = [ str( item ) for item in metadata_val ]
-                        metadata_val = ', '.join( metadata_val )
-                %>
-                ${metadata_val}
-                <div style="clear: both"></div>
-            </div>
+            %if spec.visible:
+                <div class="form-row">
+                    <label>${spec.desc.replace( ' (click box & select)', '' )}:</label>
+                    <%
+                        metadata_val = ldda.metadata.get( name )
+                        if isinstance( metadata_val, trans.model.MetadataFile ):
+                            metadata_val = metadata_val.file_name
+                        elif isinstance( metadata_val, list ):
+                            # Make sure list items are strings
+                            metadata_val = [ str( item ) for item in metadata_val ]
+                            metadata_val = ', '.join( metadata_val )
+                    %>
+                    ${metadata_val}
+                    <div style="clear: both"></div>
+                </div>
+            %endif
         %endfor
         %if ldda.peek != "no peek":
             <div class="form-row">
