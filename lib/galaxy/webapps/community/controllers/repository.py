@@ -611,6 +611,23 @@ class RepositoryController( BaseController, ItemRatings ):
                                     rra=rra,
                                     message=message,
                                     status=status )
+    @web.expose
+    def download( self, trans, repository_id, file_type, **kwd ):
+        # Download an archive of the repository files compressed as zip, gz or bz2.
+        params = util.Params( kwd )
+        repository = get_repository( trans, repository_id )
+        # Allow hgweb to handle the download.  This requires the tool shed
+        # server account's .hgrc file to include the following setting:
+        # [web]
+        # allow_archive = bz2, gz, zip
+        if file_type == 'zip':
+            file_type_str = 'tip.zip'
+        elif file_type == 'bz2':
+            file_type_str = 'tip.tar.bz2'
+        elif file_type == 'gz':
+            file_type_str = 'tip.tar.gz'
+        download_url = '/repos/%s/%s/archive/%s' % ( repository.user.username, repository.name, file_type_str )
+        return trans.response.send_redirect( download_url )
     @web.json
     def open_folder( self, trans, repository_id, key ):
         # TODO: The tool shed includes a repository source file browser, which currently depends upon

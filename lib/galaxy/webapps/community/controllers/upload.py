@@ -119,11 +119,12 @@ class UploadController( BaseController ):
                         repo.dirstate.add( file_path )
                         files_to_commit.append( file_path )
                 else:
-                    # We're uploading files to a repository with existing
-                    # contents, so clone the repository to a temporary location.
-                    tmp_dir, cloned_repo_dir = self.__handle_hg_clone( trans, repository, upload_point, uploaded_file, file_data, repo_dir, current_working_dir, istar, tar=tar )
+                    # Clone the repository to a temporary location.
+                    tmp_dir, cloned_repo_dir = self.__hg_clone( trans, repository, repo_dir, current_working_dir )
+                    # Move the uploaded files to the upload_point within the cloned repository.
+                    self.__move_to_upload_point( upload_point, uploaded_file, file_data, cloned_repo_dir, istar, tar )
                     # Commit and push the changes from the cloned repo to the master repo.
-                    self.__handle_hg_push( trans, repository, file_data, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir )
+                    self.__hg_push( trans, repository, file_data, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir )
                 if ok:
                     if files_to_commit:
                         repo.dirstate.write()
@@ -147,7 +148,7 @@ class UploadController( BaseController ):
                                     commit_message=commit_message,
                                     message=message,
                                     status=status )
-    def __handle_hg_clone( self, trans, repository, upload_point, uploaded_file, file_data, repo_dir, current_working_dir, istar, tar=None ):
+    def __hg_clone( self, trans, repository, repo_dir, current_working_dir ):
         tmp_dir = tempfile.mkdtemp()
         tmp_archive_dir = os.path.join( tmp_dir, 'tmp_archive_dir' )
         if not os.path.exists( tmp_archive_dir ):
@@ -158,20 +159,8 @@ class UploadController( BaseController ):
         os.system( cmd )
         os.chdir( current_working_dir )
         cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
-        if upload_point is not None:
-            full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point, file_data.filename ) )
-        else:
-            full_path = os.path.abspath( os.path.join( cloned_repo_dir, file_data.filename ) )
-        if istar:
-            # Extract the uploaded tarball to the load_point within the cloned repository hierarchy
-            tar.extractall( path=full_path )
-            tar.close()
-            uploaded_file.close()
-        else:
-            # Move the uploaded file to the load_point within the cloned repository hierarchy
-            shutil.move( uploaded_file.name, full_path )
         return tmp_dir, cloned_repo_dir
-    def __handle_hg_push( self, trans, repository, file_data, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir ):
+    def __hg_push( self, trans, repository, file_data, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir ):
         # We want these change sets to be associated with the owner of the repository, so we'll
         # set the HGUSER environment variable accordingly.
         os.environ[ 'HGUSER' ] = trans.user.username
@@ -198,6 +187,19 @@ class UploadController( BaseController ):
                                                    action='browse_repository',
                                                    message=message,
                                                    id=trans.security.encode_id( repository.id ) ) )
+    def __move_to_upload_point( self, upload_point, uploaded_file, file_data, cloned_repo_dir, istar, tar ):
+        if upload_point is not None:
+            full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point, file_data.filename ) )
+        else:
+            full_path = os.path.abspath( os.path.join( cloned_repo_dir, file_data.filename ) )
+        if istar:
+            # Extract the uploaded tarball to the load_point within the cloned repository hierarchy
+            tar.extractall( path=full_path )
+            tar.close()
+            uploaded_file.close()
+        else:
+            # Move the uploaded file to the load_point within the cloned repository hierarchy
+            shutil.move( uploaded_file.name, full_path )
     def __check_archive( self, archive ):
         for member in archive.getmembers():
             # Allow regular files and directories only
