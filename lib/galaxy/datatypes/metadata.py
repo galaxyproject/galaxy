@@ -228,8 +228,8 @@ class MetadataElementSpec( object ):
         #set up param last, as it uses values set above
         self.param = param( self )
         datatype.metadata_spec.append( self ) #add spec element to the spec
-    def get( self, name ):
-        return self.__dict__.get(name, None)
+    def get( self, name, default=None ):
+        return self.__dict__.get(name, default)
     def wrap( self, value ):
         """
         Turns a stored value into its usable form.
