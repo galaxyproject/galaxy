@@ -1,6 +1,6 @@
 <% _=n_ %>
 ## Render the dataset `data` as history item, using `hid` as the displayed id
-<%def name="render_dataset( data, hid, show_deleted_on_refresh = False, for_editing = True )">
+<%def name="render_dataset( data, hid, show_deleted_on_refresh = False, for_editing = True, display_structured = False )">
     <%
         dataset_id = trans.security.encode_id( data.id )
         from galaxy.datatypes.metadata import FileParameter
@@ -171,10 +171,12 @@
                                 new-url="${h.url_for( controller='tracks', action='index', dataset_id=dataset_id, default_dbkey=data.dbkey)}" title="Visualize in Trackster"></a>
                         %endif
                         %if trans.user:
-                            <div style="float: right">
-                                <a href="${h.url_for( controller='tag', action='retag', item_class=data.__class__.__name__, item_id=dataset_id )}" target="galaxy_main" title="Edit dataset tags" class="icon-button tags tooltip"></a>
-                                <a href="${h.url_for( controller='dataset', action='annotate', id=dataset_id )}" target="galaxy_main" title="Edit dataset annotation" class="icon-button annotate tooltip"></a>
-                            </div>
+							%if not display_structured:
+	                            <div style="float: right">
+	                                <a href="${h.url_for( controller='tag', action='retag', item_class=data.__class__.__name__, item_id=dataset_id )}" target="galaxy_main" title="Edit dataset tags" class="icon-button tags tooltip"></a>
+	                                <a href="${h.url_for( controller='dataset', action='annotate', id=dataset_id )}" target="galaxy_main" title="Edit dataset annotation" class="icon-button annotate tooltip"></a>
+	                            </div>
+							%endif
                             <div style="clear: both"></div>
                             <div class="tag-area" style="display: none">
                                 <strong>Tags:</strong>
