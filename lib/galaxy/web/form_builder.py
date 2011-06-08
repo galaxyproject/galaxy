@@ -88,9 +88,17 @@ class CheckboxField(BaseField):
     >>> print CheckboxField( "bar", checked="yes" ).get_html()
     <input type="checkbox" id="bar" name="bar" value="true" checked="checked"><input type="hidden" name="bar" value="true">
     """
-    def __init__( self, name, checked=None ):
+    def __init__( self, name, checked=None, refresh_on_change = False, refresh_on_change_values = None ):
         self.name = name
         self.checked = ( checked == True ) or ( isinstance( checked, basestring ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
+        self.refresh_on_change = refresh_on_change
+        self.refresh_on_change_values = refresh_on_change_values or []
+        if self.refresh_on_change: 
+            self.refresh_on_change_text = ' refresh_on_change="true" '
+            if self.refresh_on_change_values:
+                self.refresh_on_change_text = '%s refresh_on_change_values="%s" ' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
+        else:
+            self.refresh_on_change_text = ''
     def get_html( self, prefix="", disabled=False ):
         if self.checked:
             checked_text = ' checked="checked"'
@@ -102,8 +110,8 @@ class CheckboxField(BaseField):
         # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
-        return '<input type="checkbox" id="%s" name="%s" value="true"%s%s><input type="hidden" name="%s%s" value="true"%s>' \
-            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), prefix, self.name, self.get_disabled_str( disabled ) )
+        return '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>' \
+            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) )
     @staticmethod
     def is_checked( value ):
         if value == True:
@@ -253,7 +261,7 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
     <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=[], size=None ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None ):
         self.name = name
         self.multiple = multiple or False
         self.size = size
@@ -266,7 +274,7 @@ class SelectField(BaseField):
             raise Exception, "Unknown display type: %s" % display
         self.display = display
         self.refresh_on_change = refresh_on_change
-        self.refresh_on_change_values = refresh_on_change_values
+        self.refresh_on_change_values = refresh_on_change_values or []
         if self.refresh_on_change: 
             self.refresh_on_change_text = ' refresh_on_change="true"'
             if self.refresh_on_change_values:

@@ -588,6 +588,23 @@ $(document).ready( function() {
         select_field.get(0).form.submit();
     });
     
+    // checkboxes refresh on change
+    $(":checkbox[refresh_on_change='true']").click( function() {
+        var select_field = $(this),
+            select_val = select_field.val(),
+            refresh = false,
+            ref_on_change_vals = select_field.attr("refresh_on_change_values");
+        if (ref_on_change_vals) {
+            ref_on_change_vals = ref_on_change_vals.split(',');
+            var last_selected_value = select_field.attr("last_selected_value");
+            if ($.inArray(select_val, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
+                return;
+            }
+        }
+        $(window).trigger("refresh_on_change");
+        select_field.get(0).form.submit();
+    });
+    
     // Links with confirmation
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );

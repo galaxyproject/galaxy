@@ -318,7 +318,7 @@ class BooleanToolParameter( ToolParameter ):
         checked = self.checked
         if value is not None: 
             checked = form_builder.CheckboxField.is_checked( value )
-        return form_builder.CheckboxField( self.name, checked )
+        return form_builder.CheckboxField( self.name, checked, refresh_on_change = self.refresh_on_change )
     def from_html( self, value, trans=None, other_values={} ):
         return form_builder.CheckboxField.is_checked( value )  
     def to_python( self, value, app ):
@@ -330,6 +330,9 @@ class BooleanToolParameter( ToolParameter ):
             return self.truevalue
         else:
             return self.falsevalue
+    @property
+    def legal_values( self ):
+        return [ self.truevalue, self.falsevalue ]
 
 class FileToolParameter( ToolParameter ):
     """
