@@ -1106,7 +1106,7 @@ class LibraryFolder( object, APIItem ):
             name = unicode( name, 'utf-8' )
         return name
     def get_api_value( self, view='collection' ):
-        rval = super( APIItem, self ).get_api_value( vew=view )
+        rval = super( LibraryFolder, self ).get_api_value( vew=view )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
