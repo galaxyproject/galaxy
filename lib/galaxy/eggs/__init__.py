@@ -247,7 +247,7 @@ class Crate( object ):
     Reads the eggs.ini file for use with checking and fetching.
     """
     config_file = os.path.join( galaxy_dir, 'eggs.ini' )
-    def __init__( self, platform=None ):
+    def __init__( self, galaxy_config_file, platform=None ):
         self.eggs = {}
         self.config = CaseSensitiveConfigParser()
         self.repo = None
@@ -256,7 +256,7 @@ class Crate( object ):
         self.py_platform = None
         if platform is not None:
             self.py_platform = platform.split( '-' )[0]
-        self.galaxy_config = GalaxyConfig()
+        self.galaxy_config = GalaxyConfig( galaxy_config_file )
         self.parse()
     def parse( self ):
         self.config.read( Crate.config_file )
@@ -349,12 +349,14 @@ class Crate( object ):
             raise EggNotFetchable( missing )
 
 class GalaxyConfig( object ):
-    config_file = os.path.join( galaxy_dir, "universe_wsgi.ini" )
     always_conditional = ( 'GeneTrack', 'pysam', 'ctypes', 'python_daemon' )
-    def __init__( self ):
-        self.config = ConfigParser.ConfigParser()
-        if self.config.read( GalaxyConfig.config_file ) == []:
-            raise Exception( "error: unable to read Galaxy config from %s" % GalaxyConfig.config_file )
+    def __init__( self, config_file ):
+        if config_file is None:
+            self.config = None
+        else:
+            self.config = ConfigParser.ConfigParser()
+            if self.config.read( config_file ) == []:
+                raise Exception( "error: unable to read Galaxy config from %s" % config_file )
     def check_conditional( self, egg_name ):
         def check_pysam():
             # can't build pysam on solaris < 10
@@ -363,6 +365,10 @@ class GalaxyConfig( object ):
                 minor = plat[1].split('.')[1]
                 if int( minor ) < 10:
                     return False
+            return True
+        # If we're using require() we may not have a Galaxy config file, but if
+        # we're using require(), we don't care about conditionals.
+        if self.config is None:
             return True
         if egg_name == "pysqlite":
             # SQLite is different since it can be specified in two config vars and defaults to True
@@ -396,7 +402,7 @@ def get_env():
 env = get_env()
 
 def require( req_str ):
-    c = Crate()
+    c = Crate( None )
     req = pkg_resources.Requirement.parse( req_str )
     # TODO: This breaks egg version requirements.  Not currently a problem, but
     # it could become one.

@@ -39,10 +39,10 @@ class DistScrambleCrate( ScrambleCrate ):
     Holds eggs with info on how to build them for distribution.
     """
     dist_config_file = os.path.join( galaxy_dir, 'dist-eggs.ini' )
-    def __init__( self, build_on='all' ):
+    def __init__( self, galaxy_config_file, build_on='all' ):
         self.dist_config = CaseSensitiveConfigParser()
         self.build_on = build_on
-        ScrambleCrate.__init__( self )
+        ScrambleCrate.__init__( self, galaxy_config_file )
     def parse( self ):
         self.dist_config.read( DistScrambleCrate.dist_config_file )
         self.hosts = dict( self.dist_config.items( 'hosts' ) )
