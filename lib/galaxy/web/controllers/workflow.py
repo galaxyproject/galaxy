@@ -1592,6 +1592,15 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 'annotation' : annotation_str
             }
             
+            # Add post-job actions to step dict.
+            if module.type == 'tool':
+                pja_dict = {}
+                for pja in step.post_job_actions:
+                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type, 
+                                                                      output_name = pja.output_name,
+                                                                      action_arguments = pja.action_arguments )
+                step_dict[ 'post_job_actions' ] = pja_dict
+
             # Data inputs
             step_dict['inputs'] = []
             if module.type == "data_input":
@@ -1695,6 +1704,12 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
                 self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+            # Unpack and add post-job actions.
+            post_job_actions = step_dict.get( 'post_job_actions', {} )
+            for name, pja_dict in post_job_actions.items():
+                pja = PostJobAction( pja_dict[ 'action_type' ], 
+                                     step, pja_dict[ 'output_name' ], 
+                                     pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
