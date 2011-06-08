@@ -1124,6 +1124,8 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             redirect_action = 'edit_samples'
         # Check for duplicate sample names within the request
         self.__validate_sample_names( trans, cntrller, request, sample_widgets, **kwd )
+        print "SAVING SAMPLES!"
+        print "saving_new_samples is %s" % saving_new_samples
         if not saving_new_samples:
             library = None
             folder = None
@@ -1170,7 +1172,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                             handle_error( **kwd )
                 self.update_sample_state( trans, cntrller, encoded_selected_sample_ids, new_state, comment=sample_event_comment )
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                                  cntrller=cntrller, 
+                                                                  cntrller=cntrller,
                                                                   action='update_request_state',
                                                                   request_id=trans.security.encode_id( request.id ) ) )
             elif sample_operation == trans.model.Sample.bulk_operations.SELECT_LIBRARY:
@@ -1180,7 +1182,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 for sample_index in range( len( sample_widgets ) ):
                     current_sample = sample_widgets[ sample_index ]
                     if current_sample is None:
-                        # We have a None value because the user did not select this sample 
+                        # We have a None value because the user did not select this sample
                         # on which to perform the action.
                         continue
                     current_sample[ 'library' ] = library
@@ -1189,7 +1191,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             message = 'Changes made to the samples have been saved. '
         else:
             # Saving a newly created sample.  The sample will not have an associated SampleState
-            # until the request is submitted, at which time all samples of the request will be 
+            # until the request is submitted, at which time all samples of the request will be
             # set to the first SampleState configured for the request's RequestType configured
             # by the admin ( i.e., the sample's SampleState would be set to request.type.states[0] ).
             new_samples = []
@@ -1204,9 +1206,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 else:
                     bar_code = ''
                 sample = trans.model.Sample( name=sample_widget[ 'name' ],
-                                             desc='', 
+                                             desc='',
                                              request=request,
-                                             form_values=form_values, 
+                                             form_values=form_values,
                                              bar_code=bar_code,
                                              library=sample_widget[ 'library' ],
                                              folder=sample_widget[ 'folder' ],
@@ -1749,7 +1751,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                 select_field.add_option( label, value )
                         wf_fieldset.append((step.tool_inputs['name'], select_field))
         return wf_fieldset
-        
+
     def __build_sample_state_id_select_field( self, trans, request, selected_value ):
         if selected_value == 'none':
             if request.samples:
@@ -1771,10 +1773,21 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         for index, field in enumerate( request.type.request_form.fields ):
             if field[ 'required' ] == 'required' and request.values.content[ field[ 'name' ] ] in [ '', None ]:
                 empty_fields.append( field[ 'label' ] )
-        if empty_fields:
-            message = 'Complete the following fields of the request before submitting: '
-            for ef in empty_fields:
-                message += '<b>' + ef + '</b> '
+        empty_sample_fields = []
+        for s in request.samples:
+            for field in request.type.sample_form.fields:
+                print "field:", field
+                print "svc:", s.values.content
+                if field['required'] == 'required' and s.values.content[field['name']] in ['', None]:
+                    empty_sample_fields.append((s.name, field['label']))
+        if empty_fields or empty_sample_fields:
+            message = 'Complete the following fields of the request before submitting: <br/>'
+            if empty_fields:
+                for ef in empty_fields:
+                    message += '<b>%s</b><br/>' % ef
+            if empty_sample_fields:
+                for sname, ef in empty_sample_fields:
+                    message = message + '<b>%s</b> field of sample <b>%s</b><br/>' % (ef, sname)
             return message
         return None
     def __validate_sample_names( self, trans, cntrller, request, displayable_sample_widgets, **kwd ):
@@ -1791,7 +1804,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             for i in range( len( displayable_sample_widgets ) ):
                 if sample_name == displayable_sample_widgets[ i ][ 'name' ]:
                     count += 1
-            if count > 1: 
+            if count > 1:
                 message = "You tried to add %i samples with the name (%s).  Samples belonging to a request must have unique names." % ( count, sample_name )
                 break
         if message:
