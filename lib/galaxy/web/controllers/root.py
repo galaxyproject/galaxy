@@ -8,6 +8,7 @@ from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
 
@@ -329,7 +330,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                     trans.sa_session.flush()
                     if trans.app.config.set_metadata_externally:
                         trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
-                    return trans.show_ok_message( "Changed the type of dataset '%s' to %s" % ( data.name, params.datatype ), refresh_frames=['history'] )
+                    return trans.show_ok_message( "Changed the type of dataset '%s' to %s" % ( to_unicode( data.name ), params.datatype ), refresh_frames=['history'] )
                 else:
                     return trans.show_error_message( "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype ) )
             elif params.save:
