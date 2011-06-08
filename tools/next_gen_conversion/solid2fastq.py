@@ -59,14 +59,19 @@ def merge_reads_qual( f_reads, f_qual, f_out, trim_name=False, out='fastq', doub
             line = f.readline().rstrip( '\n\r' )
             while line.startswith( '#' ):
                 line = f.readline().rstrip( '\n\r' )
-            lines.append( line ) 
+            lines.append( line )
+    
             
-        if lines[0].startswith( '>' ):
+        if lines[0].startswith( '>' ) and lines[1].startswith( '>' ):
+            
+            if lines[0] != lines[1]:
+                stop_err('Files reads and quality score files are out of sync and likely corrupted. Please, check your input data')
+            
             defline = lines[0][1:]
             if trim_name and ( defline[ len( defline )-3: ] == "_F3" or defline[ len( defline )-3: ] == "_R3" ):
                 defline = defline[ : len( defline )-3 ]
                 
-        else:
+        elif ( not lines[0].startswith( '>' ) and not lines[1].startswith( '>' ) and len( lines[0] ) > 0 and len( lines[1] ) > 0 ):
 
             if trim_first_base:
                 lines[0] = lines[0][1:]
@@ -190,7 +195,7 @@ def main():
         cur.execute('create index f3_name on f3( name )')
         cur.execute('create index r3_name on r3( name )')
          
-        cur.execute('select * from r3,f3 where f3.name = r3.name')
+        cur.execute('select * from f3,r3 where f3.name = r3.name')
         for item in cur:
             f_out.write( "@%s%s\n%s\n+\n%s\n" % (item[0], "/1", item[1], item[2]) )
             r_out.write( "@%s%s\n%s\n+\n%s\n" % (item[3], "/2", item[4], item[5]) )
