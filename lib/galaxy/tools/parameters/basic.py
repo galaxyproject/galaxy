@@ -603,8 +603,9 @@ class SelectToolParameter( ToolParameter ):
         # Dynamic options are not yet supported in workflow, allow 
         # specifying the value as text for now.
         if self.need_late_validation( trans, context ):
-            assert isinstance( value, UnvalidatedValue )
-            value = value.value
+            if value is not None:
+                assert isinstance( value, UnvalidatedValue ), "Late validation needed for '%s', but provided value (%s) is not of type UnvalidatedValue (%s)." % ( self.name, value, type( value ) )
+                value = value.value
             if self.multiple:
                 if value is None:
                     value = ""
@@ -644,13 +645,11 @@ class SelectToolParameter( ToolParameter ):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
             rval = []
             for v in value: 
-                v = util.restore_text( v )
                 if v not in legal_values:
                     raise ValueError( "An invalid option was selected, please verify" )
                 rval.append( v )
             return rval
         else:
-            value = util.restore_text( value )
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected, please verify" )
             return value    
@@ -1099,7 +1098,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         # specifying the value as text for now.
         if self.need_late_validation( trans, other_values ):
             if value is not None:
-                assert isinstance( value, UnvalidatedValue )
+                assert isinstance( value, UnvalidatedValue ), "Late validation needed for '%s', but provided value (%s) is not of type UnvalidatedValue (%s)." % ( self.name, value, type( value ) )
                 value = value.value
             if self.multiple:
                 if value is None:
@@ -1127,7 +1126,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         rval = []
         for val in value:
             if val not in self.get_legal_values( trans, other_values ): raise ValueError( "An invalid option was selected, please verify" )
-            rval.append( util.restore_text( val ) )
+            rval.append( val )
         return rval
     
     def to_param_dict_string( self, value, other_values={} ):

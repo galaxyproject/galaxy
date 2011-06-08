@@ -388,9 +388,9 @@ class Registry( object ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
             if isinstance( self.get_datatype_by_extension( convert_ext ), accepted_formats ):
-                dataset = dataset.get_converted_files_by_type( convert_ext )
-                if dataset:
-                    ret_data = dataset
+                converted_dataset = dataset.get_converted_files_by_type( convert_ext )
+                if converted_dataset:
+                    ret_data = converted_dataset
                 elif not converter_safe:
                     continue
                 else:
