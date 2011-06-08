@@ -66,7 +66,7 @@ ${h.js( "jquery", "galaxy.base" )}
                         %>
                         <div class="form-row">
                             <input type="checkbox" name="source_dataset_ids" id="dataset_${encoded_id}" value="${encoded_id}"${checked}/>
-                            <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${data.name}</label>
+                            <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name)}</label>
                         </div>
                     %endfor
                 %else:

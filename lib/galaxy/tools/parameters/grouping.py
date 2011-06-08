@@ -414,7 +414,10 @@ class Conditional( Group ):
         return "Conditional (%s)" % self.name
     def get_current_case( self, value, trans ):
         # Convert value to user representation
-        str_value = self.test_param.filter_value( value, trans )
+        if isinstance( value, bool ):
+            str_value = self.test_param.to_param_dict_string( value )
+        else:
+            str_value = self.test_param.filter_value( value, trans )
         # Find the matching case
         for index, case in enumerate( self.cases ):
             if str_value == case.value:

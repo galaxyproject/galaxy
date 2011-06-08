@@ -32,7 +32,7 @@ for arg in "$@"; do
     [ "$arg" = "--stop-daemon" ] && FETCH_EGGS=0; break
 done
 if [ $FETCH_EGGS -eq 1 ]; then
-    python ./scripts/check_eggs.py quiet
+    python ./scripts/check_eggs.py -q
     if [ $? -ne 0 ]; then
         echo "Some eggs are out of date, attempting to fetch..."
         python ./scripts/fetch_eggs.py

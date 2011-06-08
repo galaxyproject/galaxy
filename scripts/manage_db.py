@@ -21,7 +21,15 @@ if sys.argv[-1] in [ 'community' ]:
     config_file = 'community_wsgi.ini'
     repo = 'lib/galaxy/webapps/community/model/migrate'
 else:
+    # Poor man's optparse
     config_file = 'universe_wsgi.ini'
+    if '-c' in sys.argv:
+        pos = sys.argv.index( '-c' )
+        sys.argv.pop(pos)
+        config_file = sys.argv.pop( pos )
+    if not os.path.exists( config_file ):
+        print "Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % config_file
+        sys.exit( 1 )
     repo = 'lib/galaxy/model/migrate'
 
 cp = SafeConfigParser()

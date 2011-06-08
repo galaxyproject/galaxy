@@ -50,7 +50,7 @@ class Ab1( Binary ):
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
-    MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
 
     def _get_samtools_version( self ):
         # Determine the version of samtools being used.  Wouldn't it be nice if

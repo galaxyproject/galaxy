@@ -303,7 +303,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
 
 
     @web.expose
-    def get_metadata_file(self, trans, hda_id, metadata_type):
+    def get_metadata_file(self, trans, hda_id, metadata_name):
         """ Allows the downloading of metadata files associated with datasets (eg. bai index for bam files) """
         data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
         if not data or not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
@@ -311,9 +311,11 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+        
+        file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
-        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, metadata_type)
-        return open(data.metadata.get(metadata_type).file_name)
+        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, file_ext)
+        return open(data.metadata.get(metadata_name).file_name)
         
     @web.expose
     def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
