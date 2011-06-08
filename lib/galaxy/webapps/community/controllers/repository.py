@@ -269,9 +269,6 @@ class RepositoryController( BaseController, ItemRatings ):
         category_ids = util.listify( params.get( 'category_id', '' ) )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         if params.get( 'create_repository_button', False ):
-            # TODOS:
-            # 1. Make sure we can update the version column in the repository table when new change set are pushed.
-            # If it's triclky, eliminate the column.
             error = False
             message = self.__validate_repository_name( name, trans.user )
             if message:
