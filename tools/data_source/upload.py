@@ -129,25 +129,29 @@ def add_file( dataset, registry, json_file, output_path ):
             file_err( 'The gzipped uploaded file contains inappropriate content', dataset, json_file )
             return
         elif is_gzipped and is_valid:
-            # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
-            CHUNK_SIZE = 2**20 # 1Mb   
-            fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_gunzip_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
-            gzipped_file = gzip.GzipFile( dataset.path, 'rb' )
-            while 1:
-                try:
-                    chunk = gzipped_file.read( CHUNK_SIZE )
-                except IOError:
-                    os.close( fd )
-                    os.remove( uncompressed )
-                    file_err( 'Problem decompressing gzipped data', dataset, json_file )
-                    return
-                if not chunk:
-                    break
-                os.write( fd, chunk )
-            os.close( fd )
-            gzipped_file.close()
-            # Replace the gzipped file with the decompressed file
-            shutil.move( uncompressed, dataset.path )
+            if link_data_only == 'copy_files':
+                # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
+                CHUNK_SIZE = 2**20 # 1Mb   
+                fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_gunzip_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
+                gzipped_file = gzip.GzipFile( dataset.path, 'rb' )
+                while 1:
+                    try:
+                        chunk = gzipped_file.read( CHUNK_SIZE )
+                    except IOError:
+                        os.close( fd )
+                        os.remove( uncompressed )
+                        file_err( 'Problem decompressing gzipped data', dataset, json_file )
+                        return
+                    if not chunk:
+                        break
+                    os.write( fd, chunk )
+                os.close( fd )
+                gzipped_file.close()
+                # Replace the gzipped file with the decompressed file if it's safe to do so
+                if dataset.type in ( 'server_dir', 'path_paste' ):
+                    dataset.path = uncompressed
+                else:
+                    shutil.move( uncompressed, dataset.path )
             dataset.name = dataset.name.rstrip( '.gz' )
             data_type = 'gzip'
         if not data_type and bz2 is not None:
@@ -157,78 +161,86 @@ def add_file( dataset, registry, json_file, output_path ):
                 file_err( 'The gzipped uploaded file contains inappropriate content', dataset, json_file )
                 return
             elif is_bzipped and is_valid:
-                # We need to uncompress the temp_name file
-                CHUNK_SIZE = 2**20 # 1Mb   
-                fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_bunzip2_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
-                bzipped_file = bz2.BZ2File( dataset.path, 'rb' )
-                while 1:
-                    try:
-                        chunk = bzipped_file.read( CHUNK_SIZE )
-                    except IOError:
-                        os.close( fd )
-                        os.remove( uncompressed )
-                        file_err( 'Problem decompressing bz2 compressed data', dataset, json_file )
-                        return
-                    if not chunk:
-                        break
-                    os.write( fd, chunk )
-                os.close( fd )
-                bzipped_file.close()
-                # Replace the gzipped file with the decompressed file
-                shutil.move( uncompressed, dataset.path )
+                if link_data_only == 'copy_files':
+                    # We need to uncompress the temp_name file
+                    CHUNK_SIZE = 2**20 # 1Mb   
+                    fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_bunzip2_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
+                    bzipped_file = bz2.BZ2File( dataset.path, 'rb' )
+                    while 1:
+                        try:
+                            chunk = bzipped_file.read( CHUNK_SIZE )
+                        except IOError:
+                            os.close( fd )
+                            os.remove( uncompressed )
+                            file_err( 'Problem decompressing bz2 compressed data', dataset, json_file )
+                            return
+                        if not chunk:
+                            break
+                        os.write( fd, chunk )
+                    os.close( fd )
+                    bzipped_file.close()
+                    # Replace the bzipped file with the decompressed file if it's safe to do so
+                    if dataset.type in ( 'server_dir', 'path_paste' ):
+                        dataset.path = uncompressed
+                    else:
+                        shutil.move( uncompressed, dataset.path )
                 dataset.name = dataset.name.rstrip( '.bz2' )
                 data_type = 'bz2'
         if not data_type:
             # See if we have a zip archive
             is_zipped = check_zip( dataset.path )
             if is_zipped:
-                CHUNK_SIZE = 2**20 # 1Mb
-                uncompressed = None
-                uncompressed_name = None
-                unzipped = False
-                z = zipfile.ZipFile( dataset.path )
-                for name in z.namelist():
-                    if name.endswith('/'):
-                        continue
-                    if unzipped:
-                        stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
-                        break
-                    fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_zip_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
-                    if sys.version_info[:2] >= ( 2, 6 ):
-                        zipped_file = z.open( name )
-                        while 1:
+                if link_data_only == 'copy_files':
+                    CHUNK_SIZE = 2**20 # 1Mb
+                    uncompressed = None
+                    uncompressed_name = None
+                    unzipped = False
+                    z = zipfile.ZipFile( dataset.path )
+                    for name in z.namelist():
+                        if name.endswith('/'):
+                            continue
+                        if unzipped:
+                            stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
+                            break
+                        fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_zip_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
+                        if sys.version_info[:2] >= ( 2, 6 ):
+                            zipped_file = z.open( name )
+                            while 1:
+                                try:
+                                    chunk = zipped_file.read( CHUNK_SIZE )
+                                except IOError:
+                                    os.close( fd )
+                                    os.remove( uncompressed )
+                                    file_err( 'Problem decompressing zipped data', dataset, json_file )
+                                    return
+                                if not chunk:
+                                    break
+                                os.write( fd, chunk )
+                            os.close( fd )
+                            zipped_file.close()
+                            uncompressed_name = name
+                            unzipped = True
+                        else:
+                            # python < 2.5 doesn't have a way to read members in chunks(!)
                             try:
-                                chunk = zipped_file.read( CHUNK_SIZE )
+                                outfile = open( uncompressed, 'wb' )
+                                outfile.write( z.read( name ) )
+                                outfile.close()
+                                uncompressed_name = name
+                                unzipped = True
                             except IOError:
                                 os.close( fd )
                                 os.remove( uncompressed )
                                 file_err( 'Problem decompressing zipped data', dataset, json_file )
                                 return
-                            if not chunk:
-                                break
-                            os.write( fd, chunk )
-                        os.close( fd )
-                        zipped_file.close()
-                        uncompressed_name = name
-                        unzipped = True
-                    else:
-                        # python < 2.5 doesn't have a way to read members in chunks(!)
-                        try:
-                            outfile = open( uncompressed, 'wb' )
-                            outfile.write( z.read( name ) )
-                            outfile.close()
-                            uncompressed_name = name
-                            unzipped = True
-                        except IOError:
-                            os.close( fd )
-                            os.remove( uncompressed )
-                            file_err( 'Problem decompressing zipped data', dataset, json_file )
-                            return
-                z.close()
-                # Replace the zipped file with the decompressed file
-                if uncompressed is not None:
-                    shutil.move( uncompressed, dataset.path )
-                    dataset.name = uncompressed_name
+                    z.close()
+                    # Replace the zipped file with the decompressed file if it's safe to do so
+                    if uncompressed is not None:
+                        if dataset.type in ( 'server_dir', 'path_paste' ):
+                            dataset.path = uncompressed
+                        else:
+                            shutil.move( uncompressed, dataset.path )
+                        dataset.name = uncompressed_name
                 data_type = 'zip'
         if not data_type:
             if check_binary( dataset.path ):
@@ -253,7 +265,7 @@ def add_file( dataset, registry, json_file, output_path ):
         if data_type != 'binary':
             if link_data_only == 'copy_files':
                 in_place = True
-                if dataset.type in ( 'server_dir', 'path_paste' ):
+                if dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
                     in_place = False
                 if dataset.space_to_tab:
                     line_count, converted_path = sniff.convert_newlines_sep2tabs( dataset.path, in_place=in_place )
@@ -277,7 +289,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
             file_err( err_msg, dataset, json_file )
             return
-    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ):
+    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
         # Move the dataset to its "real" path
         if converted_path is not None:
             shutil.copy( converted_path, output_path )
@@ -362,7 +374,7 @@ def __main__():
             add_file( dataset, registry, json_file, output_path )
     # clean up paramfile
     try:
-        os.remove( sys.argv[1] )
+        os.remove( sys.argv[3] )
     except:
         pass
 
