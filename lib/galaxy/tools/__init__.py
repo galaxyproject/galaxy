@@ -756,13 +756,14 @@ class Tool:
                             case.inputs = self.parse_input_elem( 
                                 ElementTree.XML( "<when>%s</when>" % case_inputs ), enctypes, context )
                         else:
-                            case.inputs = {}
+                            case.inputs = odict()
                         group.cases.append( case )
                 else:
                     # Should have one child "input" which determines the case
                     input_elem = elem.find( "param" )
                     assert input_elem is not None, "<conditional> must have a child <param>"
                     group.test_param = self.parse_param_elem( input_elem, enctypes, context )
+                    possible_cases = list( group.test_param.legal_values ) #store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
                     group.test_param.refresh_on_change = True
                     # And a set of possible cases
@@ -770,6 +771,16 @@ class Tool:
                         case = ConditionalWhen()
                         case.value = case_elem.get( "value" )
                         case.inputs = self.parse_input_elem( case_elem, enctypes, context )
+                        group.cases.append( case )
+                        try:
+                            possible_cases.remove( case.value )
+                        except:
+                            log.warning( "A when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." % ( group.name, group.test_param.name, case.value ) )
+                    for unspecified_case in possible_cases:
+                        log.warning( "A when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." % ( group.name, group.test_param.name, unspecified_case ) )
+                        case = ConditionalWhen()
+                        case.value = unspecified_case
+                        case.inputs = odict()
                         group.cases.append( case )
                 rval[group.name] = group
             elif elem.tag == "upload_dataset":
