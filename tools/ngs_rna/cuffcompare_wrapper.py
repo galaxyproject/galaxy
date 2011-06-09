@@ -116,7 +116,7 @@ def __main__():
             raise Exception, stderr
             
         # check that there are results in the output file
-        cc_output_fname = "cc_output"
+        cc_output_fname = "cc_output.stats"
         if len( open( cc_output_fname, 'rb' ).read().strip() ) == 0:
             raise Exception, 'The main output file is empty, there may be an error with your input file or settings.'
     except Exception, e:
