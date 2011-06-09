@@ -412,6 +412,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return msg
             
         # Return data.
+        data = None
         if isinstance( dataset.datatype, Gff ):
             data = GFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
@@ -768,7 +769,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         #
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
-            if run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
+            if input_dataset is None: #optional dataset and dataset wasn't selected
+                tool_params[ jida.name ] = None
+            elif run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
                 # Dataset is indexed and hence a subset can be extracted and used
                 # as input.
                 track_type, data_sources = input_dataset.datatype.get_track_type()
@@ -802,7 +805,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 trans.sa_session.flush()
             
                 # Add dataset to tool's parameters.
-                tool_params[ jida.name ] = new_dataset
+                tool_params[ jida.name ] = new_dataset.id
         
         #        
         # Execute tool and handle outputs.
