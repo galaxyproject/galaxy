@@ -798,6 +798,8 @@ class Tool:
             elif elem.tag == "param":
                 param = self.parse_param_elem( elem, enctypes, context )
                 rval[param.name] = param
+                if hasattr( param, 'data_ref' ):
+                    param.ref_input = context[ param.data_ref ]
         return rval
 
     def parse_param_elem( self, input_elem, enctypes, context ):
@@ -923,8 +925,6 @@ class Tool:
         if not self.check_values:
             return
         for input in self.inputs.itervalues():
-            if input.name not in value:
-                value[input.name] = input.get_initial_value( None, value )
             if isinstance( input, ToolParameter ):
                 callback( "", input, value[input.name] )
             else:

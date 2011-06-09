@@ -440,6 +440,9 @@ class DynamicOptions( object ):
         # Load Validators
         for validator in elem.findall( 'validator' ):
             self.validators.append( validation.Validator.from_element( self.tool_param, validator ) )
+        
+        if self.dataset_ref_name:
+            tool_param.data_ref = self.dataset_ref_name
             
     def parse_column_definitions( self, elem ):
         for column_elem in elem.findall( 'column' ):
