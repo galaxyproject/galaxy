@@ -53,7 +53,7 @@ def __main__():
                query = elem.findtext( "Iteration_query-def" )
                qLen = elem.findtext( "Iteration_query-len" )
                # for every <Hit> within <Iteration>
-               for hit in elem.findall( "Iteration_hits/Hit/" ):
+               for hit in elem.findall( "Iteration_hits/Hit" ):
                    subject = hit.findtext( "Hit_id" )
                    if re.search( '^gi', subject ):
                        subject = subject.split('|')[1]

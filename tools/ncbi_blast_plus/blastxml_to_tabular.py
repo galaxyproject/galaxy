@@ -138,7 +138,7 @@ for event, elem in context:
         qlen = int(elem.findtext("Iteration_query-len"))
                                         
         # for every <Hit> within <Iteration>
-        for hit in elem.findall("Iteration_hits/Hit/"):
+        for hit in elem.findall("Iteration_hits/Hit"):
             #Expecting either this,
             # <Hit_id>gi|3024260|sp|P56514.1|OPSD_BUFBU</Hit_id>
             # <Hit_def>RecName: Full=Rhodopsin</Hit_def>
