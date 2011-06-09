@@ -21,6 +21,8 @@ class ExpressionContext( object, DictMixin ):
         if self.parent is not None and key in self.parent:
             return self.parent[key]
         raise KeyError( key )
+    def __setitem__( self, key, value ):
+        self.dict[key] = value
     def __contains__( self, key ):
         if key in self.dict:
             return True
@@ -29,4 +31,7 @@ class ExpressionContext( object, DictMixin ):
         return False
     def __str__( self ):
         return str( self.dict )
-        
+    def __nonzero__( self ):
+        if not self.dict and not self.parent:
+            return False
+        return True

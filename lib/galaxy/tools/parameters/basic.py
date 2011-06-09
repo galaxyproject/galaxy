@@ -699,8 +699,8 @@ class SelectToolParameter( ToolParameter ):
         # Old style dynamic options, no dependency information so there isn't
         # a lot we can do: if we're dealing with workflows, have to assume
         # late validation no matter what.
-        if self.dynamic_options is not None:
-            return ( trans is None or trans.workflow_building_mode )
+        if self.dynamic_options is not None and ( trans is None or trans.workflow_building_mode ):
+            return True
         # If we got this far, we can actually look at the dependencies
         # to see if their values will not be available until runtime.
         for dep_name in self.get_dependencies():
@@ -1354,7 +1354,7 @@ class DataToolParameter( ToolParameter ):
               happens twice (here and when generating HTML). 
         """
         # Can't look at history in workflow mode
-        if trans.workflow_building_mode:
+        if trans is None or trans.workflow_building_mode:
             return DummyDataset()
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.get_history()
@@ -1370,7 +1370,7 @@ class DataToolParameter( ToolParameter ):
                 pass #no valid options
         def dataset_collector( datasets ):
             def is_convertable( dataset ):
-                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats, converter_safe = self.converter_safe( None, trans ) )
+                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats, converter_safe = self.converter_safe( context, trans ) )
                 if target_ext is not None:
                     return True
                 return False
