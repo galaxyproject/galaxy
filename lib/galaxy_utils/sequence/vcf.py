@@ -1,6 +1,5 @@
 #Dan Blankenberg
-#See: http://1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:vcf3.3
-#See: http://1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:variant_call_format
+# See http://www.1000genomes.org/wiki/Analysis/variant-call-format
 
 NOT_A_NUMBER = float( 'NaN' )
 

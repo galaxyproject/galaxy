@@ -637,7 +637,7 @@ class VcfDataProvider( TabixDataProvider ):
                         # alternative base(s)
                         feature[4],
                         # phred quality score
-                        int( feature[5] )]
+                        float( feature[5] )]
             rval.append(payload)
 
         return { 'data_type' : 'vcf', 'data': rval, 'message': message }
