@@ -571,6 +571,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         vis_rev.dbkey = dbkey
         # Tracks from payload
         tracks = []
+        # TODO: why go through the trouble of unpacking config only to repack and
+        # put in database? How about sticking JSON directly into database?
         for track in decoded_payload['tracks']:
             tracks.append( {    "dataset_id": track['dataset_id'],
                                 "hda_ldda": track.get('hda_ldda', "hda"),
@@ -579,14 +581,15 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                                 "prefs": track['prefs'],
                                 "is_child": track.get('is_child', False)
             } )
+        bookmarks = decoded_payload[ 'bookmarks' ]
+        vis_rev.config = { "tracks": tracks, "bookmarks": bookmarks }
         # Viewport from payload
         if 'viewport' in decoded_payload:
             chrom = decoded_payload['viewport']['chrom']
             start = decoded_payload['viewport']['start']
             end = decoded_payload['viewport']['end']
-            vis_rev.config = { "tracks": tracks, "viewport": { 'chrom': chrom, 'start': start, 'end': end } }
-        else:
-            vis_rev.config = { "tracks": tracks }
+            vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end }
+        
         vis.latest_revision = vis_rev
         session.add( vis_rev )
         session.flush()

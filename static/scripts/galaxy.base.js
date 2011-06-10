@@ -330,7 +330,76 @@ function replace_big_select_inputs(min_length, max_length) {
     });
 }
 
-// Edit and save text asynchronously.
+/**
+ * Returns editable text element. Element is a div with text: (a) when user clicks on text, a textbox/area 
+ * enables user to edit text; (b) when user presses enter key, element's text is set.
+ */
+// TODO: use this function to implement async_save_text (implemented below).
+function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish) {
+    // Set defaults if necessary.
+    if (num_cols === undefined) {
+        num_cols = 30;
+    }
+    if (num_rows === undefined) {
+        num_rows = 4;
+    }
+    
+    // Create div for element.
+    var container = $("<div/>").addClass("editable-text").text(text).click(function() {
+        // If there's already an input element, editing is active, so do nothing.
+        if ($(this).children(":input").length > 0) {
+            return;
+        }
+        
+        container.removeClass("editable-text");
+        
+        // Set element text.
+        var set_text = function(new_text) {
+              if (new_text != "") {
+                  container.text(new_text);
+              }
+              else {
+                  // Need a line so that there is a click target.
+                  container.html("<br>");
+              }
+              container.addClass("editable-text");
+        };
+        
+        // Create input element for editing.
+        var cur_text = container.text(),
+            input_elt = (use_textarea ?
+                        $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text( $.trim(cur_text) ) :
+                        $("<input type='text'></input>").attr({ value: $.trim(cur_text), size: num_cols })
+                        ).blur(function() {
+                            $(this).remove();
+                            set_text(cur_text);
+                        }).keyup(function(e) {
+                            if (e.keyCode === 27) {
+                                // Escape key.
+                                $(this).trigger("blur");
+                            } else if (e.keyCode === 13) {
+                                // Enter key.
+                                $(this).remove();
+                                var new_text = $(this).val();
+                                set_text(new_text);
+                                if (on_finish) {
+                                    on_finish(new_text);
+                                }
+                            }
+                        });
+        
+        // Replace text with input object and focus & select.
+        container.text("");
+        container.append(input_elt);
+        input_elt.focus();
+        input_elt.select();
+    }); 
+    return container;
+}
+
+/** 
+ * Edit and save text asynchronously.
+ */
 function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish) {
     // Set defaults if necessary.
     if (num_cols === undefined) {
@@ -341,7 +410,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
     }
     
     // Set up input element.
-    $("#" + click_to_edit_elt).live( "click", function() {
+    $("#" + click_to_edit_elt).live("click", function() {
         // Check if this is already active
         if ( $("#renaming-active").length > 0) {
             return;
@@ -399,7 +468,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
         }
         // Replace text with input object and focus & select.
         text_elt.hide();
-        t.insertAfter( text_elt );
+        t.insertAfter(text_elt);
         t.focus();
         t.select();
         

@@ -78,6 +78,7 @@
             if (container_element.parents(".item-content").length > 0) { // Embedded viz
                 container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
             } else { // Viewing just one shared viz
+                // TODO: need live or just bind click?
                 $("#right-border").live("click", function() { view.resize_window(); });
             }
             

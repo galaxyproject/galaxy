@@ -160,6 +160,7 @@ class UsesVisualization( SharableItemSecurity ):
         if visualization.type == 'trackster':
             # Trackster config; taken from tracks/browser
             latest_revision = visualization.latest_revision
+            bookmarks = latest_revision.config.get( 'bookmarks', [] )
             tracks = []
 
             # Set tracks.
@@ -193,7 +194,7 @@ class UsesVisualization( SharableItemSecurity ):
                     } )
             
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 
-                        "tracks": tracks, "chrom": "", "dbkey": visualization.dbkey }
+                        "tracks": tracks, "bookmarks": bookmarks, "chrom": "", "dbkey": visualization.dbkey }
 
             if 'viewport' in latest_revision.config:
                 config['viewport'] = latest_revision.config['viewport']
