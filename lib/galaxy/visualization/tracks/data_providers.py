@@ -604,7 +604,7 @@ class BedDataProvider( TabixDataProvider ):
         iterator = self.get_iterator( chrom, start, end )
         out = open( filename, "w" )
         for line in iterator:
-            out.write( line )
+            out.write( "%s\n" % line )
         out.close()
         
 class VcfDataProvider( TabixDataProvider ):
