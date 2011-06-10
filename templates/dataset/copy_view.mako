@@ -1,21 +1,29 @@
 <%inherit file="/base.mako"/>
-<%namespace file="/message.mako" import="javascripts" />
 <%def name="title()">Copy History Items</%def>
 
 <%def name="javascripts()">
 
-${parent.javascripts()}
-${h.js( "jquery", "galaxy.base" )}
-<script type="text/javascript">
-    $(function() {
-        $("#select-multiple").click(function() {
-            $("#single-dest-select").val("");
-            $("#single-destination").hide();
-            $("#multiple-destination").show();
+    ${parent.javascripts()}
+    ${h.js( "jquery", "galaxy.base" )}
+    
+    <script type="text/javascript">
+        $(function() {
+            $("#select-multiple").click(function() {
+                $("#single-dest-select").val("");
+                $("#single-destination").hide();
+                $("#multiple-destination").show();
+            });
         });
-    });
-</script>
-      
+        %if 'history' in refresh_frames:
+            if ( parent.frames && parent.frames.galaxy_history ) {
+                parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history')}";
+                if ( parent.force_right_panel ) {
+                    parent.force_right_panel( 'show' );
+                }
+            }
+        %endif
+    </script>
+    
 </%def>
 
 %if error_msg:

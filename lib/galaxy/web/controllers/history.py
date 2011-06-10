@@ -1182,3 +1182,13 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         else:
             msg = '%d cloned histories are now included in your previously stored histories.' % len( histories )
         return trans.show_ok_message( msg )
+    
+    @web.expose
+    @web.require_login( "switch to a history" )
+    def switch_to_history( self, trans, hist_id=None ):
+        decoded_id = trans.security.decode_id(hist_id)
+        hist = trans.sa_session.query( trans.app.model.History ).get( decoded_id )
+                
+        trans.set_history( hist )
+        return trans.response.send_redirect( url_for( "/" ) )
+        

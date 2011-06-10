@@ -789,10 +789,11 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         else:
             target_history_ids = []
         done_msg = error_msg = ""
+        new_history = None
         if do_copy:
             invalid_datasets = 0
             if not source_dataset_ids or not ( target_history_ids or new_history_name ):
-                error_msg = "You must provide both source datasets and target histories."
+                error_msg = "You must provide both source datasets and target histories. "
             else:
                 if new_history_name:
                     new_history = trans.app.model.History()
@@ -807,23 +808,28 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                     target_histories = [ history ]
                 if len( target_histories ) != len( target_history_ids ):
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_history_ids ) - len( target_histories ) )
-                for data in map( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get, source_dataset_ids ):
-                    if data is None:
-                        error_msg = error_msg + "You tried to copy a dataset that does not exist.  "
+                source_hdas = map( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get, source_dataset_ids )
+                source_hdas.sort(key=lambda hda: hda.hid)
+                for hda in source_hdas:
+                    if hda is None:
+                        error_msg = error_msg + "You tried to copy a dataset that does not exist. "
                         invalid_datasets += 1
-                    elif data.history != history:
-                        error_msg = error_msg + "You tried to copy a dataset which is not in your current history.  "
+                    elif hda.history != history:
+                        error_msg = error_msg + "You tried to copy a dataset which is not in your current history. "
                         invalid_datasets += 1
                     else:
                         for hist in target_histories:
-                            hist.add_dataset( data.copy( copy_children = True ) )
+                            hist.add_dataset( hda.copy( copy_children = True ) )
                 if history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
                 hist_names_str = ", ".join( [ hist.name for hist in target_histories ] )
                 num_source = len( source_dataset_ids ) - invalid_datasets
                 num_target = len(target_histories)
-                done_msg = "%i %s copied to %i %s: %s" % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str )
+                done_msg = "%i %s copied to %i %s: %s." % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str )
+                if new_history is not None:
+                    done_msg += " <a href=\"%s\" target=\"_top\">Switch to the new history.</a>" % url_for( 
+                        controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) )
                 trans.sa_session.refresh( history )
         source_datasets = history.visible_datasets
         target_histories = [history]
