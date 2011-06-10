@@ -10,7 +10,7 @@
     <!-- $input1_file.id   = ID        , e.g. 10 -->
     <!-- $input1_file.hid  = history ID, e.g. 5  -->
     <data name="outfile_pairs"   format="input" label="FASTQ interlacer pairs from data ${input1_file.hid} and data ${input2_file.hid}"/>
-    <data name="outfile_singles" format="input" label="FASTQ interlacer singles from data data ${input1_file.hid} and data ${input2_file.hid}"/>
+    <data name="outfile_singles" format="input" label="FASTQ interlacer singles from data ${input1_file.hid} and data ${input2_file.hid}"/>
   </outputs>
   <tests>
     <test>
