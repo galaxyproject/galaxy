@@ -23,6 +23,11 @@
         <param name="print_all" value="No"/>
         <output name="out_file1" file="sam2interval_noprintAll.dat" ftype="interval"/>
     </test>
+    <test>
+        <param name="input1" value="sam2interval-test3.sam" ftype="sam"/>
+        <param name="print_all" value="No"/>
+        <output name="out_file1" file="sam2interval_with_unmapped_reads_noprintAll.dat" ftype="interval"/>
+    </test>
 
 </tests>
   <help>
