@@ -116,6 +116,7 @@
         <datatype extension="svg" type="galaxy.datatypes.images:Image" mimetype="image/svg+xml"/>
         <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
         <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
+	<datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
         <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
         <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" mimetype="application/xml" display_in_upload="true"/>
         <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" mimetype="application/xml" display_in_upload="true"/>
@@ -279,6 +280,7 @@
           defined format first, followed by next-most rigidly defined, 
           and so on.
         -->
+        <sniffer type="galaxy.datatypes.binary:TwoBit"/>
         <sniffer type="galaxy.datatypes.binary:Bam"/>
         <sniffer type="galaxy.datatypes.binary:Sff"/>
         <sniffer type="galaxy.datatypes.xml:BlastXml"/>

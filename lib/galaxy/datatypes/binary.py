@@ -6,6 +6,10 @@ import data, logging, binascii
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
+from galaxy import eggs
+import pkg_resources
+pkg_resources.require( "bx-python" )
+from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 from urllib import urlencode, quote_plus
 import zipfile, gzip
 import os, subprocess, tempfile
@@ -292,3 +296,29 @@ class BigBed(BigWig):
     def get_track_type( self ):
         return "LineTrack", {"data_standalone": "bigbed"}
 
+class TwoBit (Binary):
+    """Class describing a TwoBit format nucleotide file"""
+    
+    file_ext = "twobit"
+    
+    def sniff(self, filename):
+        try:
+            input = file(filename)
+            magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
+            if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
+                return True
+        except IOError:
+            return False
+        
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary TwoBit format nucleotide file"
+            dataset.blurb = data.nice_size(dataset.get_size())
+        else:
+            return super(TwoBit, self).set_peek(dataset, is_multi_byte)
+    
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Binary TwoBit format nucleotide file (%s)" % (data.nice_size(dataset.get_size()))
