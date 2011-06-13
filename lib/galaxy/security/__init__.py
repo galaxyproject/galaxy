@@ -479,7 +479,6 @@ class GalaxyRBACAgent( RBACAgent ):
         Set new permissions on a dataset, eliminating all current permissions
         permissions looks like: { Action : [ Role, Role ] }
         """
-        for action, roles in permissions.items():
         # Make sure that DATASET_MANAGE_PERMISSIONS is associated with at least 1 role
         has_dataset_manage_permissions = False
         for action, roles in permissions.items():
