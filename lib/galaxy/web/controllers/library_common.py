@@ -232,10 +232,10 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             for k, v in trans.app.model.Library.permitted_actions.items():
                 in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                 permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-            trans.app.security_agent.set_all_library_permissions( library, permissions )
+            trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
             trans.sa_session.refresh( library )
             # Copy the permissions to the root folder
-            trans.app.security_agent.copy_library_permissions( library, library.root_folder )
+            trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
             message = "Permissions updated for library '%s'." % library.name
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='library_permissions',
@@ -285,7 +285,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
             trans.sa_session.add( new_folder )
             trans.sa_session.flush()
             # New folders default to having the same permissions as their parent folder
-            trans.app.security_agent.copy_library_permissions( parent_folder, new_folder )
+            trans.app.security_agent.copy_library_permissions( trans, parent_folder, new_folder )
             # If we're creating in the API, we're done
             if cntrller == 'api':
                 return 200, dict( created=new_folder )
@@ -411,7 +411,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     # and it is not inherited.
                     in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( int( x ) ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-            trans.app.security_agent.set_all_library_permissions( folder, permissions )
+            trans.app.security_agent.set_all_library_permissions( trans, folder, permissions )
             trans.sa_session.refresh( folder )
             message = "Permissions updated for folder '%s'." % folder.name
             return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -625,33 +625,50 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
         else:
             roles = trans.app.security_agent.get_legitimate_roles( trans, ldda.dataset, cntrller )
         if params.get( 'update_roles_button', False ):
-            a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
+            # Dataset permissions
+            access_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
+            manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
             permissions, in_roles, error, message = \
                 trans.app.security_agent.derive_roles_from_access( trans, trans.app.security.decode_id( library_id ), cntrller, library=True, **kwd )
+            # Keep roles for DATASET_MANAGE_PERMISSIONS on the dataset
+            if not ldda.has_manage_permissions_roles( trans ):
+                # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
+                # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
+                # permission.  In this case, we'll reset this permission to the ldda user's private role.
+                #dataset_manage_permissions_roles = [ trans.app.security_agent.get_private_user_role( ldda.user ) ]
+                permissions[ manage_permissions_action ] = [ trans.app.security_agent.get_private_user_role( ldda.user ) ]
+            else:
+                permissions[ manage_permissions_action ] = ldda.get_manage_permissions_roles( trans )
             for ldda in lddas:
                 # Set the DATASET permissions on the Dataset.
                 if error:
                     # Keep the original role associations for the DATASET_ACCESS permission on the ldda.
-                    permissions[ a ] = ldda.get_access_roles( trans )
-                trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
-                trans.sa_session.refresh( ldda.dataset )
-            # Set the LIBRARY permissions on the LibraryDataset.  The LibraryDataset and
-            # LibraryDatasetDatasetAssociation will be set with the same permissions.
-            permissions = {}
-            for k, v in trans.app.model.Library.permitted_actions.items():
-                if k != 'LIBRARY_ACCESS':
-                    # LIBRARY_ACCESS is a special permission set only at the library level and it is not inherited.
-                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-            for ldda in lddas:
-                trans.app.security_agent.set_all_library_permissions( ldda.library_dataset, permissions )
-                trans.sa_session.refresh( ldda.library_dataset )
-                # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
-                trans.app.security_agent.set_all_library_permissions( ldda, permissions )
-                trans.sa_session.refresh( ldda )
-            if error:
-                status = 'error'
-            else:
+                    permissions[ access_action ] = ldda.get_access_roles( trans )
+                    status = 'error'
+                else:
+                    error = trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
+                    if error:
+                        message += error
+                        status = 'error'
+                    trans.sa_session.refresh( ldda.dataset )
+            if not error:
+                # Set the LIBRARY permissions on the LibraryDataset.  The LibraryDataset and
+                # LibraryDatasetDatasetAssociation will be set with the same permissions.
+                permissions = {}
+                for k, v in trans.app.model.Library.permitted_actions.items():
+                    if k != 'LIBRARY_ACCESS':
+                        # LIBRARY_ACCESS is a special permission set only at the library level and it is not inherited.
+                        in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                        permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                for ldda in lddas:
+                    error = trans.app.security_agent.set_all_library_permissions( trans, ldda.library_dataset, permissions )
+                    trans.sa_session.refresh( ldda.library_dataset )
+                    if error:
+                        message = error
+                    else:
+                        # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
+                        trans.app.security_agent.set_all_library_permissions( trans, ldda, permissions )
+                        trans.sa_session.refresh( ldda )
                 if len( lddas ) == 1:
                     message = "Permissions updated for dataset '%s'." % ldda.name
                 else:
@@ -1211,8 +1228,8 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     if not replace_dataset:
                         # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
                         # LDDA and LibraryDataset.
-                        trans.app.security_agent.copy_library_permissions( folder, ldda )
-                        trans.app.security_agent.copy_library_permissions( folder, ldda.library_dataset )
+                        trans.app.security_agent.copy_library_permissions( trans, folder, ldda )
+                        trans.app.security_agent.copy_library_permissions( trans, folder, ldda.library_dataset )
                     # Make sure to apply any defined dataset permissions, allowing the permissions inherited from the folder to
                     # over-ride the same permissions on the dataset, if they exist.
                     dataset_permissions_dict = trans.app.security_agent.get_permissions( hda.dataset )
@@ -1235,7 +1252,7 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     if flush_needed:
                         trans.sa_session.flush()
                     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
-                    trans.app.security_agent.copy_library_permissions( ldda.library_dataset, ldda )
+                    trans.app.security_agent.copy_library_permissions( trans, ldda.library_dataset, ldda )
                 if created_ldda_ids:
                     created_ldda_ids = created_ldda_ids.lstrip( ',' )
                     ldda_id_list = created_ldda_ids.split( ',' )
@@ -1478,13 +1495,17 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
             # Set the LIBRARY permissions on the LibraryDataset
             # NOTE: the LibraryDataset and LibraryDatasetDatasetAssociation will be set with the same permissions
-            trans.app.security_agent.set_all_library_permissions( library_dataset, permissions )
+            error = trans.app.security_agent.set_all_library_permissions( trans, library_dataset, permissions )
             trans.sa_session.refresh( library_dataset )
-            # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
-            trans.app.security_agent.set_all_library_permissions( library_dataset.library_dataset_dataset_association, permissions )
-            trans.sa_session.refresh( library_dataset.library_dataset_dataset_association )
-            message = "Permisisons updated for library dataset '%s'." % library_dataset.name
-            status = 'done'
+            if error:
+                message = error
+                status = 'error'
+            else:
+                # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
+                trans.app.security_agent.set_all_library_permissions( trans, library_dataset.library_dataset_dataset_association, permissions )
+                trans.sa_session.refresh( library_dataset.library_dataset_dataset_association )
+                message = "Permisisons updated for library dataset '%s'." % library_dataset.name
+                status = 'done'
         roles = trans.app.security_agent.get_legitimate_roles( trans, library_dataset, cntrller )
         return trans.fill_template( '/library/common/library_dataset_permissions.mako',
                                     cntrller=cntrller,

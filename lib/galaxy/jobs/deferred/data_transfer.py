@@ -108,7 +108,7 @@ class DataTransfer( object ):
             ld = self.app.model.LibraryDataset( folder=sample.folder, name=library_dataset_name )
             self.sa_session.add( ld )
             self.sa_session.flush()
-            self.app.security_agent.copy_library_permissions( sample.folder, ld )
+            self.app.security_agent.copy_library_permissions( FakeTrans( self.app ), sample.folder, ld )
             ldda = self.app.model.LibraryDatasetDatasetAssociation( name = library_dataset_name,
                                                                     extension = extension,
                                                                     dbkey = '?',

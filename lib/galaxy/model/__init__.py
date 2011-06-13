@@ -594,6 +594,17 @@ class Dataset( object ):
             if dp.action == trans.app.security_agent.permitted_actions.DATASET_ACCESS.action:
                 roles.append( dp.role )
         return roles
+    def get_manage_permissions_roles( self, trans ):
+        roles = []
+        for dp in self.actions:
+            if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+                roles.append( dp.role )
+        return roles
+    def has_manage_permissions_roles( self, trans ):
+        for dp in self.actions:
+            if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+                return True
+        return False
 
 class DatasetInstance( object ):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
@@ -1265,6 +1276,10 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return
     def get_access_roles( self, trans ):
         return self.dataset.get_access_roles( trans )
+    def get_manage_permissions_roles( self, trans ):
+        return self.dataset.get_manage_permissions_roles( trans )
+    def has_manage_permissions_roles( self, trans ):
+        return self.dataset.has_manage_permissions_roles( trans )
     def get_info_association( self, restrict=False, inherited=False ):
         # If restrict is True, we will return this ldda's info_association whether it
         # exists or not ( in which case None will be returned ).  If restrict is False,

@@ -316,6 +316,13 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
         current_user_roles = trans.get_current_user_roles()
+        if not data.dataset.has_manage_permissions_roles( trans ):
+            # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
+            # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
+            # permission.  In this case, we'll reset this permission to the hda user's private role.
+            manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
+            permissions = { manage_permissions_action : [ trans.app.security_agent.get_private_user_role( data.history.user ) ] }
+            trans.app.security_agent.set_dataset_permission( data.dataset, permissions )        
         if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )
@@ -394,18 +401,24 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
                 if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
+                    access_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
+                    manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
                     # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
                     # need to ensure that they did not associate roles that would cause accessibility problems.
                     permissions, in_roles, error, message = \
                     trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, 'root', **kwd )
-                    a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
                     if error:
                         # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                        permissions[ a ] = data.dataset.get_access_roles( trans )
-                    trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
+                        permissions[ access_action ] = data.dataset.get_access_roles( trans )
+                        status = 'error'
+                    else:
+                        error = trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
+                        if error:
+                            message += error
+                            status = 'error'
+                        else:
+                            message = 'Your changes completed successfully.'
                     trans.sa_session.refresh( data.dataset )
-                    if not message:
-                        message = 'Your changes completed successfully.'
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permissions" )
             if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:

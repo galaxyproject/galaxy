@@ -143,7 +143,7 @@ def new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state=
                 folder.add_folder( new_folder )
                 trans.sa_session.add( new_folder )
                 trans.sa_session.flush()
-                trans.app.security_agent.copy_library_permissions( folder, new_folder )
+                trans.app.security_agent.copy_library_permissions( trans, folder, new_folder )
                 folder = new_folder
     if library_bunch.replace_dataset:
         ld = library_bunch.replace_dataset
@@ -151,7 +151,7 @@ def new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state=
         ld = trans.app.model.LibraryDataset( folder=folder, name=uploaded_dataset.name )
         trans.sa_session.add( ld )
         trans.sa_session.flush()
-        trans.app.security_agent.copy_library_permissions( folder, ld )
+        trans.app.security_agent.copy_library_permissions( trans, folder, ld )
     ldda = trans.app.model.LibraryDatasetDatasetAssociation( name = uploaded_dataset.name,
                                                              extension = uploaded_dataset.file_type,
                                                              dbkey = uploaded_dataset.dbkey,
@@ -167,7 +167,7 @@ def new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state=
     ldda.message = library_bunch.message
     trans.sa_session.flush()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
-    trans.app.security_agent.copy_library_permissions( ld, ldda )
+    trans.app.security_agent.copy_library_permissions( trans, ld, ldda )
     if library_bunch.replace_dataset:
         # Copy the Dataset level permissions from replace_dataset to the new LibraryDatasetDatasetAssociation.dataset
         trans.app.security_agent.copy_dataset_permissions( library_bunch.replace_dataset.library_dataset_dataset_association.dataset, ldda.dataset )

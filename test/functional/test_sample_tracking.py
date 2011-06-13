@@ -869,7 +869,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                   sample1_dataset.transfer_status.NOT_STARTED ]
             self.view_sample_dataset( sample_dataset_id=self.security.encode_id( sample1_dataset.id ),
                                       strings_displayed=strings_displayed )
-    '''
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
@@ -935,4 +934,3 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             # Manually delete the group from the database
             refresh( group )
             delete_obj( group )
-    '''

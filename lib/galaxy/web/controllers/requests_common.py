@@ -1050,7 +1050,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
     def __import_samples( self, trans, cntrller, request, displayable_sample_widgets, libraries, workflows, **kwd ):
         """
         Reads the samples csv file and imports all the samples.  The format of the csv file is:
-        SampleName,DataLibraryName,DataLibraryFolderName,HistoryName,WorkflowName,FieldValue1,FieldValue2...
+        SampleName,DataLibraryName,DataLibraryFolderName,HistoryName,WorkflowName,Field1Name,Field2Name...
         """
         params = util.Params( kwd )
         current_user_roles = trans.get_current_user_roles()
