@@ -1,6 +1,7 @@
 """
 Migration script to add 'total_size' column to the dataset table, 'purged'
-column to the HDA table, and 'disk_usage' column to the User table.
+column to the HDA table, and 'disk_usage' column to the User and GalaxySession
+tables.
 """
 
 from sqlalchemy import *
@@ -45,6 +46,15 @@ def upgrade():
         print "Adding disk_usage column to galaxy_user table failed: %s" % str( e )
         log.debug( "Adding disk_usage column to galaxy_user table failed: %s" % str( e ) )
 
+    try:
+        GalaxySession_table = Table( "galaxy_session", metadata, autoload=True )
+        c = Column( 'disk_usage', Numeric( 15, 0 ), index=True )
+        c.create( GalaxySession_table )
+        assert c is GalaxySession_table.c.disk_usage
+    except Exception, e:
+        print "Adding disk_usage column to galaxy_session table failed: %s" % str( e )
+        log.debug( "Adding disk_usage column to galaxy_session table failed: %s" % str( e ) )
+
 def downgrade():
     metadata.reflect()
     try:
@@ -67,3 +77,10 @@ def downgrade():
     except Exception, e:
         print "Dropping disk_usage column from galaxy_user table failed: %s" % str( e )
         log.debug( "Dropping disk_usage column from galaxy_user table failed: %s" % str( e ) )
+
+    try:
+        GalaxySession_table = Table( "galaxy_session", metadata, autoload=True )
+        GalaxySession_table.c.disk_usage.drop()
+    except Exception, e:
+        print "Dropping disk_usage column from galaxy_session table failed: %s" % str( e )
+        log.debug( "Dropping disk_usage column from galaxy_session table failed: %s" % str( e ) )

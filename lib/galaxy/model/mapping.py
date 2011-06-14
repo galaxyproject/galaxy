@@ -475,8 +475,8 @@ GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "current_history_id", Integer, ForeignKey( "history.id" ), nullable=True ),
     Column( "session_key", TrimmedString( 255 ), index=True, unique=True ), # unique 128 bit random number coerced to a string
     Column( "is_valid", Boolean, default=False ),
-    Column( "prev_session_id", Integer ) # saves a reference to the previous session so we have a way to chain them together
-    )
+    Column( "prev_session_id", Integer ), # saves a reference to the previous session so we have a way to chain them together
+    Column( "disk_usage", Numeric( 15, 0 ), index=True ) )
 
 GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", metadata,
     Column( "id", Integer, primary_key=True ),

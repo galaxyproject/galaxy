@@ -424,6 +424,7 @@ class JobWrapper( object ):
                 dataset.blurb = 'tool error'
                 dataset.info = message
                 dataset.set_size()
+                dataset.dataset.set_total_size()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
                 self.sa_session.add( dataset )
