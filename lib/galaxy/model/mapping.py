@@ -49,7 +49,8 @@ User.table = Table( "galaxy_user", metadata,
     Column( "external", Boolean, default=False ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
-    Column( "purged", Boolean, index=True, default=False ) )
+    Column( "purged", Boolean, index=True, default=False ),
+    Column( "disk_usage", Numeric( 15, 0 ), index=True ) )
 
 UserAddress.table = Table( "user_address", metadata,
     Column( "id", Integer, primary_key=True),
