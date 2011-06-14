@@ -1,0 +1,67 @@
+<tool id="smrtpipe_filter" name="SMRTpipe Filter" version="1.0.0">
+  <description>Produce filtered reads from a set of PacBio primary analysis outputs.</description>
+  <command interpreter="python">
+    smrtpipe_galaxy.py --output=data/filtered_subreads.fasta --galaxy_output=${outfile} ${iniFile}
+  </command>
+  <inputs>
+    <conditional name="source">
+      <param name="input_source" type="select" label="Choose the source for the analysis inputs">
+        <option value="path">Path to fofn or multiple bas.h5 paths</option>
+        <option value="history">History</option>
+      </param>
+      <when value="path">
+        <repeat name="inputFiles" title="Input files">
+          <param name="path" type="text" label="File path" size="75"/>
+        </repeat>
+      </when>
+      <when value="history">
+        <param name="input1" type="data" format="tabular" label="File containing input paths" />
+      </when>
+    </conditional>
+    <param name="minimum_readlength" type="integer" value="50" label="Minimum raw readlength" />
+    <param name="minimum_readscore" type="float" value="0.75" label="Minimum read quality" />
+  </inputs>
+  <configfiles>
+    <configfile name="iniFile">
+[input]
+#if $source.input_source=="history":
+#for $l in open($source.input1.file_name,'r'):
+$l
+#end for
+#else
+#for $p in $source.inputFiles
+${p.path}
+#end for
+#end if
+
+[S_Filter]
+filters=MinRL=${minimum_readlength},MinReadScore=${minimum_readscore}
+    </configfile>
+  </configfiles>
+  <outputs>
+    <data name="outfile" format="fasta" label="Filtered subreads" />
+  </outputs>
+  <help>
+
+**What it does**
+
+Filters PacBio bas.h5 files and produces a FASTA file of filtered subreads.
+
+In PacBio SMRT sequencing, the template format is a SMRTbell: a circular
+molecule with adapters at two locations in the circle.  The subreads are the
+portions of the read between adapters.
+
+**Parameter list**
+
+Minimum readlength
+    Only keep reads from ZMWs that produced this many bases or more.
+
+Minimum read quality
+    Only keep reads with overall quality scores of this value or more.  The read quality score is a *de novo* prediction of the accuracy of the read.
+
+**Output**
+
+FASTA file of filtered reads.
+
+  </help>
+</tool>
