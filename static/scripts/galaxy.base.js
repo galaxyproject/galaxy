@@ -353,44 +353,62 @@ function get_editable_text_elt(text, use_textarea, num_cols, num_rows, on_finish
         
         container.removeClass("editable-text");
         
-        // Set element text.
-        var set_text = function(new_text) {
-              if (new_text != "") {
-                  container.text(new_text);
-              }
-              else {
-                  // Need a line so that there is a click target.
-                  container.html("<br>");
-              }
-              container.addClass("editable-text");
+        // Handler for setting element text.
+        var set_text = function(new_text, do_on_finish) {
+            container.find(":input").remove();
+            
+            if (new_text != "") {
+                container.text(new_text);
+            }
+            else {
+                // No text; need a line so that there is a click target.
+                container.html("<br>");
+            }
+            container.addClass("editable-text");
+
+            if (do_on_finish && on_finish) {
+                on_finish(new_text);
+            }
         };
         
-        // Create input element for editing.
+        // Create input element(s) for editing.
         var cur_text = container.text(),
-            input_elt = (use_textarea ?
-                        $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text( $.trim(cur_text) ) :
-                        $("<input type='text'></input>").attr({ value: $.trim(cur_text), size: num_cols })
-                        ).blur(function() {
-                            $(this).remove();
-                            set_text(cur_text);
-                        }).keyup(function(e) {
-                            if (e.keyCode === 27) {
-                                // Escape key.
-                                $(this).trigger("blur");
-                            } else if (e.keyCode === 13) {
-                                // Enter key.
-                                $(this).remove();
-                                var new_text = $(this).val();
-                                set_text(new_text);
-                                if (on_finish) {
-                                    on_finish(new_text);
-                                }
-                            }
-                        });
-        
-        // Replace text with input object and focus & select.
+            input_elt, button_elt;
+            
+        if (use_textarea) {
+            input_elt = $("<textarea/>").attr({ rows: num_rows, cols: num_cols }).text($.trim(cur_text)).keyup(function(e) {
+                if (e.keyCode === 27) {
+                    // Escape key.
+                    set_text(cur_text);
+                }
+            });
+            button_elt = $("<button/>").text("Done").click(function() {
+                set_text(input_elt.val(), true);
+                // Return false so that click does not propogate to container.
+                return false;
+            });
+        }
+        else {
+            input_elt = $("<input type='text'/>").attr({ value: $.trim(cur_text), size: num_cols })
+            .blur(function() {
+                set_text(cur_text);
+            }).keyup(function(e) {
+                if (e.keyCode === 27) {
+                    // Escape key.
+                    $(this).trigger("blur");
+                } else if (e.keyCode === 13) {
+                    // Enter key.
+                    set_text($(this).val(), true);
+                }
+            });
+        }               
+                                
+        // Replace text with input object(s) and focus & select.
         container.text("");
         container.append(input_elt);
+        if (button_elt) {
+            container.append(button_elt);
+        }
         input_elt.focus();
         input_elt.select();
     }); 

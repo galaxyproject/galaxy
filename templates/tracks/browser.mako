@@ -76,8 +76,12 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 return false;
             }),
             delete_icon = $("<a href=''/>").addClass("icon-button delete").appendTo(delete_icon_container),
-            position_div = $("<div/>").addClass("position").text(position).appendTo(new_bookmark),
-            annotation_div = get_editable_text_elt(annotation, false).addClass("annotation").appendTo(new_bookmark);
+            position_div = $("<div/>").addClass("position").appendTo(new_bookmark),
+            position_link = $("<a href=''/>").text(position).appendTo(position_div).click(function() {
+                view.go_to(position);
+                return false;
+            });
+            annotation_div = get_editable_text_elt(annotation, true).addClass("annotation").appendTo(new_bookmark);
             
         view.has_changes = true;
         return new_bookmark;
