@@ -280,6 +280,7 @@
           defined format first, followed by next-most rigidly defined, 
           and so on.
         -->
+        <sniffer type="galaxy.datatypes.tabular:Vcf"/>
         <sniffer type="galaxy.datatypes.binary:TwoBit"/>
         <sniffer type="galaxy.datatypes.binary:Bam"/>
         <sniffer type="galaxy.datatypes.binary:Sff"/>
@@ -303,7 +304,6 @@
         <sniffer type="galaxy.datatypes.tabular:Pileup"/>
         <sniffer type="galaxy.datatypes.interval:Interval"/>
         <sniffer type="galaxy.datatypes.tabular:Sam"/>
-        <sniffer type="galaxy.datatypes.tabular:Vcf"/>
         <!--
         Keep this commented until the sniff method in the assembly.py
         module is fixed to not read the entire file.

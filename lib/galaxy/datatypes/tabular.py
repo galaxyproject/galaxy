@@ -479,13 +479,8 @@ class Vcf( Tabular ):
     MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True )
     
     def sniff( self, filename ):
-        try:
-            # If reader can read and parse file, it's VCF.
-            for line in list( galaxy_utils.sequence.vcf.Reader( open( filename ) ) ):
-                pass
-            return True
-        except:
-            return False
+        headers = get_headers( filename, '\n', count=1 )
+        return headers[0][0].startswith("##fileformat=VCF")
             
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""

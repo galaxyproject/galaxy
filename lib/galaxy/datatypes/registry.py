@@ -122,32 +122,22 @@ class Registry( object ):
                     if current_app is None and isinstance( d_type1, type( d_type2 ) ):
                         d_type1.add_display_application( display_app )
             # Load datatype sniffers from the config
-            sniff_order = []
             sniffers = root.find( 'sniffers' )
             for elem in sniffers.findall( 'sniffer' ):
                 dtype = elem.get( 'type', None )
                 if dtype:
-                    sniff_order.append( dtype )
-            for dtype in sniff_order:
-                try:
-                    fields = dtype.split( ":" )
-                    datatype_module = fields[0]
-                    datatype_class = fields[1]
-                    fields = datatype_module.split( "." )
-                    module = __import__( fields.pop(0) )
-                    for mod in fields:
-                        module = getattr( module, mod )
-                    aclass = getattr( module, datatype_class )() 
-                    included = False
-                    for atype in self.sniff_order:
-                        if not issubclass( atype.__class__, aclass.__class__ ) and isinstance( atype, aclass.__class__ ):
-                            included = True
-                            break
-                    if not included:
+                    try:
+                        fields = dtype.split( ":" )
+                        datatype_module = fields[0]
+                        datatype_class = fields[1]
+                        module = __import__( datatype_module )
+                        for comp in datatype_module.split('.')[1:]:
+                            module = getattr(module, comp)
+                        aclass = getattr( module, datatype_class )() 
                         self.sniff_order.append( aclass )
                         self.log.debug( 'Loaded sniffer for datatype: %s' % dtype )
-                except Exception, exc:
-                    self.log.warning( 'Error appending datatype %s to sniff_order, problem: %s' % ( dtype, str( exc ) ) )
+                    except Exception, exc:
+                        self.log.warning( 'Error appending datatype %s to sniff_order, problem: %s' % ( dtype, str( exc ) ) )
         #default values
         if len(self.datatypes_by_extension) < 1:
             self.datatypes_by_extension = { 
