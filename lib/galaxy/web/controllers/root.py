@@ -316,7 +316,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
         current_user_roles = trans.get_current_user_roles()
-        if not data.dataset.has_manage_permissions_roles( trans ):
+        if data.history.user and not data.dataset.has_manage_permissions_roles( trans ):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
             # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
             # permission.  In this case, we'll reset this permission to the hda user's private role.
