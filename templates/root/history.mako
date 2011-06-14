@@ -140,6 +140,7 @@ $(function() {
                 return false;
             });
         });
+
         // Undelete link
         $(this).find("a.historyItemUndelete").each( function() {
             var data_id = this.id.split( "-" )[1];
@@ -148,6 +149,24 @@ $(function() {
                 $.ajax({
                     url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
                     error: function() { alert( "Undelete failed" ) },
+                    success: function() {
+                        var to_update = {};
+                        to_update[data_id] = "none";
+                        updater( to_update );
+                    }
+                });
+                return false;
+            });
+        });
+        
+        // Purge link
+        $(this).find("a.historyItemPurge").each( function() {
+            var data_id = this.id.split( "-" )[1];
+            $(this).click( function() {
+                $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
+                $.ajax({
+                    url: "${h.url_for( controller='dataset', action='purge_async', id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { alert( "Removal from disk failed" ) },
                     success: function() {
                         var to_update = {};
                         to_update[data_id] = "none";
@@ -266,7 +285,8 @@ var updater_callback = function ( tracked_datasets ) {
     // Build request data
     var ids = [],
         states = [],
-        force_history_refresh = false;
+        force_history_refresh = false,
+        check_history_size = false;
         
     $.each( tracked_datasets, function ( id, state ) {
         ids.push( id );
@@ -292,6 +312,8 @@ var updater_callback = function ( tracked_datasets ) {
                         force_history_refresh = true;
                     }
                     delete tracked_datasets[ parseInt(id) ];
+                    // When a dataset becomes terminal, check for changes in history disk size
+                    check_history_size = true;
                 } else {
                     tracked_datasets[ parseInt(id) ] = val.state;
                 }
@@ -299,6 +321,17 @@ var updater_callback = function ( tracked_datasets ) {
             if ( force_history_refresh ) {
                 parent.frames.galaxy_history.location.reload();
             } else {
+                if ( check_history_size ) {
+                    $.ajax( {
+                        type: "POST",
+                        url: "${h.url_for( controller='root', action='history_get_disk_size' )}",
+                        dataType: "json",
+                        success: function( data ) {
+                            $("#history-size").text( data );
+                        }
+                    });
+                    check_history_size = false;
+                }
                 // Keep going (if there are still any items to track)
                 updater( tracked_datasets ); 
             }
@@ -378,11 +411,15 @@ div.form-row {
 
 <div id="history-name-area" class="historyLinks">
     
-    %if trans.get_user():
     <div id="history-name-container">
-        <div id="history-name" class="tooltip editable-text" title="Click to rename history">${history.get_display_name() | h}</div>
+        %if trans.get_user():
+        <div id="history-name" class="tooltip editable-text" style="display: inline;" title="Click to rename history">${history.get_display_name() | h}</div>
+        <div id="history-size" style="display: inline; float: right;">${history.get_disk_size(nice_size=True)}</div>
+        %else:
+        <div id="history-size">${history.get_disk_size(nice_size=True)}</div>
+        %endif
     </div>
-    %endif
+    <div style="clear: both;"></div>
                                
 </div>
 

@@ -252,16 +252,18 @@ class UsesHistory( SharableItemSecurity ):
             error( "History not found" )
         else:
             return self.security_check( trans.get_user(), history, check_ownership, check_accessible )
-    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False):
+    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
         query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
             .filter( trans.model.HistoryDatasetAssociation.history == history ) \
             .options( eagerload( "children" ) ) \
-            .join( "dataset" ).filter( trans.model.Dataset.purged == False ) \
+            .join( "dataset" ) \
             .options( eagerload_all( "dataset.actions" ) ) \
             .order_by( trans.model.HistoryDatasetAssociation.hid )
         if not show_deleted:
             query = query.filter( trans.model.HistoryDatasetAssociation.deleted == False )
+        if not show_purged:
+            query = query.filter( trans.model.Dataset.purged == False )
         return query.all()
 
 class UsesFormDefinitions:

@@ -114,9 +114,9 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                                               show_deleted=util.string_as_bool( show_deleted ),
                                               show_hidden=util.string_as_bool( show_hidden ) )
         else:
-            show_deleted = util.string_as_bool( show_deleted )
+            show_deleted = show_purged = util.string_as_bool( show_deleted )
             show_hidden = util.string_as_bool( show_hidden )
-            datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden )
+            datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),
@@ -181,6 +181,10 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                         "force_history_refresh": force_history_refresh
                     }
         return rval
+
+    @web.json
+    def history_get_disk_size( self, trans ):
+        return trans.history.get_disk_size( nice_size=True )
 
     ## ---- Dataset display / editing ----------------------------------------
 
@@ -497,6 +501,21 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 return "Dataset id '%s' is invalid" %str( id )
             self.__delete_dataset( trans, id )
         return "OK"
+
+    @web.expose
+    def purge( self, trans, id = None, show_deleted_on_refresh = False, **kwd ):
+        hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( int( id ) )
+        if bool( hda.dataset.active_history_associations or hda.dataset.library_associations ):
+            return trans.show_error_message( "Unable to purge: LDDA(s) or active HDA(s) exist" )
+        elif hda.dataset.purged:
+            return trans.show_error_message( "Unable to purge: dataset is already purged" )
+        os.unlink( hda.dataset.file_name )
+        if os.path.exists( hda.extra_files_path ):
+            shutil.rmtree( hda.extra_files_path )
+        hda.dataset.purged = True
+        trans.sa_session.add( hda.dataset )
+        trans.sa_session.flush()
+        return self.history( trans, show_deleted = show_deleted_on_refresh )
 
     ## ---- History management -----------------------------------------------
 

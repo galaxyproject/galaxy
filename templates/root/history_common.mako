@@ -10,6 +10,7 @@
         else:
             data_state = data.state
         current_user_roles = trans.get_current_user_roles()
+        can_edit = not ( data.deleted or data.purged )
     %>
     %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
         <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
@@ -17,10 +18,14 @@
         <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
     %endif
         
-    %if data.deleted:
-        <div class="warningmessagesmall">
-            <strong>This dataset has been deleted. Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" class="historyItemUndelete" id="historyItemUndeleter-${data.id}" target="galaxy_history">here</a> to undelete.</strong>
-        </div>
+    %if data.deleted or data.purged or data.dataset.purged:
+        <div class="warningmessagesmall"><strong>
+            %if data.dataset.purged or data.purged:
+                This dataset has been deleted and removed from disk.
+            %else:
+                This dataset has been deleted.  Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" class="historyItemUndelete" id="historyItemUndeleter-${data.id}" target="galaxy_history">here</a> to undelete or <a href="${h.url_for( controller='dataset', action='purge', id=data.id )}" class="historyItemPurge" id="historyItemPurger-${data.id}" target="galaxy_history">here</a> to immediately remove from disk.
+            %endif
+        </strong></div>
     %endif
 
     %if data.visible is False:
@@ -36,9 +41,9 @@
                 ## TODO: Make these CSS, just adding a "disabled" class to the normal
                 ## links should be enough. However the number of datasets being uploaded
                 ## at a time is usually small so the impact of these images is also small.
-                <img title='Display Data' class='icon-button display_disabled' />
+                <span title='Display Data' class='icon-button display_disabled tooltip'></span>
                 %if for_editing:
-                    <img title='Edit Attributes' class='icon-button edit_disabled' />
+                    <span title='Edit Attributes' class='icon-button edit_disabled tooltip'></span>
                 %endif
             %else:
                 <% 
@@ -56,17 +61,31 @@
                             # check user permissions (to the same degree) before displaying.
                             display_url = h.url_for( controller='dataset', action='display', dataset_id=dataset_id, preview=True, filename='' )
                 %>
-                <a class="icon-button display tooltip" title="Display data in browser" href="${display_url}"
-                %if for_editing:
-                    target="galaxy_main"
+                %if data.purged:
+                    <span class="icon-button display_disabled tooltip" title="Cannoy display datasets removed from disk"></span>
+                %else:
+                    <a class="icon-button display tooltip" title="Display data in browser" href="${display_url}"
+                    %if for_editing:
+                        target="galaxy_main"
+                    %endif
+                    ></a>
                 %endif
-                ></a>
                 %if for_editing:
-                    <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
+                    %if data.deleted and not data.purged:
+                        <span title="Undelete dataset to edit attributes" class="icon-button edit_disabled tooltip"></span>
+                    %elif data.purged:
+                        <span title="Cannot edit attributes of datasets removed from disk" class="icon-button edit_disabled tooltip"></span>
+                    %else:
+                        <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
+                    %endif
                 %endif
             %endif
             %if for_editing:
-                <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
+                %if can_edit:
+                    <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
+                %else:
+                    <span title="Dataset is already deleted" class="icon-button delete_disabled tooltip"></span>
+                %endif
             %endif
         </div>
         <span class="state-icon"></span>
@@ -124,14 +143,17 @@
         %elif data_state in [ "ok", "failed_metadata" ]:
             %if data_state == "failed_metadata":
                 <div class="warningmessagesmall" style="margin: 4px 0 4px 0">
-                    An error occurred setting the metadata for this dataset.  You may be able to <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">set it manually or retry auto-detection</a>.
+                    An error occurred setting the metadata for this dataset.
+                    %if can_edit:
+                        You may be able to <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">set it manually or retry auto-detection</a>.
+                    %endif
                 </div>
             %endif
             <div>
                 ${data.blurb}<br />
                 format: <span class="${data.ext}">${data.ext}</span>, 
                 database:
-                %if data.dbkey == '?':
+                %if data.dbkey == '?' and can_edit:
                     <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">${_(data.dbkey)}</a>
                 %else:
                     <span class="${data.dbkey}">${_(data.dbkey)}</span>
@@ -142,23 +164,25 @@
             %endif
             <div>
                 %if data.has_data():
-                    ## Check for downloadable metadata files
-                    <% meta_files = [ k for k in data.metadata.spec.keys() if isinstance( data.metadata.spec[k].param, FileParameter ) ] %>
-                    %if meta_files:
-                        <div popupmenu="dataset-${dataset_id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, \
-                                to_ext=data.ext )}">Download Dataset</a>
-                            <a>Additional Files</a>
-                        %for file_type in meta_files:
-                            <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', \
-                                hda_id=dataset_id, metadata_name=file_type )}">Download ${file_type}</a>
-                        %endfor
-                        </div>
-                        <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
-                    %endif
-                    <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Download" class="icon-button disk tooltip"></a>
-                    %if meta_files:
-                        </div>
+                    %if not data.purged:
+                        ## Check for downloadable metadata files
+                        <% meta_files = [ k for k in data.metadata.spec.keys() if isinstance( data.metadata.spec[k].param, FileParameter ) ] %>
+                        %if meta_files:
+                            <div popupmenu="dataset-${dataset_id}-popup">
+                                <a class="action-button" href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, \
+                                    to_ext=data.ext )}">Download Dataset</a>
+                                <a>Additional Files</a>
+                            %for file_type in meta_files:
+                                <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', \
+                                    hda_id=dataset_id, metadata_type=file_type )}">Download ${file_type}</a>
+                            %endfor
+                            </div>
+                            <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
+                        %endif
+                        <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Download" class="icon-button disk tooltip"></a>
+                        %if meta_files:
+                            </div>
+                        %endif
                     %endif
                     
                     <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>

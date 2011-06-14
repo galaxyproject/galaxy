@@ -117,6 +117,7 @@ HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata
     Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ),
     Column( "visible", Boolean ) )
 
 Dataset.table = Table( "dataset", metadata, 
@@ -129,7 +130,8 @@ Dataset.table = Table( "dataset", metadata,
     Column( "purgable", Boolean, default=True ),
     Column( "external_filename" , TEXT ),
     Column( "_extra_files_path", TEXT ),
-    Column( 'file_size', Numeric( 15, 0 ) ) )
+    Column( 'file_size', Numeric( 15, 0 ) ),
+    Column( 'total_size', Numeric( 15, 0 ) ) )
 
 HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_dataset_association_display_at_authorization", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1132,7 +1134,10 @@ assign_mapper( context, Dataset, Dataset.table,
             primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
         active_history_associations=relation( 
             HistoryDatasetAssociation, 
-            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == False ) ) ),
+            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == False ) & ( HistoryDatasetAssociation.table.c.purged == False ) ) ),
+        purged_history_associations=relation(
+            HistoryDatasetAssociation,
+            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.purged == True ) ) ),
         library_associations=relation( 
             LibraryDatasetDatasetAssociation, 
             primaryjoin=( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),

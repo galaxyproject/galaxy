@@ -630,6 +630,10 @@ class JobWrapper( object ):
                              tool=self.tool, stdout=stdout, stderr=stderr )
         job.command_line = self.command_line
 
+        # Once datasets are collected, set the total dataset size (includes extra files)
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            dataset_assoc.dataset.dataset.set_total_size()
+
         # fix permissions
         for path in [ dp.real_path for dp in self.get_output_fnames() ]:
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )

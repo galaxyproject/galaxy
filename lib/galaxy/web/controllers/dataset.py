@@ -694,25 +694,68 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             return True
         return False
     
+    def _purge( self, trans, id ):
+        try:
+            id = int( id )
+        except ValueError, e:
+            return False
+        hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+        # Invalid HDA or not deleted
+        if not hda or not hda.history or not hda.deleted:
+            return False
+        # If the user is anonymous, make sure the HDA is owned by the current session.
+        if not hda.history.user and trans.galaxy_session.id not in [ s.id for s in hda.history.galaxy_sessions ]:
+            return False
+        # If the user is known, make sure the HDA is owned by the current user.
+        if hda.history.user and hda.history.user != trans.user:
+            return False
+        # HDA is purgeable
+        hda.purged = True
+        trans.sa_session.add( hda )
+        trans.log_event( "HDA id %s has been purged" % hda.id )
+        # Don't delete anything if there are active HDAs or any LDDAs, even if
+        # the LDDAs are deleted.  Let the cleanup scripts get it in the latter
+        # case.
+        if hda.dataset.user_can_purge:
+            try:
+                hda.dataset.full_delete()
+                trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                trans.sa_session.add( hda.dataset )
+            except:
+                log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+        trans.sa_session.flush()
+        return True
+
     @web.expose
     def undelete( self, trans, id ):
         if self._undelete( trans, id ):
             return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
-        raise "Error undeleting"
+        raise Exception( "Error undeleting" )
 
     @web.expose
     def unhide( self, trans, id ):
         if self._unhide( trans, id ):
             return trans.response.send_redirect( web.url_for( controller='root', action='history', show_hidden = True ) )
-        raise "Error unhiding"
-
+        raise Exception( "Error unhiding" )
 
     @web.expose
     def undelete_async( self, trans, id ):
         if self._undelete( trans, id ):
             return "OK"
-        raise "Error undeleting"
+        raise Exception( "Error undeleting" )
     
+    @web.expose
+    def purge( self, trans, id ):
+        if self._purge( trans, id ):
+            return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
+        raise Exception( "Error removing disk file" )
+
+    @web.expose
+    def purge_async( self, trans, id ):
+        if self._purge( trans, id ):
+            return "OK"
+        raise Exception( "Error removing disk file" )
+
     @web.expose
     def show_params( self, trans, dataset_id=None, from_noframe=None, **kwd ):
         """

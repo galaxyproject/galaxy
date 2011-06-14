@@ -1,5 +1,6 @@
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.datatypes.data import nice_size
 from galaxy import model, util
 from galaxy.util.odict import odict
 from galaxy.model.mapping import desc
@@ -51,6 +52,7 @@ class HistoryListGrid( grids.Grid ):
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, \
                                     filterable="advanced", grid_name="HistoryListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
+        grids.GridColumn( "Size on Disk", key="get_disk_size_bytes", format=nice_size, sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
@@ -68,6 +70,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Delete and remove datasets from disk", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), async_compatible=True ),
     ]
     standard_filters = [
@@ -219,8 +222,11 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                         return trans.response.send_redirect( url_for( "/" ) )
                     else:    
                         trans.template_context['refresh_frames'] = ['history']
-                elif operation == "delete":
-                    status, message = self._list_delete( trans, histories )
+                elif operation in ( "delete", "delete and remove datasets from disk" ):
+                    if operation == "delete and remove datasets from disk":
+                        status, message = self._list_delete( trans, histories, purge=True )
+                    else:
+                        status, message = self._list_delete( trans, histories )
                     if current_history in histories:
                         # Deleted the current history, so a new, empty history was
                         # created automatically, and we need to refresh the history frame
@@ -245,7 +251,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                 trans.sa_session.flush()
         # Render the list view
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
-    def _list_delete( self, trans, histories ):
+    def _list_delete( self, trans, histories, purge=False ):
         """Delete histories"""
         n_deleted = 0
         deleted_current = False
@@ -264,8 +270,24 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                     trans.new_history()
                 trans.log_event( "History (%s) marked as deleted" % history.name )
                 n_deleted += 1
+            if purge:
+                for hda in history.datasets:
+                    hda.purged = True
+                    trans.sa_session.add( hda )
+                    trans.log_event( "HDA id %s has been purged" % hda.id )
+                    if hda.dataset.user_can_purge:
+                        try:
+                            hda.dataset.full_delete()
+                            trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                            trans.sa_session.add( hda.dataset )
+                        except:
+                            log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+        trans.sa_session.flush()
         if n_deleted:
-            message_parts.append( "Deleted %d %s.  " % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) ) )
+            part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
+            if purge:
+                part += " and removed %s datasets from disk" % iff( n_deleted != 1, "their", "its" )
+            message_parts.append( "%s.  " % part )
         if deleted_current:
             message_parts.append( "Your active history was deleted, a new empty history is now active.  " )
             status = INFO

@@ -15,7 +15,10 @@ from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
-import os.path, os, errno, codecs, operator, socket, pexpect, logging, time
+import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
+
+if sys.version_info[:2] < ( 2, 5 ):
+    from sets import Set as set
 
 log = logging.getLogger( __name__ )
 
@@ -402,6 +405,15 @@ class History( object, UsesAnnotations ):
         if isinstance(history_name, str):
             history_name = unicode(history_name, 'utf-8')
         return history_name
+    @property
+    def get_disk_size_bytes( self ):
+        return self.get_disk_size( nice_size=False )
+    def get_disk_size( self, nice_size=False ):
+        # unique datasets only
+        rval = sum( [ d.get_total_size() for d in list( set( [ hda.dataset for hda in self.datasets if not hda.purged ] ) ) if not d.purged ] )
+        if nice_size:
+            rval = galaxy.datatypes.data.nice_size( rval )
+        return rval
 
 class HistoryUserShareAssociation( object ):
     def __init__( self ):
@@ -569,6 +581,22 @@ class Dataset( object ):
                 self.file_size = os.path.getsize( self.file_name )
         except OSError:
             self.file_size = 0
+    def get_total_size( self ):
+        if self.total_size is not None:
+            return self.total_size
+        if self.file_size:
+            # for backwards compatibility, set if unset
+            self.set_total_size()
+            db_session = object_session( self )
+            db_session.flush()
+            return self.total_size
+        return 0
+    def set_total_size( self ):
+        if self.file_size is None:
+            self.set_size()
+        self.total_size = self.file_size or 0
+        for root, dirs, files in os.walk( self.extra_files_path ):
+            self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files ] )
     def has_data( self ):
         """Detects whether there is any data"""
         return self.get_size() > 0
@@ -588,6 +616,19 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
+    @property
+    def user_can_purge( self ):
+        return self.purged == False \
+                and not bool( self.library_associations ) \
+                and len( self.history_associations ) == len( self.purged_history_associations )
+    def full_delete( self ):
+        """Remove the file and extra files, marks deleted and purged"""
+        os.unlink( self.file_name )
+        if os.path.exists( self.extra_files_path ):
+            shutil.rmtree( self.extra_files_path )
+        # TODO: purge metadata files
+        self.deleted = True
+        self.purged = True
     def get_access_roles( self, trans ):
         roles = []
         for dp in self.actions:

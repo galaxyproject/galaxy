@@ -143,9 +143,10 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.display_disabled{background:url(history-buttons.png) no-repeat 0px -52px;}
 .icon-button.delete{background:url(history-buttons.png) no-repeat 0px -78px;}
 .icon-button.delete:hover{background:url(history-buttons.png) no-repeat 0px -104px;}
-.icon-button.edit{background:url(history-buttons.png) no-repeat 0px -130px;}
-.icon-button.edit:hover{background:url(history-buttons.png) no-repeat 0px -156px;}
-.icon-button.edit_disabled{background:url(history-buttons.png) no-repeat 0px -182px;}
+.icon-button.delete_disabled{background:url(history-buttons.png) no-repeat 0px -130px;}
+.icon-button.edit{background:url(history-buttons.png) no-repeat 0px -156px;}
+.icon-button.edit:hover{background:url(history-buttons.png) no-repeat 0px -182px;}
+.icon-button.edit_disabled{background:url(history-buttons.png) no-repeat 0px -208px;}
 .icon-button.tag{background:url(fugue.png) no-repeat 0px -0px;}
 .icon-button.tags{background:url(fugue.png) no-repeat 0px -26px;}
 .icon-button.tag--plus{background:url(fugue.png) no-repeat 0px -52px;}
