@@ -411,17 +411,17 @@ div.form-row {
 
 <div id="history-name-area" class="historyLinks">
     
-    <div id="history-name-container">
+    <div id="history-name-container" style="position: relative;">
         %if trans.get_user():
-        <div id="history-name" class="tooltip editable-text" style="display: inline;" title="Click to rename history">${history.get_display_name() | h}</div>
-        <div id="history-size" style="display: inline; float: right;">${history.get_disk_size(nice_size=True)}</div>
+            <div id="history-size" style="position: absolute; top: 3px; right: 0px;">${history.get_disk_size(nice_size=True)}</div>
+            <div id="history-name" style="margin-right: 50px;" class="tooltip editable-text" title="Click to rename history">${history.get_display_name() | h}</div>
+            
         %else:
-        <div id="history-size">${history.get_disk_size(nice_size=True)}</div>
+            <div id="history-size">${history.get_disk_size(nice_size=True)}</div>
         %endif
-    </div>
-    <div style="clear: both;"></div>
-                               
+    </div>                     
 </div>
+<div style="clear: both;"></div>
 
 %if history.deleted:
     <div class="warningmessagesmall">
@@ -443,15 +443,15 @@ div.form-row {
     
         ## Annotation elt.
         <div id="history-annotation-area" style="display: none">
-   	        <b>Annotation / Notes:</b>
-   	        <div id="history-annotation-container">
-		    <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
-    		    %if annotation:
+            <strong>Annotation / Notes:</strong>
+            <div id="history-annotation-container">
+            <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
+                %if annotation:
                     ${h.to_unicode( annotation ) | h}
                 %else:
                     <em>Describe or add notes to history</em>
                 %endif
-		    </div>
+            </div>
             </div>
         </div>
         
