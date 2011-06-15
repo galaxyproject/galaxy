@@ -649,7 +649,8 @@ class GalaxyRBACAgent( RBACAgent ):
             if not self.folder_is_public( sub_folder ):
                 return False
         for library_dataset in folder.datasets:
-            if not self.dataset_is_public( library_dataset.library_dataset_dataset_association.dataset ):
+            ldda = library_dataset.library_dataset_dataset_association
+            if ldda and ldda.dataset and not self.dataset_is_public( ldda.dataset ):
                 return False
         return True
     def make_folder_public( self, folder ):
