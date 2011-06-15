@@ -2,7 +2,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
 <%
-from galaxy.util.expressions import ExpressionContext 
+from galaxy.util.expressions import ExpressionContext
 %>
 
 <html>
@@ -160,34 +160,35 @@ $(function() {
             cls = "form-row form-row-error"
         else:
             cls = "form-row"
+            
+        label = param.get_label()
+        
+        field = param.get_html_field( trans, parent_state[ param.name ], other_values )
+        field.refresh_on_change = param.refresh_on_change
+        
+        # Field may contain characters submitted by user and these characters may be unicode; handle non-ascii characters gracefully.
+        field_html = field.get_html( prefix )
+        if type( field_html ) is not unicode:
+            field_html = unicode( field_html, 'utf-8' )
+        
+        if param.type == "hidden":
+            return field_html
         %>
         <div class="${cls}">
-            <% label = param.get_label() %>
             %if label:
-                <label>
-                    ${label}:
-                </label>
+                <label for="${param.name}">${label}:</label>
             %endif
-            <%
-                field = param.get_html_field( trans, parent_state[ param.name ], other_values )
-                field.refresh_on_change = param.refresh_on_change
-                
-                # Field may contain characters submitted by user and these characters may be unicode; handle non-ascii characters gracefully.
-                field_html = field.get_html( prefix )
-                if type( field_html ) is not unicode:
-                    field_html = unicode( field_html, 'utf-8' )
-            %>
             <div class="form-row-input">${field_html}</div>
             %if parent_errors.has_key( param.name ):
-            <div class="form-row-error-message">
-                <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
-            </div>
+                <div class="form-row-error-message">
+                    <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
+                </div>
             %endif
             
             %if param.help:
-            <div class="toolParamHelp" style="clear: both;">
-                ${param.help}
-            </div>
+                <div class="toolParamHelp" style="clear: both;">
+                    ${param.help}
+                </div>
             %endif
     
             <div style="clear: both"></div>
