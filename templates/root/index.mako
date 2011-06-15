@@ -144,11 +144,11 @@
         ## Search tools menu item.
         %if trans.app.toolbox_search.enabled:
             <% 
-                show_tool_search = False
+                show_tool_search = True
                 if trans.user:
-                    show_tool_search = trans.user.preferences.get( "show_tool_search", "False" )
+                    show_tool_search = trans.user.preferences.get( "show_tool_search", "False" ) == "True"
                     
-                if show_tool_search == "True":
+                if show_tool_search:
                     action = "HIDE_TOOL"
                 else:
                     action = "SHOW_TOOL"
