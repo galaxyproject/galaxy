@@ -130,7 +130,7 @@ if valid_filter:
     valid_lines = total_lines - skipped_lines
     print 'Filtering with %s, ' % cond_text
     if valid_lines > 0:
-        print 'kept %4.2f%% of %d lines.' % ( 100.0*lines_kept/valid_lines, total_lines )
+        print 'kept %4.2f%% of %d valid lines (%d total lines).' % ( 100.0*lines_kept/valid_lines, valid_lines, total_lines )
     else:
         print 'Possible invalid filter condition "%s" or non-existent column referenced. See tool tips, syntax and examples.' % cond_text
     if invalid_lines:
