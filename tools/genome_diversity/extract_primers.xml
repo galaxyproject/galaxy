@@ -49,16 +49,15 @@
   <help>
 **What it does**
 
-  This tool extracts primers for SNPs in the argument dataset using the
-  Primer3 program.  The first line of output for a given SNP reports the
-  name of the assembled contig, the SNP's position in the contig, the
-  two variant nucleotides, and Primer3's "pair penalty".  The next line,
-  if not blank, names restriction enzymes (from the user-adjustable list)
-  that differentially cut at that site, but do not cut at any other position
-  between and including the primer positions.  The next lines show the SNP's
-  flanking regions, with the SNP position indicated by "n", including the
-  primer positions and an additional 3 nucleotides.
-
+  This tool extracts primers for SNPs in the dataset using the Primer3 program.
+  The first line of output for a given SNP reports the name of the assembled
+  contig, the SNP's position in the contig, the two variant nucleotides, and
+  Primer3's "pair penalty".  The next line, if not blank, names restriction
+  enzymes (from the user-adjustable list) that differentially cut at that
+  site, but do not cut at any other position between and including the
+  primer positions.  The next lines show the SNP's flanking regions, with
+  the SNP position indicated by "n", including the primer positions and an
+  additional 3 nucleotides.
 
 -----
 

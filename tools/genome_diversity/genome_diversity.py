@@ -31,6 +31,7 @@ class SnpFile:
         self.ref_pos_col = ref_pos_col
         self.elems = None
         self.line = None
+        self.comments = []
 
     def next( self ):
         while self.fh:
@@ -40,11 +41,14 @@ class SnpFile:
                 self.line = None
                 self.elems = None
                 return None
-            if self.line and not self.line.startswith( '#' ):
+            if self.line:
                 self.line = self.line.rstrip( '\r\n' )
                 if self.line:
-                    self.elems = self.line.split( '\t' )
-                    return 1
+                    if self.line.startswith( '#' ):
+                        self.comments.append( self.line )
+                    else:
+                        self.elems = self.line.split( '\t' )
+                        return 1
 
     def get_seq_pos( self ):
         if self.elems:
