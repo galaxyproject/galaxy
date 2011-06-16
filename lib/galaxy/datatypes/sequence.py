@@ -58,7 +58,10 @@ class Sequence( data.Text ):
         if split_params is None:
             return
         
-        def split_one( input_file, get_dir, clusters_per_file,  default_clusters=None):
+        def split_calculate_clusters( input_file, get_dir, default_clusters):
+            """
+            Split the 0th file into even sized chunks, and return the number of clusters in each
+            """
             compress = is_gzip(input_file)
             if compress:
 # TODO: Python 2.4, 2.5 don't have io.BufferedReader!!!
@@ -68,13 +71,10 @@ class Sequence( data.Text ):
                 in_file = open(input_file, 'rt')
             part_file = None
             part = 0
-            if clusters_per_file is None:
-                local_clusters_per_file = [default_clusters]
-            else:
-                local_clusters_per_file = [x for x in clusters_per_file] 
+            local_clusters_per_file = []
             for i, line in enumerate(in_file):
                 cluster_number,  line_in_cluster = divmod(i, 4)
-                current_part, remainder = divmod(cluster_number, local_clusters_per_file[part]+1)
+                current_part, remainder = divmod(cluster_number, default_clusters)
                 
                 if (current_part != part or part_file is None):
                     if (part_file):
@@ -84,8 +84,7 @@ class Sequence( data.Text ):
                     part_path = os.path.join(part_dir, os.path.basename(input_file))
 # TODO: If the input was compressed, compress the output?
                     part_file = open(part_path, 'w')
-                    if clusters_per_file is None:
-                        local_clusters_per_file.append(default_clusters)
+                    local_clusters_per_file.append(default_clusters)
                 part_file.write(line)
             if (part_file):
                 part_file.close()
@@ -93,6 +92,50 @@ class Sequence( data.Text ):
             local_clusters_per_file[part] = remainder + 1
             return local_clusters_per_file
     
+        def split_to_size(input_file, get_dir, clusters_per_file):
+            """
+            Split the files beyond the 0th to the same number of clusters as the 0th.
+            This is used to split in a variety of ways, so these are both legal for
+            clusters_per_file:
+                [ 10000, 10000, 10000, 10000, 2 ] # to_size=10000, 40002 total
+                [ 10001, 10001, 10000, 10000 ] # number_of_parts = 4, 40002 total
+
+            """
+            compress = is_gzip(input_file)
+            if compress:
+# TODO: Python 2.4, 2.5 don't have io.BufferedReader!!!
+# add a buffered reader because gzip is really slow before python 2.7
+                in_file = gzip.GzipFile(input_file, 'r')
+            else:
+                in_file = open(input_file, 'rt')
+            part_file = None
+            part = 0
+            clusters_this_part = 0
+            for i, line in enumerate(in_file):
+                cluster_number,  line_in_cluster = divmod(i, 4)
+                if clusters_this_part  == clusters_per_file[part]:
+                    current_part = part + 1
+                else:
+                    current_part = part
+                
+                if (current_part != part or part_file is None):
+                    if (part_file):
+                        part_file.close()
+                    part = current_part
+                    clusters_this_part = 0
+                    part_dir = get_dir()
+                    part_path = os.path.join(part_dir, os.path.basename(input_file))
+# TODO: If the input was compressed, compress the output?
+                    part_file = open(part_path, 'w')
+                    if clusters_per_file is None and part > 0:
+                        local_clusters_per_file.append(default_clusters)
+                part_file.write(line)
+                if line_in_cluster == 3:
+                    clusters_this_part += 1
+            if (part_file):
+                part_file.close()
+            in_file.close()
+
         directories = []
         def create_subdir():
             dir = subdir_generator_function()
@@ -123,10 +166,11 @@ class Sequence( data.Text ):
                 clusters_per_file.append(chunk)
                 remainder=- 1
                 length -= chunk
-            split_one(input_files[0],  create_subdir,  clusters_per_file)
+            split_to_size(input_files[0],  create_subdir,  clusters_per_file)
         elif split_params['split_mode'] == 'to_size':
             # split one file and see what the cluster sizes turn out to be
-            clusters_per_file = split_one(input_files[0],  create_subdir,  None,  int(split_params['split_size']))
+            clusters_per_file = split_calculate_clusters(input_files[0],  create_subdir,  
+                int(split_params['split_size']))
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
         
@@ -141,7 +185,7 @@ class Sequence( data.Text ):
             
         for i in range(1,  len(input_files)):
             current_dir_idx[0] = 0
-            split_one(input_files[i],  get_subdir,  clusters_per_file)
+            split_to_size(input_files[i],  get_subdir,  clusters_per_file)
     split = staticmethod(split)
 
 
