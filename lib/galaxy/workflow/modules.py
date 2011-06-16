@@ -247,8 +247,20 @@ class ToolModule( WorkflowModule ):
         return data_inputs
     def get_data_outputs( self ):
         data_outputs = []
+        data_inputs = None
         for name, tool_output in self.tool.outputs.iteritems():
-            formats = [ tool_output.format ]
+            if tool_output.format_source != None:
+                formats = [ 'input' ] # default to special name "input" which remove restrictions on connections
+                if data_inputs == None:
+                    data_inputs = self.get_data_inputs()
+                # find the input parameter referenced by format_source
+                for di in data_inputs:
+                    # input names come prefixed with conditional and repeat names separated by '|'
+                    # remove prefixes when comparing with format_source
+                    if di['name'] != None and di['name'].split('|')[-1] == tool_output.format_source:
+                        formats = di['extensions']
+            else:
+                formats = [ tool_output.format ]
             for change_elem in tool_output.change_format:
                 for when_elem in change_elem.findall( 'when' ):
                     format = when_elem.get( 'format', None )
