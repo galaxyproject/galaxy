@@ -43,7 +43,7 @@
     <div class="page-container" style="padding: 10px;">
         <div class="toolMenu">
             <div class="toolSectionList">
-                <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_categories', webapp='community' )}">Browse by category</a></div>
+                <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories', webapp='community' )}">Browse by category</a></div>
                 <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repositories', webapp='community' )}">Browse all repositories</a></div>
                 <div class="toolSectionTitle">
                     Categories

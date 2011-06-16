@@ -323,7 +323,6 @@ class AdminController( BaseController, Admin ):
     group_list_grid = GroupListGrid()
     manage_category_list_grid = ManageCategoryListGrid()
     repository_list_grid = RepositoryListGrid()
-    category_list_grid = CategoryListGrid()
 
     @web.expose
     @web.require_admin
@@ -368,21 +367,13 @@ class AdminController( BaseController, Admin ):
         return self.repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
-    def browse_categories( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd[ 'operation' ].lower()
-            if operation in [ "repositories_by_category", "repositories_by_user" ]:
-                # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
-                    if k.startswith( 'f-' ):
-                        del kwd[ k ]
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='browse_repositories',
-                                                                  **kwd ) )
-        return self.category_list_grid( trans, **kwd )
-    @web.expose
-    @web.require_admin
     def manage_categories( self, trans, **kwd ):
+        if 'f-free-text-search' in kwd:
+            # Trick to enable searching repository name, description from the CategoryListGrid.
+            # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
+            # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
+            # Since we are searching repositories and not categories, redirect to browse_repositories().
+            return self.browse_repositories( trans, **kwd )
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "create":

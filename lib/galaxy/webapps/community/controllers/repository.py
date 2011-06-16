@@ -25,7 +25,6 @@ VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
     
 class CategoryListGrid( grids.Grid ):
-    # TODO rename this class to be categoryListGrid when we eliminate all the tools stuff.
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
             return category.name
@@ -66,11 +65,6 @@ class CategoryListGrid( grids.Grid ):
                             model_class=model.Repository,
                             attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search category name, description",
-                                                cols_to_filter=[ columns[0], columns[1] ],
-                                                key="free-text-search",
-                                                visible=False,
-                                                filterable="standard" ) )
 
     # Override these
     global_actions = []
@@ -185,6 +179,12 @@ class RepositoryController( BaseController, ItemRatings ):
         return trans.fill_template( '/webapps/community/index.mako', message=message, status=status )
     @web.expose
     def browse_categories( self, trans, **kwd ):
+        if 'f-free-text-search' in kwd:
+            # Trick to enable searching repository name, description from the CategoryListGrid.
+            # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
+            # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
+            # Since we are searching repositories and not categories, redirect to browse_repositories().
+            return self.browse_repositories( trans, **kwd )
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation in [ "repositories_by_category", "repositories_by_user" ]:
@@ -337,9 +337,9 @@ class RepositoryController( BaseController, ItemRatings ):
             return "Repository names must contain only lower-case letters, numbers and underscore '_'."
         return ''
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
-        # Add an entry in the hgweb.config file for a new repository.  This enables calls to repository.repo_path.
-        # An entry looks something like: repos/test/mira_assembler = database/community_files/000/repo_123.
-        # TODO: I believe this can be done via ui.updateconfig(), but I haven't confirmed this...
+        # Add an entry in the hgweb.config file for a new repository.
+        # An entry looks something like:
+        # repos/test/mira_assembler = database/community_files/000/repo_123.
         hgweb_config = "%s/hgweb.config" %  trans.app.config.root
         entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
         if os.path.exists( hgweb_config ):
@@ -405,9 +405,9 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo = hg.repository( ui.ui(), repository.repo_path )
-        # TODO: Our current support for browsing a repository requires copies of the
-        # repository files to be in the repository root directory.  We do the following
-        # to ensure the latest files are being browsed.
+        # Our current support for browsing a repository requires copies of the
+        # repository files to be in the repository root directory.  We do the
+        # following to ensure the latest files are being browsed.
         current_working_dir = os.getcwd()
         repo_dir = repository.repo_path
         os.chdir( repo_dir )
@@ -627,10 +627,8 @@ class RepositoryController( BaseController, ItemRatings ):
         return trans.response.send_redirect( download_url )
     @web.json
     def open_folder( self, trans, repository_id, key ):
-        # TODO: The tool shed includes a repository source file browser, which currently depends upon
-        # copies of the hg repository file store in the repo_path for browsing.  We need to figure
-        # out how to use the mercurial api to browse repository contents so we don't need these copied
-        # files ( not bad now, but hwen the tools shed includes data indexes, not good ).
+        # The tool shed includes a repository source file browser, which currently depends upon
+        # copies of the hg repository file store in the repo_path for browsing.
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'

@@ -161,6 +161,8 @@ class UploadController( BaseController ):
         cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
         return tmp_dir, cloned_repo_dir
     def __hg_push( self, trans, repository, file_data, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir ):
+        repo = hg.repository( ui.ui(), repo_dir )
+        tip = repo.changectx( "tip" )
         # We want these change sets to be associated with the owner of the repository, so we'll
         # set the HGUSER environment variable accordingly.
         os.environ[ 'HGUSER' ] = trans.user.username
@@ -182,7 +184,10 @@ class UploadController( BaseController ):
         os.system( 'hg update > /dev/null 2>&1' )
         os.chdir( current_working_dir )
         shutil.rmtree( tmp_dir )
-        message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
+        if tip != repo.changectx( "tip" ):
+            message = "The file '%s' has been successfully uploaded to the repository." % file_data.filename
+        else:
+            message = 'No changes in uploaded files.'
         trans.response.send_redirect( web.url_for( controller='repository',
                                                    action='browse_repository',
                                                    message=message,
