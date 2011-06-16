@@ -976,7 +976,7 @@ extend(Tool.prototype, {
             
         // Create and add track.
         // TODO: add support for other kinds of tool data tracks.
-        if (current_track.track_type === 'FeatureTrack') {
+        if (current_track instanceof FeatureTrack) {
             new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);  
             new_track.change_mode(current_track.mode);
         }
@@ -1942,7 +1942,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 //
                 // HACK: use track type b/c LineTrack histograms are different; what's needed is different
                 // post-draw actions for different line tracks.
-                if (track.track_type == "FeatureTrack" && track.mode == "Histogram") {
+                if (track instanceof FeatureTrack && track.mode == "Histogram") {
                     // Get global max.
                     var global_max = -1;
                     for (var i = 0; i < drawn_tiles.length; i++) {
@@ -2159,7 +2159,6 @@ extend(TiledTrack.prototype, Track.prototype, {
 });
 
 var LabelTrack = function (view, parent_element) {
-    this.track_type = "LabelTrack";
     this.hidden = true;
     Track.call( this, null, view, parent_element );
     this.container_div.addClass( "label-track" );
@@ -2187,7 +2186,6 @@ extend( LabelTrack.prototype, Track.prototype, {
 });
 
 var ReferenceTrack = function (view) {
-    this.track_type = "ReferenceTrack";
     this.hidden = true;
     Track.call(this, null, view, view.top_labeltrack);
     TiledTrack.call(this);
@@ -2235,7 +2233,6 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
 
 var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     var track = this;
-    this.track_type = "LineTrack";
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
     Track.call( this, name, view, view.viewport_container );
@@ -2377,7 +2374,6 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     // initialization code.
     //
     var track = this;
-    this.track_type = "FeatureTrack";
     this.display_modes = ["Auto", "Histogram", "Dense", "Squish", "Pack"];
     // Define and restore track configuration.
     this.track_config = new TrackConfig( {
@@ -2680,7 +2676,6 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
 
 var VcfTrack = function(name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
-    this.track_type = "VcfTrack";
     this.painter = painters.VariantPainter;
 };
 
@@ -2708,7 +2703,6 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     });
     this.prefs = this.track_config.values;
     
-    this.track_type = "ReadTrack";
     this.painter = painters.ReadPainter;
     this.make_name_popup_menu();
 };
@@ -2719,7 +2713,6 @@ extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
  */
 var ToolDataFeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, parent_track) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters, {}, parent_track);
-    this.track_type = "ToolDataFeatureTrack";
     
     // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
     // is ready.

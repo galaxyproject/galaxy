@@ -488,6 +488,8 @@ class Tool:
             self.parse_requirements( requirements_elem )
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible()
+        # Trackster configuration.
+        self.trackster_conf = ( root.find( "trackster_conf" ) is not None )
             
     def parse_inputs( self, root ):
         """

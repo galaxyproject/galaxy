@@ -808,7 +808,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                 trans.sa_session.flush()
             
                 # Add dataset to tool's parameters.
-                tool_params[ jida.name ] = new_dataset.id
+                tool_params[ jida.name ] = new_dataset
         
         #        
         # Execute tool and handle outputs.

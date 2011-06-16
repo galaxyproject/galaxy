@@ -24,6 +24,10 @@ def get_tool_def( trans, hda ):
     # assert tool is not None, 'Requested tool has not been loaded.'
     if not tool:
         return {}
+        
+    # Tool must have a Trackster configuration.
+    if not tool.trackster_conf:
+        return {}
 
     # Get list of tool parameters that can be interactively modified.
     tool_params = []
@@ -46,7 +50,7 @@ def get_tool_def( trans, hda ):
                                   'html' : urllib.quote( input.get_html() ) } )
         
     # If tool has parameters that can be interactively modified, return tool.
-    # Return empty set otherwise.
+    tool_def = {}
     if len( tool_params ) != 0:
-        return { 'name' : tool.name, 'params' : tool_params } 
-    return {}
+        tool_def = { 'name' : tool.name, 'params' : tool_params } 
+    return tool_def

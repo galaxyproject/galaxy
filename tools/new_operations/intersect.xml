@@ -36,6 +36,7 @@
       <data format="input" name="output" metadata_source="input1"/>
   </outputs>
   <code file="operation_filter.py"/>
+  <trackster_conf/>
   <tests>
     <test>
       <param name="input1" value="1.bed" />

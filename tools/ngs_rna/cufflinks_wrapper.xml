@@ -97,6 +97,7 @@
         <data format="gtf" name="assembled_isoforms" label="${tool.name} on ${on_string}: assembled transcripts"/>
     </outputs>
 
+    <trackster_conf/>
     <tests>
         <!--
             Simple test that uses test data included with cufflinks.
