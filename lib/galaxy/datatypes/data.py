@@ -1,4 +1,4 @@
-import logging, os, sys, time, tempfile,  gzip
+import logging, os, sys, time, tempfile
 from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
@@ -356,24 +356,11 @@ class Data( object ):
 
     def merge( split_files, output_file): 
         """
-        Export files are usually compressed, but it doesn't have to be so. In the case that they are, use
-        zcat to cat the files and gzip -c to recompress the result, otherwise use cat
-        TODO: Move to a faster gzjoin-based technique
+        TODO: Do we need to merge gzip files using gzjoin? cat seems to work,
+        but might be brittle. Need to revisit this.
         """
-        #TODO: every time I try to import this from sniff, the parser dies
-        def is_gzip( filename ):
-            temp = open( filename, "U" )
-            magic_check = temp.read( 2 )
-            temp.close()
-            if magic_check != util.gzip_magic:
-                return False
-            return True
-        
         if len(split_files) == 1:
             os.system( 'mv -f %s %s' % ( split_files[0], output_file ) )
-            return
-        if is_gzip(split_files[0]):
-            os.system( 'zcat %s | gzip -c > %s' % ( ' '.join(split_files), output_file ) )
         else:
             os.system( 'cat %s > %s' % ( ' '.join(split_files), output_file ) )
     merge = staticmethod(merge)
