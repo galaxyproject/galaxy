@@ -1013,5 +1013,20 @@
             </td>
         </tr>
     %endif
+    %if len([o for o in grid.operations if o.global_operation]) > 0:
+    <tr>
+        <td colspan="100">
+            %for operation in grid.operations:
+            %if operation.global_operation:
+                <%
+                    link = operation.global_operation()
+                    href = url( **link )
+                %>
+                <a class="action-button" href="${href}">${operation.label}</a>
+            %endif
+            %endfor
+        </td>
+    </tr>
+    %endif
 </%def>
 

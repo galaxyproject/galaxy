@@ -702,7 +702,8 @@ class SharingStatusColumn( GridColumn ):
 
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True,
-                  target=None, url_args=None, async_compatible=False, confirm=None ):
+                  target=None, url_args=None, async_compatible=False, confirm=None,
+                  global_operation=None ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple
@@ -713,6 +714,11 @@ class GridOperation( object ):
         self.async_compatible = async_compatible
         # if 'confirm' is set, then ask before completing the operation
         self.confirm = confirm
+        # specify a general operation that acts on the full grid
+        # this should be a function returning a dictionary with parameters
+        # to pass to the URL, similar to GridColumn links:
+        # global_operation=(lambda: dict(operation="download")
+        self.global_operation = global_operation
     def get_url_args( self, item ):
         if self.url_args:
             temp = dict( self.url_args )
