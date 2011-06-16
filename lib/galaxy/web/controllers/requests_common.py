@@ -1049,8 +1049,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                     status=status )
     def __import_samples( self, trans, cntrller, request, displayable_sample_widgets, libraries, workflows, **kwd ):
         """
-        Reads the samples csv file and imports all the samples.  The format of the csv file is:
-        SampleName,DataLibraryName,DataLibraryFolderName,HistoryName,WorkflowName,Field1Name,Field2Name...
+        Reads the samples csv file and imports all the samples.  The csv file must be in the following format.  The [:FieldValue]
+        is optional, the form field will contain the value after the ':' if included.
+                        SampleName,DataLibraryName,DataLibraryFolderName,HistoryName,WorkflowName,Field1Name:Field1Value,Field2Name:Field2Value...
         """
         params = util.Params( kwd )
         current_user_roles = trans.get_current_user_roles()
@@ -1123,7 +1124,13 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 field_values = {}
                 field_names = row[5:]
                 for field_name in field_names:
-                    field_values[ field_name ] = ''
+                    if field_name.find( ':' ) >= 0:
+                        field_list = field_name.split( ':' )
+                        field_name = field_list[0]
+                        field_value = field_list[1]
+                    else:
+                        field_value = ''
+                    field_values[ field_name ] = field_value
                 displayable_sample_widgets.append( dict( id=None,
                                                          name=row[0],
                                                          bar_code='',

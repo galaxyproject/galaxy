@@ -117,8 +117,9 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
                     <input type="file" name="file_data" />
                     <input type="submit" name="import_samples_button" value="Import samples"/>
                     <div class="toolParamHelp" style="clear: both;">
-                        The csv file must be in the following format:<br/>
-                        SampleName,DataLibraryName,DataLibraryFolderName,HistoryName,WorkflowName,Field1Name,Field2Name...
+                        The csv file must be in the following format.<br/>
+                        The [:FieldValue] is optional, the named form field will contain the value after the ':' if included.<br/>
+                        SampleName,DataLibraryName,FolderName,HistoryName,WorkflowName,Field1Name:Field1Value,Field2Name:Field2Value...
                     </div>
                 </div>
             </form>
