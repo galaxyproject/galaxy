@@ -203,6 +203,12 @@
     <tool file="human_genome_variation/lps.xml" />
     <tool file="human_genome_variation/hilbertvis.xml" />
   </section>
+  <section name="Genome Diversity" id="gd">
+    <tool file="genome_diversity/extract_primers.xml" />
+    <tool file="genome_diversity/select_snps.xml" />
+    <tool file="genome_diversity/select_restriction_enzymes.xml" />
+    <tool file="genome_diversity/extract_flanking_dna.xml" />
+  </section>
   <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss_5/emboss_antigenic.xml" />
     <tool file="emboss_5/emboss_backtranseq.xml" />
