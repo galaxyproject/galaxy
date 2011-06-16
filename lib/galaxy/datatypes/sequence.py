@@ -2,6 +2,7 @@
 Sequence classes
 """
 
+import gzip
 import data
 import logging
 import re
@@ -58,17 +59,22 @@ class Sequence( data.Text ):
             return
         
         def split_one( input_file, get_dir, clusters_per_file,  default_clusters=None):
-            in_file = open(input_file, 'rt')
+            compress = is_gzip(input_file)
+            if compress:
+# TODO: Python 2.4, 2.5 don't have io.BufferedReader!!!
+# add a buffered reader because gzip is really slow before python 2.7
+                in_file = gzip.GzipFile(input_file, 'r')
+            else:
+                in_file = open(input_file, 'rt')
             part_file = None
             part = 0
             if clusters_per_file is None:
                 local_clusters_per_file = [default_clusters]
             else:
                 local_clusters_per_file = [x for x in clusters_per_file] 
-                
             for i, line in enumerate(in_file):
                 cluster_number,  line_in_cluster = divmod(i, 4)
-                current_part, remainder = divmod(cluster_number, local_clusters_per_file[part])
+                current_part, remainder = divmod(cluster_number, local_clusters_per_file[part]+1)
                 
                 if (current_part != part or part_file is None):
                     if (part_file):
@@ -76,6 +82,7 @@ class Sequence( data.Text ):
                     part = current_part
                     part_dir = get_dir()
                     part_path = os.path.join(part_dir, os.path.basename(input_file))
+# TODO: If the input was compressed, compress the output?
                     part_file = open(part_path, 'w')
                     if clusters_per_file is None:
                         local_clusters_per_file.append(default_clusters)
