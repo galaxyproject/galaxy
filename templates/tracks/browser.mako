@@ -379,7 +379,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 <div class="unified-panel-body" style="overflow: auto;">
     <div id="bookmarks-container"></div>
     <div>
-        <a class="icon-button import" original-title="Add Bookmark" id="add-bookmark-button" href="javascript:void(0);">Add Bookmark</a>
+        <a class="icon-button import" style="margin-left: .5em; width: 100%" original-title="Add Bookmark" id="add-bookmark-button" href="javascript:void(0);">Add Bookmark</a>
     </div>
 </div>
 
