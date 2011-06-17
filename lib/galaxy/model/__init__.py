@@ -95,6 +95,7 @@ class Job( object ):
         self.parameters = []
         self.input_datasets = []
         self.output_datasets = []
+        self.input_library_datasets = []
         self.output_library_datasets = []
         self.state = Job.states.NEW
         self.info = None
@@ -109,6 +110,8 @@ class Job( object ):
         self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
+    def add_input_library_dataset( self, name, dataset ):
+        self.input_library_datasets.append( JobToInputLibraryDatasetAssociation( name, dataset ) )
     def add_output_library_dataset( self, name, dataset ):
         self.output_library_datasets.append( JobToOutputLibraryDatasetAssociation( name, dataset ) )
     def add_post_job_action(self, pja):
@@ -211,6 +214,11 @@ class JobToInputDatasetAssociation( object ):
         self.dataset = dataset
         
 class JobToOutputDatasetAssociation( object ):
+    def __init__( self, name, dataset ):
+        self.name = name
+        self.dataset = dataset
+
+class JobToInputLibraryDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
         self.dataset = dataset

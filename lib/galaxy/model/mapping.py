@@ -370,6 +370,12 @@ JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", metadata,
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
     
+JobToInputLibraryDatasetAssociation.table = Table( "job_to_input_library_dataset", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
+    Column( "name", String(255) ) )
+
 JobToOutputLibraryDatasetAssociation.table = Table( "job_to_output_library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -1376,6 +1382,9 @@ assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociati
 assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )
 
+assign_mapper( context, JobToInputLibraryDatasetAssociation, JobToInputLibraryDatasetAssociation.table,
+    properties=dict( job=relation( Job ), dataset=relation( LibraryDatasetDatasetAssociation, lazy=False ) ) )
+
 assign_mapper( context, JobToOutputLibraryDatasetAssociation, JobToOutputLibraryDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( LibraryDatasetDatasetAssociation, lazy=False ) ) )
 
@@ -1410,6 +1419,7 @@ assign_mapper( context, Job, Job.table,
                      input_datasets=relation( JobToInputDatasetAssociation ),
                      output_datasets=relation( JobToOutputDatasetAssociation ),
                      post_job_actions=relation( PostJobActionAssociation, lazy=False ),
+                     input_library_datasets=relation( JobToInputLibraryDatasetAssociation ),
                      output_library_datasets=relation( JobToOutputLibraryDatasetAssociation ),
                      external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
 

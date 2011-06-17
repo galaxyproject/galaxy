@@ -229,7 +229,7 @@ class JobQueue( object ):
             return JOB_DELETED
         elif job.state == model.Job.states.ERROR:
             return JOB_ADMIN_DELETED
-        for dataset_assoc in job.input_datasets:
+        for dataset_assoc in job.input_datasets + job.input_library_datasets:
             idata = dataset_assoc.dataset
             if not idata:
                 continue
@@ -330,6 +330,7 @@ class JobWrapper( object ):
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
         
         # Set up output dataset association for export history jobs. Because job 
@@ -614,6 +615,7 @@ class JobWrapper( object ):
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
@@ -665,7 +667,7 @@ class JobWrapper( object ):
     def get_input_fnames( self ):
         job = self.get_job()
         filenames = []
-        for da in job.input_datasets: #da is JobToInputDatasetAssociation object
+        for da in job.input_datasets + job.input_library_datasets: #da is JobToInputDatasetAssociation object
             if da.dataset:
                 filenames.append( da.dataset.file_name )
                 #we will need to stage in metadata file names also
@@ -861,9 +863,10 @@ class TaskWrapper(JobWrapper):
         self.tool.handle_unvalidated_param_values( incoming, self.app )
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
-        # DBTODO New method for generating command line for a task?
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+        # DBTODO New method for generating command line for a task?
         # These can be passed on the command line if wanted as $userId $userEmail
         if job.history and job.history.user: # check for anonymous user!
             userId = '%d' % job.history.user.id

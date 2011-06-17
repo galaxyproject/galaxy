@@ -93,12 +93,18 @@ class DataTransfer( object ):
                 # In this case, job.params will be a dictionary that contains a key named 'result'.  The value
                 # of the result key is a dictionary that looks something like:
                 # {'sample_dataset_id': '8', 'status': 'Not started', 'protocol': 'scp', 'name': '3.bed', 
-                #  'file_path': '/tmp/library/3.bed', 'host': '127.0.0.1', 'sample_id': 8, 'external_service_id': 2,
-                #  'password': 'galaxy', 'user_name': 'gvk', 'error_msg': '', 'size': '8.0K'}
-                result_dict = job.params[ 'result' ]
+                #  'file_path': '/data/library/3.bed', 'host': '127.0.0.1', 'sample_id': 8, 'external_service_id': 2,
+                #  'local_path': '/tmp/kjl2Ss4', 'password': 'galaxy', 'user_name': 'gvk', 'error_msg': '', 'size': '8.0K'}
+                try:
+                    tj = self.sa_session.query( self.app.model.TransferJob ).get( int( job.params['transfer_job_id'] ) )
+                    result_dict = tj.params
+                    result_dict['local_path'] = tj.path
+                except Exception, e:
+                    log.error( "Updated transfer result unavailable, using old result.  Error was: %s" % str( e ) )
+                    result_dict = job.params[ 'result' ]
                 library_dataset_name = result_dict[ 'name' ]
                 # Determine the data format (see the relevant TODO item in the manual_data_transfer plugin)..
-                extension = sniff.guess_ext( result_dict[ 'file_path' ], sniff_order=self.app.datatypes_registry.sniff_order )
+                extension = sniff.guess_ext( result_dict[ 'local_path' ], sniff_order=self.app.datatypes_registry.sniff_order )
             self._update_sample_dataset_status( protocol=job.params[ 'protocol' ],
                                                 sample_id=int( job.params[ 'sample_id' ] ),
                                                 result_dict=result_dict,
@@ -132,7 +138,9 @@ class DataTransfer( object ):
                             setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                 if self.app.config.set_metadata_externally:
                     self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( self.app.datatypes_registry.set_external_metadata_tool,
-                                                                                                FakeTrans( self.app ),
+                                                                                                FakeTrans( self.app,
+                                                                                                           history=sample.history,
+                                                                                                           user=sample.request.user ),
                                                                                                 incoming = { 'input1':ldda } )
                 else:
                     ldda.set_meta()
