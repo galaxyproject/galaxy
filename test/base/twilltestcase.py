@@ -242,10 +242,10 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_page( "history" )
         for subpatt in patt.split():
             try:
-                tc.find( escape(subpatt) )
+                tc.find( subpatt )
             except:
                 fname = self.write_temp_file( tc.browser.get_html() )
-                errmsg = "no match to '%s'\npage content written to '%s'" % ( escape(subpatt), fname )
+                errmsg = "no match to '%s'\npage content written to '%s'" % ( subpatt, fname )
                 raise AssertionError( errmsg )
         self.home()
     def clear_history( self ):
@@ -384,7 +384,7 @@ class TwillTestCase( unittest.TestCase ):
         """Switches to a history in the current list of histories"""
         self.visit_url( "%s/history/list?operation=switch&id=%s" % ( self.url, id ) )
         if name:
-            self.check_history_for_string( name )
+            self.check_history_for_string( escape( name ) )
         self.home()
     def view_stored_active_histories( self, strings_displayed=[] ):
         self.home()
