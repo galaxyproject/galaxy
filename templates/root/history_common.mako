@@ -174,7 +174,7 @@
                                 <a>Additional Files</a>
                             %for file_type in meta_files:
                                 <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', \
-                                    hda_id=dataset_id, metadata_type=file_type )}">Download ${file_type}</a>
+                                    hda_id=dataset_id, metadata_name=file_type )}">Download ${file_type}</a>
                             %endfor
                             </div>
                             <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
@@ -195,12 +195,12 @@
                                 new-url="${h.url_for( controller='tracks', action='index', dataset_id=dataset_id, default_dbkey=data.dbkey)}" title="Visualize in Trackster"></a>
                         %endif
                         %if trans.user:
-							%if not display_structured:
-	                            <div style="float: right">
-	                                <a href="${h.url_for( controller='tag', action='retag', item_class=data.__class__.__name__, item_id=dataset_id )}" target="galaxy_main" title="Edit dataset tags" class="icon-button tags tooltip"></a>
-	                                <a href="${h.url_for( controller='dataset', action='annotate', id=dataset_id )}" target="galaxy_main" title="Edit dataset annotation" class="icon-button annotate tooltip"></a>
-	                            </div>
-							%endif
+                            %if not display_structured:
+                                <div style="float: right">
+                                    <a href="${h.url_for( controller='tag', action='retag', item_class=data.__class__.__name__, item_id=dataset_id )}" target="galaxy_main" title="Edit dataset tags" class="icon-button tags tooltip"></a>
+                                    <a href="${h.url_for( controller='dataset', action='annotate', id=dataset_id )}" target="galaxy_main" title="Edit dataset annotation" class="icon-button annotate tooltip"></a>
+                                </div>
+                            %endif
                             <div style="clear: both"></div>
                             <div class="tag-area" style="display: none">
                                 <strong>Tags:</strong>
