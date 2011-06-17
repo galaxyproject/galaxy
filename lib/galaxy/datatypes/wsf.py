@@ -26,7 +26,7 @@ class SnpFile( Tabular ):
 
 
     def set_meta( self, dataset, overwrite = True, **kwd ):
-        Tabular.set_meta( self, dataset, overwrite=overwrite, skip=1, max_data_lines=None, **kwd )
+        Tabular.set_meta( self, dataset, overwrite=overwrite, max_data_lines=None, **kwd )
         # these two if statements work around a potential bug in metadata.py
         if dataset.metadata.labels is None or dataset.metadata.labels == dataset.metadata.spec['labels'].no_value:
             self._set_column_labels_metadata( dataset )
