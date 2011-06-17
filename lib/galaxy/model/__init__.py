@@ -2244,20 +2244,59 @@ class PageUserShareAssociation( object ):
         self.user = None
 
 class Visualization( object ):
-    def __init__( self ):
+    def __init__( self, user=None, type=None, title=None, dbkey=None, latest_revision=None ):
         self.id = None
-        self.user = None
-        self.type = None
-        self.title = None
-        self.latest_revision = None
+        self.user = user
+        self.type = type
+        self.title = title
+        self.dbkey = dbkey
+        self.latest_revision = latest_revision
         self.revisions = []
+        if self.latest_revision:
+            self.revisions.append( latest_revision )
+        
+    def copy( self, user=None, title=None ):
+        """
+        Provide copy of visualization with only its latest revision.
+        """
+        # NOTE: a shallow copy is done: the config is copied as is but datasets
+        # are not copied nor are the dataset ids changed. This means that the
+        # user does not have a copy of the data in his/her history and the
+        # user who owns the datasets may delete them, making them inaccessible
+        # for the current user.
+        # TODO: a deep copy option is needed.
+        
+        if not user:
+            user = self.user
+        if not title:
+            title = self.title
+        
+        copy_viz = Visualization( user=user, type=self.type, title=title, dbkey=self.dbkey )
+        copy_revision = self.latest_revision.copy( visualization=copy_viz )
+        copy_viz.latest_revision = copy_revision
+        return copy_viz
 
 class VisualizationRevision( object ):
-    def __init__( self ):
+    def __init__( self, visualization=None, title=None, dbkey=None, config=None ):
         self.id = None
-        self.visualization = None
-        self.title = None
-        self.config = None
+        self.visualization = visualization
+        self.title = title
+        self.dbkey = dbkey
+        self.config = config
+        
+    def copy( self, visualization=None ):
+        """
+        Returns a copy of this object.
+        """
+        if not visualization:
+            visualization = self.visualization
+            
+        return VisualizationRevision( 
+            visualization=visualization, 
+            title=self.title,
+            dbkey=self.dbkey,
+            config=self.config
+        )
         
 class VisualizationUserShareAssociation( object ):
     def __init__( self ):
