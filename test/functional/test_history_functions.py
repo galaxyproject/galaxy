@@ -282,9 +282,9 @@ class TestHistory( TwillTestCase ):
                               .first()
         assert hda_3_bed is not None, "Problem retrieving hda_3_bed from database"
         # Make sure the deleted datasets are included in the cloned history
-        check_str = 'This dataset has been deleted. Click undelete id=%d"' % hda_2_bed.id
+        check_str = 'This dataset has been deleted. Click undelete id=%d' % hda_2_bed.id
         self.check_history_for_string( check_str, show_deleted=True )
-        check_str = 'This dataset has been deleted. Click undelete id=%d"' % hda_3_bed.id
+        check_str = 'This dataset has been deleted. Click undelete id=%d' % hda_3_bed.id
         self.check_history_for_string( check_str, show_deleted=True )
         # Test cloning only active datasets
         self.clone_history( self.security.encode_id( history3.id ),
@@ -353,7 +353,7 @@ class TestHistory( TwillTestCase ):
                              .first()
         assert history5 is not None, "Problem retrieving history5 from database"
         self.rename_history( self.security.encode_id( history5.id ), history5.name, new_name=urllib.quote( 'history 5' ) )
-        # Current history is hostory5
+        # Current history is history5
         sa_session.refresh( history5 )
         # Due to the limitations of twill ( not functional with the permissions forms ), we're forced
         # to do this manually.  At this point, we just want to restrict the access permission on history5
@@ -514,7 +514,7 @@ class TestHistory( TwillTestCase ):
         self.visit_page( "root/history_options" )
         try:
             self.check_page_for_string( 'List</a> histories shared with you by others' )
-            raise AssertionError, "history5 still shared with regular_user2 after unshaing it with that user."
+            raise AssertionError, "history5 still shared with regular_user2 after unsharing it with that user."
         except:
             pass
         self.logout()
