@@ -1,16 +1,9 @@
 #!/usr/bin/env python
 
-"""
-basic version
-need to add
-    o indexing
-    o better error handing
-"""
-
 import sys
-import string
 import math
 from optparse import OptionParser
+import genome_diversity as gd
 
 def main_function(parse_arguments=None):
     if parse_arguments is None:
@@ -37,38 +30,32 @@ def parse_arguments(arguments):
 
 @main_function(parse_arguments)
 def main(options, arguments):
-    ref_chrom_idx = int( options.ref_chrom_col ) - 1
-    ref_pos_idx = int( options.ref_pos_col ) - 1
 
-    chrlens_fh = open( options.chrlens_loc, 'r' )
-    for line in chrlens_fh:
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ):
-            elems = line.split( '\t' )
-            if len(elems) >= 2 and elems[0] == options.species:
-                chrom_info_file = elems[1]
+    ref_chrom_idx = to_int( options.ref_chrom_col ) -1
+    ref_pos_idx = to_int( options.ref_pos_col ) -1
 
-    chrom_info = open( chrom_info_file, 'r' )
+    if (ref_chrom_idx < 1) or (ref_pos_idx < 1) or (ref_chrom_idx == ref_pos_idx):
+        print >> sys.stderr, "Cannot locate reference genome sequence (ref) or reference genome position (rPos) column for this dataset."
+        sys.exit(1)
+
+    chrlens = gd.ChrLens( options.chrlens_loc, options.species )
+
     total_len = 0
-    for i, line in enumerate( chrom_info ):
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ):
-            elems = line.split()
-            if len(elems) == 2:
-                chrom = elems[0]
-                try:
-                    chrom_len = int(elems[1])
-                except ValueError:
-                    sys.stderr.write( "bad chrom len in line %d column 2: %s\n" % ( i, elems[1] ) )
-                    sys.exit(1)
-                total_len += chrom_len;
-    chrom_info.close()
+    for chrom in chrlens:
+        total_len += chrlens.length(chrom)
 
     total_requested = int( options.num_snps )
     lines, data, comments = get_snp_lines_data_and_comments( options.input, ref_chrom_idx, ref_pos_idx )
     selected = select_snps( data, total_len, total_requested )
     out_data = fix_selection_and_order_like_input(data, selected, total_requested)
     write_selected_snps( options.output, out_data, lines, comments )
+
+def to_int( value ):
+    try:
+        int_value = int( value )
+    except ValueError:
+        int_value = 0
+    return int_value
 
 def get_snp_lines_data_and_comments( filename, chrom_idx, pos_idx ):
     fh = open( filename, 'r' )
