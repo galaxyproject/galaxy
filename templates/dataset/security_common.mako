@@ -16,21 +16,21 @@
     </p>
     <div style="width: 100%; white-space: nowrap;">
         <div style="float: left; width: 50%;">
-            Roles associated:<br/>
+            Roles associated:<br />
             <select name="${action_key}_in" id="${action_key}_in_select" class="in_select" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" multiple>
                 %for role in in_roles:
                     <option value="${role.id}">${role.name}</option>
                 %endfor
-            </select> <br/>
+            </select> <br />
             <div style="width: 98%; text-align: right"><input type="submit" id="${action_key}_remove_button" class="role_remove_button" value=">>"/></div>
         </div>
         <div style="width: 50%;">
-            Roles not associated:<br/>
+            Roles not associated:<br />
             <select name="${action_key}_out" id="${action_key}_out_select" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" multiple>
                 %for role in out_roles:
                     <option value="${role.id}">${role.name}</option>
                 %endfor
-            </select> <br/>
+            </select> <br />
             <input type="submit" id="${action_key}_add_button" class="role_add_button" value="<<"/>
         </div>
     </div>
