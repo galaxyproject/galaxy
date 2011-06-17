@@ -72,6 +72,30 @@
         </div>
         <div style="clear: both"></div>
     </div>
+
+    <div class="form-row">
+        <%
+            if uncompress_file:
+                yes_selected = 'selected'
+                no_selected = ''
+            else:
+                yes_selected = ''
+                no_selected = 'selected'
+        %>
+        <label>Uncompress files?</label>
+        <div class="form-row-input">
+            <select name="uncompress_file">
+                <option value="true" ${yes_selected}>Yes
+                <option value="false" ${no_selected}>No
+            </select>
+        </div>
+        <div class="toolParamHelp" style="clear: both;">
+            Supported compression types are gz and bz2.  If <b>Yes</b> is selected, the uploaded file will be uncompressed.  However,
+            if the uploaded file is an archive that contains compressed files, the contained files will not be uncompressed.  For
+            example, if the uploaded compressed file is some_file.tar.gz, some_file.tar will be uncompressed and extracted, but if
+            some_file.tar contains 4.bed.gz, the contained file 4.bed.gz will not be uncompressed.
+        </div>
+    </div>
     <div class="form-row">
         <label>Message:</label>
         <div class="form-row-input">
