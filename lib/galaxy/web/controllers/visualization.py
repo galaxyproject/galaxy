@@ -87,7 +87,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def index( self, trans, *args, **kwargs ):
         """ Lists user's saved visualizations. """
-        return self.list( trans, args, kwargs )
+        return self.list( trans, *args, **kwargs )
     
     @web.expose
     @web.require_login()
@@ -202,20 +202,39 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
         visualization = self.get_visualization( trans, id, check_ownership=False )
         if visualization.importable == False:
             return trans.show_error_message( "The owner of this visualization has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True )
-        elif visualization.user == trans.user:
-            return trans.show_error_message( "You can't import this visualization because you own it.<br>You can %s" % referer_message, use_panels=True )
         elif visualization.deleted:
             return trans.show_error_message( "You can't import this visualization because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
         else:
-            # Create imported visualization via copy. TODO: Visualizations use datasets -- do we need to check to ensure that
-            # datasets can be imported/viewed and/or copy datasets to user?
+            #
+            # Create imported visualization via copy. 
+            # NOTE: a shallow copy is done: the config is copied as is but datasets
+            # are not copied nor are the dataset ids changed. This means that the
+            # user does not have a copy of the data in his/her history and the
+            # user who owns the datasets may delete them, making them inaccessible
+            # for the current user.
+            # TODO:
+            #   -a deep copy is needed;
+            #   -need to handle custom db keys.
+            # 
+            
             imported_visualization = model.Visualization()
-            imported_visualization.title = "imported: " + visualization.title
-            imported_visualization.latest_revision = visualization.latest_revision
+            imported_visualization.title = visualization.title
+            imported_visualization.dbkey = visualization.dbkey
+            imported_visualization.type = visualization.type
             imported_visualization.user = trans.user
-            # Save new visualization.
+            
+            # And the first visualization revision
+            imported_visualization_revision = model.VisualizationRevision()
+            imported_visualization_revision.title = visualization.title
+            imported_visualization_revision.config = visualization.latest_revision.config
+            imported_visualization_revision.dbkey = visualization.dbkey
+            imported_visualization_revision.visualization = imported_visualization
+            imported_visualization.latest_revision = imported_visualization_revision
+
+            # Persist
             session = trans.sa_session
             session.add( imported_visualization )
+            session.add( imported_visualization_revision )
             session.flush()
             
             # Redirect to load galaxy frames.
