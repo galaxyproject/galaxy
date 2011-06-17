@@ -121,5 +121,5 @@
                 <span>Configure your workflow menu</span>
             </a>
         </div>
-    </div
+    </div>
 </%def>
