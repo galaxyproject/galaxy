@@ -746,12 +746,16 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
     
     @web.expose
     def purge( self, trans, id ):
+        if not trans.app.config.allow_user_dataset_purge:
+            raise Exception( "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator." )
         if self._purge( trans, id ):
             return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
         raise Exception( "Error removing disk file" )
 
     @web.expose
     def purge_async( self, trans, id ):
+        if not trans.app.config.allow_user_dataset_purge:
+            raise Exception( "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator." )
         if self._purge( trans, id ):
             return "OK"
         raise Exception( "Error removing disk file" )

@@ -401,6 +401,11 @@ use_interactive = True
 # Allow administrators to delete accounts.
 #allow_user_deletion = False
 
+# Allow users to remove their datasets from disk immediately (otherwise,
+# datasets will be removed after a time period specified by an administrator in
+# the cleanup scripts run via cron)
+#allow_user_dataset_purge = False
+
 # By default, users' data will be public, but setting this to True will cause
 # it to be private.  Does not affect existing users and data, only ones created
 # after this option is set.  Users may still change their default back to

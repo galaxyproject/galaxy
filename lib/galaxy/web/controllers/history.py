@@ -270,7 +270,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
                     trans.new_history()
                 trans.log_event( "History (%s) marked as deleted" % history.name )
                 n_deleted += 1
-            if purge:
+            if purge and trans.app.config.allow_user_dataset_purge:
                 for hda in history.datasets:
                     hda.purged = True
                     trans.sa_session.add( hda )
@@ -285,8 +285,10 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
-            if purge:
+            if purge and trans.app.config.allow_user_dataset_purge:
                 part += " and removed %s datasets from disk" % iff( n_deleted != 1, "their", "its" )
+            elif purge:
+                part += " but the datasets were not removed from disk because that feature is not enabled in this Galaxy instance"
             message_parts.append( "%s.  " % part )
         if deleted_current:
             message_parts.append( "Your active history was deleted, a new empty history is now active.  " )

@@ -504,6 +504,8 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
 
     @web.expose
     def purge( self, trans, id = None, show_deleted_on_refresh = False, **kwd ):
+        if not trans.app.config.allow_user_dataset_purge:
+            return trans.show_error_message( "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator." )
         hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( int( id ) )
         if bool( hda.dataset.active_history_associations or hda.dataset.library_associations ):
             return trans.show_error_message( "Unable to purge: LDDA(s) or active HDA(s) exist" )
