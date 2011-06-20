@@ -1,9 +1,35 @@
 <% _=n_ %>
+
+<%def name="render_download_links( data, dataset_id )">
+    <%
+        from galaxy.datatypes.metadata import FileParameter
+    %>
+    %if not data.purged:
+        ## Check for downloadable metadata files
+        <% meta_files = [ k for k in data.metadata.spec.keys() if isinstance( data.metadata.spec[k].param, FileParameter ) ] %>
+        %if meta_files:
+            <div popupmenu="dataset-${dataset_id}-popup">
+                <a class="action-button" href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, \
+                    to_ext=data.ext )}">Download Dataset</a>
+                <a>Additional Files</a>
+            %for file_type in meta_files:
+                <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', \
+                    hda_id=dataset_id, metadata_name=file_type )}">Download ${file_type}</a>
+            %endfor
+            </div>
+            <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
+        %endif
+        <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Download" class="icon-button disk tooltip"></a>
+        %if meta_files:
+            </div>
+        %endif
+    %endif
+</%def>
+
 ## Render the dataset `data` as history item, using `hid` as the displayed id
 <%def name="render_dataset( data, hid, show_deleted_on_refresh = False, for_editing = True, display_structured = False )">
     <%
         dataset_id = trans.security.encode_id( data.id )
-        from galaxy.datatypes.metadata import FileParameter
 
         if data.state in ['no state','',None]:
             data_state = "queued"
@@ -126,6 +152,9 @@
             </div>
             <div>
                 <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main" title="View or report this error" class="icon-button bug tooltip"></a>
+                %if data.has_data():
+                    ${render_download_links( data, dataset_id )}
+                %endif
                 <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
                 %if for_editing:
                     <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
@@ -169,26 +198,7 @@
             %endif
             <div>
                 %if data.has_data():
-                    %if not data.purged:
-                        ## Check for downloadable metadata files
-                        <% meta_files = [ k for k in data.metadata.spec.keys() if isinstance( data.metadata.spec[k].param, FileParameter ) ] %>
-                        %if meta_files:
-                            <div popupmenu="dataset-${dataset_id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, \
-                                    to_ext=data.ext )}">Download Dataset</a>
-                                <a>Additional Files</a>
-                            %for file_type in meta_files:
-                                <a class="action-button" href="${h.url_for( controller='dataset', action='get_metadata_file', \
-                                    hda_id=dataset_id, metadata_name=file_type )}">Download ${file_type}</a>
-                            %endfor
-                            </div>
-                            <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
-                        %endif
-                        <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Download" class="icon-button disk tooltip"></a>
-                        %if meta_files:
-                            </div>
-                        %endif
-                    %endif
+                    ${render_download_links( data, dataset_id )}
                     
                     <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title="View Details" class="icon-button information tooltip"></a>
                     
