@@ -2,7 +2,7 @@ import sys, os, shutil, logging, tarfile, tempfile
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
-from common import get_categories, get_repository
+from common import get_categories, get_repository, hg_add, hg_clone, hg_commit, hg_push, update_for_browsing
 from mercurial import hg, ui
 
 log = logging.getLogger( __name__ )
@@ -139,12 +139,39 @@ class UploadController( BaseController ):
                     # We have a repository that is not new (it contains files).
                     if uncompress_file and ( isgzip or isbz2 ):
                         uploaded_file_filename = self.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
+                    # Get the current repository tip.
+                    tip = repo[ 'tip' ]
                     # Clone the repository to a temporary location.
-                    tmp_dir, cloned_repo_dir = self.__hg_clone( trans, repository, repo_dir, current_working_dir )
+                    tmp_dir, cloned_repo_dir = hg_clone( trans, repository, current_working_dir )
                     # Move the uploaded files to the upload_point within the cloned repository.
                     self.__move_to_upload_point( upload_point, uploaded_file, uploaded_file_name, uploaded_file_filename, cloned_repo_dir, istar, tar )
-                    # Commit and push the changes from the cloned repo to the master repo.
-                    self.__hg_push( trans, repository, file_data.filename, uncompress_file, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir )
+                    # Add the files to the cloned repository.
+                    hg_add( trans, current_working_dir, cloned_repo_dir )
+                    # Commit the files to the cloned repository.
+                    if not commit_message:
+                        commit_message = 'Uploaded'
+                    hg_commit( commit_message, current_working_dir, cloned_repo_dir )
+                    # Push the changes from the cloned repository to the master repository.
+                    hg_push( trans, repository, current_working_dir, cloned_repo_dir )
+                    # Remove the temporary directory containing the cloned repository.
+                    shutil.rmtree( tmp_dir )
+                    # Update the repository files for browsing.
+                    update_for_browsing( repository, current_working_dir )
+                    # Get the new repository tip.
+                    repo = hg.repository( ui.ui(), repo_dir )
+                    if tip != repo[ 'tip' ]:
+                        if uncompress_file:
+                            uncompress_str = ' uncompressed and '
+                        else:
+                            uncompress_str = ' '
+                        message = "The file '%s' has been successfully%suploaded to the repository." % ( uploaded_file_filename, uncompress_str )
+                    else:
+                        message = 'No changes to repository.'
+                    trans.response.send_redirect( web.url_for( controller='repository',
+                                                               action='browse_repository',
+                                                               commit_message='Deleted selected files',
+                                                               message=message,
+                                                               id=trans.security.encode_id( repository.id ) ) )
                 if ok:
                     if files_to_commit:
                         repo.dirstate.write()
@@ -159,6 +186,7 @@ class UploadController( BaseController ):
                         message = "The file '%s' has been successfully%suploaded to the repository." % ( uploaded_file_filename, uncompress_str )
                         trans.response.send_redirect( web.url_for( controller='repository',
                                                                    action='browse_repository',
+                                                                   commit_message='Deleted selected files',
                                                                    message=message,
                                                                    id=trans.security.encode_id( repository.id ) ) )
                 else:
@@ -214,55 +242,6 @@ class UploadController( BaseController ):
         os.close( fd )
         bzipped_file.close()
         shutil.move( uncompressed, uploaded_file_name )
-    def __hg_clone( self, trans, repository, repo_dir, current_working_dir ):
-        tmp_dir = tempfile.mkdtemp()
-        tmp_archive_dir = os.path.join( tmp_dir, 'tmp_archive_dir' )
-        if not os.path.exists( tmp_archive_dir ):
-            os.makedirs( tmp_archive_dir )
-        # Make a clone of the repository in a temporary location
-        cmd = "hg clone %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-        os.chdir( tmp_archive_dir )
-        os.system( cmd )
-        os.chdir( current_working_dir )
-        cloned_repo_dir = os.path.join( tmp_archive_dir, 'repo_%d' % repository.id )
-        return tmp_dir, cloned_repo_dir
-    def __hg_push( self, trans, repository, filename, uncompress_file, commit_message, current_working_dir, cloned_repo_dir, repo_dir, tmp_dir ):
-        repo = hg.repository( ui.ui(), repo_dir )
-        tip = repo[ 'tip' ]
-        # We want these change sets to be associated with the owner of the repository, so we'll
-        # set the HGUSER environment variable accordingly.
-        os.environ[ 'HGUSER' ] = trans.user.username
-        # Add the file to the cloned repository.  If it's already tracked, this should do nothing.
-        os.chdir( cloned_repo_dir )
-        os.system( 'hg add > /dev/null 2>&1' )
-        os.chdir( current_working_dir )
-        os.chdir( cloned_repo_dir )
-        # Commit the change set to the cloned repository
-        os.system( "hg commit -m '%s' > /dev/null 2>&1" % commit_message )
-        os.chdir( current_working_dir )
-        # Push the change set to the master repository
-        cmd = "hg push %s > /dev/null 2>&1" % os.path.abspath( repo_dir )
-        os.chdir( cloned_repo_dir )
-        os.system( cmd )
-        os.chdir( current_working_dir )
-        # Make a copy of the updated repository files for browsing.
-        os.chdir( repo_dir )
-        os.system( 'hg update > /dev/null 2>&1' )
-        os.chdir( current_working_dir )
-        shutil.rmtree( tmp_dir )
-        repo = hg.repository( ui.ui(), repo_dir )
-        if tip != repo[ 'tip' ]:
-            if uncompress_file:
-                uncompress_str = ' uncompressed and '
-            else:
-                uncompress_str = ' '
-            message = "The file '%s' has been successfully%suploaded to the repository." % ( filename, uncompress_str )
-        else:
-            message = 'No changes in uploaded files.'
-        trans.response.send_redirect( web.url_for( controller='repository',
-                                                   action='browse_repository',
-                                                   message=message,
-                                                   id=trans.security.encode_id( repository.id ) ) )
     def __move_to_upload_point( self, upload_point, uploaded_file, uploaded_file_name, uploaded_file_filename, cloned_repo_dir, istar, tar ):
         if upload_point is not None:
             if istar:

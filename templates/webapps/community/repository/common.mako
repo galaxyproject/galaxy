@@ -35,11 +35,17 @@
                     // Display list of selected nodes
                     var selNodes = dtnode.tree.getSelectedNodes();
                     // convert to title/key array
-                    var selKeys = $.map(selNodes, function(node){
+                    var selKeys = $.map(selNodes, function(node) {
                         return node.data.key;
                     });
-                    // The following is used only in the upload form.
-                    document.upload_form.upload_point.value = selKeys[0];
+                    if (document.forms["select_files_to_delete"]) {
+                        // The following is used only ~/templates/webapps/community/repository/browse_repository.mako.
+                        document.select_files_to_delete.selected_files_to_delete.value = selKeys.join(",");
+                    }
+                    // The following is used only in ~/templates/webapps/community/repository/upload.mako.
+                    if (document.forms["upload_form"]) {
+                        document.upload_form.upload_point.value = selKeys[0];
+                    }
                 },
                 onActivate: function(dtnode) {
                     var cell = $("#file_contents");

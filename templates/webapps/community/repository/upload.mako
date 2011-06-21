@@ -55,7 +55,7 @@
             <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
         %endif
         %if can_browse_contents:
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">Browse repository</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">Browse or delete repository files</a>
         %endif
     </div>
 </ul>
@@ -106,7 +106,7 @@
             %endif
         </div>
         <div class="toolParamHelp" style="clear: both;">
-            This is the commit message for the mercurial change set that will be created by this upload
+            This is the commit message for the mercurial change set that will be created by this upload.
         </div>
         <div style="clear: both"></div>
     </div>

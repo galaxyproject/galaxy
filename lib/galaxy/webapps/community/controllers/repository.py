@@ -378,7 +378,13 @@ class RepositoryController( BaseController, ItemRatings ):
                 return config.get( "web", option )
         raise Exception( "Repository %s missing allow_push entry under the [web] option in it's hgrc file." % repository.name )
     def __set_allow_push( self, repository, usernames, remove_auth='' ):
-        # TODO: Use the mercurial api to handle this
+        """
+        # TODO: Use the mercurial api to handle this, something like the following:
+        items = repo.ui.configitems( section, untrusted=False )
+        push_section = repo.ui.config( 'hgrc', 'allow_push' )
+        for XXX (in name you want to add):
+            repo.ui.updateconfig( section=extensions_section, name='XXX', value='YYY' )
+        """
         hgrc_file = os.path.abspath( os.path.join( repository.repo_path, ".hg", "hgrc" ) )
         fh, fn = tempfile.mkstemp()
         for i, line in enumerate( open( hgrc_file ) ):
@@ -403,6 +409,7 @@ class RepositoryController( BaseController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
         repo = hg.repository( ui.ui(), repository.repo_path )
         # Our current support for browsing a repository requires copies of the
@@ -416,6 +423,56 @@ class RepositoryController( BaseController, ItemRatings ):
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
+                                    commit_message=commit_message,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    def select_files_to_delete( self, trans, id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
+        repository = get_repository( trans, id )
+        _ui = ui.ui()
+        repo_dir = repository.repo_path
+        repo = hg.repository( _ui, repo_dir )
+        selected_files_to_delete = util.restore_text( params.get( 'selected_files_to_delete', '' ) )
+        if params.get( 'select_files_to_delete_button', False ):
+            if selected_files_to_delete:
+                selected_files_to_delete = selected_files_to_delete.split( ',' )
+                current_working_dir = os.getcwd()
+                # Get the current repository tip.
+                tip = repo[ 'tip' ]
+                # Clone the repository to a temporary location.
+                tmp_dir, cloned_repo_dir = hg_clone( trans, repository, current_working_dir )
+                # Delete the selected files from the repository.
+                cloned_repo = hg.repository( _ui, cloned_repo_dir )
+                for selected_file in selected_files_to_delete:
+                    selected_file_path = selected_file.split( 'repo_%d' % repository.id )[ 1 ].lstrip( '/' )
+                    hg_remove( selected_file_path, current_working_dir, cloned_repo_dir )
+                # Commit the change set.
+                if not commit_message:
+                    commit_message = 'Deleted selected files'
+                hg_commit( commit_message, current_working_dir, cloned_repo_dir )
+                # Push the change set from the cloned repository to the master repository.
+                hg_push( trans, repository, current_working_dir, cloned_repo_dir )
+                # Remove the temporary directory containing the cloned repository.
+                shutil.rmtree( tmp_dir )
+                # Update the repository files for browsing.
+                update_for_browsing( repository, current_working_dir )
+                # Get the new repository tip.
+                repo = hg.repository( _ui, repo_dir )
+                if tip != repo[ 'tip' ]:
+                    message = "The selected files were deleted from the repository."
+                else:
+                    message = 'No changes to repository.'
+            else:
+                message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
+                status = "error"
+        return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
+                                    repo=repo,
+                                    repository=repository,
+                                    commit_message=commit_message,
                                     message=message,
                                     status=status )
     @web.expose
