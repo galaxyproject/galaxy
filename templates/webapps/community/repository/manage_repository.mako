@@ -111,7 +111,11 @@
             </div>
             <div class="form-row">
                 <label>Version:</label>
-                ${tip}
+                    %if can_view_change_log:
+                        <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${tip}</a>
+                    %else:
+                        ${tip}
+                    %endif
             </div>
             <div class="form-row">
                 <label>Owner:</label>

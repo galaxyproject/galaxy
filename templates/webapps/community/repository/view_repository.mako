@@ -100,7 +100,11 @@
         </div>
         <div class="form-row">
             <label>Name:</label>
-            ${repository.name}
+            %if can_browse_contents:
+                <a href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${repository.name}</a>
+            %else:
+                ${repository.name}
+            %endif
         </div>
         <div class="form-row">
             <label>Description:</label>
@@ -108,7 +112,11 @@
         </div>
         <div class="form-row">
             <label>Version:</label>
-            ${tip}
+            %if can_view_change_log:
+                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${tip}</a>
+            %else:
+                ${tip}
+            %endif
         </div>
         <div class="form-row">
             <label>Owner:</label>

@@ -97,7 +97,30 @@
         </div>
     </div>
     <div class="form-row">
-        <label>Message:</label>
+        <%
+            if remove_repo_files_not_in_tar:
+                yes_selected = 'selected'
+                no_selected = ''
+            else:
+                yes_selected = ''
+                no_selected = 'selected'
+        %>
+        <label>Remove files in the repository (relative to the upload point) that are not in the uploaded archive?</label>
+        <div class="form-row-input">
+            <select name="remove_repo_files_not_in_tar">
+                <option value="true" ${yes_selected}>Yes
+                <option value="false" ${no_selected}>No
+            </select>
+        </div>
+        <div class="toolParamHelp" style="clear: both;">
+            This selection pertains only to uploaded tar archives, not to single file uploads.  If <b>Yes</b> is selected, files
+            that exist in the repository (relative to the upload point) but that are not in the uploaded archive will be removed
+            from the repository.  Otherwise, all existing repository files will remain and the uploaded archive files will be added
+            to the repository.
+        </div>
+    </div>
+    <div class="form-row">
+        <label>Change set commit message:</label>
         <div class="form-row-input">
             %if commit_message:
                 <textarea name="commit_message" rows="3" cols="35">${commit_message}</textarea>
@@ -118,7 +141,8 @@
             </div>
             <input type="hidden" id="upload_point" name="upload_point" value=""/>
             <div class="toolParamHelp" style="clear: both;">
-                Select a location within the repository to upload your files by clicking a check box next to the location.  If a location is not selected, files will be uploaded to the repository root.
+                Select a location within the repository to upload your files by clicking a check box next to the location.  If a location 
+                is not selected, files will be uploaded to the repository root.
             </div>
             <div style="clear: both"></div>
         </div>
