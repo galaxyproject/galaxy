@@ -93,38 +93,52 @@
 %if can_browse_contents:
     <div class="toolForm">
         <div class="toolFormTitle">Browse ${repository.name}</div>
-        <form name="select_files_to_delete" id="select_files_to_delete" action="${h.url_for( controller='repository', action='select_files_to_delete', id=trans.security.encode_id( repository.id ))}" method="post" >
-            <div class="form-row" >
-                <label>Contents:</label>
-                <div id="tree" >
-                    Loading...
+        %if can_push:
+            <form name="select_files_to_delete" id="select_files_to_delete" action="${h.url_for( controller='repository', action='select_files_to_delete', id=trans.security.encode_id( repository.id ))}" method="post" >
+                <div class="form-row" >
+                    <label>Contents:</label>
+                    <div id="tree" >
+                        Loading...
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Click on a file to display it's contents below.  You may delete files from the repository by clicking the check box next to each file and clicking the <b>Delete selected files</b> button.
+                    </div>
+                    <input id="selected_files_to_delete" name="selected_files_to_delete" type="hidden" value=""/>
                 </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    Click on a file to display it's contents below.  You may delete files from the repository by clicking the check box next to each file and clicking the <b>Delete selected files</b> button.
+                <div class="form-row">
+                    <label>Message:</label>
+                    <div class="form-row-input">
+                        %if commit_message:
+                            <textarea name="commit_message" rows="3" cols="35">${commit_message}</textarea>
+                        %else:
+                            <textarea name="commit_message" rows="3" cols="35"></textarea>
+                        %endif
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        This is the commit message for the mercurial change set that will be created if you delete selected files.
+                    </div>
+                    <div style="clear: both"></div>
                 </div>
-                <input id="selected_files_to_delete" name="selected_files_to_delete" type="hidden" value=""/>
-            </div>
-            <div class="form-row">
-                <label>Message:</label>
-                <div class="form-row-input">
-                    %if commit_message:
-                        <textarea name="commit_message" rows="3" cols="35">${commit_message}</textarea>
-                    %else:
-                        <textarea name="commit_message" rows="3" cols="35"></textarea>
-                    %endif
+                <div class="form-row">
+                    <input type="submit" name="select_files_to_delete_button" value="Delete selected files"/>
                 </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    This is the commit message for the mercurial change set that will be created if you delete selected files.
+                <div class="form-row">
+                    <div id="file_contents" class="toolParamHelp" style="clear: both;background-color:#FAFAFA;"></div>
                 </div>
-                <div style="clear: both"></div>
+            </form>
+        %else:
+            <div class="toolFormBody">
+                <div class="form-row" >
+                    <label>Contents:</label>
+                    <div id="tree" >
+                        Loading...
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div id="file_contents" class="toolParamHelp" style="clear: both;background-color:#FAFAFA;"></div>
+                </div>
             </div>
-            <div class="form-row">
-                <input type="submit" name="select_files_to_delete_button" value="Delete selected files"/>
-            </div>
-            <div class="form-row">
-                <div id="file_contents" class="toolParamHelp" style="clear: both;background-color:#FAFAFA;"></div>
-            </div>
-        </form>
+        %endif
     </div>
     <p/>
 %endif
