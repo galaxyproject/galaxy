@@ -32,6 +32,9 @@ def __main__():
     parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
     parser.add_option( '', '--ref_file', dest='ref_file', help='The reference dataset from the history' )
     
+    # Outputs.
+    parser.add_option( '', '--combined-transcripts', dest='combined_transcripts' )
+    
     (options, args) = parser.parse_args()
     
     # output version # of tool
@@ -114,6 +117,9 @@ def __main__():
         # Error checking.
         if returncode != 0:
             raise Exception, stderr
+            
+        # Copy outputs.
+        shutil.copyfile( "cc_output.combined.gtf" , options.combined_transcripts )    
             
         # check that there are results in the output file
         cc_output_fname = "cc_output.stats"
