@@ -117,7 +117,7 @@ class RepositoryListGrid( grids.Grid ):
                                        model.User.table.c.email == column_filter ) )
     class EmailAlertsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
-            if trans.user.email in from_json_string( repository.email_alerts ):
+            if repository.email_alerts and trans.user.email in from_json_string( repository.email_alerts ):
                 return 'yes'
             return ''
     # Grid definition
