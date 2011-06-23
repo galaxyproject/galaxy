@@ -106,7 +106,8 @@ Repository.table = Table( "repository", metadata,
     Column( "description" , TEXT ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "private", Boolean, default=False ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "email_alerts", JSONType, nullable=True ) )
 
 RepositoryRatingAssociation.table = Table( "repository_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),

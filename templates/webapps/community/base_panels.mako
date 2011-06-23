@@ -33,7 +33,6 @@
         <a>Help</a>
         <div class="submenu">
         <ul>            
-            <li><a target="galaxy_main" href="${h.url_for( controller='tool', action='help' )}">How to upload, download and install tools</a></li>
             <li><a href="${app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )}">Email comments, bug reports, or suggestions</a></li>
             <li><a target="_blank" href="${app.config.get( "wiki_url", "http://bitbucket.org/galaxy/galaxy-central/wiki" )}">Galaxy Wiki</a></li>             
             <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://galaxycast.org" )}">Video tutorials (screencasts)</a></li>

@@ -137,6 +137,26 @@
         </form>
     </div>
 </div>
+%if trans.app.config.smtp_server:
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormBody">
+            <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+                <div class="form-row">
+                    <label>Receive email alerts:</label>
+                    ${alerts_check_box.get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        Check the box and click <b>Save</b> to receive email alerts when updates to this repository occur.
+                    </div>
+                </div>
+                <div class="form-row">
+                    <input type="submit" name="receive_email_alerts_button" value="Save"/>
+                </div>
+            </form>
+        </div>
+    </div>
+%endif
 <p/>
 <div class="toolForm">
     <div class="toolFormTitle">User access</div>

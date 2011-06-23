@@ -5,9 +5,11 @@ from datetime import *
 from galaxy import util
 from galaxy.datatypes.checkers import *
 from galaxy.web.base.controller import *
+from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.community import model
 from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from common import *
 from mercurial import hg, ui, patch
@@ -113,6 +115,11 @@ class RepositoryListGrid( grids.Grid ):
                 return query
             return query.filter( and_( model.Repository.table.c.user_id == model.User.table.c.id,
                                        model.User.table.c.email == column_filter ) )
+    class EmailAlertsColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository ):
+            if trans.user.email in from_json_string( repository.email_alerts ):
+                return 'yes'
+            return ''
     # Grid definition
     title = "Repositories"
     model_class = model.Repository
@@ -139,6 +146,8 @@ class RepositoryListGrid( grids.Grid ):
                      key="username" ),
         grids.CommunityRatingColumn( "Average Rating",
                                      key="rating" ),
+        EmailAlertsColumn( "Alert",
+                           attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
                      model_class=model.User,
@@ -154,7 +163,10 @@ class RepositoryListGrid( grids.Grid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = []
+    operations = [ grids.GridOperation( "Receive email alerts",
+                                        allow_multiple=True,
+                                        condition=( lambda item: not item.deleted ),
+                                        async_compatible=False ) ]
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
@@ -248,6 +260,10 @@ class RepositoryController( BaseController, ItemRatings ):
                 category_id = kwd.get( 'id', None )
                 category = get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
+            elif operation == "receive email alerts":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='set_email_alerts',
+                                                                  **kwd ) )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
     @web.expose
@@ -485,6 +501,30 @@ class RepositoryController( BaseController, ItemRatings ):
         tip = get_repository_tip( repo )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
+        alerts = params.get( 'alerts', '' )
+        alerts_checked = CheckboxField.is_checked( alerts )
+        if repository.email_alerts:
+            email_alerts = from_json_string( repository.email_alerts )
+        else:
+            email_alerts = []
+        user = trans.user
+        if params.get( 'receive_email_alerts_button', False ):
+            flush_needed = False
+            if alerts_checked:
+                if user.email not in email_alerts:
+                    email_alerts.append( user.email )
+                    repository.email_alerts = to_json_string( email_alerts )
+                    flush_needed = True
+            else:
+                if user.email in email_alerts:
+                    email_alerts.remove( user.email )
+                    repository.email_alerts = to_json_string( email_alerts )
+                    flush_needed = True
+            if flush_needed:
+                trans.sa_session.add( repository )
+                trans.sa_session.flush()
+        checked = alerts_checked or user.email in email_alerts
+        alerts_check_box = CheckboxField( 'alerts', checked=checked )
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -492,6 +532,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
+                                    alerts_check_box=alerts_check_box,
                                     message=message,
                                     status=status )
     @web.expose
@@ -507,11 +548,18 @@ class RepositoryController( BaseController, ItemRatings ):
         description = util.restore_text( params.get( 'description', repository.description ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
+        alerts = params.get( 'alerts', '' )
+        alerts_checked = CheckboxField.is_checked( alerts )
+        if repository.email_alerts:
+            email_alerts = from_json_string( repository.email_alerts )
+        else:
+            email_alerts = []
         allow_push = params.get( 'allow_push', '' )
         error = False
+        user = trans.user
         if params.get( 'edit_repository_button', False ):
             flush_needed = False
-            if trans.user != repository.user:
+            if user != repository.user:
                 message = "You are not the owner of this repository, so you cannot manage it."
                 status = error
                 return trans.response.send_redirect( web.url_for( controller='repository',
@@ -520,7 +568,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                                                   message=message,
                                                                   status=status ) )
             if repo_name != repository.name:
-                message = self.__validate_repository_name( repo_name, trans.user )
+                message = self.__validate_repository_name( repo_name, user )
                 if message:
                     error = True
                 else:
@@ -545,10 +593,27 @@ class RepositoryController( BaseController, ItemRatings ):
                         usernames.append( user.username )
                     usernames = ','.join( usernames )
                 self.__set_allow_push( repository, usernames, remove_auth=remove_auth )
+        elif params.get( 'receive_email_alerts_button', False ):
+            flush_needed = False
+            if alerts_checked:
+                if user.email not in email_alerts:
+                    email_alerts.append( user.email )
+                    repository.email_alerts = to_json_string( email_alerts )
+                    flush_needed = True
+            else:
+                if user.email in email_alerts:
+                    email_alerts.remove( user.email )
+                    repository.email_alerts = to_json_string( email_alerts )
+                    flush_needed = True
+            if flush_needed:
+                trans.sa_session.add( repository )
+                trans.sa_session.flush()
         if error:
             status = 'error'
         current_allow_push_list = self.__get_allow_push( repository ).split( ',' )
         allow_push_select_field = self.__build_allow_push_select_field( trans, current_allow_push_list )
+        checked = alerts_checked or user.email in email_alerts
+        alerts_check_box = CheckboxField( 'alerts', checked=checked )
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
@@ -560,6 +625,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
+                                    alerts_check_box=alerts_check_box,
                                     message=message,
                                     status=status )
     @web.expose
@@ -665,6 +731,42 @@ class RepositoryController( BaseController, ItemRatings ):
                                     rra=rra,
                                     message=message,
                                     status=status )
+    @web.expose
+    def set_email_alerts( self, trans, **kwd ):
+        # Set email alerts for selected repositories
+        params = util.Params( kwd )
+        user = trans.user
+        repository_ids = util.listify( kwd.get( 'id', '' ) )
+        total_alerts_added = 0
+        total_alerts_removed = 0
+        for repository_id in repository_ids:
+            flush_needed = False
+            repository = get_repository( trans, repository_id )
+            if repository.email_alerts:
+                email_alerts = from_json_string( repository.email_alerts )
+            else:
+                email_alerts = []
+            if user.email in email_alerts:
+                email_alerts.remove( user.email )
+                repository.email_alerts = to_json_string( email_alerts )
+                trans.sa_session.add( repository )
+                flush_needed = True
+                total_alerts_removed += 1
+            else:
+                email_alerts.append( user.email )
+                repository.email_alerts = to_json_string( email_alerts )
+                trans.sa_session.add( repository )
+                flush_needed = True
+                total_alerts_added += 1
+        if flush_needed:
+            trans.sa_session.flush()
+        message = 'Total alerts added: %d, total alerts removed: %d' % ( total_alerts_added, total_alerts_removed )
+        kwd[ 'message' ] = message
+        kwd[ 'status' ] = 'done'
+        del( kwd[ 'operation' ] )
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='browse_repositories',
+                                                          **kwd ) )
     @web.expose
     def download( self, trans, repository_id, file_type, **kwd ):
         # Download an archive of the repository files compressed as zip, gz or bz2.

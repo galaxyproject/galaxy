@@ -19,8 +19,6 @@ class User( object ):
         self.deleted = False
         self.purged = False
         self.username = None
-        # Relationships
-        self.tools = []
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash( text_type=cleartext )
@@ -90,11 +88,12 @@ class Repository( object ):
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
-    def __init__( self, name=None, description=None, user_id=None, private=False ):
+    def __init__( self, name=None, description=None, user_id=None, private=False, email_alerts=None ):
         self.name = name or "Unnamed repository"
         self.description = description
         self.user_id = user_id
         self.private = private
+        self.email_alerts = email_alerts
     @property
     def repo_path( self ):
         # Repository locations on disk are defined in the hgweb.config file
