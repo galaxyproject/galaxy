@@ -33,6 +33,7 @@ def upgrade():
         c = Column( "purged", Boolean, index=True, default=False )
         c.create( HistoryDatasetAssociation_table )
         assert c is HistoryDatasetAssociation_table.c.purged
+        db_session.execute(HistoryDatasetAssociation_table.update().values(purged=False))
     except Exception, e:
         print "Adding purged column to history_dataset_association table failed: %s" % str( e )
         log.debug( "Adding purged column to history_dataset_association table failed: %s" % str( e ) )
