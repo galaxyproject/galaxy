@@ -1,4 +1,4 @@
-<tool id="tophat" name="Tophat for Illumina" version="1.5.0">
+<tool id="tophat_color" name="Tophat for SOLiD" version="1.0.0">
     <description>Find splice junctions using RNA-seq data</description>
     <requirements>
         <requirement type="package">tophat</requirement>
@@ -8,6 +8,9 @@
             ## Change this to accommodate the number of threads you have available.
             --num-threads="4"
 
+            ## base- or color-space
+            --color-space
+
             ## Provide outputs.
             --junctions-output=$junctions
             --hits-output=$accepted_hits
@@ -16,7 +19,7 @@
             #if $refGenomeSource.genomeSource == "history":
                 --own-file=$refGenomeSource.ownFile
             #else:
-                --indexes-path="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'tophat_indexes' ].get_fields() )[0][-1] }"
+                --indexes-path="${ filter( lambda x: str( x[0] ) == str( $refGenomeSource.index ), $__app__.tool_data_tables[ 'tophat_indexes_color' ].get_fields() )[0][-1] }"
             #end if
 
             ## Are reads single-end or paired?
@@ -144,7 +147,7 @@
             #end if
     </command>
     <inputs>
-        <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
+        <param format="fastqcssanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Color-space: Must have Sanger-scaled quality values with ASCII offset 33" />
         <conditional name="refGenomeSource">
           <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
             <option value="indexed">Use a built-in index</option>
@@ -152,7 +155,7 @@
           </param>
           <when value="indexed">
             <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-              <options from_data_table="tophat_indexes">
+              <options from_data_table="tophat_indexes_color">
                 <filter type="sort_by" column="2"/>
                 <validator type="no_options" message="No indexes are available for the selected input dataset"/>
               </options>
@@ -262,7 +265,7 @@
                         <param name="max_coverage_intron" type="integer" value="20000" label="Maximum intron length that may be found during coverage search" />
                     </when>
                     <when value="No" />
-                  </conditional>
+                  </conditional>     
                   <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
@@ -271,7 +274,7 @@
               </conditional>  <!-- sParams -->
             </when>  <!--  single -->
             <when value="paired">
-              <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
+              <param format="fastqcssanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Color-space: Must have Sanger-scaled quality values with ASCII offset 33" />
               <param name="mate_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs" />
               <conditional name="pParams">
                 <param name="pSettingsType" type="select" label="TopHat settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
@@ -388,23 +391,6 @@
                       ( singlePaired['pParams']['indel_search']['allow_indel_search'] == 'Yes' ) )
                 ) 
             </filter>
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
         </data>
         <data format="bed" name="deletions" label="${tool.name} on ${on_string}: deletions" from_work_dir="tophat_out/deletions.bed">
             <filter>
@@ -415,107 +401,37 @@
                       ( singlePaired['pParams']['indel_search']['allow_indel_search'] == 'Yes' ) )
                 )
             </filter>
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
         </data>
-        <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
-        </data>
-        <data format="bam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
-        </data>
+        <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions"/>
+        <data format="bam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits"/>
     </outputs>
-
     <tests>
-        <!-- Test base-space single-end reads with pre-built index and preset parameters -->
+        <!-- Test color-space single-end reads with user-supplied reference fasta and preset parameters -->
         <test>
             <!-- TopHat commands:
-            tophat -o tmp_dir -p 1 tophat_in1 test-data/tophat_in2.fastqsanger
+            cp test-data/tophat_in5.fasta tophat_in5.fa
+            bowtie-build -C -f tophat_in5.fasta tophat_in5
+            tophat -p 1 -C tophat_in5 test-data/tophat_in4.fastqcssanger
             Rename the files in tmp_dir appropriately
             -->
-            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
-            <param name="genomeSource" value="indexed" />
-            <param name="index" value="tophat_test" />
+            <param name="input1" ftype="fastqcssanger" value="tophat_in4.fastqcssanger" />
+            <param name="genomeSource" value="history" />
+            <param name="ownFile" ftype="fasta" value="tophat_in5.fasta"/>
             <param name="sPaired" value="single" />
             <param name="sSettingsType" value="preSet" />
-            <output name="junctions" file="tophat_out1j.bed" />
-            <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" />
+            <output name="junctions" file="tophat_out5j.bed" />
+            <output name="accepted_hits" file="tophat_out5h.bam" compare="sim_size" />
         </test>
-        <!-- Test using base-space test data: paired-end reads, index from history. -->
-        <test>
-            <!-- TopHat commands:
-            bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -r 20 tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
-            Rename the files in tmp_dir appropriately
-            -->
-            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
-            <param name="genomeSource" value="history" />
-            <param name="ownFile" ftype="fasta" value="tophat_in1.fasta" />
-            <param name="sPaired" value="paired" />
-            <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger" />
-            <param name="mate_inner_distance" value="20" />
-            <param name="pSettingsType" value="preSet" />
-            <output name="junctions" file="tophat_out2j.bed" />
-            <output name="accepted_hits" file="tophat_out2h.bam" compare="sim_size" />
-        </test>
-        <!-- Test base-space single-end reads with user-supplied reference fasta and full parameters -->
+        <!-- Test color-space single-end reads with pre-built index and full parameters -->
         <test>
             <!-- Tophat commands:
-            bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat -p 1 -C -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intron 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search partialMm9chrX_random_cs test-data/tophat_in4.fastqcssanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
-            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
-            <param name="genomeSource" value="history"/>
-            <param name="ownFile" value="tophat_in1.fasta"/>
+            <param name="input1" ftype="fastqcssanger" value="tophat_in4.fastqcssanger"/>
+            <param name="genomeSource" value="indexed"/>
+            <param name="index" value="partialMm9chrX_random_cs" />
             <param name="sPaired" value="single"/>
             <param name="sSettingsType" value="full"/>
             <param name="library_type" value="FR Unstranded"/>
@@ -544,23 +460,41 @@
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
             <param name="microexon_search" value="Yes" />
-            <output name="insertions" file="tophat_out3i.bed" />
-            <output name="deletions" file="tophat_out3d.bed" />
-            <output name="junctions" file="tophat_out3j.bed" />
-            <output name="accepted_hits" file="tophat_out3h.bam" compare="sim_size" />
+            <output name="insertions" file="tophat_out6i.bed" />
+            <output name="deletions" file="tophat_out6d.bed" />
+            <output name="junctions" file="tophat_out6j.bed" />
+            <output name="accepted_hits" file="tophat_out6h.bam" compare="sim_size" />
         </test>
-        <!-- Test base-space paired-end reads with user-supplied reference fasta and full parameters -->
+        <!-- Test color-space paired-end reads with pre-built index and preset parameters -->
         <test>
             <!-- TopHat commands:
-            tophat -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intron 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            tophat -C -o tmp_dir -r 50 -p 1 partialMm9chrX_random_cs test-data/tophat_in6.fastqcssanger test-data/tophat_in7.fastqcssanger
+            Rename the files in tmp_dir appropriately
+            -->
+            <param name="input1" ftype="fastqcssanger" value="tophat_in6.fastqcssanger" />
+            <param name="genomeSource" value="indexed" />
+            <param name="index" value="partialMm9chrX_random_cs" />
+            <param name="sPaired" value="paired" />
+            <param name="input2" ftype="fastqcssanger" value="tophat_in7.fastqcssanger"/>
+            <param name="mate_inner_distance" value="50"/>
+            <param name="pSettingsType" value="preSet" />
+            <output name="junctions" file="tophat_out7j.bed" />
+            <output name="accepted_hits" file="tophat_out7h.bam" compare="sim_size" />
+        </test>
+        <!-- Test color-space paired-end reads with user-supplied reference fasta and full parameters -->
+        <test>
+            <!-- TopHat commands:
+            cp test-data/tophat_in5.fasta tophat_in5.fa
+            bowtie-build -C -f tophat_in5.fa tophat_in5
+            tophat -C -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +library-type fr-unstranded +allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intron 15000 +mate-std-dev 20 +segment-mismatch 2 +segment-length 20 +min-segment-intron 50 +max-segment-intron 500000 tophat_in5 test-data/tophat_in6.fastqcssanger test-data/tophat_in7.fastqcssanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
-            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
-            <param name="genomeSource" value="indexed"/>
-            <param name="index" value="tophat_test"/>
+            <param name="input1" ftype="fastqcssanger" value="tophat_in6.fastqcssanger"/>
+            <param name="genomeSource" value="history"/>
+            <param name="ownFile" ftype="fasta" value="tophat_in5.fasta"/>
             <param name="sPaired" value="paired"/>
-            <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger"/>
+            <param name="input2" ftype="fastqcssanger" value="tophat_in7.fastqcssanger"/>
             <param name="mate_inner_distance" value="20"/>
             <param name="pSettingsType" value="full"/>
             <param name="library_type" value="FR Unstranded"/>
@@ -571,25 +505,23 @@
             <param name="max_intron_length" value="500000"/>
             <param name="junction_filter" value="0.15"/>
             <param name="max_multihits" value="40"/>
-            <param name="min_segment_intron" value="50" />
-            <param name="max_segment_intron" value="500000" />
+            <param name="min_segment_intron" value="70" />
+            <param name="max_segment_intron" value="400000" />
             <param name="seg_mismatches" value="2"/>
-            <param name="seg_length" value="25"/>
-            <param name="allow_indel_search" value="No"/>
-            <param name="use_junctions" value="Yes" />
-            <param name="use_annotations" value="No" />
-            <param name="use_juncs" value="No" />
-            <param name="no_novel_juncs" value="No" />
-            <param name="use_search" value="Yes" />
-            <param name="min_closure_exon" value="50" />
-            <param name="min_closure_intron" value="50" />
-            <param name="max_closure_intron" value="5000" />
+            <param name="seg_length" value="20"/>
+            <param name="allow_indel_search" value="Yes"/>
+            <param name="max_insertion_length" value="3"/>
+            <param name="max_deletion_length" value="3"/>
+            <param name="use_junctions" value="No" />
+            <param name="use_search" value="No" />
             <param name="use_search" value="Yes" />
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
-            <param name="microexon_search" value="Yes" />
-            <output name="junctions" file="tophat_out4j.bed" />
-            <output name="accepted_hits" file="tophat_out4h.bam" compare="sim_size" />
+            <param name="microexon_search" value="No" />
+            <output name="insertions" file="tophat_out8i.bed" />
+            <output name="deletions" file="tophat_out8d.bed" />
+            <output name="junctions" file="tophat_out8j.bed" />
+            <output name="accepted_hits" file="tophat_out8h.bam" compare="sim_size" />
         </test>
     </tests>
 
@@ -620,7 +552,7 @@ Tophat accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare yo
 
 **Outputs**
 
-Tophat produces two output files:
+Tophat produces two main output files:
 
 - junctions -- A UCSC BED_ track of junctions reported by TopHat. Each junction consists of two connected BED blocks, where each block is as long as the maximal overhang of any read spanning the junction. The score is the number of alignments spanning the junction.
 - accepted_hits -- A list of read alignments in BAM_ format.
@@ -639,6 +571,8 @@ All of the options have a default value. You can change any of them. Some of the
 ------
 
 **Tophat parameter list**
+
+This is a list of implemented Tophat options::
 
 This is a list of implemented Tophat options::
 
