@@ -68,7 +68,6 @@ set_default_mode(BASIC_CONVERSION)
 
 coeffs=linear_model.as_py()['coefficients']
 yintercept= coeffs['(Intercept)']
-print >>fout, "Y-intercept\t%s" %(yintercept)
 summary = r.summary(linear_model)
 
 co = summary.get('coefficients', 'NA')
@@ -76,15 +75,23 @@ co = summary.get('coefficients', 'NA')
 if len(co) != len(x_vals)+1:
     stop_err("Stopped performing linear regression on the input data, since one of the predictor columns contains only non-numeric or invalid values.")
 """
-print >>fout, "p-value (Y-intercept)\t%s" %(co[0][3])
+
+try:
+    yintercept = r.round(float(yintercept), digits=10)
+    pvaly = r.round(float(co[0][3]), digits=10)
+except:
+    pass
+
+print >>fout, "Y-intercept\t%s" %(yintercept)
+print >>fout, "p-value (Y-intercept)\t%s" %(pvaly)
 
 if len(x_vals) == 1:    #Simple linear  regression case with 1 predictor variable
     try:
-        slope = coeffs['x']
+        slope = r.round(float(coeffs['x']), digits=10)
     except:
         slope = 'NA'
     try:
-        pval = co[1][3]
+        pval = r.round(float(co[1][3]), digits=10)
     except:
         pval = 'NA'
     print >>fout, "Slope (c%d)\t%s" %(x_cols[0]+1,slope)
@@ -92,18 +99,36 @@ if len(x_vals) == 1:    #Simple linear  regression case with 1 predictor variabl
 else:    #Multiple regression case with >1 predictors
     ind=1
     while ind < len(coeffs.keys()):
-        print >>fout, "Slope (c%d)\t%s" %(x_cols[ind-1]+1,coeffs['x'+str(ind)])
         try:
-            pval = co[ind][3]
+            slope = r.round(float(coeffs['x'+str(ind)]), digits=10)
+        except:
+            slope = 'NA'
+        print >>fout, "Slope (c%d)\t%s" %(x_cols[ind-1]+1,slope)
+        try:
+            pval = r.round(float(co[ind][3]), digits=10)
         except:
             pval = 'NA'
         print >>fout, "p-value (c%d)\t%s" %(x_cols[ind-1]+1,pval)
         ind+=1
 
-print >>fout, "R-squared\t%s" %(summary.get('r.squared','NA'))
-print >>fout, "Adjusted R-squared\t%s" %(summary.get('adj.r.squared','NA'))
-print >>fout, "F-statistic\t%s" %(summary.get('fstatistic','NA'))
-print >>fout, "Sigma\t%s" %(summary.get('sigma','NA'))
+rsq = summary.get('r.squared','NA')
+adjrsq = summary.get('adj.r.squared','NA')
+fstat = summary.get('fstatistic','NA')
+sigma = summary.get('sigma','NA')
+
+try:
+    rsq = r.round(float(rsq), digits=5)
+    adjrsq = r.round(float(adjrsq), digits=5)
+    fval = r.round(fstat['value'], digits=5)
+    fstat['value'] = str(fval)
+    sigma = r.round(float(sigma), digits=10)
+except:
+    pass
+
+print >>fout, "R-squared\t%s" %(rsq)
+print >>fout, "Adjusted R-squared\t%s" %(adjrsq)
+print >>fout, "F-statistic\t%s" %(fstat)
+print >>fout, "Sigma\t%s" %(sigma)
 
 r.pdf( outfile2, 8, 8 )
 if len(x_vals) == 1:    #Simple linear  regression case with 1 predictor variable
