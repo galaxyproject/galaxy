@@ -59,8 +59,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         converted_datasets_state_url = "${h.url_for( action='converted_datasets_state' )}",
         addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
         view;
-        
-        
+    
     /**
      * Add bookmark.
      */
@@ -85,7 +84,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             
         view.has_changes = true;
         return new_bookmark;
-    }
+    };
     
     $(function() {
         // Hide bookmarks by default right now.
@@ -267,7 +266,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
 
                         // Add track.
                         tracks.push( {
-                            "track_type": track.track_type,
+                            "track_type": track.get_type(),
                             "name": track.name,
                             "hda_ldda": track.hda_ldda,
                             "dataset_id": track.dataset_id,

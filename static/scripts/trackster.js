@@ -1524,6 +1524,7 @@ var FeatureTrackTile = function(index, resolution, canvas, message) {
  * ----> FeatureTrack
  * -------> ReadTrack
  * -------> ToolDataFeatureTrack
+ * -------> VcfTrack
  */
 var Track = function(name, view, parent_element, data_url, data_query_wait) {
     //
@@ -1556,6 +1557,32 @@ var Track = function(name, view, parent_element, data_url, data_query_wait) {
     this.parent_element.append(this.container_div);
 };
 extend(Track.prototype, {
+    /** Returns track type. */
+    get_type: function() {
+        // Order is important: start with most-specific classes and go up the track hierarchy.
+        if (this instanceof LabelTrack) {
+            return "LabelTrack";
+        }
+        else if (this instanceof ReferenceTrack) {
+            return "ReferenceTrack";
+        }
+        else if (this instanceof LineTrack) {
+            return "LineTrack";
+        }
+        else if (this instanceof ReadTrack) {
+            return "ReadTrack";
+        }
+        else if (this instanceof ToolDataFeatureTrack) {
+            return "ToolDataFeatureTrack";
+        }
+        else if (this instanceof VcfTrack) {
+            return "VcfTrack";
+        }
+        else if (this instanceof FeatureTrack) {
+            return "FeatureTrack";
+        }
+        return "";
+    },
     /**
      * Initialize and draw the track.
      */
