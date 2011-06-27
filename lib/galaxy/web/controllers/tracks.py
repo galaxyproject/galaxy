@@ -229,9 +229,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         """
         Display browser for the datasets listed in `dataset_ids`.
         """
-        decoded_id = trans.security.decode_id( id )
-        session = trans.sa_session
-        vis = session.query( model.Visualization ).get( decoded_id )
+        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
         
         new_dataset = kwargs.get("dataset_id", None)
