@@ -117,6 +117,23 @@ def expose_api( func ):
                 return error
         trans.response.set_content_type( "application/json" )
         trans.set_user( provided_key.user )
+# Perform api_run_as processing, possibly changing identity
+        if 'run_as' in kwargs:
+            if not trans.user_can_do_run_as():
+                error_message = 'User does not have permissions to run jobs as another user'
+                return error
+            try:
+                decoded_user_id = trans.security.decode_id( kwargs['run_as'] )
+            except TypeError:
+                trans.response.status = 400
+                return "Malformed user id ( %s ) specified, unable to decode." % str( kwargs['run_as'] )
+            try:
+                user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
+                trans.set_user(user)
+            except:
+                trans.response.status = 400
+                return "That user does not exist."
+
         if trans.debug:
             return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
         else:
@@ -590,6 +607,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def user_is_admin( self ):
         admin_users = self.app.config.get( "admin_users", "" ).split( "," )
         return self.user and admin_users and self.user.email in admin_users
+    def user_can_do_run_as( self ):
+        run_as_users = self.app.config.get( "api_allow_run_as", "" ).split( "," )
+        return self.user and run_as_users and self.user.email in run_as_users
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox

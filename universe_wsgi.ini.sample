@@ -433,6 +433,10 @@ use_interactive = True
 # Enable the (experimental! beta!) Web API.  Documentation forthcoming.
 #enable_api = False
 
+# Optional list of email addresses of API users who can make calls on behalf of
+# other users
+#api_allow_run_as = None
+
 # Enable tool tags (associating tools with tags).  This has its own option
 # since its implementation has a few performance implications on startup for
 # large servers.
