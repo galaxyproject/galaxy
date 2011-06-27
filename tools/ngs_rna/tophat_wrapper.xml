@@ -386,7 +386,7 @@
                       ( singlePaired['sParams']['indel_search']['allow_indel_search'] == 'Yes' ) ) or 
                     ( ( 'pParams' in singlePaired ) and ( 'indel_search' in singlePaired['pParams'] ) and 
                       ( singlePaired['pParams']['indel_search']['allow_indel_search'] == 'Yes' ) )
-                ) 
+                )
             </filter>
             <actions>
               <conditional name="refGenomeSource.genomeSource">
