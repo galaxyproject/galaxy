@@ -261,9 +261,12 @@ class RepositoryController( BaseController, ItemRatings ):
                 category = get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='set_email_alerts',
-                                                                  **kwd ) )
+                if kwd[ 'id' ]:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='set_email_alerts',
+                                                                      **kwd ) )
+                else:
+                    del kwd[ 'operation' ]
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
     @web.expose
@@ -708,8 +711,8 @@ class RepositoryController( BaseController, ItemRatings ):
             repository_ids = util.listify( kwd.get( 'id', '' ) )
             total_alerts_added = 0
             total_alerts_removed = 0
+            flush_needed = False
             for repository_id in repository_ids:
-                flush_needed = False
                 repository = get_repository( trans, repository_id )
                 if repository.email_alerts:
                     email_alerts = from_json_string( repository.email_alerts )
