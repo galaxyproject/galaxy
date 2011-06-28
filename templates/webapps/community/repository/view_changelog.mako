@@ -9,7 +9,7 @@
     can_browse_contents = not is_new
     can_manage = trans.user == repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
-    can_rate = repository.user != trans.user
+    can_rate = trans.user and repository.user != trans.user
     can_upload = can_push
     if can_push:
         browse_label = 'Browse or delete repository files'

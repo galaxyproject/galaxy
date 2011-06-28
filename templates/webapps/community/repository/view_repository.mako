@@ -7,7 +7,7 @@
     from galaxy.web.framework.helpers import time_ago
     is_new = repository.is_new
     can_push = trans.app.security_agent.can_push( trans.user, repository )
-    can_rate = not is_new and repository.user != trans.user
+    can_rate = not is_new and trans.user and repository.user != trans.user
     can_upload = can_push
     can_browse_contents = not is_new
     can_view_change_log = not is_new

@@ -12,7 +12,7 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from common import *
-from mercurial import hg, ui, patch
+from mercurial import hg, ui, patch, commands
 
 log = logging.getLogger( __name__ )
 
@@ -117,7 +117,7 @@ class RepositoryListGrid( grids.Grid ):
                                        model.User.table.c.email == column_filter ) )
     class EmailAlertsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
-            if repository.email_alerts and trans.user.email in from_json_string( repository.email_alerts ):
+            if trans.user and repository.email_alerts and trans.user.email in from_json_string( repository.email_alerts ):
                 return 'yes'
             return ''
     # Grid definition
@@ -373,53 +373,18 @@ class RepositoryController( BaseController, ItemRatings ):
         # allow_push = test
         # name = convert_characters1
         # push_ssl = False
-        # Upon repository creation, only the owner can push to it ( allow_push setting ),
-        # and since we support both http and https, we set push_ssl to False to override
+        # Since we support both http and https, we set push_ssl to False to override
         # the default (which is True) in the mercurial api.
-        hgrc_file = os.path.abspath( os.path.join( repository.repo_path, ".hg", "hgrc" ) )
-        output = open( hgrc_file, 'w' )
-        output.write( '[web]\n' )
-        output.write( 'allow_push = %s\n' % repository.user.username )
-        output.write( 'name = %s\n' % repository.name )
-        output.write( 'push_ssl = false\n' )
-        output.flush()
-        output.close()
-    def __get_allow_push( self, repository ):
-        # TODO: Use the mercurial api to handle this
-        hgrc_file = os.path.abspath( os.path.join( repository.repo_path, ".hg", "hgrc" ) )
-        config = ConfigParser.ConfigParser()
-        config.read( hgrc_file )
-        for option in config.options( "web" ):
-            if option == 'allow_push':
-                return config.get( "web", option )
-        raise Exception( "Repository %s missing allow_push entry under the [web] option in it's hgrc file." % repository.name )
-    def __set_allow_push( self, repository, usernames, remove_auth='' ):
-        """
-        # TODO: Use the mercurial api to handle this, something like the following:
-        items = repo.ui.configitems( section, untrusted=False )
-        push_section = repo.ui.config( 'hgrc', 'allow_push' )
-        for XXX (in name you want to add):
-            repo.ui.updateconfig( section=extensions_section, name='XXX', value='YYY' )
-        """
-        hgrc_file = os.path.abspath( os.path.join( repository.repo_path, ".hg", "hgrc" ) )
-        fh, fn = tempfile.mkstemp()
-        for i, line in enumerate( open( hgrc_file ) ):
-            if line.startswith( 'allow_push' ):
-                value = line.split( ' = ' )[1].rstrip( '\n' )
-                if remove_auth:
-                    current_usernames = value.split( ',' )
-                    new_usernames = []
-                    for current_username in current_usernames:
-                        if current_username != remove_auth:
-                            new_usernames.append( current_username )
-                    new_usernames = ','.join( new_usernames )
-                    line = 'allow_push = %s\n' % new_usernames
-                else:
-                    value = '%s,%s\n' % ( value, usernames )
-                    line = 'allow_push = %s' % value
-            os.write( fh, line )
-        os.close( fh )
-        shutil.move( fn, hgrc_file )
+        repo = hg.repository( ui.ui(), path=repository.repo_path )
+        fp = repo.opener( 'hgrc', 'wb' )
+        fp.write( '[paths]\n' )
+        fp.write( 'default = .\n' )
+        fp.write( 'default-push = .\n' )
+        fp.write( '[web]\n' )
+        fp.write( 'allow_push = %s\n' % repository.user.username )
+        fp.write( 'name = %s\n' % repository.name )
+        fp.write( 'push_ssl = false\n' )
+        fp.close()
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
         params = util.Params( kwd )
@@ -428,14 +393,8 @@ class RepositoryController( BaseController, ItemRatings ):
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
         repo = hg.repository( ui.ui(), repository.repo_path )
-        # Our current support for browsing a repository requires copies of the
-        # repository files to be in the repository root directory.  We do the
-        # following to ensure the latest files are being browsed.
         current_working_dir = os.getcwd()
-        repo_dir = repository.repo_path
-        os.chdir( repo_dir )
-        os.system( 'hg update > /dev/null 2>&1' )
-        os.chdir( current_working_dir )
+        update_for_browsing( repository, current_working_dir )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -449,9 +408,8 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
-        _ui = ui.ui()
         repo_dir = repository.repo_path
-        repo = hg.repository( _ui, repo_dir )
+        repo = hg.repository( ui.ui(), repo_dir )
         selected_files_to_delete = util.restore_text( params.get( 'selected_files_to_delete', '' ) )
         if params.get( 'select_files_to_delete_button', False ):
             if selected_files_to_delete:
@@ -459,25 +417,19 @@ class RepositoryController( BaseController, ItemRatings ):
                 current_working_dir = os.getcwd()
                 # Get the current repository tip.
                 tip = repo[ 'tip' ]
-                # Clone the repository to a temporary location.
-                tmp_dir, cloned_repo_dir = hg_clone( trans, repository, current_working_dir )
-                # Delete the selected files from the repository.
-                cloned_repo = hg.repository( _ui, cloned_repo_dir )
                 for selected_file in selected_files_to_delete:
-                    selected_file_path = selected_file.split( 'repo_%d' % repository.id )[ 1 ].lstrip( '/' )
-                    hg_remove( selected_file_path, current_working_dir, cloned_repo_dir )
+                    repo_file = os.path.abspath( selected_file )
+                    commands.remove( repo.ui, repo, repo_file )
                 # Commit the change set.
                 if not commit_message:
                     commit_message = 'Deleted selected files'
-                hg_commit( commit_message, current_working_dir, cloned_repo_dir )
-                # Push the change set from the cloned repository to the master repository.
-                hg_push( trans, repository, current_working_dir, cloned_repo_dir )
-                # Remove the temporary directory containing the cloned repository.
-                shutil.rmtree( tmp_dir )
+                # Commit the changes.
+                commands.commit( repo.ui, repo, repo_dir, message=commit_message )
+                handle_email_alerts( trans, repository )
                 # Update the repository files for browsing.
                 update_for_browsing( repository, current_working_dir )
                 # Get the new repository tip.
-                repo = hg.repository( _ui, repo_dir )
+                repo = hg.repository( ui.ui(), repo_dir )
                 if tip != repo[ 'tip' ]:
                     message = "The selected files were deleted from the repository."
                 else:
@@ -508,7 +460,7 @@ class RepositoryController( BaseController, ItemRatings ):
         else:
             email_alerts = []
         user = trans.user
-        if params.get( 'receive_email_alerts_button', False ):
+        if user and params.get( 'receive_email_alerts_button', False ):
             flush_needed = False
             if alerts_checked:
                 if user.email not in email_alerts:
@@ -523,7 +475,7 @@ class RepositoryController( BaseController, ItemRatings ):
             if flush_needed:
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
-        checked = alerts_checked or user.email in email_alerts
+        checked = alerts_checked or ( user and user.email in email_alerts )
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
@@ -592,7 +544,7 @@ class RepositoryController( BaseController, ItemRatings ):
                         user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
                         usernames.append( user.username )
                     usernames = ','.join( usernames )
-                self.__set_allow_push( repository, usernames, remove_auth=remove_auth )
+                repository.set_allow_push( usernames, remove_auth=remove_auth )
         elif params.get( 'receive_email_alerts_button', False ):
             flush_needed = False
             if alerts_checked:
@@ -610,7 +562,10 @@ class RepositoryController( BaseController, ItemRatings ):
                 trans.sa_session.flush()
         if error:
             status = 'error'
-        current_allow_push_list = self.__get_allow_push( repository ).split( ',' )
+        if repository.allow_push:
+            current_allow_push_list = repository.allow_push.split( ',' )
+        else:
+            current_allow_push_list = []
         allow_push_select_field = self.__build_allow_push_select_field( trans, current_allow_push_list )
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField( 'alerts', checked=checked )

@@ -93,7 +93,7 @@
             Supported compression types are gz and bz2.  If <b>Yes</b> is selected, the uploaded file will be uncompressed.  However,
             if the uploaded file is an archive that contains compressed files, the contained files will not be uncompressed.  For
             example, if the uploaded compressed file is some_file.tar.gz, some_file.tar will be uncompressed and extracted, but if
-            some_file.tar contains 4.bed.gz, the contained file 4.bed.gz will not be uncompressed.
+            some_file.tar contains some_contained_file.gz, the contained file will not be uncompressed.
         </div>
     </div>
     <div class="form-row">
@@ -105,7 +105,7 @@
                 yes_selected = ''
                 no_selected = 'selected'
         %>
-        <label>Remove files in the repository (relative to the upload point) that are not in the uploaded archive?</label>
+        <label>Remove files in the repository (relative to the root or selected upload point) that are not in the uploaded archive?</label>
         <div class="form-row-input">
             <select name="remove_repo_files_not_in_tar">
                 <option value="true" ${yes_selected}>Yes
@@ -114,9 +114,9 @@
         </div>
         <div class="toolParamHelp" style="clear: both;">
             This selection pertains only to uploaded tar archives, not to single file uploads.  If <b>Yes</b> is selected, files
-            that exist in the repository (relative to the upload point) but that are not in the uploaded archive will be removed
-            from the repository.  Otherwise, all existing repository files will remain and the uploaded archive files will be added
-            to the repository.
+            that exist in the repository (relative to the root or selected upload point) but that are not in the uploaded archive
+            will be removed from the repository.  Otherwise, all existing repository files will remain and the uploaded archive
+            files will be added to the repository.
         </div>
     </div>
     <div class="form-row">
@@ -141,8 +141,9 @@
             </div>
             <input type="hidden" id="upload_point" name="upload_point" value=""/>
             <div class="toolParamHelp" style="clear: both;">
-                Select a location within the repository to upload your files by clicking a check box next to the location.  If a location 
-                is not selected, files will be uploaded to the repository root.
+                Select a location within the repository to upload your files by clicking a check box next to the location.  The 
+                selected location is considered the upload point.  If a location is not selected, the upload point will be the 
+                repository root.
             </div>
             <div style="clear: both"></div>
         </div>

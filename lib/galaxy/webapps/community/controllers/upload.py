@@ -2,8 +2,8 @@ import sys, os, shutil, logging, tarfile, tempfile
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
-from common import get_categories, get_repository, hg_add, hg_clone, hg_commit, hg_push, hg_remove, update_for_browsing
-from mercurial import hg, ui
+from common import *
+from mercurial import hg, ui, commands
 
 log = logging.getLogger( __name__ )
 
@@ -31,30 +31,10 @@ class UploadController( BaseController ):
         uncompress_file = util.string_as_bool( params.get( 'uncompress_file', 'true' ) )
         remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
-        upload_point = params.get( 'upload_point', None )
-        if upload_point is not None:
-            # The value of upload_point will be something like: database/community_files/000/repo_12/1.bed
-            if os.path.exists( upload_point ):
-                if os.path.isfile( upload_point ):
-                    # Get the parent directory
-                    upload_point, not_needed = os.path.split( upload_point )
-                    # Now the value of uplaod_point will be something like: database/community_files/000/repo_12/
-                upload_point = upload_point.split( 'repo_%d' % repository.id )[ 1 ]
-                if upload_point:
-                    upload_point = upload_point.lstrip( '/' )
-                    upload_point = upload_point.rstrip( '/' )
-                # Now the value of uplaod_point will be something like: /
-                if upload_point == '/':
-                    upload_point = None
-            else:
-                # Must have been an error selecting something that didn't exist, so default to repository root
-                # TODO: throw an exception????
-                upload_point = None
-        else:
-            # Default to repository root
-            upload_point = None
+        upload_point = self.__get_upload_point( repository, **kwd )
+        # Get the current repository tip.
+        tip = repo[ 'tip' ]
         if params.get( 'upload_button', False ):
-            ctx = repo.changectx( "tip" )
             current_working_dir = os.getcwd()
             file_data = params.get( 'file_data', '' )
             if file_data == '':
@@ -66,12 +46,6 @@ class UploadController( BaseController ):
                 uploaded_file_name = uploaded_file.name
                 uploaded_file_filename = file_data.filename
             if uploaded_file:
-                # Our current support for browsing repo contents requires a copy of the
-                # repository files in the repo root directory.  To eliminate these copies,
-                # we update the repo, passing the "-r null" flag.
-                os.chdir( repo_dir )
-                os.system( 'hg update -r null > /dev/null 2>&1' )
-                os.chdir( current_working_dir )
                 isgzip = False
                 isbz2 = False
                 if uncompress_file:
@@ -79,10 +53,9 @@ class UploadController( BaseController ):
                     if not isgzip:
                         isbz2 = is_bz2( uploaded_file_name )
                 ok = True
-                files_to_commit = []
                 # Determine what we have - a single file or an archive
                 try:
-                    if uncompress_file:
+                    if ( isgzip or isbz2 ) and uncompress_file:
                         # Open for reading with transparent compression.
                         tar = tarfile.open( uploaded_file_name, 'r:*' )
                     else:
@@ -91,125 +64,52 @@ class UploadController( BaseController ):
                 except tarfile.ReadError, e:
                     tar = None
                     istar = False
-                if repository.is_new:
-                    if istar:
-                        # We have an archive ( a tarball ) in a new repository.
-                        ok, message = self.__check_archive( tar )
-                        if ok:
-                            tar.extractall( path=repo_dir )
-                            tar.close()
-                            uploaded_file.close()
-                            for root, dirs, files in os.walk( repo_dir, topdown=False ):
-                                # Don't visit .hg directories and don't include hgrc files in commit.
-                                if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                                    if '.hg' in dirs:
-                                        # Don't visit .hg directories
-                                        dirs.remove( '.hg' )
-                                    if 'hgrc' in files:
-                                         # Don't include hgrc files in commit - should be impossible
-                                         # since we don't visit .hg dirs, but just in case...
-                                        files.remove( 'hgrc' )
-                                    for name in files:
-                                        relative_root = root.split( 'repo_%d' % repository.id )[ 1 ].lstrip ( '/' )
-                                        if upload_point is not None:
-                                            file_path = os.path.join( relative_root, upload_point, name )
-                                        else:
-                                            file_path = os.path.join( relative_root, name )
-                                        # Check if the file is tracked and make it tracked if not.
-                                        repo_contains = file_path in [ i for i in ctx.manifest() ]
-                                        if not repo_contains:
-                                            # Add the file to the dirstate
-                                            repo.dirstate.add( file_path )
-                                            files_to_commit.append( file_path )
-                        else:
-                            tar.close()
-                    else:
-                        # We have a single file in a new repository.
-                        if uncompress_file and ( isgzip or isbz2 ):
-                            uploaded_file_filename = self.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
-                        if upload_point is not None:
-                            full_path = os.path.abspath( os.path.join( upload_point, uploaded_file_filename ) )
-                            file_path = os.path.join( upload_point, uploaded_file_filename )
-                        else:
-                            full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
-                            file_path = os.path.join( uploaded_file_filename )
-                        shutil.move( uploaded_file_name, full_path )
-                        repo.dirstate.add( file_path )
-                        files_to_commit.append( file_path )
+                if istar:
+                    ok, message, files_to_remove = self.upload_tar( trans,
+                                                                    repository,
+                                                                    tar,
+                                                                    uploaded_file,
+                                                                    upload_point,
+                                                                    remove_repo_files_not_in_tar,
+                                                                    commit_message )
                 else:
-                    # We have a repository that is not new (it contains files).
-                    if uncompress_file and ( isgzip or isbz2 ):
+                    if ( isgzip or isbz2 ) and uncompress_file:
                         uploaded_file_filename = self.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
-                    # Get the current repository tip.
-                    tip = repo[ 'tip' ]
-                    # Clone the repository to a temporary location.
-                    tmp_dir, cloned_repo_dir = hg_clone( trans, repository, current_working_dir )
-                    # Move the uploaded files to the upload_point within the cloned repository.
-                    files_to_remove = self.__move_to_upload_point( repository,
-                                                                   upload_point,
-                                                                   uploaded_file,
-                                                                   uploaded_file_name,
-                                                                   uploaded_file_filename,
-                                                                   cloned_repo_dir,
-                                                                   istar,
-                                                                   tar,
-                                                                   remove_repo_files_not_in_tar )
-                    if remove_repo_files_not_in_tar and files_to_remove:
-                        # Remove files in the repository (relative to the upload point)
-                        # that are not in the uploaded archive.
-                        for repo_file in files_to_remove:
-                            hg_remove( repo_file, current_working_dir, cloned_repo_dir )
-                    # Add the files in the uploaded archive to the cloned repository.
-                    hg_add( trans, current_working_dir, cloned_repo_dir )
-                    # Commit the files to the cloned repository.
-                    if not commit_message:
-                        commit_message = 'Uploaded'
-                    hg_commit( commit_message, current_working_dir, cloned_repo_dir )
-                    # Push the changes from the cloned repository to the master repository.
-                    hg_push( trans, repository, current_working_dir, cloned_repo_dir )
-                    # Remove the temporary directory containing the cloned repository.
-                    shutil.rmtree( tmp_dir )
-                    # Update the repository files for browsing.
+                    if upload_point is not None:
+                        full_path = os.path.abspath( os.path.join( repo_dir, upload_point, uploaded_file_filename ) )
+                    else:
+                        full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
+                    # Move the uploaded file to the load_point within the repository hierarchy.
+                    shutil.move( uploaded_file_name, full_path )
+                    commands.add( repo.ui, repo, full_path )
+                    commands.commit( repo.ui, repo, full_path, message=commit_message )
+                    handle_email_alerts( trans, repository )
+                if ok:
+                    # Update the repository files for browsing, a by-product of doing this
+                    # is eliminating unwanted files from the repository directory.
                     update_for_browsing( repository, current_working_dir )
                     # Get the new repository tip.
                     repo = hg.repository( ui.ui(), repo_dir )
                     if tip != repo[ 'tip' ]:
-                        if uncompress_file:
+                        if ( isgzip or isbz2 ) and uncompress_file:
                             uncompress_str = ' uncompressed and '
                         else:
                             uncompress_str = ' '
                         message = "The file '%s' has been successfully%suploaded to the repository." % ( uploaded_file_filename, uncompress_str )
-                        if istar and remove_repo_files_not_in_tar:
-                            message += "  %d files were removed from the repository." % len( files_to_remove )
+                        if istar and remove_repo_files_not_in_tar and files_to_remove:
+                            if upload_point is not None:
+                                message += "  %d files were removed from the repository relative to the selected upload point '%s'." % ( len( files_to_remove ), upload_point )
+                            else:
+                                message += "  %d files were removed from the repository root." % len( files_to_remove )
                     else:
-                        message = 'No changes to repository.'
+                        message = 'No changes to repository.'        
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                commit_message='Deleted selected files',
                                                                message=message,
                                                                id=trans.security.encode_id( repository.id ) ) )
-                if ok:
-                    if files_to_commit:
-                        repo.dirstate.write()
-                        repo.commit( text=commit_message )
-                        os.chdir( repo_dir )
-                        os.system( 'hg update > /dev/null 2>&1' )
-                        os.chdir( current_working_dir )
-                        if uncompress_file:
-                            uncompress_str = ' uncompressed and '
-                        else:
-                            uncompress_str = ' '
-                        message = "The file '%s' has been successfully%suploaded to the repository." % ( uploaded_file_filename, uncompress_str )
-                        trans.response.send_redirect( web.url_for( controller='repository',
-                                                                   action='browse_repository',
-                                                                   commit_message='Deleted selected files',
-                                                                   message=message,
-                                                                   id=trans.security.encode_id( repository.id ) ) )
                 else:
                     status = 'error'
-                os.chdir( repo_dir )
-                os.system( 'hg update > /dev/null 2>&1' )
-                os.chdir( current_working_dir )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/community/repository/upload.mako',
                                     repository=repository,
@@ -218,6 +118,53 @@ class UploadController( BaseController ):
                                     remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
                                     message=message,
                                     status=status )
+    def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message ):
+        # Upload a tar archive of files.
+        repo_dir = repository.repo_path
+        repo = hg.repository( ui.ui(), repo_dir )
+        files_to_remove = []
+        ok, message = self.__check_archive( tar )
+        if not ok:
+            tar.close()
+            uploaded_file.close()
+            return ok, message, files_to_remove
+        else:
+            if upload_point is not None:
+                full_path = os.path.abspath( os.path.join( repo_dir, upload_point ) )
+            else:
+                full_path = os.path.abspath( repo_dir )
+            filenames_in_archive = [ tarinfo_obj.name for tarinfo_obj in tar.getmembers() ]
+            filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
+            # Extract the uploaded tar to the load_point within the repository hierarchy.
+            tar.extractall( path=full_path )
+            tar.close()
+            uploaded_file.close()
+            if remove_repo_files_not_in_tar and not repository.is_new:
+                # We have a repository that is not new (it contains files), so discover
+                # those files that are in the repository, but not in the uploaded archive.
+                for root, dirs, files in os.walk( full_path ):
+                    if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                        if '.hg' in dirs:
+                            # Don't visit .hg directories - should be impossible since we don't
+                            # allow uploaded archives that contain .hg dirs, but just in case...
+                            dirs.remove( '.hg' )
+                        if 'hgrc' in files:
+                             # Don't include hgrc files in commit.
+                            files.remove( 'hgrc' )
+                        for name in files:
+                            full_name = os.path.join( root, name )
+                            if full_name not in filenames_in_archive:
+                                files_to_remove.append( full_name )
+                for repo_file in files_to_remove:
+                    # Remove files in the repository (relative to the upload point)
+                    # that are not in the uploaded archive.
+                    commands.remove( repo.ui, repo, repo_file )
+            for filename_in_archive in filenames_in_archive:
+                commands.add( repo.ui, repo, filename_in_archive )
+            # Commit the changes.
+            commands.commit( repo.ui, repo, full_path, message=commit_message )
+            handle_email_alerts( trans, repository )
+            return True, '', files_to_remove
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
         if isgzip:
             self.__handle_gzip( repository, uploaded_file_name )
@@ -259,44 +206,26 @@ class UploadController( BaseController ):
         os.close( fd )
         bzipped_file.close()
         shutil.move( uncompressed, uploaded_file_name )
-    def __move_to_upload_point( self, repository, upload_point, uploaded_file, uploaded_file_name, 
-                                uploaded_file_filename, cloned_repo_dir, istar, tar, remove_repo_files_not_in_tar ):
-        files_to_remove = []
+    def __get_upload_point( self, repository, **kwd ):
+        upload_point = kwd.get( 'upload_point', None )
         if upload_point is not None:
-            if istar:
-                full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point ) )
+            # The value of upload_point will be something like: database/community_files/000/repo_12/1.bed
+            if os.path.exists( upload_point ):
+                if os.path.isfile( upload_point ):
+                    # Get the parent directory
+                    upload_point, not_needed = os.path.split( upload_point )
+                    # Now the value of uplaod_point will be something like: database/community_files/000/repo_12/
+                upload_point = upload_point.split( 'repo_%d' % repository.id )[ 1 ]
+                if upload_point:
+                    upload_point = upload_point.lstrip( '/' )
+                    upload_point = upload_point.rstrip( '/' )
+                # Now the value of uplaod_point will be something like: /
+                if upload_point == '/':
+                    upload_point = None
             else:
-                full_path = os.path.abspath( os.path.join( cloned_repo_dir, upload_point, uploaded_file_filename ) )
-        else:
-            if istar:
-                full_path = os.path.abspath( os.path.join( cloned_repo_dir ) )
-            else:
-                full_path = os.path.abspath( os.path.join( cloned_repo_dir, uploaded_file_filename ) )
-        if istar:
-            if remove_repo_files_not_in_tar:
-                # Discover those files that are in the repository, but not in the uploaded archive
-                filenames_in_archive = [ tarinfo_obj.name for tarinfo_obj in tar.getmembers() ]
-                for root, dirs, files in os.walk( full_path ):
-                    relative_dir = root.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
-                    if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                        if '.hg' in dirs:
-                            # Don't visit .hg directories
-                            dirs.remove( '.hg' )
-                        if 'hgrc' in files:
-                             # Don't include hgrc files in commit - should be impossible
-                             # since we don't visit .hg dirs, but just in case...
-                            files.remove( 'hgrc' )
-                        for name in files:
-                            if name not in filenames_in_archive:
-                                files_to_remove.append( os.path.join( relative_dir, name ) )
-            # Extract the uploaded tarball to the load_point within the cloned repository hierarchy
-            tar.extractall( path=full_path )
-            tar.close()
-            uploaded_file.close()
-        else:
-            # Move the uploaded file to the load_point within the cloned repository hierarchy
-            shutil.move( uploaded_file_name, full_path )
-        return files_to_remove
+                # Must have been an error selecting something that didn't exist, so default to repository root
+                upload_point = None
+        return upload_point
     def __check_archive( self, archive ):
         for member in archive.getmembers():
             # Allow regular files and directories only
