@@ -424,7 +424,7 @@ class RepositoryController( BaseController, ItemRatings ):
                 if not commit_message:
                     commit_message = 'Deleted selected files'
                 # Commit the changes.
-                commands.commit( repo.ui, repo, repo_dir, message=commit_message )
+                commands.commit( repo.ui, repo, repo_dir, user=trans.user.username, message=commit_message )
                 handle_email_alerts( trans, repository )
                 # Update the repository files for browsing.
                 update_for_browsing( repository, current_working_dir )

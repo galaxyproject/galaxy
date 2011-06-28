@@ -82,7 +82,7 @@ class UploadController( BaseController ):
                     # Move the uploaded file to the load_point within the repository hierarchy.
                     shutil.move( uploaded_file_name, full_path )
                     commands.add( repo.ui, repo, full_path )
-                    commands.commit( repo.ui, repo, full_path, message=commit_message )
+                    commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
                     handle_email_alerts( trans, repository )
                 if ok:
                     # Update the repository files for browsing, a by-product of doing this
@@ -162,7 +162,7 @@ class UploadController( BaseController ):
             for filename_in_archive in filenames_in_archive:
                 commands.add( repo.ui, repo, filename_in_archive )
             # Commit the changes.
-            commands.commit( repo.ui, repo, full_path, message=commit_message )
+            commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
             handle_email_alerts( trans, repository )
             return True, '', files_to_remove
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
