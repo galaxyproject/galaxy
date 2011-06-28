@@ -96,29 +96,31 @@
             some_file.tar contains some_contained_file.gz, the contained file will not be uncompressed.
         </div>
     </div>
-    <div class="form-row">
-        <%
-            if remove_repo_files_not_in_tar:
-                yes_selected = 'selected'
-                no_selected = ''
-            else:
-                yes_selected = ''
-                no_selected = 'selected'
-        %>
-        <label>Remove files in the repository (relative to the root or selected upload point) that are not in the uploaded archive?</label>
-        <div class="form-row-input">
-            <select name="remove_repo_files_not_in_tar">
-                <option value="true" ${yes_selected}>Yes
-                <option value="false" ${no_selected}>No
-            </select>
+    %if not is_new:
+        <div class="form-row">
+            <%
+                if remove_repo_files_not_in_tar:
+                    yes_selected = 'selected'
+                    no_selected = ''
+                else:
+                    yes_selected = ''
+                    no_selected = 'selected'
+            %>
+            <label>Remove files in the repository (relative to the root or selected upload point) that are not in the uploaded archive?</label>
+            <div class="form-row-input">
+                <select name="remove_repo_files_not_in_tar">
+                    <option value="true" ${yes_selected}>Yes
+                    <option value="false" ${no_selected}>No
+                </select>
+            </div>
+            <div class="toolParamHelp" style="clear: both;">
+                This selection pertains only to uploaded tar archives, not to single file uploads.  If <b>Yes</b> is selected, files
+                that exist in the repository (relative to the root or selected upload point) but that are not in the uploaded archive
+                will be removed from the repository.  Otherwise, all existing repository files will remain and the uploaded archive
+                files will be added to the repository.
+            </div>
         </div>
-        <div class="toolParamHelp" style="clear: both;">
-            This selection pertains only to uploaded tar archives, not to single file uploads.  If <b>Yes</b> is selected, files
-            that exist in the repository (relative to the root or selected upload point) but that are not in the uploaded archive
-            will be removed from the repository.  Otherwise, all existing repository files will remain and the uploaded archive
-            files will be added to the repository.
-        </div>
-    </div>
+    %endif
     <div class="form-row">
         <label>Change set commit message:</label>
         <div class="form-row-input">

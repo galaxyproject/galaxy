@@ -282,6 +282,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                                               status=status ) )
         name = util.restore_text( params.get( 'name', '' ) )
         description = util.restore_text( params.get( 'description', '' ) )
+        long_description = util.restore_text( params.get( 'long_description', '' ) )
         category_ids = util.listify( params.get( 'category_id', '' ) )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         if params.get( 'create_repository_button', False ):
@@ -294,7 +295,10 @@ class RepositoryController( BaseController, ItemRatings ):
                 error = True
             if not error:
                 # Add the repository record to the db
-                repository = trans.app.model.Repository( name=name, description=description, user_id=trans.user.id )
+                repository = trans.app.model.Repository( name=name,
+                                                         description=description,
+                                                         long_description=long_description,
+                                                         user_id=trans.user.id )
                 # Flush to get the id
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
@@ -333,6 +337,7 @@ class RepositoryController( BaseController, ItemRatings ):
         return trans.fill_template( '/webapps/community/repository/create_repository.mako',
                                     name=name,
                                     description=description,
+                                    long_description=long_description,
                                     selected_categories=selected_categories,
                                     categories=categories,
                                     message=message,
@@ -498,6 +503,7 @@ class RepositoryController( BaseController, ItemRatings ):
         tip = get_repository_tip( repo )
         repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
         description = util.restore_text( params.get( 'description', repository.description ) )
+        long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         alerts = params.get( 'alerts', '' )
@@ -528,6 +534,9 @@ class RepositoryController( BaseController, ItemRatings ):
                     flush_needed = True
             if description != repository.description:
                 repository.description = description
+                flush_needed = True
+            if long_description != repository.long_description:
+                repository.long_description = long_description
                 flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
@@ -572,6 +581,7 @@ class RepositoryController( BaseController, ItemRatings ):
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
+                                    long_description=long_description,
                                     current_allow_push_list=current_allow_push_list,
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
@@ -666,6 +676,8 @@ class RepositoryController( BaseController, ItemRatings ):
                                                               message='Select a repository to rate',
                                                               status='error' ) )
         repository = get_repository( trans, id )
+        repo = hg.repository( ui.ui(), repository.repo_path )
+        tip = get_repository_tip( repo )
         if repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_repositories',
@@ -680,6 +692,7 @@ class RepositoryController( BaseController, ItemRatings ):
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
                                     repository=repository,
+                                    tip=tip,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
@@ -691,34 +704,35 @@ class RepositoryController( BaseController, ItemRatings ):
         # Set email alerts for selected repositories
         params = util.Params( kwd )
         user = trans.user
-        repository_ids = util.listify( kwd.get( 'id', '' ) )
-        total_alerts_added = 0
-        total_alerts_removed = 0
-        for repository_id in repository_ids:
-            flush_needed = False
-            repository = get_repository( trans, repository_id )
-            if repository.email_alerts:
-                email_alerts = from_json_string( repository.email_alerts )
-            else:
-                email_alerts = []
-            if user.email in email_alerts:
-                email_alerts.remove( user.email )
-                repository.email_alerts = to_json_string( email_alerts )
-                trans.sa_session.add( repository )
-                flush_needed = True
-                total_alerts_removed += 1
-            else:
-                email_alerts.append( user.email )
-                repository.email_alerts = to_json_string( email_alerts )
-                trans.sa_session.add( repository )
-                flush_needed = True
-                total_alerts_added += 1
-        if flush_needed:
-            trans.sa_session.flush()
-        message = 'Total alerts added: %d, total alerts removed: %d' % ( total_alerts_added, total_alerts_removed )
-        kwd[ 'message' ] = message
-        kwd[ 'status' ] = 'done'
-        del( kwd[ 'operation' ] )
+        if user:
+            repository_ids = util.listify( kwd.get( 'id', '' ) )
+            total_alerts_added = 0
+            total_alerts_removed = 0
+            for repository_id in repository_ids:
+                flush_needed = False
+                repository = get_repository( trans, repository_id )
+                if repository.email_alerts:
+                    email_alerts = from_json_string( repository.email_alerts )
+                else:
+                    email_alerts = []
+                if user.email in email_alerts:
+                    email_alerts.remove( user.email )
+                    repository.email_alerts = to_json_string( email_alerts )
+                    trans.sa_session.add( repository )
+                    flush_needed = True
+                    total_alerts_removed += 1
+                else:
+                    email_alerts.append( user.email )
+                    repository.email_alerts = to_json_string( email_alerts )
+                    trans.sa_session.add( repository )
+                    flush_needed = True
+                    total_alerts_added += 1
+            if flush_needed:
+                trans.sa_session.flush()
+            message = 'Total alerts added: %d, total alerts removed: %d' % ( total_alerts_added, total_alerts_removed )
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'done'
+        del kwd[ 'operation' ]
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='browse_repositories',
                                                           **kwd ) )
@@ -737,6 +751,9 @@ class RepositoryController( BaseController, ItemRatings ):
             file_type_str = 'tip.tar.bz2'
         elif file_type == 'gz':
             file_type_str = 'tip.tar.gz'
+        repository.times_downloaded += 1
+        trans.sa_session.add( repository )
+        trans.sa_session.flush()
         download_url = '/repos/%s/%s/archive/%s' % ( repository.user.username, repository.name, file_type_str )
         return trans.response.send_redirect( download_url )
     @web.json

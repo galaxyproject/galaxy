@@ -24,8 +24,17 @@
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Description:</label>
+                <label>Synopsis:</label>
                 <input  name="description" type="textfield" value="${description}" size=80"/>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Detailed description:</label>
+                %if long_description:
+                    <textarea name="long_description" rows="3" cols="80">${long_description}</textarea>
+                %else:
+                    <textarea name="long_description" rows="3" cols="80"></textarea>
+                %endif
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">

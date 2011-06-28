@@ -30,7 +30,7 @@ Repository_table = Table( "repository", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), index=True ),
-    Column( "description" , TEXT ),
+    Column( "description", TEXT ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "private", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ) )

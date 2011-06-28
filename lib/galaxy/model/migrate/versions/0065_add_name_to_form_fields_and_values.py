@@ -14,8 +14,14 @@ from galaxy.util.json import from_json_string, to_json_string
 import datetime
 now = datetime.datetime.utcnow
 
-import logging
+import sys, logging
 log = logging.getLogger( __name__ )
+log.setLevel(logging.DEBUG)
+handler = logging.StreamHandler( sys.stdout )
+format = "%(name)s %(levelname)s %(asctime)s %(message)s"
+formatter = logging.Formatter( format )
+handler.setFormatter( formatter )
+log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
@@ -42,18 +48,24 @@ def upgrade():
     cmd = "SELECT f.id, f.fields FROM form_definition AS f"
     result = db_session.execute( cmd )
     for row in result:
+        log.debug("Line 51 ROW: %s" % str( row ))
         form_definition_id = row[0]
+        log.debug("form_definition_id: %s" % str( form_definition_id ))
         fields = str( row[1] )
+        log.debug("fields: %s" % str( fields ))
         if not fields.strip():
             continue
         fields_list = from_json_string( fields )
+        log.debug("fields_list: %s" % str( fields_list ))
         if len( fields_list ):
             for index, field in enumerate( fields_list ):
                 field[ 'name' ] = 'field_%i' % index
                 field[ 'helptext' ] = field[ 'helptext' ].replace("'", "''").replace('"', "")
                 field[ 'label' ] = field[ 'label' ].replace("'", "''")
             fields_json = to_json_string( fields_list )
+            log.debug("fields_json: %s" % str( fields_json ))
             cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" %( fields_json, form_definition_id )
+            log.debug("cmd: %s" % str( cmd ))
             db_session.execute( cmd )
     # replace the values list in the content field of the form_values table with a name:value dict
     cmd = "SELECT form_values.id, form_values.content, form_definition.fields" \
@@ -115,6 +127,7 @@ def downgrade():
     cmd = "SELECT f.id, f.fields FROM form_definition AS f"
     result = db_session.execute( cmd )
     for row in result:
+        og.debug("Line 124 ROW: %s" % str( row ))
         form_definition_id = row[0]
         fields = str( row[1] )
         if not fields.strip():

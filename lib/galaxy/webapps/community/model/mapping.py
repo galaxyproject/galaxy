@@ -104,10 +104,12 @@ Repository.table = Table( "repository", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "description" , TEXT ),
+    Column( "long_description" , TEXT ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "private", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
-    Column( "email_alerts", JSONType, nullable=True ) )
+    Column( "email_alerts", JSONType, nullable=True ),
+    Column( "times_downloaded", Integer ) )
 
 RepositoryRatingAssociation.table = Table( "repository_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),

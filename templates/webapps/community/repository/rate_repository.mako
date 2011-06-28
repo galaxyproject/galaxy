@@ -103,7 +103,7 @@
             </div>
             <div class="form-row">
                 <label>Version:</label>
-                ${repository.version}
+                ${tip}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">

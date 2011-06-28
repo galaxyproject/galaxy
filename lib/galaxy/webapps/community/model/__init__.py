@@ -89,12 +89,14 @@ class Repository( object ):
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
-    def __init__( self, name=None, description=None, user_id=None, private=False, email_alerts=None ):
+    def __init__( self, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None, times_downloaded=0 ):
         self.name = name or "Unnamed repository"
         self.description = description
+        self.long_description = long_description
         self.user_id = user_id
         self.private = private
         self.email_alerts = email_alerts
+        self.times_downloaded = times_downloaded
     @property
     def repo_path( self ):
         # Repository locations on disk are defined in the hgweb.config file

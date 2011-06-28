@@ -107,9 +107,16 @@
             %endif
         </div>
         <div class="form-row">
-            <label>Description:</label>
+            <label>Synopsis:</label>
             ${repository.description}
         </div>
+        %if repository.long_description:
+            <div class="form-row">
+                <label>Detailed description:</label>
+                ${repository.long_description}
+                <div style="clear: both"></div>
+            </div>
+        %endif
         <div class="form-row">
             <label>Version:</label>
             %if can_view_change_log:
@@ -122,16 +129,20 @@
             <label>Owner:</label>
             ${repository.user.username}
         </div>
+        <div class="form-row">
+            <label>Times downloaded:</label>
+            ${repository.times_downloaded}
+        </div>
         %if trans.user_is_admin():
             <div class="form-row">
                 <label>Location:</label>
                 ${repository.repo_path}
             </div>
+            <div class="form-row">
+                <label>Deleted:</label>
+                ${repository.deleted}
+            </div>
         %endif
-        <div class="form-row">
-            <label>Deleted:</label>
-            ${repository.deleted}
-        </div>
     </div>
 </div>
 %if trans.user and trans.app.config.smtp_server:

@@ -101,36 +101,49 @@
             </div>
             <div class="form-row">
                 <label>Name:</label>
-                <input name="repo_name" type="textfield" value="${repo_name}" size=40"/>
+                <input name="repo_name" type="textfield" value="${repo_name}" size="40"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Description:</label>
-                <input name="description" type="textfield" value="${description}" size=80"/>
+                <label>Synopsis:</label>
+                <input name="description" type="textfield" value="${description}" size="80"/>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Detailed description:</label>
+                %if long_description:
+                    <textarea name="long_description" rows="3" cols="80">${long_description}</textarea>
+                %else:
+                    <textarea name="long_description" rows="3" cols="80"></textarea>
+                %endif
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Version:</label>
-                    %if can_view_change_log:
-                        <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${tip}</a>
-                    %else:
-                        ${tip}
-                    %endif
+                %if can_view_change_log:
+                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${tip}</a>
+                %else:
+                    ${tip}
+                %endif
             </div>
             <div class="form-row">
                 <label>Owner:</label>
                 ${repository.user.username}
+            </div>
+            <div class="form-row">
+                <label>Times downloaded:</label>
+                ${repository.times_downloaded}
             </div>
             %if trans.user_is_admin():
                 <div class="form-row">
                     <label>Location:</label>
                     ${repository.repo_path}
                 </div>
+                <div class="form-row">
+                    <label>Deleted:</label>
+                    ${repository.deleted}
+                </div>
             %endif
-            <div class="form-row">
-                <label>Deleted:</label>
-                ${repository.deleted}
-            </div>
             <div class="form-row">
                 <input type="submit" name="edit_repository_button" value="Save"/>
             </div>
