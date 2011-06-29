@@ -107,7 +107,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
     
-    __myexp_url = "sandbox.myexperiment.org:80"
+    __myexp_url = "www.myexperiment.org:80"
     
     @web.expose
     def index( self, trans ):
@@ -972,7 +972,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # NOTE: blocks web thread.
         headers = {}
         if myexp_username and myexp_password:
-            auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))[:-1]
+            auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
             headers = { "Authorization" : "Basic %s" % auth_header }
         conn.request( "GET", "/workflow.xml?id=%s&elements=content" % myexp_id, headers=headers )
         response = conn.getresponse()
@@ -1037,8 +1037,8 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         request = unicode( request_raw.strip(), 'utf-8' )
         
         # Do request and get result.
-        auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))[:-1]
-        headers = { "Content-type": "text/xml", "Accept": "text/plain", "Authorization" : "Basic %s" % auth_header }
+        auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
+        headers = { "Content-type": "text/xml", "Accept": "text/xml", "Authorization" : "Basic %s" % auth_header }
         conn = httplib.HTTPConnection( self.__myexp_url )
         # NOTE: blocks web thread.
         conn.request("POST", "/workflow.xml", request, headers)
