@@ -84,7 +84,9 @@
                     <a href="${h.url_for( action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
                 <a href="${get_history_link( history )}">${_('refresh')}</a> 
                 %if show_deleted:
-                | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
+                | <a href="${h.url_for( id=trans.security.encode_id(history.id), show_deleted=False )}">${_('hide deleted')}</a> 
+                %else:
+                | <a href="${h.url_for( id=trans.security.encode_id(history.id), show_deleted=True )}">${_('show deleted')}</a> 
                 %endif
                 | <a href="#" class="toggle">collapse all</a>
             </div>

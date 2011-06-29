@@ -49,11 +49,14 @@
             %if data.dataset.purged or data.purged:
                 This dataset has been deleted and removed from disk.
             %else:
-                This dataset has been deleted.  Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" class="historyItemUndelete" id="historyItemUndeleter-${data.id}" target="galaxy_history">here</a> to undelete
-                %if trans.app.config.allow_user_dataset_purge:
-                    or <a href="${h.url_for( controller='dataset', action='purge', id=data.id )}" class="historyItemPurge" id="historyItemPurger-${data.id}" target="galaxy_history">here</a> to immediately remove it from disk.
-                %else:
-                    it.
+                This dataset has been deleted. 
+                %if for_editing:
+                    Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" class="historyItemUndelete" id="historyItemUndeleter-${data.id}" target="galaxy_history">here</a> to undelete
+                    %if trans.app.config.allow_user_dataset_purge:
+                        or <a href="${h.url_for( controller='dataset', action='purge', id=data.id )}" class="historyItemPurge" id="historyItemPurger-${data.id}" target="galaxy_history">here</a> to immediately remove it from disk.
+                    %else:
+                        it.
+                    %endif
                 %endif
             %endif
         </strong></div>
@@ -151,7 +154,9 @@
                 An error occurred running this job: <i>${data.display_info().strip()}</i>
             </div>
             <div>
-                <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main" title="View or report this error" class="icon-button bug tooltip"></a>
+                %if for_editing:
+                    <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main" title="View or report this error" class="icon-button bug tooltip"></a>
+                %endif
                 %if data.has_data():
                     ${render_download_links( data, dataset_id )}
                 %endif

@@ -738,7 +738,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
             """ % ( web.url_for( id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
         
     @web.expose
-    def view( self, trans, id=None ):
+    def view( self, trans, id=None, show_deleted=False ):
         """View a history. If a history is importable, then it is viewable by any user."""
         # Get history to view.
         if not id:
@@ -751,11 +751,12 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesItemRati
         if not trans.user_is_admin() and not history_to_view.importable:
             error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
         # View history.
-        datasets = self.get_history_datasets( trans, history_to_view )
+        show_deleted = util.string_as_bool( show_deleted )
+        datasets = self.get_history_datasets( trans, history_to_view, show_deleted=show_deleted )
         return trans.stream_template_mako( "history/view.mako",
                                            history = history_to_view,
                                            datasets = datasets,
-                                           show_deleted = False )
+                                           show_deleted = show_deleted )
                                            
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
