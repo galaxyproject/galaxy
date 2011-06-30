@@ -2683,6 +2683,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             this.example_feature = (result.data.length ? result.data[0] : undefined);
 
             // Draw features.
+            ctx.translate(left_offset, 0);
             painter.draw(ctx, width, required_height, slots);
         }
         
