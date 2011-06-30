@@ -23,14 +23,41 @@ class Hg( object ):
         self.username = None
         self.action = None
     def __call__( self, environ, start_response ):
-        # Handle authentication for hg push commands
         cmd = self.__get_hg_command( **environ )
+        if cmd == 'changegroup':
+            # This is an hg clone from the command line.  When doing this, the following 5 commands, in order,
+            # will be retrieved from environ: 
+            # between -> heads -> changegroup -> capabilities -> listkeys
+            #
+            # Increment the value of the times_downloaded column in the repository table for the cloned repository.
+            if 'PATH_INFO' in environ:
+                path_info = environ[ 'PATH_INFO' ].lstrip( '/' )
+                # An example of path_info is: '/repos/test/column1'
+                path_info_components = path_info.split( '/' )
+                username = path_info_components[1]
+                name = path_info_components[2]
+                # Instantiate a database connection
+                db_url = self.config[ 'database_connection' ]
+                engine = create_engine( db_url )
+                connection = engine.connect()
+                result_set = connection.execute( "select id from galaxy_user where username = '%s'" % username.lower() )
+                for row in result_set:
+                    # Should only be 1 row...
+                    user_id = row[ 'id' ]
+                result_set = connection.execute( "select times_downloaded from repository where user_id = %d and name = '%s'" % ( user_id, name.lower() ) )
+                for row in result_set:
+                    # Should only be 1 row...
+                    times_downloaded = row[ 'times_downloaded' ]
+                times_downloaded += 1
+                connection.execute( "update repository set times_downloaded = %d where user_id = %d and name = '%s'" % ( times_downloaded, user_id, name.lower() ) )
+                connection.close()
         if cmd == 'unbundle':
+            # This is an hg push from the command line.  When doing this, the following 7 commands, in order,
+            # will be retrieved from environ: 
+            # between -> capabilities -> heads -> branchmap -> unbundle -> unbundle -> listkeys
+            #
             # The mercurial API unbundle() ( i.e., hg push ) method ultimately requires authorization.
-            # We'll force password entry every time a change set is pushed.  The user that pushes the changes
-            # sets may not be the same user that committed the change sets.  In other words, the user that is 
-            # pushing is the one being authenticated, but the owner of a specific change set in the change log 
-            # may be different.
+            # We'll force password entry every time a change set is pushed.
             #
             # When a user executes hg commit, it is not guaranteed to succeed.  Mercurial records your name 
             # and address with each change that you commit, so that you and others will later be able to 
@@ -40,7 +67,7 @@ class Hg( object ):
             # 1) If you specify a -u option to the hg commit command on the command line, followed by a username, 
             # this is always given the highest precedence.
             # 2) If you have set the HGUSER environment variable, this is checked next.
-            # 3) If you create a file in your home directory called .hgrc (~/.hgrc), with a username entry, that 
+            # 3) If you create a file in your home directory called .hgrc with a username entry, that 
             # will be used next.
             # 4) If you have set the EMAIL environment variable, this will be used next.
             # 5) Mercurial will query your system to find out your local user name and host name, and construct 
