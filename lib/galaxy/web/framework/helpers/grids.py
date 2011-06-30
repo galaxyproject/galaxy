@@ -626,6 +626,13 @@ class DeletedColumn( GridColumn ):
            args = { self.key: val }
            accepted_filters.append( GridColumnFilter( label, args) )
         return accepted_filters
+    def filter( self, trans, user, query, column_filter ):
+        """Modify query to filter self.model_class by state."""
+        if column_filter == "All":
+            pass
+        elif column_filter in [ "True", "False" ]:
+            query = query.filter( self.model_class.deleted == column_filter )
+        return query
 
 class StateColumn( GridColumn ):
     """

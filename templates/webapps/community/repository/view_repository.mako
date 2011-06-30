@@ -113,7 +113,7 @@
         %if repository.long_description:
             <div class="form-row">
                 <label>Detailed description:</label>
-                ${repository.long_description}
+                <pre>${repository.long_description}</pre>
                 <div style="clear: both"></div>
             </div>
         %endif
@@ -206,7 +206,7 @@
                         %>
                         <tr>
                             <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                            <td>${review.comment}</td>
+                            <td><pre>${review.comment}</pre></td>
                             <td>${time_ago( review.update_time )}</td>
                             <td>${review.user.username}</td>
                         </tr>

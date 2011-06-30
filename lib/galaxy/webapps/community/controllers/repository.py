@@ -50,25 +50,19 @@ class CategoryListGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="name",
+                    key="Category.name",
                     link=( lambda item: dict( operation="repositories_by_category", id=item.id, webapp="community" ) ),
-                    attach_popup=False,
-                    filterable="advanced" ),
+                    attach_popup=False ),
         DescriptionColumn( "Description",
-                    key="description",
-                    attach_popup=False,
-                    filterable="advanced" ),
+                           key="Category.description",
+                           attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" ),
         RepositoriesColumn( "Repositories",
                             model_class=model.Repository,
                             attach_popup=False )
     ]
-
     # Override these
+    default_filter = {}
     global_actions = []
     operations = []
     standard_filters = []
@@ -102,7 +96,7 @@ class RepositoryListGrid( grids.Grid ):
         def filter( self, trans, user, query, column_filter ):
             """Modify query to filter by category."""
             if column_filter == "All":
-                pass
+                return query
             return query.filter( model.Category.name == column_filter )
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
@@ -127,7 +121,7 @@ class RepositoryListGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="Repository.name",
+                    key="name",
                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id, webapp="community" ) ),
                     attach_popup=False ),
         DescriptionColumn( "Description",
@@ -143,20 +137,22 @@ class RepositoryListGrid( grids.Grid ):
                      model_class=model.User,
                      link=( lambda item: dict( operation="repositories_by_user", id=item.id, webapp="community" ) ),
                      attach_popup=False,
-                     key="username" ),
-        grids.CommunityRatingColumn( "Average Rating",
-                                     key="rating" ),
-        EmailAlertsColumn( "Alert",
-                           attach_popup=False ),
+                     key="User.username" ),
+        grids.CommunityRatingColumn( "Average Rating", key="rating" ),
+        EmailAlertsColumn( "Alert", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
                      model_class=model.User,
-                     key="email",
+                     key="User.email",
                      visible=False ),
         RepositoryCategoryColumn( "Category",
                                   model_class=model.Category,
                                   key="Category.name",
-                                  visible=False )
+                                  visible=False ),
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[0], columns[1] ],
@@ -168,7 +164,7 @@ class RepositoryListGrid( grids.Grid ):
                                         condition=( lambda item: not item.deleted ),
                                         async_compatible=False ) ]
     standard_filters = []
-    default_filter = {}
+    default_filter = dict( deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True

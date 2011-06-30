@@ -142,9 +142,13 @@
                 <div class="form-row">
                     <label>Review:</label>
                     %if rra and rra.comment:
-                        <div class="form-row-input"><textarea name="comment" rows="5" cols="35">${rra.comment}</textarea></div>
+                        <div class="form-row-input">
+                            <pre><textarea name="comment" rows="5" cols="80">${rra.comment}</textarea></pre>
+                        </div>
                     %else:
-                        <div class="form-row-input"><textarea name="comment" rows="5" cols="35"></textarea></div>
+                        <div class="form-row-input">
+                            <textarea name="comment" rows="5" cols="80"></textarea>
+                        </div>
                     %endif
                     <div style="clear: both"></div>
                 </div>
@@ -179,7 +183,7 @@
                             %>
                             <tr>
                                 <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${review.comment}</td>
+                                <td><pre>${review.comment}</pre></td>
                                 <td>${time_ago( review.update_time )}</td>
                                 <td>${review.user.username}</td>
                             </tr>

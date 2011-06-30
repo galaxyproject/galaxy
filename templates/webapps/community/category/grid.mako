@@ -25,7 +25,7 @@
                 %endif
             </ul>
         %endif
-        ${render_grid_filters( repo_grid )}
+        ${render_grid_filters( repo_grid, render_advanced_search=False )}
     </div>
 </%def>
 

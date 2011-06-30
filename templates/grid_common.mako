@@ -102,7 +102,7 @@
 </%def>
 
 ## Print grid search/filtering UI.
-<%def name="render_grid_filters( grid )">
+<%def name="render_grid_filters( grid, render_advanced_search=True )">
     ## Standard search.
     <div id="standard-search">
         <table>
@@ -124,11 +124,12 @@
                 ## Only show advanced search if there are filterable columns.
                 <%
                     show_advanced_search_link = False
-                    for column in grid.columns:
-                        if column.filterable == "advanced":
-                            show_advanced_search_link = True
-                            break
-                        endif
+                    if render_advanced_search:
+                        for column in grid.columns:
+                            if column.filterable == "advanced":
+                                show_advanced_search_link = True
+                                break
+                            endif
                 %>
                 %if show_advanced_search_link:
                     <% args = { "advanced-search" : True } %>
@@ -170,7 +171,7 @@
                     %if column.key in cur_filter_dict and column.key in default_filter_dict and \
                         cur_filter_dict[column.key] != default_filter_dict[column.key]:
                         <script type="text/javascript">
-                            $('#advanced-search').css("display", "block");
+                            $('#advanced-search').css("display", "none");
                         </script>
                     %endif
             

@@ -112,7 +112,7 @@
             <div class="form-row">
                 <label>Detailed description:</label>
                 %if long_description:
-                    <textarea name="long_description" rows="3" cols="80">${long_description}</textarea>
+                    <pre><textarea name="long_description" rows="3" cols="80">${long_description}</textarea></pre>
                 %else:
                     <textarea name="long_description" rows="3" cols="80"></textarea>
                 %endif
@@ -247,7 +247,7 @@
                         %>
                         <tr>
                             <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                            <td>${review.comment}</td>
+                            <td><pre>${review.comment}</pre></td>
                             <td>${time_ago( review.update_time )}</td>
                             <td>${review.user.username}</td>
                         </tr>

@@ -125,7 +125,7 @@
         <label>Change set commit message:</label>
         <div class="form-row-input">
             %if commit_message:
-                <textarea name="commit_message" rows="3" cols="35">${commit_message}</textarea>
+                <pre><textarea name="commit_message" rows="3" cols="35">${commit_message}</textarea></pre>
             %else:
                 <textarea name="commit_message" rows="3" cols="35"></textarea>
             %endif

@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.util import inflector
 from common import get_category, get_repository
 from repository import RepositoryListGrid, CategoryListGrid
 import logging
@@ -282,39 +283,30 @@ class GroupListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class AdminCategoryListGrid( CategoryListGrid ):
-    # Override standard filters
-    standard_filters = [
-        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
-        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
-    ]
-
 class ManageCategoryListGrid( CategoryListGrid ):
     columns = [ col for col in CategoryListGrid.columns ]
     # Override the NameColumn to include an Edit link
     columns[ 0 ] = CategoryListGrid.NameColumn( "Name",
-                                                key="name",
+                                                key="Category.name",
                                                 link=( lambda item: dict( operation="Edit", id=item.id, webapp="community" ) ),
                                                 model_class=model.Category,
-                                                attach_popup=False,
-                                                filterable="advanced" )
+                                                attach_popup=False )
     global_actions = [
         grids.GridAction( "Add new category",
                           dict( controller='admin', action='manage_categories', operation='create', webapp="community" ) )
     ]
-    operations = [ grids.GridOperation( "Delete",
-                                        condition=( lambda item: not item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="community", action="mark_category_deleted" ) ),
-                   grids.GridOperation( "Undelete",
-                                        condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="community", action="undelete_category" ) ),
-                   grids.GridOperation( "Purge",
-                                        condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="community", action="purge_category" ) ) ]
+
+class AdminRepositoryListGrid( RepositoryListGrid ):
+    operations = [ operation for operation in RepositoryListGrid.operations ]
+    operations.append( grids.GridOperation( "Delete",
+                                            allow_multiple=True,
+                                            condition=( lambda item: not item.deleted ),
+                                            async_compatible=False ) )
+    operations.append( grids.GridOperation( "Undelete",
+                                            allow_multiple=True,
+                                            condition=( lambda item: item.deleted ),
+                                            async_compatible=False ) )
+    standard_filters = []
 
 class AdminController( BaseController, Admin ):
     
@@ -322,7 +314,7 @@ class AdminController( BaseController, Admin ):
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     manage_category_list_grid = ManageCategoryListGrid()
-    repository_list_grid = RepositoryListGrid()
+    repository_list_grid = AdminRepositoryListGrid()
 
     @web.expose
     @web.require_admin
@@ -363,8 +355,79 @@ class AdminController( BaseController, Admin ):
                 category_id = kwd.get( 'id', None )
                 category = get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
+            elif operation == "receive email alerts":
+                if kwd[ 'id' ]:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='set_email_alerts',
+                                                                      **kwd ) )
+                else:
+                    del kwd[ 'operation' ]
+            elif operation == 'delete':
+                return self.mark_repository_deleted( trans, **kwd )
+            elif operation == "undelete":
+                return self.undelete_repository( trans, **kwd )
         # Render the list view
         return self.repository_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def mark_repository_deleted( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            deleted_repositories = ""
+            for repository_id in ids:
+                repository = get_repository( trans, repository_id )
+                if not repository.deleted:
+                    repository.deleted = True
+                    trans.sa_session.add( repository )
+                    trans.sa_session.flush()
+                    count += 1
+                    deleted_repositories += " %s " % repository.name
+            if count:
+                message = "Deleted %d %s: %s" % ( count, inflector.cond_plural( len( ids ), "repository" ), deleted_repositories )
+            else:
+                message = "All selected repositories were already marked deleted."
+        else:
+            message = "No repository ids received for deleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repositories',
+                                                   message=util.sanitize_text( message ),
+                                                   status=status ) )
+    @web.expose
+    @web.require_admin
+    def undelete_repository( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            undeleted_repositories = ""
+            for repository_id in ids:
+                repository = get_repository( trans, repository_id )
+                if repository.deleted:
+                    repository.deleted = False
+                    trans.sa_session.add( repository )
+                    trans.sa_session.flush()
+                    count += 1
+                    undeleted_repositories += " %s" % repository.name
+            if count:
+                message = "Undeleted %d %s: %s" % ( count, inflector.cond_plural( count, "repository" ), undeleted_repositories )
+            else:
+                message = "No selected repositories were marked deleted, so they could not be undeleted."
+        else:
+            message = "No repository ids received for undeleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repositories',
+                                                   message=util.sanitize_text( message ),
+                                                   status='done' ) )
     @web.expose
     @web.require_admin
     def manage_categories( self, trans, **kwd ):
@@ -476,22 +539,25 @@ class AdminController( BaseController, Admin ):
     @web.expose
     @web.require_admin
     def mark_category_deleted( self, trans, **kwd ):
+        # TODO: We should probably eliminate the Category.deleted column since it really makes no
+        # sense to mark a category as deleted (category names and descriptions can be changed instead).
+        # If we do this, and the following 2 methods can be eliminated.
         params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         id = kwd.get( 'id', None )
-        if not id:
-            message = "No category ids received for deleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='manage_categories',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Deleted %d categories: " % len( ids )
-        for category_id in ids:
-            category = get_category( trans, category_id )
-            category.deleted = True
-            trans.sa_session.add( category )
-            trans.sa_session.flush()
-            message += " %s " % category.name
+        if id:
+            ids = util.listify( id )
+            message = "Deleted %d categories: " % len( ids )
+            for category_id in ids:
+                category = get_category( trans, category_id )
+                category.deleted = True
+                trans.sa_session.add( category )
+                trans.sa_session.flush()
+                message += " %s " % category.name
+        else:
+            message = "No category ids received for deleting."
+            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
@@ -500,30 +566,25 @@ class AdminController( BaseController, Admin ):
     @web.require_admin
     def undelete_category( self, trans, **kwd ):
         params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         id = kwd.get( 'id', None )
-        if not id:
-            message = "No category ids received for undeleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='manage_categories',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        count = 0
-        undeleted_categories = ""
-        for category_id in ids:
-            category = get_category( trans, category_id )
-            if not category.deleted:
-                message = "Category '%s' has not been deleted, so it cannot be undeleted." % category.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='manage_categories',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
-            category.deleted = False
-            trans.sa_session.add( category )
-            trans.sa_session.flush()
-            count += 1
-            undeleted_categories += " %s" % category.name
-        message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            undeleted_categories = ""
+            for category_id in ids:
+                category = get_category( trans, category_id )
+                if category.deleted:
+                    category.deleted = False
+                    trans.sa_session.add( category )
+                    trans.sa_session.flush()
+                    count += 1
+                    undeleted_categories += " %s" % category.name
+            message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
+        else:
+            message = "No category ids received for undeleting."
+            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
@@ -535,28 +596,26 @@ class AdminController( BaseController, Admin ):
         # Purging a deleted Category deletes all of the following from the database:
         # - RepoitoryCategoryAssociations where category_id == Category.id
         params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         id = kwd.get( 'id', None )
-        if not id:
-            message = "No category ids received for purging"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='manage_categories',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Purged %d categories: " % len( ids )
-        for category_id in ids:
-            category = get_category( trans, category_id )
-            if not category.deleted:
-                message = "Category '%s' has not been deleted, so it cannot be purged." % category.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='manage_categories',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
-            # Delete RepositoryCategoryAssociations
-            for rca in category.repositories:
-                trans.sa_session.delete( rca )
-            trans.sa_session.flush()
-            message += " %s " % category.name
+        if id:
+            ids = util.listify( id )
+            count = 0
+            purged_categories = ""
+            message = "Purged %d categories: " % len( ids )
+            for category_id in ids:
+                category = get_category( trans, category_id )
+                if category.deleted:
+                    # Delete RepositoryCategoryAssociations
+                    for rca in category.repositories:
+                        trans.sa_session.delete( rca )
+                    trans.sa_session.flush()
+                    purged_categories += " %s " % category.name
+            message = "Purged %d categories: %s" % ( count, purged_categories )
+        else:
+            message = "No category ids received for purging."
+            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
