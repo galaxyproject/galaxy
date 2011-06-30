@@ -143,7 +143,7 @@ class RepositoryListGrid( grids.Grid ):
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
                      model_class=model.User,
-                     key="User.email",
+                     key="email",
                      visible=False ),
         RepositoryCategoryColumn( "Category",
                                   model_class=model.Category,
