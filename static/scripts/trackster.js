@@ -172,7 +172,7 @@ var
     // height of individual features within tracks. Feature height, then, should always be less
     // than track height.
     CHAR_HEIGHT_PX = 9, // FIXME: font size may not be static
-    ERROR_PADDING = 15, // Padding at the top of tracks for error messages
+    ERROR_PADDING = 18, // Padding at the top of tracks for error messages
     SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
     // Maximum number of rows un a slotted track
     MAX_FEATURE_DEPTH = 100,
@@ -212,7 +212,14 @@ extend(Cache.prototype, {
     get: function(key) {
         var index = this.key_ary.indexOf(key);
         if (index !== -1) {
-            this.move_key_to_end(key, index);
+            if (this.obj_cache[key].stale) {
+                // Object is stale, so remove key and object.
+                this.key_ary.splice(index, 1);
+                delete this.obj_cache[key];
+            }
+            else {
+                this.move_key_to_end(key, index);
+            }
         }
         return this.obj_cache[key];
     },
@@ -280,7 +287,7 @@ extend(DataManager.prototype, Cache.prototype, {
         });
     },
     /**
-     * Get data and do callback.
+     * Get track data.
      */
     get_data: function(chrom, low, high, mode, resolution, extra_params) {
         // Debugging:
@@ -332,7 +339,7 @@ extend(DataManager.prototype, Cache.prototype, {
         // Load data from server. The deferred is immediately saved until the
         // data is ready, it then replaces itself with the actual data
         entry = this.load_data(chrom, low, high, mode, resolution, extra_params);
-        this.set_data( low, high, mode, entry );
+        this.set_data(low, high, mode, entry);
         return entry
     },
     set_data: function(low, high, mode, result) {
@@ -1500,6 +1507,7 @@ var Tile = function(index, resolution, canvas) {
     this.resolution = resolution;
     // Wrap element in div for background.
     this.canvas = $("<div class='track-tile'/>").append(canvas);
+    this.stale = false;
 };
 
 var SummaryTreeTile = function(index, resolution, canvas, max_val) {
@@ -1925,9 +1933,9 @@ extend(TiledTrack.prototype, Track.prototype, {
             var cached = this.tile_cache.get(key);
             var tile_low = tile_index * DENSITY * this.view.resolution;
             var tile_high = tile_low + DENSITY * this.view.resolution;
-            if ( !force && cached ) {
+            if (!force && cached) {
                 drawn_tiles[drawn_tiles.length] = cached;
-                this.show_tile(cached, parent_element, tile_low, w_scale);
+                this.show_tile(cached, parent_element, tile_low, tile_high, w_scale);
             } else {
                 this.delayed_draw(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles);
             }
@@ -2079,7 +2087,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             if (tile === undefined) {
                 return;
             }
-            track.show_tile(tile, parent_element, tile_low, w_scale);
+            track.show_tile(tile, parent_element, tile_low, tile_high, w_scale);
             drawn_tiles[drawn_tiles.length] = tile;
         };
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
@@ -2088,7 +2096,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 // Show/draw tile: check cache for tile; if tile not in cache, draw it.
                 var tile = (force ? undefined : track.tile_cache.get(key));
                 if (tile) { 
-                    track.show_tile(tile, parent_element, tile_low, w_scale);
+                    track.show_tile(tile, parent_element, tile_low, tile_high, w_scale);
                     drawn_tiles[drawn_tiles.length] = tile;
                 }
                 else {
@@ -2117,9 +2125,41 @@ extend(TiledTrack.prototype, Track.prototype, {
     /**
      * Show track tile and perform associated actions.
      */
-    show_tile: function(tile, parent_element, tile_low, w_scale) {
+    show_tile: function(tile, parent_element, tile_low, tile_high, w_scale) {
         // Readability.
-        var track = this;
+        var 
+            track = this,
+            canvas = tile.canvas,
+            tile_element = canvas;
+        
+        //
+        // If tile has message, display message and button to show more data.
+        // TODO: need to handle other messages, not assume message === show more data.
+        //
+        if (tile.message) {
+            var 
+                container_div = $("<div/>"),
+                message_div = $("<div/>").addClass("tile-message").text(tile.message).
+                                // -1 to account for border.
+                                css({'height': ERROR_PADDING-1, 'width': tile.canvas.width}).appendTo(container_div),
+                show_more_data_btn = $("<button/>").text("Show more").css("margin-left", "0.5em").appendTo(message_div);
+            container_div.append(canvas);
+            tile_element = container_div;
+            
+            // Set up actions for button.
+            show_more_data_btn.click(function() {
+                // Mark data, tile as stale, request more data, and redraw track.
+                // HACK: get_data used will return object that can be marked as stale, but a better way to this is needed.
+                var cur_data = track.data_cache.get_data(track.view.chrom, tile_low, tile_high, track.mode, tile.resolution);
+                cur_data.stale = true;
+                tile.stale = true;
+                track.data_cache.get_data(track.view.chrom, tile_low, tile_high, track.mode, tile.resolution, {max_vals: cur_data.data.length * 2});
+                track.draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normal zoom in.
+                e.stopPropagation();
+            });
+        }
         
         //
         // Show tile element.
@@ -2131,7 +2171,6 @@ extend(TiledTrack.prototype, Track.prototype, {
         if (this.left_offset) {
             left -= this.left_offset;
         }
-        var tile_element = tile.canvas;
         tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
         parent_element.append(tile_element);
         
@@ -2389,7 +2428,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
         var ctx = canvas.getContext("2d");
         var painter = new painters.LinePainter( result.data, tile_low, tile_low + tile_length,
                                                 this.prefs, this.mode );
-        painter.draw( ctx, width, height );
+        painter.draw(ctx, width, height);
         
         return new Tile(tile_length, resolution, canvas);
     } 
@@ -2680,6 +2719,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         
         if (result.data) {
             // Set example feature. This is needed so that track can update its UI based on feature attributes.
+            // TODO: use tile data rather than example feature?
             this.example_feature = (result.data.length ? result.data[0] : undefined);
 
             // Draw features.
@@ -2687,17 +2727,6 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             painter.draw(ctx, width, required_height, slots);
         }
         
-        // If tile has a message, create container div with both a message div and the canvas.
-        if (result.message) {
-            var container_div = $("<div/>");
-            var message_div = $("<div/>").addClass("tile-message").text(result.message).css('width', canvas.width);
-            message_div.css({position: 'absolute', top: 0});
-            $(canvas).css("top", 15);
-            container_div.append(message_div);
-            container_div.append(canvas);
-            canvas = container_div;
-        }
-
         return new FeatureTrackTile(tile_index, resolution, canvas, result.message);        
     }
 });

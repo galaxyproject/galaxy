@@ -168,13 +168,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     histories_grid = HistorySelectionGrid()
     history_datasets_grid = HistoryDatasetsSelectionGrid()
     tracks_grid = TracksterSelectionGrid()
-    
-    #
-    # TODO: need to encode dataset id and use 
-    #   UsesHistoryDatasetAssociation.get_dataset
-    # for better dataset security.
-    #
-    
+        
     available_tracks = None
     available_genomes = None
     
@@ -475,9 +469,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
         
     @web.json
-    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, **kwargs ):
+    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, max_vals=5000, **kwargs ):
         """
-        Called by the browser to request a block of data
+        Provides a block of data from a dataset.
         """
     
         # Parameter check.
@@ -532,7 +526,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
-        data = data_provider.get_data( chrom, low, high, **kwargs )
+        data = data_provider.get_data( chrom, low, high, max_vals, **kwargs )
         message = None
         if isinstance(data, dict) and 'message' in data:
             message = data['message']
