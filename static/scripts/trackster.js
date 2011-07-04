@@ -263,9 +263,12 @@ extend(DataManager.prototype, Cache.prototype, {
     /**
      * Load data from server; returns AJAX object so that use of Deferred is possible.
      */
-    load_data: function(chrom, low, high, mode, resolution, extra_params) {
+    load_data: function(low, high, resolution, extra_params) {
         // Setup data request params.
-        var params = {"chrom": chrom, "low": low, "high": high, "mode": mode, 
+        var 
+            chrom = this.track.view.chrom,
+            mode = this.track.mode,
+            params = {"chrom": chrom, "low": low, "high": high, "mode": mode, 
                       "resolution": resolution, "dataset_id" : this.track.dataset_id, 
                       "hda_ldda": this.track.hda_ldda};
         $.extend(params, extra_params);
@@ -289,7 +292,7 @@ extend(DataManager.prototype, Cache.prototype, {
     /**
      * Get track data.
      */
-    get_data: function(chrom, low, high, mode, resolution, extra_params) {
+    get_data: function(low, high, resolution, extra_params) {
         // Debugging:
         //console.log("get_data", low, high, mode);
         /*
@@ -300,7 +303,9 @@ extend(DataManager.prototype, Cache.prototype, {
         */
         
         // Look for entry and return if found.
-        var entry = this.get(this.gen_key(low, high, mode));
+        var 
+            mode = this.track.mode,
+            entry = this.get(this.gen_key(low, high, mode));
         if (entry) {
             return entry;
         }
@@ -315,6 +320,7 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         
         /* Disabling for now, more detailed data is never loaded for line tracks
+        TODO: can using resolution in the key solve this problem?
         if (this.subset) {
             var key, split_key, entry_low, entry_high, mode, entry;
             for (var i = 0; i < this.key_ary.length; i++) {
@@ -338,7 +344,7 @@ extend(DataManager.prototype, Cache.prototype, {
                 
         // Load data from server. The deferred is immediately saved until the
         // data is ready, it then replaces itself with the actual data
-        entry = this.load_data(chrom, low, high, mode, resolution, extra_params);
+        entry = this.load_data(low, high, resolution, extra_params);
         this.set_data(low, high, mode, entry);
         return entry
     },
@@ -349,6 +355,8 @@ extend(DataManager.prototype, Cache.prototype, {
     /**
      * Generate key for cache.
      */
+    // TODO: use chrom in key so that (a) data is not thrown away when changing chroms and (b)
+    // manager does not need to be cleared when changing chroms.
     gen_key: function(low, high, mode) {
         var key = low + "_" + high + "_" + mode;
         return key;
@@ -1504,6 +1512,8 @@ extend( TrackConfig.prototype, {
  */
 var Tile = function(index, resolution, canvas) {
     this.index = index;
+    this.low = index * DENSITY * resolution;
+    this.high = (index + 1) * DENSITY * resolution;
     this.resolution = resolution;
     // Wrap element in div for background.
     this.canvas = $("<div class='track-tile'/>").append(canvas);
@@ -1598,7 +1608,7 @@ extend(Track.prototype, {
         var track = this;
         track.enabled = false;
         track.tile_cache.clear();    
-        track.data_cache.clear();
+        track.data_manager.clear();
         track.initial_canvas = undefined;
         track.content_div.css("height", "auto");
         /*
@@ -1935,7 +1945,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             var tile_high = tile_low + DENSITY * this.view.resolution;
             if (!force && cached) {
                 drawn_tiles[drawn_tiles.length] = cached;
-                this.show_tile(cached, parent_element, tile_low, tile_high, w_scale);
+                this.show_tile(cached, parent_element, w_scale);
             } else {
                 this.delayed_draw(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles);
             }
@@ -2087,7 +2097,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             if (tile === undefined) {
                 return;
             }
-            track.show_tile(tile, parent_element, tile_low, tile_high, w_scale);
+            track.show_tile(tile, parent_element, w_scale);
             drawn_tiles[drawn_tiles.length] = tile;
         };
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
@@ -2096,21 +2106,19 @@ extend(TiledTrack.prototype, Track.prototype, {
                 // Show/draw tile: check cache for tile; if tile not in cache, draw it.
                 var tile = (force ? undefined : track.tile_cache.get(key));
                 if (tile) { 
-                    track.show_tile(tile, parent_element, tile_low, tile_high, w_scale);
+                    track.show_tile(tile, parent_element, w_scale);
                     drawn_tiles[drawn_tiles.length] = tile;
                 }
                 else {
                     //
                     // Really draw tile: get data, seq data if available, and draw tile.
                     //
-                    $.when(track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
-                                                     resolution, track.data_url_extra_params)).then(function(tile_data) {
+                    $.when(track.data_manager.get_data(tile_low, tile_high, resolution, track.data_url_extra_params)).then(function(tile_data) {
                         extend(tile_data, more_tile_data);
                         // If sequence data needed, get that and draw. Otherwise draw.
                         if (view.reference_track && w_scale > view.canvas_manager.char_width_px) {
-                            $.when(view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
-                                                                            track.mode, resolution, 
-                                                                            view.reference_track.data_url_extra_params)).then(function(seq_data) {
+                            $.when(view.reference_track.data_manager.get_data(tile_low, tile_high, resolution, 
+                                                                                view.reference_track.data_url_extra_params)).then(function(seq_data) {
                                 draw_and_show_tile(id, tile_data, resolution, tile_index, parent_element, w_scale, seq_data);
                             });
                         }
@@ -2125,7 +2133,7 @@ extend(TiledTrack.prototype, Track.prototype, {
     /**
      * Show track tile and perform associated actions.
      */
-    show_tile: function(tile, parent_element, tile_low, tile_high, w_scale) {
+    show_tile: function(tile, parent_element, w_scale) {
         // Readability.
         var 
             track = this,
@@ -2150,10 +2158,10 @@ extend(TiledTrack.prototype, Track.prototype, {
             show_more_data_btn.click(function() {
                 // Mark data, tile as stale, request more data, and redraw track.
                 // HACK: get_data used will return object that can be marked as stale, but a better way to this is needed.
-                var cur_data = track.data_cache.get_data(track.view.chrom, tile_low, tile_high, track.mode, tile.resolution);
+                var cur_data = track.data_manager.get_data(tile.low, tile.high, tile.resolution);
                 cur_data.stale = true;
                 tile.stale = true;
-                track.data_cache.get_data(track.view.chrom, tile_low, tile_high, track.mode, tile.resolution, {max_vals: cur_data.data.length * 2});
+                track.data_manager.get_data(tile.low, tile.high, tile.resolution, {max_vals: cur_data.data.length * 2});
                 track.draw();
             }).dblclick(function(e) {
                 // Do not propogate as this would normal zoom in.
@@ -2167,7 +2175,7 @@ extend(TiledTrack.prototype, Track.prototype, {
       
         // Position tile element, recalculate left position at display time
         var range = this.view.high - this.view.low,
-            left = (tile_low - this.view.low) * w_scale;
+            left = (tile.low - this.view.low) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
         }
@@ -2259,13 +2267,13 @@ var ReferenceTrack = function (view) {
     view.reference_track = this;
     this.left_offset = 200;
     this.height_px = 12;
-    this.container_div.addClass( "reference-track" );
+    this.container_div.addClass("reference-track");
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
     this.content_div.css("border", "none");
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
-    this.data_cache = new ReferenceTrackDataManager(CACHED_DATA, this, false);
+    this.data_manager = new ReferenceTrackDataManager(CACHED_DATA, this, false);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 extend(ReferenceTrack.prototype, TiledTrack.prototype, {
@@ -2283,7 +2291,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
             }
             var canvas = this.view.canvas_manager.new_canvas();
             var ctx = canvas.getContext("2d");
-            canvas.width = Math.ceil( tile_length * w_scale + track.left_offset);
+            canvas.width = Math.ceil(tile_length * w_scale + track.left_offset);
             canvas.height = track.height_px;
             ctx.font = ctx.canvas.manager.default_font;
             ctx.textAlign = "center";
@@ -2310,7 +2318,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.data_cache = new DataManager(CACHED_DATA, this);
+    this.data_manager = new DataManager(CACHED_DATA, this);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 
     // Define track configuration
@@ -2426,11 +2434,10 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
         
         // Paint line onto full canvas
         var ctx = canvas.getContext("2d");
-        var painter = new painters.LinePainter( result.data, tile_low, tile_low + tile_length,
-                                                this.prefs, this.mode );
+        var painter = new painters.LinePainter(result.data, tile_low, tile_low + tile_length, this.prefs, this.mode);
         painter.draw(ctx, width, height);
         
-        return new Tile(tile_length, resolution, canvas);
+        return new Tile(tile_index, resolution, canvas);
     } 
 });
 
@@ -2475,7 +2482,7 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     this.inc_slots = {};
     this.start_end_dct = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
-    this.data_cache = new DataManager(20, this);
+    this.data_manager = new DataManager(20, this);
     this.left_offset = 200;
 
     this.painter = painters.LinkedFeaturePainter;
@@ -2600,9 +2607,9 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
     draw_tile: function(result, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
             tile_low = tile_index * DENSITY * resolution,
-            tile_high = ( tile_index + 1 ) * DENSITY * resolution,
+            tile_high = (tile_index + 1) * DENSITY * resolution,
             tile_span = tile_high - tile_low,
-            width = Math.ceil( tile_span * w_scale ),
+            width = Math.ceil(tile_span * w_scale),
             mode = this.mode,
             min_height = 25,
             left_offset = this.left_offset,
@@ -2703,7 +2710,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         
         // Create painter, and canvas of sufficient size to contain all features
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
-        var painter = new (this.painter)( filtered, tile_low, tile_high, this.prefs, mode, ref_seq );
+        var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, ref_seq);
         var required_height = painter.get_required_height(slots_required);
         var canvas = this.view.canvas_manager.new_canvas();
         
@@ -2786,7 +2793,7 @@ extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.protot
         // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
         var track = this; 
         var post_init = function() {
-            if (track.data_cache.size() === 0) {
+            if (track.data_manager.size() === 0) {
                 // Track still drawing initial data, so do nothing.
                 setTimeout(post_init, 300);
             }
