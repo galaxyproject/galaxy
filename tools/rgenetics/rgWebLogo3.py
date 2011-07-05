@@ -1,9 +1,12 @@
 """
+# modified june 2 ross lazarus to add units option at Assaf Gordon's suggestion
 # rgWebLogo3.py
 # wrapper to check that all fasta files are same length
 
 """
 import optparse, os, sys, subprocess, tempfile
+
+WEBLOGO = 'weblogo' # executable name for weblogo3 - confusing isn't it?
 
 class WL3:
     """
@@ -18,10 +21,21 @@ class WL3:
         self.fastaf = file(self.opts.input,'r')
         self.clparams = {}
 
+    def whereis(self,program):
+        for path in os.environ.get('PATH', '').split(':'):
+            if os.path.exists(os.path.join(path, program)) and not os.path.isdir(os.path.join(path, program)):
+                return os.path.join(path, program)
+        return None
+
     def runCL(self):
         """ construct and run a command line
         """
-        cll = ['weblogo',]
+        wl = self.whereis(WEBLOGO)
+        if not wl:
+             print >> sys.stderr, '## rgWebLogo3.py error - cannot locate the weblogo binary %s on the current path' % WEBLOGO
+             print >> sys.stderr, '## Please ensure it is installed and working from http://code.google.com/p/weblogo'
+             sys.exit(1)
+        cll = [WEBLOGO,]
         cll += [' '.join(it) for it in list(self.clparams.items())]
         cl = ' '.join(cll)
         assert cl > '', 'runCL needs a command line as clparms'
@@ -59,8 +73,13 @@ class WL3:
                         sys.exit(1)
                     else:
                         seqname = row[1:].strip() 
-            else:
-                aseq.append(row.strip())
+            else: # sequence row
+                if seqname == None:
+                    print >> sys.stderr,'Invalid fasta file %s - does not start with %s - please read the tool documentation carefully' % (self.opts.input,self.FASTASTARTSYM)
+                    sys.exit(1) 
+                else:
+                    aseq.append(row.strip())
+                
         if seqname <> None: # last one
             l = len(''.join(aseq))
             yield (seqname,l)
@@ -74,7 +93,7 @@ class WL3:
         lasti = None
         f = self.iter_fasta()
         for i,(seqname,seqlen) in enumerate(f):
-	    lasti = i
+            lasti = i
             if i == 0:
                 flen = seqlen
             else:
@@ -98,6 +117,8 @@ class WL3:
             self.clparams['-u'] = self.opts.upper        
         if self.opts.colours <> None:
             self.clparams['-c'] = self.opts.colours
+        if self.opts.units <> None:
+            self.clparams['-U'] = self.opts.units
         s = self.runCL()
         return check,s
 
@@ -122,6 +143,7 @@ if __name__ == '__main__':
     op.add_option('-c', '--colours', default=None)
     op.add_option('-l', '--lower', default=None)
     op.add_option('-u', '--upper', default=None)  
+    op.add_option('-U', '--units', default=None)  
     opts, args = op.parse_args()
     assert opts.input <> None,'weblogo3 needs a -i parameter with a fasta input file - cannot open'
     assert os.path.isfile(opts.input),'weblogo3 needs a valid fasta input file - cannot open %s' % opts.input

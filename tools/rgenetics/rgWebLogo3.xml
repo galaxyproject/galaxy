@@ -1,7 +1,7 @@
-<tool id="rgweblogo3" name="Sequence Logo" version="0.2">
+<tool id="rgweblogo3" name="Sequence Logo" version="0.3">
    <description>generator for fasta (eg Clustal alignments)</description>
    <command interpreter="python"> 
-    rgWebLogo3.py -F $outformat -s $size -i $input -o $output -t "$logoname" -c "$colours"
+    rgWebLogo3.py -F $outformat -s $size -i $input -o $output -t "$logoname" -c "$colours" -U "$units"
 #if $range.mode == 'part'
 -l "$range.seqstart" -u "$range.seqend"
 #end if
@@ -18,6 +18,15 @@
       <option value="eps">EPS</option>
       <option value="txt">Text (shows the detailed calculations for each position - no image)</option>
     </param>
+    <param name="units" type="select" label="Display Units"
+      help="What the height of each logo element depicts - eg bits of entropy (default)">
+      <option value="bits" selected="True">Entropy (bits)</option>
+      <option value="probability">Probability</option>
+      <option value="nats">Nats</option>
+      <option value="kT">kT</option>
+      <option value="kJ/mol">kJ/mol</option>
+      <option value="kcal/mol">kcal/mol</option>
+    </param>
     <param name="colours" type="select" label="Colour scheme for output Sequence Logo" 
       help="Note that some of these only make sense for protein sequences!">
       <option value="auto" selected="True">Default automatic colour selection</option>
@@ -28,6 +37,7 @@
       <option value="hydrophobicity">Hydrophobicity</option>
       <option value="monochrome">monochrome</option>
     </param>
+
     
     <conditional name="range">
         <param name="mode" type="select" label="Include entire sequence (default) or specify a subsequence range to use">
@@ -63,17 +73,26 @@
     </data>
   </outputs>
   <tests>
-    <test>
-  
+    <test>  
       <param name="input" value="rgClustal_testout.fasta" />
       <param name = "logoname" value="Galaxy/Rgenetics weblogo" />
       <param name = "outformat" value="jpeg" />
       <param name = "mode" value="complete" />
       <param name = "size" value="medium" />      
       <param name = "colours" value="auto" />
+      <param name = "units" value="bits" /> 
       <output name="output" file="rgWebLogo3_test.jpg" ftype="jpg" compare="sim_size" delta="10000" />
     </test>
-
+    <test>  
+      <param name="input" value="rgClustal_testout.fasta" />
+      <param name = "logoname" value="Galaxy/Rgenetics weblogo" />
+      <param name = "outformat" value="png" />
+      <param name = "mode" value="complete" />
+      <param name = "size" value="medium" />      
+      <param name = "colours" value="auto" />
+      <param name = "units" value="probability" /> 
+      <output name="output" file="rgWebLogo3_test2.png" ftype="png" compare="sim_size" delta="10000" />
+    </test>
   </tests>
   <help>
 
@@ -92,7 +111,8 @@ A typical output looks like this
 
 **Warning about input Fasta format files**
 
-The Weblogo3 program used by this tool will fail if your fasta sequences are not all EXACTLY the same length. 
+The Weblogo3 program used by this tool will fail if your fasta sequences are not all EXACTLY the same length. The tool will provide a warning
+and refuse to call the weblogo3 executable if irregular length sequences are detected.
 
 Fasta alignments from the companion ClustalW Galaxy tool will work but many other fasta files may cause this tool to fail - please do not file 
 a Galaxy bug report - this is a feature of the tool and a problem with your source data - not a tool error - please make certain all your fasta 
