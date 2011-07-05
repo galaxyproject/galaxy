@@ -305,10 +305,8 @@ extend(DataManager.prototype, Cache.prototype, {
         // Look for entry and return if found.
         var 
             mode = this.track.mode,
-            entry = this.get(this.gen_key(low, high, mode));
-        if (entry) {
-            return entry;
-        }
+            entry = this.get_data_from_cache(low, high, mode);
+        if (entry) { return entry; }
 
         //
         // If data supports subsetting:
@@ -348,6 +346,69 @@ extend(DataManager.prototype, Cache.prototype, {
         this.set_data(low, high, mode, entry);
         return entry
     },
+    /** "Deep" data request; used as a parameter for DataManager.get_more_data() */
+    DEEP_DATA_REQ: "deep",
+    /** "Broad" data request; used as a parameter for DataManager.get_more_data() */
+    BROAD_DATA_REQ: "breadth",
+    /**
+     * Gets more data for a region using either a depth-first or a breadth-first approach.
+     */
+    get_more_data: function(low, high, resolution, extra_params, req_type) {
+        //
+        // Get current data from cache and mark as stale.
+        //
+        var 
+            mode = this.track.mode,
+            cur_data = this.get_data_from_cache(low, high, mode);
+        if (!cur_data) {
+            console.log("ERROR: no current data for: ", this.track, low, high, resolution, extra_params);
+            return;
+        }
+        cur_data.stale = true;
+        
+        //
+        // Set parameters based on request type.
+        //
+        if (req_type === this.DEEP_DATA_REQ) {
+            // HACK: for now, just up the max vals and request all data; in the future, 
+            // need server to recognize min_vals and max_vals to specify range of data to
+            // return.
+            $.extend(extra_params, {max_vals: cur_data.data.length * 2});
+        }
+        else if (req_type === this.BROAD_DATA_REQ) {
+            // Set low to be past the last feature returned.
+            low = cur_data.data[cur_data.length-1][2] + 1;
+        }
+        
+        //
+        // Get additional data, append to current data, and set new data. Use a custom deferred object
+        // to signal when new data is available.
+        //
+        var 
+            data_manager = this,
+            new_data_request = this.load_data(low, high, resolution, extra_params)
+            new_data_available = $.Deferred();
+        // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
+        // is all data, not just new data.
+        this.set_data(low, high, mode, new_data_available);
+        $.when(new_data_request).then(function(result) {
+            if (result.data) {
+                //result.data.append(cur_data.data);
+            }
+            data_manager.set_data(low, high, mode, result);
+            new_data_available.resolve(result);
+        });
+        return new_data_available;
+    },
+    /**
+     * Gets data from the cache.
+     */
+    get_data_from_cache: function(low, high, mode) {
+        return this.get(this.gen_key(low, high, mode));
+    },
+    /**
+     * Sets data in the cache.
+     */
     set_data: function(low, high, mode, result) {
         //console.log("set_data", low, high, mode, result);
         return this.set(this.gen_key(low, high, mode), result);
@@ -2150,18 +2211,15 @@ extend(TiledTrack.prototype, Track.prototype, {
                 message_div = $("<div/>").addClass("tile-message").text(tile.message).
                                 // -1 to account for border.
                                 css({'height': ERROR_PADDING-1, 'width': tile.canvas.width}).appendTo(container_div),
-                show_more_data_btn = $("<button/>").text("Show more").css("margin-left", "0.5em").appendTo(message_div);
+                show_more_data_btn = $("<div/>").text("Show more").addClass("action-button").css({'padding-top': 0, 'padding-bottom':0}).appendTo(message_div);
             container_div.append(canvas);
             tile_element = container_div;
             
             // Set up actions for button.
             show_more_data_btn.click(function() {
-                // Mark data, tile as stale, request more data, and redraw track.
-                // HACK: get_data used will return object that can be marked as stale, but a better way to this is needed.
-                var cur_data = track.data_manager.get_data(tile.low, tile.high, tile.resolution);
-                cur_data.stale = true;
+                // Mark tile as stale, request more data, and redraw track.
                 tile.stale = true;
-                track.data_manager.get_data(tile.low, tile.high, tile.resolution, {max_vals: cur_data.data.length * 2});
+                track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
                 track.draw();
             }).dblclick(function(e) {
                 // Do not propogate as this would normal zoom in.
