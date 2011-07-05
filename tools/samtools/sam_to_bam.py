@@ -68,7 +68,7 @@ def __main__():
     # and the equCab2.fa file will contain fasta sequences.
     seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
     tmp_dir = tempfile.mkdtemp()
-    if options.ref_file == 'None':
+    if not options.ref_file or options.ref_file == 'None':
         # We're using locally cached reference sequences( e.g., /galaxy/data/equCab2/sam_index/equCab2.fa ).
         # The indexes for /galaxy/data/equCab2/sam_index/equCab2.fa will be contained in
         # a file named /galaxy/data/equCab2/sam_index/equCab2.fa.fai
@@ -125,9 +125,7 @@ def __main__():
         tmp_aligns_file = tempfile.NamedTemporaryFile( dir=tmp_dir )
         tmp_aligns_file_name = tmp_aligns_file.name
         tmp_aligns_file.close()
-        # IMPORTANT NOTE: for some reason the samtools view command gzips the resulting bam file without warning,
-        # and the docs do not currently state that this occurs ( very bad ).
-        command = 'samtools view -h -bt %s -o %s %s' % ( fai_index_file_path, tmp_aligns_file_name, options.input1 )
+        command = 'samtools view -bt %s -o %s %s' % ( fai_index_file_path, tmp_aligns_file_name, options.input1 )
         tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
         tmp_stderr = open( tmp, 'wb' )
         proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )
@@ -147,8 +145,6 @@ def __main__():
         tmp_stderr.close()
         if returncode != 0:
             raise Exception, stderr
-        if len( open( tmp_aligns_file_name ).read() ) == 0:
-            raise Exception, 'Initial BAM file empty'
     except Exception, e:
         #clean up temp files
         if os.path.exists( tmp_dir ):
@@ -188,11 +184,6 @@ def __main__():
         stop_err( 'Error sorting alignments from (%s), %s' % ( tmp_aligns_file_name, str( e ) ) )
     # Move tmp_aligns_file_name to our output dataset location
     sorted_bam_file = '%s.bam' % tmp_sorted_aligns_file_name
-    if os.path.getsize( sorted_bam_file ) == 0:
-        #clean up temp files
-        if os.path.exists( tmp_dir ):
-            shutil.rmtree( tmp_dir )
-        stop_err( 'Error creating sorted version of BAM file' )
     shutil.move( sorted_bam_file, options.output1 )
     #clean up temp files
     if os.path.exists( tmp_dir ):
@@ -201,6 +192,6 @@ def __main__():
     if os.path.getsize( options.output1 ) > 0:
         sys.stdout.write( 'SAM file converted to BAM' )
     else:
-        stop_err( 'The output file is empty, there may be an error with your input file or settings.' )
+        stop_err( 'Error creating sorted version of BAM file.' )
 
 if __name__=="__main__": __main__()

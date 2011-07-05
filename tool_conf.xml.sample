@@ -368,7 +368,6 @@
   </section>
   <section name="NGS: Simulation" id="ngs-simulation">
     <tool file="ngs_simulation/ngs_simulation.xml" />
-    <tool file="rgenetics/EpiD.xml" />
   </section>
   <section name="SNP/WGA: Data; Filters" id="rgdat">
   <label text="Data: Import and upload" id="rgimport" />

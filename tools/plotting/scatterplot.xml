@@ -1,6 +1,6 @@
 <tool id="scatterplot_rpy" name="Scatterplot">
   <description>of two numeric columns</description>
-  <command interpreter="python">scatterplot.py $input $out_file1 $col1 $col2 "$title" "$xlab" "$ylab" $output_format $out_width $out_height $point_size</command>
+  <command interpreter="python">scatterplot.py $input $out_file1 $col1 $col2 "$title" "$xlab" "$ylab"</command>
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset" help="Dataset missing? See TIP below"/>
     <param name="col1" type="data_column" data_ref="input" numerical="True" label="Numerical column for x axis" />
@@ -8,26 +8,15 @@
     <param name="title" size="30" type="text" value="Scatterplot" label="Plot title"/>
     <param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
     <param name="ylab" size="30" type="text" value="V2" label="Label for y axis"/>
-    <param name="output_format" type="select" label="Output format">
-        <option value="pdf">pdf</option>
-        <option value="png">png</option>
-        <option value="jpg">jpg</option>
-    </param>    
-    <param name="out_width" size="4" type="integer" value="8" label="Width (pdf=inches, image=pixels)"/>
-    <param name="out_height" size="4" type="integer" value="8" label="Height (pdf=inches, image=pixels)"/>
-    <param name="point_size" size="4" type="float" value="0.2" label="Point Size"/>
   </inputs>
   <outputs>
-    <data format="pdf" name="out_file1">
-        <change_format>
-            <when input="output_format" value="png" format="png" />
-            <when input="output_format" value="jpg" format="jpg" />
-        </change_format>
-    </data>
+    <data format="pdf" name="out_file1" />
   </outputs>
   <requirements>
     <requirement type="python-module">rpy</requirement>
   </requirements>
+  <!-- TODO: uncomment the following test when we have tools.update_state() working for 
+       multiple dependents with the same dependency.
   <tests>
     <test>
       <param name="input" value="scatterplot_in1.tabular" ftype="tabular"/>
@@ -36,37 +25,7 @@
       <param name="title" value="Scatterplot"/>
       <param name="xlab" value="V1"/>
       <param name="ylab" value="V2"/>
-      <param name="out_width" value="8"/>
-      <param name="out_height" value="8"/>
-      <param name="point_size" value="0.5"/>
-      <param name="output_format" value="pdf" />
       <output name="out_file1" file="scatterplot_out1.pdf" />
-    </test>
-    <test>
-      <param name="input" value="scatterplot_in1.tabular" ftype="tabular"/>
-      <param name="col1" value="2"/>
-      <param name="col2" value="3"/>
-      <param name="title" value="Scatterplot"/>
-      <param name="xlab" value="V1"/>
-      <param name="ylab" value="V2"/>
-      <param name="out_width" value="800"/>
-      <param name="out_height" value="600"/>
-      <param name="point_size" value="0.5"/>
-      <param name="output_format" value="png" />
-      <output name="out_file1" file="scatterplot_out1.png" />
-    </test>
-    <test>
-      <param name="input" value="scatterplot_in1.tabular" ftype="tabular"/>
-      <param name="col1" value="2"/>
-      <param name="col2" value="3"/>
-      <param name="title" value="Scatterplot"/>
-      <param name="xlab" value="V1"/>
-      <param name="ylab" value="V2"/>
-      <param name="out_width" value="800"/>
-      <param name="out_height" value="600"/>
-      <param name="point_size" value="0.5"/>
-      <param name="output_format" value="jpg" />
-      <output name="out_file1" file="scatterplot_out1.jpg" />
     </test>
   </tests>
   -->

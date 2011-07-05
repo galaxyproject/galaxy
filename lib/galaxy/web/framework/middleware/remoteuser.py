@@ -36,7 +36,6 @@ errorpage = """
 """
 
 UCSC_MAIN_SERVERS = (
-    'omics.bhri.internal',
     'hgw1.cse.ucsc.edu',
     'hgw2.cse.ucsc.edu',
     'hgw3.cse.ucsc.edu',
@@ -50,7 +49,6 @@ UCSC_ARCHAEA_SERVERS = (
     'lowepub.cse.ucsc.edu',
 )
 
-
 class RemoteUser( object ):
     def __init__( self, app, maildomain=None, ucsc_display_sites=[], admin_users=[] ):
         self.app = app
@@ -58,7 +56,7 @@ class RemoteUser( object ):
         self.allow_ucsc_main = False
         self.allow_ucsc_archaea = False
         self.admin_users = admin_users
-        if 'main' in ucsc_display_sites or 'test' in ucsc_display_sites or 'bhri' in ucsc_display_sites:
+        if 'main' in ucsc_display_sites or 'test' in ucsc_display_sites:
             self.allow_ucsc_main = True
         if 'archaea' in ucsc_display_sites:
             self.allow_ucsc_archaea = True
