@@ -208,7 +208,7 @@ class JobQueue( object ):
                     log.error( "unknown job state '%s' for job %d" % ( job_state, job.id ) )
                     if not self.track_jobs_in_database:
                         new_waiting_jobs.append( job.id )
-            except Exception, e:
+            except Exception:
                 log.exception( "failure running job %d" % job.id )
         # Update the waiting list
         self.waiting_jobs = new_waiting_jobs
@@ -332,7 +332,6 @@ class JobWrapper( object ):
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
-        
         # Set up output dataset association for export history jobs. Because job 
         # uses a Dataset rather than an HDA or LDA, it's necessary to set up a 
         # fake dataset association that provides the needed attributes for
@@ -428,6 +427,10 @@ class JobWrapper( object ):
                 dataset.dataset.set_total_size()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
+                # Update (non-library) job output datasets through the object store
+                if dataset not in job.output_library_datasets:
+                    print "====== Handing failed job's dataset '%s' with name '%s' to object store" % (dataset.id, dataset.file_name)
+                    self.app.object_store.update_from_file(dataset.id, create=True)
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
             job.state = model.Job.states.ERROR
@@ -538,11 +541,14 @@ class JobWrapper( object ):
                             else:
                                 # Security violation.
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, self.working_directory ) )
-            
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
                 dataset.info  = context['stdout'] + context['stderr']
                 dataset.set_size()
+                # Update (non-library) job output datasets through the object store
+                if dataset not in job.output_library_datasets:
+                    print "===+=== Handing dataset '%s' with name '%s' to object store" % (dataset.id, dataset.file_name)
+                    self.app.object_store.update_from_file(dataset.id, create=True)
                 if context['stderr']:
                     dataset.blurb = "error"
                 elif dataset.has_data():

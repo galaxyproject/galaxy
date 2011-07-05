@@ -217,7 +217,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         outfname = data.name[0:150]
         outfname = ''.join(c in valid_chars and c or '_' for c in outfname)
         if (params.do_action == None):
-     	    params.do_action = 'zip' # default
+            params.do_action = 'zip' # default
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         if not data:
@@ -300,8 +300,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream
         return trans.show_error_message( msg )
-
-
+    
     @web.expose
     def get_metadata_file(self, trans, hda_id, metadata_name):
         """ Allows the downloading of metadata files associated with datasets (eg. bai index for bam files) """
@@ -316,12 +315,8 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, file_ext)
         return open(data.metadata.get(metadata_name).file_name)
-        
-    @web.expose
-    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
-        """Catches the dataset id and displays file contents as directed"""
-        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
-        composite_extensions.append('html') # for archiving composite datatypes
+    
+    def _check_dataset(self, trans, dataset_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
             data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
@@ -340,9 +335,36 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
         
+        return data
+    
+    @web.expose
+    @web.json
+    def transfer_status(self, trans, dataset_id, filename=None):
+        """ Primarily used for the S3ObjectStore - get the status of data transfer
+        if the file is not in cache """
+        data = self._check_dataset(trans, dataset_id)
+        print "dataset.py -> transfer_status: Checking transfer status for dataset %s..." % data.id
+        
+        # Pulling files in extra_files_path into cache is not handled via this
+        # method but that's primarily because those files are typically linked to
+        # through tool's output page anyhow so tying a JavaScript event that will
+        # call this method does not seem doable?
+        if trans.app.object_store.file_ready(data.id):
+            return True
+        else:
+            return False
+    
+    @web.expose
+    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
+        """Catches the dataset id and displays file contents as directed"""
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+        composite_extensions.append('html') # for archiving composite datatypes
+        data = self._check_dataset(trans, dataset_id)
+        
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = os.path.join( data.extra_files_path, filename )
+            file_path = os.path.join( data.extra_files_path, filename ) # remove after debugging
+            file_path = trans.app.object_store.get_filename(data.id, extra_dir='dataset_%s_files' % data.id, alt_name=filename)
             if os.path.exists( file_path ):
                 if os.path.isdir( file_path ):
                     return trans.show_error_message( "Directory listing is not allowed." ) #TODO: Reconsider allowing listing of directories?

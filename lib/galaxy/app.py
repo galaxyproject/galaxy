@@ -7,6 +7,7 @@ from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
 import galaxy.security
+from galaxy.objectstore import build_object_store_from_config
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.sample_tracking import external_service_types
@@ -30,12 +31,15 @@ class UniverseApplication( object ):
         # Initialize database / check for appropriate schema version
         from galaxy.model.migrate.check import create_or_verify_database
         create_or_verify_database( db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
+        # Object store manager
+        self.object_store = build_object_store_from_config(self)
         # Setup the database engine and ORM
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,
                                    db_url,
                                    self.config.database_engine_options,
-                                   database_query_profiling_proxy = self.config.database_query_profiling_proxy )
+                                   database_query_profiling_proxy = self.config.database_query_profiling_proxy,
+                                   object_store = self.object_store )
         # Security helper
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Tag handler

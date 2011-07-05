@@ -1709,10 +1709,12 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False ):
+def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
+    # Connect dataset to object store
+    Dataset.object_store = object_store
     # Load the appropriate db module
     load_egg_for_url( url )
     # Should we use the logging proxy?

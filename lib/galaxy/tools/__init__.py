@@ -1701,23 +1701,38 @@ class Tool:
         Find extra files in the job working directory and move them into
         the appropriate dataset's files directory
         """
+        # print "Working in collect_associated_files"
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
             try:
-                if len( os.listdir( temp_file_path ) ) > 0:
-                    store_file_path = os.path.join( 
-                        os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), 
-                        "dataset_%d_files" % hda.dataset.id )
-                    shutil.move( temp_file_path, store_file_path )
-                    # Fix permissions
-                    for basedir, dirs, files in os.walk( store_file_path ):
-                        util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
-                        for file in files:
-                            path = os.path.join( basedir, file )
-                            # Ignore symlinks
-                            if os.path.islink( path ):
-                                continue 
-                            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+                a_files = os.listdir( temp_file_path )
+                if len( a_files ) > 0:
+                    for f in a_files:
+                        # print "------ Instructing ObjectStore to update/create file: %s from %s" \
+                        #     % (hda.dataset.id, os.path.join(temp_file_path, f))
+                        self.app.object_store.update_from_file(hda.dataset.id,
+                            extra_dir="dataset_%d_files" % hda.dataset.id, 
+                            alt_name = f,
+                            file_name = os.path.join(temp_file_path, f),
+                            create = True)
+                    # Clean up after being handled by object store. 
+                    # FIXME: If the object (e.g., S3) becomes async, this will 
+                    # cause issues so add it to the object store functionality?
+                    # shutil.rmtree(temp_file_path)
+
+                    # store_file_path = os.path.join( 
+                    #     os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), 
+                    #     "dataset_%d_files" % hda.dataset.id )
+                    # shutil.move( temp_file_path, store_file_path )
+                    # # Fix permissions
+                    # for basedir, dirs, files in os.walk( store_file_path ):
+                    #     util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
+                    #     for file in files:
+                    #         path = os.path.join( basedir, file )
+                    #         # Ignore symlinks
+                    #         if os.path.islink( path ):
+                    #             continue 
+                    #         util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
             except:
                 continue
     
