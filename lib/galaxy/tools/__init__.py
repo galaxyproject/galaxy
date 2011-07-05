@@ -922,8 +922,6 @@ class Tool:
         if not self.check_values:
             return
         for input in self.inputs.itervalues():
-            if input.name not in value:
-                value[input.name] = input.get_initial_value( None, value )
             if isinstance( input, ToolParameter ):
                 callback( "", input, value[input.name] )
             else:

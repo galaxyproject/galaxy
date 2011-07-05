@@ -304,7 +304,7 @@
     </when>
   </conditional>
   
-  <param name="non_commercial_use" label="I certify that I am not using this tool for commercial purposes." type="boolean" truevalue="NON_COMMERCIAL_USE" falsevalue="COMMERCIAL_USE" checked="True">
+  <param name="non_commercial_use" label="I certify that I am not using this tool for commercial purposes." type="boolean" truevalue="NON_COMMERCIAL_USE" falsevalue="COMMERCIAL_USE" checked="False">
     <validator type="expression" message="This tool is only available for non-commercial use.">value == True</validator>
   </param>
   

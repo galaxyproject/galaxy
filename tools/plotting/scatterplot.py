@@ -19,14 +19,8 @@ def main():
     title = sys.argv[5]
     xlab = sys.argv[6]
     ylab = sys.argv[7]
-    out_type = sys.argv[8]
-    out_width = int(sys.argv[9])
-    out_height = int(sys.argv[10])
-    point_size = float(sys.argv[11])
 
-
-    xvec=[]
-    yvec=[]
+    matrix = []
     skipped_lines = 0
     first_invalid_line = 0
     invalid_value = ''
@@ -34,19 +28,17 @@ def main():
     i = 0
     for i, line in enumerate( file( in_fname ) ):
         valid = True
-        vals = []
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ): 
             row = []
             fields = line.split( "\t" )
-            for c,column in enumerate(columns):
+            for column in columns:
                 try:
                     val = fields[column]
                     if val.lower() == "na": 
-                        v = float( "nan" ) 
+                        row.append( float( "nan" ) )
                     else:
-                        v = float( fields[column] )
-                    vals.append(val) 
+                        row.append( float( fields[column] ) )
                 except:
                     valid = False
                     skipped_lines += 1
@@ -65,19 +57,12 @@ def main():
                 first_invalid_line = i+1
 
         if valid:
-            xvec.append(vals[0])
-            yvec.append(vals[1])
+            matrix.append( row )
+
     if skipped_lines < i:
         try:
-            if out_type == "jpg":
-                r.jpeg(out_fname,width=out_width,height=out_height)
-            elif out_type == "png":
-                # type="cairo" needed to be set for headless servers
-                r.png(out_fname,type="cairo",width=out_width,height=out_height)
-            else:
-                r.pdf(out_fname, out_width, out_height)
-
-            r.plot(xvec,yvec, type="p", main=title, xlab=xlab, ylab=ylab, col="blue", pch=19,cex=point_size )
+            r.pdf( out_fname, 8, 8 )
+            r.plot( array( matrix ), type="p", main=title, xlab=xlab, ylab=ylab, col="blue", pch=19 )
             r.dev_off()
         except Exception, exc:
             stop_err( "%s" %str( exc ) )
