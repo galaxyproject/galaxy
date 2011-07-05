@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Refactored on 11/13/2010 by Kanwei Li
-
+# Added drop_header option - default is now keep headers for downstream sanity by ross lazarus 
 import sys
 import optparse
 
@@ -14,7 +14,11 @@ def main():
 options (listed below) default to 'None' if omitted
     """
     parser = optparse.OptionParser(usage=usage)
-    
+    parser.add_option('--drop_header',
+        action = 'store_true',
+        dest='drop_header',
+        help="Remove sam header - you probably NEVER want this for fussy downstream tools")    
+
     parser.add_option(
         '--0x0001','--is_paired',
         choices = ( '0','1' ),
@@ -129,21 +133,24 @@ options (listed below) default to 'None' if omitted
     opt_map = { '0': False, '1': True }
     used_indices = [(index, opt_map[opt]) for index, opt in enumerate(opt_ary) if opt is not None]
     flag_col = int( options.flag_col ) - 1
-    
     for line in infile:
         line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ) and not line.startswith( '@' ) :
-            fields = line.split( '\t' )
-            flags = int( fields[flag_col] )
+        if line:
+            if line.startswith('@'):
+                if not options.drop_header:
+                    print line # usually want these so add -h if you don't want headers
+            elif not line.startswith( '#' ) :
+                fields = line.split( '\t' )
+                flags = int( fields[flag_col] )
             
-            valid_line = True
-            for index, opt_bool in used_indices:
-                if bool(flags & 0x0001 << index) != opt_bool:
-                    valid_line = False
-                    break
+                valid_line = True
+                for index, opt_bool in used_indices:
+                    if bool(flags & 0x0001 << index) != opt_bool:
+                        valid_line = False
+                        break
                     
-            if valid_line:
-                print line
+                if valid_line:
+                    print line
 
 if __name__ == "__main__": main()
 

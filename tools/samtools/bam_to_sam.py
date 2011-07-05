@@ -21,7 +21,6 @@ def __main__():
     parser = optparse.OptionParser()
     parser.add_option( '', '--input1', dest='input1', help='The input SAM dataset' )
     parser.add_option( '', '--output1', dest='output1', help='The output BAM dataset' )
-    parser.add_option( '', '--header', dest='header', action='store_true', default=False, help='Write SAM Header' )
     ( options, args ) = parser.parse_args()
 
     # output version # of tool
@@ -88,11 +87,7 @@ def __main__():
 
     try:
         # Extract all alignments from the input BAM file to SAM format ( since no region is specified, all the alignments will be extracted ).
-        if options.header:
-            view_options = "-h"
-        else:
-            view_options = ""
-        command = 'samtools view %s -o %s %s' % ( view_options, options.output1, tmp_sorted_aligns_file_name )
+        command = 'samtools view -o -h %s %s' % ( options.output1, tmp_sorted_aligns_file_name )
         tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
         tmp_stderr = open( tmp, 'wb' )
         proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )

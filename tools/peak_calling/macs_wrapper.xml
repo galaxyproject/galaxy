@@ -28,7 +28,8 @@
     <param name="tsize" type="integer" label="Tag size" value="25"/>
     <param name="bw" type="integer" label="Band width" value="300"/>
     <param name="pvalue" type="float" label="Pvalue cutoff for peak detection" value="1e-5" help="default: 1e-5"/>
-    <param name="mfold" type="integer" label="Select the regions with MFOLD high-confidence enrichment ratio against background to build model" value="32"/>
+    <param name="mfold" type="text" label="Select the regions with MFOLD high-confidence enrichment ratio against background to build model" value="10,30"
+        help="Range for high-confidence enrichment ratio against background for model are within this range. DEFAULT:10,30" />
     <param name="xls_to_interval" label="Parse xls files into into distinct interval files" type="boolean" truevalue="create" falsevalue="do_not_create" checked="False"/>
     <conditional name="wig_type">
       <param name="wig_type_selector" type="select" label="Save shifted raw tag count at every bp into a wiggle file">
@@ -44,7 +45,6 @@
       </when>
     </conditional>
     <param name="nolambda" label="Use fixed background lambda as local lambda for every peak region" type="boolean" truevalue="--nolambda" falsevalue="" checked="False" help="up to 9X more time consuming"/>
-    <param name="lambdaset" type="text" label="3 levels of regions around the peak region to calculate the maximum lambda as local lambda" value="1000,5000,10000" size="50"/>
     <conditional name="nomodel_type">
       <param name="nomodel_type_selector" type="select" label="Build Model">
         <option value="nomodel">Do not build the shifting model</option>
@@ -95,7 +95,7 @@
     <configfile name="options_file">&lt;%
 import simplejson
 %&gt;
-#set $__options = { 'experiment_name':str( $experiment_name ), 'gsize':int( float( str( $gsize ) ) ), 'tsize':str( $tsize ), 'bw':str( $bw ), 'pvalue':str( $pvalue ), 'mfold':str( $mfold ), 'nolambda':str( $nolambda ), 'lambdaset': str( $lambdaset ), 'futurefdr':str( $futurefdr ) }
+#set $__options = { 'experiment_name':str( $experiment_name ), 'gsize':int( float( str( $gsize ) ) ), 'tsize':str( $tsize ), 'bw':str( $bw ), 'pvalue':str( $pvalue ), 'mfold':str( $mfold ), 'nolambda':str( $nolambda ), 'futurefdr':str( $futurefdr ) }
 #if str( $xls_to_interval ) == 'create':
 #set $__options['xls_to_interval'] = { 'peaks_file': str( $output_xls_to_interval_peaks_file ), 'negative_peaks_file': str( $output_xls_to_interval_negative_peaks_file ) }
 #else:
@@ -145,14 +145,13 @@ ${ simplejson.dumps( __options ) }
       <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
       <param name="experiment_name" value="Galaxy Test Run" />
       <param name="tsize" value="36" />
-      <param name="mfold" value="13" />
+      <param name="mfold" value="10,30" />
       <param name="gsize" value="2.7e+9" />
       <param name="bw" value="300" />
       <param name="pvalue" value="1e-5" />
       <param name="xls_to_interval" />
       <param name="wig_type_selector" value="no_wig" />
       <param name="nolambda"/>
-      <param name="lambdaset" value="1000,5000,10000"/>
       <param name="nomodel_type_selector" value="create_model" />
       <param name="diag_type_selector" value="no_diag" />
       <param name="futurefdr"/>
@@ -171,14 +170,13 @@ ${ simplejson.dumps( __options ) }
       <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
       <param name="experiment_name" value="Galaxy Test Run" />
       <param name="tsize" value="36" />
-      <param name="mfold" value="13" />
+      <param name="mfold" value="10,30" />
       <param name="gsize" value="2.7e+9" />
       <param name="bw" value="300" />
       <param name="pvalue" value="1e-5" />
       <param name="xls_to_interval" value="true" />
       <param name="wig_type_selector" value="no_wig" />
       <param name="nolambda"/>
-      <param name="lambdaset" value="1000,5000,10000"/>
       <param name="nomodel_type_selector" value="create_model" />
       <param name="diag_type_selector" value="no_diag" />
       <param name="futurefdr"/>
@@ -195,7 +193,7 @@ ${ simplejson.dumps( __options ) }
       <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
       <param name="experiment_name" value="Galaxy Test Run" />
       <param name="tsize" value="36" />
-      <param name="mfold" value="13" />
+      <param name="mfold" value="10,30" />
       <param name="gsize" value="2.7e+9" />
       <param name="bw" value="300" />
       <param name="pvalue" value="1e-5" />
@@ -204,7 +202,6 @@ ${ simplejson.dumps( __options ) }
       <param name="wigextend" value="-1" />
       <param name="space" value="10" />
       <param name="nolambda"/>
-      <param name="lambdaset" value="1000,5000,10000"/>
       <param name="nomodel_type_selector" value="create_model" />
       <param name="diag_type_selector" value="no_diag" />
       <param name="futurefdr"/>

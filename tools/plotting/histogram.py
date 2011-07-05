@@ -73,7 +73,8 @@ def main():
 
     if skipped_lines < i:
         try:
-            a = r.array( matrix )
+            #a = array( matrix )
+            a=matrix
             r.pdf( out_fname, 8, 8 )
             histogram = r.hist( a, probability=not frequency, main=title, xlab=xlab, breaks=breaks )
             if density:

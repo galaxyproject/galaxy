@@ -51,7 +51,8 @@ def main():
     cmdline = "macs -t %s" % ",".join( options['input_chipseq'] )
     if options['input_control']:
         cmdline = "%s -c %s" % ( cmdline, ",".join( options['input_control'] ) )
-    cmdline = "%s --format='%s' --name='%s' --gsize='%s' --tsize='%s' --bw='%s' --pvalue='%s' --mfold='%s' %s --lambdaset='%s' %s" % ( cmdline, options['format'], experiment_name, options['gsize'], options['tsize'], options['bw'], options['pvalue'], options['mfold'], options['nolambda'], options['lambdaset'], options['futurefdr'] )
+    cmdline = "%s --format='%s' --name='%s' --gsize='%s' --tsize='%s' --bw='%s' --pvalue='%s' --mfold='%s' %s %s" %\
+  ( cmdline, options['format'], experiment_name, options['gsize'], options['tsize'], options['bw'], options['pvalue'], options['mfold'], options['nolambda'], options['futurefdr'] )
     if 'wig' in options:
         wigextend = int( options['wig']['wigextend']  )
         if wigextend >= 0:
