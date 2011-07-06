@@ -370,10 +370,8 @@ extend(DataManager.prototype, Cache.prototype, {
         // Set parameters based on request type.
         //
         if (req_type === this.DEEP_DATA_REQ) {
-            // HACK: for now, just up the max vals and request all data; in the future, 
-            // need server to recognize min_vals and max_vals to specify range of data to
-            // return.
-            $.extend(extra_params, {max_vals: cur_data.data.length * 2});
+            // Use same interval but set start_val to skip data that's already in cur_data.
+            $.extend(extra_params, {start_val: cur_data.data.length + 1});
         }
         else if (req_type === this.BROAD_DATA_REQ) {
             // Set low to be past the last feature returned.
@@ -393,7 +391,7 @@ extend(DataManager.prototype, Cache.prototype, {
         this.set_data(low, high, mode, new_data_available);
         $.when(new_data_request).then(function(result) {
             if (result.data) {
-                //result.data.append(cur_data.data);
+                result.data = cur_data.data.concat(result.data);
             }
             data_manager.set_data(low, high, mode, result);
             new_data_available.resolve(result);

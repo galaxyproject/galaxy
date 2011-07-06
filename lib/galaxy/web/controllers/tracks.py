@@ -469,7 +469,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
         
     @web.json
-    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, max_vals=5000, **kwargs ):
+    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, start_val=0, max_vals=5000, **kwargs ):
         """
         Provides a block of data from a dataset.
         """
@@ -526,7 +526,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
-        data = data_provider.get_data( chrom, low, high, max_vals, **kwargs )
+        data = data_provider.get_data( chrom, low, high, int(start_val), int(max_vals), **kwargs )
         message = None
         if isinstance(data, dict) and 'message' in data:
             message = data['message']
