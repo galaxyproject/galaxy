@@ -411,10 +411,13 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletab
                 app.sa_session.add( metadata_file )
                 app.sa_session.flush()
             print "%s" % metadata_file.file_name
-        print "Deleting dataset id", dataset.id
-        dataset.deleted = True
-        app.sa_session.add( dataset )
-        app.sa_session.flush()
+        if not info_only:
+            print "Deleting dataset id", dataset.id
+            dataset.deleted = True
+            app.sa_session.add( dataset )
+            app.sa_session.flush()
+        else:
+            print "Dataset %i will be deleted (without 'info_only' mode)" % ( dataset.id )
 
 def _purge_dataset( app, dataset, remove_from_disk, info_only = False ):
     if dataset.deleted:
@@ -433,6 +436,8 @@ def _purge_dataset( app, dataset, remove_from_disk, info_only = False ):
                     dataset.purged = True
                     app.sa_session.add( dataset )
                     app.sa_session.flush()
+                else:
+                    print "Dataset %i will be purged (without 'info_only' mode)" % (dataset.id)
             else:
                 print "This dataset (%i) is not purgable, the file (%s) will not be removed.\n" % ( dataset.id, dataset.file_name )
         except OSError, exc:
