@@ -172,7 +172,7 @@ var
     // height of individual features within tracks. Feature height, then, should always be less
     // than track height.
     CHAR_HEIGHT_PX = 9, // FIXME: font size may not be static
-    ERROR_PADDING = 18, // Padding at the top of tracks for error messages
+    ERROR_PADDING = 20, // Padding at the top of tracks for error messages
     SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
     // Maximum number of rows un a slotted track
     MAX_FEATURE_DEPTH = 100,
@@ -369,13 +369,15 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         // Set parameters based on request type.
         //
+        var query_low = low;
         if (req_type === this.DEEP_DATA_REQ) {
             // Use same interval but set start_val to skip data that's already in cur_data.
             $.extend(extra_params, {start_val: cur_data.data.length + 1});
         }
         else if (req_type === this.BROAD_DATA_REQ) {
-            // Set low to be past the last feature returned.
-            low = cur_data.data[cur_data.length-1][2] + 1;
+            // Set query low to be past the last feature returned so that an area of extreme feature depth
+            // is bypassed.
+            query_low = cur_data.data[cur_data.data.length - 1][2] + 1;
         }
         
         //
@@ -384,14 +386,19 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         var 
             data_manager = this,
-            new_data_request = this.load_data(low, high, resolution, extra_params)
+            new_data_request = this.load_data(query_low, high, resolution, extra_params)
             new_data_available = $.Deferred();
         // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
         // is all data, not just new data.
         this.set_data(low, high, mode, new_data_available);
         $.when(new_data_request).then(function(result) {
+            // Update data and message.
             if (result.data) {
                 result.data = cur_data.data.concat(result.data);
+                if (result.message) {
+                    // HACK: replace number in message with current data length. Works but is ugly.
+                    result.message = result.message.replace(/[0-9]+/, result.data.length);
+                }
             }
             data_manager.set_data(low, high, mode, result);
             new_data_available.resolve(result);
@@ -2209,18 +2216,29 @@ extend(TiledTrack.prototype, Track.prototype, {
                 message_div = $("<div/>").addClass("tile-message").text(tile.message).
                                 // -1 to account for border.
                                 css({'height': ERROR_PADDING-1, 'width': tile.canvas.width}).appendTo(container_div),
-                show_more_data_btn = $("<div/>").text("Show more").addClass("action-button").css({'padding-top': 0, 'padding-bottom':0}).appendTo(message_div);
+                more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
+                more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
             container_div.append(canvas);
             tile_element = container_div;
             
-            // Set up actions for button.
-            show_more_data_btn.click(function() {
+            // Set up actions for icons.
+            more_down_icon.click(function() {
                 // Mark tile as stale, request more data, and redraw track.
                 tile.stale = true;
                 track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
                 track.draw();
             }).dblclick(function(e) {
-                // Do not propogate as this would normal zoom in.
+                // Do not propogate as this would normally zoom in.
+                e.stopPropagation();
+            });
+            
+            more_across_icon.click(function() {
+                // Mark tile as stale, request more data, and redraw track.
+                tile.stale = true;
+                track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+                track.draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normally zoom in.
                 e.stopPropagation();
             });
         }
