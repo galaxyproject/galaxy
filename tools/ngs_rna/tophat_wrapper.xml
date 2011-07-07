@@ -1,5 +1,6 @@
 <tool id="tophat" name="Tophat for Illumina" version="1.5.0">
     <description>Find splice junctions using RNA-seq data</description>
+    <version_string>tophat --version</version_string>
     <requirements>
         <requirement type="package">tophat</requirement>
     </requirements>

@@ -271,7 +271,7 @@ class JobQueue( object ):
 
 class JobWrapper( object ):
     """
-    Wraps a 'model.Job' with convience methods for running processes and 
+    Wraps a 'model.Job' with convenience methods for running processes and 
     state management.
     """
     def __init__( self, job, queue ):
@@ -284,6 +284,9 @@ class JobWrapper( object ):
         self.sa_session = self.app.model.context
         self.extra_filenames = []
         self.command_line = None
+        # Tool versioning variables
+        self.version_string_cmd = None
+        self.version_string = ""
         self.galaxy_lib_dir = None
         # With job outputs in the working directory, we need the working
         # directory to be set before prepare is run, or else premature deletion
@@ -310,6 +313,9 @@ class JobWrapper( object ):
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         return param_dict
+        
+    def get_version_string_path( self ):
+        return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
         
     def prepare( self ):
         """
@@ -389,6 +395,7 @@ class JobWrapper( object ):
             extra_filenames.append( param_filename )
         self.param_dict = param_dict
         self.extra_filenames = extra_filenames
+        self.version_string_cmd = self.tool.version_string_cmd
         return extra_filenames
 
     def fail( self, message, exception=False ):
@@ -491,6 +498,12 @@ class JobWrapper( object ):
             job.state = job.states.ERROR
         else:
             job.state = job.states.OK
+        if self.version_string_cmd:
+            version_filename = self.get_version_string_path()
+            if os.path.exists(version_filename):
+                self.version_string = "Tool version: %s" % open(version_filename).read()
+                os.unlink(version_filename)
+            
         if self.app.config.outputs_to_working_directory:
             for dataset_path in self.get_output_fnames():
                 try:
@@ -541,7 +554,7 @@ class JobWrapper( object ):
             
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info  = context['stdout'] + context['stderr']
+                dataset.info  = context['stdout'] + context['stderr'] + self.version_string
                 dataset.set_size()
                 if context['stderr']:
                     dataset.blurb = "error"
