@@ -1,4 +1,4 @@
-<tool id="rgweblogo3" name="Sequence Logo" version="0.3">
+<tool id="rgweblogo3" name="Sequence Logo" version="0.4">
    <description>generator for fasta (eg Clustal alignments)</description>
    <command interpreter="python"> 
     rgWebLogo3.py -F $outformat -s $size -i $input -o $output -t "$logoname" -c "$colours" -U "$units"
