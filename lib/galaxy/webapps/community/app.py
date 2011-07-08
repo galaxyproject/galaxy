@@ -1,4 +1,6 @@
 import sys, config
+import galaxy.tools.data
+import galaxy.datatypes.registry
 import galaxy.webapps.community.model
 from galaxy.web import security
 from galaxy.tags.tag_handler import CommunityTagHandler
@@ -11,6 +13,8 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
+        # Set up datatypes registry
+        self.datatypes_registry = galaxy.datatypes.registry.Registry( self.config.root, self.config.datatypes_config )
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection
@@ -28,6 +32,8 @@ class UniverseApplication( object ):
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Tag handler
         self.tag_handler = CommunityTagHandler()
+        # Tool data tables
+        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_table_config_path )
         # Load security policy
         self.security_agent = self.model.security_agent
     def shutdown( self ):

@@ -5,9 +5,10 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
+    is_admin = trans.user_is_admin()
     is_new = repository.is_new
     can_browse_contents = not is_new
-    can_manage = trans.user == repository.user
+    can_manage = is_admin or trans.user == repository.user
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_rate = trans.user and repository.user != trans.user
     can_upload = can_push

@@ -111,6 +111,14 @@ Repository.table = Table( "repository", metadata,
     Column( "email_alerts", JSONType, nullable=True ),
     Column( "times_downloaded", Integer ) )
 
+RepositoryMetadata.table = Table( "repository_metadata", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "metadata", JSONType, nullable=True ) )
+
 RepositoryRatingAssociation.table = Table( "repository_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -185,6 +193,9 @@ assign_mapper( context, Repository, Repository.table,
         categories=relation( RepositoryCategoryAssociation ),
         ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
         user=relation( User.mapper ) ) )
+
+assign_mapper( context, RepositoryMetadata, RepositoryMetadata.table,
+    properties=dict( repository=relation( Repository ) ) )
 
 assign_mapper( context, RepositoryRatingAssociation, RepositoryRatingAssociation.table,
     properties=dict( repository=relation( Repository ), user=relation( User ) ) )

@@ -76,8 +76,7 @@ class RepositoryListGrid( grids.Grid ):
             return repository.name
     class VersionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
-            repo = hg.repository( ui.ui(), repository.repo_path )
-            return get_repository_tip( repo )
+            return repository.version
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.description
@@ -124,7 +123,7 @@ class RepositoryListGrid( grids.Grid ):
                     key="name",
                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id, webapp="community" ) ),
                     attach_popup=False ),
-        DescriptionColumn( "Description",
+        DescriptionColumn( "Synopsis",
                            key="description",
                            attach_popup=False ),
         VersionColumn( "Version",
@@ -420,7 +419,7 @@ class RepositoryController( BaseController, ItemRatings ):
                 selected_files_to_delete = selected_files_to_delete.split( ',' )
                 current_working_dir = os.getcwd()
                 # Get the current repository tip.
-                tip = repo[ 'tip' ]
+                tip = repository.tip
                 for selected_file in selected_files_to_delete:
                     repo_file = os.path.abspath( selected_file )
                     commands.remove( repo.ui, repo, repo_file )
@@ -434,10 +433,19 @@ class RepositoryController( BaseController, ItemRatings ):
                 update_for_browsing( repository, current_working_dir )
                 # Get the new repository tip.
                 repo = hg.repository( ui.ui(), repo_dir )
-                if tip != repo[ 'tip' ]:
+                if tip != repository.tip:
                     message = "The selected files were deleted from the repository."
                 else:
                     message = 'No changes to repository.'
+                # Set metadata on the repository tip
+                error_message, status = set_repository_metadata( trans, id, repository.tip, **kwd )
+                if error_message:
+                    message = '%s<br/>%s' % ( message, error_message )
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='manage_repository',
+                                                                      id=id,
+                                                                      message=message,
+                                                                      status=status ) )
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
@@ -454,7 +462,6 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo = hg.repository( ui.ui(), repository.repo_path )
-        tip = get_repository_tip( repo )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         alerts = params.get( 'alerts', '' )
@@ -481,10 +488,15 @@ class RepositoryController( BaseController, ItemRatings ):
                 trans.sa_session.flush()
         checked = alerts_checked or ( user and user.email in email_alerts )
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
+        repository_metadata = get_repository_metadata( trans, id, repository.tip )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+        else:
+            metadata = None
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
-                                    tip=tip,
+                                    metadata=metadata,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
@@ -499,7 +511,6 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo = hg.repository( ui.ui(), repository.repo_path )
-        tip = get_repository_tip( repo )
         repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
         description = util.restore_text( params.get( 'description', repository.description ) )
         long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
@@ -577,6 +588,11 @@ class RepositoryController( BaseController, ItemRatings ):
         allow_push_select_field = self.__build_allow_push_select_field( trans, current_allow_push_list )
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
+        repository_metadata = get_repository_metadata( trans, id, repository.tip )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+        else:
+            metadata = None
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
@@ -585,7 +601,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
-                                    tip=tip,
+                                    metadata=metadata,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
@@ -676,7 +692,6 @@ class RepositoryController( BaseController, ItemRatings ):
                                                               status='error' ) )
         repository = get_repository( trans, id )
         repo = hg.repository( ui.ui(), repository.repo_path )
-        tip = get_repository_tip( repo )
         if repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_repositories',
@@ -691,7 +706,6 @@ class RepositoryController( BaseController, ItemRatings ):
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
                                     repository=repository,
-                                    tip=tip,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
@@ -735,6 +749,40 @@ class RepositoryController( BaseController, ItemRatings ):
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='browse_repositories',
                                                           **kwd ) )
+    @web.expose
+    @web.require_login( "set repository metadata" )
+    def set_metadata( self, trans, id, ctx_str, **kwd ):
+        message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='manage_repository',
+                                                          id=id,
+                                                          message=message,
+                                                          status=status ) )
+    @web.expose
+    def display_tool( self, trans, repository_id, tool_config, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, repository_id )
+        tool = load_tool( trans, os.path.abspath( tool_config ) )
+        tool_state = self.__new_state( trans )
+        return trans.fill_template( "/webapps/community/repository/tool_form.mako",
+                                    repository=repository,
+                                    tool=tool,
+                                    tool_state=tool_state,
+                                    message=message,
+                                    status=status )
+    def __new_state( self, trans, all_pages=False ):
+        """
+        Create a new `DefaultToolState` for this tool. It will not be initialized
+        with default values for inputs. 
+        
+        Only inputs on the first page will be initialized unless `all_pages` is
+        True, in which case all inputs regardless of page are initialized.
+        """
+        state = DefaultToolState()
+        state.inputs = {}
+        return state
     @web.expose
     def download( self, trans, repository_id, file_type, **kwd ):
         # Download an archive of the repository files compressed as zip, gz or bz2.

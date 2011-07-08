@@ -41,6 +41,9 @@ class Configuration( object ):
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
+        self.tool_secret = kwargs.get( "tool_secret", "" )
+        self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
+        self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
@@ -56,7 +59,9 @@ class Configuration( object ):
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
+        self.start_job_runners = kwargs.get( 'start_job_runners', None )
         self.email_alerts_from = kwargs.get( 'email_alerts_from', None )
+        self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://bitbucket.org/galaxy/galaxy-central/wiki/Home' )
@@ -65,7 +70,7 @@ class Configuration( object ):
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.log_events = False
         self.cloud_controller_instance = False
-        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'community_datatypes_conf.xml' )
+        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         # Proxy features
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )

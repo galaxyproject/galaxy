@@ -121,9 +121,9 @@
             <div class="form-row">
                 <label>Version:</label>
                 %if can_view_change_log:
-                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${tip}</a>
+                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${repository.version}</a>
                 %else:
-                    ${tip}
+                    ${repository.version}
                 %endif
             </div>
             <div class="form-row">
@@ -146,6 +146,40 @@
             %endif
             <div class="form-row">
                 <input type="submit" name="edit_repository_button" value="Save"/>
+            </div>
+        </form>
+    </div>
+</div>
+<p/>
+<div class="toolForm">
+    <div class="toolFormTitle">Repository metadata</div>
+    <div class="toolFormBody">
+        %if metadata:
+            %if 'tools' in metadata:
+                <div class="form-row">
+                    <label>Tools:</label>
+                    <% tool_dicts = metadata[ 'tools' ] %>
+                    <table class="grid">
+                        %for tool_dict in tool_dicts:
+                            <tr>
+                                <td><a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">${tool_dict[ 'name' ]}</a></td>
+                                <td>${tool_dict[ 'description' ]}</td>
+                                <td>version: ${tool_dict[ 'version' ]}</td>
+                            </tr>
+                        %endfor
+                    </table>
+                </div>
+                <div style="clear: both"></div>
+            %endif
+        %endif
+        <form name="set_metadata" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=repository.tip )}" method="post">
+            <div class="form-row">
+                <div style="float: left; width: 250px; margin-right: 10px;">
+                    <input type="submit" name="set_metadata_button" value="Reset metadata"/>
+                </div>
+                <div class="toolParamHelp" style="clear: both;">
+                    Inspect the repository and reset the above attributes for the repository tip.
+                </div>
             </div>
         </form>
     </div>

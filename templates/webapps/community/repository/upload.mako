@@ -2,11 +2,12 @@
 <%namespace file="/webapps/community/repository/common.mako" import="*" />
 
 <%
+    is_admin = trans.user_is_admin()
     is_new = repository.is_new
     can_browse_contents = not is_new
     can_browse_contents = not is_new
     can_rate = repository.user != trans.user
-    can_manage = repository.user == trans.user
+    can_manage = is_admin or repository.user == trans.user
     can_view_change_log = not is_new
 %>
 

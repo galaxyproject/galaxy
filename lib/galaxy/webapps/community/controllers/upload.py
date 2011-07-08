@@ -33,7 +33,7 @@ class UploadController( BaseController ):
         uploaded_file = None
         upload_point = self.__get_upload_point( repository, **kwd )
         # Get the current repository tip.
-        tip = repo[ 'tip' ]
+        tip = repository.tip
         if params.get( 'upload_button', False ):
             current_working_dir = os.getcwd()
             file_data = params.get( 'file_data', '' )
@@ -89,8 +89,7 @@ class UploadController( BaseController ):
                     # is eliminating unwanted files from the repository directory.
                     update_for_browsing( repository, current_working_dir )
                     # Get the new repository tip.
-                    repo = hg.repository( ui.ui(), repo_dir )
-                    if tip != repo[ 'tip' ]:
+                    if tip != repository.tip:
                         if ( isgzip or isbz2 ) and uncompress_file:
                             uncompress_str = ' uncompressed and '
                         else:
@@ -102,12 +101,22 @@ class UploadController( BaseController ):
                             else:
                                 message += "  %d files were removed from the repository root." % len( files_to_remove )
                     else:
-                        message = 'No changes to repository.'        
+                        message = 'No changes to repository.'      
+                    # Set metadata on the repository tip
+                    error_message, status = set_repository_metadata( trans, repository_id, repository.tip, **kwd )
+                    if error_message:
+                        message = '%s<br/>%s' % ( message, error_message )
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='manage_repository',
+                                                                          id=repository_id,
+                                                                          message=message,
+                                                                          status=status ) )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
+                                                               id=repository_id,
                                                                commit_message='Deleted selected files',
                                                                message=message,
-                                                               id=trans.security.encode_id( repository.id ) ) )
+                                                               status=status ) )
                 else:
                     status = 'error'
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]

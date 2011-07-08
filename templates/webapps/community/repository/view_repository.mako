@@ -120,9 +120,9 @@
         <div class="form-row">
             <label>Version:</label>
             %if can_view_change_log:
-                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${tip}</a>
+                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${repository.version}</a>
             %else:
-                ${tip}
+                ${repository.version}
             %endif
         </div>
         <div class="form-row">
@@ -145,6 +145,30 @@
         %endif
     </div>
 </div>
+%if metadata:
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Repository metadata</div>
+        <div class="toolFormBody">
+            %if 'tools' in metadata:
+                <div class="form-row">
+                    <label>Tools:</label>
+                    <% tool_dicts = metadata[ 'tools' ] %>
+                    <table class="grid">
+                        %for tool_dict in tool_dicts:
+                            <tr>
+                                <td><a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">${tool_dict[ 'name' ]}</a></td>
+                                <td>${tool_dict[ 'description' ]}</td>
+                                <td>version: ${tool_dict[ 'version' ]}</td>
+                            </tr>
+                        %endfor
+                    </table>
+                </div>
+                <div style="clear: both"></div>
+            %endif
+        </div>
+    </div>
+%endif
 %if trans.user and trans.app.config.smtp_server:
     <p/>
     <div class="toolForm">

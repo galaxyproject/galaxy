@@ -4,12 +4,13 @@
 <%
     from galaxy.web.framework.helpers import time_ago
     from urllib import quote_plus
+    is_admin = trans.user_is_admin()
     is_new = repository.is_new
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
     can_browse_contents = not is_new
     can_rate = repository.user != trans.user
-    can_manage = repository.user == trans.user
+    can_manage = is_admin or repository.user == trans.user
     can_view_change_log = not is_new
     if can_push:
         browse_label = 'Browse or delete repository files'
@@ -103,7 +104,7 @@
             </div>
             <div class="form-row">
                 <label>Version:</label>
-                ${tip}
+                ${repository.version}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
