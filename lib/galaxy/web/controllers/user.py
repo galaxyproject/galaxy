@@ -914,6 +914,9 @@ class User( BaseController, UsesFormDefinitions ):
     @web.expose
     def set_default_permissions( self, trans, cntrller, **kwd ):
         """Sets the user's default permissions for the new histories"""
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         if trans.user:
             if 'update_roles_button' in kwd:
                 p = util.Params( kwd )
@@ -926,8 +929,11 @@ class User( BaseController, UsesFormDefinitions ):
                     action = trans.app.security_agent.get_action( v.action ).action
                     permissions[ action ] = in_roles
                 trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
-                return trans.show_ok_message( 'Default new history permissions have been changed.' )
-            return trans.fill_template( 'user/permissions.mako', cntrller=cntrller )
+                message = 'Default new history permissions have been changed.'
+            return trans.fill_template( 'user/permissions.mako',
+                                        cntrller=cntrller,
+                                        message=message,
+                                        status=status )
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )   
