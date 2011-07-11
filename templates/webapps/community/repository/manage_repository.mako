@@ -160,11 +160,36 @@
                     <label>Tools:</label>
                     <% tool_dicts = metadata[ 'tools' ] %>
                     <table class="grid">
+                        <tr>
+                            <td><b>name</b></td>
+                            <td><b>description</b></td>
+                            <td><b>version</b></td>
+                            <td><b>requirements</b></td>
+                        </tr>
                         %for tool_dict in tool_dicts:
                             <tr>
                                 <td><a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">${tool_dict[ 'name' ]}</a></td>
                                 <td>${tool_dict[ 'description' ]}</td>
-                                <td>version: ${tool_dict[ 'version' ]}</td>
+                                <td>${tool_dict[ 'version' ]}</td>
+                                <td>
+                                    <%
+                                        if 'requirements' in tool_dict:
+                                            requirements = tool_dict[ 'requirements' ]
+                                        else:
+                                            requirements = None
+                                    %>
+                                    %if requirements:
+                                        <%
+                                            requirements_str = ''
+                                            for requirement_dict in tool_dict[ 'requirements' ]:
+                                                requirements_str += '%s (%s), ' % ( requirement_dict[ 'name' ], requirement_dict[ 'type' ] )
+                                            requirements_str = requirements_str.rstrip( ', ' )
+                                        %>
+                                        ${requirements_str}
+                                    %else:
+                                        none
+                                    %endif
+                                </td>
                             </tr>
                         %endfor
                     </table>

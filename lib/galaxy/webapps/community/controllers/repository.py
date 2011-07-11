@@ -643,13 +643,8 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo = hg.repository( ui.ui(), repository.repo_path )
-        found = False
-        for changeset in repo.changelog:
-            ctx = repo.changectx( changeset )
-            if str( ctx ) == ctx_str:
-                found = True
-                break
-        if not found:
+        ctx = get_change_set( trans, repo, ctx_str )
+        if ctx is None:
             message = "Repository does not include changeset revision '%s'." % str( ctx_str )
             status = 'error'
             return trans.response.send_redirect( web.url_for( controller='repository',
@@ -753,6 +748,8 @@ class RepositoryController( BaseController, ItemRatings ):
     @web.require_login( "set repository metadata" )
     def set_metadata( self, trans, id, ctx_str, **kwd ):
         message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
+        if not message:
+            message = "Metadata for change set revision '%s' has been reset." % str( ctx_str )
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,

@@ -75,9 +75,100 @@ def get_repository_metadata( trans, id, changeset_revision ):
                            .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
                                           trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
                            .first()
+def set_repository_metadata( trans, id, ctx_str, **kwd ):
+    """Set repository metadata"""
+    message = ''
+    status = 'done'
+    repository = get_repository( trans, id )
+    repo_dir = repository.repo_path
+    repo = hg.repository( ui.ui(), repo_dir )
+    change_set = get_change_set( trans, repo, ctx_str )
+    invalid_tool_configs = []
+    flush_needed = False
+    if change_set is not None:
+        for root, dirs, files in os.walk( repo_dir ):
+            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                if '.hg' in dirs:
+                    # Don't visit .hg directories - should be impossible since we don't
+                    # allow uploaded archives that contain .hg dirs, but just in case...
+                    dirs.remove( '.hg' )
+                if 'hgrc' in files:
+                     # Don't include hgrc files in commit.
+                    files.remove( 'hgrc' )
+                for name in files:
+                    # Find all tool configs.
+                    if name.endswith( '.xml' ):
+                        try:
+                            full_path = os.path.abspath( os.path.join( root, name ) )
+                            tool = load_tool( trans, full_path )
+                            if tool is not None:
+                                repository_metadata = get_repository_metadata( trans, id, repository.tip )
+                                tool_requirements = []
+                                for tr in tool.requirements:
+                                    requirement_dict = dict( name=tr.name,
+                                                             type=tr.type,
+                                                             version=tr.version )
+                                    tool_requirements.append( requirement_dict )
+                                tool_dict = dict( id = tool.id,
+                                                  name = tool.name,
+                                                  version = tool.version,
+                                                  description = tool.description,
+                                                  tool_config = os.path.join( root, name ),
+                                                  requirements = tool_requirements )
+                                if repository_metadata:
+                                    metadata = repository_metadata.metadata
+                                    if metadata and 'tools' in metadata:
+                                        metadata_tools = metadata[ 'tools' ]
+                                        found = False
+                                        for tool_metadata_dict in metadata_tools:
+                                            if 'id' in tool_metadata_dict and tool_metadata_dict[ 'id' ] == tool.id and \
+                                                'version' in tool_metadata_dict and tool_metadata_dict[ 'version' ] == tool.version:
+                                                found = True
+                                                tool_metadata_dict[ 'name' ] = tool.name
+                                                tool_metadata_dict[ 'description' ] = tool.description
+                                                tool_metadata_dict[ 'tool_config' ] = os.path.join( root, name )
+                                                tool_metadata_dict[ 'requirements' ] = tool_requirements
+                                                flush_needed = True
+                                        if not found:
+                                            metadata_tools.append( tool_dict )
+                                    else:
+                                        if metadata is None:
+                                            repository_metadata.metadata = {}
+                                        repository_metadata.metadata[ 'tools' ] = [ tool_dict ]
+                                        trans.sa_session.add( repository_metadata )
+                                        if not flush_needed:
+                                            flush_needed = True
+                                else:
+                                    metadata_dict = dict( tools = [ tool_dict ] )
+                                    repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
+                                    trans.sa_session.add( repository_metadata )
+                                    if not flush_needed:
+                                        flush_needed = True
+                        except Exception, e:
+                            invalid_tool_configs.append( ( name, str( e ) ) )
+    else:
+        message = "Repository does not include changeset revision '%s'." % str( ctx_str )
+        status = 'error'
+    if invalid_tool_configs:
+        message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( ctx_str )
+        for itc_tup in invalid_tool_configs:
+            message += "<b>%s</b> - %s<br/>" % ( itc_tup[0], itc_tup[1] )
+        status = 'error'
+    elif flush_needed:
+        # We only flush if there are no tool config errors, so change sets will only have metadata
+        # if everything in them is valid.
+        trans.sa_session.flush()
+    return message, status
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
     return trans.sa_session.query( app.model.Repository ).filter_by( name=name ).one()
+def get_change_set( trans, repo, ctx_str, **kwd ):
+    """Retrieve a specified change set from a repository"""
+    for changeset in repo.changelog:
+        ctx = repo.changectx( changeset )
+        if str( ctx ) == ctx_str:
+            return ctx
+    return None
 def get_user( trans, id ):
     """Get a user from the database"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
@@ -184,77 +275,3 @@ def load_tool( trans, config_file ):
             ToolClass = Tool
         return ToolClass( config_file, root, trans.app )
     return None
-def set_repository_metadata( trans, id, ctx_str, **kwd ):
-    """Set repository metadata"""
-    message = ''
-    status = 'done'
-    repository = get_repository( trans, id )
-    repo_dir = repository.repo_path
-    repo = hg.repository( ui.ui(), repo_dir )
-    found = False
-    invalid_tool_configs = []
-    for changeset in repo.changelog:
-        ctx = repo.changectx( changeset )
-        if str( ctx ) == ctx_str:
-            found = True
-            break
-    if found:
-        for root, dirs, files in os.walk( repo_dir ):
-            if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
-                if '.hg' in dirs:
-                    # Don't visit .hg directories - should be impossible since we don't
-                    # allow uploaded archives that contain .hg dirs, but just in case...
-                    dirs.remove( '.hg' )
-                if 'hgrc' in files:
-                     # Don't include hgrc files in commit.
-                    files.remove( 'hgrc' )
-                for name in files:
-                    # Find all tool configs.
-                    if name.endswith( '.xml' ):
-                        try:
-                            full_path = os.path.abspath( os.path.join( root, name ) )
-                            tool = load_tool( trans, full_path )
-                            if tool is not None:
-                                repository_metadata = get_repository_metadata( trans, id, repository.tip )
-                                # TODO: add more stuff, like requirements
-                                tool_dict = dict( id = tool.id,
-                                                  name = tool.name,
-                                                  version = tool.version,
-                                                  description = tool.description,
-                                                  tool_config = full_path )
-                                if repository_metadata:
-                                    metadata = repository_metadata.metadata
-                                    if metadata and 'tools' in metadata:
-                                        metadata_tools = metadata[ 'tools' ]
-                                        found = False
-                                        for tool_metadata_dict in metadata_tools:
-                                            if 'id' in tool_metadata_dict and tool_metadata_dict[ 'id' ] == tool.id and \
-                                                'version' in tool_metadata_dict and tool_metadata_dict[ 'version' ] == tool.version:
-                                                found = True
-                                                tool_metadata_dict[ 'name' ] = tool.name
-                                                tool_metadata_dict[ 'description' ] = tool.description
-                                                tool_metadata_dict[ 'tool_config' ] = os.path.join( root, name )
-                                                # TODO: add more stuff, like tool requirements, code files, etc
-                                        if not found:
-                                            metadata_tools.append( tool_dict )
-                                    else:
-                                        if metadata is None:
-                                            repository_metadata.metadata = {}
-                                        repository_metadata.metadata[ 'tools' ] = [ tool_dict ]
-                                        trans.sa_session.add( repository_metadata )
-                                else:
-                                    metadata_dict = dict( tools = [ tool_dict ] )
-                                    repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
-                                    trans.sa_session.add( repository_metadata )
-                                trans.sa_session.flush()
-                        except Exception, e:
-                            invalid_tool_configs.append( ( name, str( e ) ) )
-    else:
-        message = "Repository does not include changeset revision '%s'." % str( ctx_str )
-        status = 'error'
-    if invalid_tool_configs:
-        message = "The following tool configs are invalid and were not added to the repository metadata:<br/>"
-        for itc_tup in invalid_tool_configs:
-            message += "<b>%s</b> - %s<br/>" % ( itc_tup[0], itc_tup[1] )
-        status = 'error'
-    return message, status
