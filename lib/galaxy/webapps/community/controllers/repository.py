@@ -214,7 +214,8 @@ class RepositoryController( BaseController, ItemRatings ):
             if operation == "view_or_manage_repository":
                 repository_id = kwd.get( 'id', None )
                 repository = get_repository( trans, repository_id )
-                if repository.user == trans.user:
+                is_admin = trans.user_is_admin()
+                if is_admin or repository.user == trans.user:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='manage_repository',
                                                                       **kwd ) )
