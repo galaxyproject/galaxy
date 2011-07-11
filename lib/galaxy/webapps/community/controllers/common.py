@@ -146,10 +146,13 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
                                         metadata_dict[ 'tools' ] = [ tool_dict ]
                         except Exception, e:
                             invalid_tool_configs.append( ( name, str( e ) ) )
-        repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
-        trans.sa_session.add( repository_metadata )
-        if not flush_needed:
-            flush_needed = True
+        if metadata_dict:
+            # The metadata_dict dictionary will contain items only
+            # if the repository did not already have metadata set.  
+            repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
+            trans.sa_session.add( repository_metadata )
+            if not flush_needed:
+                flush_needed = True
     else:
         message = "Repository does not include changeset revision '%s'." % str( ctx_str )
         status = 'error'
