@@ -86,6 +86,7 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
     invalid_tool_configs = []
     flush_needed = False
     if change_set is not None:
+        metadata_dict = {}
         for root, dirs, files in os.walk( repo_dir ):
             if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
                 if '.hg' in dirs:
@@ -139,13 +140,16 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
                                         if not flush_needed:
                                             flush_needed = True
                                 else:
-                                    metadata_dict = dict( tools = [ tool_dict ] )
-                                    repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
-                                    trans.sa_session.add( repository_metadata )
-                                    if not flush_needed:
-                                        flush_needed = True
+                                    if 'tools' in metadata_dict:
+                                        metadata_dict[ 'tools' ].append( tool_dict )
+                                    else:
+                                        metadata_dict[ 'tools' ] = [ tool_dict ]
                         except Exception, e:
                             invalid_tool_configs.append( ( name, str( e ) ) )
+        repository_metadata = trans.model.RepositoryMetadata( repository.id, repository.tip, metadata_dict )
+        trans.sa_session.add( repository_metadata )
+        if not flush_needed:
+            flush_needed = True
     else:
         message = "Repository does not include changeset revision '%s'." % str( ctx_str )
         status = 'error'
