@@ -397,8 +397,9 @@ class Tool:
         self.description = util.xml_text(root, "description")
         # Versioning for tools        
         self.version_string_cmd = None
-        if root.find("version_string") is not None:
-            self.version_string_cmd = root.find("version_string").text
+        version_cmd = root.find("version_command")
+        if version_cmd is not None:
+            self.version_string_cmd = version_cmd.text
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
