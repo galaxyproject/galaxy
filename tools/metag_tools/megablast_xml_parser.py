@@ -2,12 +2,12 @@
     
 import sys, os, re
 
-assert sys.version_info[:2] >= ( 2, 4 )
-
 if sys.version_info[:2] >= ( 2, 5 ):
-    import xml.etree.cElementTree as cElementTree
+    import xml.etree.cElementTree as ElementTree
 else:
-    import cElementTree 
+    from galaxy import eggs
+    import pkg_resources; pkg_resources.require( "elementtree" )
+    from elementtree import ElementTree
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
@@ -34,7 +34,7 @@ def __main__():
 
     # get an iterable
     try: 
-        context = cElementTree.iterparse( source, events=( "start", "end" ) )
+        context = ElementTree.iterparse( source, events=( "start", "end" ) )
     except:
         stop_err( "Invalid data format." )
     # turn it into an iterator
@@ -46,7 +46,7 @@ def __main__():
         stop_err( "Invalid data format." )
 
     outfile = open( sys.argv[2], 'w' )
-    try:    
+    try:
         for event, elem in context:
            # for every <Iteration> tag
            if event == "end" and elem.tag == "Iteration":
@@ -71,7 +71,7 @@ def __main__():
                elem.clear()
     except:
         outfile.close()
-        stop_err( "The input data contains tags that are not recognizable by the tool." )
+        stop_err( "The input data is malformed, or there is more than one dataset in the input file. Error: %s" % sys.exc_info()[1] )
 
     outfile.close()
 

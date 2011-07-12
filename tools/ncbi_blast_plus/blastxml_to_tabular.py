@@ -5,7 +5,7 @@ Takes three command line options, input BLAST XML filename, output tabular
 BLAST filename, output format (std for standard 12 columns, or ext for the
 extended 24 columns offered in the BLAST+ wrappers).
 
-The 12 colums output are 'qseqid sseqid pident length mismatch gapopen qstart
+The 12 columns output are 'qseqid sseqid pident length mismatch gapopen qstart
 qend sstart send evalue bitscore' or 'std' at the BLAST+ command line, which
 mean:
    
@@ -51,22 +51,23 @@ the percentage identity and the number of gap openings must be calculated.
 Be aware that the sequence in the extended tabular output or XML direct from
 BLAST+ may or may not use XXXX masking on regions of low complexity. This
 can throw the off the calculation of percentage identity and gap openings.
-[In fact, both BLAST 2.2.24+ and 2.2.25+ have a sutle bug in this regard,
+[In fact, both BLAST 2.2.24+ and 2.2.25+ have a subtle bug in this regard,
 with these numbers changing depending on whether or not the low complexity
 filter is used.]
 
-This script attempts to produce idential output to what BLAST+ would have done.
+This script attempts to produce identical output to what BLAST+ would have done.
 However, check this with "diff -b ..." since BLAST+ sometimes includes an extra
 space character (probably a bug).
 """
 import sys
 import re
 
-assert sys.version_info[:2] >= ( 2, 4 )
 if sys.version_info[:2] >= ( 2, 5 ):
-    import xml.etree.cElementTree as cElementTree
+    import xml.etree.cElementTree as ElementTree
 else:
-    import cElementTree 
+    from galaxy import eggs
+    import pkg_resources; pkg_resources.require( "elementtree" )
+    from elementtree import ElementTree
 
 def stop_err( msg ):
     sys.stderr.write("%s\n" % msg)
@@ -90,7 +91,7 @@ else:
 
 # get an iterable
 try: 
-    context = cElementTree.iterparse(in_file, events=("start", "end"))
+    context = ElementTree.iterparse(in_file, events=("start", "end"))
 except:
     stop_err("Invalid data format.")
 # turn it into an iterator

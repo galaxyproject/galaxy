@@ -2,26 +2,23 @@
 <description></description>
 <command interpreter="python">megablast_xml_parser.py $input1 $output1</command>
 <inputs>
-	<param name="input1" type="data" format="blastxml" label="Megablast XML output" />
+  <param name="input1" type="data" format="blastxml" label="Megablast XML output" />
 </inputs>
 <outputs>
-	<data name="output1" format="tabular"/>
+  <data name="output1" format="tabular"/>
 </outputs>
-<requirements>
-	<requirement type="python-module">cElementTree</requirement>
-</requirements>
 <tests>
-	<test>
-		<param name="input1" value="megablast_xml_parser_test1.gz" ftype="blastxml" />
-		<output name="output1" file="megablast_xml_parser_test1_out.tabular" ftype="tabular" />
-	</test>
+  <test>
+    <param name="input1" value="megablast_xml_parser_test1.gz" ftype="blastxml" />
+    <output name="output1" file="megablast_xml_parser_test1_out.tabular" ftype="tabular" />
+  </test>
 </tests>
 <help>
 
 **What it does**
 
 This tool processes the XML output of any NCBI blast tool (if you run your own blast jobs, the XML output can be generated with **-m 7** option).
- 
+
 -----
 
 **Output fields**
