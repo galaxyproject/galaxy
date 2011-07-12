@@ -84,7 +84,7 @@
                     field = SelectField( param.name )
                     field.add_option( param.name, param.name )
                     field_html = field.get_html()
-                elif isinstance( param, SelectToolParameter ) and param.data_ref:
+                elif isinstance( param, SelectToolParameter ) and hasattr( param, 'data_ref' ):
                     field = SelectField( param.name, display=param.display )
                     field.add_option( param.data_ref, param.data_ref )
                     field_html = field.get_html( prefix )
