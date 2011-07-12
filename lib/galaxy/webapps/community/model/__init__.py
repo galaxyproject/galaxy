@@ -4,7 +4,7 @@ Galaxy Tool Shed data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile, mimetypes, ConfigParser
+import os.path, os, errno, sys, codecs, operator, logging, tarfile, mimetypes, ConfigParser
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import *

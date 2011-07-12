@@ -369,6 +369,23 @@ class RepositoryController( BaseController, ItemRatings ):
             output.write( '[paths]\n' )
         output.write( "%s\n" % entry )
         output.close()
+    def __change_hgweb_config_entry( self, trans, repository, old_repository_name, new_repository_name ):
+        # Change an entry in the hgweb.config file for a repository.  This only happens when
+        # the owner changes the name of the repository.  An entry looks something like:
+        # repos/test/mira_assembler = database/community_files/000/repo_123.
+        hgweb_config = "%s/hgweb.config" % trans.app.config.root
+        repo_dir = repository.repo_path
+        old_lhs = "repos/%s/%s" % ( repository.user.username, old_repository_name )
+        old_entry = "%s = %s" % ( old_lhs, repo_dir )
+        new_entry = "repos/%s/%s = %s\n" % ( repository.user.username, new_repository_name, repo_dir )
+        tmp_fd, tmp_fname = tempfile.mkstemp()
+        new_hgweb_config = open( tmp_fname, 'wb' )
+        for i, line in enumerate( open( hgweb_config ) ):
+            if line.startswith( old_lhs ):
+                new_hgweb_config.write( new_entry )
+            else:
+                new_hgweb_config.write( line )
+        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     def __create_hgrc_file( self, repository ):
         # At this point, an entry for the repository is required to be in the hgweb.config
         # file so we can call repository.repo_path.
@@ -511,7 +528,8 @@ class RepositoryController( BaseController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
-        repo = hg.repository( ui.ui(), repository.repo_path )
+        repo_dir = repository.repo_path
+        repo = hg.repository( ui.ui(), repo_dir )
         repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
         description = util.restore_text( params.get( 'description', repository.description ) )
         long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
@@ -528,6 +546,7 @@ class RepositoryController( BaseController, ItemRatings ):
         user = trans.user
         if params.get( 'edit_repository_button', False ):
             flush_needed = False
+            # TODO: add a can_manage in the security agent.
             if user != repository.user:
                 message = "You are not the owner of this repository, so you cannot manage it."
                 status = error
@@ -541,6 +560,7 @@ class RepositoryController( BaseController, ItemRatings ):
                 if message:
                     error = True
                 else:
+                    self.__change_hgweb_config_entry( trans, repository, repository.name, repo_name )
                     repository.name = repo_name
                     flush_needed = True
             if description != repository.description:
@@ -552,6 +572,7 @@ class RepositoryController( BaseController, ItemRatings ):
             if flush_needed:
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
+                message = "The repository information has been updated."
         elif params.get( 'user_access_button', False ):
             if allow_push not in [ 'none' ]:
                 remove_auth = params.get( 'remove_auth', '' )

@@ -4,7 +4,7 @@
 <%
     from galaxy.util.expressions import ExpressionContext
     from galaxy import util
-    from galaxy.tools.parameters.basic import DataToolParameter, ColumnListParameter
+    from galaxy.tools.parameters.basic import DataToolParameter, ColumnListParameter, SelectToolParameter
     from galaxy.web.form_builder import SelectField
 
     is_admin = trans.user_is_admin()
@@ -84,6 +84,10 @@
                     field = SelectField( param.name )
                     field.add_option( param.name, param.name )
                     field_html = field.get_html()
+                elif isinstance( param, SelectToolParameter ) and param.data_ref:
+                    field = SelectField( param.name, display=param.display )
+                    field.add_option( param.data_ref, param.data_ref )
+                    field_html = field.get_html( prefix )
                 else:
                     field = param.get_html_field( trans, None, other_values )
                     field_html = field.get_html( prefix )
