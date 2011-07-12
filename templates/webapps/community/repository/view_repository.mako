@@ -145,6 +145,20 @@
         %endif
     </div>
 </div>
+%if repository.categories:
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Categories</div>
+        <div class="toolFormBody">
+            %for rca in repository.categories:
+                <div class="form-row">
+                    ${rca.category.name}
+                </div>
+            %endfor
+            <div style="clear: both"></div>
+        </div>
+    </div>
+%endif
 %if metadata:
     <p/>
     <div class="toolForm">
@@ -197,7 +211,7 @@
 %if trans.user and trans.app.config.smtp_server:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormTitle">Notification on update</div>
         <div class="toolFormBody">
             <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">

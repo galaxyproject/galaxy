@@ -356,11 +356,19 @@ class RepositoryController( BaseController, ItemRatings ):
         if not( VALID_REPOSITORYNAME_RE.match( name ) ):
             return "Repository names must contain only lower-case letters, numbers and underscore '_'."
         return ''
+    def __make_hgweb_config_copy( self, trans, hgweb_config ):
+        # Make a backup of the hgweb.config file
+        today = date.today()
+        backup_date = today.strftime( "%Y_%m_%d" )
+        hgweb_config_copy = '%s/hgweb.config_%s_backup' % ( trans.app.config.root, backup_date )
+        shutil.copy( os.path.abspath( hgweb_config ), os.path.abspath( hgweb_config_copy ) )
     def __add_hgweb_config_entry( self, trans, repository, repository_path ):
         # Add an entry in the hgweb.config file for a new repository.
         # An entry looks something like:
         # repos/test/mira_assembler = database/community_files/000/repo_123.
         hgweb_config = "%s/hgweb.config" %  trans.app.config.root
+        # Make a backup of the hgweb.config file since we're going to be changing it.
+        self.__make_hgweb_config_copy( trans, hgweb_config )
         entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path.lstrip( './' ) )
         if os.path.exists( hgweb_config ):
             output = open( hgweb_config, 'a' )
@@ -374,6 +382,8 @@ class RepositoryController( BaseController, ItemRatings ):
         # the owner changes the name of the repository.  An entry looks something like:
         # repos/test/mira_assembler = database/community_files/000/repo_123.
         hgweb_config = "%s/hgweb.config" % trans.app.config.root
+        # Make a backup of the hgweb.config file since we're going to be changing it.
+        self.__make_hgweb_config_copy( trans, hgweb_config )
         repo_dir = repository.repo_path
         old_lhs = "repos/%s/%s" % ( repository.user.username, old_repository_name )
         old_entry = "%s = %s" % ( old_lhs, repo_dir )
@@ -537,6 +547,7 @@ class RepositoryController( BaseController, ItemRatings ):
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         alerts = params.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
+        category_ids = util.listify( params.get( 'category_id', '' ) )
         if repository.email_alerts:
             email_alerts = from_json_string( repository.email_alerts )
         else:
@@ -572,7 +583,21 @@ class RepositoryController( BaseController, ItemRatings ):
             if flush_needed:
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
-                message = "The repository information has been updated."
+            message = "The repository information has been updated."
+        elif params.get( 'manage_categories_button', False ):
+            flush_needed = False
+            # Delete all currently existing categories.
+            for rca in repository.categories:
+                trans.sa_session.delete( rca )
+                trans.sa_session.flush()
+            if category_ids:
+                # Create category associations
+                for category_id in category_ids:
+                    category = trans.app.model.Category.get( trans.security.decode_id( category_id ) )
+                    rca = trans.app.model.RepositoryCategoryAssociation( repository, category )
+                    trans.sa_session.add( rca )
+                    trans.sa_session.flush()
+            message = "The repository information has been updated."
         elif params.get( 'user_access_button', False ):
             if allow_push not in [ 'none' ]:
                 remove_auth = params.get( 'remove_auth', '' )
@@ -586,6 +611,7 @@ class RepositoryController( BaseController, ItemRatings ):
                         usernames.append( user.username )
                     usernames = ','.join( usernames )
                 repository.set_allow_push( usernames, remove_auth=remove_auth )
+            message = "The repository information has been updated."
         elif params.get( 'receive_email_alerts_button', False ):
             flush_needed = False
             if alerts_checked:
@@ -601,6 +627,7 @@ class RepositoryController( BaseController, ItemRatings ):
             if flush_needed:
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
+            message = "The repository information has been updated."
         if error:
             status = 'error'
         if repository.allow_push:
@@ -615,6 +642,8 @@ class RepositoryController( BaseController, ItemRatings ):
             metadata = repository_metadata.metadata
         else:
             metadata = None
+        categories = get_categories( trans )
+        selected_categories = [ rca.category_id for rca in repository.categories ]
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
@@ -623,6 +652,8 @@ class RepositoryController( BaseController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
+                                    selected_categories=selected_categories,
+                                    categories=categories,
                                     metadata=metadata,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,

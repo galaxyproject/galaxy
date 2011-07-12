@@ -151,6 +151,34 @@
         </form>
     </div>
 </div>
+<p/>
+<div class="toolForm">
+    <div class="toolFormTitle">Manage categories</div>
+    <div class="toolFormBody">
+        <form name="categories" id="categories" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+            <div class="form-row">
+                <label>Categories</label>
+                <select name="category_id" multiple>
+                    %for category in categories:
+                        %if category.id in selected_categories:
+                            <option value="${trans.security.encode_id( category.id )}" selected>${category.name}</option>
+                        %else:
+                            <option value="${trans.security.encode_id( category.id )}">${category.name}</option>
+                        %endif
+                    %endfor
+                </select>
+                <div class="toolParamHelp" style="clear: both;">
+                    Multi-select list - hold the appropriate key while clicking to select multiple categories.
+                </div>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <input type="submit" name="manage_categories_button" value="Save"/>
+            </div>
+        </form>
+    </div>
+</div>
+<p/>
 %if can_set_metadata:
     <p/>
     <div class="toolForm">
@@ -215,7 +243,7 @@
 %if trans.app.config.smtp_server:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormTitle">Notification on update</div>
         <div class="toolFormBody">
             <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">

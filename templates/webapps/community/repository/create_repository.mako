@@ -38,7 +38,7 @@
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Category</label>
+                <label>Categories</label>
                 <div class="form-row">
                     <select name="category_id" multiple>
                         %for category in categories:
@@ -49,6 +49,9 @@
                             %endif
                         %endfor
                     </select>
+                </div>
+                <div class="toolParamHelp" style="clear: both;">
+                    Multi-select list - hold the appropriate key while clicking to select multiple categories.
                 </div>
                 <div style="clear: both"></div>
             </div>
