@@ -94,7 +94,7 @@
                 %>
                 <% display_date = changeset[ 'display_date' ] %>
                 %if test_date != display_date:
-                    <tr colspan="2"><td bgcolor="#D8D8D8 ">${display_date}</td></tr>
+                    <tr colspan="2"><td bgcolor="#D8D8D8">${display_date}</td></tr>
                 %endif
                 <tr>
                     <td>

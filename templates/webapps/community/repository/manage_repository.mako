@@ -187,7 +187,13 @@
             %if metadata:
                 %if 'tools' in metadata:
                     <div class="form-row">
-                        <label>Tools:</label>
+                        <table width="100%">
+                            <tr bgcolor="#D8D8D8" width="100%">
+                                <td><label>Tools:</label></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="form-row">
                         <% tool_dicts = metadata[ 'tools' ] %>
                         <table class="grid">
                             <tr>
@@ -220,6 +226,34 @@
                                             none
                                         %endif
                                     </td>
+                                </tr>
+                            %endfor
+                        </table>
+                    </div>
+                    <div style="clear: both"></div>
+                %endif
+                %if 'workflows' in metadata:
+                    <div class="form-row">
+                        <table width="100%">
+                            <tr bgcolor="#D8D8D8" width="100%">
+                                <td><label>Workflows:</label></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div style="clear: both"></div>
+                    <div class="form-row">
+                        <% workflow_dicts = metadata[ 'workflows' ] %>
+                        <table class="grid">
+                            <tr>
+                                <td><b>name</b></td>
+                                <td><b>format-version</b></td>
+                                <td><b>annotation</b></td>
+                            </tr>
+                            %for workflow_dict in workflow_dicts:
+                                <tr>
+                                    <td>${workflow_dict[ 'name' ]}</td>
+                                    <td>${workflow_dict[ 'format-version' ]}</td>
+                                    <td>${workflow_dict[ 'annotation' ]}</td>
                                 </tr>
                             %endfor
                         </table>

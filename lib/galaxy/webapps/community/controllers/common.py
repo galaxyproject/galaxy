@@ -83,7 +83,7 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
     repo_dir = repository.repo_path
     repo = hg.repository( ui.ui(), repo_dir )
     change_set = get_change_set( trans, repo, ctx_str )
-    invalid_tool_configs = []
+    invalid_files = []
     flush_needed = False
     if change_set is not None:
         metadata_dict = {}
@@ -110,12 +110,22 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
                                                              type=tr.type,
                                                              version=tr.version )
                                     tool_requirements.append( requirement_dict )
-                                tool_dict = dict( id = tool.id,
-                                                  name = tool.name,
-                                                  version = tool.version,
-                                                  description = tool.description,
-                                                  tool_config = os.path.join( root, name ),
-                                                  requirements = tool_requirements )
+                                tool_tests = []
+                                if tool.tests:
+                                    for ttb in tool.tests:
+                                        test_dict = dict( name=ttb.name,
+                                                          required_files=ttb.required_files,
+                                                          inputs=ttb.inputs,
+                                                          outputs=ttb.outputs )
+                                        tool_tests.append( test_dict )
+                                tool_dict = dict( id=tool.id,
+                                                  name=tool.name,
+                                                  version=tool.version,
+                                                  description=tool.description,
+                                                  version_string_cmd = tool.version_string_cmd,
+                                                  tool_config=os.path.join( root, name ),
+                                                  requirements=tool_requirements,
+                                                  tests=tool_tests )
                                 if repository_metadata:
                                     metadata = repository_metadata.metadata
                                     if metadata and 'tools' in metadata:
@@ -127,8 +137,10 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
                                                 found = True
                                                 tool_metadata_dict[ 'name' ] = tool.name
                                                 tool_metadata_dict[ 'description' ] = tool.description
+                                                tool_metadata_dict[ 'version_string_cmd' ] = tool.version_string_cmd
                                                 tool_metadata_dict[ 'tool_config' ] = os.path.join( root, name )
                                                 tool_metadata_dict[ 'requirements' ] = tool_requirements
+                                                tool_metadata_dict[ 'tests' ] = tool_tests
                                                 flush_needed = True
                                         if not found:
                                             metadata_tools.append( tool_dict )
@@ -145,7 +157,43 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
                                     else:
                                         metadata_dict[ 'tools' ] = [ tool_dict ]
                         except Exception, e:
-                            invalid_tool_configs.append( ( name, str( e ) ) )
+                            invalid_files.append( ( name, str( e ) ) )
+                    # Find all exported workflows
+                    elif name.endswith( '.ga' ):
+                        try:
+                            repository_metadata = get_repository_metadata( trans, id, repository.tip )
+                            full_path = os.path.abspath( os.path.join( root, name ) )
+                            # Convert workflow data from json
+                            fp = open( full_path, 'rb' )
+                            workflow_text = fp.read()
+                            fp.close()
+                            workflow_dict = from_json_string( workflow_text )
+                            if repository_metadata:
+                                metadata = repository_metadata.metadata
+                                old_metadata_workflows = metadata[ 'workflows' ]
+                                new_metadata_workflows = []
+                                for workflow_metadata_dict in old_metadata_workflows:
+                                    # TODO: what if 2 exported galaxy workflows have the same name, annotation, format-version?
+                                    if 'a_galaxy_workflow' in workflow_metadata_dict and util.string_as_bool( workflow_metadata_dict[ 'a_galaxy_workflow' ] ) and \
+                                        'name' in workflow_metadata_dict and workflow_metadata_dict[ 'name' ] == workflow_dict[ 'name' ] and \
+                                        'annotation' in workflow_metadata_dict and workflow_metadata_dict[ 'annotation' ] == workflow_dict[ 'annotation' ] and \
+                                        'format-version' in workflow_metadata_dict and workflow_metadata_dict[ 'format-version' ] == workflow_dict[ 'format-version' ]:
+                                        new_metadata_workflows.append( workflow_dict )
+                                    else:
+                                        new_metadata_workflows.append( workflow_metadata_dict )
+                                if metadata is None:
+                                    repository_metadata.metadata = {}
+                                repository_metadata.metadata[ 'workflows' ] = new_metadata_workflows
+                                trans.sa_session.add( repository_metadata )
+                                if not flush_needed:
+                                    flush_needed = True
+                            else:
+                                if 'workflows' in metadata_dict:
+                                    metadata_dict[ 'workflows' ].append( workflow_dict )
+                                else:
+                                    metadata_dict[ 'workflows' ] = [ workflow_dict ]
+                        except Exception, e:
+                            invalid_files.append( ( name, str( e ) ) )
         if metadata_dict:
             # The metadata_dict dictionary will contain items only
             # if the repository did not already have metadata set.  
@@ -156,9 +204,9 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
     else:
         message = "Repository does not include changeset revision '%s'." % str( ctx_str )
         status = 'error'
-    if invalid_tool_configs:
+    if invalid_files:
         message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( ctx_str )
-        for itc_tup in invalid_tool_configs:
+        for itc_tup in invalid_files:
             message += "<b>%s</b> - %s<br/>" % ( itc_tup[0], itc_tup[1] )
         status = 'error'
     elif flush_needed:
