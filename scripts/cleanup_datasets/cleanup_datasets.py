@@ -310,17 +310,21 @@ def delete_datasets( app, cutoff_time, remove_from_disk, info_only = False, forc
     dataset_ids.extend( [ row.id for row in history_dataset_ids_query.execute() ] )
     # Process each of the Dataset objects
     for dataset_id in dataset_ids:
-        print "######### Processing dataset id:", dataset_id
         dataset = app.sa_session.query( app.model.Dataset ).get( dataset_id )
-        if dataset.id not in skip and _dataset_is_deletable( dataset ):
-            deleted_dataset_count += 1
-            for dataset_instance in dataset.history_associations + dataset.library_associations:
-                # Mark each associated HDA as deleted
-                _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children=True, info_only=info_only, is_deletable=True )
-                deleted_instance_count += 1
+        if dataset.id in skip:
+            continue
         skip.append( dataset.id )
+        print "######### Processing dataset id:", dataset_id
+        if not _dataset_is_deletable( dataset ):
+            print "Dataset is not deletable (shared between multiple histories/libraries, at least one is not deleted)"
+            continue
+        deleted_dataset_count += 1
+        for dataset_instance in dataset.history_associations + dataset.library_associations:
+            # Mark each associated HDA as deleted
+            _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children=True, info_only=info_only, is_deletable=True )
+            deleted_instance_count += 1
     stop = time.time()
-    print "Examined %d datasets, marked %d as deleted and purged %d dataset instances" % ( len( skip ), deleted_dataset_count, deleted_instance_count )
+    print "Examined %d datasets, marked %d datasets and %d dataset instances (HDA) as deleted" % ( len( skip ), deleted_dataset_count, deleted_instance_count )
     print "Total elapsed time: ", stop - start
     print "##########################################" 
 
@@ -396,8 +400,13 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletab
                                                .filter( app.model.MetadataFile.table.c.lda_id==ldda.id ):
                 metadata_files.append( metadata_file )
         for metadata_file in metadata_files:
-            print "The following metadata files attached to associations of Dataset '%s' have been purged:" % dataset.id
-            if not info_only:
+            op_description = "marked as deleted"
+            if remove_from_disk:
+                op_description = op_description + " and purged from disk"
+            if info_only:
+                print "The following metadata files attached to associations of Dataset '%s' will be %s (without 'info_only' mode):" % ( dataset.id, op_description )
+            else:
+                print "The following metadata files attached to associations of Dataset '%s' have been %s:" % ( dataset.id, op_description )
                 if remove_from_disk:
                     try:
                         print "Removing disk file ", metadata_file.file_name
