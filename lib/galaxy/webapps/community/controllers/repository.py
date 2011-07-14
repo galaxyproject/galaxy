@@ -74,9 +74,9 @@ class RepositoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.name
-    class VersionColumn( grids.TextColumn ):
+    class RevisionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
-            return repository.version
+            return repository.revision
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return repository.description
@@ -126,8 +126,8 @@ class RepositoryListGrid( grids.Grid ):
         DescriptionColumn( "Synopsis",
                            key="description",
                            attach_popup=False ),
-        VersionColumn( "Version",
-                       attach_popup=False ),
+        RevisionColumn( "Revision",
+                        attach_popup=False ),
         CategoryColumn( "Category",
                         model_class=model.Category,
                         key="Category.name",
@@ -878,7 +878,6 @@ class RepositoryController( BaseController, ItemRatings ):
                 folder_contents.append( node )
         return folder_contents
     def __get_files( self, trans, repository, folder_path ):
-        ok = True
         def print_ticks( d ):
             pass
         cmd  = "ls -p '%s'" % folder_path
@@ -887,17 +886,22 @@ class RepositoryController( BaseController, ItemRatings ):
                               events={ pexpect.TIMEOUT : print_ticks }, 
                               timeout=10 )
         if 'No such file or directory' in output:
-            status = 'error'
-            message = "No folder named (%s) exists." % folder_path
-            ok = False
-        if ok:
-            return output.split()
-        return trans.response.send_redirect( web.url_for( controller='repository',
-                                                          action='browse_repositories',
-                                                          operation="view_or_manage_repository",
-                                                          id=trans.security.encode_id( repository.id ),
-                                                          status=status,
-                                                          message=message ) )
+            if 'root' in output:
+                # The repository is empty
+                return []
+            else:
+                # Some strange error occurred, the selected file was displayed, but
+                # does not exist in the sub-directory from which it was displayed.
+                # This should not happen...
+                status = 'error'
+                message = "No folder named (%s) exists." % folder_path
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories',
+                                                                  operation="view_or_manage_repository",
+                                                                  id=trans.security.encode_id( repository.id ),
+                                                                  status=status,
+                                                                  message=message ) )
+        return output.split()
     @web.json
     def get_file_contents( self, trans, file_path ):
         # Avoid caching

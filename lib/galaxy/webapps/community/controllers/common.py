@@ -75,14 +75,14 @@ def get_repository_metadata( trans, id, changeset_revision ):
                            .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
                                           trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
                            .first()
-def set_repository_metadata( trans, id, ctx_str, **kwd ):
+def set_repository_metadata( trans, id, change_set_revision, **kwd ):
     """Set repository metadata"""
     message = ''
     status = 'done'
     repository = get_repository( trans, id )
     repo_dir = repository.repo_path
     repo = hg.repository( ui.ui(), repo_dir )
-    change_set = get_change_set( trans, repo, ctx_str )
+    change_set = get_change_set( trans, repo, change_set_revision )
     invalid_files = []
     flush_needed = False
     if change_set is not None:
@@ -103,7 +103,6 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
                             full_path = os.path.abspath( os.path.join( root, name ) )
                             tool = load_tool( trans, full_path )
                             if tool is not None:
-                                repository_metadata = get_repository_metadata( trans, id, repository.tip )
                                 tool_requirements = []
                                 for tr in tool.requirements:
                                     requirement_dict = dict( name=tr.name,
@@ -126,6 +125,7 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
                                                   tool_config=os.path.join( root, name ),
                                                   requirements=tool_requirements,
                                                   tests=tool_tests )
+                                repository_metadata = get_repository_metadata( trans, id, change_set_revision )
                                 if repository_metadata:
                                     metadata = repository_metadata.metadata
                                     if metadata and 'tools' in metadata:
@@ -161,32 +161,39 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
                     # Find all exported workflows
                     elif name.endswith( '.ga' ):
                         try:
-                            repository_metadata = get_repository_metadata( trans, id, repository.tip )
                             full_path = os.path.abspath( os.path.join( root, name ) )
                             # Convert workflow data from json
                             fp = open( full_path, 'rb' )
                             workflow_text = fp.read()
                             fp.close()
-                            workflow_dict = from_json_string( workflow_text )
+                            exported_workflow_dict = from_json_string( workflow_text )
+                            # We'll store everything except the workflow steps in the database.
+                            workflow_dict = { 'a_galaxy_workflow' : exported_workflow_dict[ 'a_galaxy_workflow' ],
+                                              'name' :exported_workflow_dict[ 'name' ],
+                                              'annotation' : exported_workflow_dict[ 'annotation' ],
+                                              'format-version' : exported_workflow_dict[ 'format-version' ] }
+                            repository_metadata = get_repository_metadata( trans, id, change_set_revision )
                             if repository_metadata:
                                 metadata = repository_metadata.metadata
-                                old_metadata_workflows = metadata[ 'workflows' ]
-                                new_metadata_workflows = []
-                                for workflow_metadata_dict in old_metadata_workflows:
-                                    # TODO: what if 2 exported galaxy workflows have the same name, annotation, format-version?
-                                    if 'a_galaxy_workflow' in workflow_metadata_dict and util.string_as_bool( workflow_metadata_dict[ 'a_galaxy_workflow' ] ) and \
-                                        'name' in workflow_metadata_dict and workflow_metadata_dict[ 'name' ] == workflow_dict[ 'name' ] and \
-                                        'annotation' in workflow_metadata_dict and workflow_metadata_dict[ 'annotation' ] == workflow_dict[ 'annotation' ] and \
-                                        'format-version' in workflow_metadata_dict and workflow_metadata_dict[ 'format-version' ] == workflow_dict[ 'format-version' ]:
-                                        new_metadata_workflows.append( workflow_dict )
-                                    else:
-                                        new_metadata_workflows.append( workflow_metadata_dict )
-                                if metadata is None:
-                                    repository_metadata.metadata = {}
-                                repository_metadata.metadata[ 'workflows' ] = new_metadata_workflows
-                                trans.sa_session.add( repository_metadata )
-                                if not flush_needed:
-                                    flush_needed = True
+                                if metadata and 'workflows' in metadata:
+                                    metadata_workflows = metadata[ 'workflows' ]
+                                    found = False
+                                    for workflow_metadata_dict in metadata_workflows:
+                                        if 'a_galaxy_workflow' in workflow_metadata_dict and util.string_as_bool( workflow_metadata_dict[ 'a_galaxy_workflow' ] ) and \
+                                            'name' in workflow_metadata_dict and workflow_metadata_dict[ 'name' ] == exported_workflow_dict[ 'name' ] and \
+                                            'annotation' in workflow_metadata_dict and workflow_metadata_dict[ 'annotation' ] == exported_workflow_dict[ 'annotation' ] and \
+                                            'format-version' in workflow_metadata_dict and workflow_metadata_dict[ 'format-version' ] == exported_workflow_dict[ 'format-version' ]:
+                                            found = True
+                                            break
+                                    if not found:
+                                        metadata_workflows.append( workflow_dict )
+                                else:
+                                    if metadata is None:
+                                        repository_metadata.metadata = {}
+                                    repository_metadata.metadata[ 'workflows' ] = workflow_dict
+                                    trans.sa_session.add( repository_metadata )
+                                    if not flush_needed:
+                                        flush_needed = True
                             else:
                                 if 'workflows' in metadata_dict:
                                     metadata_dict[ 'workflows' ].append( workflow_dict )
@@ -202,10 +209,10 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
             if not flush_needed:
                 flush_needed = True
     else:
-        message = "Repository does not include changeset revision '%s'." % str( ctx_str )
+        message = "Repository does not include changeset revision '%s'." % str( change_set_revision )
         status = 'error'
     if invalid_files:
-        message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( ctx_str )
+        message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( change_set_revision )
         for itc_tup in invalid_files:
             message += "<b>%s</b> - %s<br/>" % ( itc_tup[0], itc_tup[1] )
         status = 'error'
@@ -217,11 +224,11 @@ def set_repository_metadata( trans, id, ctx_str, **kwd ):
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
     return trans.sa_session.query( app.model.Repository ).filter_by( name=name ).one()
-def get_change_set( trans, repo, ctx_str, **kwd ):
+def get_change_set( trans, repo, change_set_revision, **kwd ):
     """Retrieve a specified change set from a repository"""
     for changeset in repo.changelog:
         ctx = repo.changectx( changeset )
-        if str( ctx ) == ctx_str:
+        if str( ctx ) == change_set_revision:
             return ctx
     return None
 def get_user( trans, id ):

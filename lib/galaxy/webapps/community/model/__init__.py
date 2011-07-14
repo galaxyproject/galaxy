@@ -114,7 +114,7 @@ class Repository( object ):
                 return config.get( "paths", option )
         raise Exception( "Entry for repository %s missing in %s/hgweb.config file." % ( lhs, os.getcwd() ) )
     @property
-    def version( self ):
+    def revision( self ):
         repo = hg.repository( ui.ui(), self.repo_path )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return "%s:%s" % ( str( tip_ctx.rev() ), str( repo.changectx( repo.changelog.tip() ) ) )

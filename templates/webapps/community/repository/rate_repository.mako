@@ -104,7 +104,7 @@
             </div>
             <div class="form-row">
                 <label>Version:</label>
-                ${repository.version}
+                ${repository.revision}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
