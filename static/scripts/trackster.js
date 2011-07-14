@@ -3307,6 +3307,9 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     ctx.restore();
 }
 
+/**
+ * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
+ */
 var FeaturePainter = function( data, view_start, view_end, prefs, mode ) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
 }
@@ -3327,7 +3330,6 @@ extend( FeaturePainter.prototype, {
     },
 
     draw: function( ctx, width, height, slots ) {
-
         var data = this.data, view_start = this.view_start, view_end = this.view_end;
 
         ctx.save();
@@ -3356,7 +3358,12 @@ extend( FeaturePainter.prototype, {
         }
 
         ctx.restore();
-    }
+    },
+    
+    /** 
+     * Abstract function for drawing an individual feature. NOTE: this method must be implemented by subclasses for drawing to work.
+     */
+    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {}
 });
 
 // Constants specific to feature tracks moved here (HACKING, these should
