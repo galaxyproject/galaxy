@@ -412,7 +412,7 @@ class FilterableMixin:
                           'type': 'int', 
                           'index': filter_col, 
                           'tool_id': 'Filter1',
-                          'tool_exp_name': 'c5' } ]
+                          'tool_exp_name': 'c6' } ]
             filter_col += 1
             if isinstance( self.original_dataset.datatype, Gtf ):
                 # Create filters based on dataset metadata.
