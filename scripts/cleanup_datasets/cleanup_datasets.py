@@ -170,6 +170,7 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False, forc
                                                  app.model.History.table.c.update_time < cutoff_time ) ) \
                                   .options( eagerload( 'datasets' ) )
     for history in histories:
+        print "### Processing history id %d (%s)" % (history.id, history.name) 
         for dataset_assoc in history.datasets:
             _purge_dataset_instance( dataset_assoc, app, remove_from_disk, info_only = info_only ) #mark a DatasetInstance as deleted, clear associated files, and mark the Dataset as deleted if it is deletable
         if not info_only:
@@ -182,6 +183,8 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False, forc
             history.purged = True
             app.sa_session.add( history )
             app.sa_session.flush()
+        else:
+            print "History id %d will be purged (without 'info_only' mode)" % history.id
         history_count += 1
     stop = time.time()
     print 'Purged %d histories.' % history_count
@@ -364,15 +367,24 @@ def _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_ch
     # A dataset_instance is either a HDA or an LDDA.  Purging a dataset instance marks the instance as deleted, 
     # and marks the associated dataset as deleted if it is not associated with another active DatsetInstance.
     if not info_only:
-        print "Marking as deleted: ", dataset_instance.__class__.__name__, " id ", dataset_instance.id
+        print "Marking as deleted: %s id %d (for dataset id %d)" % \
+            ( dataset_instance.__class__.__name__, dataset_instance.id, dataset_instance.dataset.id )
         dataset_instance.mark_deleted( include_children = include_children )
         dataset_instance.clear_associated_files()
         app.sa_session.add( dataset_instance )
         app.sa_session.flush()
         app.sa_session.refresh( dataset_instance.dataset )
+    else:
+        print "%s id %d (for dataset id %d) will be marked as deleted (without 'info_only' mode)" % \
+            ( dataset_instance.__class__.__name__, dataset_instance.id, dataset_instance.dataset.id )
     if is_deletable or _dataset_is_deletable( dataset_instance.dataset ):
         # Calling methods may have already checked _dataset_is_deletable, if so, is_deletable should be True
         _delete_dataset( dataset_instance.dataset, app, remove_from_disk, info_only=info_only, is_deletable=is_deletable )
+    else:
+        if info_only:
+            print "Not deleting dataset ", dataset_instance.dataset.id, " (will be possibly deleted without 'info_only' mode)"
+        else:
+            print "Not deleting dataset %d (shared between multiple histories/libraries, at least one not deleted)" % dataset_instance.dataset.id
     #need to purge children here
     if include_children:
         for child in dataset_instance.children:
