@@ -486,8 +486,11 @@ extend( View.prototype, {
         this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.top_container);        
         // Viewport for dragging tracks in center    
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
-        // Future overlay?
-        this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide(); 
+        // Introduction div shown when there are no tracks.
+        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
+        var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
+            add_tracks();
+        });
         // Another label track at bottom
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
         // Navigation at top
@@ -536,7 +539,6 @@ extend( View.prototype, {
         this.chrom_select.bind("change", function() {
             view.change_chrom(view.chrom_select.val());
         });
-        this.intro_div.show();
                 
         /*
         this.content_div.bind("mousewheel", function( e, delta ) {
@@ -651,6 +653,16 @@ extend( View.prototype, {
         
         this.reset();
         $(window).trigger("resize");
+        this.update_intro_div();
+    },
+    /** Show or hide intro div depending on view state. */
+    update_intro_div: function() {
+        if (this.num_tracks === 0) {
+            this.intro_div.show();
+        }
+        else {
+            this.intro_div.hide();
+        }
     },
     update_location: function(low, high) {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
@@ -735,12 +747,6 @@ extend( View.prototype, {
             // Switching to local chrom.
             if (chrom !== view.chrom) {
                 view.chrom = chrom;
-                if (!view.chrom) {
-                    // No chrom selected
-                    view.intro_div.show();
-                } else {
-                    view.intro_div.hide();
-                }
                 view.chrom_select.val(view.chrom);
                 view.max_high = found.len-1; // -1 because we're using 0-based indexing.
                 view.reset();
@@ -810,6 +816,7 @@ extend( View.prototype, {
         sortable( track.container_div, '.draghandle' );
         this.track_id_counter += 1;
         this.num_tracks += 1;
+        this.update_intro_div();
     },
     add_label_track: function (label_track) {
         label_track.view = this;
@@ -817,9 +824,13 @@ extend( View.prototype, {
     },
     remove_track: function(track) {
         this.has_changes = true;
-        track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[this.tracks.indexOf(track)];
         this.num_tracks -= 1;
+        var view = this;
+        track.container_div.fadeOut('slow', function() { 
+            $(this).remove();
+            view.update_intro_div(); 
+        });
     },
     reset: function() {
         this.low = this.max_low;

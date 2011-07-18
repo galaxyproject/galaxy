@@ -86,6 +86,75 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         return new_bookmark;
     };
     
+    /**
+     * Use track data to add a track to a view.
+     * TODO: rename function?
+     */
+    var add_async_success = function(track_data) {
+        var td = track_data,
+            new_track = new addable_track_types[track_data.track_type]( 
+                                track_data.name, view, track_data.hda_ldda, track_data.dataset_id,
+                                track_data.prefs, track_data.filters, track_data.tool );
+        view.add_track(new_track);
+        // Should replace with live event but can't get working
+        sortable(new_track.container_div, ".draghandle");
+        view.has_changes = true;
+        $("#no-tracks").hide();
+    };
+    
+    /**
+     * Use a popup grid to add more tracks.
+     */
+    var add_tracks = function() {
+        $.ajax({
+            url: "${h.url_for( action='list_histories' )}",
+            data: { "f-dbkey": view.dbkey },
+            error: function() { alert( "Grid failed" ); },
+            success: function(table_html) {
+                show_modal(
+                    "Select datasets for new tracks",
+                    table_html, {
+                        "Cancel": function() {
+                            hide_modal();
+                        },
+                        "Insert": function() {
+                            var requests = [];
+                            $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                                var data,
+                                    id = $(this).val();
+                                    if ($(this).attr("name") === "id") {
+                                        data = { hda_id: id };
+                                    } else {
+                                        data = { ldda_id: id};
+                                    }
+                                    requests[requests.length] = $.ajax({
+                                        url: "${h.url_for( action='add_track_async' )}",
+                                        data: data,
+                                        dataType: "json",
+                                    });
+                            });
+                            // To preserve order, wait until there are definitions for all tracks and then add 
+                            // them sequentially.
+                            $.when.apply($, requests).then(function() {
+                                 // jQuery always returns an Array for arguments, so need to look at first element
+                                 // to determine whether multiple requests were made and consequently how to 
+                                 // map arguments to track definitions.
+                                 var track_defs = (arguments[0] instanceof Array ?  
+                                                   $.map(arguments, function(arg) { return arg[0]; }) :
+                                                   [ arguments[0] ]
+                                                   );
+                                 for (var i= 0; i < track_defs.length; i++) {
+                                     add_async_success(track_defs[i]); 
+                                 }
+                            });
+                            hide_modal();
+                        }
+                    }
+                );
+            }
+        });
+    };
+    
     $(function() {
         // Hide bookmarks by default right now.
         parent.force_right_panel("hide"); 
@@ -170,19 +239,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     return "There are unsaved changes to your visualization which will be lost.";
                 }
             };
-            
-            var add_async_success = function(track_data) {
-                var td = track_data,
-                    new_track = new addable_track_types[track_data.track_type]( 
-                                        track_data.name, view, track_data.hda_ldda, track_data.dataset_id,
-                                        track_data.prefs, track_data.filters, track_data.tool );
-                view.add_track(new_track);
-                // Should replace with live event but can't get working
-                sortable(new_track.container_div, ".draghandle");
-                view.has_changes = true;
-                $("#no-tracks").hide();
-            };
-            
+                        
             %if add_dataset is not None:
                 $.ajax({
                     url: "${h.url_for( action='add_track_async' )}",
@@ -195,56 +252,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
             
             $("#viz-options-button").css( "position", "relative" );
             make_popupmenu( $("#viz-options-button"), {
-                "Add Tracks": function() {          
-                    // Use a popup grid to add more tracks
-                    $.ajax({
-                        url: "${h.url_for( action='list_histories' )}",
-                        data: { "f-dbkey": view.dbkey },
-                        error: function() { alert( "Grid failed" ); },
-                        success: function(table_html) {
-                            show_modal(
-                                "Select datasets for new tracks",
-                                table_html, {
-                                    "Cancel": function() {
-                                        hide_modal();
-                                    },
-                                    "Insert": function() {
-                                        var requests = [];
-                                        $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                                            var data,
-                                                id = $(this).val();
-                                            if ($(this).attr("name") === "id") {
-                                                data = { hda_id: id };
-                                            } else {
-                                                data = { ldda_id: id};
-                                            }
-                                            requests[requests.length] = $.ajax({
-                                                    url: "${h.url_for( action='add_track_async' )}",
-                                                    data: data,
-                                                    dataType: "json",
-                                                });
-                                        });
-                                        // To preserve order, wait until there are definitions for all tracks and then add 
-                                        // them sequentially.
-                                        $.when.apply($, requests).then(function() {
-                                            // jQuery always returns an Array for arguments, so need to look at first element
-                                            // to determine whether multiple requests were made and consequently how to 
-                                            // map arguments to track definitions.
-                                            var track_defs = (arguments[0] instanceof Array ?  
-                                                              $.map(arguments, function(arg) { return arg[0]; }) :
-                                                              [ arguments[0] ]
-                                                              );
-                                            for (var i= 0; i < track_defs.length; i++) {
-                                                    add_async_success(track_defs[i]); 
-                                            }
-                                        });
-                                        hide_modal();
-                                    }
-                                }
-                            );
-                        }
-                    });
-                },
+                "Add Tracks": add_tracks,
                 "Save": function() {
                     // Show saving dialog box
                     show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
