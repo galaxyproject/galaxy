@@ -34,9 +34,9 @@
         <div class="submenu">
         <ul>            
             <li><a href="${app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )}">Email comments, bug reports, or suggestions</a></li>
-            <li><a target="_blank" href="${app.config.get( "wiki_url", "http://bitbucket.org/galaxy/galaxy-central/wiki" )}">Galaxy Wiki</a></li>             
+            <li><a target="_blank" href="${app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" )}">Galaxy Wiki</a></li>             
             <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://galaxycast.org" )}">Video tutorials (screencasts)</a></li>
-            <li><a target="_blank" href="${app.config.get( "citation_url", "http://bitbucket.org/galaxy/galaxy-central/wiki/Citations" )}">How to Cite Galaxy</a></li>
+            <li><a target="_blank" href="${app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" )}">How to Cite Galaxy</a></li>
         </ul>
         </div>
     </td>

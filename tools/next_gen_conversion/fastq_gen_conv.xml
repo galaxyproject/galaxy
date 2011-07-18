@@ -75,7 +75,7 @@ Galaxy pipeline for mapping of Illumina data requires data to be in fastq format
 A good description of fastq datasets can be found `here`__, while a description of Galaxy's fastq "logic" can be found `here`__. Because ranges of quality values within different types of fastq datasets overlap it very difficult to detect them automatically. This tool supports conversion of two commonly found types (Solexa/Illumina 1.0 and Illumina 1.3+) into fastq Sanger. 
 
  .. __: http://en.wikipedia.org/wiki/FASTQ_format
- .. __: http://bitbucket.org/galaxy/galaxy-central/wiki/NGS
+ .. __: http://wiki.g2.bx.psu.edu/Admin/NGS%20Local%20Setup
 
 .. class:: warningmark
 
