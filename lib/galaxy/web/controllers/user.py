@@ -394,7 +394,7 @@ class User( BaseController, UsesFormDefinitions ):
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
         if not user:
-            message = "No such user"
+            message = "No such user (please note that login is case sensitive)"
             status = 'error'
         elif user.deleted:
             message = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
