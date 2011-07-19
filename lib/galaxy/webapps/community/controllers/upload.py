@@ -87,7 +87,16 @@ class UploadController( BaseController ):
                     # Move the uploaded file to the load_point within the repository hierarchy.
                     shutil.move( uploaded_file_name, full_path )
                     commands.add( repo.ui, repo, full_path )
-                    commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                    """
+                    try:
+                        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                    except Exception, e:
+                        # I never have a problem with commands.commit on a Mac, but in the test/production
+                        # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                        # exception.  If this happens, we'll try the following.
+                        repo.dirstate.write()
+                        repo.commit( text=commit_message )
+                    """
                     if full_path.endswith( '.loc.sample' ):
                         # Handle the special case where a xxx.loc.sample file is
                         # being uploaded by copying it to ~/tool-data/xxx.loc.
@@ -96,7 +105,7 @@ class UploadController( BaseController ):
                 if ok:
                     # Update the repository files for browsing, a by-product of doing this
                     # is eliminating unwanted files from the repository directory.
-                    update_for_browsing( repository, current_working_dir )
+                    update_for_browsing( repository, current_working_dir, commit_message=commit_message )
                     # Get the new repository tip.
                     if tip != repository.tip:
                         if ( isgzip or isbz2 ) and uncompress_file:
@@ -183,8 +192,14 @@ class UploadController( BaseController ):
                     # Handle the special case where a xxx.loc.sample file is
                     # being uploaded by copying it to ~/tool-data/xxx.loc.
                     copy_sample_loc_file( trans, filename_in_archive )
-            # Commit the changes.
-            commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+            try:
+                commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+            except Exception, e:
+                # I never have a problem with commands.commit on a Mac, but in the test/production
+                # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                # exception.  If this happens, we'll try the following.
+                repo.dirstate.write()
+                repo.commit( text=commit_message )
             handle_email_alerts( trans, repository )
             return True, '', files_to_remove
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):

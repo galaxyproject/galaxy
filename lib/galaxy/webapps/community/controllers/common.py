@@ -297,7 +297,7 @@ def handle_email_alerts( trans, repository ):
                 util.send_mail( frm, to, subject, body, trans.app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
-def update_for_browsing( repository, current_working_dir ):
+def update_for_browsing( repository, current_working_dir, commit_message='' ):
     # Make a copy of a repository's files for browsing.
     repo_dir = repository.repo_path
     repo = hg.repository( ui.ui(), repo_dir )
@@ -316,12 +316,15 @@ def update_for_browsing( repository, current_working_dir ):
     # ! = deleted, but still tracked
     # ? = not tracked
     # I = ignored
-    # We'll remove all files that are not tracked or ignored.
     files_to_remove_from_disk = []
+    files_to_commit = []
     for status_and_file_name in status_and_file_names:
         if status_and_file_name.startswith( '?' ) or status_and_file_name.startswith( 'I' ):
             files_to_remove_from_disk.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
+        elif status_and_file_name.startswith( 'M' ) or status_and_file_name.startswith( 'A' ) or status_and_file_name.startswith( 'R' ):
+            files_to_commit.append( os.path.abspath( os.path.join( repo_dir, status_and_file_name.split()[1] ) ) )
     for full_path in files_to_remove_from_disk:
+        # We'll remove all files that are not tracked or ignored.
         if os.path.isdir( full_path ):
             try:
                 os.rmdir( full_path )
@@ -336,6 +339,11 @@ def update_for_browsing( repository, current_working_dir ):
             except OSError, e:
                 # The directory is not empty
                 pass
+    if files_to_commit:
+        if not commit_message:
+            commit_message = 'Committed changes to: %s' % ', '.join( files_to_commit )
+        repo.dirstate.write()
+        repo.commit( text=commit_message )
     os.chdir( repo_dir )
     os.system( 'hg update > /dev/null 2>&1' )
     os.chdir( current_working_dir )

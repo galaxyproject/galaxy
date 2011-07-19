@@ -425,7 +425,7 @@ class RepositoryController( BaseController, ItemRatings ):
         repository = get_repository( trans, id )
         repo = hg.repository( ui.ui(), repository.repo_path )
         current_working_dir = os.getcwd()
-        update_for_browsing( repository, current_working_dir )
+        update_for_browsing( repository, current_working_dir, commit_message=commit_message )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -454,11 +454,17 @@ class RepositoryController( BaseController, ItemRatings ):
                 # Commit the change set.
                 if not commit_message:
                     commit_message = 'Deleted selected files'
-                # Commit the changes.
-                commands.commit( repo.ui, repo, repo_dir, user=trans.user.username, message=commit_message )
+                try:
+                    commands.commit( repo.ui, repo, repo_dir, user=trans.user.username, message=commit_message )
+                except Exception, e:
+                    # I never have a problem with commands.commit on a Mac, but in the test/production
+                    # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                    # exception.  If this happens, we'll try the following.
+                    repo.dirstate.write()
+                    repo.commit( text=commit_message )
                 handle_email_alerts( trans, repository )
                 # Update the repository files for browsing.
-                update_for_browsing( repository, current_working_dir )
+                update_for_browsing( repository, current_working_dir, commit_message=commit_message )
                 # Get the new repository tip.
                 repo = hg.repository( ui.ui(), repo_dir )
                 if tip != repository.tip:
