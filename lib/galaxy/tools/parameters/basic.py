@@ -1272,7 +1272,7 @@ class DataToolParameter( ToolParameter ):
           displayed as radio buttons and multiple selects as a set of checkboxes
 
     TODO: The following must be fixed to test correctly for the new security_check tag in the DataToolParameter ( the last test below is broken )
-    Nate's next passs at the dataset security stuff will dramatically alter this anyway.
+    Nate's next pass at the dataset security stuff will dramatically alter this anyway.
     """
 
     def __init__( self, tool, elem ):
@@ -1522,6 +1522,38 @@ class DataToolParameter( ToolParameter ):
             ref = ref()
         return ref
 
+class LibraryDatasetToolParameter( ToolParameter ):
+    """
+    Parameter that lets users select a LDDA from a modal window, then use it within the wrapper.
+    """
+
+    def __init__( self, tool, elem ):
+        ToolParameter.__init__( self, tool, elem )
+        
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        return form_builder.LibraryField( self.name, value=value, trans=trans )
+        
+    def get_initial_value( self, trans, context ):
+        return None
+
+    def from_html( self, value, trans, other_values={} ):
+        if not value:
+            return None
+        elif isinstance( value, trans.app.model.LibraryDatasetDatasetAssociation ):
+            return value
+        else:
+            return trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( value ) )
+
+    def to_string( self, value, app ):
+        if not value:
+            return None
+        return value.id
+
+    def to_python( self, value, app ):
+        if not value:
+            return value
+        return app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( value )
+
 # class RawToolParameter( ToolParameter ):
 #     """
 #     Completely nondescript parameter, HTML representation is provided as text
@@ -1570,19 +1602,20 @@ class DataToolParameter( ToolParameter ):
 #         self.html = form_builder.HiddenField( self.name, trans.history.id ).get_html()
 #         return self.html
 
-parameter_types = dict( text        = TextToolParameter,
-                        integer     = IntegerToolParameter,
-                        float       = FloatToolParameter,
-                        boolean     = BooleanToolParameter,
-                        genomebuild = GenomeBuildParameter,
-                        select      = SelectToolParameter,
-                        data_column = ColumnListParameter,
-                        hidden      = HiddenToolParameter,
-                        baseurl     = BaseURLToolParameter,
-                        file        = FileToolParameter,
-                        ftpfile     = FTPFileToolParameter,
-                        data        = DataToolParameter,
-                        drill_down = DrillDownSelectToolParameter )
+parameter_types = dict( text            = TextToolParameter,
+                        integer         = IntegerToolParameter,
+                        float           = FloatToolParameter,
+                        boolean         = BooleanToolParameter,
+                        genomebuild     = GenomeBuildParameter,
+                        select          = SelectToolParameter,
+                        data_column     = ColumnListParameter,
+                        hidden          = HiddenToolParameter,
+                        baseurl         = BaseURLToolParameter,
+                        file            = FileToolParameter,
+                        ftpfile         = FTPFileToolParameter,
+                        data            = DataToolParameter,
+                        library_data    = LibraryDatasetToolParameter,
+                        drill_down      = DrillDownSelectToolParameter )
 
 class UnvalidatedValue( object ):
     """

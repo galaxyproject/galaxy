@@ -1,15 +1,13 @@
 <% _=n_ %>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-
-<head>
-<title>${self.title()}</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-${self.metas()}
-${self.stylesheets()}
-${self.javascripts()}
-</head>
-
+    <head>
+        <title>${self.title()}</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        ${self.metas()}
+        ${self.stylesheets()}
+        ${self.javascripts()}
+    </head>
     <body>
         ${next.body()}
     </body>
