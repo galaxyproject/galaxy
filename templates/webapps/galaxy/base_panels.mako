@@ -109,7 +109,7 @@
                             ['Email comments, bug reports, or suggestions', app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  ) ],
                             ['Galaxy Wiki', app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
                             ['Video tutorials (screencasts)', app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
-                            ['How to Cite Galaxy', app.config.get( "screencasts_url", "templates/webapps/galaxy/base_panels.mako" ), "_blank" ]
+                            ['How to Cite Galaxy', app.config.get( "screencasts_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
                         ]
         tab( "help", "Help", None, menu_options=menu_options)
     %>
