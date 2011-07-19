@@ -230,6 +230,8 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
                     correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % sample_loc_file
                 else:
                     correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % missing_file
+            else:
+               correction_msg = exception_msg
             message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )
         status = 'error'
     elif flush_needed:
