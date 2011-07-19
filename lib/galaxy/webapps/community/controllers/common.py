@@ -214,7 +214,23 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
     if invalid_files:
         message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( change_set_revision )
         for itc_tup in invalid_files:
-            message += "<b>%s</b> - %s<br/>" % ( itc_tup[0], itc_tup[1] )
+            # Handle the special case where a tool depends on a missing xxx.loc file by telliing
+            # the user to upload xxx.loc.sample to the repository so that it can be copied to
+            # ~/tool-data/xxx.loc.  In this case, itc_tup[1] will be a message looking something like:
+            # [Errno 2] No such file or directory: '/Users/gvk/central/tool-data/blast2go.loc'
+            tool_file = itc_tup[0]
+            exception_msg = itc_tup[1]
+            if exception_msg.find( 'No such file or directory' ) >= 0:
+                exception_items = exception_msg.split()
+                missing_file_items = exception_items[7].split( '/' )
+                missing_file = missing_file_items[-1].rstrip( '\'' )
+                correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( missing_file )
+                if exception_msg.find( '.loc' ) >= 0:
+                    sample_loc_file = '%s.sample' % str( missing_file )
+                    correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % sample_loc_file
+                else:
+                    correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % missing_file
+            message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )
         status = 'error'
     elif flush_needed:
         # We only flush if there are no tool config errors, so change sets will only have metadata
@@ -231,6 +247,14 @@ def get_change_set( trans, repo, change_set_revision, **kwd ):
         if str( ctx ) == change_set_revision:
             return ctx
     return None
+def copy_sample_loc_file( trans, filename ):
+    """Copy xxx.loc.sample to ~/tool-data/xxx.loc"""
+    sample_loc_file = os.path.split( filename )[1]
+    loc_file = os.path.split( filename )[1].rstrip( '.sample' )
+    tool_data_path = os.path.abspath( trans.app.config.tool_data_path )
+    if not ( os.path.exists( os.path.join( tool_data_path, loc_file ) ) or os.path.exists( os.path.join( tool_data_path, sample_loc_file ) ) ):
+        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
+        shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
 def get_user( trans, id ):
     """Get a user from the database"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )

@@ -45,6 +45,7 @@ class UploadController( BaseController ):
                 uploaded_file = file_data.file
                 uploaded_file_name = uploaded_file.name
                 uploaded_file_filename = file_data.filename
+            isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             if uploaded_file:
                 isgzip = False
                 isbz2 = False
@@ -53,17 +54,21 @@ class UploadController( BaseController ):
                     if not isgzip:
                         isbz2 = is_bz2( uploaded_file_name )
                 ok = True
-                # Determine what we have - a single file or an archive
-                try:
-                    if ( isgzip or isbz2 ) and uncompress_file:
-                        # Open for reading with transparent compression.
-                        tar = tarfile.open( uploaded_file_name, 'r:*' )
-                    else:
-                        tar = tarfile.open( uploaded_file_name )
-                    istar = True
-                except tarfile.ReadError, e:
+                if isempty:
                     tar = None
                     istar = False
+                else:                
+                    # Determine what we have - a single file or an archive
+                    try:
+                        if ( isgzip or isbz2 ) and uncompress_file:
+                            # Open for reading with transparent compression.
+                            tar = tarfile.open( uploaded_file_name, 'r:*' )
+                        else:
+                            tar = tarfile.open( uploaded_file_name )
+                        istar = True
+                    except tarfile.ReadError, e:
+                        tar = None
+                        istar = False
                 if istar:
                     ok, message, files_to_remove = self.upload_tar( trans,
                                                                     repository,
@@ -83,6 +88,10 @@ class UploadController( BaseController ):
                     shutil.move( uploaded_file_name, full_path )
                     commands.add( repo.ui, repo, full_path )
                     commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                    if full_path.endswith( '.loc.sample' ):
+                        # Handle the special case where a xxx.loc.sample file is
+                        # being uploaded by copying it to ~/tool-data/xxx.loc.
+                        copy_sample_loc_file( trans, full_path )
                     handle_email_alerts( trans, repository )
                 if ok:
                     # Update the repository files for browsing, a by-product of doing this
@@ -170,6 +179,10 @@ class UploadController( BaseController ):
                     commands.remove( repo.ui, repo, repo_file )
             for filename_in_archive in filenames_in_archive:
                 commands.add( repo.ui, repo, filename_in_archive )
+                if filename_in_archive.endswith( '.loc.sample' ):
+                    # Handle the special case where a xxx.loc.sample file is
+                    # being uploaded by copying it to ~/tool-data/xxx.loc.
+                    copy_sample_loc_file( trans, filename_in_archive )
             # Commit the changes.
             commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
             handle_email_alerts( trans, repository )
