@@ -1,4 +1,6 @@
 #!/usr/local/bin/python
+# updated july 20 to fix sort order - R unique() sorts into strict collating order
+# so need to sort after unique to revert to lexicographic order for x axis on Manhattan
 # rgmanqq updated july 19 to deal with x,y and mt
 # lots of fixes
 # ross lazarus
@@ -39,14 +41,9 @@ DrawManhattan = function(pvals=Null,chrom=Null,offset=Null,title=NULL, max.y="ma
         genomewideline=NULL # was genomewideline=-log10(5e-8)
         if (genomewide) { # use bonferroni since might be only a small region?
             genomewideline = -log10(0.05/length(pvals)) }
-        chro = sub('chr','',chrom, ignore.case = T) # just in case
-        chro = sub(':','',chro, ignore.case = T) # ugh
-        chro = sub('X',23,chro, ignore.case = T) 
-        chro = sub('Y',24,chro, ignore.case = T)
-        chro = sub('Mt',25,chro, ignore.case = T)
         offset = as.integer(offset)
         pvals = as.double(pvals)
-        chro = as.integer(chro)
+        chro = as.integer(chrom) # already dealt with X and friends?
         d=data.frame(CHR=chro,BP=offset,P=pvals)
         #limit to only chrs 1-22, x=23,y=24,Mt=25?
         d=d[d$CHR %in% 1:25, ]
@@ -58,6 +55,7 @@ DrawManhattan = function(pvals=Null,chrom=Null,offset=Null,title=NULL, max.y="ma
                 ticks=NULL
                 lastbase=0
                 chrlist = unique(d$CHR)
+                chrlist = sort(chrlist) # returns lexical ordering 
                 nchr = length(chrlist) # may be any number?
                 if (nchr >= 2) {
                 for (x in c(1:nchr)) {
@@ -151,10 +149,17 @@ rawd = read.table(infile,head=T,sep='\\t')
 dn = names(rawd)
 cc = dn[chromcolumn]
 oc = dn[offsetcolumn] 
-nams = c(cc,oc)
+rawd[,cc] = sub('chr','',rawd[,cc],ignore.case = T) # just in case
+rawd[,cc] = sub(':','',rawd[,cc],ignore.case = T) # ugh
+rawd[,cc] = sub('X',23,rawd[,cc],ignore.case = T)
+rawd[,cc] = sub('Y',24,rawd[,cc],ignore.case = T)
+rawd[,cc] = sub('Mt',25,rawd[,cc], ignore.case = T)
+nams = c(cc,oc) # for sorting
 plen = length(rawd[,1])
-doreorder=1
 print(paste('###',plen,'values read from',infile,'read - now running plots',sep=' '))
+rawd = rawd[do.call(order,rawd[nams]),]
+# mmmf - suggested by http://onertipaday.blogspot.com/2007/08/sortingordering-dataframe-according.html
+# in case not yet ordered
 if (plen > 0) {
   for (pvalscolumn in pvalscolumns) {
   if (pvalscolumn > 0) 
@@ -166,12 +171,6 @@ if (plen > 0) {
      ggsave(filename=paste(myfname,"qqplot.png",sep='_'),myqqplot,width=6,height=4,dpi=100)
      print(paste('## qqplot on',cname,'done'))
      if ((chromcolumn > 0) & (offsetcolumn > 0)) {
-         if (doreorder) {
-             rawd = rawd[do.call(order,rawd[nams]),]
-             # mmmf - suggested by http://onertipaday.blogspot.com/2007/08/sortingordering-dataframe-according.html
-             # in case not yet ordered
-             doreorder = 0
-             }
          print(paste('## manhattan on',cname,'starting',chromcolumn,offsetcolumn,pvalscolumn))
          mymanplot= DrawManhattan(chrom=rawd[,chromcolumn],offset=rawd[,offsetcolumn],pvals=rawd[,pvalscolumn],title=mytitle,grey=grey)
          print(paste('## manhattan plot on',cname,'done'))
