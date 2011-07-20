@@ -17,7 +17,7 @@ The 'pbs' runner depends on 'pbs_python' which is not installed or not
 configured properly.  Galaxy's "scramble" system should make this installation
 simple, please follow the instructions found at:
 
-    http://bitbucket.org/galaxy/galaxy-central/wiki/Config/Cluster
+    http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Cluster
 
 Additional errors may follow:
 %s
