@@ -1,4 +1,4 @@
-<tool id="rgManQQ1" name="Manhattan/QQ:" version="1.0.1">
+<tool id="rgManQQ1" name="Manhattan/QQ:" version="1.0.2">
     <code file="rgManQQ_code.py"/>
 
     <description>Plots for WGA P values</description>

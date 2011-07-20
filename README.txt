@@ -28,4 +28,4 @@ on adding tools can be found on the Galaxy website (linked above).
 Not all dependencies are included for the tools provided in the sample
 tool_conf.xml.  A full list of external dependencies is available at:
 
-http://bitbucket.org/galaxy/galaxy-central/wiki/ToolDependencies
+http://wiki.g2.bx.psu.edu/Admin/Tools/Tool%20Dependencies

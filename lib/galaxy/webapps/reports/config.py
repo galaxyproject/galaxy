@@ -33,7 +33,7 @@ class Configuration( object ):
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )
-        self.wiki_url = kwargs.get( 'wiki_url', 'http://bitbucket.org/galaxy/galaxy-central/wiki/Home' )
+        self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.g2.bx.psu.edu/FrontPage' )
         self.bugs_email = kwargs.get( 'bugs_email', None )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
