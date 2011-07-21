@@ -27,7 +27,7 @@ class UploadController( BaseController ):
         repository_id = params.get( 'repository_id', '' )
         repository = get_repository( trans, repository_id )
         repo_dir = repository.repo_path
-        repo = hg.repository( ui.ui(), repo_dir )
+        repo = hg.repository( get_configured_ui(), repo_dir )
         uncompress_file = util.string_as_bool( params.get( 'uncompress_file', 'true' ) )
         remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
@@ -87,7 +87,6 @@ class UploadController( BaseController ):
                     # Move the uploaded file to the load_point within the repository hierarchy.
                     shutil.move( uploaded_file_name, full_path )
                     commands.add( repo.ui, repo, full_path )
-                    """
                     try:
                         commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
                     except Exception, e:
@@ -95,17 +94,15 @@ class UploadController( BaseController ):
                         # tool shed environment, it occasionally throws a "TypeError: array item must be char"
                         # exception.  If this happens, we'll try the following.
                         repo.dirstate.write()
-                        repo.commit( text=commit_message )
-                    """
+                        repo.commit( user=trans.user.username, text=commit_message )
                     if full_path.endswith( '.loc.sample' ):
                         # Handle the special case where a xxx.loc.sample file is
                         # being uploaded by copying it to ~/tool-data/xxx.loc.
                         copy_sample_loc_file( trans, full_path )
                     handle_email_alerts( trans, repository )
                 if ok:
-                    # Update the repository files for browsing, a by-product of doing this
-                    # is eliminating unwanted files from the repository directory.
-                    update_for_browsing( repository, current_working_dir, commit_message=commit_message )
+                    # Update the repository files for browsing.
+                    update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
                     # Get the new repository tip.
                     if tip != repository.tip:
                         if ( isgzip or isbz2 ) and uncompress_file:
@@ -148,7 +145,7 @@ class UploadController( BaseController ):
     def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message ):
         # Upload a tar archive of files.
         repo_dir = repository.repo_path
-        repo = hg.repository( ui.ui(), repo_dir )
+        repo = hg.repository( get_configured_ui(), repo_dir )
         files_to_remove = []
         ok, message = self.__check_archive( tar )
         if not ok:
@@ -185,7 +182,7 @@ class UploadController( BaseController ):
                 for repo_file in files_to_remove:
                     # Remove files in the repository (relative to the upload point)
                     # that are not in the uploaded archive.
-                    commands.remove( repo.ui, repo, repo_file )
+                    commands.remove( repo.ui, repo, repo_file, force=True )
             for filename_in_archive in filenames_in_archive:
                 commands.add( repo.ui, repo, filename_in_archive )
                 if filename_in_archive.endswith( '.loc.sample' ):
@@ -199,7 +196,7 @@ class UploadController( BaseController ):
                 # tool shed environment, it occasionally throws a "TypeError: array item must be char"
                 # exception.  If this happens, we'll try the following.
                 repo.dirstate.write()
-                repo.commit( text=commit_message )
+                repo.commit( user=trans.user.username, text=commit_message )
             handle_email_alerts( trans, repository )
             return True, '', files_to_remove
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):

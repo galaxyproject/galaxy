@@ -127,7 +127,8 @@ mapped_chars = { '>' :'__gt__',
                  '@' : '__at__',
                  '\n' : '__cn__',
                  '\r' : '__cr__',
-                 '\t' : '__tc__'
+                 '\t' : '__tc__',
+                 '#' : '__pd__'
                  }
 
 def restore_text(text):

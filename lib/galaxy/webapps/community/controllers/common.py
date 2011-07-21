@@ -81,7 +81,7 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
     status = 'done'
     repository = get_repository( trans, id )
     repo_dir = repository.repo_path
-    repo = hg.repository( ui.ui(), repo_dir )
+    repo = hg.repository( get_configured_ui(), repo_dir )
     change_set = get_change_set( trans, repo, change_set_revision )
     invalid_files = []
     flush_needed = False
@@ -214,10 +214,6 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
     if invalid_files:
         message = "Metadata cannot be defined for change set revision '%s'.  Correct the following problems and reset metadata.<br/>" % str( change_set_revision )
         for itc_tup in invalid_files:
-            # Handle the special case where a tool depends on a missing xxx.loc file by telliing
-            # the user to upload xxx.loc.sample to the repository so that it can be copied to
-            # ~/tool-data/xxx.loc.  In this case, itc_tup[1] will be a message looking something like:
-            # [Errno 2] No such file or directory: '/Users/gvk/central/tool-data/blast2go.loc'
             tool_file = itc_tup[0]
             exception_msg = itc_tup[1]
             if exception_msg.find( 'No such file or directory' ) >= 0:
@@ -226,10 +222,28 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
                 missing_file = missing_file_items[-1].rstrip( '\'' )
                 correction_msg = "This file refers to a missing file <b>%s</b>.  " % str( missing_file )
                 if exception_msg.find( '.loc' ) >= 0:
+                    # Handle the special case where a tool depends on a missing xxx.loc file by telliing
+                    # the user to upload xxx.loc.sample to the repository so that it can be copied to
+                    # ~/tool-data/xxx.loc.  In this case, exception_msg will look something like:
+                    # [Errno 2] No such file or directory: '/Users/gvk/central/tool-data/blast2go.loc'
                     sample_loc_file = '%s.sample' % str( missing_file )
                     correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % sample_loc_file
                 else:
                     correction_msg += "Upload a file named <b>%s</b> to the repository to correct this error." % missing_file
+            elif exception_msg.find( 'Data table named' ) >= 0:
+                # Handle the special case where the tool requires an entry in the tool_data_table.conf file.
+                # In this case, exception_msg will look something like:
+                # Data table named 'tmap_indexes' is required by tool but not configured
+                exception_items = exception_msg.split()
+                name_attr = exception_items[3].lstrip( '\'' ).rstrip( '\'' )
+                message += "<b>%s</b> - This tool requires an entry in the tool_data_table_conf.xml file.  " % tool_file
+                message += "Complete and <b>Save</b> the form below to resolve this issue.<br/>"
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='add_tool_data_table_entry',
+                                                                  name_attr=name_attr,
+                                                                  repository_id=id,
+                                                                  message=message,
+                                                                  status='error' ) )
             else:
                correction_msg = exception_msg
             message += "<b>%s</b> - %s<br/>" % ( tool_file, correction_msg )
@@ -257,12 +271,21 @@ def copy_sample_loc_file( trans, filename ):
     if not ( os.path.exists( os.path.join( tool_data_path, loc_file ) ) or os.path.exists( os.path.join( tool_data_path, sample_loc_file ) ) ):
         shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, sample_loc_file ) )
         shutil.copy( os.path.abspath( filename ), os.path.join( tool_data_path, loc_file ) )
+def get_configured_ui():
+    # Configure any desired ui settings.
+    _ui = ui.ui()
+    # The following will suppress all messages.  This is
+    # the same as adding the following setting to the repo
+    # hgrc file' [ui] section:
+    # quiet = True
+    _ui.setconfig( 'ui', 'quiet', True )
+    return _ui
 def get_user( trans, id ):
     """Get a user from the database"""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
 def handle_email_alerts( trans, repository ):
     repo_dir = repository.repo_path
-    repo = hg.repository( ui.ui(), repo_dir )
+    repo = hg.repository( get_configured_ui(), repo_dir )
     smtp_server = trans.app.config.smtp_server
     if smtp_server and repository.email_alerts:
         # Send email alert to users that want them.
@@ -299,17 +322,19 @@ def handle_email_alerts( trans, repository ):
                 util.send_mail( frm, to, subject, body, trans.app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
-def update_for_browsing( repository, current_working_dir, commit_message='' ):
-    # Make a copy of a repository's files for browsing.
+def update_for_browsing( trans, repository, current_working_dir, commit_message='' ):
+    # Make a copy of a repository's files for browsing, remove from disk all files that
+    # are not tracked, and commit all added, modified or removed files that have not yet
+    # been committed.
     repo_dir = repository.repo_path
-    repo = hg.repository( ui.ui(), repo_dir )
+    repo = hg.repository( get_configured_ui(), repo_dir )
     # The following will delete the disk copy of only the files in the repository.
     #os.system( 'hg update -r null > /dev/null 2>&1' )
     repo.ui.pushbuffer()
     commands.status( repo.ui, repo, all=True )
     status_and_file_names = repo.ui.popbuffer().strip().split( "\n" )
     # status_and_file_names looks something like:
-    # ['? MY_README_AGAIN', '? galaxy_tmap_tool/tmap-0.0.9.tar.gz', '? dna_filtering.py', 'C filtering.py', 'C filtering.xml']
+    # ['? README', '? tmap_tool/tmap-0.0.9.tar.gz', '? dna_filtering.py', 'C filtering.py', 'C filtering.xml']
     # The codes used to show the status of files are:
     # M = modified
     # A = added
@@ -345,7 +370,7 @@ def update_for_browsing( repository, current_working_dir, commit_message='' ):
         if not commit_message:
             commit_message = 'Committed changes to: %s' % ', '.join( files_to_commit )
         repo.dirstate.write()
-        repo.commit( text=commit_message )
+        repo.commit( user=trans.user.username, text=commit_message )
     os.chdir( repo_dir )
     os.system( 'hg update > /dev/null 2>&1' )
     os.chdir( current_working_dir )

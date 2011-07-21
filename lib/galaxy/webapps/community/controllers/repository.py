@@ -312,7 +312,7 @@ class RepositoryController( BaseController, ItemRatings ):
                 if not os.path.exists( repository_path ):
                     os.makedirs( repository_path )
                 # Create the local repository
-                repo = hg.repository( ui.ui(), repository_path, create=True )
+                repo = hg.repository( get_configured_ui(), repository_path, create=True )
                 # Add an entry in the hgweb.config file for the local repository
                 # This enables calls to repository.repo_path
                 self.__add_hgweb_config_entry( trans, repository, repository_path )
@@ -406,7 +406,7 @@ class RepositoryController( BaseController, ItemRatings ):
         # push_ssl = False
         # Since we support both http and https, we set push_ssl to False to override
         # the default (which is True) in the mercurial api.
-        repo = hg.repository( ui.ui(), path=repository.repo_path )
+        repo = hg.repository( get_configured_ui(), path=repository.repo_path )
         fp = repo.opener( 'hgrc', 'wb' )
         fp.write( '[paths]\n' )
         fp.write( 'default = .\n' )
@@ -423,9 +423,10 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
-        repo = hg.repository( ui.ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path )
         current_working_dir = os.getcwd()
-        update_for_browsing( repository, current_working_dir, commit_message=commit_message )
+        # Update repository files for browsing.
+        update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -440,7 +441,7 @@ class RepositoryController( BaseController, ItemRatings ):
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
         repo_dir = repository.repo_path
-        repo = hg.repository( ui.ui(), repo_dir )
+        repo = hg.repository( get_configured_ui(), repo_dir )
         selected_files_to_delete = util.restore_text( params.get( 'selected_files_to_delete', '' ) )
         if params.get( 'select_files_to_delete_button', False ):
             if selected_files_to_delete:
@@ -450,7 +451,7 @@ class RepositoryController( BaseController, ItemRatings ):
                 tip = repository.tip
                 for selected_file in selected_files_to_delete:
                     repo_file = os.path.abspath( selected_file )
-                    commands.remove( repo.ui, repo, repo_file )
+                    commands.remove( repo.ui, repo, repo_file, force=True )
                 # Commit the change set.
                 if not commit_message:
                     commit_message = 'Deleted selected files'
@@ -461,12 +462,12 @@ class RepositoryController( BaseController, ItemRatings ):
                     # tool shed environment, it occasionally throws a "TypeError: array item must be char"
                     # exception.  If this happens, we'll try the following.
                     repo.dirstate.write()
-                    repo.commit( text=commit_message )
+                    repo.commit( user=trans.user.username, text=commit_message )
                 handle_email_alerts( trans, repository )
                 # Update the repository files for browsing.
-                update_for_browsing( repository, current_working_dir, commit_message=commit_message )
+                update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
                 # Get the new repository tip.
-                repo = hg.repository( ui.ui(), repo_dir )
+                repo = hg.repository( get_configured_ui(), repo_dir )
                 if tip != repository.tip:
                     message = "The selected files were deleted from the repository."
                 else:
@@ -495,7 +496,7 @@ class RepositoryController( BaseController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
-        repo = hg.repository( ui.ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         alerts = params.get( 'alerts', '' )
@@ -545,7 +546,7 @@ class RepositoryController( BaseController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         repo_dir = repository.repo_path
-        repo = hg.repository( ui.ui(), repo_dir )
+        repo = hg.repository( get_configured_ui(), repo_dir )
         repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
         description = util.restore_text( params.get( 'description', repository.description ) )
         long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
@@ -673,7 +674,7 @@ class RepositoryController( BaseController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
-        repo = hg.repository( ui.ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path )
         changesets = []
         for changeset in repo.changelog:
             ctx = repo.changectx( changeset )
@@ -701,7 +702,7 @@ class RepositoryController( BaseController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
-        repo = hg.repository( ui.ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path )
         ctx = get_change_set( trans, repo, ctx_str )
         if ctx is None:
             message = "Repository does not include changeset revision '%s'." % str( ctx_str )
@@ -745,7 +746,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                                               message='Select a repository to rate',
                                                               status='error' ) )
         repository = get_repository( trans, id )
-        repo = hg.repository( ui.ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path )
         if repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_repositories',
@@ -814,6 +815,98 @@ class RepositoryController( BaseController, ItemRatings ):
                                                           id=id,
                                                           message=message,
                                                           status=status ) )
+    @web.expose
+    def add_tool_data_table_entry( self, trans, name_attr, repository_id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        status = params.get( 'status', 'done' )
+        comment_char = util.restore_text( params.get( 'comment_char', '#' ) )
+        loc_filename = util.restore_text( params.get( 'loc_filename', '' ) )
+        repository = get_repository( trans, repository_id )
+        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        column_fields = self.__get_column_fields( **kwd )
+        if params.get( 'add_field_button', False ):
+            # Add a field
+            field_index = len( column_fields ) + 1
+            field_tup = ( '%i_field_name' % field_index, '' )
+            column_fields.append( field_tup )
+        elif params.get( 'remove_button', False ):
+            # Delete a field - find the index of the field to be removed from the remove button label
+            index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
+            tup_to_remove = column_fields[ index ]
+            column_fields.remove( tup_to_remove )
+            # Re-number field tups
+            new_column_fields = []
+            for field_index, old_field_tup in enumerate( column_fields ):
+                name = '%i_field_name' % ( field_index + 1 )
+                value = old_field_tup[1]
+                new_column_fields.append( ( name, value ) )
+            column_fields = new_column_fields
+        elif params.get( 'add_tool_data_table_entry_button', False ):
+            # Add an entry to the end of the tool_data_table_conf.xml file
+            tdt_config = "%s/tool_data_table_conf.xml" %  trans.app.config.root
+            if os.path.exists( tdt_config ):
+                # Make a backup of the file since we're going to be changing it.
+                today = date.today()
+                backup_date = today.strftime( "%Y_%m_%d" )
+                tdt_config_copy = '%s/tool_data_table_conf.xml_%s_backup' % ( trans.app.config.root, backup_date )
+                shutil.copy( os.path.abspath( tdt_config ), os.path.abspath( tdt_config_copy ) )
+                # Generate the string of column names
+                column_names = ', '.join( [ column_tup[1] for column_tup in column_fields ] )
+                # Write each line of the tool_data_table_conf.xml file, except the last line to a temp file.
+                fh = tempfile.NamedTemporaryFile( 'wb' )
+                tmp_filename = fh.name
+                fh.close()
+                new_tdt_config = open( tmp_filename, 'wb' )
+                for i, line in enumerate( open( tdt_config, 'rb' ) ):
+                    if line.startswith( '</tables>' ):
+                        break
+                    new_tdt_config.write( line )
+                new_tdt_config.write( '    <!-- Location of %s files -->\n' % name_attr )
+                new_tdt_config.write( '    <table name="%s" comment_char="%s">\n' % ( name_attr, comment_char ) )
+                new_tdt_config.write( '        <columns>%s</columns>\n' % column_names )
+                new_tdt_config.write( '        <file path="tool-data/%s" />\n' % loc_filename )
+                new_tdt_config.write( '    </table>\n' )
+                # Now write the last line of the file
+                new_tdt_config.write( '</tables>\n' )
+                new_tdt_config.close()
+                shutil.move( tmp_filename, os.path.abspath( tdt_config ) )
+                # Reload the tool_data_table_conf entries
+                trans.app.tool_data_tables = galaxy.tools.data.ToolDataTableManager( trans.app.config.tool_data_table_config_path )
+                message = "The new entry has been added to the tool_data_table_conf.xml file, so click the <b>Reset metadata</b> button below."
+                # TODO: what if ~/tool-data/<loc_filename> doesn't exist?  We need to figure out how to 
+                # force the user to upload it's sample to the repository in order to generate metadata.
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='manage_repository',
+                                                                  id=repository_id,
+                                                                  message=message,
+                                                                  status=status ) )
+        return trans.fill_template( '/webapps/community/repository/add_tool_data_table_entry.mako', 
+                                    name_attr=name_attr,
+                                    repository=repository,
+                                    comment_char=comment_char,
+                                    loc_filename=loc_filename,
+                                    column_fields=column_fields,
+                                    message=message,
+                                    status=status )
+    def __get_column_fields( self, **kwd ):
+        '''
+        Return a dictionary of the user-entered form fields representing columns
+        in the location file.
+        '''
+        params = util.Params( kwd )
+        column_fields = []
+        index = 0
+        while True:
+            name = '%i_field_name' % ( index + 1 )
+            if kwd.has_key( name ):
+                value = util.restore_text( params.get( name, '' ) )
+                field_tup = ( name, value )
+                index += 1
+                column_fields.append( field_tup )
+            else:
+                break
+        return column_fields
     @web.expose
     def display_tool( self, trans, repository_id, tool_config, **kwd ):
         params = util.Params( kwd )

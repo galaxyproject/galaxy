@@ -17,15 +17,15 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create Repository</div>
     <div class="toolFormBody">
-        <form name="create_repository_form" id="create_repository_form" action="${h.url_for( action='create_repository' )}" method="post" >
+        <form name="create_repository_form" id="create_repository_form" action="${h.url_for( controller='repository', action='create_repository' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
-                <input  name="name" type="textfield" value="${name}" size=40"/>
+                <input  name="name" type="textfield" value="${name}" size="40"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Synopsis:</label>
-                <input  name="description" type="textfield" value="${description}" size=80"/>
+                <input  name="description" type="textfield" value="${description}" size="80"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
