@@ -191,6 +191,21 @@ class UploadController( BaseController ):
                         relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
                         repo.dirstate.remove( relative_selected_file )
                         repo.dirstate.write()
+                        absolute_selected_file = os.path.abspath( selected_file )
+                        if os.path.isdir( absolute_selected_file ):
+                            try:
+                                os.rmdir( absolute_selected_file )
+                            except OSError, e:
+                                # The directory is not empty
+                                pass
+                        elif os.path.isfile( absolute_selected_file ):
+                            os.remove( absolute_selected_file )
+                            dir = os.path.split( absolute_selected_file )[0]
+                            try:
+                                os.rmdir( dir )
+                            except OSError, e:
+                                # The directory is not empty
+                                pass
             for filename_in_archive in filenames_in_archive:
                 commands.add( repo.ui, repo, filename_in_archive )
                 if filename_in_archive.endswith( '.loc.sample' ):
