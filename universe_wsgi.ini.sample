@@ -414,6 +414,17 @@ use_interactive = True
 
 # -- Beta features
 
+# Object store mode (valid options are: disk, s3, hierarchical)
+#object_store = s3
+#aws_access_key = <AWS access key>
+#aws_secret_key = <AWS secret key>
+#s3_bucket = <name of an existing S3 bucket>
+#use_reduced_redundancy = True
+# Size (in GB) that the cache used by object store should be limited to.
+# If the value is not specified, the cache size will be limited only by the file
+# system size.
+#object_store_cache_size = 100
+
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
