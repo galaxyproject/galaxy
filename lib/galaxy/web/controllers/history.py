@@ -56,7 +56,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Status", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append(
         grids.MulticolFilterColumn(

@@ -631,7 +631,7 @@ class DeletedColumn( GridColumn ):
         if column_filter == "All":
             pass
         elif column_filter in [ "True", "False" ]:
-            query = query.filter( self.model_class.deleted == column_filter )
+            query = query.filter( self.model_class.deleted == ( column_filter == "True" ) )
         return query
 
 class StateColumn( GridColumn ):
