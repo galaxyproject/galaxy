@@ -21,7 +21,7 @@ SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
 # RE that tests for valid slug.
 VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
-    
+
 class BaseController( object ):
     """
     Base class for Galaxy web application controllers.
@@ -51,7 +51,7 @@ class BaseController( object ):
         else:
             item_class = None
         return item_class
-        
+
 Root = BaseController
 
 class SharableItemSecurity:
@@ -72,7 +72,7 @@ class SharableItemSecurity:
 
 #
 # TODO: need to move UsesHistory, etc. mixins to better location - perhaps lib/galaxy/model/XXX ?
-#       
+#
 
 class UsesHistoryDatasetAssociation:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
@@ -119,15 +119,15 @@ class UsesHistoryDatasetAssociation:
                 dataset_data = open( dataset.file_name ).read(max_peek_size)
                 truncated = False
         return truncated, dataset_data
-        
+
 class UsesVisualization( SharableItemSecurity ):
     """ Mixin for controllers that use Visualization objects. """
 
     len_files = None
-    
+
     def _get_dbkeys( self, trans ):
         """ Returns all valid dbkeys that a user can use in a visualization. """
-        
+
         # Read len files.
         if not self.len_files:
             len_files = glob.glob( os.path.join(trans.app.config.len_file_path, "*.len") )
@@ -137,10 +137,10 @@ class UsesVisualization( SharableItemSecurity ):
         user = trans.get_user()
         if 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )
-        
+
         dbkeys = [ (v, k) for k, v in trans.db_builds if k in self.len_files or k in user_keys ]
         return dbkeys
-    
+
     def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a Visualization from the database by id, verifying ownership. """
         # Load workflow from database
@@ -152,7 +152,7 @@ class UsesVisualization( SharableItemSecurity ):
             error( "Visualization not found" )
         else:
             return self.security_check( trans.get_user(), visualization, check_ownership, check_accessible )
-            
+
     def get_visualization_config( self, trans, visualization ):
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
 
@@ -172,16 +172,16 @@ class UsesVisualization( SharableItemSecurity ):
                         dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
                     else:
                         dataset = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(dataset_id) )
-                        
+
                     try:
                         prefs = t['prefs']
                     except KeyError:
                         prefs = {}
-                    
+
                     track_type, _ = dataset.datatype.get_track_type()
                     track_data_provider_class = get_data_provider( original_dataset=dataset )
                     track_data_provider = track_data_provider_class( original_dataset=dataset )
-                    
+
                     tracks.append( {
                         "track_type": track_type,
                         "name": t['name'],
@@ -192,15 +192,15 @@ class UsesVisualization( SharableItemSecurity ):
                         "tool": get_tool_def( trans, dataset ),
                         "is_child": t.get('is_child', False)
                     } )
-            
-            config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 
+
+            config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ),
                         "tracks": tracks, "bookmarks": bookmarks, "chrom": "", "dbkey": visualization.dbkey }
 
             if 'viewport' in latest_revision.config:
                 config['viewport'] = latest_revision.config['viewport']
-            
+
         return config
-        
+
 class UsesStoredWorkflow( SharableItemSecurity ):
     """ Mixin for controllers that use StoredWorkflow objects. """
     def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
@@ -225,7 +225,7 @@ class UsesStoredWorkflow( SharableItemSecurity ):
                 step.upgrade_messages = module.check_and_update_state()
                 # Any connected input needs to have value DummyDataset (these
                 # are not persisted so we need to do it every time)
-                module.add_dummy_datasets( connections=step.input_connections )                  
+                module.add_dummy_datasets( connections=step.input_connections )
                 # Store state with the step
                 step.module = module
                 step.state = module.state
@@ -270,7 +270,7 @@ class UsesFormDefinitions:
     """Mixin for controllers that use Galaxy form objects."""
     def get_all_forms( self, trans, all_versions=False, filter=None, form_type='All' ):
         """
-        Return all the latest forms from the form_definition_current table 
+        Return all the latest forms from the form_definition_current table
         if all_versions is set to True. Otherwise return all the versions
         of all the forms from the form_definition table.
         """
@@ -684,7 +684,7 @@ class UsesFormDefinitions:
                         trans.sa_session.flush()
                         info_association = sra.run
                     else:
-                       info_association = assoc.run 
+                       info_association = assoc.run
                 else:
                     info_association = None
             if info_association:
@@ -912,7 +912,7 @@ class UsesFormDefinitions:
                 else:
                     field_value = int( input_text_value )
             elif field_type == CheckboxField.__name__:
-                field_value = CheckboxField.is_checked( input_value ) 
+                field_value = CheckboxField.is_checked( input_value )
             elif field_type == PasswordField.__name__:
                 field_value = kwd.get( field_name, '' )
             else:
@@ -1043,7 +1043,7 @@ class Sharable:
     @web.require_login( "modify Galaxy items" )
     def set_slug_async( self, trans, id, new_slug ):
         """ Set item slug asynchronously. """
-        pass  
+        pass
     @web.expose
     @web.require_login( "share Galaxy items" )
     def sharing( self, trans, id, **kwargs ):
@@ -1099,7 +1099,7 @@ class Sharable:
             item.slug = slug
             return True
         return False
-        
+
 """
 Deprecated: `BaseController` used to be available under the name `Root`
 """
@@ -1111,7 +1111,7 @@ class Admin( object ):
     user_list_grid = None
     role_list_grid = None
     group_list_grid = None
-    
+
     @web.expose
     @web.require_admin
     def index( self, trans, **kwd ):
@@ -1158,7 +1158,7 @@ class Admin( object ):
                                     toolbox=self.app.toolbox,
                                     message=message,
                                     status='done' )
-    
+
     # Galaxy Role Stuff
     @web.expose
     @web.require_admin
@@ -1342,7 +1342,7 @@ class Admin( object ):
                                                        action='roles',
                                                        webapp=webapp,
                                                        message=util.sanitize_text( message ),
-                                                       status=status ) )            
+                                                       status=status ) )
         in_users = []
         out_users = []
         in_groups = []
@@ -1934,7 +1934,7 @@ class Admin( object ):
     def purge_user( self, trans, **kwd ):
         # This method should only be called for a User that has previously been deleted.
         # We keep the User in the database ( marked as purged ), and stuff associated
-        # with the user's private role in case we want the ability to unpurge the user 
+        # with the user's private role in case we want the ability to unpurge the user
         # some time in the future.
         # Purging a deleted User deletes all of the following:
         # - History where user_id = User.id
@@ -2158,7 +2158,7 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, job_lock = None, **kwd ):
+    def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, job_lock = None, ajl_submit = None, **kwd ):
         deleted = []
         msg = None
         status = None
@@ -2181,10 +2181,11 @@ class Admin( object ):
             msg += ' for deletion: '
             msg += ', '.join( deleted )
             status = 'done'
-        if job_lock == 'lock':
-            trans.app.job_manager.job_queue.job_lock = True
-        elif job_lock == 'unlock':
-            trans.app.job_manager.job_queue.job_lock = False
+        if ajl_submit:
+            if job_lock == 'on':
+                trans.app.job_manager.job_queue.job_lock = True
+            else:
+                trans.app.job_manager.job_queue.job_lock = False
         cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
         jobs = trans.sa_session.query( trans.app.model.Job ) \
                                .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -2209,7 +2210,7 @@ class Admin( object ):
                                     job_lock = trans.app.job_manager.job_queue.job_lock )
 
 ## ---- Utility methods -------------------------------------------------------
-        
+
 def get_user( trans, id ):
     """Get a User from the database by id."""
     # Load user from database
