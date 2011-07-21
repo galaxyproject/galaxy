@@ -707,6 +707,7 @@ def get_data_provider( name=None, original_dataset=None ):
     """
     Returns data provider class by name and/or original dataset.
     """
+    data_provider = None
     if name:
         value = dataset_type_name_to_data_provider[ name ]
         if isinstance( value, dict ):

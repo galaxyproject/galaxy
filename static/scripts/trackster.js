@@ -1034,6 +1034,7 @@ extend(Tool.prototype, {
                      dataset_id: this.track.original_dataset_id,
                      tool_id: tool.name
                  },
+                 null,
                  // Success callback.
                  function(track_data) {
                      show_modal(tool.name + " is Running", 
@@ -1076,7 +1077,7 @@ extend(Tool.prototype, {
         new_track.content_div.text("Starting job.");
         
         // Run tool.
-        this.run(url_params,
+        this.run(url_params, new_track,
                  // Success callback.
                  function(track_data) {
                      new_track.dataset_id = track_data.dataset_id;
@@ -1088,7 +1089,7 @@ extend(Tool.prototype, {
     /**
      * Run tool using a set of URL params and a success callback.
      */
-    run: function(url_params, success_callback) {
+    run: function(url_params, new_track, success_callback) {
         // Add tool params to URL params.
         $.extend(url_params, this.get_param_values_dict());
         
@@ -1109,7 +1110,7 @@ extend(Tool.prototype, {
                 else if (response === "pending") {
                     // Converting/indexing input datasets; show message and try again.
                     new_track.container_div.addClass("pending");
-                    new_track.content_div.text("Converting input data so that it can be easily reused.");
+                    new_track.content_div.text("Converting input data so that it can be used quickly with tool.");
                     setTimeout(json_run_tool, 2000);
                 }
                 else {

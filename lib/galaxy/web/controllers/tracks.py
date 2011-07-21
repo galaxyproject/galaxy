@@ -730,8 +730,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if run_on_region:
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
-                # TODO: put together more robust way to determine if a dataset can be indexed.
-                if hasattr( input_dataset, 'get_track_type' ):
+                if get_data_provider( original_dataset=input_dataset ):
                     # Can index dataset.
                     track_type, data_sources = input_dataset.datatype.get_track_type()
                     # Convert to datasource that provides 'data' because we need to
@@ -744,7 +743,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Return any messages generated during conversions.
         return_message = _get_highest_priority_msg( messages_list )
         if return_message:
-            return return_message
+            return to_json_string( return_message )
             
         #
         # Set target history (the history that tool will use for inputs/outputs).
