@@ -18,17 +18,17 @@
 </%def>
 
 <%def name="javascripts()">
-    
+
     ${parent.javascripts()}
-    
+
     <!--[if lt IE 9]>
       <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"></script>
     <![endif]-->
 
     ${h.js( "jquery",
             "jquery.tipsy",
-            "jquery.event.drag", 
-            "jquery.event.drop", 
+            "jquery.event.drag",
+            "jquery.event.drop",
             "jquery.event.hover",
             "jquery.form",
             "json2",
@@ -43,7 +43,7 @@
     window.lt_ie_7 = true;
     </script>
     <![endif]-->
-    
+
     <script type='text/javascript'>
     // Globals
     workflow = null;
@@ -51,10 +51,10 @@
     active_ajax_call = false;
     var galaxy_async = new GalaxyAsync();
     galaxy_async.set_func_url(galaxy_async.set_user_pref, "${h.url_for( controller='user', action='set_user_pref_async' )}");
-    
+
     // jQuery onReady
     $( function() {
-        
+
         if ( window.lt_ie_7 ) {
             show_modal(
                 "Browser not supported",
@@ -62,7 +62,7 @@
             );
             return;
         }
-        
+
         // Init tool options.
         %if trans.app.toolbox_search.enabled:
         make_popupmenu( $("#tools-options-button"), {
@@ -71,7 +71,7 @@
                 show_tool_search = False
                 if trans.user:
                     show_tool_search = trans.user.preferences.get( "workflow.show_tool_search", "True" )
-                    
+
                 if show_tool_search == "True":
                     initial_text = "Hide Search"
                 else:
@@ -85,7 +85,6 @@
                     pref_value = "False";
                     menu_option_text = "Search Tools";
                     menu.toggle();
-                    
                     // Reset search.
                     reset_tool_search(true);
                 } else {
@@ -94,14 +93,12 @@
                     menu_option_text = "Hide Search";
                     menu.toggle();
                 }
-        
                 // Update menu option.
                 $("#tools-options-button-menu").find("li").eq(0).text(menu_option_text);
-        
                 galaxy_async.set_user_pref("workflow.show_tool_search", pref_value);
             }
         });
-        
+
         // Init searching.
         $("#tool-search-query").click( function (){
             $(this).focus();
@@ -110,7 +107,6 @@
         .keyup( function () {
             // Remove italics.
             $(this).css("font-style", "normal");
-            
             // Don't update if same value as last time
             if ( this.value.length < 3 ) {
                 reset_tool_search(false);
@@ -127,7 +123,6 @@
                 // Start a new ajax-request in X ms
                 $("#search-spinner").show();
                 this.timer = setTimeout(function () {
-                    
                     $.get("${h.url_for( controller='root', action='tool_search' )}", { query: q }, function (data) {
                         // input.removeClass(config.loadingClass);
                         // Show live-search if results and search-term aren't empty
@@ -139,17 +134,15 @@
                         if ( data.length != 0 ) {
                             // Map tool ids to element ids and join them.
                             var s = $.map( data, function( n, i ) { return "#link-" + n; } ).join( ", " );
-                            
                             // First pass to show matching tools and their parents.
                             $(s).each( function() {
                                 // Add class to denote match.
                                 $(this).parent().addClass("search_match");
                                 $(this).parent().show().parent().parent().show().parent().show();
                             });
-                            
                             // Hide labels that have no visible children.
                             $(".toolPanelLabel").each( function() {
-                               var this_label = $(this);                                   
+                               var this_label = $(this);
                                var next = this_label.next();
                                var no_visible_tools = true;
                                // Look through tools following label and, if none are visible, hide label.
@@ -174,11 +167,11 @@
             }
             this.lastValue = this.value;
         });
-        %endif          
-        
+        %endif
+
         // Canvas overview management
         canvas_manager = new CanvasManager( $("#canvas-viewport"), $("#overview") );
-        
+
         // Initialize workflow state
         reset();
         // Load the datatype info
@@ -225,7 +218,7 @@
                 });
             }
         });
-        
+
         // For autosave purposes
         $(document).ajaxStart( function() {
             active_ajax_call = true;
@@ -233,14 +226,14 @@
                 active_ajax_call = false;
             });
         });
-        
+
         $(document).ajaxError( function ( e, x ) {
             // console.log( e, x );
             var message = x.responseText || x.statusText || "Could not connect to server";
             show_modal( "Server error", message, { "Ignore error" : hide_modal } );
             return false;
         });
-         
+
         make_popupmenu( $("#workflow-options-button"), {
             "Save" : save_current_workflow,
             ##"Create New" : create_new_workflow_dialog,
@@ -250,7 +243,7 @@
             ##"Load a Workflow" : load_workflow,
             "Close": close_editor
         });
-        
+
         function edit_workflow_outputs(){
             workflow.clear_active_node();
             $('.right-content').hide();
@@ -297,14 +290,14 @@
             scroll_to_nodes();
             canvas_manager.draw_overview();
         }
-        
+
         function edit_workflow_attributes() {
             workflow.clear_active_node();
             $('.right-content').hide();
             $('#edit-attributes').show();
 
         }
-        
+
         // On load, set the size to the pref stored in local storage if it exists
         overview_size = $.jStorage.get("overview-size");
         if (overview_size !== undefined) {
@@ -313,14 +306,14 @@
                 height: overview_size
             });
         }
-        
+
         // Show viewport on load unless pref says it's off
         if ($.jStorage.get("overview-off")) {
             hide_overview();
         } else {
             show_overview();
         }
-        
+
         // Stores the size of the overview into local storage when it's resized
         $("#overview-border").bind( "dragend", function( e, d ) {
             var op = $(this).offsetParent();
@@ -329,19 +322,19 @@
                                      op.height() - ( d.offsetY - opo.top ) );
             $.jStorage.set("overview-size", new_size + "px");
         });
-        
+
         function show_overview() {
             $.jStorage.set("overview-off", false);
             $("#overview-border").css("right", "0px");
             $("#close-viewport").css("background-position", "0px 0px");
         }
-        
+
         function hide_overview() {
             $.jStorage.set("overview-off", true);
             $("#overview-border").css("right", "20000px");
             $("#close-viewport").css("background-position", "12px 0px");
         }
-        
+
         // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
         $("#close-viewport").click( function() {
             if ( $("#overview-border").css("right") === "0px" ) {
@@ -350,19 +343,19 @@
                 show_overview();
             }
         });
-        
+
         // Unload handler
         window.onbeforeunload = function() {
             if ( workflow && workflow.has_changes ) {
                 return "There are unsaved changes to your workflow which will be lost.";
             }
         };
-        
+
         // Tool menu
         $( "div.toolSectionBody" ).hide();
         $( "div.toolSectionTitle > span" ).wrap( "<a href='#'></a>" );
         var last_expanded = null;
-        $( "div.toolSectionTitle" ).each( function() { 
+        $( "div.toolSectionTitle" ).each( function() {
            var body = $(this).next( "div.toolSectionBody" );
            $(this).click( function() {
                if ( body.is( ":hidden" ) ) {
@@ -379,7 +372,7 @@
 
         // Rename async.
         async_save_text("workflow-name", "workflow-name", "${h.url_for( action='rename_async', id=trans.security.encode_id(stored.id) )}", "new_name");
-        
+
         // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
         $('#workflow-tag').click( function() {
             $('.tag-area').click();
@@ -396,7 +389,7 @@
         }
         workflow = new Workflow( $("#canvas-container") );
     }
-        
+
     function scroll_to_nodes() {
         var cv = $("#canvas-viewport");
         var cc = $("#canvas-container");
@@ -413,7 +406,7 @@
         }
         cc.css( { left: left, top: top } );
     }
-    
+
     // Add a new step to the workflow by tool id
     function add_node_for_tool( id, title ) {
         var node = prebuild_node( 'tool', title, id );
@@ -422,7 +415,7 @@
         canvas_manager.draw_overview();
         workflow.activate_node( node );
         $.ajax( {
-            url: "${h.url_for( action='get_new_module_info' )}", 
+            url: "${h.url_for( action='get_new_module_info' )}",
             data: { type: "tool", tool_id: id, "_": "true" },
             global: false,
             dataType: "json",
@@ -438,7 +431,7 @@
             }
         });
     }
-    
+
     function add_node_for_module( type, title ) {
         node = prebuild_node( type, title );
         workflow.add_node( node );
@@ -446,8 +439,8 @@
         canvas_manager.draw_overview();
         workflow.activate_node( node );
         $.ajax( {
-            url: "${h.url_for( action='get_new_module_info' )}", 
-            data: { type: type, "_": "true" }, 
+            url: "${h.url_for( action='get_new_module_info' )}",
+            data: { type: type, "_": "true" },
             dataType: "json",
             success: function( data ) {
                 node.init_field_data( data );
@@ -479,11 +472,11 @@
             workflow.active_form_has_changes = true;
         });
     }
-    
+
     function display_pja_list(){
         return "${ActionBox.get_add_list()}";
     }
-    
+
     function display_file_list(node){
         addlist = "<select id='node_data_list' name='node_data_list'>";
         for (var out_terminal in node.output_terminals){
@@ -492,7 +485,7 @@
         addlist += "</select>";
         return addlist;
     }
-    
+
     function new_pja(action_type, target, node){
         if (node.post_job_actions === undefined){
             //New tool node, set up dict.
@@ -511,7 +504,7 @@
             return false;
         }
     }
-    
+
     function show_workflow_parameters(){
         var parameter_re = /\$\{.+?\}/g;
         var workflow_parameters = [];
@@ -532,7 +525,7 @@
                             if (arg_matches){
                                 matches = matches.concat(arg_matches);
                             }
-                        });                        
+                        });
                     }
                 });
                 if (matches){
@@ -541,7 +534,7 @@
                             workflow_parameters.push(element);
                         }
                     });
-                }                
+                }
             }
         });
         if (workflow_parameters && workflow_parameters.length !== 0){
@@ -555,7 +548,7 @@
             wf_parm_box.hide();
         }
     }
-    
+
     function show_form_for_tool( text, node ) {
         $('.right-content').hide();
         $("#right-content").show().html( text );
@@ -632,7 +625,7 @@
             });
         });
     }
-    
+
     var close_editor = function() {
         <% next_url = h.url_for( controller='workflow', action='index' ) %>
         workflow.check_changes_in_active_form();
@@ -655,7 +648,7 @@
             window.document.location = "${next_url}";
         }
     };
-    
+
     var save_current_workflow = function ( eventObj, success_callback ) {
         show_modal( "Saving workflow", "progress" );
         workflow.check_changes_in_active_form();
@@ -677,7 +670,7 @@
                     "_": "true"
                 },
                 dataType: 'json',
-                success: function( data ) { 
+                success: function( data ) {
                     var body = $("<div></div>").text( data.message );
                     if ( data.errors ) {
                         body.addClass( "warningmark" );
@@ -704,7 +697,7 @@
                 }
             });
         };
-        
+
         // We bind to ajaxStop because of auto-saving, since the form submission ajax
         // call needs to be completed so that the new data is saved
         if (active_ajax_call) {
@@ -718,7 +711,7 @@
             savefn(success_callback);
         }
     };
-    
+
     </script>
 </%def>
 
@@ -732,7 +725,7 @@
 
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
-    
+
     /* Wider right panel */
     #center       { right: 309px; }
     #right-border { right: 300px; }
@@ -744,11 +737,11 @@
     ##     top: 2.5em;
     ##     margin-top: 7px;
     ## }
-    
+
     #left {
         background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
     }
-    
+
     div.toolMenu {
         margin: 5px;
         margin-left: 10px;
@@ -785,8 +778,8 @@
     .right-content {
         margin: 5px;
     }
-    
-    canvas { position: absolute; z-index: 10; } 
+
+    canvas { position: absolute; z-index: 10; }
     canvas.dragging { position: absolute; z-index: 1000; }
     .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; left: -6px; z-index: 1500; }
     .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; right: -6px; z-index: 1500; }
@@ -795,12 +788,12 @@
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
     .unselectable { -moz-user-select: none; -khtml-user-select: none; user-select: none; }
     img { border: 0; }
-    
+
     div.buttons img {
     width: 16px; height: 16px;
     cursor: pointer;
     }
-    
+
     ## Extra styles for the representation of a tool on the canvas (looks like
     ## a tiny tool form)
     div.toolFormInCanvas {
@@ -809,18 +802,18 @@
         ## min-width: 130px;
         margin: 6px;
     }
-    
+
     div.toolForm-active {
         z-index: 1001;
         border: solid #8080FF 4px;
         margin: 3px;
     }
-    
+
     div.toolFormTitle {
         cursor: move;
         min-height: 16px;
     }
-    
+
     div.titleRow {
         font-weight: bold;
         border-bottom: dotted gray 1px;
@@ -830,7 +823,7 @@
     div.form-row {
       position: relative;
     }
-    
+
     div.tool-node-error div.toolFormTitle {
         background: #FFCCCC;
         border-color: #AA6666;
@@ -838,14 +831,14 @@
     div.tool-node-error {
         border-color: #AA6666;
     }
-    
+
     #canvas-area {
         position: absolute;
         top: 0; left: 305px; bottom: 0; right: 0;
         border: solid red 1px;
         overflow: none;
     }
-    
+
     .form-row {
     }
 
@@ -855,14 +848,14 @@
     .form-row-clear {
         clear: both;
     }
-    
+
     div.rule {
         height: 0;
         border: none;
         border-bottom: dotted black 1px;
         margin: 0 5px;
     }
-    
+
     .callout {
         position: absolute;
         z-index: 10000;
@@ -871,21 +864,21 @@
     .pjaForm {
         margin-bottom:10px;
     }
-    
+
     .pjaForm .toolFormBody{
         padding:10px;
     }
-    
+
     .pjaForm .toolParamHelp{
         padding:5px;
     }
-    
+
     .panel-header-button-group {
         margin-right: 5px;
         padding-right: 5px;
         border-right: solid gray 1px;
     }
-        
+
     </style>
 </%def>
 
@@ -945,7 +938,7 @@
             ${n_('Tools')}
         </div>
     </div>
-    
+
     <div class="unified-panel-body" style="overflow: auto;">
             <div class="toolMenu">
             ## Tool search.
@@ -953,7 +946,6 @@
                 show_tool_search = False
                 if trans.user:
                     show_tool_search = trans.user.preferences.get( "workflow.show_tool_search", "True" )
-            
                 if show_tool_search == "True":
                     display = "block"
                 else:
@@ -963,7 +955,6 @@
                 <input type="text" name="query" value="search tools" id="tool-search-query" style="width: 100%; font-style:italic; font-size: inherit" autocomplete="off"/>
                 <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" style="display: none; position: absolute; right: 0; top: 5px;"/>
             </div>
-        
             <div class="toolSectionList">
                 %for key, val in app.toolbox.tool_panel.items():
                     <div class="toolSectionWrapper">
@@ -1007,10 +998,10 @@
                         <a href="#" onclick="add_node_for_module( 'data_input', 'Input Dataset' )">Input dataset</a>
                     </div>
                 </div>
-            </div>                    
+            </div>
         </div>
     </div>
-    
+
 </%def>
 
 <%def name="center_panel()">
@@ -1023,7 +1014,6 @@
             Workflow Canvas | ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
-
     <div class="unified-panel-body">
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
@@ -1079,7 +1069,7 @@
                     <div class="toolParamHelp">Apply tags to make it easy to search for and find items with the same tag.</div>
                 </div>
                 ## Workflow annotation.
-                ## Annotation elt.                
+                ## Annotation elt.
                 <div id="workflow-annotation-area" class="form-row">
                     <label>Annotation / Notes:</label>
                     <div id="workflow-annotation" class="tooltip editable-text" original-title="Click to edit annotation">
