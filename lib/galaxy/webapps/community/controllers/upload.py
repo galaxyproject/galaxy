@@ -182,7 +182,15 @@ class UploadController( BaseController ):
                 for repo_file in files_to_remove:
                     # Remove files in the repository (relative to the upload point)
                     # that are not in the uploaded archive.
-                    commands.remove( repo.ui, repo, repo_file, force=True )
+                    try:
+                        commands.remove( repo.ui, repo, repo_file, force=True )
+                    except Exception, e:
+                        # I never have a problem with commands.remove on a Mac, but in the test/production
+                        # tool shed environment, it throws an exception whenever I delete all files from a
+                        # repository.  If this happens, we'll try the following.
+                        relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
+                        repo.dirstate.remove( relative_selected_file )
+                        repo.dirstate.write()
             for filename_in_archive in filenames_in_archive:
                 commands.add( repo.ui, repo, filename_in_archive )
                 if filename_in_archive.endswith( '.loc.sample' ):
