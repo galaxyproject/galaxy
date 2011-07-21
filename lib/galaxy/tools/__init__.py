@@ -2029,6 +2029,7 @@ class LibraryDatasetValueWrapper( object ):
     def __str__( self ):
         return self.value.name
     def templates( self ):
+        """ Returns JSON dict of templates => data """
         if not self.value:
             return None
         template_data = {}
@@ -2039,7 +2040,7 @@ class LibraryDatasetValueWrapper( object ):
             for field in template.fields:
                 tmp_dict[field['label']] = content[field['name']]
             template_data[template.name] = tmp_dict
-        return template_data
+        return simplejson.dumps( template_data )
     def __getattr__( self, key ):
         return getattr( self.value, key )
         
