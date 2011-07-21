@@ -374,15 +374,15 @@ class Tool:
         self.input_translator = root.find( "request_param_translation" )
         if self.input_translator:
             self.input_translator = ToolInputTranslator.from_element( self.input_translator )
-        # Command line (template). Optional for tools that do not invoke a 
-        # local program  
+        # Command line (template). Optional for tools that do not invoke a local program  
         command = root.find("command")
         if command is not None and command.text is not None:
             self.command = command.text.lstrip() # get rid of leading whitespace
+            # Must pre-pend this AFTER processing the cheetah command template
+            self.interpreter = command.get( "interpreter", None )
         else:
             self.command = ''
-        # Must pre-pend this AFTER processing the cheetah command template
-        self.interpreter = command.get("interpreter", None)
+            self.interpreter = None
         # Parameters used to build URL for redirection to external app
         redirect_url_params = root.find( "redirect_url_params" )
         if redirect_url_params is not None and redirect_url_params.text is not None:
