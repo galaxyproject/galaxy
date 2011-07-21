@@ -1005,8 +1005,7 @@ class HostAgent( RBACAgent ):
         ucsc_main = ( 'hgw1.cse.ucsc.edu', 'hgw2.cse.ucsc.edu', 'hgw3.cse.ucsc.edu', 'hgw4.cse.ucsc.edu',
                       'hgw5.cse.ucsc.edu', 'hgw6.cse.ucsc.edu', 'hgw7.cse.ucsc.edu', 'hgw8.cse.ucsc.edu' ),
         ucsc_test = ( 'hgwdev.cse.ucsc.edu', ),
-        ucsc_archaea = ( 'lowepub.cse.ucsc.edu', ),
-        ucsc_bhri = ('ucsc.omics.bhri.internal','galaxy.omics.bhri.internal'),
+        ucsc_archaea = ( 'lowepub.cse.ucsc.edu', )
     )
     def __init__( self, model, permitted_actions=None ):
         self.model = model
@@ -1037,7 +1036,7 @@ class HostAgent( RBACAgent ):
                 # We're going to search in order, but if the remote site is load
                 # balancing their connections (as UCSC does), this is okay.
                 try:
-                    if socket.gethostbyname( server ) == addr or server == '127.0.0.1' or server == '172.16.0.38':
+                    if socket.gethostbyname( server ) == addr:
                         break # remote host is in the server list
                 except ( socket.error, socket.gaierror ):
                     pass # can't resolve, try next

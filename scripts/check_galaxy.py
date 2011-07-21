@@ -292,7 +292,7 @@ class userParser(htmllib.HTMLParser):
         self.in_span = False
     def handle_data(self, data):
         if self.in_span:
-            if data == "No such user":
+            if data == "No such user (please note that login is case sensitive)":
                 self.no_user = True
             elif data == "Invalid password":
                 self.bad_pw = True

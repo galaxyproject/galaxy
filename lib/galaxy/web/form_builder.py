@@ -652,6 +652,27 @@ class HistoryField( BaseField ):
             return self.value
         else:
             return '-'
+            
+class LibraryField( BaseField ):
+    def __init__( self, name, value=None, trans=None ):
+        self.name = name
+        self.ldda = value
+        self.trans = trans
+    def get_html( self, prefix="", disabled=False ):
+        if not self.ldda:
+            ldda = ""
+            text = "Choose a library dataset"
+        else:
+            ldda = self.trans.security.encode_id(self.ldda.id)
+            text = self.ldda.name
+        return '<a href="javascript:void(0);" class="add-librarydataset">%s</a> \
+                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda), quote=True ) )
+
+    def get_display_text(self):
+        if self.ldda:
+            return self.ldda.name
+        else:
+            return 'None'
 
 def get_suite():
     """Get unittest suite for this module"""

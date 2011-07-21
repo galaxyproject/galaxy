@@ -44,7 +44,7 @@
                     }
                     // The following is used only in ~/templates/webapps/community/repository/upload.mako.
                     if (document.forms["upload_form"]) {
-                        document.upload_form.upload_point.value = selKeys[0];
+                        document.upload_form.upload_point.value = selKeys.slice(-1);
                     }
                 },
                 onActivate: function(dtnode) {

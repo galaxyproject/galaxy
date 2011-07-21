@@ -83,10 +83,12 @@ summary = r.summary(pc, loadings="TRUE")
 ncomps = len(summary['sdev'])
 
 if type(summary['sdev']) == type({}):
-    comps = summary['sdev'].keys()
+    comps_unsorted = summary['sdev'].keys()
+    comps=[]
     sd = summary['sdev'].values()
     for i in range(ncomps):
-        sd[comps.index('Comp.%s' %(i+1))] = summary['sdev'].values()[i]
+        sd[i] = summary['sdev'].values()[comps_unsorted.index('Comp.%s' %(i+1))]
+        comps.append('Comp.%s' %(i+1))
 elif type(summary['sdev']) == type([]):
     comps=[]
     for i in range(ncomps):

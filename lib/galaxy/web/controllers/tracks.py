@@ -469,7 +469,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
         
     @web.json
-    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, max_vals=5000, **kwargs ):
+    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, start_val=0, max_vals=5000, **kwargs ):
         """
         Provides a block of data from a dataset.
         """
@@ -526,7 +526,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
-        data = data_provider.get_data( chrom, low, high, max_vals, **kwargs )
+        data = data_provider.get_data( chrom, low, high, int(start_val), int(max_vals), **kwargs )
         message = None
         if isinstance(data, dict) and 'message' in data:
             message = data['message']
@@ -730,8 +730,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if run_on_region:
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
-                # TODO: put together more robust way to determine if a dataset can be indexed.
-                if hasattr( input_dataset, 'get_track_type' ):
+                if get_data_provider( original_dataset=input_dataset ):
                     # Can index dataset.
                     track_type, data_sources = input_dataset.datatype.get_track_type()
                     # Convert to datasource that provides 'data' because we need to
@@ -744,7 +743,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Return any messages generated during conversions.
         return_message = _get_highest_priority_msg( messages_list )
         if return_message:
-            return return_message
+            return to_json_string( return_message )
             
         #
         # Set target history (the history that tool will use for inputs/outputs).

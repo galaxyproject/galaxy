@@ -27,13 +27,13 @@ class UploadController( BaseController ):
         repository_id = params.get( 'repository_id', '' )
         repository = get_repository( trans, repository_id )
         repo_dir = repository.repo_path
-        repo = hg.repository( ui.ui(), repo_dir )
+        repo = hg.repository( get_configured_ui(), repo_dir )
         uncompress_file = util.string_as_bool( params.get( 'uncompress_file', 'true' ) )
         remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
         upload_point = self.__get_upload_point( repository, **kwd )
         # Get the current repository tip.
-        tip = repo[ 'tip' ]
+        tip = repository.tip
         if params.get( 'upload_button', False ):
             current_working_dir = os.getcwd()
             file_data = params.get( 'file_data', '' )
@@ -45,6 +45,7 @@ class UploadController( BaseController ):
                 uploaded_file = file_data.file
                 uploaded_file_name = uploaded_file.name
                 uploaded_file_filename = file_data.filename
+            isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             if uploaded_file:
                 isgzip = False
                 isbz2 = False
@@ -53,17 +54,21 @@ class UploadController( BaseController ):
                     if not isgzip:
                         isbz2 = is_bz2( uploaded_file_name )
                 ok = True
-                # Determine what we have - a single file or an archive
-                try:
-                    if ( isgzip or isbz2 ) and uncompress_file:
-                        # Open for reading with transparent compression.
-                        tar = tarfile.open( uploaded_file_name, 'r:*' )
-                    else:
-                        tar = tarfile.open( uploaded_file_name )
-                    istar = True
-                except tarfile.ReadError, e:
+                if isempty:
                     tar = None
                     istar = False
+                else:                
+                    # Determine what we have - a single file or an archive
+                    try:
+                        if ( isgzip or isbz2 ) and uncompress_file:
+                            # Open for reading with transparent compression.
+                            tar = tarfile.open( uploaded_file_name, 'r:*' )
+                        else:
+                            tar = tarfile.open( uploaded_file_name )
+                        istar = True
+                    except tarfile.ReadError, e:
+                        tar = None
+                        istar = False
                 if istar:
                     ok, message, files_to_remove = self.upload_tar( trans,
                                                                     repository,
@@ -82,15 +87,24 @@ class UploadController( BaseController ):
                     # Move the uploaded file to the load_point within the repository hierarchy.
                     shutil.move( uploaded_file_name, full_path )
                     commands.add( repo.ui, repo, full_path )
-                    commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                    try:
+                        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                    except Exception, e:
+                        # I never have a problem with commands.commit on a Mac, but in the test/production
+                        # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                        # exception.  If this happens, we'll try the following.
+                        repo.dirstate.write()
+                        repo.commit( user=trans.user.username, text=commit_message )
+                    if full_path.endswith( '.loc.sample' ):
+                        # Handle the special case where a xxx.loc.sample file is
+                        # being uploaded by copying it to ~/tool-data/xxx.loc.
+                        copy_sample_loc_file( trans, full_path )
                     handle_email_alerts( trans, repository )
                 if ok:
-                    # Update the repository files for browsing, a by-product of doing this
-                    # is eliminating unwanted files from the repository directory.
-                    update_for_browsing( repository, current_working_dir )
+                    # Update the repository files for browsing.
+                    update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
                     # Get the new repository tip.
-                    repo = hg.repository( ui.ui(), repo_dir )
-                    if tip != repo[ 'tip' ]:
+                    if tip != repository.tip:
                         if ( isgzip or isbz2 ) and uncompress_file:
                             uncompress_str = ' uncompressed and '
                         else:
@@ -102,12 +116,22 @@ class UploadController( BaseController ):
                             else:
                                 message += "  %d files were removed from the repository root." % len( files_to_remove )
                     else:
-                        message = 'No changes to repository.'        
+                        message = 'No changes to repository.'      
+                    # Set metadata on the repository tip
+                    error_message, status = set_repository_metadata( trans, repository_id, repository.tip, **kwd )
+                    if error_message:
+                        message = '%s<br/>%s' % ( message, error_message )
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='manage_repository',
+                                                                          id=repository_id,
+                                                                          message=message,
+                                                                          status=status ) )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
+                                                               id=repository_id,
                                                                commit_message='Deleted selected files',
                                                                message=message,
-                                                               id=trans.security.encode_id( repository.id ) ) )
+                                                               status=status ) )
                 else:
                     status = 'error'
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
@@ -121,7 +145,7 @@ class UploadController( BaseController ):
     def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message ):
         # Upload a tar archive of files.
         repo_dir = repository.repo_path
-        repo = hg.repository( ui.ui(), repo_dir )
+        repo = hg.repository( get_configured_ui(), repo_dir )
         files_to_remove = []
         ok, message = self.__check_archive( tar )
         if not ok:
@@ -158,11 +182,21 @@ class UploadController( BaseController ):
                 for repo_file in files_to_remove:
                     # Remove files in the repository (relative to the upload point)
                     # that are not in the uploaded archive.
-                    commands.remove( repo.ui, repo, repo_file )
+                    commands.remove( repo.ui, repo, repo_file, force=True )
             for filename_in_archive in filenames_in_archive:
                 commands.add( repo.ui, repo, filename_in_archive )
-            # Commit the changes.
-            commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                if filename_in_archive.endswith( '.loc.sample' ):
+                    # Handle the special case where a xxx.loc.sample file is
+                    # being uploaded by copying it to ~/tool-data/xxx.loc.
+                    copy_sample_loc_file( trans, filename_in_archive )
+            try:
+                commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+            except Exception, e:
+                # I never have a problem with commands.commit on a Mac, but in the test/production
+                # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                # exception.  If this happens, we'll try the following.
+                repo.dirstate.write()
+                repo.commit( user=trans.user.username, text=commit_message )
             handle_email_alerts( trans, repository )
             return True, '', files_to_remove
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):

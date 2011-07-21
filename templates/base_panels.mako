@@ -155,13 +155,13 @@
     ## Override
 </%def>
 
-<%def name="overlay( title='', content='' )">
+<%def name="overlay( title='', content='', visible=False )">
     <%def name="title()"></%def>
     <%def name="content()"></%def>
 
     <div id="overlay"
-    %if not self.overlay_visible:
-    style="display: none;"
+    %if not visible:
+        style="display: none;"
     %endif
     >
     ##
@@ -169,21 +169,21 @@
     
     ## Need a table here for centering in IE6
     <table class="dialog-box-container" border="0" cellpadding="0" cellspacing="0"
-    %if not self.overlay_visible:
+    %if not visible:
         style="display: none;"
     %endif
     ><tr><td>
     <div class="dialog-box-wrapper">
         <div class="dialog-box">
-        <div class="unified-panel-header">
-            <div class="unified-panel-header-inner"><span class='title'>${title}</span></div>
-        </div>
-        <div class="body">${content}</div>
-        <div>
-            <div class="buttons" style="display: none; float: right;"></div>
-            <div class="extra_buttons" style="display: none; padding: 5px;"></div>
-            <div style="clear: both;"></div>
-        </div>
+            <div class="unified-panel-header">
+                <div class="unified-panel-header-inner"><span class='title'>${title}</span></div>
+            </div>
+            <div class="body">${content}</div>
+            <div>
+                <div class="buttons" style="display: none; float: right;"></div>
+                <div class="extra_buttons" style="display: none; padding: 5px;"></div>
+                <div style="clear: both;"></div>
+            </div>
         </div>
     </div>
     </td></tr></table>
@@ -198,45 +198,45 @@
 <html>
     ${self.init()}    
     <head>
-    <title>${self.title()}</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name = "viewport" content = "maximum-scale=1.0">
-    ${self.stylesheets()}
-    ${self.javascripts()}
+        <title>${self.title()}</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name = "viewport" content = "maximum-scale=1.0">
+        ${self.stylesheets()}
+        ${self.javascripts()}
     </head>
     
     <body scroll="no" class="${self.body_class}">
-	<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 600px;">
-        ## Background displays first
-        <div id="background"></div>
-        ## Layer iframes over backgrounds
-        <div id="masthead">
-            ${self.masthead()}
-        </div>
-        <div id="messagebox" class="panel-${self.message_box_class}-message">
-            %if self.message_box_visible:
-                ${self.message_box_content()}
+        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 600px;">
+            ## Background displays first
+            <div id="background"></div>
+            ## Layer iframes over backgrounds
+            <div id="masthead">
+                ${self.masthead()}
+            </div>
+            <div id="messagebox" class="panel-${self.message_box_class}-message">
+                %if self.message_box_visible:
+                    ${self.message_box_content()}
+                %endif
+            </div>
+            ${self.overlay(visible=self.overlay_visible)}
+            %if self.has_left_panel:
+                <div id="left">
+                    ${self.left_panel()}
+                </div>
+                <div id="left-border">
+                    <div id="left-border-inner" style="display: none;"></div>
+                </div>
+            %endif
+            <div id="center">
+                ${self.center_panel()}
+            </div>
+            %if self.has_right_panel:
+                <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
+                <div id="right">
+                    ${self.right_panel()}
+                </div>
             %endif
         </div>
-    ${self.overlay()}
-        %if self.has_left_panel:
-            <div id="left">
-                ${self.left_panel()}
-            </div>
-            <div id="left-border">
-                <div id="left-border-inner" style="display: none;"></div>
-            </div>
-        %endif
-        <div id="center">
-            ${self.center_panel()}
-        </div>
-        %if self.has_right_panel:
-            <div id="right-border"><div id="right-border-inner" style="display: none;"></div></div>
-            <div id="right">
-                ${self.right_panel()}
-            </div>
-        %endif
-	</div>
         ## Allow other body level elements
     </body>
     ## Scripts can be loaded later since they progressively add features to

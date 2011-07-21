@@ -30,7 +30,7 @@ Need Help?
 
 .. __: /static/help.html
 .. __: http://www.bx.psu.edu/cgi-bin/trac.cgi
-.. __: http://bitbucket.org/galaxy/galaxy-central/wiki/GalaxyTeam
+.. __: http://wiki.g2.bx.psu.edu/Galaxy%20Team
 .. __: mailto:galaxy@bx.psu.edu
 
 Version: <b>2.1</b> Revision: <b>$Rev$</b>

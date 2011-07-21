@@ -4,7 +4,7 @@ Galaxy Tool Shed data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile, mimetypes, ConfigParser
+import os.path, os, errno, sys, codecs, operator, logging, tarfile, mimetypes, ConfigParser
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import *
@@ -114,6 +114,15 @@ class Repository( object ):
                 return config.get( "paths", option )
         raise Exception( "Entry for repository %s missing in %s/hgweb.config file." % ( lhs, os.getcwd() ) )
     @property
+    def revision( self ):
+        repo = hg.repository( ui.ui(), self.repo_path )
+        tip_ctx = repo.changectx( repo.changelog.tip() )
+        return "%s:%s" % ( str( tip_ctx.rev() ), str( repo.changectx( repo.changelog.tip() ) ) )
+    @property
+    def tip( self ):
+        repo = hg.repository( ui.ui(), self.repo_path )
+        return str( repo.changectx( repo.changelog.tip() ) )
+    @property
     def is_new( self ):
         repo = hg.repository( ui.ui(), self.repo_path )
         tip_ctx = repo.changectx( repo.changelog.tip() )
@@ -143,6 +152,12 @@ class Repository( object ):
                 fp.write( line )
         fp.close()
 
+class RepositoryMetadata( object ):
+    def __init__( self, repository_id=None, changeset_revision=None, metadata=None ):
+        self.repository_id = repository_id
+        self.changeset_revision = changeset_revision
+        self.metadata = metadata or dict()
+    
 class ItemRatingAssociation( object ):
     def __init__( self, id=None, user=None, item=None, rating=0, comment='' ):
         self.id = id

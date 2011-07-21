@@ -172,7 +172,7 @@ var
     // height of individual features within tracks. Feature height, then, should always be less
     // than track height.
     CHAR_HEIGHT_PX = 9, // FIXME: font size may not be static
-    ERROR_PADDING = 18, // Padding at the top of tracks for error messages
+    ERROR_PADDING = 20, // Padding at the top of tracks for error messages
     SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
     // Maximum number of rows un a slotted track
     MAX_FEATURE_DEPTH = 100,
@@ -369,15 +369,15 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         // Set parameters based on request type.
         //
+        var query_low = low;
         if (req_type === this.DEEP_DATA_REQ) {
-            // HACK: for now, just up the max vals and request all data; in the future, 
-            // need server to recognize min_vals and max_vals to specify range of data to
-            // return.
-            $.extend(extra_params, {max_vals: cur_data.data.length * 2});
+            // Use same interval but set start_val to skip data that's already in cur_data.
+            $.extend(extra_params, {start_val: cur_data.data.length + 1});
         }
         else if (req_type === this.BROAD_DATA_REQ) {
-            // Set low to be past the last feature returned.
-            low = cur_data.data[cur_data.length-1][2] + 1;
+            // Set query low to be past the last feature returned so that an area of extreme feature depth
+            // is bypassed.
+            query_low = cur_data.data[cur_data.data.length - 1][2] + 1;
         }
         
         //
@@ -386,14 +386,19 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         var 
             data_manager = this,
-            new_data_request = this.load_data(low, high, resolution, extra_params)
+            new_data_request = this.load_data(query_low, high, resolution, extra_params)
             new_data_available = $.Deferred();
         // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
         // is all data, not just new data.
         this.set_data(low, high, mode, new_data_available);
         $.when(new_data_request).then(function(result) {
+            // Update data and message.
             if (result.data) {
-                //result.data.append(cur_data.data);
+                result.data = cur_data.data.concat(result.data);
+                if (result.message) {
+                    // HACK: replace number in message with current data length. Works but is ugly.
+                    result.message = result.message.replace(/[0-9]+/, result.data.length);
+                }
             }
             data_manager.set_data(low, high, mode, result);
             new_data_available.resolve(result);
@@ -481,8 +486,11 @@ extend( View.prototype, {
         this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.top_container);        
         // Viewport for dragging tracks in center    
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
-        // Future overlay?
-        this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide(); 
+        // Introduction div shown when there are no tracks.
+        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
+        var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
+            add_tracks();
+        });
         // Another label track at bottom
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
         // Navigation at top
@@ -531,7 +539,6 @@ extend( View.prototype, {
         this.chrom_select.bind("change", function() {
             view.change_chrom(view.chrom_select.val());
         });
-        this.intro_div.show();
                 
         /*
         this.content_div.bind("mousewheel", function( e, delta ) {
@@ -646,6 +653,16 @@ extend( View.prototype, {
         
         this.reset();
         $(window).trigger("resize");
+        this.update_intro_div();
+    },
+    /** Show or hide intro div depending on view state. */
+    update_intro_div: function() {
+        if (this.num_tracks === 0) {
+            this.intro_div.show();
+        }
+        else {
+            this.intro_div.hide();
+        }
     },
     update_location: function(low, high) {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
@@ -730,12 +747,6 @@ extend( View.prototype, {
             // Switching to local chrom.
             if (chrom !== view.chrom) {
                 view.chrom = chrom;
-                if (!view.chrom) {
-                    // No chrom selected
-                    view.intro_div.show();
-                } else {
-                    view.intro_div.hide();
-                }
                 view.chrom_select.val(view.chrom);
                 view.max_high = found.len-1; // -1 because we're using 0-based indexing.
                 view.reset();
@@ -805,6 +816,7 @@ extend( View.prototype, {
         sortable( track.container_div, '.draghandle' );
         this.track_id_counter += 1;
         this.num_tracks += 1;
+        this.update_intro_div();
     },
     add_label_track: function (label_track) {
         label_track.view = this;
@@ -812,9 +824,13 @@ extend( View.prototype, {
     },
     remove_track: function(track) {
         this.has_changes = true;
-        track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[this.tracks.indexOf(track)];
         this.num_tracks -= 1;
+        var view = this;
+        track.container_div.fadeOut('slow', function() { 
+            $(this).remove();
+            view.update_intro_div(); 
+        });
     },
     reset: function() {
         this.low = this.max_low;
@@ -1018,6 +1034,7 @@ extend(Tool.prototype, {
                      dataset_id: this.track.original_dataset_id,
                      tool_id: tool.name
                  },
+                 null,
                  // Success callback.
                  function(track_data) {
                      show_modal(tool.name + " is Running", 
@@ -1060,7 +1077,7 @@ extend(Tool.prototype, {
         new_track.content_div.text("Starting job.");
         
         // Run tool.
-        this.run(url_params,
+        this.run(url_params, new_track,
                  // Success callback.
                  function(track_data) {
                      new_track.dataset_id = track_data.dataset_id;
@@ -1072,7 +1089,7 @@ extend(Tool.prototype, {
     /**
      * Run tool using a set of URL params and a success callback.
      */
-    run: function(url_params, success_callback) {
+    run: function(url_params, new_track, success_callback) {
         // Add tool params to URL params.
         $.extend(url_params, this.get_param_values_dict());
         
@@ -1093,7 +1110,7 @@ extend(Tool.prototype, {
                 else if (response === "pending") {
                     // Converting/indexing input datasets; show message and try again.
                     new_track.container_div.addClass("pending");
-                    new_track.content_div.text("Converting input data so that it can be easily reused.");
+                    new_track.content_div.text("Converting input data so that it can be used quickly with tool.");
                     setTimeout(json_run_tool, 2000);
                 }
                 else {
@@ -2211,18 +2228,29 @@ extend(TiledTrack.prototype, Track.prototype, {
                 message_div = $("<div/>").addClass("tile-message").text(tile.message).
                                 // -1 to account for border.
                                 css({'height': ERROR_PADDING-1, 'width': tile.canvas.width}).appendTo(container_div),
-                show_more_data_btn = $("<div/>").text("Show more").addClass("action-button").css({'padding-top': 0, 'padding-bottom':0}).appendTo(message_div);
+                more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
+                more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
             container_div.append(canvas);
             tile_element = container_div;
             
-            // Set up actions for button.
-            show_more_data_btn.click(function() {
+            // Set up actions for icons.
+            more_down_icon.click(function() {
                 // Mark tile as stale, request more data, and redraw track.
                 tile.stale = true;
                 track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
                 track.draw();
             }).dblclick(function(e) {
-                // Do not propogate as this would normal zoom in.
+                // Do not propogate as this would normally zoom in.
+                e.stopPropagation();
+            });
+            
+            more_across_icon.click(function() {
+                // Mark tile as stale, request more data, and redraw track.
+                tile.stale = true;
+                track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+                track.draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normally zoom in.
                 e.stopPropagation();
             });
         }
@@ -3291,6 +3319,9 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     ctx.restore();
 }
 
+/**
+ * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
+ */
 var FeaturePainter = function( data, view_start, view_end, prefs, mode ) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
 }
@@ -3311,7 +3342,6 @@ extend( FeaturePainter.prototype, {
     },
 
     draw: function( ctx, width, height, slots ) {
-
         var data = this.data, view_start = this.view_start, view_end = this.view_end;
 
         ctx.save();
@@ -3340,7 +3370,12 @@ extend( FeaturePainter.prototype, {
         }
 
         ctx.restore();
-    }
+    },
+    
+    /** 
+     * Abstract function for drawing an individual feature. NOTE: this method must be implemented by subclasses for drawing to work.
+     */
+    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {}
 });
 
 // Constants specific to feature tracks moved here (HACKING, these should

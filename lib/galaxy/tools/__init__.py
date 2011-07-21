@@ -5,7 +5,7 @@ import pkg_resources;
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -395,6 +395,11 @@ class Tool:
             self.redirect_url_params = ''
         # Short description of the tool
         self.description = util.xml_text(root, "description")
+        # Versioning for tools        
+        self.version_string_cmd = None
+        version_cmd = root.find("version_command")
+        if version_cmd is not None:
+            self.version_string_cmd = version_cmd.text
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
@@ -922,8 +927,6 @@ class Tool:
         if not self.check_values:
             return
         for input in self.inputs.itervalues():
-            if input.name not in value:
-                value[input.name] = input.get_initial_value( None, value )
             if isinstance( input, ToolParameter ):
                 callback( "", input, value[input.name] )
             else:
@@ -1460,6 +1463,11 @@ class Tool:
                 elif isinstance( input, SelectToolParameter ):
                     input_values[ input.name ] = SelectToolParameterWrapper( 
                         input, input_values[ input.name ], self.app, other_values = param_dict )
+                        
+                elif isinstance( input, LibraryDatasetToolParameter ):
+                    input_values[ input.name ] = LibraryDatasetValueWrapper( 
+                        input, input_values[ input.name ], param_dict )
+                        
                 else:
                     input_values[ input.name ] = InputValueWrapper( 
                         input, input_values[ input.name ], param_dict )
@@ -2025,6 +2033,31 @@ class RawObjectWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.obj, key )
 
+class LibraryDatasetValueWrapper( object ):
+    """
+    Wraps an input so that __str__ gives the "param_dict" representation.
+    """
+    def __init__( self, input, value, other_values={} ):
+        self.input = input
+        self.value = value
+        self._other_values = other_values
+    def __str__( self ):
+        return self.value.name
+    def templates( self ):
+        if not self.value:
+            return None
+        template_data = {}
+        for temp_info in self.value.info_association:
+            template = temp_info.template
+            content = temp_info.info.content
+            tmp_dict = {}
+            for field in template.fields:
+                tmp_dict[field['label']] = content[field['name']]
+            template_data[template.name] = tmp_dict
+        return template_data
+    def __getattr__( self, key ):
+        return getattr( self.value, key )
+        
 class InputValueWrapper( object ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.

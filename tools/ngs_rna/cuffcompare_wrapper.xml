@@ -1,4 +1,5 @@
-<tool id="cuffcompare" name="Cuffcompare" version="0.9.1">
+<tool id="cuffcompare" name="Cuffcompare" version="0.0.5">
+    <!-- Wrapper supports Cuffcompare versions v1.0.0-v1.0.3 -->
     <description>compare assembled transcripts to a reference annotation and track Cufflinks transcripts across multiple experiments</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>

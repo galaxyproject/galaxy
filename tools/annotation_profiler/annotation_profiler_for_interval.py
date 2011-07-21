@@ -340,6 +340,8 @@ def __main__():
     
     options, args = parser.parse_args()
     
+    assert os.path.isdir( options.path ), IOError( "Configuration error: Table directory is missing (%s)" % options.path )
+    
     #get profiler_info
     profiler_info = parse_profiler_info( os.path.join( options.path, 'profiler_info.txt' ) )
     

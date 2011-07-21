@@ -748,6 +748,9 @@ class SelectToolParameter( ToolParameter ):
             # Dependency on a value that does not yet exist
             if isinstance( dep_value, RuntimeValue ):
                 return True
+            #dataset not ready yet
+            if hasattr( self, 'ref_input' ) and isinstance( dep_value, self.tool.app.model.HistoryDatasetAssociation ) and ( dep_value.is_pending or not isinstance( dep_value.datatype, self.ref_input.formats ) ):
+                return True
         # Dynamic, but all dependenceis are known and have values
         return False 
     def get_initial_value( self, trans, context ):
@@ -878,6 +881,7 @@ class ColumnListParameter( SelectToolParameter ):
         self.force_select = string_as_bool( elem.get( "force_select", True ))
         self.accept_default = string_as_bool( elem.get( "accept_default", False ))
         self.data_ref = elem.get( "data_ref", None )
+        self.ref_input = None
         self.default_value = elem.get( "default_value", None )
         self.is_dynamic = True
     def from_html( self, value, trans=None, context={} ):
@@ -973,7 +977,7 @@ class ColumnListParameter( SelectToolParameter ):
             if not dataset.metadata.columns:
                 # Only allow late validation if the dataset is not yet ready
                 # (since we have reason to expect the metadata to be ready eventually)
-                if dataset.is_pending:
+                if dataset.is_pending or not isinstance( dataset.datatype, self.ref_input.formats ):
                     return True
         # No late validation
         return False
@@ -1268,7 +1272,7 @@ class DataToolParameter( ToolParameter ):
           displayed as radio buttons and multiple selects as a set of checkboxes
 
     TODO: The following must be fixed to test correctly for the new security_check tag in the DataToolParameter ( the last test below is broken )
-    Nate's next passs at the dataset security stuff will dramatically alter this anyway.
+    Nate's next pass at the dataset security stuff will dramatically alter this anyway.
     """
 
     def __init__( self, tool, elem ):
@@ -1353,7 +1357,7 @@ class DataToolParameter( ToolParameter ):
                         selected = ( value and ( hda in value ) )
                         field.add_option( "%s: %s" % ( hid, hda_name ), hda.id, selected )
                     else:
-                        target_ext, converted_dataset = hda.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
+                        target_ext, converted_dataset = hda.find_conversion_destination( self.formats )
                         if target_ext:
                             if converted_dataset:
                                 hda = converted_dataset
@@ -1402,13 +1406,22 @@ class DataToolParameter( ToolParameter ):
                 pass #no valid options
         def dataset_collector( datasets ):
             def is_convertable( dataset ):
-                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats, converter_safe = self.converter_safe( context, trans ) )
+                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats )
                 if target_ext is not None:
                     return True
                 return False
             for i, data in enumerate( datasets ):
-                if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED] and ( isinstance( data.datatype, self.formats) or is_convertable( data ) ):
-                    if self.options and self._options_filter_attribute( data ) != filter_value:
+                if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED]:
+                    is_valid = False
+                    if isinstance( data.datatype, self.formats ):
+                        is_valid = True
+                    else:
+                        target_ext, converted_dataset = data.find_conversion_destination( self.formats )
+                        if target_ext:
+                            is_valid = True
+                        if converted_dataset:
+                            data = converted_dataset
+                    if not is_valid or ( self.options and self._options_filter_attribute( data ) != filter_value ):
                         continue
                     most_recent_dataset[0] = data
                 # Also collect children via association object
@@ -1509,6 +1522,38 @@ class DataToolParameter( ToolParameter ):
             ref = ref()
         return ref
 
+class LibraryDatasetToolParameter( ToolParameter ):
+    """
+    Parameter that lets users select a LDDA from a modal window, then use it within the wrapper.
+    """
+
+    def __init__( self, tool, elem ):
+        ToolParameter.__init__( self, tool, elem )
+        
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        return form_builder.LibraryField( self.name, value=value, trans=trans )
+        
+    def get_initial_value( self, trans, context ):
+        return None
+
+    def from_html( self, value, trans, other_values={} ):
+        if not value:
+            return None
+        elif isinstance( value, trans.app.model.LibraryDatasetDatasetAssociation ):
+            return value
+        else:
+            return trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( value ) )
+
+    def to_string( self, value, app ):
+        if not value:
+            return None
+        return value.id
+
+    def to_python( self, value, app ):
+        if not value:
+            return value
+        return app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( value )
+
 # class RawToolParameter( ToolParameter ):
 #     """
 #     Completely nondescript parameter, HTML representation is provided as text
@@ -1557,19 +1602,20 @@ class DataToolParameter( ToolParameter ):
 #         self.html = form_builder.HiddenField( self.name, trans.history.id ).get_html()
 #         return self.html
 
-parameter_types = dict( text        = TextToolParameter,
-                        integer     = IntegerToolParameter,
-                        float       = FloatToolParameter,
-                        boolean     = BooleanToolParameter,
-                        genomebuild = GenomeBuildParameter,
-                        select      = SelectToolParameter,
-                        data_column = ColumnListParameter,
-                        hidden      = HiddenToolParameter,
-                        baseurl     = BaseURLToolParameter,
-                        file        = FileToolParameter,
-                        ftpfile     = FTPFileToolParameter,
-                        data        = DataToolParameter,
-                        drill_down = DrillDownSelectToolParameter )
+parameter_types = dict( text            = TextToolParameter,
+                        integer         = IntegerToolParameter,
+                        float           = FloatToolParameter,
+                        boolean         = BooleanToolParameter,
+                        genomebuild     = GenomeBuildParameter,
+                        select          = SelectToolParameter,
+                        data_column     = ColumnListParameter,
+                        hidden          = HiddenToolParameter,
+                        baseurl         = BaseURLToolParameter,
+                        file            = FileToolParameter,
+                        ftpfile         = FTPFileToolParameter,
+                        data            = DataToolParameter,
+                        library_data    = LibraryDatasetToolParameter,
+                        drill_down      = DrillDownSelectToolParameter )
 
 class UnvalidatedValue( object ):
     """

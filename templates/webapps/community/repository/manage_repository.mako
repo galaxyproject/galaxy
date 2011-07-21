@@ -9,6 +9,7 @@
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
     can_browse_contents = not is_new
+    can_set_metadata = not is_new
     can_rate = not is_new and trans.user and repository.user != trans.user
     can_view_change_log = not is_new
     if can_push:
@@ -79,10 +80,10 @@
             %endif
             %if can_browse_contents:
                 <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
             %endif
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
         </div>
     %endif
 </ul>
@@ -121,9 +122,9 @@
             <div class="form-row">
                 <label>Version:</label>
                 %if can_view_change_log:
-                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${tip}</a>
+                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${repository.revision}</a>
                 %else:
-                    ${tip}
+                    ${repository.revision}
                 %endif
             </div>
             <div class="form-row">
@@ -150,10 +151,133 @@
         </form>
     </div>
 </div>
+<p/>
+<div class="toolForm">
+    <div class="toolFormTitle">Manage categories</div>
+    <div class="toolFormBody">
+        <form name="categories" id="categories" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+            <div class="form-row">
+                <label>Categories</label>
+                <select name="category_id" multiple>
+                    %for category in categories:
+                        %if category.id in selected_categories:
+                            <option value="${trans.security.encode_id( category.id )}" selected>${category.name}</option>
+                        %else:
+                            <option value="${trans.security.encode_id( category.id )}">${category.name}</option>
+                        %endif
+                    %endfor
+                </select>
+                <div class="toolParamHelp" style="clear: both;">
+                    Multi-select list - hold the appropriate key while clicking to select multiple categories.
+                </div>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <input type="submit" name="manage_categories_button" value="Save"/>
+            </div>
+        </form>
+    </div>
+</div>
+<p/>
+%if can_set_metadata:
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Repository metadata</div>
+        <div class="toolFormBody">
+            %if metadata:
+                %if 'tools' in metadata:
+                    <div class="form-row">
+                        <table width="100%">
+                            <tr bgcolor="#D8D8D8" width="100%">
+                                <td><label>Tools:</label></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="form-row">
+                        <% tool_dicts = metadata[ 'tools' ] %>
+                        <table class="grid">
+                            <tr>
+                                <td><b>name</b></td>
+                                <td><b>description</b></td>
+                                <td><b>version</b></td>
+                                <td><b>requirements</b></td>
+                            </tr>
+                            %for tool_dict in tool_dicts:
+                                <tr>
+                                    <td><a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">${tool_dict[ 'name' ]}</a></td>
+                                    <td>${tool_dict[ 'description' ]}</td>
+                                    <td>${tool_dict[ 'version' ]}</td>
+                                    <td>
+                                        <%
+                                            if 'requirements' in tool_dict:
+                                                requirements = tool_dict[ 'requirements' ]
+                                            else:
+                                                requirements = None
+                                        %>
+                                        %if requirements:
+                                            <%
+                                                requirements_str = ''
+                                                for requirement_dict in tool_dict[ 'requirements' ]:
+                                                    requirements_str += '%s (%s), ' % ( requirement_dict[ 'name' ], requirement_dict[ 'type' ] )
+                                                requirements_str = requirements_str.rstrip( ', ' )
+                                            %>
+                                            ${requirements_str}
+                                        %else:
+                                            none
+                                        %endif
+                                    </td>
+                                </tr>
+                            %endfor
+                        </table>
+                    </div>
+                    <div style="clear: both"></div>
+                %endif
+                %if 'workflows' in metadata:
+                    <div class="form-row">
+                        <table width="100%">
+                            <tr bgcolor="#D8D8D8" width="100%">
+                                <td><label>Workflows:</label></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div style="clear: both"></div>
+                    <div class="form-row">
+                        <% workflow_dicts = metadata[ 'workflows' ] %>
+                        <table class="grid">
+                            <tr>
+                                <td><b>name</b></td>
+                                <td><b>format-version</b></td>
+                                <td><b>annotation</b></td>
+                            </tr>
+                            %for workflow_dict in workflow_dicts:
+                                <tr>
+                                    <td>${workflow_dict[ 'name' ]}</td>
+                                    <td>${workflow_dict[ 'format-version' ]}</td>
+                                    <td>${workflow_dict[ 'annotation' ]}</td>
+                                </tr>
+                            %endfor
+                        </table>
+                    </div>
+                    <div style="clear: both"></div>
+                %endif
+            %endif
+            <form name="set_metadata" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=repository.tip )}" method="post">
+                <div class="form-row">
+                    <div style="float: left; width: 250px; margin-right: 10px;">
+                        <input type="submit" name="set_metadata_button" value="Reset metadata"/>
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Inspect the repository and reset the above attributes for the repository tip.
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+%endif
 %if trans.app.config.smtp_server:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormTitle">Notification on update</div>
         <div class="toolFormBody">
             <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">

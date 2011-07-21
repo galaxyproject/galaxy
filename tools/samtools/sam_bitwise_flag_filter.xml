@@ -1,11 +1,8 @@
-<tool id="sam_bw_filter" name="Filter SAM" version="1.0.1">
+<tool id="sam_bw_filter" name="Filter SAM" version="1.0.0">
   <description>on bitwise flag values</description>
   <parallelism method="basic"></parallelism>
   <command interpreter="python">
     sam_bitwise_flag_filter.py  
-      #if $drop_header == "1":
-      --drop_header
-      #end if
       --input_sam_file=$input1
       --flag_column=2
       #for $bit in $bits
@@ -15,11 +12,6 @@
   </command>
   <inputs>
     <param format="sam" name="input1" type="data" label="Select dataset to filter"/>
-    <param name="drop_header" type="select" display="radio" label="DROP sam headers"
-         help="Set this if you REALLY want to throw away existing sam header metadata - downstream (eg Picard) tools often demand it" >
-         <option value="0" selected="true">Keep headers (default)</option>
-         <option value="1">Drop headers</option>
-    </param>
     <repeat name="bits" title="Flag">
       <param name="flags" type="select" label="Type">
         <option value="--0x0001">Read is paired</option>

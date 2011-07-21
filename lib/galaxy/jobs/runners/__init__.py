@@ -1,10 +1,9 @@
 import os, os.path
 
 class BaseJobRunner( object ):
-
     def build_command_line( self, job_wrapper, include_metadata=False ):
         """
-        Compose the sequence of commands neccesary to execute a job. This will
+        Compose the sequence of commands necessary to execute a job. This will
         currently include:
             - environment settings corresponding to any requirement tags
             - command line taken from job wrapper
@@ -15,9 +14,13 @@ class BaseJobRunner( object ):
         # occur
         if not commands:
             return None
+        # Prepend version string
+        if job_wrapper.version_string_cmd:
+            commands = "%s &> %s; " % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() ) + commands
         # Prepend dependency injection
         if job_wrapper.dependency_shell_commands:
             commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] ) 
+        
         # Append metadata setting commands, we don't want to overwrite metadata
         # that was copied over in init_meta(), as per established behavior
         if include_metadata and self.app.config.set_metadata_externally:
