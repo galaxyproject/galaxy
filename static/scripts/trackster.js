@@ -825,6 +825,9 @@ extend( View.prototype, {
         label_track.view = this;
         this.label_tracks.push(label_track);
     },
+    /**
+     * Remove a track from the view.
+     */
     remove_track: function(track) {
         this.has_changes = true;
         delete this.tracks[this.tracks.indexOf(track)];
