@@ -807,6 +807,9 @@ extend( View.prototype, {
         }
         view.redraw();
     },
+    /**
+     * Add a track to the view.
+     */
     add_track: function(track) {
         track.view = this;
         track.track_id = this.track_id_counter;

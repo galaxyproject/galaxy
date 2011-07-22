@@ -93,7 +93,11 @@ class DbKeyColumn( grids.GridColumn ):
         """ Filter by dbkey. """
         # use raw SQL b/c metadata is a BLOB
         dbkey = dbkey.replace("'", "\\'")
-        return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+        return query.filter( or_( \
+                                or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
+                                or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
+                                )
+                            )
                     
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
