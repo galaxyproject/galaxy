@@ -442,12 +442,12 @@ class S3ObjectStore(ObjectStore):
     
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
-        for basedir, dirs, files in os.walk( rel_path ):
-            util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
+        for basedir, dirs, files in os.walk(rel_path):
+            util.umask_fix_perms(basedir, self.app.config.umask, 0777, self.app.config.gid)
             for f in files:
-                path = os.path.join( basedir, f )
+                path = os.path.join(basedir, f)
                 # Ignore symlinks
-                if os.path.islink( path ):
+                if os.path.islink(path):
                     continue 
                 util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
     
@@ -545,7 +545,7 @@ class S3ObjectStore(ObjectStore):
             os.makedirs(self._get_cache_path(rel_path_dir))
         # Now pull in the file
         ok = self._download(rel_path)
-        self._fix_permissions(rel_path)
+        self._fix_permissions(self._get_cache_path(rel_path_dir))
         return ok
     
     def _transfer_cb(self, complete, total):
@@ -569,14 +569,14 @@ class S3ObjectStore(ObjectStore):
             if ret_code == 127:
                 self.transfer_progress = 0 # Reset transfer progress counter
                 key.get_contents_to_filename(self._get_cache_path(rel_path), cb=self._transfer_cb, num_cb=10)
-                print "(ssss) Pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path))
+                print "(ssss1) Pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path))
                 return True
             else:
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
                 ret_code = subprocess.call("axel -a -n %s '%s'" % (ncores, url))
                 if ret_code == 0:
-                    print "(ssss) Parallel pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path))
+                    print "(ssss2) Parallel pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path))
                     return True
         except S3ResponseError, ex:
             log.error("Problem downloading key '%s' from S3 bucket '%s': %s" % (rel_path, self.bucket.name, ex))
