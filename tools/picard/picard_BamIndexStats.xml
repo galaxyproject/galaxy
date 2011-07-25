@@ -9,8 +9,8 @@
       -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/BamIndexStats.jar"
   </command>
   <inputs>
-    <param format="bam" name="input_file" type="data"  label="Input: sam or bam format short read data in your current history"
-      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
+    <param format="bam" name="input_file" type="data"  label="BAM dataset to generate statistics for"
+      help="If empty, upload or import a BAM dataset" />
   </inputs>
   <outputs>
     <data format="html" name="htmlfile" label="${tool.name}_on_${on_string}.html" />
@@ -39,30 +39,39 @@
 
 **Purpose**
 
-Generate Bam Index Stats for a provided bam file
+Generate Bam Index Stats for a provided BAM file.
 
 **Picard documentation**
 
-This is a Galaxy wrapper for BamIndexStats, a part of Picard-tools_, which is closely related to SAMTools_.
+This is a Galaxy wrapper for BamIndexStats, a part of the external package Picard-tools_.
 
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
- .. _SAMTools: http://samtools.sourceforge.net/
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
 
 ------
 
-**Inputs**
+.. class:: infomark
 
-The only input is the bam file you wish to obtain statistics for, which is required. Note that it must be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
+**Inputs and outputs**
 
-**Outputs**
+The only input is the BAM file you wish to obtain statistics for, which is required.
+Note that it must be coordinate-sorted. Galaxy currently coordinate-sorts all BAM files.
 
-The output from this tool is a simple text file.
+This tool outputs an HTML file that contains links to the actual metrics results, as well
+as a log file with info on the exact command run.
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
 
 ------
 
 **Example**
 
-Given a bam file created from the following::
+Given a BAM file created from the following::
 
   @HD    VN:1.0     SO:coordinate
   @SQ    SN:chr1    LN:101
@@ -83,13 +92,13 @@ Given a bam file created from the following::
   read7    163    chr7    302    255    10M1D10M5I76M    =         1    -201    NCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA    I/15445666651/566666553+2/14/I/555512+3/)-'/-I-'*+))*''13+3)'//++''/'))/3+I*5++)I'2+I+/*I-II*)I-./1'1    RG:Z:0
   read8    165       *      0      0    *                chr7      1       0    NCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA    I/15445666651/566666553+2/14/I/555512+3/)-'/-I-'*+))*''13+3)'//++''/'))/3+I*5++)I'2+I+/*I-II*)I-./1'1    RG:Z:0
 
-The following file will be produced::
+The following metrics file will be produced::
 
-  chr1 length=    101    Aligned= 0	Unaligned= 0
-  chr7 length=    404    Aligned= 7	Unaligned= 0
-  chr8 length=    202    Aligned= 0	Unaligned= 0
-  chr10 length=   303    Aligned= 0	Unaligned= 0
-  chr14 length=   505    Aligned= 0	Unaligned= 0
+  chr1 length=    101    Aligned= 0    Unaligned= 0
+  chr7 length=    404    Aligned= 7    Unaligned= 0
+  chr8 length=    202    Aligned= 0    Unaligned= 0
+  chr10 length=   303    Aligned= 0    Unaligned= 0
+  chr14 length=   505    Aligned= 0    Unaligned= 0
   NoCoordinateCount= 1
 
   </help>

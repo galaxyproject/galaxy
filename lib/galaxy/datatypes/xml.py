@@ -26,19 +26,31 @@ class BlastXml( data.Text ):
         >>> fname = get_test_fname( 'megablast_xml_parser_test1.blastxml' )
         >>> BlastXml().sniff( fname )
         True
+        >>> fname = get_test_fname( 'tblastn_four_human_vs_rhodopsin.xml' )
+        >>> BlastXml().sniff( fname )
+        True
         >>> fname = get_test_fname( 'interval.interval' )
         >>> BlastXml().sniff( fname )
         False
         """
-        blastxml_header = [ '<?xml version="1.0"?>',
-                            '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
-                            '<BlastOutput>' ]
-        for i, line in enumerate( file( filename ) ):
-            if i >= len( blastxml_header ):
-                return True
-            line = line.rstrip( '\n\r' )
-            if line != blastxml_header[ i ]:
-                return False
+        #TODO - Use a context manager on Python 2.5+ to close handle
+        handle = open(filename)
+        line = handle.readline()
+        if line.strip() != '<?xml version="1.0"?>':
+            handle.close()
+            return False
+        line = handle.readline()
+        if line.strip() not in ['<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
+                                '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">']:
+            handle.close()
+            return False
+        line = handle.readline()
+        if line.strip() != '<BlastOutput>':
+            handle.close()
+            return False
+        handle.close()
+        return True
+        
 
 class MEMEXml( data.Text ):
     """MEME XML Output data"""

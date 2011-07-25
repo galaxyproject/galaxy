@@ -135,6 +135,7 @@
         <div class="form-row">
             <div>${ldda.blurb}</div>
         </div>
+        ## We want to display all metadata item here, whether marked visible or not since they are all pretty useful
         %for name, spec in ldda.metadata.spec.items():
             <div class="form-row">
                 <label>${spec.desc.replace( ' (click box & select)', '' )}:</label>

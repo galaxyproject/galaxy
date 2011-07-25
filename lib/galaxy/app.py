@@ -29,7 +29,7 @@ class UniverseApplication( object ):
             db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         # Initialize database / check for appropriate schema version
         from galaxy.model.migrate.check import create_or_verify_database
-        create_or_verify_database( db_url, self.config.database_engine_options )
+        create_or_verify_database( db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
         # Setup the database engine and ORM
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,

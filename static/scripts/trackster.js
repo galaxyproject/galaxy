@@ -172,7 +172,7 @@ var
     // height of individual features within tracks. Feature height, then, should always be less
     // than track height.
     CHAR_HEIGHT_PX = 9, // FIXME: font size may not be static
-    ERROR_PADDING = 10, // Padding at the top of tracks for error messages
+    ERROR_PADDING = 20, // Padding at the top of tracks for error messages
     SUMMARY_TREE_TOP_PADDING = CHAR_HEIGHT_PX + 2,
     // Maximum number of rows un a slotted track
     MAX_FEATURE_DEPTH = 100,
@@ -212,7 +212,14 @@ extend(Cache.prototype, {
     get: function(key) {
         var index = this.key_ary.indexOf(key);
         if (index !== -1) {
-            this.move_key_to_end(key, index);
+            if (this.obj_cache[key].stale) {
+                // Object is stale, so remove key and object.
+                this.key_ary.splice(index, 1);
+                delete this.obj_cache[key];
+            }
+            else {
+                this.move_key_to_end(key, index);
+            }
         }
         return this.obj_cache[key];
     },
@@ -256,9 +263,12 @@ extend(DataManager.prototype, Cache.prototype, {
     /**
      * Load data from server; returns AJAX object so that use of Deferred is possible.
      */
-    load_data: function(chrom, low, high, mode, resolution, extra_params) {
+    load_data: function(low, high, resolution, extra_params) {
         // Setup data request params.
-        var params = {"chrom": chrom, "low": low, "high": high, "mode": mode, 
+        var 
+            chrom = this.track.view.chrom,
+            mode = this.track.mode,
+            params = {"chrom": chrom, "low": low, "high": high, "mode": mode, 
                       "resolution": resolution, "dataset_id" : this.track.dataset_id, 
                       "hda_ldda": this.track.hda_ldda};
         $.extend(params, extra_params);
@@ -280,9 +290,9 @@ extend(DataManager.prototype, Cache.prototype, {
         });
     },
     /**
-     * Get data and do callback.
+     * Get track data.
      */
-    get_data: function(chrom, low, high, mode, resolution, extra_params) {
+    get_data: function(low, high, resolution, extra_params) {
         // Debugging:
         //console.log("get_data", low, high, mode);
         /*
@@ -292,11 +302,11 @@ extend(DataManager.prototype, Cache.prototype, {
         }
         */
         
-        // Look for key in cache and, if found, do callback.
-        var entry = this.get(this.gen_key(low, high, mode));
-        if (entry) {
-            return entry;
-        }
+        // Look for entry and return if found.
+        var 
+            mode = this.track.mode,
+            entry = this.get_data_from_cache(low, high, mode);
+        if (entry) { return entry; }
 
         //
         // If data supports subsetting:
@@ -308,6 +318,7 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         
         /* Disabling for now, more detailed data is never loaded for line tracks
+        TODO: can using resolution in the key solve this problem?
         if (this.subset) {
             var key, split_key, entry_low, entry_high, mode, entry;
             for (var i = 0; i < this.key_ary.length; i++) {
@@ -331,10 +342,78 @@ extend(DataManager.prototype, Cache.prototype, {
                 
         // Load data from server. The deferred is immediately saved until the
         // data is ready, it then replaces itself with the actual data
-        entry = this.load_data(chrom, low, high, mode, resolution, extra_params);
-        this.set_data( low, high, mode, entry );
+        entry = this.load_data(low, high, resolution, extra_params);
+        this.set_data(low, high, mode, entry);
         return entry
     },
+    /** "Deep" data request; used as a parameter for DataManager.get_more_data() */
+    DEEP_DATA_REQ: "deep",
+    /** "Broad" data request; used as a parameter for DataManager.get_more_data() */
+    BROAD_DATA_REQ: "breadth",
+    /**
+     * Gets more data for a region using either a depth-first or a breadth-first approach.
+     */
+    get_more_data: function(low, high, resolution, extra_params, req_type) {
+        //
+        // Get current data from cache and mark as stale.
+        //
+        var 
+            mode = this.track.mode,
+            cur_data = this.get_data_from_cache(low, high, mode);
+        if (!cur_data) {
+            console.log("ERROR: no current data for: ", this.track, low, high, resolution, extra_params);
+            return;
+        }
+        cur_data.stale = true;
+        
+        //
+        // Set parameters based on request type.
+        //
+        var query_low = low;
+        if (req_type === this.DEEP_DATA_REQ) {
+            // Use same interval but set start_val to skip data that's already in cur_data.
+            $.extend(extra_params, {start_val: cur_data.data.length + 1});
+        }
+        else if (req_type === this.BROAD_DATA_REQ) {
+            // Set query low to be past the last feature returned so that an area of extreme feature depth
+            // is bypassed.
+            query_low = cur_data.data[cur_data.data.length - 1][2] + 1;
+        }
+        
+        //
+        // Get additional data, append to current data, and set new data. Use a custom deferred object
+        // to signal when new data is available.
+        //
+        var 
+            data_manager = this,
+            new_data_request = this.load_data(query_low, high, resolution, extra_params)
+            new_data_available = $.Deferred();
+        // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
+        // is all data, not just new data.
+        this.set_data(low, high, mode, new_data_available);
+        $.when(new_data_request).then(function(result) {
+            // Update data and message.
+            if (result.data) {
+                result.data = cur_data.data.concat(result.data);
+                if (result.message) {
+                    // HACK: replace number in message with current data length. Works but is ugly.
+                    result.message = result.message.replace(/[0-9]+/, result.data.length);
+                }
+            }
+            data_manager.set_data(low, high, mode, result);
+            new_data_available.resolve(result);
+        });
+        return new_data_available;
+    },
+    /**
+     * Gets data from the cache.
+     */
+    get_data_from_cache: function(low, high, mode) {
+        return this.get(this.gen_key(low, high, mode));
+    },
+    /**
+     * Sets data in the cache.
+     */
     set_data: function(low, high, mode, result) {
         //console.log("set_data", low, high, mode, result);
         return this.set(this.gen_key(low, high, mode), result);
@@ -342,6 +421,8 @@ extend(DataManager.prototype, Cache.prototype, {
     /**
      * Generate key for cache.
      */
+    // TODO: use chrom in key so that (a) data is not thrown away when changing chroms and (b)
+    // manager does not need to be cleared when changing chroms.
     gen_key: function(low, high, mode) {
         var key = low + "_" + high + "_" + mode;
         return key;
@@ -405,8 +486,11 @@ extend( View.prototype, {
         this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.top_container);        
         // Viewport for dragging tracks in center    
         this.viewport_container = $("<div/>").addClass("viewport-container").addClass("viewport-container").appendTo(this.content_div);
-        // Future overlay?
-        this.intro_div = $("<div/>").addClass("intro").text("Select a chrom from the dropdown below").hide(); 
+        // Introduction div shown when there are no tracks.
+        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
+        var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
+            add_tracks();
+        });
         // Another label track at bottom
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
         // Navigation at top
@@ -455,7 +539,6 @@ extend( View.prototype, {
         this.chrom_select.bind("change", function() {
             view.change_chrom(view.chrom_select.val());
         });
-        this.intro_div.show();
                 
         /*
         this.content_div.bind("mousewheel", function( e, delta ) {
@@ -570,6 +653,16 @@ extend( View.prototype, {
         
         this.reset();
         $(window).trigger("resize");
+        this.update_intro_div();
+    },
+    /** Show or hide intro div depending on view state. */
+    update_intro_div: function() {
+        if (this.num_tracks === 0) {
+            this.intro_div.show();
+        }
+        else {
+            this.intro_div.hide();
+        }
     },
     update_location: function(low, high) {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
@@ -654,12 +747,6 @@ extend( View.prototype, {
             // Switching to local chrom.
             if (chrom !== view.chrom) {
                 view.chrom = chrom;
-                if (!view.chrom) {
-                    // No chrom selected
-                    view.intro_div.show();
-                } else {
-                    view.intro_div.hide();
-                }
                 view.chrom_select.val(view.chrom);
                 view.max_high = found.len-1; // -1 because we're using 0-based indexing.
                 view.reset();
@@ -720,6 +807,9 @@ extend( View.prototype, {
         }
         view.redraw();
     },
+    /**
+     * Add a track to the view.
+     */
     add_track: function(track) {
         track.view = this;
         track.track_id = this.track_id_counter;
@@ -729,16 +819,24 @@ extend( View.prototype, {
         sortable( track.container_div, '.draghandle' );
         this.track_id_counter += 1;
         this.num_tracks += 1;
+        this.update_intro_div();
     },
     add_label_track: function (label_track) {
         label_track.view = this;
         this.label_tracks.push(label_track);
     },
+    /**
+     * Remove a track from the view.
+     */
     remove_track: function(track) {
         this.has_changes = true;
-        track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[this.tracks.indexOf(track)];
         this.num_tracks -= 1;
+        var view = this;
+        track.container_div.fadeOut('slow', function() { 
+            $(this).remove();
+            view.update_intro_div(); 
+        });
     },
     reset: function() {
         this.low = this.max_low;
@@ -942,6 +1040,7 @@ extend(Tool.prototype, {
                      dataset_id: this.track.original_dataset_id,
                      tool_id: tool.name
                  },
+                 null,
                  // Success callback.
                  function(track_data) {
                      show_modal(tool.name + " is Running", 
@@ -976,14 +1075,15 @@ extend(Tool.prototype, {
             
         // Create and add track.
         // TODO: add support for other kinds of tool data tracks.
-        if (current_track.track_type === 'FeatureTrack') {
-            new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);    
+        if (current_track instanceof FeatureTrack) {
+            new_track = new ToolDataFeatureTrack(track_name, view, current_track.hda_ldda, undefined, {}, {}, current_track);  
+            new_track.change_mode(current_track.mode);
         }
         this.track.add_track(new_track);
         new_track.content_div.text("Starting job.");
         
         // Run tool.
-        this.run(url_params,
+        this.run(url_params, new_track,
                  // Success callback.
                  function(track_data) {
                      new_track.dataset_id = track_data.dataset_id;
@@ -995,7 +1095,7 @@ extend(Tool.prototype, {
     /**
      * Run tool using a set of URL params and a success callback.
      */
-    run: function(url_params, success_callback) {
+    run: function(url_params, new_track, success_callback) {
         // Add tool params to URL params.
         $.extend(url_params, this.get_param_values_dict());
         
@@ -1016,7 +1116,7 @@ extend(Tool.prototype, {
                 else if (response === "pending") {
                     // Converting/indexing input datasets; show message and try again.
                     new_track.container_div.addClass("pending");
-                    new_track.content_div.text("Converting input data so that it can be easily reused.");
+                    new_track.content_div.text("Converting input data so that it can be used quickly with tool.");
                     setTimeout(json_run_tool, 2000);
                 }
                 else {
@@ -1494,20 +1594,25 @@ extend( TrackConfig.prototype, {
 /**
  * Tiles drawn by tracks.
  */
-var Tile = function(index, resolution, canvas) {
+var Tile = function(index, resolution, canvas, data) {
     this.index = index;
+    this.low = index * DENSITY * resolution;
+    this.high = (index + 1) * DENSITY * resolution;
     this.resolution = resolution;
     // Wrap element in div for background.
     this.canvas = $("<div class='track-tile'/>").append(canvas);
+    this.data = data;
+    this.stale = false;
 };
 
-var SummaryTreeTile = function(index, resolution, canvas, max_val) {
-    Tile.call(this, index, resolution, canvas);
+var SummaryTreeTile = function(index, resolution, canvas, data, max_val) {
+    Tile.call(this, index, resolution, canvas, data);
     this.max_val = max_val;
 };
 
-var FeatureTrackTile = function(index, resolution, canvas) {
-    Tile.call(this, index, resolution, canvas);
+var FeatureTrackTile = function(index, resolution, canvas, data, message) {
+    Tile.call(this, index, resolution, canvas, data);
+    this.message = message;
 };
 
 /**
@@ -1522,6 +1627,7 @@ var FeatureTrackTile = function(index, resolution, canvas) {
  * ----> FeatureTrack
  * -------> ReadTrack
  * -------> ToolDataFeatureTrack
+ * -------> VcfTrack
  */
 var Track = function(name, view, parent_element, data_url, data_query_wait) {
     //
@@ -1554,6 +1660,32 @@ var Track = function(name, view, parent_element, data_url, data_query_wait) {
     this.parent_element.append(this.container_div);
 };
 extend(Track.prototype, {
+    /** Returns track type. */
+    get_type: function() {
+        // Order is important: start with most-specific classes and go up the track hierarchy.
+        if (this instanceof LabelTrack) {
+            return "LabelTrack";
+        }
+        else if (this instanceof ReferenceTrack) {
+            return "ReferenceTrack";
+        }
+        else if (this instanceof LineTrack) {
+            return "LineTrack";
+        }
+        else if (this instanceof ReadTrack) {
+            return "ReadTrack";
+        }
+        else if (this instanceof ToolDataFeatureTrack) {
+            return "ToolDataFeatureTrack";
+        }
+        else if (this instanceof VcfTrack) {
+            return "VcfTrack";
+        }
+        else if (this instanceof FeatureTrack) {
+            return "FeatureTrack";
+        }
+        return "";
+    },
     /**
      * Initialize and draw the track.
      */
@@ -1561,7 +1693,7 @@ extend(Track.prototype, {
         var track = this;
         track.enabled = false;
         track.tile_cache.clear();    
-        track.data_cache.clear();
+        track.data_manager.clear();
         track.initial_canvas = undefined;
         track.content_div.css("height", "auto");
         /*
@@ -1704,19 +1836,11 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
             track.mode = init_mode;
             track.mode_div.text(init_mode);
         
-            var change_mode = function(name) {
-                track.mode_div.text(name);
-                // TODO: is it necessary to store the mode in two places (.mode and track_config)?
-                track.mode = name;
-                track.track_config.values['mode'] = name;
-                track.tile_cache.clear();
-                track.draw();
-            };
             var mode_mapping = {};
             for (var i = 0, len = track.display_modes.length; i < len; i++) {
                 var mode = track.display_modes[i];
                 mode_mapping[mode] = function(mode) {
-                    return function() { change_mode(mode); };
+                    return function() { track.change_mode(mode); };
                 }(mode);
             }
             make_popupmenu(track.mode_div, mode_mapping);
@@ -1746,6 +1870,18 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     */
 };
 extend(TiledTrack.prototype, Track.prototype, {
+    /**
+     * Change track's mode.
+     */
+    change_mode: function(name) {
+        var track = this;
+        track.mode_div.text(name);
+        // TODO: is it necessary to store the mode in two places (.mode and track_config)?
+        track.mode = name;
+        track.track_config.values['mode'] = name;
+        track.tile_cache.clear();
+        track.draw();
+     },
     /**
      * Make popup menu for track name.
      */
@@ -1862,6 +1998,10 @@ extend(TiledTrack.prototype, Track.prototype, {
      * tiles after drawing new tiles.
      */
     draw: function(force, clear_after) {
+        // Cannot draw without dataset_id; dataset_id may not be set if track dynamically created
+        // and is waiting for dataset.
+        if (!this.dataset_id) { return; }
+        
         var low = this.view.low,
             high = this.view.high,
             range = high - low,
@@ -1888,9 +2028,9 @@ extend(TiledTrack.prototype, Track.prototype, {
             var cached = this.tile_cache.get(key);
             var tile_low = tile_index * DENSITY * this.view.resolution;
             var tile_high = tile_low + DENSITY * this.view.resolution;
-            if ( !force && cached ) {
+            if (!force && cached) {
                 drawn_tiles[drawn_tiles.length] = cached;
-                this.show_tile(cached, parent_element, tile_low, w_scale);
+                this.show_tile(cached, parent_element, w_scale);
             } else {
                 this.delayed_draw(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles);
             }
@@ -1932,7 +2072,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 //
                 // HACK: use track type b/c LineTrack histograms are different; what's needed is different
                 // post-draw actions for different line tracks.
-                if (track.track_type == "FeatureTrack" && track.mode == "Histogram") {
+                if (track instanceof FeatureTrack && track.mode == "Histogram") {
                     // Get global max.
                     var global_max = -1;
                     for (var i = 0; i < drawn_tiles.length; i++) {
@@ -1963,13 +2103,17 @@ extend(TiledTrack.prototype, Track.prototype, {
                         filters[f].update_ui_elt();
                     }
 
-                    // Determine if filters are available; this is based on the example feature.
-                    var filters_available = false;
-                    if (track.example_feature) {
-                        for (var f = 0; f < filters.length; f++) {
-                            if (filters[f].applies_to(track.example_feature)) {
-                                filters_available = true;
-                                break;
+                    // Determine if filters are available; this is based on the tiles' data.
+                    var filters_available = false,
+                        example_feature;
+                    for (var i = 0; i < drawn_tiles.length; i++) {
+                        if (drawn_tiles[i].data.length) {
+                            example_feature = drawn_tiles[i].data[0];
+                            for (var f = 0; f < filters.length; f++) {
+                                if (filters[f].applies_to(example_feature)) {
+                                    filters_available = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -1981,6 +2125,27 @@ extend(TiledTrack.prototype, Track.prototype, {
                             track.filters_div.hide();
                         }
                         track.make_name_popup_menu();
+                    }
+                }
+                
+                //
+                // If some tiles have messages, set padding of tiles without messages
+                // so features and rows align.
+                //
+                var messages_to_show = false;
+                for (var tile_index = 0; tile_index < drawn_tiles.length; tile_index++) {
+                    if (drawn_tiles[tile_index].message) {
+                        messages_to_show = true;
+                        break;
+                    }
+                }
+                if (messages_to_show) {
+                    for (var tile_index = 0; tile_index < drawn_tiles.length; tile_index++) {
+                        tile = drawn_tiles[tile_index];
+                        if (!tile.message) {
+                            // Need to align with other tile(s) that have message(s).
+                            tile.canvas.css("padding-top", ERROR_PADDING);
+                        }
                     }
                 }
                 
@@ -2021,7 +2186,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             if (tile === undefined) {
                 return;
             }
-            track.show_tile(tile, parent_element, tile_low, w_scale);
+            track.show_tile(tile, parent_element, w_scale);
             drawn_tiles[drawn_tiles.length] = tile;
         };
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
@@ -2030,21 +2195,19 @@ extend(TiledTrack.prototype, Track.prototype, {
                 // Show/draw tile: check cache for tile; if tile not in cache, draw it.
                 var tile = (force ? undefined : track.tile_cache.get(key));
                 if (tile) { 
-                    track.show_tile(tile, parent_element, tile_low, w_scale);
+                    track.show_tile(tile, parent_element, w_scale);
                     drawn_tiles[drawn_tiles.length] = tile;
                 }
                 else {
                     //
                     // Really draw tile: get data, seq data if available, and draw tile.
                     //
-                    $.when(track.data_cache.get_data(view.chrom, tile_low, tile_high, track.mode, 
-                                                     resolution, track.data_url_extra_params)).then(function(tile_data) {
+                    $.when(track.data_manager.get_data(tile_low, tile_high, resolution, track.data_url_extra_params)).then(function(tile_data) {
                         extend(tile_data, more_tile_data);
                         // If sequence data needed, get that and draw. Otherwise draw.
                         if (view.reference_track && w_scale > view.canvas_manager.char_width_px) {
-                            $.when(view.reference_track.data_cache.get_data(view.chrom, tile_low, tile_high, 
-                                                                            track.mode, resolution, 
-                                                                            view.reference_track.data_url_extra_params)).then(function(seq_data) {
+                            $.when(view.reference_track.data_manager.get_data(tile_low, tile_high, resolution, 
+                                                                                view.reference_track.data_url_extra_params)).then(function(seq_data) {
                                 draw_and_show_tile(id, tile_data, resolution, tile_index, parent_element, w_scale, seq_data);
                             });
                         }
@@ -2059,9 +2222,49 @@ extend(TiledTrack.prototype, Track.prototype, {
     /**
      * Show track tile and perform associated actions.
      */
-    show_tile: function(tile, parent_element, tile_low, w_scale) {
+    show_tile: function(tile, parent_element, w_scale) {
         // Readability.
-        var track = this;
+        var 
+            track = this,
+            canvas = tile.canvas,
+            tile_element = canvas;
+        
+        //
+        // If tile has message, display message and button to show more data.
+        // TODO: need to handle other messages, not assume message === show more data.
+        //
+        if (tile.message) {
+            var 
+                container_div = $("<div/>"),
+                message_div = $("<div/>").addClass("tile-message").text(tile.message).
+                                // -1 to account for border.
+                                css({'height': ERROR_PADDING-1, 'width': tile.canvas.width}).appendTo(container_div),
+                more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down").appendTo(message_div),
+                more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across").appendTo(message_div);
+            container_div.append(canvas);
+            tile_element = container_div;
+            
+            // Set up actions for icons.
+            more_down_icon.click(function() {
+                // Mark tile as stale, request more data, and redraw track.
+                tile.stale = true;
+                track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+                track.draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normally zoom in.
+                e.stopPropagation();
+            });
+            
+            more_across_icon.click(function() {
+                // Mark tile as stale, request more data, and redraw track.
+                tile.stale = true;
+                track.data_manager.get_more_data(tile.low, tile.high, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+                track.draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normally zoom in.
+                e.stopPropagation();
+            });
+        }
         
         //
         // Show tile element.
@@ -2069,11 +2272,10 @@ extend(TiledTrack.prototype, Track.prototype, {
       
         // Position tile element, recalculate left position at display time
         var range = this.view.high - this.view.low,
-            left = (tile_low - this.view.low) * w_scale;
+            left = (tile.low - this.view.low) * w_scale;
         if (this.left_offset) {
             left -= this.left_offset;
         }
-        var tile_element = tile.canvas;
         tile_element.css({ position: 'absolute', top: 0, left: left, height: '' });
         parent_element.append(tile_element);
         
@@ -2128,7 +2330,6 @@ extend(TiledTrack.prototype, Track.prototype, {
 });
 
 var LabelTrack = function (view, parent_element) {
-    this.track_type = "LabelTrack";
     this.hidden = true;
     Track.call( this, null, view, parent_element );
     this.container_div.addClass( "label-track" );
@@ -2156,7 +2357,6 @@ extend( LabelTrack.prototype, Track.prototype, {
 });
 
 var ReferenceTrack = function (view) {
-    this.track_type = "ReferenceTrack";
     this.hidden = true;
     Track.call(this, null, view, view.top_labeltrack);
     TiledTrack.call(this);
@@ -2164,13 +2364,13 @@ var ReferenceTrack = function (view) {
     view.reference_track = this;
     this.left_offset = 200;
     this.height_px = 12;
-    this.container_div.addClass( "reference-track" );
+    this.container_div.addClass("reference-track");
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
     this.content_div.css("border", "none");
     this.data_url = reference_url;
     this.data_url_extra_params = {dbkey: view.dbkey};
-    this.data_cache = new ReferenceTrackDataManager(CACHED_DATA, this, false);
+    this.data_manager = new ReferenceTrackDataManager(CACHED_DATA, this, false);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 };
 extend(ReferenceTrack.prototype, TiledTrack.prototype, {
@@ -2188,7 +2388,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
             }
             var canvas = this.view.canvas_manager.new_canvas();
             var ctx = canvas.getContext("2d");
-            canvas.width = Math.ceil( tile_length * w_scale + track.left_offset);
+            canvas.width = Math.ceil(tile_length * w_scale + track.left_offset);
             canvas.height = track.height_px;
             ctx.font = ctx.canvas.manager.default_font;
             ctx.textAlign = "center";
@@ -2196,7 +2396,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
                 var c_start = Math.round(c * w_scale);
                 ctx.fillText(seq[c], c_start + track.left_offset, 10);
             }
-            return new Tile(tile_index, resolution, canvas);
+            return new Tile(tile_index, resolution, canvas, seq);
         }
         this.content_div.css("height", "0px");
     }
@@ -2204,7 +2404,6 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
 
 var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     var track = this;
-    this.track_type = "LineTrack";
     this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
     this.mode = "Histogram";
     Track.call( this, name, view, view.viewport_container );
@@ -2216,7 +2415,7 @@ var LineTrack = function (name, view, hda_ldda, dataset_id, prefs) {
     this.hda_ldda = hda_ldda;
     this.dataset_id = dataset_id;
     this.original_dataset_id = dataset_id;
-    this.data_cache = new DataManager(CACHED_DATA, this);
+    this.data_manager = new DataManager(CACHED_DATA, this);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
 
     // Define track configuration
@@ -2332,11 +2531,10 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
         
         // Paint line onto full canvas
         var ctx = canvas.getContext("2d");
-        var painter = new painters.LinePainter( result.data, tile_low, tile_low + tile_length,
-                                                this.prefs, this.mode );
-        painter.draw( ctx, width, height );
+        var painter = new painters.LinePainter(result.data, tile_low, tile_low + tile_length, this.prefs, this.mode);
+        painter.draw(ctx, width, height);
         
-        return new Tile(tile_length, resolution, canvas);
+        return new Tile(tile_index, resolution, canvas, result.data);
     } 
 });
 
@@ -2346,7 +2544,6 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     // initialization code.
     //
     var track = this;
-    this.track_type = "FeatureTrack";
     this.display_modes = ["Auto", "Histogram", "Dense", "Squish", "Pack"];
     // Define and restore track configuration.
     this.track_config = new TrackConfig( {
@@ -2382,7 +2579,7 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     this.inc_slots = {};
     this.start_end_dct = {};
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
-    this.data_cache = new DataManager(20, this);
+    this.data_manager = new DataManager(20, this);
     this.left_offset = 200;
 
     this.painter = painters.LinkedFeaturePainter;
@@ -2507,9 +2704,9 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
     draw_tile: function(result, resolution, tile_index, w_scale, ref_seq) {
         var track = this,
             tile_low = tile_index * DENSITY * resolution,
-            tile_high = ( tile_index + 1 ) * DENSITY * resolution,
+            tile_high = (tile_index + 1) * DENSITY * resolution,
             tile_span = tile_high - tile_low,
-            width = Math.ceil( tile_span * w_scale ),
+            width = Math.ceil(tile_span * w_scale),
             mode = this.mode,
             min_height = 25,
             left_offset = this.left_offset,
@@ -2551,7 +2748,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // TODO: this shouldn't be done at the tile level
             this.container_div.find(".yaxislabel").remove();
             var max_label = $("<div />").addClass('yaxislabel');
-            max_label.text( result.max );
+            max_label.text(result.max);
             max_label.css({ position: "absolute", top: "24px", left: "10px", color: this.prefs.label_color });
             max_label.prependTo(this.container_div);
             // Create canvas
@@ -2574,7 +2771,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // Deal with left_offset by translating
             ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
             painter.draw(ctx, width, required_height);
-            return new SummaryTreeTile(tile_index, resolution, canvas, result.max);
+            return new SummaryTreeTile(tile_index, resolution, canvas, result.data, result.max);
         }
 
         // Start dealing with row-by-row tracks
@@ -2610,9 +2807,8 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         
         // Create painter, and canvas of sufficient size to contain all features
         // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
-        var painter = new (this.painter)( filtered, tile_low, tile_high, this.prefs, mode, ref_seq );
-        // FIXME: ERROR_PADDING is an ugly gap most of the time
-        var required_height = painter.get_required_height( slots_required ) + ERROR_PADDING;
+        var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, ref_seq);
+        var required_height = painter.get_required_height(slots_required);
         var canvas = this.view.canvas_manager.new_canvas();
         
         canvas.width = width + left_offset;
@@ -2625,37 +2821,18 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.textAlign = "right";
         this.container_div.find(".yaxislabel").remove();
         
-        // If there is a message, draw it on canvas so that it moves around with canvas, and make the border red
-        // to indicate region where message is applicable
-        if (result.message) {
-            ctx.fillStyle = "red";
-            ctx.textAlign = "left";
-            var old_base = ctx.textBaseline;
-            ctx.textBaseline = "top";
-            ctx.fillRect(left_offset, 0, canvas.width - left_offset, 1);
-            ctx.fillText(result.message, left_offset, 2);
-            ctx.textBaseline = old_base;
-
-            // If there's no data, return.
-            if (!result.data) {
-                return new Tile(tile_index, resolution, canvas, required_height);
-            }
+        if (result.data) {
+            // Draw features.
+            ctx.translate(left_offset, 0);
+            painter.draw(ctx, width, required_height, slots);
         }
-
-        // Set example feature. This is needed so that track can update its UI based on feature attributes.
-        this.example_feature = (result.data.length ? result.data[0] : undefined);
-      
-        // Draw features
-        ctx.translate(left_offset, ERROR_PADDING);
-        painter.draw(ctx, width, required_height, slots);
-            
-        return new FeatureTrackTile(tile_index, resolution, canvas);
+        
+        return new FeatureTrackTile(tile_index, resolution, canvas, result.data, result.message);        
     }
 });
 
 var VcfTrack = function(name, view, hda_ldda, dataset_id, prefs, filters) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters);
-    this.track_type = "VcfTrack";
     this.painter = painters.VariantPainter;
 };
 
@@ -2683,7 +2860,6 @@ var ReadTrack = function (name, view, hda_ldda, dataset_id, prefs, filters) {
     });
     this.prefs = this.track_config.values;
     
-    this.track_type = "ReadTrack";
     this.painter = painters.ReadPainter;
     this.make_name_popup_menu();
 };
@@ -2694,7 +2870,6 @@ extend(ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype);
  */
 var ToolDataFeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, parent_track) {
     FeatureTrack.call(this, name, view, hda_ldda, dataset_id, prefs, filters, {}, parent_track);
-    this.track_type = "ToolDataFeatureTrack";
     
     // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
     // is ready.
@@ -2711,7 +2886,7 @@ extend(ToolDataFeatureTrack.prototype, TiledTrack.prototype, FeatureTrack.protot
         // Postdraw init: once data has been fetched, reset data url, wait time and start indexing.
         var track = this; 
         var post_init = function() {
-            if (track.data_cache.size() === 0) {
+            if (track.data_manager.size() === 0) {
                 // Track still drawing initial data, so do nothing.
                 setTimeout(post_init, 300);
             }
@@ -3151,6 +3326,9 @@ LinePainter.prototype.draw = function( ctx, width, height ) {
     ctx.restore();
 }
 
+/**
+ * Abstract object for painting feature tracks. Subclasses must implement draw_element() for painting to work.
+ */
 var FeaturePainter = function( data, view_start, view_end, prefs, mode ) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
 }
@@ -3171,7 +3349,6 @@ extend( FeaturePainter.prototype, {
     },
 
     draw: function( ctx, width, height, slots ) {
-
         var data = this.data, view_start = this.view_start, view_end = this.view_end;
 
         ctx.save();
@@ -3200,7 +3377,12 @@ extend( FeaturePainter.prototype, {
         }
 
         ctx.restore();
-    }
+    },
+    
+    /** 
+     * Abstract function for drawing an individual feature. NOTE: this method must be implemented by subclasses for drawing to work.
+     */
+    draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {}
 });
 
 // Constants specific to feature tracks moved here (HACKING, these should

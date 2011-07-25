@@ -1,15 +1,15 @@
-"""
-usage: fetch_eggs.py [egg_name] [platform]
-    With no arguments, fetches all eggs necessary according to the
-    settings in universe_wsgi.ini.
-  egg_name - Fetch only this egg (as defined in eggs.ini) or 'all' for
-    all eggs (even those not required by your settings).
-  platform - Fetch eggs for a specific platform (if not provided, fetch
-    eggs for *this* platform).  Useful for fetching eggs for cluster
-    nodes which are of a different architecture than the head node.
-    Platform name can be determined with the get_platforms.py script.
-"""
 import os, sys, logging
+from optparse import OptionParser
+
+parser = OptionParser()
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default='universe_wsgi.ini' )
+parser.add_option( '-e', '--egg-name', dest='egg_name', help='Egg name (as defined in eggs.ini) to fetch, or "all" for all eggs, even those not needed by your configuration' )
+parser.add_option( '-p', '--platform', dest='platform', help='Fetch for a specific platform (by default, eggs are fetched for *this* platform' )
+( options, args ) = parser.parse_args()
+
+if not os.path.exists( options.config ):
+    print "Config file does not exist (see 'python %s --help'): %s" % ( sys.argv[0], options.config )
+    sys.exit( 1 )
 
 root = logging.getLogger()
 root.setLevel( 10 )
@@ -21,18 +21,18 @@ sys.path.append( lib )
 from galaxy.eggs import Crate, EggNotFetchable
 import pkg_resources
 
+if options.platform:
+    c = Crate( options.config, platform = options.platform )
+else:
+    c = Crate( options.config )
 try:
-    c = Crate( platform = sys.argv[2] )
-except:
-    c = Crate()
-try:
-    if len( sys.argv ) == 1:
+    if not options.egg_name:
         c.resolve() # Only fetch eggs required by the config
-    elif sys.argv[1] == 'all':
+    elif options.egg_name == 'all':
         c.resolve( all=True ) # Fetch everything
     else:
         # Fetch a specific egg
-        name = sys.argv[1]
+        name = options.egg_name
         try:
             egg = c[name]
         except:
@@ -41,12 +41,15 @@ try:
         dist = egg.resolve()[0]
         print "%s %s is installed at %s" % ( dist.project_name, dist.version, dist.location )
 except EggNotFetchable, e:
+    config_arg = ''
+    if options.config != 'universe_wsgi.ini':
+        config_arg = '-c %s ' % options.config
     try:
-        assert sys.argv[1] != 'all'
+        assert options.egg_name != 'all'
         egg = e.eggs[0]
         print "%s %s couldn't be downloaded automatically.  You can try" % ( egg.name, egg.version )
         print "building it by hand with:"
-        print "  python scripts/scramble.py %s"
+        print "  python scripts/scramble.py %s-e %s" % ( config_arg, egg.name )
     except ( AssertionError, IndexError ):
         print "One or more of the python eggs necessary to run Galaxy couldn't be"
         print "downloaded automatically.  You can try building them by hand (all"
@@ -54,6 +57,6 @@ except EggNotFetchable, e:
         print "  python scripts/scramble.py"
         print "Or individually:"
         for egg in e.eggs:
-            print "  python scripts/scramble.py %s" % egg.name
+            print "  python scripts/scramble.py %s-e %s" % ( config_arg, egg.name )
     sys.exit( 1 )
 sys.exit( 0 )

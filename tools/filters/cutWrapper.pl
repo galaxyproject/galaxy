@@ -39,19 +39,38 @@ $del = $column_delimiters_href->{$ARGV[2]};
 
 open (OUT, ">$ARGV[3]") or die "Cannot create $ARGV[2]:$!\n";
 open (IN,  "<$ARGV[0]") or die "Cannot open $ARGV[0]:$!\n";
-while (<IN>) {
-  chop;
-  @in = split /$del/; 
-  foreach $field (@columns) {
-    if (defined($in[$field-1])) {
-      push(@out, $in[$field-1]);
-    } else {
-      push(@out, ".");
-    }
-  }
-  print OUT join("\t",@out), "\n";
-  @out = ();
+
+while (my $line=<IN>) {
+   if ($line =~ /^#/) {
+     #Ignore comment lines
+   } else {
+     chop($line);
+     @in = split(/$del/, $line);
+     foreach $field (@columns) {
+       if (defined($in[$field-1])) {
+         push(@out, $in[$field-1]);
+       } else {
+         push(@out, ".");
+       }
+     }    
+     print OUT join("\t",@out), "\n";
+     @out = ();
+   }
 }
+
+#while (<IN>) {
+#  chop;
+#  @in = split /$del/; 
+#  foreach $field (@columns) {
+#    if (defined($in[$field-1])) {
+#      push(@out, $in[$field-1]);
+#    } else {
+#      push(@out, ".");
+#    }
+#  }
+#  print OUT join("\t",@out), "\n";
+#  @out = ();
+#}
 close IN;
 
 close OUT;

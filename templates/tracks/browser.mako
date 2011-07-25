@@ -3,7 +3,7 @@
 <%def name="init()">
 <%
     self.has_left_panel=False
-    self.has_right_panel=False
+    self.has_right_panel=True
     self.active_view="visualization"
     self.message_box_visible=False
 %>
@@ -35,19 +35,6 @@
     </style>
 </%def>
 
-<%def name="center_panel()">
-<div class="unified-panel-header" unselectable="on">
-    <div class="unified-panel-header-inner">
-        <div style="float:left;" id="title"></div>
-        <a class="panel-header-button right-float" href="${h.url_for( controller='visualization', action='list' )}">Close</a>
-        <a id="save-button" class="panel-header-button right-float" href="javascript:void(0);">Save</a>
-        <a id="add-track" class="panel-header-button right-float" href="javascript:void(0);">Add Tracks</a>
-    </div>
-</div>
-<div id="browser-container" class="unified-panel-body"></div>
-
-</%def>
-
 <%def name="javascripts()">
 ${parent.javascripts()}
 
@@ -73,7 +60,107 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         addable_track_types = { "LineTrack": LineTrack, "FeatureTrack": FeatureTrack, "ReadTrack": ReadTrack },
         view;
     
+    /**
+     * Add bookmark.
+     */
+    var add_bookmark = function(position, annotation) {
+        var 
+            bookmarks_container = $("#bookmarks-container"),
+            new_bookmark = $("<div/>").addClass("bookmark").appendTo(bookmarks_container),
+            delete_icon_container = $("<div/>").addClass("delete-icon-container").appendTo(new_bookmark).click(function (){
+                // Remove bookmark.
+                new_bookmark.slideUp("fast");
+                new_bookmark.remove();
+                view.has_changes = true;
+                return false;
+            }),
+            delete_icon = $("<a href=''/>").addClass("icon-button delete").appendTo(delete_icon_container),
+            position_div = $("<div/>").addClass("position").appendTo(new_bookmark),
+            position_link = $("<a href=''/>").text(position).appendTo(position_div).click(function() {
+                view.go_to(position);
+                return false;
+            });
+            annotation_div = get_editable_text_elt(annotation, true).addClass("annotation").appendTo(new_bookmark);
+            
+        view.has_changes = true;
+        return new_bookmark;
+    };
+    
+    /**
+     * Use track data to add a track to a view.
+     * TODO: rename function?
+     */
+    var add_async_success = function(track_data) {
+        var td = track_data,
+            new_track = new addable_track_types[track_data.track_type]( 
+                                track_data.name, view, track_data.hda_ldda, track_data.dataset_id,
+                                track_data.prefs, track_data.filters, track_data.tool );
+        view.add_track(new_track);
+        // Should replace with live event but can't get working
+        sortable(new_track.container_div, ".draghandle");
+        view.has_changes = true;
+        $("#no-tracks").hide();
+    };
+    
+    /**
+     * Use a popup grid to add more tracks.
+     */
+    var add_tracks = function() {
+        $.ajax({
+            url: "${h.url_for( action='list_histories' )}",
+            data: { "f-dbkey": view.dbkey },
+            error: function() { alert( "Grid failed" ); },
+            success: function(table_html) {
+                show_modal(
+                    "Select datasets for new tracks",
+                    table_html, {
+                        "Cancel": function() {
+                            hide_modal();
+                        },
+                        "Insert": function() {
+                            var requests = [];
+                            $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                                var data,
+                                    id = $(this).val();
+                                    if ($(this).attr("name") === "id") {
+                                        data = { hda_id: id };
+                                    } else {
+                                        data = { ldda_id: id};
+                                    }
+                                    requests[requests.length] = $.ajax({
+                                        url: "${h.url_for( action='add_track_async' )}",
+                                        data: data,
+                                        dataType: "json",
+                                    });
+                            });
+                            // To preserve order, wait until there are definitions for all tracks and then add 
+                            // them sequentially.
+                            $.when.apply($, requests).then(function() {
+                                 // jQuery always returns an Array for arguments, so need to look at first element
+                                 // to determine whether multiple requests were made and consequently how to 
+                                 // map arguments to track definitions.
+                                 var track_defs = (arguments[0] instanceof Array ?  
+                                                   $.map(arguments, function(arg) { return arg[0]; }) :
+                                                   [ arguments[0] ]
+                                                   );
+                                 for (var i= 0; i < track_defs.length; i++) {
+                                     add_async_success(track_defs[i]); 
+                                 }
+                            });
+                            hide_modal();
+                        }
+                    }
+                );
+            }
+        });
+    };
+    
     $(function() {
+        // Hide bookmarks by default right now.
+        parent.force_right_panel("hide"); 
+        
+        // Resize view when showing/hiding right panel (bookmarks for now).
+        $("#right-border").click(function() { view.resize_window(); });
         
         %if config:
             var callback;
@@ -107,6 +194,17 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 parent_obj.add_track(track);
             }
             init();
+            
+            // Load bookmarks.
+            var bookmarks = JSON.parse('${ h.to_json_string( config.get('bookmarks') ) }'),
+                bookmark;
+            for (var i = 0; i < bookmarks.length; i++) {
+                bookmark = bookmarks[i];
+                add_bookmark(bookmark['position'], bookmark['annotation']);
+            }
+            
+            // View has no changes as of yet.
+            view.has_changes = false;
         %else:
             var continue_fn = function() {
                 view = new View( $("#browser-container"), $("#new-title").val(), undefined, $("#new-dbkey").val() );
@@ -141,21 +239,9 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     return "There are unsaved changes to your visualization which will be lost.";
                 }
             };
-            
-            var add_async_success = function(track_data) {
-                var td = track_data,
-                    new_track = new addable_track_types[track_data.track_type]( 
-                                        track_data.name, view, track_data.hda_ldda, track_data.dataset_id,
-                                        track_data.prefs, track_data.filters, track_data.tool );
-                view.add_track(new_track);
-                // Should replace with live event but can't get working
-                sortable( new_track.container_div, ".draghandle" );
-                view.has_changes = true;
-                $("#no-tracks").hide();
-            };
-            
+                        
             %if add_dataset is not None:
-                $.ajax( {
+                $.ajax({
                     url: "${h.url_for( action='add_track_async' )}",
                     data: { hda_id: "${add_dataset}" },
                     dataType: "json",
@@ -164,92 +250,83 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 
             %endif
             
-            // Use a popup grid to add more tracks
-            $("#add-track").bind("click", function(e) {
-                $.ajax({
-                    url: "${h.url_for( action='list_histories' )}",
-                    data: { "f-dbkey": view.dbkey },
-                    error: function() { alert( "Grid failed" ); },
-                    success: function(table_html) {
-                        show_modal(
-                            "Select datasets for new tracks",
-                            table_html, {
-                                "Cancel": function() {
-                                    hide_modal();
-                                },
-                                "Insert": function() {
-                                    $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                                        var data,
-                                            id = $(this).val();
-                                        if ($(this).attr("name") === "id") {
-                                            data = { hda_id: id };
-                                        } else {
-                                            data = { ldda_id: id};
-                                        }
-                                        $.ajax( {
-                                            url: "${h.url_for( action='add_track_async' )}",
-                                            data: data,
-                                            dataType: "json",
-                                            success: add_async_success
-                                        });
+            $("#viz-options-button").css( "position", "relative" );
+            make_popupmenu( $("#viz-options-button"), {
+                "Add Tracks": add_tracks,
+                "Save": function() {
+                    // Show saving dialog box
+                    show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
 
-                                    });
-                                    hide_modal();
-                                }
-                            }
-                        );
-                    }
-                });
+                    // Save all tracks.
+                    var tracks = [];
+                    $(".viewport-container .track").each(function () {
+                        // ID has form track_<main_track_id>_<child_track_id>
+                        var 
+                            id_split = $(this).attr("id").split("_"),
+                            track_id = id_split[1],
+                            child_id = id_split[2];
+
+                        // Get track.    
+                        var track = view.tracks[track_id];
+                        if (child_id) {
+                            track = track.child_tracks[child_id];
+                        }
+
+                        // Add track.
+                        tracks.push({
+                            "track_type": track.get_type(),
+                            "name": track.name,
+                            "hda_ldda": track.hda_ldda,
+                            "dataset_id": track.dataset_id,
+                            "prefs": track.prefs,
+                            "is_child": (child_id ? true : false )
+                        });
+                    });
+
+                    // Save all bookmarks.
+                    var bookmarks = [];
+                    $(".bookmark").each(function() { 
+                        bookmarks[bookmarks.length] = {
+                            position: $(this).children(".position").text(),
+                            annotation: $(this).children(".annotation").text()
+                        };
+                    });
+
+                    var payload = { 
+                        'tracks': tracks, 
+                        'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high },
+                        'bookmarks': bookmarks
+                    };
+
+                    $.ajax({
+                        url: "${h.url_for( action='save' )}",
+                        type: "POST",
+                        data: {
+                            'vis_id': view.vis_id,
+                            'vis_title': view.title,
+                            'dbkey': view.dbkey,
+                            'payload': JSON.stringify(payload)
+                        },
+                        success: function(vis_id) {
+                            view.vis_id = vis_id;
+                            view.has_changes = false;
+                            hide_modal();
+                        },
+                        error: function() { alert("Could not save visualization"); }
+                    });
+                },
+                "Bookmarks": function() {
+                    // HACK -- use style to determine if panel is hidden and hide/show accordingly.
+                    parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show")); 
+                },
+                "Close": function() { window.location = "${h.url_for( controller='visualization', action='list' )}"; }
             });
             
-            $("#save-button").bind("click", function(e) {
-                // Show saving dialog box
-                show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
-                
-                // Save all tracks.
-                var tracks = [];
-                $(".viewport-container .track").each(function () {
-                    // ID has form track_<main_track_id>_<child_track_id>
-                    var 
-                        id_split = $(this).attr("id").split("_"),
-                        track_id = id_split[1],
-                        child_id = id_split[2];
-                    
-                    // Get track.    
-                    var track = view.tracks[track_id];
-                    if (child_id) {
-                        track = track.child_tracks[child_id];
-                    }
-                    
-                    // Add track.
-                    tracks.push( {
-                        "track_type": track.track_type,
-                        "name": track.name,
-                        "hda_ldda": track.hda_ldda,
-                        "dataset_id": track.dataset_id,
-                        "prefs": track.prefs,
-                        "is_child": (child_id ? true : false )
-                    });
-                });
-
-                var payload = { 'tracks': tracks, 'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high } };
-                
-                $.ajax({
-                    url: "${h.url_for( action='save' )}",
-                    type: "POST",
-                    data: {
-                        'vis_id': view.vis_id,
-                        'vis_title': view.title,
-                        'dbkey': view.dbkey,
-                        'payload': JSON.stringify(payload)
-                    },
-                    success: function(vis_id) {
-                        view.vis_id = vis_id;
-                        view.has_changes = false;
-                        hide_modal();
-                    },
-                    error: function() { alert("Could not save visualization"); }
-                });
+            $("#add-bookmark-button").click(function() {
+                // Add new bookmark.
+                var position = view.chrom + ":" + view.low + "-" + view.high,
+                    annotation = "Bookmark description";
+                return add_bookmark(position, annotation);
             });
 
             //
@@ -284,4 +361,33 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
     });
 
 </script>
+</%def>
+
+<%def name="center_panel()">
+<div class="unified-panel-header" unselectable="on">
+    <div class="unified-panel-header-inner">
+        <div style="float:left;" id="title"></div>
+        <div style="float: right">
+            <a id="viz-options-button" class='panel-header-button popup' href="javascript:void(0)" target="galaxy_main">${_('Options')}</a>
+        </div>
+    </div>
+</div>
+<div id="browser-container" class="unified-panel-body"></div>
+
+</%def>
+
+<%def name="right_panel()">
+
+<div class="unified-panel-header" unselectable="on">
+    <div class="unified-panel-header-inner">
+        Bookmarks
+    </div>
+</div>
+<div class="unified-panel-body" style="overflow: auto;">
+    <div id="bookmarks-container"></div>
+    <div>
+        <a class="icon-button import" style="margin-left: .5em; width: 100%" original-title="Add Bookmark" id="add-bookmark-button" href="javascript:void(0);">Add Bookmark</a>
+    </div>
+</div>
+
 </%def>

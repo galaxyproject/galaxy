@@ -6,7 +6,9 @@
 -c "$contaminants"
 #end if
   </command>
-<requirements><requirement type="package">FastQC</requirement></requirements>
+  <requirements>
+    <requirement type="package">FastQC</requirement>
+  </requirements>
   <inputs>
     <param format="fastqsanger,fastq,bam,sam" name="input_file" type="data" label="Short read data from your current history" />
     <param name="out_prefix" value="FastQC" type="text" label="Title for the output file - to remind you what the job was for" size="80" />
@@ -30,35 +32,57 @@
 
 **Purpose**
 
-FastQC aims to provide a simple way to do some quality control checks on raw sequence data coming from high throughput sequencing pipelines. 
-It provides a modular set of analyses which you can use to give a quick impression of whether your data has any problems of 
+FastQC aims to provide a simple way to do some quality control checks on raw
+sequence data coming from high throughput sequencing pipelines. 
+It provides a modular set of analyses which you can use to give a quick
+impression of whether your data has any problems of 
 which you should be aware before doing any further analysis.
 
-The main functions of FastQC are
+The main functions of FastQC are:
 
-Import of data from BAM, SAM or FastQ files (any variant)
-Providing a quick overview to tell you in which areas there may be problems
-Summary graphs and tables to quickly assess your data
-Export of results to an HTML based permanent report
-Offline operation to allow automated generation of reports without running the interactive application
+- Import of data from BAM, SAM or FastQ files (any variant)
+- Providing a quick overview to tell you in which areas there may be problems
+- Summary graphs and tables to quickly assess your data
+- Export of results to an HTML based permanent report
+- Offline operation to allow automated generation of reports without running the interactive application
+
+**FastQC documentation**
+
+This is a Galaxy interface to the external package FastQC_.
+Specific documentation on FastQC can be found on that site.
+FastQC incorporates the Picard-tools_ libraries for sam/bam processing.
+
+ .. _FastQC: http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+
+The contaminants file parameter was borrowed from the independently developed
+fastqcwrapper contributed to the Galaxy Community Tool Shed by J. Johnson.
 
 -----
 
 .. class:: infomark
 
-**Attribution**
+**Inputs and outputs**
 
-FastQC comes from http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
-Please see that site for all documentation - this is just a Galaxy wrapper.
-This tool wraps the fastqc package to report some QC metrics on fastq, groomed fastq (fastqsanger) in Galaxy
+This wrapper will accept any fastq file as well as sam or bam as the primary file to check.
+It will also take an optional file containing a list of contaminants information, in the form of
+a tab-delimited file with 2 columns, name and sequence.
 
-This Galaxy tool wrapper is part of the rgenetics toolkit.
+The tool produces a single HTML output file that contains all of the results, including the following:
 
-Contaminants file parameter borrowed from the independently
-developed fastqcwrapper_ contributed to the galaxy community tool shed 
-by j johnson
+- Basic Statistics
+- Per base sequence quality
+- Per sequence quality scores
+- Per base sequence content
+- Per base GC content
+- Per sequence GC content
+- Per base N content
+- Sequence Length Distribution
+- Sequence Duplication Levels
+- Overrepresented sequences
+- Kmer Content
 
-.. _fastqcwrapper: http%3A//community.g2.bx.psu.edu/tool/browse_tools%3F%26webapp%3Dcommunity%26operation%3Dview_tool%26id%3D256f9f17b153ce60
+All except Basic Statistics and Overrepresented sequences are plots.
 
 </help>
 </tool>

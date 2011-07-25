@@ -8,6 +8,7 @@ from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
 
@@ -113,9 +114,9 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                                               show_deleted=util.string_as_bool( show_deleted ),
                                               show_hidden=util.string_as_bool( show_hidden ) )
         else:
-            show_deleted = util.string_as_bool( show_deleted )
+            show_deleted = show_purged = util.string_as_bool( show_deleted )
             show_hidden = util.string_as_bool( show_hidden )
-            datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden )
+            datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),
@@ -180,6 +181,10 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                         "force_history_refresh": force_history_refresh
                     }
         return rval
+
+    @web.json
+    def history_get_disk_size( self, trans ):
+        return trans.history.get_disk_size( nice_size=True )
 
     ## ---- Dataset display / editing ----------------------------------------
 
@@ -315,6 +320,13 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
         current_user_roles = trans.get_current_user_roles()
+        if data.history.user and not data.dataset.has_manage_permissions_roles( trans ):
+            # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
+            # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
+            # permission.  In this case, we'll reset this permission to the hda user's private role.
+            manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
+            permissions = { manage_permissions_action : [ trans.app.security_agent.get_private_user_role( data.history.user ) ] }
+            trans.app.security_agent.set_dataset_permission( data.dataset, permissions )        
         if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )
@@ -329,7 +341,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                     trans.sa_session.flush()
                     if trans.app.config.set_metadata_externally:
                         trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
-                    return trans.show_ok_message( "Changed the type of dataset '%s' to %s" % ( data.name, params.datatype ), refresh_frames=['history'] )
+                    return trans.show_ok_message( "Changed the type of dataset '%s' to %s" % ( to_unicode( data.name ), params.datatype ), refresh_frames=['history'] )
                 else:
                     return trans.show_error_message( "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype ) )
             elif params.save:
@@ -393,18 +405,24 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
                 if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
+                    access_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
+                    manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
                     # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
                     # need to ensure that they did not associate roles that would cause accessibility problems.
                     permissions, in_roles, error, message = \
                     trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, 'root', **kwd )
-                    a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
                     if error:
                         # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                        permissions[ a ] = data.dataset.get_access_roles( trans )
-                    trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
+                        permissions[ access_action ] = data.dataset.get_access_roles( trans )
+                        status = 'error'
+                    else:
+                        error = trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
+                        if error:
+                            message += error
+                            status = 'error'
+                        else:
+                            message = 'Your changes completed successfully.'
                     trans.sa_session.refresh( data.dataset )
-                    if not message:
-                        message = 'Your changes completed successfully.'
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permissions" )
             if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
@@ -483,6 +501,23 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 return "Dataset id '%s' is invalid" %str( id )
             self.__delete_dataset( trans, id )
         return "OK"
+
+    @web.expose
+    def purge( self, trans, id = None, show_deleted_on_refresh = False, **kwd ):
+        if not trans.app.config.allow_user_dataset_purge:
+            return trans.show_error_message( "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator." )
+        hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( int( id ) )
+        if bool( hda.dataset.active_history_associations or hda.dataset.library_associations ):
+            return trans.show_error_message( "Unable to purge: LDDA(s) or active HDA(s) exist" )
+        elif hda.dataset.purged:
+            return trans.show_error_message( "Unable to purge: dataset is already purged" )
+        os.unlink( hda.dataset.file_name )
+        if os.path.exists( hda.extra_files_path ):
+            shutil.rmtree( hda.extra_files_path )
+        hda.dataset.purged = True
+        trans.sa_session.add( hda.dataset )
+        trans.sa_session.flush()
+        return self.history( trans, show_deleted = show_deleted_on_refresh )
 
     ## ---- History management -----------------------------------------------
 

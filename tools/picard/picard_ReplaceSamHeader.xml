@@ -1,4 +1,4 @@
-<tool name="Replace Sam Header" id="picard_ReplaceSamHeader" version="0.2.0">
+<tool name="Replace SAM/BAM Header" id="picard_ReplaceSamHeader" version="0.2.0">
   <requirements><requirement type="package">picard</requirement></requirements>
   <command interpreter="python">
     picard_wrapper.py
@@ -10,11 +10,11 @@
       --tmpdir "${__new_file_path__}" 
   </command>
   <inputs>
-    <param format="bam,sam" name="inputFile" type="data" label="Input: sam or bam format short read data in your current history whose header will be replaced"
-      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
-    <param format="bam,sam" name="headerFile" type="data" label="sam or bam file from which header will be read"
-      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library" />
-    <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output bam instead of sam" help="Uncheck for sam output" />
+    <param format="bam,sam" name="inputFile" type="data" label="SAM/BAM dataset to replace header in (TARGET)"
+      help="If empty, upload or import a SAM/BAM dataset." />
+    <param format="bam,sam" name="headerFile" type="data" label="SAM/BAM to reader header from (SOURCE)"
+      help="If empty, upload or import a SAM/BAM dataset." />
+    <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output BAM instead of SAM" help="Uncheck for SAM output" />
   </inputs>
   <outputs>
     <data name="outFile" format="bam" label="${tool.name} on ${on_string}: ${outputFormat} with replaced header">
@@ -61,26 +61,41 @@
 
 **Purpose**
 
-Replace Sam Header with the header from another sam file. The tool does not do any significant validation, so it's up to the user to make sure that the elements in the header are relevant and that the new header has all the required things.
+Replace Sam Header with the header from another sam file. The tool does not do any
+significant validation, so it's up to the user to make sure that the elements in
+the header are relevant and that the new header has all the required things.
 
-Replace the SAMFileHeader in a SAM file with the given header. Validation is minimal. It is up to the user to ensure that all the elements referred to in the SAMRecords are present in the new header. Sort order of the two input files must be the same.
+Replace the SAMFileHeader in a SAM file with the given header. Validation is
+minimal. It is up to the user to ensure that all the elements referred to in the
+SAMRecords are present in the new header. Sort order of the two input files must
+be the same.
 
 **Picard documentation**
 
-This is a Galaxy interface to the Picard-tools_'s ReplaceSamHeader tools, which is supported by SAMTools_.
+This is a Galaxy wrapper for ReplaceSamHeader, a part of the external package Picard-tools_.
 
- .. _Picard-tools: http://picard.sourceforge.net/index.shtml
- .. _SAMTools: http://samtools.sourceforge.net/
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
 
 ------
 
-**Inputs**
+.. class:: infomark
 
-Either a sam file or a bam file is required as the file whose header will be replaced. The header file is also required and can also be either sam or bam (it does not have to be the same type as the other file). In both cases, if a bam file is used, it must be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
+**Inputs and outputs**
 
-**Outputs**
+Either a sam file or a bam file is required as the file whose header will be replaced.
+The header file is also required and can also be either sam or bam (it does not have
+to be the same type as the other file). In both cases, if a bam file is used, it must
+be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
 
 The tool will output either bam (the default) or sam. Bam is recommended since it is smaller.
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
 
 
 

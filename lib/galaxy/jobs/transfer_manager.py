@@ -106,6 +106,7 @@ class TransferManager( object ):
                         error = dict( code=256, message='Error connecting to transfer daemon', data=str( e ) )
                     rval.append( dict( transfer_job_id=tj.id, state=tj.state, error=error ) )
             else:
+                self.sa_session.refresh( tj )
                 rval.append( dict( transfer_job_id=tj.id, state=tj.state ) )
         for tj_state in rval:
             if tj_state['state'] in self.app.model.TransferJob.terminal_states:

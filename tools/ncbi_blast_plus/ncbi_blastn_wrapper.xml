@@ -1,5 +1,6 @@
-<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.10">
+<tool id="ncbi_blastn_wrapper" name="NCBI BLAST+ blastn" version="0.0.11">
     <description>Search nucleotide database with nucleotide query sequence(s)</description>
+    <version_command>blastn -version</version_command>
     <command interpreter="python">hide_stderr.py
 ## The command is a Cheetah template which allows some Python based syntax.
 ## Lines starting hash hash are comments. Galaxy will turn newlines into spaces

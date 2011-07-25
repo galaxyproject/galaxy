@@ -5,9 +5,8 @@ from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy import util, model
-import logging, os, string, re, smtplib, socket, glob
+import logging, os, string, re, socket, glob
 from random import choice
-from email.MIMEText import MIMEText
 from galaxy.web.form_builder import * 
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.framework.helpers import iff
@@ -395,7 +394,7 @@ class User( BaseController, UsesFormDefinitions ):
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
         if not user:
-            message = "No such user"
+            message = "No such user (please note that login is case sensitive)"
             status = 'error'
         elif user.deleted:
             message = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
@@ -436,7 +435,7 @@ class User( BaseController, UsesFormDefinitions ):
                                     status='done',
                                     active_view="user" )
     @web.expose
-    def create( self, trans, cntrller, redirect_url='', refresh_frames=[], **kwd ):
+    def create( self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -560,15 +559,12 @@ class User( BaseController, UsesFormDefinitions ):
                 if trans.app.config.smtp_server is None:
                     error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance."
                 else:
-                    msg = MIMEText( 'Join Mailing list.\n' )
-                    to = msg[ 'To' ] = trans.app.config.mailing_join_addr
-                    frm = msg[ 'From' ] = email
-                    msg[ 'Subject' ] = 'Join Mailing List'
+                    body = 'Join Mailing list.\n'
+                    to = trans.app.config.mailing_join_addr
+                    frm = email
+                    subject = 'Join Mailing List'
                     try:
-                        s = smtplib.SMTP()
-                        s.connect( trans.app.config.smtp_server )
-                        s.sendmail( frm, [ to ], msg.as_string() )
-                        s.close()
+                        util.send_mail( frm, to, subject, body, trans.app.config )
                     except:
                         error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
             if not error and not is_admin:
@@ -888,15 +884,12 @@ class User( BaseController, UsesFormDefinitions ):
                     host = trans.request.host.split(':')[0]
                     if host == 'localhost':
                         host = socket.getfqdn()
-                    msg = MIMEText( 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass ) )
-                    to = msg[ 'To' ] = email
-                    frm = msg[ 'From' ] = 'galaxy-no-reply@' + host
-                    msg[ 'Subject' ] = 'Galaxy Password Reset'
+                    body = 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass )
+                    to = email
+                    frm = 'galaxy-no-reply@' + host
+                    subject = 'Galaxy Password Reset'
                     try:
-                        s = smtplib.SMTP()
-                        s.connect( trans.app.config.smtp_server )
-                        s.sendmail( frm, [ to ], msg.as_string() )
-                        s.close()
+                        util.send_mail( frm, to, subject, body, trans.app.config )
                         reset_user.set_password_cleartext( new_pass )
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
@@ -921,6 +914,9 @@ class User( BaseController, UsesFormDefinitions ):
     @web.expose
     def set_default_permissions( self, trans, cntrller, **kwd ):
         """Sets the user's default permissions for the new histories"""
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         if trans.user:
             if 'update_roles_button' in kwd:
                 p = util.Params( kwd )
@@ -933,8 +929,11 @@ class User( BaseController, UsesFormDefinitions ):
                     action = trans.app.security_agent.get_action( v.action ).action
                     permissions[ action ] = in_roles
                 trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
-                return trans.show_ok_message( 'Default new history permissions have been changed.' )
-            return trans.fill_template( 'user/permissions.mako', cntrller=cntrller )
+                message = 'Default new history permissions have been changed.'
+            return trans.fill_template( 'user/permissions.mako',
+                                        cntrller=cntrller,
+                                        message=message,
+                                        status=status )
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )   

@@ -312,11 +312,11 @@
             
                 ## Tool search.
                 <%
-                    show_tool_search = False
+                    show_tool_search = True
                     if trans.user:
-                        show_tool_search = trans.user.preferences.get( "show_tool_search", "False" )
+                        show_tool_search = trans.user.preferences.get( "show_tool_search", "False" ) == "True"
                     
-                    if show_tool_search == "True":
+                    if show_tool_search:
                         display = "block"
                     else:
                         display = "none"

@@ -1,4 +1,4 @@
-<tool id="Grouping1" name="Group" version="1.9.4">
+<tool id="Grouping1" name="Group" version="2.0.0">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python">
     grouping.py 
@@ -22,16 +22,16 @@
       <param name="optype" type="select" label="Type">
         <option value="mean">Mean</option>
         <option value="median">Median</option>
-        <option value="Mode">Mode</option>
+        <option value="mode">Mode</option>
         <option value="max">Maximum</option>
         <option value="min">Minimum</option>
         <option value="sum">Sum</option>
         <option value="length">Count</option>
         <option value="unique">Count Distinct</option>
-        <option value="c">Concatenate</option>
-        <option value="cuniq">Concatenate Distinct</option>
+        <option value="cat">Concatenate</option>
+        <option value="cat_uniq">Concatenate Distinct</option>
         <option value="random">Randomly pick</option>
-        <option value="sd">Standard deviation</option>
+        <option value="std">Standard deviation</option>
       </param>
       <param name="opcol" label="On column" type="data_column" data_ref="input1" />
       <param name="opround" type="select" label="Round result to nearest integer?">
@@ -44,7 +44,7 @@
     <data format="tabular" name="out_file1" />
   </outputs>
   <requirements>
-    <requirement type="python-module">rpy</requirement>
+    <requirement type="python-module">numpy</requirement>
   </requirements>
   <tests>
     <!-- Test valid data -->
@@ -57,8 +57,16 @@
       <param name="opround" value="no"/>
       <output name="out_file1" file="groupby_out1.dat"/>
     </test>
-    
-    <!-- Test data with an invalid value in a column -->
+    <!-- Long case but test framework doesn't allow yet
+    <test>
+      <param name="input1" value="1.bed"/>
+      <param name="groupcol" value="1"/>
+      <param name="ignorecase" value="false"/>
+      <param name="operations" value='[{"opcol": "2", "__index__": 0, "optype": "mean", "opround": "no"}, {"opcol": "2", "__index__": 1, "optype": "median", "opround": "no"}, {"opcol": "6", "__index__": 2, "optype": "mode", "opround": "no"}, {"opcol": "2", "__index__": 3, "optype": "max", "opround": "no"}, {"opcol": "2", "__index__": 4, "optype": "min", "opround": "no"}, {"opcol": "2", "__index__": 5, "optype": "sum", "opround": "no"}, {"opcol": "1", "__index__": 6, "optype": "length", "opround": "no"}, {"opcol": "1", "__index__": 7, "optype": "unique", "opround": "no"}, {"opcol": "1", "__index__": 8, "optype": "cat", "opround": "no"}, {"opcol": "6", "__index__": 9, "optype": "cat_uniq", "opround": "no"}, {"opcol": "2", "__index__": 10, "optype": "random", "opround": "no"}, {"opcol": "2", "__index__": 11, "optype": "std", "opround": "no"}]'/>
+      <output name="out_file1" file="groupby_out3.tabular"/>
+    </test>
+    -->
+    <!-- Test data with an invalid value in a column. Can't do it because test framework doesn't allow testing of errors
     <test>
       <param name="input1" value="1.tabular"/>
       <param name="groupcol" value="1"/>
@@ -68,6 +76,7 @@
       <param name="opround" value="no"/>
       <output name="out_file1" file="groupby_out2.dat"/>
     </test>
+     -->
   </tests>
   <help>
 
@@ -79,9 +88,11 @@
 
 **Syntax**
 
-This tool allows you to group the input dataset by a particular column and perform aggregate functions like Mean, Median, Mode, Sum, Max, Min, Count, Random draw and Concatenate on other columns. 
+This tool allows you to group the input dataset by a particular column and perform aggregate functions: Mean, Median, Mode, Sum, Max, Min, Count, Concatenate, and Randomly pick on any column(s).
 
-- All invalid, blank and comment lines are skipped when performing the aggregate functions.  The number of skipped lines is displayed in the resulting history item.
+The Concatenate function will take, for each group, each item in the specified column and build a comma delimited list. Concatenate Unique will do the same but will build a list of unique items with no repetition.
+
+Count and Count Unique are equivalent to Concatenate and Concatenate Unique, but will only count the number of items and will return an integer.
 
 - If multiple modes are present, all are reported.
 

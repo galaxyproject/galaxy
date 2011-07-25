@@ -90,10 +90,14 @@ class LibrarySelectionGrid( LibraryListGrid ):
 class DbKeyColumn( grids.GridColumn ):
     """ Column for filtering by and displaying dataset dbkey. """
     def filter( self, trans, user, query, dbkey ):
-        """ Filter by dbkey. """
+        """ Filter by dbkey; datasets without a dbkey are returned as well. """
         # use raw SQL b/c metadata is a BLOB
         dbkey = dbkey.replace("'", "\\'")
-        return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+        return query.filter( or_( \
+                                or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
+                                or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
+                                )
+                            )
                     
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
@@ -168,13 +172,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
     histories_grid = HistorySelectionGrid()
     history_datasets_grid = HistoryDatasetsSelectionGrid()
     tracks_grid = TracksterSelectionGrid()
-    
-    #
-    # TODO: need to encode dataset id and use 
-    #   UsesHistoryDatasetAssociation.get_dataset
-    # for better dataset security.
-    #
-    
+        
     available_tracks = None
     available_genomes = None
     
@@ -229,9 +227,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         """
         Display browser for the datasets listed in `dataset_ids`.
         """
-        decoded_id = trans.security.decode_id( id )
-        session = trans.sa_session
-        vis = session.query( model.Visualization ).get( decoded_id )
+        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
         
         new_dataset = kwargs.get("dataset_id", None)
@@ -412,6 +408,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             return msg
             
         # Return data.
+        data = None
         if isinstance( dataset.datatype, Gff ):
             data = GFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
@@ -476,9 +473,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         return { "status": messages.DATA, "valid_chroms": valid_chroms }
         
     @web.json
-    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, **kwargs ):
+    def data( self, trans, hda_ldda, dataset_id, chrom, low, high, start_val=0, max_vals=5000, **kwargs ):
         """
-        Called by the browser to request a block of data
+        Provides a block of data from a dataset.
         """
     
         # Parameter check.
@@ -533,7 +530,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
         
         # Get and return data from data_provider.
-        data = data_provider.get_data( chrom, low, high, **kwargs )
+        data = data_provider.get_data( chrom, low, high, int(start_val), int(max_vals), **kwargs )
         message = None
         if isinstance(data, dict) and 'message' in data:
             message = data['message']
@@ -570,6 +567,8 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         vis_rev.dbkey = dbkey
         # Tracks from payload
         tracks = []
+        # TODO: why go through the trouble of unpacking config only to repack and
+        # put in database? How about sticking JSON directly into database?
         for track in decoded_payload['tracks']:
             tracks.append( {    "dataset_id": track['dataset_id'],
                                 "hda_ldda": track.get('hda_ldda', "hda"),
@@ -578,14 +577,15 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
                                 "prefs": track['prefs'],
                                 "is_child": track.get('is_child', False)
             } )
+        bookmarks = decoded_payload[ 'bookmarks' ]
+        vis_rev.config = { "tracks": tracks, "bookmarks": bookmarks }
         # Viewport from payload
         if 'viewport' in decoded_payload:
             chrom = decoded_payload['viewport']['chrom']
             start = decoded_payload['viewport']['start']
             end = decoded_payload['viewport']['end']
-            vis_rev.config = { "tracks": tracks, "viewport": { 'chrom': chrom, 'start': start, 'end': end } }
-        else:
-            vis_rev.config = { "tracks": tracks }
+            vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end }
+        
         vis.latest_revision = vis_rev
         session.add( vis_rev )
         session.flush()
@@ -734,8 +734,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         if run_on_region:
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
-                # TODO: put together more robust way to determine if a dataset can be indexed.
-                if hasattr( input_dataset, 'get_track_type' ):
+                if get_data_provider( original_dataset=input_dataset ):
                     # Can index dataset.
                     track_type, data_sources = input_dataset.datatype.get_track_type()
                     # Convert to datasource that provides 'data' because we need to
@@ -748,7 +747,7 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         # Return any messages generated during conversions.
         return_message = _get_highest_priority_msg( messages_list )
         if return_message:
-            return return_message
+            return to_json_string( return_message )
             
         #
         # Set target history (the history that tool will use for inputs/outputs).
@@ -768,7 +767,9 @@ class TracksController( BaseController, UsesVisualization, UsesHistoryDatasetAss
         #
         for jida in original_job.input_datasets:
             input_dataset = jida.dataset
-            if run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
+            if input_dataset is None: #optional dataset and dataset wasn't selected
+                tool_params[ jida.name ] = None
+            elif run_on_region and hasattr( input_dataset.datatype, 'get_track_type' ):
                 # Dataset is indexed and hence a subset can be extracted and used
                 # as input.
                 track_type, data_sources = input_dataset.datatype.get_track_type()

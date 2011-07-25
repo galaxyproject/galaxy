@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<datatypes>
-    <registration>
-        <datatype extension="tool" type="galaxy.webapps.community.datatypes:Tool" model="galaxy.webapps.community.model:Tool"/>
-        <datatype extension="toolsuite" type="galaxy.webapps.community.datatypes:ToolSuite" model="galaxy.webapps.community.model:Tool"/>
-    </registration>
-</datatypes>

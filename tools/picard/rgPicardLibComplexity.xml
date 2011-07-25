@@ -5,12 +5,12 @@
    -j "${GALAXY_DATA_INDEX_DIR}/shared/jars/EstimateLibraryComplexity.jar" -d "$html_file.files_path" -t "$html_file"
   </command>
   <inputs>
-    <param format="bam,sam" name="input_file" type="data" label="Input: sam or bam format short read data in your current history"
-      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
+    <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset"
+      help="If empty, upload or import a SAM/BAM dataset."/>
     <param name="out_prefix" value="Library Complexity" type="text"
-      label="Title for the output file - use this remind you what the job was for" size="80" />
+      label="Title for the output file" help="Use this remind you what the job was for." size="80" />
     <param name="minIDbases" value="5" type="integer"  label="Minimum identical bases at starts of reads for grouping" size="5" 
-      help="Total_reads / 4^max_id_bases reads will be compared at a time. Lower numbers = more accurate results and exponentially more time/ram" />
+      help="Total_reads / 4^max_id_bases reads will be compared at a time. Lower numbers = more accurate results and exponentially more time/memory." />
      <param name="maxDiff" value="0.03" type="float"
       label="Maximum difference rate for identical reads" size="5" 
       help="The maximum rate of differences between two reads to call them identical" />
@@ -55,44 +55,36 @@
 
 **Purpose**
 
-    EstimateLibraryComplexity
-    Attempts to estimate library complexity from sequence alone. 
-    Does so by sorting all reads by the first N bases (5 by default) of each read and then 
-    comparing reads with the first N bases identical to each other for duplicates. Reads are considered to be 
-    duplicates if they match each other with no gaps and an overall mismatch rate less than or equal to MAX_DIFF_RATE (0.03 by default).
+Attempts to estimate library complexity from sequence alone. 
+Does so by sorting all reads by the first N bases (5 by default) of each read and then 
+comparing reads with the first N bases identical to each other for duplicates. Reads are considered to be 
+duplicates if they match each other with no gaps and an overall mismatch rate less than or equal to MAX_DIFF_RATE (0.03 by default).
 
-    Reads of poor quality are filtered out so as to provide a more accurate estimate. 
-    The filtering removes reads with any no-calls in the first N bases or with a mean base quality lower than 
-    MIN_MEAN_QUALITY across either the first or second read.
+Reads of poor quality are filtered out so as to provide a more accurate estimate. 
+The filtering removes reads with any no-calls in the first N bases or with a mean base quality lower than 
+MIN_MEAN_QUALITY across either the first or second read.
 
-    The algorithm attempts to detect optical duplicates separately from PCR duplicates and excludes these in the 
-    calculation of library size. Also, since there is no alignment to screen out technical reads one 
-    further filter is applied on the data. After examining all reads a histogram is built of 
-    [#reads in duplicate set -> #of duplicate sets]; 
-    all bins that contain exactly one duplicate set are then removed from the histogram as outliers before library size is estimated.
+The algorithm attempts to detect optical duplicates separately from PCR duplicates and excludes these in the 
+calculation of library size. Also, since there is no alignment to screen out technical reads one 
+further filter is applied on the data. After examining all reads a histogram is built of 
+[#reads in duplicate set -> #of duplicate sets]; all bins that contain exactly one duplicate set are
+then removed from the histogram as outliers before library size is estimated.
 
-**Why you might want to use this tool**
+**Picard documentation**
 
-    This tool provides a Galaxy interface to one of the Picard tools.
-    If you need to estimate library complexity from sequences, the Picard tool may help.
+This is a Galaxy wrapper for EstimateLibraryComplexity, a part of the external package Picard-tools_.
 
-
-**Note on the Regular Expression**
-
-    (from the Picard docs)
-    This tool requires a valid regular expression to parse out the read names in the incoming SAM or BAM file. 
-    These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. 
-    The regular expression should contain three capture groups for the three variables, in order. 
-    Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*.
-    
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
 
 -----
 
 .. class:: infomark
 
-**From the Picard documentation**
+**Inputs, outputs, and parameters**
 
-.. csv-table:: Estimate complexity docs
+Picard documentation says (reformatted for Galaxy):
+
+.. csv-table::
    :header-rows: 1
 
     Option	Description
@@ -105,20 +97,24 @@
     "OPTICAL_DUPLICATE_PIXEL_DISTANCE=Integer","The maximum offset between two duplicte clusters in order to consider them optical duplicates. This should usually be set to some fairly small number (e.g. 5-10 pixels) unless using later versions of the Illumina pipeline that multiply pixel values by 10, in which case 50-100 is more normal. Default value: 100"
     "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false. This option can be set to 'null' to clear the default value. "
 
+.. class:: warningmark
 
------
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
 
 .. class:: infomark
 
-**Attributions**
+**Note on the Regular Expression**
 
-Picard is supported through the SamTools project.
-This tool wraps Picard and is supported through the galaxy-bugs mailing list
-Please help us by completing the report form that appears automatically
-if a tool fails unexpectedly when you run it in Galaxy.
+(from the Picard docs)
+This tool requires a valid regular expression to parse out the read names in the incoming SAM or BAM file. 
+These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. 
+The regular expression should contain three capture groups for the three variables, in order. 
+Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*.
 
-All the Picard tools are freely available and are documented
-at http://picard.sourceforge.net/command-line-overview.shtml#CollectInsertSizeMetrics
 
   </help>
 </tool>

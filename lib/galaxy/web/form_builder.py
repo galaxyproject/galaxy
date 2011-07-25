@@ -88,9 +88,17 @@ class CheckboxField(BaseField):
     >>> print CheckboxField( "bar", checked="yes" ).get_html()
     <input type="checkbox" id="bar" name="bar" value="true" checked="checked"><input type="hidden" name="bar" value="true">
     """
-    def __init__( self, name, checked=None ):
+    def __init__( self, name, checked=None, refresh_on_change = False, refresh_on_change_values = None ):
         self.name = name
         self.checked = ( checked == True ) or ( isinstance( checked, basestring ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
+        self.refresh_on_change = refresh_on_change
+        self.refresh_on_change_values = refresh_on_change_values or []
+        if self.refresh_on_change: 
+            self.refresh_on_change_text = ' refresh_on_change="true" '
+            if self.refresh_on_change_values:
+                self.refresh_on_change_text = '%s refresh_on_change_values="%s" ' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
+        else:
+            self.refresh_on_change_text = ''
     def get_html( self, prefix="", disabled=False ):
         if self.checked:
             checked_text = ' checked="checked"'
@@ -102,8 +110,8 @@ class CheckboxField(BaseField):
         # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
-        return '<input type="checkbox" id="%s" name="%s" value="true"%s%s><input type="hidden" name="%s%s" value="true"%s>' \
-            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), prefix, self.name, self.get_disabled_str( disabled ) )
+        return '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>' \
+            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) )
     @staticmethod
     def is_checked( value ):
         if value == True:
@@ -183,7 +191,7 @@ class FTPFileField(BaseField):
     def get_html( self, prefix="" ):
         rval = FTPFileField.thead
         if self.dir is None:
-            rval += '<tr><td colspan="3"><em>Please <a href="%s">create</a> or <a href="%s">log in to</a> a Galaxy account to view files uploaded via FTP.</em></td></tr>' % ( url_for( controller='user', action='create', referer=url_for( controller='root' ) ), url_for( controller='user', action='login', referer=url_for( controller='root' ) ) )
+            rval += '<tr><td colspan="3"><em>Please <a href="%s">create</a> or <a href="%s">log in to</a> a Galaxy account to view files uploaded via FTP.</em></td></tr>' % ( url_for( controller='user', action='create', cntrller='user', referer=url_for( controller='root' ) ), url_for( controller='user', action='login', cntrller='user', referer=url_for( controller='root' ) ) )
         elif not os.path.exists( self.dir ):
             rval += '<tr><td colspan="3"><em>Your FTP upload directory contains no files.</em></td></tr>'
         else:
@@ -253,7 +261,7 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
     <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=[], size=None ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None ):
         self.name = name
         self.multiple = multiple or False
         self.size = size
@@ -266,7 +274,7 @@ class SelectField(BaseField):
             raise Exception, "Unknown display type: %s" % display
         self.display = display
         self.refresh_on_change = refresh_on_change
-        self.refresh_on_change_values = refresh_on_change_values
+        self.refresh_on_change_values = refresh_on_change_values or []
         if self.refresh_on_change: 
             self.refresh_on_change_text = ' refresh_on_change="true"'
             if self.refresh_on_change_values:
@@ -644,6 +652,27 @@ class HistoryField( BaseField ):
             return self.value
         else:
             return '-'
+            
+class LibraryField( BaseField ):
+    def __init__( self, name, value=None, trans=None ):
+        self.name = name
+        self.ldda = value
+        self.trans = trans
+    def get_html( self, prefix="", disabled=False ):
+        if not self.ldda:
+            ldda = ""
+            text = "Choose a library dataset"
+        else:
+            ldda = self.trans.security.encode_id(self.ldda.id)
+            text = self.ldda.name
+        return '<a href="javascript:void(0);" class="add-librarydataset">%s</a> \
+                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda), quote=True ) )
+
+    def get_display_text(self):
+        if self.ldda:
+            return self.ldda.name
+        else:
+            return 'None'
 
 def get_suite():
     """Get unittest suite for this module"""

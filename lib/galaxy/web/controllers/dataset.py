@@ -1,4 +1,4 @@
-import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib, tempfile, zipfile, glob, sys
+import logging, os, string, shutil, re, socket, mimetypes, urllib, tempfile, zipfile, glob, sys
 
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
@@ -10,7 +10,6 @@ from galaxy.util import inflector
 from galaxy.model.item_attrs import *
 from galaxy.model import LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
-from email.MIMEText import MIMEText
 import pkg_resources; 
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
@@ -174,7 +173,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         host = trans.request.host
         history_view_link = "%s/history/view?id=%s" % ( str( host ), trans.security.encode_id( hda.history_id ) )
         # Build the email message
-        msg = MIMEText( string.Template( error_report_template )
+        body = string.Template( error_report_template ) \
             .safe_substitute( host=host,
                               dataset_id=hda.dataset_id,
                               history_id=hda.history_id,
@@ -189,7 +188,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                               job_info=job.info,
                               job_traceback=job.traceback,
                               email=email, 
-                              message=message ) )
+                              message=message )
         frm = to_address
         # Check email a bit
         email = email.strip()
@@ -198,15 +197,10 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             to = to_address + ", " + email
         else:
             to = to_address
-        msg[ 'To' ] = to
-        msg[ 'From' ] = frm
-        msg[ 'Subject' ] = "Galaxy tool error report from " + email
+        subject = "Galaxy tool error report from " + email
         # Send it
         try:
-            s = smtplib.SMTP()
-            s.connect( smtp_server )
-            s.sendmail( frm, [ to ], msg.as_string() )
-            s.close()
+            util.send_mail( frm, to, subject, body, trans.app.config )
             return trans.show_ok_message( "Your error report has been sent" )
         except Exception, e:
             return trans.show_error_message( "An error occurred sending the report by email: %s" % str( e ) )
@@ -309,7 +303,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
 
 
     @web.expose
-    def get_metadata_file(self, trans, hda_id, metadata_type):
+    def get_metadata_file(self, trans, hda_id, metadata_name):
         """ Allows the downloading of metadata files associated with datasets (eg. bai index for bam files) """
         data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
         if not data or not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
@@ -317,8 +311,11 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
-        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, metadata_type)
-        return open(data.metadata.get(metadata_type).file_name)
+        
+        file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
+        trans.response.headers["Content-Type"] = "application/octet-stream"
+        trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s].%s" % (data.hid, fname, file_ext)
+        return open(data.metadata.get(metadata_name).file_name)
         
     @web.expose
     def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
@@ -347,17 +344,18 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             # For files in extra_files_path
             file_path = os.path.join( data.extra_files_path, filename )
             if os.path.exists( file_path ):
+                if os.path.isdir( file_path ):
+                    return trans.show_error_message( "Directory listing is not allowed." ) #TODO: Reconsider allowing listing of directories?
                 mime, encoding = mimetypes.guess_type( file_path )
                 if not mime:
                     try:
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
                     except:
                         mime = "text/plain"
-            
                 trans.response.set_content_type( mime )
                 return open( file_path )
             else:
-                return "Could not find '%s' on the extra files path %s." % (filename,file_path)
+                return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         
         mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
         trans.response.set_content_type(mime)
@@ -696,25 +694,72 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             return True
         return False
     
+    def _purge( self, trans, id ):
+        try:
+            id = int( id )
+        except ValueError, e:
+            return False
+        hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+        # Invalid HDA or not deleted
+        if not hda or not hda.history or not hda.deleted:
+            return False
+        # If the user is anonymous, make sure the HDA is owned by the current session.
+        if not hda.history.user and trans.galaxy_session.id not in [ s.id for s in hda.history.galaxy_sessions ]:
+            return False
+        # If the user is known, make sure the HDA is owned by the current user.
+        if hda.history.user and hda.history.user != trans.user:
+            return False
+        # HDA is purgeable
+        hda.purged = True
+        trans.sa_session.add( hda )
+        trans.log_event( "HDA id %s has been purged" % hda.id )
+        # Don't delete anything if there are active HDAs or any LDDAs, even if
+        # the LDDAs are deleted.  Let the cleanup scripts get it in the latter
+        # case.
+        if hda.dataset.user_can_purge:
+            try:
+                hda.dataset.full_delete()
+                trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                trans.sa_session.add( hda.dataset )
+            except:
+                log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+        trans.sa_session.flush()
+        return True
+
     @web.expose
     def undelete( self, trans, id ):
         if self._undelete( trans, id ):
             return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
-        raise "Error undeleting"
+        raise Exception( "Error undeleting" )
 
     @web.expose
     def unhide( self, trans, id ):
         if self._unhide( trans, id ):
             return trans.response.send_redirect( web.url_for( controller='root', action='history', show_hidden = True ) )
-        raise "Error unhiding"
-
+        raise Exception( "Error unhiding" )
 
     @web.expose
     def undelete_async( self, trans, id ):
         if self._undelete( trans, id ):
             return "OK"
-        raise "Error undeleting"
+        raise Exception( "Error undeleting" )
     
+    @web.expose
+    def purge( self, trans, id ):
+        if not trans.app.config.allow_user_dataset_purge:
+            raise Exception( "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator." )
+        if self._purge( trans, id ):
+            return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
+        raise Exception( "Error removing disk file" )
+
+    @web.expose
+    def purge_async( self, trans, id ):
+        if not trans.app.config.allow_user_dataset_purge:
+            raise Exception( "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator." )
+        if self._purge( trans, id ):
+            return "OK"
+        raise Exception( "Error removing disk file" )
+
     @web.expose
     def show_params( self, trans, dataset_id=None, from_noframe=None, **kwd ):
         """
@@ -791,10 +836,11 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
         else:
             target_history_ids = []
         done_msg = error_msg = ""
+        new_history = None
         if do_copy:
             invalid_datasets = 0
             if not source_dataset_ids or not ( target_history_ids or new_history_name ):
-                error_msg = "You must provide both source datasets and target histories."
+                error_msg = "You must provide both source datasets and target histories. "
             else:
                 if new_history_name:
                     new_history = trans.app.model.History()
@@ -809,23 +855,28 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
                     target_histories = [ history ]
                 if len( target_histories ) != len( target_history_ids ):
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_history_ids ) - len( target_histories ) )
-                for data in map( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get, source_dataset_ids ):
-                    if data is None:
-                        error_msg = error_msg + "You tried to copy a dataset that does not exist.  "
+                source_hdas = map( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get, source_dataset_ids )
+                source_hdas.sort(key=lambda hda: hda.hid)
+                for hda in source_hdas:
+                    if hda is None:
+                        error_msg = error_msg + "You tried to copy a dataset that does not exist. "
                         invalid_datasets += 1
-                    elif data.history != history:
-                        error_msg = error_msg + "You tried to copy a dataset which is not in your current history.  "
+                    elif hda.history != history:
+                        error_msg = error_msg + "You tried to copy a dataset which is not in your current history. "
                         invalid_datasets += 1
                     else:
                         for hist in target_histories:
-                            hist.add_dataset( data.copy( copy_children = True ) )
+                            hist.add_dataset( hda.copy( copy_children = True ) )
                 if history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
                 hist_names_str = ", ".join( [ hist.name for hist in target_histories ] )
                 num_source = len( source_dataset_ids ) - invalid_datasets
                 num_target = len(target_histories)
-                done_msg = "%i %s copied to %i %s: %s" % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str )
+                done_msg = "%i %s copied to %i %s: %s." % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str )
+                if new_history is not None:
+                    done_msg += " <a href=\"%s\" target=\"_top\">Switch to the new history.</a>" % url_for( 
+                        controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) )
                 trans.sa_session.refresh( history )
         source_datasets = history.visible_datasets
         target_histories = [history]

@@ -49,7 +49,12 @@
 </%def>
 
 <%def name="render_item_links( visualization )">
-    
+    <a 
+        href="${h.url_for( controller='/visualization', action='imp', id=trans.security.encode_id( visualization.id ) )}"
+        class="icon-button import"
+        ## Needed to overwide initial width so that link is floated left appropriately.
+        style="width: 100%"
+        title="Import visualization">Import visualization</a>
 </%def>
 
 <%def name="render_item( visualization, config )">
@@ -64,7 +69,7 @@
         var default_data_url = "${h.url_for( controller='/tracks', action='data' )}",
             raw_data_url = "${h.url_for( controller='/tracks', action='raw_data' )}",
             run_tool_url = "${h.url_for( controller='/tracks', action='run_tool' )}",
-            rerun_tool_url = "${h.url_for( controller='/tracks', action='run_tool' )}",
+            rerun_tool_url = "${h.url_for( controller='/tracks', action='rerun_tool' )}",
             reference_url = "${h.url_for( controller='/tracks', action='reference' )}",
             chrom_url = "${h.url_for( controller='/tracks', action='chroms' )}",
             dataset_state_url = "${h.url_for( controller='/tracks', action='dataset_state' )}",
@@ -78,6 +83,7 @@
             if (container_element.parents(".item-content").length > 0) { // Embedded viz
                 container_element.parents(".item-content").css( { "max-height": "none", "overflow": "visible" } );
             } else { // Viewing just one shared viz
+                // TODO: need live or just bind click?
                 $("#right-border").live("click", function() { view.resize_window(); });
             }
             
@@ -116,6 +122,11 @@
             // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
             //
             $(document).keydown(function(e) {
+                // Do not navigate if arrow keys used in input element.
+                if ($(e.srcElement).is(':input')) {
+                    return;
+                }
+                
                 // Key codes: left == 37, up == 38, right == 39, down == 40
                 switch(e.which) {
                     case 37:

@@ -26,7 +26,7 @@ def get_deps():
         depf = open( '.galaxy_deps', 'r' )
     except:
         return []
-    c = eggs.Crate()
+    c = eggs.Crate( None )
     for dep in depf:
         c[dep.strip()].require()
 

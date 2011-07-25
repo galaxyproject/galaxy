@@ -5,7 +5,7 @@ Takes three command line options, input BLAST XML filename, output tabular
 BLAST filename, output format (std for standard 12 columns, or ext for the
 extended 24 columns offered in the BLAST+ wrappers).
 
-The 12 colums output are 'qseqid sseqid pident length mismatch gapopen qstart
+The 12 columns output are 'qseqid sseqid pident length mismatch gapopen qstart
 qend sstart send evalue bitscore' or 'std' at the BLAST+ command line, which
 mean:
    
@@ -51,22 +51,23 @@ the percentage identity and the number of gap openings must be calculated.
 Be aware that the sequence in the extended tabular output or XML direct from
 BLAST+ may or may not use XXXX masking on regions of low complexity. This
 can throw the off the calculation of percentage identity and gap openings.
-[In fact, both BLAST 2.2.24+ and 2.2.25+ have a sutle bug in this regard,
+[In fact, both BLAST 2.2.24+ and 2.2.25+ have a subtle bug in this regard,
 with these numbers changing depending on whether or not the low complexity
 filter is used.]
 
-This script attempts to produce idential output to what BLAST+ would have done.
+This script attempts to produce identical output to what BLAST+ would have done.
 However, check this with "diff -b ..." since BLAST+ sometimes includes an extra
 space character (probably a bug).
 """
 import sys
 import re
 
-assert sys.version_info[:2] >= ( 2, 4 )
 if sys.version_info[:2] >= ( 2, 5 ):
-    import xml.etree.cElementTree as cElementTree
+    import xml.etree.cElementTree as ElementTree
 else:
-    import cElementTree 
+    from galaxy import eggs
+    import pkg_resources; pkg_resources.require( "elementtree" )
+    from elementtree import ElementTree
 
 def stop_err( msg ):
     sys.stderr.write("%s\n" % msg)
@@ -90,7 +91,7 @@ else:
 
 # get an iterable
 try: 
-    context = cElementTree.iterparse(in_file, events=("start", "end"))
+    context = ElementTree.iterparse(in_file, events=("start", "end"))
 except:
     stop_err("Invalid data format.")
 # turn it into an iterator
@@ -138,7 +139,7 @@ for event, elem in context:
         qlen = int(elem.findtext("Iteration_query-len"))
                                         
         # for every <Hit> within <Iteration>
-        for hit in elem.findall("Iteration_hits/Hit/"):
+        for hit in elem.findall("Iteration_hits/Hit"):
             #Expecting either this,
             # <Hit_id>gi|3024260|sp|P56514.1|OPSD_BUFBU</Hit_id>
             # <Hit_def>RecName: Full=Rhodopsin</Hit_def>
@@ -176,16 +177,19 @@ for event, elem in context:
                 expected_mismatch = len(q_seq) \
                                   - sum(1 for q,h in zip(q_seq, h_seq) \
                                         if q == h or q == "-" or h == "-")
-                assert expected_mismatch - q_seq.count("X") <= int(mismatch) <= expected_mismatch, \
-                       "%s vs %s mismatches, expected %i <= %i <= %i" \
-                       % (qseqid, sseqid, expected_mismatch - q_seq.count("X"), int(mismatch), expected_mismatch)
+                xx = sum(1 for q,h in zip(q_seq, h_seq) if q=="X" and h=="X")
+                if not (expected_mismatch - q_seq.count("X") <= int(mismatch) <= expected_mismatch + xx):
+                    stop_err("%s vs %s mismatches, expected %i <= %i <= %i" \
+                             % (qseqid, sseqid, expected_mismatch - q_seq.count("X"),
+                                int(mismatch), expected_mismatch))
 
                 #TODO - Remove this alternative identity calculation and test
                 #once satisifed there are no problems
-                expected_idendity = sum(1 for q,h in zip(q_seq, h_seq) if q == h)
-                assert expected_idendity <= int(nident) <= expected_idendity + q_seq.count("X"), \
-                       "%s vs %s identities, expected %i <= %i <= %i" \
-                       % (qseqid, sseqid, expected_idendity, int(identity), expected_idendity + q_seq.count("X"))
+                expected_identity = sum(1 for q,h in zip(q_seq, h_seq) if q == h)
+                if not (expected_identity - xx <= int(nident) <= expected_identity + q_seq.count("X")):
+                    stop_err("%s vs %s identities, expected %i <= %i <= %i" \
+                             % (qseqid, sseqid, expected_identity, int(nident),
+                                expected_identity + q_seq.count("X")))
                 
 
                 evalue = hsp.findtext("Hsp_evalue")

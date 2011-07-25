@@ -107,7 +107,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
     
-    __myexp_url = "sandbox.myexperiment.org:80"
+    __myexp_url = "www.myexperiment.org:80"
     
     @web.expose
     def index( self, trans ):
@@ -364,7 +364,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Update workflow attributes if new values submitted.
         if 'name' in kwargs:
             # Rename workflow.
-            stored.name = kwargs[ 'name' ]
+            stored.name = sanitize_html( kwargs['name'] )
         if 'annotation' in kwargs:
             # Set workflow annotation; sanitize annotation before adding it.
             annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
@@ -380,7 +380,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     def rename( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name is not None:
-            stored.name = new_name
+            stored.name = sanitize_html( new_name )
             trans.sa_session.flush()
             # For current workflows grid:
             trans.set_message ( "Workflow renamed to '%s'." % new_name )
@@ -586,6 +586,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def clone( self, trans, id ):
+        # Get workflow to clone.
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
         if stored.user == user:
@@ -595,9 +596,24 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                     .filter_by( user=user, stored_workflow=stored ).count() == 0:
                 error( "Workflow is not owned by or shared with current user" )
             owner = False
+            
+        # Clone.
         new_stored = model.StoredWorkflow()
         new_stored.name = "Clone of '%s'" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
+        # Clone annotation.
+        annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
+        if annotation_obj:
+            self.add_item_annotation( trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation )
+        # Clone tags.
+        for swta in stored.owner_tags:
+            new_swta = model.StoredWorkflowTagAssociation()
+            new_swta.tag = swta.tag
+            new_swta.user = trans.user
+            new_swta.user_tname = swta.user_tname
+            new_swta.user_value = swta.user_value
+            new_swta.value = swta.value
+            new_stored.tags.append( new_swta )         
         if not owner:
             new_stored.name += " shared by '%s'" % stored.user.email
         new_stored.user = user
@@ -956,7 +972,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # NOTE: blocks web thread.
         headers = {}
         if myexp_username and myexp_password:
-            auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))[:-1]
+            auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
             headers = { "Authorization" : "Basic %s" % auth_header }
         conn.request( "GET", "/workflow.xml?id=%s&elements=content" % myexp_id, headers=headers )
         response = conn.getresponse()
@@ -1021,8 +1037,8 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         request = unicode( request_raw.strip(), 'utf-8' )
         
         # Do request and get result.
-        auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))[:-1]
-        headers = { "Content-type": "text/xml", "Accept": "text/plain", "Authorization" : "Basic %s" % auth_header }
+        auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
+        headers = { "Content-type": "text/xml", "Accept": "text/xml", "Authorization" : "Basic %s" % auth_header }
         conn = httplib.HTTPConnection( self.__myexp_url )
         # NOTE: blocks web thread.
         conn.request("POST", "/workflow.xml", request, headers)
@@ -1576,6 +1592,15 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 'annotation' : annotation_str
             }
             
+            # Add post-job actions to step dict.
+            if module.type == 'tool':
+                pja_dict = {}
+                for pja in step.post_job_actions:
+                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type, 
+                                                                      output_name = pja.output_name,
+                                                                      action_arguments = pja.action_arguments )
+                step_dict[ 'post_job_actions' ] = pja_dict
+
             # Data inputs
             step_dict['inputs'] = []
             if module.type == "data_input":
@@ -1679,6 +1704,12 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
                 self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+            # Unpack and add post-job actions.
+            post_job_actions = step_dict.get( 'post_job_actions', {} )
+            for name, pja_dict in post_job_actions.items():
+                pja = PostJobAction( pja_dict[ 'action_type' ], 
+                                     step, pja_dict[ 'output_name' ], 
+                                     pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections

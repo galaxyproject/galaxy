@@ -1,11 +1,10 @@
-"""
-usage: dist-scramble.py <egg_name> [platform]
-  egg_name - The egg to scramble (as defined in eggs.ini)
-  platform - The platform to scramble on (as defined in
-             dist-eggs.ini).  Leave blank for all.
-             Platform-inspecific eggs ignore this argument.
-"""
 import os, sys, logging
+from optparse import OptionParser
+
+parser = OptionParser()
+parser.add_option( '-e', '--egg-name', dest='egg_name', help='Egg name (as defined in eggs.ini) to scramble (required)' )
+parser.add_option( '-p', '--platform', dest='platform', help='Scramble for a specific platform (by default, eggs are scrambled for all platforms, see dist-eggs.ini for platform names)' )
+( options, args ) = parser.parse_args()
 
 root = logging.getLogger()
 root.setLevel( 10 )
@@ -17,18 +16,20 @@ sys.path.append( lib )
 from galaxy.eggs.dist import DistScrambleCrate, ScrambleFailure
 from galaxy.eggs import EggNotFetchable
 
-if len( sys.argv ) > 3 or len( sys.argv ) < 2:
-    print __doc__
+if not options.egg_name:
+    print "ERROR: You must specify an egg to scramble (-e)"
+    parser.print_help()
     sys.exit( 1 )
-elif len( sys.argv ) == 3:
-    c = DistScrambleCrate( sys.argv[2] )
+
+if options.platform:
+    c = DistScrambleCrate( None, options.platform )
 else:
-    c = DistScrambleCrate()
+    c = DistScrambleCrate( None )
 
 try:
-    eggs = c[sys.argv[1]]
+    eggs = c[options.egg_name]
 except:
-    print "error: %s not in eggs.ini" % sys.argv[1]
+    print "ERROR: %s not in eggs.ini" % options.egg_name
     sys.exit( 1 )
 failed = []
 for egg in eggs:

@@ -10,12 +10,19 @@ from migrate import *
 from migrate.changeset import *
 from sqlalchemy.exc import *
 from galaxy.util.json import from_json_string, to_json_string
+from galaxy.model.custom_types import _sniffnfix_pg9_hex
 
 import datetime
 now = datetime.datetime.utcnow
 
-import logging
+import sys, logging
 log = logging.getLogger( __name__ )
+log.setLevel(logging.DEBUG)
+handler = logging.StreamHandler( sys.stdout )
+format = "%(name)s %(levelname)s %(asctime)s %(message)s"
+formatter = logging.Formatter( format )
+handler.setFormatter( formatter )
+log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
@@ -39,21 +46,24 @@ def upgrade():
             return ''
     # Go through the entire table and add a 'name' attribute for each field
     # in the list of fields for each form definition
-    cmd = "SELECT id, fields FROM form_definition"
+    cmd = "SELECT f.id, f.fields FROM form_definition AS f"
     result = db_session.execute( cmd )
     for row in result:
         form_definition_id = row[0]
         fields = str( row[1] )
         if not fields.strip():
             continue
-        fields_list = from_json_string( fields )
+        fields_list = from_json_string( _sniffnfix_pg9_hex( fields ) )
         if len( fields_list ):
             for index, field in enumerate( fields_list ):
                 field[ 'name' ] = 'field_%i' % index
                 field[ 'helptext' ] = field[ 'helptext' ].replace("'", "''").replace('"', "")
                 field[ 'label' ] = field[ 'label' ].replace("'", "''")
             fields_json = to_json_string( fields_list )
-            cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( fields_json, form_definition_id )
+            if migrate_engine.name == 'mysql':
+                cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" %( fields_json, form_definition_id )
+            else:
+                cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( fields_json, form_definition_id )
             db_session.execute( cmd )
     # replace the values list in the content field of the form_values table with a name:value dict
     cmd = "SELECT form_values.id, form_values.content, form_definition.fields" \
@@ -112,17 +122,20 @@ def downgrade():
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( to_json_string( values_list ), form_values_id )
             db_session.execute( cmd )
     # remove name attribute from the field column of the form_definition table
-    cmd = "SELECT id, fields FROM form_definition"
+    cmd = "SELECT f.id, f.fields FROM form_definition AS f"
     result = db_session.execute( cmd )
     for row in result:
         form_definition_id = row[0]
         fields = str( row[1] )
         if not fields.strip():
             continue
-        fields_list = from_json_string( fields )
+        fields_list = from_json_string( _sniffnfix_pg9_hex( fields ) )
         if len( fields_list ):
             for index, field in enumerate( fields_list ):
                 if field.has_key( 'name' ):
                     del field[ 'name' ]
-            cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( to_json_string( fields_list ), form_definition_id )
+            if migrate_engine.name == 'mysql':
+                cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" %( to_json_string( fields_list ), form_definition_id )
+            else:
+                cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( to_json_string( fields_list ), form_definition_id )
         db_session.execute( cmd )

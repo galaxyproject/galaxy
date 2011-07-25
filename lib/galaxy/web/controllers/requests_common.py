@@ -826,7 +826,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         if params.get( 'import_samples_button', False ):
             # Import sample field values from a csv file
-            return self.__import_samples( trans, cntrller, request, displayable_sample_widgets, libraries, **kwd )
+            # TODO: should this be a mapper?
+            workflows = [ w.latest_workflow for w in trans.user.stored_workflows if not w.deleted ]
+            return self.__import_samples( trans, cntrller, request, displayable_sample_widgets, libraries, workflows, **kwd )
         elif params.get( 'add_sample_button', False ):
             return self.add_sample( trans, cntrller, request_id, **kwd )
         elif params.get( 'save_samples_button', False ):
@@ -905,17 +907,17 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                                                                                            folder_id=folder_id,
                                                                                                            **kwd )
                 history_select_field = self.__build_history_select_field( trans=trans,
-                                                           user=request.user,
-                                                           sample_index=len( displayable_sample_widgets ),
-                                                           history_id=history_id,
-                                                           **kwd)
+                                                                          user=request.user,
+                                                                          sample_index=len( displayable_sample_widgets ),
+                                                                          history_id=history_id,
+                                                                          **kwd )
                 workflow_select_field = self.__build_workflow_select_field( trans=trans,
-                                                             user=request.user,
-                                                             request=request,
-                                                             sample_index=len( displayable_sample_widgets ),
-                                                             workflow_id=workflow_id,
-                                                             history_id=history_id,
-                                                             **kwd)
+                                                                            user=request.user,
+                                                                            request=request,
+                                                                            sample_index=len( displayable_sample_widgets ),
+                                                                            workflow_id=workflow_id,
+                                                                            history_id=history_id,
+                                                                            **kwd )
                 # Append the new sample to the current list of samples for the request
                 displayable_sample_widgets.append( dict( id=None,
                                                          name=name,
@@ -1045,47 +1047,106 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                     transfer_status=transfer_status,
                                     message=message,
                                     status=status )
-    def __import_samples( self, trans, cntrller, request, displayable_sample_widgets, libraries, **kwd ):
+    def __import_samples( self, trans, cntrller, request, displayable_sample_widgets, libraries, workflows, **kwd ):
         """
-        Reads the samples csv file and imports all the samples.  The format of the csv file is:
-        SampleName,DataLibrary,DataLibraryFolder,Field1,Field2....
+        Reads the samples csv file and imports all the samples.  The csv file must be in the following format.  The [:FieldValue]
+        is optional, the form field will contain the value after the ':' if included.
+                        SampleName,DataLibraryName,DataLibraryFolderName,HistoryName,WorkflowName,Field1Name:Field1Value,Field2Name:Field2Value...
         """
         params = util.Params( kwd )
+        current_user_roles = trans.get_current_user_roles()
+        is_admin = trans.user_is_admin() and cntrller == 'requests_admin'
         file_obj = params.get( 'file_data', '' )
         try:
             reader = csv.reader( file_obj.file )
             for row in reader:
                 library_id = None
+                library = None
                 folder_id = None
-                # FIXME: this is bad - what happens when multiple libraries have the same name??
-                lib = trans.sa_session.query( trans.model.Library ) \
-                                      .filter( and_( trans.model.Library.table.c.name==row[1],
-                                                     trans.model.Library.table.c.deleted==False ) ) \
-                                      .first()
-                if lib:
-                    folder = trans.sa_session.query( trans.model.LibraryFolder ) \
-                                             .filter( and_( trans.model.LibraryFolder.table.c.name==row[2],
-                                                            trans.model.LibraryFolder.table.c.deleted==False ) ) \
-                                             .first()
+                folder = None
+                history_id = None
+                history = None
+                workflow_id = None
+                workflow = None
+                # Get the library
+                library = trans.sa_session.query( trans.model.Library ) \
+                                          .filter( and_( trans.model.Library.table.c.name==row[1],
+                                                         trans.model.Library.table.c.deleted==False ) ) \
+                                          .first()
+                if library:
+                    # Get the folder
+                    for folder in trans.sa_session.query( trans.model.LibraryFolder ) \
+                                                  .filter( and_( trans.model.LibraryFolder.table.c.name==row[2],
+                                                                 trans.model.LibraryFolder.table.c.deleted==False ) ):
+                        if folder.parent_library == library:
+                            break
                     if folder:
-                        library_id = lib.id
-                        folder_id = folder.id
+                        library_id = trans.security.encode_id( library.id )
+                        folder_id = trans.security.encode_id( folder.id )
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
                                                                                                            request.user,
-                                                                                                           len( displayable_sample_widgets ), 
+                                                                                                           len( displayable_sample_widgets ),
                                                                                                            libraries,
                                                                                                            None,
                                                                                                            library_id,
                                                                                                            folder_id,
                                                                                                            **kwd )
+                # Get the history
+                history = trans.sa_session.query( trans.model.History ) \
+                                          .filter( and_( trans.model.History.table.c.name==row[3],
+                                                         trans.model.History.table.c.deleted==False,
+                                                         trans.model.History.user_id == trans.user.id ) ) \
+                                          .first()
+                if history:
+                    history_id = trans.security.encode_id( history.id )
+                else:
+                    history_id = 'none'
+                history_select_field = self.__build_history_select_field( trans=trans,
+                                                                          user=request.user,
+                                                                          sample_index=len( displayable_sample_widgets ),
+                                                                          history_id=history_id )
+                # Get the workflow
+                workflow = trans.sa_session.query( trans.model.StoredWorkflow ) \
+                                           .filter( and_( trans.model.StoredWorkflow.table.c.name==row[4],
+                                                          trans.model.StoredWorkflow.table.c.deleted==False,
+                                                          trans.model.StoredWorkflow.user_id == trans.user.id ) ) \
+                                           .first()
+                if workflow:
+                    workflow_id = trans.security.encode_id( workflow.id )
+                else:
+                    workflow_id = 'none'
+                workflow_select_field = self.__build_workflow_select_field( trans=trans,
+                                                                            user=request.user,
+                                                                            request=request,
+                                                                            sample_index=len( displayable_sample_widgets ),
+                                                                            workflow_id=workflow_id,
+                                                                            history_id=history_id )
+                field_values = {}
+                field_names = row[5:]
+                for field_name in field_names:
+                    if field_name.find( ':' ) >= 0:
+                        field_list = field_name.split( ':' )
+                        field_name = field_list[0]
+                        field_value = field_list[1]
+                    else:
+                        field_value = ''
+                    field_values[ field_name ] = field_value
                 displayable_sample_widgets.append( dict( id=None,
-                                                         name=row[0], 
+                                                         name=row[0],
                                                          bar_code='',
-                                                         library=None,
-                                                         folder=None,
+                                                         library=library,
+                                                         library_id=library_id,
                                                          library_select_field=library_select_field,
+                                                         folder=folder,
+                                                         folder_id=folder_id,
                                                          folder_select_field=folder_select_field,
-                                                         field_values=row[3:] ) )
+                                                         history=history,
+                                                         history_id=history_id,
+                                                         history_select_field=history_select_field,
+                                                         workflow=workflow,
+                                                         workflow_id=workflow_id,
+                                                         workflow_select_field=workflow_select_field,
+                                                         field_values=field_values ) )
         except Exception, e:
             if str( e ) == "'unicode' object has no attribute 'file'":
                 message = "Select a file"
@@ -1124,6 +1185,8 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             redirect_action = 'edit_samples'
         # Check for duplicate sample names within the request
         self.__validate_sample_names( trans, cntrller, request, sample_widgets, **kwd )
+        print "SAVING SAMPLES!"
+        print "saving_new_samples is %s" % saving_new_samples
         if not saving_new_samples:
             library = None
             folder = None
@@ -1170,7 +1233,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                             handle_error( **kwd )
                 self.update_sample_state( trans, cntrller, encoded_selected_sample_ids, new_state, comment=sample_event_comment )
                 return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                                  cntrller=cntrller, 
+                                                                  cntrller=cntrller,
                                                                   action='update_request_state',
                                                                   request_id=trans.security.encode_id( request.id ) ) )
             elif sample_operation == trans.model.Sample.bulk_operations.SELECT_LIBRARY:
@@ -1180,7 +1243,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 for sample_index in range( len( sample_widgets ) ):
                     current_sample = sample_widgets[ sample_index ]
                     if current_sample is None:
-                        # We have a None value because the user did not select this sample 
+                        # We have a None value because the user did not select this sample
                         # on which to perform the action.
                         continue
                     current_sample[ 'library' ] = library
@@ -1189,7 +1252,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             message = 'Changes made to the samples have been saved. '
         else:
             # Saving a newly created sample.  The sample will not have an associated SampleState
-            # until the request is submitted, at which time all samples of the request will be 
+            # until the request is submitted, at which time all samples of the request will be
             # set to the first SampleState configured for the request's RequestType configured
             # by the admin ( i.e., the sample's SampleState would be set to request.type.states[0] ).
             new_samples = []
@@ -1204,9 +1267,9 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                 else:
                     bar_code = ''
                 sample = trans.model.Sample( name=sample_widget[ 'name' ],
-                                             desc='', 
+                                             desc='',
                                              request=request,
-                                             form_values=form_values, 
+                                             form_values=form_values,
                                              bar_code=bar_code,
                                              library=sample_widget[ 'library' ],
                                              folder=sample_widget[ 'folder' ],
@@ -1486,7 +1549,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                          library_select_field=library_select_field,
                                          folder_select_field=folder_select_field,
                                          history_select_field=history_select_field,
-                                         workflow_select_field=workflow_select_field, ) )
+                                         workflow_select_field=workflow_select_field ) )
         # There may be additional new samples on the form that have not yet been associated with the request.
         # TODO: factor this code so it is not duplicating what's above.
         index = len( samples )
@@ -1749,7 +1812,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
                                 select_field.add_option( label, value )
                         wf_fieldset.append((step.tool_inputs['name'], select_field))
         return wf_fieldset
-        
+
     def __build_sample_state_id_select_field( self, trans, request, selected_value ):
         if selected_value == 'none':
             if request.samples:
@@ -1771,10 +1834,21 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
         for index, field in enumerate( request.type.request_form.fields ):
             if field[ 'required' ] == 'required' and request.values.content[ field[ 'name' ] ] in [ '', None ]:
                 empty_fields.append( field[ 'label' ] )
-        if empty_fields:
-            message = 'Complete the following fields of the request before submitting: '
-            for ef in empty_fields:
-                message += '<b>' + ef + '</b> '
+        empty_sample_fields = []
+        for s in request.samples:
+            for field in request.type.sample_form.fields:
+                print "field:", field
+                print "svc:", s.values.content
+                if field['required'] == 'required' and s.values.content[field['name']] in ['', None]:
+                    empty_sample_fields.append((s.name, field['label']))
+        if empty_fields or empty_sample_fields:
+            message = 'Complete the following fields of the request before submitting: <br/>'
+            if empty_fields:
+                for ef in empty_fields:
+                    message += '<b>%s</b><br/>' % ef
+            if empty_sample_fields:
+                for sname, ef in empty_sample_fields:
+                    message = message + '<b>%s</b> field of sample <b>%s</b><br/>' % (ef, sname)
             return message
         return None
     def __validate_sample_names( self, trans, cntrller, request, displayable_sample_widgets, **kwd ):
@@ -1791,7 +1865,7 @@ class RequestsCommon( BaseController, UsesFormDefinitions ):
             for i in range( len( displayable_sample_widgets ) ):
                 if sample_name == displayable_sample_widgets[ i ][ 'name' ]:
                     count += 1
-            if count > 1: 
+            if count > 1:
                 message = "You tried to add %i samples with the name (%s).  Samples belonging to a request must have unique names." % ( count, sample_name )
                 break
         if message:

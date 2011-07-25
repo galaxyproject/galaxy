@@ -144,11 +144,11 @@
         ## Search tools menu item.
         %if trans.app.toolbox_search.enabled:
             <% 
-                show_tool_search = False
+                show_tool_search = True
                 if trans.user:
-                    show_tool_search = trans.user.preferences.get( "show_tool_search", "False" )
+                    show_tool_search = trans.user.preferences.get( "show_tool_search", "False" ) == "True"
                     
-                if show_tool_search == "True":
+                if show_tool_search:
                     action = "HIDE_TOOL"
                 else:
                     action = "SHOW_TOOL"
@@ -174,14 +174,14 @@
 
 <%def name="init()">
 <%
-	if trans.app.config.cloud_controller_instance:
-		self.has_left_panel=False
-		self.has_right_panel=False
-		self.active_view="cloud"
-	else:
-		self.has_left_panel=True
-		self.has_right_panel=True
-		self.active_view="analysis"
+    if trans.app.config.cloud_controller_instance:
+        self.has_left_panel=False
+        self.has_right_panel=False
+        self.active_view="cloud"
+    else:
+        self.has_left_panel=True
+        self.has_right_panel=True
+        self.active_view="analysis"
 %>
 %if trans.app.config.require_login and not trans.user:
     <script type="text/javascript">
@@ -219,7 +219,7 @@
     elif m_c is not None:
         center_url = h.url_for( controller=m_c, action=m_a )
     elif trans.app.config.cloud_controller_instance:
-    	center_url = h.url_for( controller='cloud', action='list' )
+        center_url = h.url_for( controller='cloud', action='list' )
     else:
         center_url = h.url_for( '/static/welcome.html' )
     %>

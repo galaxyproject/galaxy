@@ -167,6 +167,13 @@
     border-width: 2px 0px 0px 0px;
 }
 
+.tile-message {
+    border-bottom: solid 1px red;
+    text-align: center;
+    color: red;
+    background-color: white;
+}
+
 .track.error .track-content {
     background-color: #ECB4AF;
     background-image: none;
@@ -270,5 +277,38 @@ input {
     height: 7px;
     border: solid #999 1px;
     z-index: 100;
+}
+.bookmark {
+    background:white;
+    border:solid #999 1px;
+    border-right:none;
+    margin:0.5em;
+    margin-right:0;
+    padding:0.5em;
+}
+.bookmark .position {
+    font-weight:bold;
+}
+.delete-icon-container {
+    float:right;
+}
+
+.icon {
+    display:inline-block;
+    width:16px;
+    height:16px;
+}
+.icon.more-down {
+    background:url('../images/fugue/arrow-transition-270-bw.png') no-repeat 0px 0px;
+}
+.icon.more-across {
+    background: url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;
+}
+.intro {
+    padding: 1em;
+}
+.intro > .action-button {
+    background-color: #CCC;
+    padding: 1em;
 }
 

@@ -1,5 +1,5 @@
-import logging, datetime, smtplib
-from email.MIMEText import MIMEText
+import logging, datetime
+from galaxy.util import send_mail
 from galaxy.util.json import to_json_string
 
 log = logging.getLogger( __name__ )
@@ -10,16 +10,16 @@ def get_form_template(action_type, title, content, help, on_output = True ):
     if on_output:
         form = """
             if (pja.action_type == "%s"){
-            	p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + pja.output_name + "</span><div class='toolFormTitle'> %s <br/> on " + pja.output_name + "\
-            	<div style='float: right;' class='buttons'><img src='/static/images/delete_icon.png'></div></div><div class='toolFormBody'>";
+                p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + pja.output_name + "</span><div class='toolFormTitle'> %s <br/> on " + pja.output_name + "\
+                <div style='float: right;' class='buttons'><img src='/static/images/delete_icon.png'></div></div><div class='toolFormBody'>";
                 %s
                 p_str += "</div><div class='toolParamHelp'>%s</div></div>";
             }""" % (action_type, title, content, help)
     else:
-    	form =  """
+        form =  """
             if (pja.action_type == "%s"){
-            	p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + "</span><div class='toolFormTitle'> %s \
-            	<div style='float: right;' class='buttons'><img src='/static/images/delete_icon.png'></div></div><div class='toolFormBody'>";
+                p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + "</span><div class='toolFormTitle'> %s \
+                <div style='float: right;' class='buttons'><img src='/static/images/delete_icon.png'></div></div><div class='toolFormBody'>";
                 %s
                 p_str += "</div><div class='toolParamHelp'>%s</div></div>";
             }""" % (action_type, title, content, help)
@@ -58,43 +58,25 @@ class EmailAction(DefaultJobAction):
     
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
-        smtp_server = app.config.smtp_server
         if action.action_arguments and action.action_arguments.has_key('host'):
             host = action.action_arguments['host']
         else:
             host = 'usegalaxy.org'
-        if smtp_server is None:
-            log.error("Mail is not configured for this galaxy instance.  Workflow action aborting after logging mail to info.")
-            frm = 'galaxy-noreply@%s' % host
-            to  = job.user.email
-            outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-            msg = MIMEText( "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" )))
-            msg[ 'To' ] = to
-            msg[ 'From' ] = frm
-            msg[ 'Subject' ] = "Galaxy notification regarding history '%s'" % (job.history.name)
-            log.info(msg)
-            return
-        # Build the email message
         frm = 'galaxy-noreply@%s' % host
         to  = job.user.email
+        subject = "Galaxy workflow step notification '%s'" % (job.history.name)
         outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-        msg = MIMEText( "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" )))
-        msg[ 'To' ] = to
-        msg[ 'From' ] = frm
-        msg[ 'Subject' ] = "Galaxy workflow step notification '%s'" % (job.history.name)
+        body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" ))
         try:
-            s = smtplib.SMTP()
-            s.connect( smtp_server )
-            s.sendmail( frm, [ to ], msg.as_string() )
-            s.close()
+            send_mail( frm, to, subject, body, app.config )
         except Exception, e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
             
     @classmethod
     def get_config_form(cls, trans):
         form = """
-        	p_str += "<label for='pja__"+pja.output_name+"__EmailAction'>There are no additional options for this action.  You will be emailed upon job completion.</label>\
-        	            <input type='hidden' value='%s' name='pja__"+pja.output_name+"__EmailAction__host'/><input type='hidden' name='pja__"+pja.output_name+"__EmailAction'/>";
+            p_str += "<label for='pja__"+pja.output_name+"__EmailAction'>There are no additional options for this action.  You will be emailed upon job completion.</label>\
+                        <input type='hidden' value='%s' name='pja__"+pja.output_name+"__EmailAction__host'/><input type='hidden' name='pja__"+pja.output_name+"__EmailAction'/>";
             """ % trans.request.host
         return get_form_template(cls.name, cls.verbose_name, form, "This action will send an email notifying you when the job is done.", on_output = False)
 
@@ -123,14 +105,14 @@ class ChangeDatatypeAction(DefaultJobAction):
         for dt_name in dtnames:
             dt_list += """<option id='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype__%s' value='%s'>%s</option>""" % (dt_name, dt_name, dt_name)
         ps = """
-			p_str += "<label for='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>New Datatype:</label>\
-			    <select id='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype' name='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>\
-		        %s\
-		        </select>";
-	        if (pja.action_arguments !== undefined && pja.action_arguments.newtype !== undefined){
+            p_str += "<label for='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>New Datatype:</label>\
+                <select id='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype' name='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>\
+                %s\
+                </select>";
+            if (pja.action_arguments !== undefined && pja.action_arguments.newtype !== undefined){
                  p_str += "<scrip" + "t type='text/javascript'>$('#pja__" + pja.output_name + "__ChangeDatatypeAction__newtype').val('" + pja.action_arguments.newtype + "');</scrip" + "t>";
-	        }
-		    """ % dt_list
+            }
+            """ % dt_list
             # Note the scrip + t hack above.  Is there a better way?
         return get_form_template(cls.name, cls.verbose_name, ps, 'This action will change the datatype of the output to the indicated value.')
     
@@ -158,15 +140,16 @@ class RenameDatasetAction(DefaultJobAction):
     @classmethod
     def get_config_form(cls, trans):
         form = """
-			if ((pja.action_arguments !== undefined) && (pja.action_arguments.newname !== undefined)){
-				p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
-				          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value='"+pja.action_arguments.newname + "'/>";
-			}
-			else{
-				p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
-				          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=''/>";
-			}
-		    """
+            if ((pja.action_arguments !== undefined) && (pja.action_arguments.newname !== undefined)){
+                p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
+                          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=\\"" + pja.action_arguments.newname.replace(/"/g, "&quot;") + "\\"/>";
+            }
+            
+            else{
+                p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
+                          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=''/>";
+            }
+            """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
     
     @classmethod
@@ -213,8 +196,8 @@ class DeleteDatasetAction(DefaultJobAction):
     @classmethod
     def get_config_form(cls, trans):
         form = """
-        	p_str += "<label for='pja__"+pja.output_name+"__DeleteDatasetAction'>There are no additional options for this action.  This dataset will be marked deleted.</label>\
-        	            <input type='hidden' name='pja__"+pja.output_name+"__DeleteDatasetAction'/>";
+            p_str += "<label for='pja__"+pja.output_name+"__DeleteDatasetAction'>There are no additional options for this action.  This dataset will be marked deleted.</label>\
+                        <input type='hidden' name='pja__"+pja.output_name+"__DeleteDatasetAction'/>";
             """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
     

@@ -126,7 +126,7 @@
         tagged_item_id = str( trans.security.encode_id ( tagged_item.id ) )
         elt_id = int ( floor ( random()*maxint ) )
         
-        # Get list of user's item tags. TODO: this could be moved to a database query for speed purposes.
+        # Get list of user's item tags. TODO: implement owner_tags for all taggable objects and use here.
         item_tags = [ tag for tag in tagged_item.tags if ( tag.user == user ) ]
     %>
     

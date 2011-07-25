@@ -116,13 +116,14 @@
         <datatype extension="svg" type="galaxy.datatypes.images:Image" mimetype="image/svg+xml"/>
         <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
         <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
+	<datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
         <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
-        <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" display_in_upload="true"/>
-        <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" display_in_upload="true"/>
+        <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" mimetype="application/xml" display_in_upload="true"/>
+        <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" mimetype="application/xml" display_in_upload="true"/>
         <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
             <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
             <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-            <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>    
+            <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
         </datatype>
         <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
         <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
@@ -273,12 +274,14 @@
     </registration>
     <sniffers>
         <!--
-          The order in which Galaxy attempts to determine data types is 
-          important because some formats are much more loosely defined 
-          than others.  The following list should be the most rigidly 
-          defined format first, followed by next-most rigidly defined, 
+          The order in which Galaxy attempts to determine data types is
+          important because some formats are much more loosely defined
+          than others.  The following list should be the most rigidly
+          defined format first, followed by next-most rigidly defined,
           and so on.
         -->
+        <sniffer type="galaxy.datatypes.tabular:Vcf"/>
+        <sniffer type="galaxy.datatypes.binary:TwoBit"/>
         <sniffer type="galaxy.datatypes.binary:Bam"/>
         <sniffer type="galaxy.datatypes.binary:Sff"/>
         <sniffer type="galaxy.datatypes.xml:BlastXml"/>
@@ -301,7 +304,6 @@
         <sniffer type="galaxy.datatypes.tabular:Pileup"/>
         <sniffer type="galaxy.datatypes.interval:Interval"/>
         <sniffer type="galaxy.datatypes.tabular:Sam"/>
-        <sniffer type="galaxy.datatypes.tabular:Vcf"/>
         <!--
         Keep this commented until the sniff method in the assembly.py
         module is fixed to not read the entire file.

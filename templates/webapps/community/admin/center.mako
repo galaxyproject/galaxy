@@ -7,24 +7,6 @@
 <p>The menu on the left provides the following features</p>
 <ul>
     <li>
-        <strong>Tools</strong>
-        <p/>
-        <ul>
-            <li>
-                <strong>Tools awaiting approval</strong>
-            </li>
-            <p/>
-            <li>
-                <strong>Browse by category</strong>
-            </li>
-            <p/>
-            <li>
-                <strong>Browse all tools</strong>
-            </li>
-            <p/>
-        </ul>
-    </li>
-    <li>
         <strong>Categories</strong>
         <p/>
         <ul>

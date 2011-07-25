@@ -82,11 +82,17 @@ def main( options, arguments ):
     primer_index_file = file_root + ".cdb"
     primers = gd.PrimersFile( data_file=primer_data_file, index_file=primer_index_file )
 
+    comments_printed = False
+
     while snps.next():
         seq, pos = snps.get_seq_pos()
         enzyme_list = primers.get_enzymes( seq, pos )
         for enzyme in enzyme_list:
             if enzyme in enzyme_dict:
+                if not comments_printed:
+                    for comment in snps.comments:
+                        out_fh.write( "%s\n" % comment )
+                    comments_printed = True
                 out_fh.write( "%s\n" % snps.line )
                 break
 

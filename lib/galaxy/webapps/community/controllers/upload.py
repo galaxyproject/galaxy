@@ -1,183 +1,300 @@
-import sys, os, shutil, logging, urllib2
+import sys, os, shutil, logging, tarfile, tempfile
 from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
-from galaxy.web.form_builder import SelectField, build_select_field
-from galaxy.webapps.community import datatypes
-from common import get_categories, get_category, get_versions
+from galaxy.datatypes.checkers import *
+from common import *
+from mercurial import hg, ui, commands
 
 log = logging.getLogger( __name__ )
 
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
+CHUNK_SIZE = 2**20 # 1Mb
 
 class UploadError( Exception ):
     pass
 
 class UploadController( BaseController ):
-    
     @web.expose
     @web.require_login( 'upload', use_panels=True, webapp='community' )
     def upload( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        commit_message = util.restore_text( params.get( 'commit_message', 'Uploaded'  ) )
         category_ids = util.listify( params.get( 'category_id', '' ) )
-        replace_id = params.get( 'replace_id', None )
-        if replace_id:
-            replace_version = trans.sa_session.query( trans.app.model.Tool ).get( trans.security.decode_id( replace_id ) )
-            upload_type = replace_version.type
-        else:
-            replace_version = None
-            upload_type = params.get( 'upload_type', 'tool' )
-        uploaded_file = None
         categories = get_categories( trans )
-        if not categories:
-            message = 'No categories have been configured in this instance of the Galaxy Tool Shed.  ' + \
-                'An administrator needs to create some via the Administrator control panel before anything can be uploaded',
-            status = 'error'
-            return trans.response.send_redirect( web.url_for( controller='tool',
-                                                              action='browse_tools',
-                                                              cntrller='tool',
-                                                              message=message,
-                                                              status=status ) )
+        repository_id = params.get( 'repository_id', '' )
+        repository = get_repository( trans, repository_id )
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        uncompress_file = util.string_as_bool( params.get( 'uncompress_file', 'true' ) )
+        remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
+        uploaded_file = None
+        upload_point = self.__get_upload_point( repository, **kwd )
+        # Get the current repository tip.
+        tip = repository.tip
         if params.get( 'upload_button', False ):
-            url_paste = params.get( 'url', '' ).strip()
+            current_working_dir = os.getcwd()
             file_data = params.get( 'file_data', '' )
-            if file_data == '' and url_paste == '':
+            if file_data == '':
                 message = 'No files were entered on the upload form.'
                 status = 'error'
-            elif file_data == '':
-                try:
-                    uploaded_file = urllib2.urlopen( url_paste )
-                except ( ValueError, urllib2.HTTPError ), e:
-                    message = 'An error occurred trying to retrieve the URL entered on the upload form: %s' % str( e )
-                    status = 'error'
-                except urllib2.URLError, e:
-                    message = 'An error occurred trying to retrieve the URL entered on the upload form: %s' % e.reason
-                    status = 'error'
+                uploaded_file = None
             elif file_data not in ( '', None ):
                 uploaded_file = file_data.file
+                uploaded_file_name = uploaded_file.name
+                uploaded_file_filename = file_data.filename
+            isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             if uploaded_file:
-                datatype = trans.app.datatypes_registry.get_datatype_by_extension( upload_type )
-                if datatype is None:
-                    message = 'An unknown file type was selected.  This should not be possible, please report the error.'
-                    status = 'error'
-                else:
+                isgzip = False
+                isbz2 = False
+                if uncompress_file:
+                    isgzip = is_gzip( uploaded_file_name )
+                    if not isgzip:
+                        isbz2 = is_bz2( uploaded_file_name )
+                ok = True
+                if isempty:
+                    tar = None
+                    istar = False
+                else:                
+                    # Determine what we have - a single file or an archive
                     try:
-                        # Initialize the tool object
-                        meta = datatype.verify( uploaded_file )
-                        meta.user = trans.user
-                        meta.guid = trans.app.security.get_new_guid()
-                        meta.suite = upload_type == 'toolsuite'
-                        obj = datatype.create_model_object( meta )
-                        trans.sa_session.add( obj )
-                        if isinstance( obj, trans.app.model.Tool ):
-                            existing = trans.sa_session.query( trans.app.model.Tool ) \
-                                                       .filter_by( tool_id = meta.id ) \
-                                                       .first()
-                            if existing and not replace_id:
-                                raise UploadError( 'A %s with the same Id already exists.  If you are trying to update this %s to a new version, use the upload form on the "Edit Tool" page.  Otherwise, change the Id in the %s config.' % \
-                                                   ( obj.label, obj.label, obj.label ) )
-                            elif replace_id and not existing:
-                                raise UploadError( 'The new %s id (%s) does not match the old %s id (%s).  Check the %s config files.' % \
-                                                   ( obj.label, str( meta.id ), obj.label, str( replace_version.tool_id ), obj.label ) )
-                            elif existing and replace_id:
-                                if replace_version.newer_version:
-                                    # If the user has picked an old version, switch to the newest version
-                                    replace_version = get_versions( replace_version )[0]
-                                if replace_version.tool_id != meta.id:
-                                    raise UploadError( 'The new %s id (%s) does not match the old %s id (%s).  Check the %s config files.' % \
-                                                   ( obj.label, str( meta.id ), obj.label, str( replace_version.tool_id ), obj.label ) )
-                                for old_version in get_versions( replace_version ):
-                                    if old_version.version == meta.version:
-                                        raise UploadError( 'The new version (%s) matches an old version.  Check your version in the %s config file.' % \
-                                                           ( str( meta.version ), obj.label ) )
-                                    if old_version.is_new:
-                                        raise UploadError( 'There is an existing version of this %s which has not yet been submitted for approval, so either <a href="%s">submit it or delete it</a> before uploading a new version.' % \
-                                                           ( obj.label,
-                                                             url_for( controller='common',
-                                                                      action='view_tool',
-                                                                      cntrller='tool',
-                                                                      id=trans.security.encode_id( old_version.id ) ) ) )
-                                    if old_version.is_waiting:
-                                        raise UploadError( 'There is an existing version of this %s which is waiting for administrative approval, so contact an administrator for help.' % \
-                                                           obj.label )
-                                    # Defer setting the id since the newer version id doesn't exist until the new Tool object is flushed
-                            if category_ids:
-                                for category_id in category_ids:
-                                    category = trans.app.model.Category.get( trans.security.decode_id( category_id ) )
-                                    # Initialize the tool category
-                                    tca = trans.app.model.ToolCategoryAssociation( obj, category )
-                                    trans.sa_session.add( tca )
-                            # Initialize the tool event
-                            event = trans.app.model.Event( state=trans.app.model.Tool.states.NEW )
-                            # Flush to get an event id
-                            trans.sa_session.add( event )
-                            trans.sa_session.flush()
-                            tea = trans.app.model.ToolEventAssociation( obj, event )
-                            trans.sa_session.add( tea )
-                        if replace_version and replace_id:
-                            replace_version.newer_version_id = obj.id
-                            trans.sa_session.add( replace_version )
-                            # TODO: should the state be changed to archived?  We'll leave it alone for now
-                            # because if the newer version is deleted, we'll need to add logic to reset the
-                            # the older version back to it's previous state ( possible approved ).
-                            comment = "Replaced by new version %s" % obj.version
-                            event = trans.app.model.Event( state=replace_version.state, comment=comment )
-                            # Flush to get an event id
-                            trans.sa_session.add( event )
-                            trans.sa_session.flush()
-                            tea = trans.app.model.ToolEventAssociation( replace_version, event )
-                        trans.sa_session.flush()
-                        try:
-                            os.link( uploaded_file.name, obj.file_name )
-                        except OSError:
-                            shutil.copy( uploaded_file.name, obj.file_name )
-                        # We're setting cntrller to 'tool' since that is the only controller from which we can upload
-                        # TODO: this will need tweaking when we can upload histories or workflows
-                        return trans.response.send_redirect( web.url_for( controller='common',
-                                                                          action='edit_tool',
-                                                                          cntrller='tool',
-                                                                          id=trans.app.security.encode_id( obj.id ),
-                                                                          message='Uploaded %s' % meta.message,
-                                                                          status='done' ) )
-                    except ( datatypes.DatatypeVerificationError, UploadError ), e:
-                        message = str( e )
-                        status = 'error'
-                    uploaded_file.close()
-            elif replace_id is not None:
-                old_version = None
-                for old_version in get_versions( replace_version ):
-                    if old_version.is_new:
-                        message = 'There is an existing version of this tool which has not been submitted for approval, so either submit or delete it before uploading a new version.'
-                        break
-                    if old_version.is_waiting:
-                        message = 'There is an existing version of this tool which is waiting for administrative approval, so contact an administrator for help.'
-                        break
+                        if ( isgzip or isbz2 ) and uncompress_file:
+                            # Open for reading with transparent compression.
+                            tar = tarfile.open( uploaded_file_name, 'r:*' )
+                        else:
+                            tar = tarfile.open( uploaded_file_name )
+                        istar = True
+                    except tarfile.ReadError, e:
+                        tar = None
+                        istar = False
+                if istar:
+                    ok, message, files_to_remove = self.upload_tar( trans,
+                                                                    repository,
+                                                                    tar,
+                                                                    uploaded_file,
+                                                                    upload_point,
+                                                                    remove_repo_files_not_in_tar,
+                                                                    commit_message )
                 else:
-                    old_version = None
-                if old_version is not None:
-                    return trans.response.send_redirect( web.url_for( controller='common',
-                                                                      action='view_tool',
-                                                                      cntrller='tool',
-                                                                      id=trans.app.security.encode_id( old_version.id ),
-                                                                      message=message,
-                                                                      status='error' ) )
+                    if ( isgzip or isbz2 ) and uncompress_file:
+                        uploaded_file_filename = self.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
+                    if upload_point is not None:
+                        full_path = os.path.abspath( os.path.join( repo_dir, upload_point, uploaded_file_filename ) )
+                    else:
+                        full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
+                    # Move the uploaded file to the load_point within the repository hierarchy.
+                    shutil.move( uploaded_file_name, full_path )
+                    commands.add( repo.ui, repo, full_path )
+                    try:
+                        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                    except Exception, e:
+                        # I never have a problem with commands.commit on a Mac, but in the test/production
+                        # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                        # exception.  If this happens, we'll try the following.
+                        repo.dirstate.write()
+                        repo.commit( user=trans.user.username, text=commit_message )
+                    if full_path.endswith( '.loc.sample' ):
+                        # Handle the special case where a xxx.loc.sample file is
+                        # being uploaded by copying it to ~/tool-data/xxx.loc.
+                        copy_sample_loc_file( trans, full_path )
+                    handle_email_alerts( trans, repository )
+                if ok:
+                    # Update the repository files for browsing.
+                    update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
+                    # Get the new repository tip.
+                    if tip != repository.tip:
+                        if ( isgzip or isbz2 ) and uncompress_file:
+                            uncompress_str = ' uncompressed and '
+                        else:
+                            uncompress_str = ' '
+                        message = "The file '%s' has been successfully%suploaded to the repository." % ( uploaded_file_filename, uncompress_str )
+                        if istar and remove_repo_files_not_in_tar and files_to_remove:
+                            if upload_point is not None:
+                                message += "  %d files were removed from the repository relative to the selected upload point '%s'." % ( len( files_to_remove ), upload_point )
+                            else:
+                                message += "  %d files were removed from the repository root." % len( files_to_remove )
+                    else:
+                        message = 'No changes to repository.'      
+                    # Set metadata on the repository tip
+                    error_message, status = set_repository_metadata( trans, repository_id, repository.tip, **kwd )
+                    if error_message:
+                        message = '%s<br/>%s' % ( message, error_message )
+                        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                          action='manage_repository',
+                                                                          id=repository_id,
+                                                                          message=message,
+                                                                          status=status ) )
+                    trans.response.send_redirect( web.url_for( controller='repository',
+                                                               action='browse_repository',
+                                                               id=repository_id,
+                                                               commit_message='Deleted selected files',
+                                                               message=message,
+                                                               status=status ) )
+                else:
+                    status = 'error'
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
-        datatype_extensions = trans.app.datatypes_registry.get_datatype_extensions()
-        upload_type_select_list = build_select_field( trans,
-                                                      objs=datatype_extensions,
-                                                      label_attr='self',
-                                                      select_field_name='upload_type',
-                                                      initial_value=upload_type,
-                                                      selected_value=upload_type,
-                                                      refresh_on_change=True )
-        return trans.fill_template( '/webapps/community/upload/upload.mako',
+        return trans.fill_template( '/webapps/community/repository/upload.mako',
+                                    repository=repository,
+                                    commit_message=commit_message,
+                                    uncompress_file=uncompress_file,
+                                    remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
                                     message=message,
-                                    status=status,
-                                    selected_upload_type=upload_type,
-                                    upload_type_select_list=upload_type_select_list,
-                                    replace_id=replace_id,
-                                    selected_categories=selected_categories,
-                                    categories=get_categories( trans ) )
+                                    status=status )
+    def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message ):
+        # Upload a tar archive of files.
+        repo_dir = repository.repo_path
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        files_to_remove = []
+        ok, message = self.__check_archive( tar )
+        if not ok:
+            tar.close()
+            uploaded_file.close()
+            return ok, message, files_to_remove
+        else:
+            if upload_point is not None:
+                full_path = os.path.abspath( os.path.join( repo_dir, upload_point ) )
+            else:
+                full_path = os.path.abspath( repo_dir )
+            filenames_in_archive = [ tarinfo_obj.name for tarinfo_obj in tar.getmembers() ]
+            filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
+            # Extract the uploaded tar to the load_point within the repository hierarchy.
+            tar.extractall( path=full_path )
+            tar.close()
+            uploaded_file.close()
+            if remove_repo_files_not_in_tar and not repository.is_new:
+                # We have a repository that is not new (it contains files), so discover
+                # those files that are in the repository, but not in the uploaded archive.
+                for root, dirs, files in os.walk( full_path ):
+                    if not root.find( '.hg' ) >= 0 and not root.find( 'hgrc' ) >= 0:
+                        if '.hg' in dirs:
+                            # Don't visit .hg directories - should be impossible since we don't
+                            # allow uploaded archives that contain .hg dirs, but just in case...
+                            dirs.remove( '.hg' )
+                        if 'hgrc' in files:
+                             # Don't include hgrc files in commit.
+                            files.remove( 'hgrc' )
+                        for name in files:
+                            full_name = os.path.join( root, name )
+                            if full_name not in filenames_in_archive:
+                                files_to_remove.append( full_name )
+                for repo_file in files_to_remove:
+                    # Remove files in the repository (relative to the upload point)
+                    # that are not in the uploaded archive.
+                    try:
+                        commands.remove( repo.ui, repo, repo_file, force=True )
+                    except Exception, e:
+                        # I never have a problem with commands.remove on a Mac, but in the test/production
+                        # tool shed environment, it throws an exception whenever I delete all files from a
+                        # repository.  If this happens, we'll try the following.
+                        relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
+                        repo.dirstate.remove( relative_selected_file )
+                        repo.dirstate.write()
+                        absolute_selected_file = os.path.abspath( selected_file )
+                        if os.path.isdir( absolute_selected_file ):
+                            try:
+                                os.rmdir( absolute_selected_file )
+                            except OSError, e:
+                                # The directory is not empty
+                                pass
+                        elif os.path.isfile( absolute_selected_file ):
+                            os.remove( absolute_selected_file )
+                            dir = os.path.split( absolute_selected_file )[0]
+                            try:
+                                os.rmdir( dir )
+                            except OSError, e:
+                                # The directory is not empty
+                                pass
+            for filename_in_archive in filenames_in_archive:
+                commands.add( repo.ui, repo, filename_in_archive )
+                if filename_in_archive.endswith( '.loc.sample' ):
+                    # Handle the special case where a xxx.loc.sample file is
+                    # being uploaded by copying it to ~/tool-data/xxx.loc.
+                    copy_sample_loc_file( trans, filename_in_archive )
+            try:
+                commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+            except Exception, e:
+                # I never have a problem with commands.commit on a Mac, but in the test/production
+                # tool shed environment, it occasionally throws a "TypeError: array item must be char"
+                # exception.  If this happens, we'll try the following.
+                repo.dirstate.write()
+                repo.commit( user=trans.user.username, text=commit_message )
+            handle_email_alerts( trans, repository )
+            return True, '', files_to_remove
+    def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
+        if isgzip:
+            self.__handle_gzip( repository, uploaded_file_name )
+            return uploaded_file_filename.rstrip( '.gz' )
+        if isbz2:
+            self.__handle_bz2( repository, uploaded_file_name )
+            return uploaded_file_filename.rstrip( '.bz2' )
+    def __handle_gzip( self, repository, uploaded_file_name ):
+        fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
+        gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
+        while 1:
+            try:
+                chunk = gzipped_file.read( CHUNK_SIZE )
+            except IOError, e:
+                os.close( fd )
+                os.remove( uncompressed )
+                log.exception( 'Problem uncompressing gz data "%s": %s' % ( uploaded_file_name, str( e ) ) )
+                return
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        gzipped_file.close()
+        shutil.move( uncompressed, uploaded_file_name )
+    def __handle_bz2( self, repository, uploaded_file_name ):
+        fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_bunzip2_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
+        bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
+        while 1:
+            try:
+                chunk = bzipped_file.read( CHUNK_SIZE )
+            except IOError:
+                os.close( fd )
+                os.remove( uncompressed )
+                log.exception( 'Problem uncompressing bz2 data "%s": %s' % ( uploaded_file_name, str( e ) ) )
+                return
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        bzipped_file.close()
+        shutil.move( uncompressed, uploaded_file_name )
+    def __get_upload_point( self, repository, **kwd ):
+        upload_point = kwd.get( 'upload_point', None )
+        if upload_point is not None:
+            # The value of upload_point will be something like: database/community_files/000/repo_12/1.bed
+            if os.path.exists( upload_point ):
+                if os.path.isfile( upload_point ):
+                    # Get the parent directory
+                    upload_point, not_needed = os.path.split( upload_point )
+                    # Now the value of uplaod_point will be something like: database/community_files/000/repo_12/
+                upload_point = upload_point.split( 'repo_%d' % repository.id )[ 1 ]
+                if upload_point:
+                    upload_point = upload_point.lstrip( '/' )
+                    upload_point = upload_point.rstrip( '/' )
+                # Now the value of uplaod_point will be something like: /
+                if upload_point == '/':
+                    upload_point = None
+            else:
+                # Must have been an error selecting something that didn't exist, so default to repository root
+                upload_point = None
+        return upload_point
+    def __check_archive( self, archive ):
+        for member in archive.getmembers():
+            # Allow regular files and directories only
+            if not ( member.isdir() or member.isfile() ):
+                message = "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc)."
+                return False, message
+            for item in [ '.hg', '..', '/' ]:
+                if member.name.startswith( item ):
+                    message = "Uploaded archives cannot contain .hg directories, absolute filenames starting with '/', or filenames with two dots '..'."
+                    return False, message
+            if member.name in [ 'hgrc' ]:
+                message = "Uploaded archives cannot contain hgrc files."
+                return False, message
+        return True, ''
+                            

@@ -13,6 +13,12 @@ class SetMetadataToolAction( ToolAction ):
             if isinstance( value, trans.app.model.HistoryDatasetAssociation ):
                 dataset = value
                 dataset_name = name
+                type = 'hda'
+                break
+            elif isinstance( value, trans.app.model.LibraryDatasetDatasetAssociation ):
+                dataset = value
+                dataset_name = name
+                type = 'ldda'
                 break
             else:
                 raise Exception( 'The dataset to set metadata on could not be determined.' )
@@ -22,6 +28,8 @@ class SetMetadataToolAction( ToolAction ):
         job.session_id = trans.get_galaxy_session().id
         job.history_id = trans.history.id
         job.tool_id = tool.id
+        if trans.user:
+            job.user_id = trans.user.id
         start_job_state = job.state #should be job.states.NEW
         try:
             # For backward compatibility, some tools may not have versions yet.
@@ -50,7 +58,10 @@ class SetMetadataToolAction( ToolAction ):
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
         #add the dataset to job_to_input_dataset table
-        job.add_input_dataset( dataset_name, dataset )
+        if type == 'hda':
+            job.add_input_dataset( dataset_name, dataset )
+        elif type == 'ldda':
+            job.add_input_library_dataset( dataset_name, dataset )
         #Need a special state here to show that metadata is being set and also allow the job to run
         #   i.e. if state was set to 'running' the set metadata job would never run, as it would wait for input (the dataset to set metadata on) to be in a ready state
         dataset._state = dataset.states.SETTING_METADATA

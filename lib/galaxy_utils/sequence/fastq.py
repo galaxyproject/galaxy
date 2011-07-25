@@ -438,7 +438,7 @@ class fastqReader( object ):
         while True:
             line = self.file.readline()
             if not line:
-                raise Exception( 'Invalid FASTQ file: could not parse second instance of sequence identifier.' )
+                raise Exception( 'Invalid FASTQ file: could not find quality score of sequence identifier %s.' % rval.identifier )
             line = line.rstrip( '\n\r' )
             if line.startswith( '+' ) and ( len( line ) == 1 or line[1:].startswith( fastq_header[1:] ) ):
                 rval.description = line
@@ -547,7 +547,7 @@ class fastqNamedReader( object ):
                 eof = True
             self.file.seek( offset )
         if count:
-            rval = "There were %i known sequence reads not utilized. "
+            rval = "There were %i known sequence reads not utilized. " % count
         if not eof:
             rval = "%s%s" % ( rval, "An additional unknown number of reads exist in the input that were not utilized." )
         return rval
@@ -615,6 +615,16 @@ class fastqJoiner( object ):
             elif identifier[-1] == "2":
                 identifier = "%s1" % identifier[:-1]
         return identifier
+    def is_first_mate( self, sequence_id ):
+        is_first = None
+        if not isinstance( sequence_id, basestring ):
+            sequence_id = sequence_id.identifier
+        if sequence_id[-2] == '/':
+            if sequence_id[-1] == "1":
+                is_first = True
+            else:
+                is_first = False
+        return is_first
 
 class fastqSplitter( object ):   
     def split( self, fastq_read ):

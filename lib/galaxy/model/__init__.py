@@ -15,7 +15,10 @@ from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
-import os.path, os, errno, codecs, operator, smtplib, socket, pexpect, logging, time
+import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
+
+if sys.version_info[:2] < ( 2, 5 ):
+    from sets import Set as set
 
 log = logging.getLogger( __name__ )
 
@@ -92,6 +95,7 @@ class Job( object ):
         self.parameters = []
         self.input_datasets = []
         self.output_datasets = []
+        self.input_library_datasets = []
         self.output_library_datasets = []
         self.state = Job.states.NEW
         self.info = None
@@ -106,6 +110,8 @@ class Job( object ):
         self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
+    def add_input_library_dataset( self, name, dataset ):
+        self.input_library_datasets.append( JobToInputLibraryDatasetAssociation( name, dataset ) )
     def add_output_library_dataset( self, name, dataset ):
         self.output_library_datasets.append( JobToOutputLibraryDatasetAssociation( name, dataset ) )
     def add_post_job_action(self, pja):
@@ -208,6 +214,11 @@ class JobToInputDatasetAssociation( object ):
         self.dataset = dataset
         
 class JobToOutputDatasetAssociation( object ):
+    def __init__( self, name, dataset ):
+        self.name = name
+        self.dataset = dataset
+
+class JobToInputLibraryDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
         self.dataset = dataset
@@ -402,6 +413,15 @@ class History( object, UsesAnnotations ):
         if isinstance(history_name, str):
             history_name = unicode(history_name, 'utf-8')
         return history_name
+    @property
+    def get_disk_size_bytes( self ):
+        return self.get_disk_size( nice_size=False )
+    def get_disk_size( self, nice_size=False ):
+        # unique datasets only
+        rval = sum( [ d.get_total_size() for d in list( set( [ hda.dataset for hda in self.datasets if not hda.purged ] ) ) if not d.purged ] )
+        if nice_size:
+            rval = galaxy.datatypes.data.nice_size( rval )
+        return rval
 
 class HistoryUserShareAssociation( object ):
     def __init__( self ):
@@ -569,6 +589,22 @@ class Dataset( object ):
                 self.file_size = os.path.getsize( self.file_name )
         except OSError:
             self.file_size = 0
+    def get_total_size( self ):
+        if self.total_size is not None:
+            return self.total_size
+        if self.file_size:
+            # for backwards compatibility, set if unset
+            self.set_total_size()
+            db_session = object_session( self )
+            db_session.flush()
+            return self.total_size
+        return 0
+    def set_total_size( self ):
+        if self.file_size is None:
+            self.set_size()
+        self.total_size = self.file_size or 0
+        for root, dirs, files in os.walk( self.extra_files_path ):
+            self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files ] )
     def has_data( self ):
         """Detects whether there is any data"""
         return self.get_size() > 0
@@ -588,12 +624,36 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
+    @property
+    def user_can_purge( self ):
+        return self.purged == False \
+                and not bool( self.library_associations ) \
+                and len( self.history_associations ) == len( self.purged_history_associations )
+    def full_delete( self ):
+        """Remove the file and extra files, marks deleted and purged"""
+        os.unlink( self.file_name )
+        if os.path.exists( self.extra_files_path ):
+            shutil.rmtree( self.extra_files_path )
+        # TODO: purge metadata files
+        self.deleted = True
+        self.purged = True
     def get_access_roles( self, trans ):
         roles = []
         for dp in self.actions:
             if dp.action == trans.app.security_agent.permitted_actions.DATASET_ACCESS.action:
                 roles.append( dp.role )
         return roles
+    def get_manage_permissions_roles( self, trans ):
+        roles = []
+        for dp in self.actions:
+            if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+                roles.append( dp.role )
+        return roles
+    def has_manage_permissions_roles( self, trans ):
+        for dp in self.actions:
+            if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+                return True
+        return False
 
 class DatasetInstance( object ):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
@@ -1106,7 +1166,7 @@ class LibraryFolder( object, APIItem ):
             name = unicode( name, 'utf-8' )
         return name
     def get_api_value( self, view='collection' ):
-        rval = super( APIItem, self ).get_api_value( vew=view )
+        rval = super( LibraryFolder, self ).get_api_value( vew=view )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -1265,6 +1325,10 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return
     def get_access_roles( self, trans ):
         return self.dataset.get_access_roles( trans )
+    def get_manage_permissions_roles( self, trans ):
+        return self.dataset.get_manage_permissions_roles( trans )
+    def has_manage_permissions_roles( self, trans ):
+        return self.dataset.has_manage_permissions_roles( trans )
     def get_info_association( self, restrict=False, inherited=False ):
         # If restrict is True, we will return this ldda's info_association whether it
         # exists or not ( in which case None will be returned ).  If restrict is False,
@@ -1353,7 +1417,7 @@ class ImplicitlyConvertedDatasetAssociation( object ):
         elif isinstance(parent, LibraryDatasetDatasetAssociation):
             self.parent_ldda = parent
         else:
-            raise AttributeError
+            raise AttributeError, 'Unknown dataset type provided for parent: %s' % type( parent )
         self.type = file_type
         self.deleted = deleted
         self.purged = purged
@@ -1803,12 +1867,8 @@ All samples in state:     %(sample_state)s
             to = self.notification['email']
             frm = 'galaxy-no-reply@' + host
             subject = "Galaxy Sample Tracking notification: '%s' sequencing request" % self.name
-            message = "From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" % ( frm, ", ".join( to ), subject, body )
             try:
-                s = smtplib.SMTP()
-                s.connect( trans.app.config.smtp_server )
-                s.sendmail( frm, to, message )
-                s.quit()
+                util.send_mail( frm, to, subject, body, trans.app.config )
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
             except Exception,e:
                 comments = "Email notification failed. (%s)" % str(e)
@@ -2192,20 +2252,59 @@ class PageUserShareAssociation( object ):
         self.user = None
 
 class Visualization( object ):
-    def __init__( self ):
+    def __init__( self, user=None, type=None, title=None, dbkey=None, latest_revision=None ):
         self.id = None
-        self.user = None
-        self.type = None
-        self.title = None
-        self.latest_revision = None
+        self.user = user
+        self.type = type
+        self.title = title
+        self.dbkey = dbkey
+        self.latest_revision = latest_revision
         self.revisions = []
+        if self.latest_revision:
+            self.revisions.append( latest_revision )
+        
+    def copy( self, user=None, title=None ):
+        """
+        Provide copy of visualization with only its latest revision.
+        """
+        # NOTE: a shallow copy is done: the config is copied as is but datasets
+        # are not copied nor are the dataset ids changed. This means that the
+        # user does not have a copy of the data in his/her history and the
+        # user who owns the datasets may delete them, making them inaccessible
+        # for the current user.
+        # TODO: a deep copy option is needed.
+        
+        if not user:
+            user = self.user
+        if not title:
+            title = self.title
+        
+        copy_viz = Visualization( user=user, type=self.type, title=title, dbkey=self.dbkey )
+        copy_revision = self.latest_revision.copy( visualization=copy_viz )
+        copy_viz.latest_revision = copy_revision
+        return copy_viz
 
 class VisualizationRevision( object ):
-    def __init__( self ):
+    def __init__( self, visualization=None, title=None, dbkey=None, config=None ):
         self.id = None
-        self.visualization = None
-        self.title = None
-        self.config = None
+        self.visualization = visualization
+        self.title = title
+        self.dbkey = dbkey
+        self.config = config
+        
+    def copy( self, visualization=None ):
+        """
+        Returns a copy of this object.
+        """
+        if not visualization:
+            visualization = self.visualization
+            
+        return VisualizationRevision( 
+            visualization=visualization, 
+            title=self.title,
+            dbkey=self.dbkey,
+            config=self.config
+        )
         
 class VisualizationUserShareAssociation( object ):
     def __init__( self ):

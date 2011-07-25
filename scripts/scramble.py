@@ -1,11 +1,14 @@
-"""
-usage: scramble.py [egg_name]
-    With no arguments, scrambles all eggs necessary according to the
-    settings in universe_wsgi.ini.
-  egg_name - Scramble only this egg (as defined in eggs.ini) or 'all'
-    for all eggs (even those not required by your settings).
-"""
 import os, sys, logging
+from optparse import OptionParser
+
+parser = OptionParser()
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default='universe_wsgi.ini' )
+parser.add_option( '-e', '--egg-name', dest='egg_name', help='Egg name (as defined in eggs.ini) to fetch, or "all" for all eggs, even those not needed by your configuration' )
+( options, args ) = parser.parse_args()
+
+if not os.path.exists( options.config ):
+    print "Config file does not exist (see 'python %s --help'): %s" % ( sys.argv[0], options.config )
+    sys.exit( 1 )
 
 root = logging.getLogger()
 root.setLevel( 10 )
@@ -16,22 +19,25 @@ sys.path.append( lib )
 
 from galaxy.eggs.scramble import ScrambleCrate, ScrambleFailure, EggNotFetchable
 
-c = ScrambleCrate()
+c = ScrambleCrate( options.config )
 
 try:
-    if len( sys.argv ) == 1:
+    if not options.egg_name:
         eggs = c.scramble()
-    elif sys.argv[1] == 'all':
+    elif options.egg_name == 'all':
         c.scramble( all=True )
     else:
         # Scramble a specific egg
-        name = sys.argv[1]
+        name = options.egg_name
         try:
             egg = c[name]
         except:
             print "error: %s not in eggs.ini" % name
             sys.exit( 1 )
         for dependency in egg.dependencies:
+            config_arg = ''
+            if options.config != 'universe_wsgi.ini':
+                config_arg = '-c %s' % options.config
             print "Checking %s dependency: %s" % ( egg.name, dependency )
             try:
                 c[dependency].require()
@@ -39,7 +45,7 @@ try:
                 degg = e.eggs[0]
                 print "%s build dependency %s %s couldn't be downloaded" % ( egg.name, degg.name, degg.version )
                 print "automatically.  You can try building it by hand with:"
-                print "  python scripts/scramble.py %s" % degg.name
+                print "  python scripts/scramble.py %s-e %s" % ( config_agr, degg.name )
                 sys.exit( 1 )
         egg.scramble()
         sys.exit( 0 )

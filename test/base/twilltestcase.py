@@ -8,6 +8,8 @@ import twill
 import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
 pkg_resources.require( "elementtree" )
+pkg_resources.require( "MarkupSafe" )
+from markupsafe import escape
 from elementtree import ElementTree
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
@@ -240,7 +242,12 @@ class TwillTestCase( unittest.TestCase ):
         else:
             self.visit_page( "history" )
         for subpatt in patt.split():
-            tc.find(subpatt)
+            try:
+                tc.find( subpatt )
+            except:
+                fname = self.write_temp_file( tc.browser.get_html() )
+                errmsg = "no match to '%s'\npage content written to '%s'" % ( subpatt, fname )
+                raise AssertionError( errmsg )
         self.home()
     def clear_history( self ):
         """Empties a history of all datasets"""
@@ -378,7 +385,7 @@ class TwillTestCase( unittest.TestCase ):
         """Switches to a history in the current list of histories"""
         self.visit_url( "%s/history/list?operation=switch&id=%s" % ( self.url, id ) )
         if name:
-            self.check_history_for_string( name )
+            self.check_history_for_string( escape( name ) )
         self.home()
     def view_stored_active_histories( self, strings_displayed=[] ):
         self.home()
@@ -612,13 +619,10 @@ class TwillTestCase( unittest.TestCase ):
         return hids
 
     def makeTfname(self, fname=None):
-	"""
-        safe temp name - preserve the file extension for tools that interpret it
-	"""
+        """safe temp name - preserve the file extension for tools that interpret it"""
         suffix = os.path.split(fname)[-1] # ignore full path
-	fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
-	return temp_prefix
-
+        fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
+        return temp_prefix
 
     def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
@@ -683,12 +687,12 @@ class TwillTestCase( unittest.TestCase ):
                            self.files_re_match( local_name, temp_name, attributes=attributes )
                        elif compare == 're_match_multiline':
                            self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-                       elif compare == 'sim_size':
-                           delta = attributes.get('delta','100')
-                           s1 = len(data)
-                           s2 = os.path.getsize(local_name)
-                           if abs(s1-s2) > int(delta):
-                               raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
+                    elif compare == 'sim_size':
+                        delta = attributes.get('delta','100')
+                        s1 = len(data)
+                        s2 = os.path.getsize(local_name)
+                        if abs(s1-s2) > int(delta):
+                           raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
                        elif compare == "contains":
                            self.files_contains( local_name, temp_name, attributes=attributes )
                        else:
@@ -759,7 +763,7 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += str( err )
                 raise AssertionError( errmsg )
         finally:
-	    os.remove( temp_name )
+            os.remove( temp_name )
 
     def is_zipped( self, filename ):
         if not zipfile.is_zipfile( filename ):

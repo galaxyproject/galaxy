@@ -1,4 +1,5 @@
-<tool id="cuffdiff" name="Cuffdiff" version="0.9.1">
+<tool id="cuffdiff" name="Cuffdiff" version="0.0.5">
+    <!-- Wrapper supports Cuffdiff versions v1.0.0-v1.0.3 -->
     <description>find significant changes in transcript expression, splicing, and promoter use</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -67,9 +68,7 @@
 
     </command>
     <inputs>
-        <param format="gtf" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source.">
-            <validator type="unspecified_build" />
-        </param>
+        <param format="gtf" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source."/>
         <conditional name="group_analysis"> 
             <param name="do_groups" type="select" label="Perform replicate analysis" help="Perform cuffdiff with replicates in each group.">
                 <option value="No">No</option>
@@ -134,17 +133,17 @@
     </inputs>
 
     <outputs>
-        <data format="tabular" name="isoforms_exp" label="${tool.name} on ${on_string}: isoform expression"/>
-        <data format="tabular" name="genes_exp" label="${tool.name} on ${on_string}: gene expression"/>
-        <data format="tabular" name="tss_groups_exp" label="${tool.name} on ${on_string}: TSS groups expression"/>
-        <data format="tabular" name="cds_exp_fpkm_tracking" label="${tool.name} on ${on_string}: CDS Expression FPKM Tracking"/>
-        <data format="tabular" name="isoforms_fpkm_tracking" label="${tool.name} on ${on_string}: isoform FPKM tracking"/>
-        <data format="tabular" name="genes_fpkm_tracking" label="${tool.name} on ${on_string}: gene FPKM tracking"/>
-        <data format="tabular" name="tss_groups_fpkm_tracking" label="${tool.name} on ${on_string}: TSS groups FPKM tracking" />
+        <data format="tabular" name="splicing_diff" label="${tool.name} on ${on_string}: splicing differential expression testing"/>
+        <data format="tabular" name="promoters_diff" label="${tool.name} on ${on_string}: promoters differential expression testing"/>
+        <data format="tabular" name="cds_diff" label="${tool.name} on ${on_string}: CDS overloading diffential expression testing"/>
+        <data format="tabular" name="cds_exp_fpkm_tracking" label="${tool.name} on ${on_string}: CDS FPKM differential expression testing"/>
         <data format="tabular" name="cds_fpkm_tracking" label="${tool.name} on ${on_string}: CDS FPKM tracking"/>
-        <data format="tabular" name="splicing_diff" label="${tool.name} on ${on_string}: splicing diff"/>
-        <data format="tabular" name="promoters_diff" label="${tool.name} on ${on_string}: promoters diff"/>
-        <data format="tabular" name="cds_diff" label="${tool.name} on ${on_string}: CDS diff"/>
+        <data format="tabular" name="tss_groups_exp" label="${tool.name} on ${on_string}: TSS groups differential expression testing"/>
+        <data format="tabular" name="tss_groups_fpkm_tracking" label="${tool.name} on ${on_string}: TSS groups FPKM tracking" />
+        <data format="tabular" name="genes_exp" label="${tool.name} on ${on_string}: gene differential expression testing"/>
+        <data format="tabular" name="genes_fpkm_tracking" label="${tool.name} on ${on_string}: gene FPKM tracking"/>
+        <data format="tabular" name="isoforms_exp" label="${tool.name} on ${on_string}: transcript differential expression testing"/>
+        <data format="tabular" name="isoforms_fpkm_tracking" label="${tool.name} on ${on_string}: transcript FPKM tracking"/>
     </outputs>
 
     <tests>
@@ -158,7 +157,6 @@
                 <param name="aligned_reads2" value="cuffdiff_in2.sam" ftype="sam" />
                 <!-- Defaults. -->
                 <param name="fdr" value="0.05" />
-                <param name="min_mapqual" value="0" ftype="sam" />
                 <param name="min_alignment_count" value="0" ftype="sam" />
                 <param name="do_bias_correction" value="No" />
                 <param name="do_normalization" value="No" />
@@ -167,17 +165,17 @@
                     Line diffs are needed because cuffdiff does not produce deterministic output.
                     TODO: can we find datasets that lead to deterministic behavior?
                 -->
-                <output name="isoforms_exp" file="cuffdiff_out1.txt" lines_diff="200"/>
-                <output name="genes_exp" file="cuffdiff_out2.txt" lines_diff="200"/>
-                <output name="tss_groups_exp" file="cuffdiff_out3.txt"/>
-                <output name="cds_exp_fpkm_tracking" file="cuffdiff_out4.txt"/>
-                <output name="isoforms_fpkm_tracking" file="cuffdiff_out5.txt" lines_diff="200"/>
-                <output name="genes_fpkm_tracking" file="cuffdiff_out6.txt" lines_diff="200"/>
-                <output name="tss_groups_fpkm_tracking" file="cuffdiff_out7.txt"/>
-                <output name="cds_fpkm_tracking" file="cuffdiff_out8.txt"/>
                 <output name="splicing_diff" file="cuffdiff_out9.txt"/>
                 <output name="promoters_diff" file="cuffdiff_out10.txt"/>
                 <output name="cds_diff" file="cuffdiff_out11.txt"/>
+                <output name="cds_exp_fpkm_tracking" file="cuffdiff_out4.txt"/>
+                <output name="cds_fpkm_tracking" file="cuffdiff_out8.txt"/>
+                <output name="tss_groups_exp" file="cuffdiff_out3.txt"/>
+                <output name="tss_groups_fpkm_tracking" file="cuffdiff_out7.txt"/>
+                <output name="genes_exp" file="cuffdiff_out2.txt" lines_diff="200"/>
+                <output name="genes_fpkm_tracking" file="cuffdiff_out6.txt" lines_diff="200"/>
+                <output name="isoforms_exp" file="cuffdiff_out1.txt" lines_diff="200"/>
+                <output name="isoforms_fpkm_tracking" file="cuffdiff_out5.txt" lines_diff="200"/>
         </test>
     </tests>
 

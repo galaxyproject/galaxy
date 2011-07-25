@@ -1,0 +1,70 @@
+<tool id="fastq_paired_end_deinterlacer" name="FASTQ de-interlacer" version="1.1">
+  <description>on paired end reads</description>
+  <command interpreter="python">fastq_paired_end_deinterlacer.py '$input_file' '${input_file.extension[len( 'fastq' ):]}' '$output1_pairs_file' '$output2_pairs_file' '$output1_singles_file' '$output2_singles_file'</command>
+  <inputs>
+    <param name="input_file" type="data" format="fastqsanger,fastqcssanger" label="FASTQ reads" />
+  </inputs>
+  <outputs>
+    <data name="output1_pairs_file" format="input" label="FASTQ de-interlacer left mates from data ${input_file.hid}" />
+    <data name="output2_pairs_file" format="input" label="FASTQ de-interlacer right mates from data ${input_file.hid}"/>
+    <data name="output1_singles_file" format="input" label="FASTQ de-interlacer left singles from data ${input_file.hid}"/>
+    <data name="output2_singles_file" format="input" label="FASTQ de-interlacer right singles from data ${input_file.hid}"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="paired_end_merged.fastqsanger" ftype="fastqsanger" />
+      <output name="output1_pairs_file" file="paired_end_1.fastqsanger" />
+      <output name="output2_pairs_file" file="paired_end_2.fastqsanger" />
+      <output name="output1_singles_file" file="paired_end_1_singles.fastqsanger" />
+      <output name="output2_singles_file" file="paired_end_2_singles.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="paired_end_merged_errors.fastqsanger" ftype="fastqsanger" />
+      <output name="output1_pairs_file" file="paired_end_1_cleaned.fastqsanger" />
+      <output name="output2_pairs_file" file="paired_end_2_cleaned.fastqsanger" />
+      <output name="output1_singles_file" file="paired_end_1_cleaned_singles.fastqsanger" />
+      <output name="output2_singles_file" file="paired_end_2_cleaned_singles.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+De-interlaces a single fastq dataset representing paired-end run into two fastq datasets containing only the first or second mate read. Reads without mate are saved in separate output files.
+
+Sequence identifiers for paired-end reads must follow the /1 and /2 convention.
+
+-----
+
+**Input**
+
+A multiple-fastq file containing paired-end reads, for example::
+
+    @1539:931/1
+    ACTTCCCGCGCGTGAAGGCGCCGGCAAACGAGGCTCGGGAAGGGGCTCCCG
+    +1539:931/1
+    BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+    @1539:931/2
+    CGCCATTCCGAATCGTAGTTGTCGGCGTCTTCCAGTGCGGCAAGGCATCGT
+    +1539:931/2
+    WNUUZ\P^`BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+-----
+
+**Output**
+
+Multi-fastq file with left-hand mate only::
+
+    @1539:931/1
+    ACTTCCCGCGCGTGAAGGCGCCGGCAAACGAGGCTCGGGAAGGGGCTCCCG
+    +1539:931/1
+    BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+Multi-fastq file with right-hand mate only::
+
+    @1539:931/2
+    CGCCATTCCGAATCGTAGTTGTCGGCGTCTTCCAGTGCGGCAAGGCATCGT
+    +1539:931/2
+    WNUUZ\P^`BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+  </help>
+</tool>

@@ -1,4 +1,5 @@
-<tool id="cufflinks" name="Cufflinks" version="0.9.1">
+<tool id="cufflinks" name="Cufflinks" version="0.0.5">
+    <!-- Wrapper supports Cufflinks versions v1.0.0-v1.0.3 -->
     <description>transcript assembly and FPKM (RPKM) estimates for RNA-Seq data</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -41,9 +42,7 @@
             #end if
     </command>
     <inputs>
-        <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help="">
-            <validator type="unspecified_build" />
-        </param>    
+        <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
         <param name="max_intron_len" type="integer" value="300000" min="1" max="600000" label="Max Intron Length" help=""/>
         <param name="min_isoform_fraction" type="float" value="0.05" min="0" max="1" label="Min Isoform Fraction" help=""/>
         <param name="pre_mrna_fraction" type="float" value="0.05" min="0" max="1" label="Pre MRNA Fraction" help=""/>
@@ -99,6 +98,7 @@
         <data format="gtf" name="assembled_isoforms" label="${tool.name} on ${on_string}: assembled transcripts"/>
     </outputs>
 
+    <trackster_conf/>
     <tests>
         <!--
             Simple test that uses test data included with cufflinks.
@@ -109,7 +109,6 @@
             <param name="max_intron_len" value="300000"/>
             <param name="min_isoform_fraction" value="0.05"/>
             <param name="pre_mrna_fraction" value="0.05"/>
-            <param name="min_map_quality" value="0"/>
             <param name="use_ref" value="No"/>
             <param name="do_normalization" value="No" />
             <param name="do_bias_correction" value="No"/>

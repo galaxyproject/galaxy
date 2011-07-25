@@ -70,7 +70,7 @@ class RBACAgent:
         raise "Unimplemented Method"
     def set_dataset_permission( self, dataset, permission ):
         raise "Unimplemented Method"
-    def set_all_library_permissions( self, dataset, permissions ):
+    def set_all_library_permissions( self, trans, dataset, permissions ):
         raise "Unimplemented Method"
     def library_is_public( self, library ):
         raise "Unimplemented Method"
@@ -287,8 +287,12 @@ class GalaxyRBACAgent( RBACAgent ):
             if self.can_access_library_item( roles, library_dataset, user ):
                 return True
         if search_downward:
-            for folder in folder.active_folders:
-                return self.has_accessible_library_datasets( trans, folder, user, roles, search_downward=search_downward )
+            return self.__active_folders_have_accessible_library_datasets( trans, folder, user, roles )
+        return False
+    def __active_folders_have_accessible_library_datasets( self, trans, folder, user, roles ):
+        for active_folder in folder.active_folders:
+            if self.has_accessible_library_datasets( trans, active_folder, user, roles ):
+                return True
         return False
     def can_access_library_item( self, roles, item, user ):
         if type( item ) == self.model.Library:
@@ -475,6 +479,18 @@ class GalaxyRBACAgent( RBACAgent ):
         Set new permissions on a dataset, eliminating all current permissions
         permissions looks like: { Action : [ Role, Role ] }
         """
+        # Make sure that DATASET_MANAGE_PERMISSIONS is associated with at least 1 role
+        has_dataset_manage_permissions = False
+        for action, roles in permissions.items():
+            if isinstance( action, Action ):
+                if action == self.permitted_actions.DATASET_MANAGE_PERMISSIONS and roles:
+                    has_dataset_manage_permissions = True
+                    break
+            elif action == self.permitted_actions.DATASET_MANAGE_PERMISSIONS.action and roles:
+                has_dataset_manage_permissions = True
+                break
+        if not has_dataset_manage_permissions:
+            return "At least 1 role must be associated with the <b>manage permissions</b> permission on this dataset."
         flush_needed = False
         # Delete all of the current permissions on the dataset
         for dp in dataset.actions:
@@ -489,6 +505,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 flush_needed = True
         if flush_needed:
             self.sa_session.flush()
+        return ""
     def set_dataset_permission( self, dataset, permission={} ):
         """
         Set a specific permission on a dataset, leaving all other current permissions on the dataset alone
@@ -576,7 +593,7 @@ class GalaxyRBACAgent( RBACAgent ):
             for user in users:
                 self.associate_components( user=user, role=sharing_role )
         self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
-    def set_all_library_permissions( self, library_item, permissions={} ):
+    def set_all_library_permissions( self, trans, library_item, permissions={} ):
         # Set new permissions on library_item, eliminating all current permissions
         flush_needed = False
         for role_assoc in library_item.actions:
@@ -591,14 +608,21 @@ class GalaxyRBACAgent( RBACAgent ):
                     for role_assoc in [ permission_class( action, library_item, role ) for role in roles ]:
                         self.sa_session.add( role_assoc )
                         flush_needed = True
-                    if isinstance( library_item, self.model.LibraryDatasetDatasetAssociation ) and \
-                        action == self.permitted_actions.LIBRARY_MANAGE.action:
-                        # Handle the special case when we are setting the LIBRARY_MANAGE_PERMISSION on a
-                        # library_dataset_dataset_association since the roles need to be applied to the
-                        # DATASET_MANAGE_PERMISSIONS permission on the associated dataset
-                        permissions = {}
-                        permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = roles
-                        self.set_dataset_permission( library_item.dataset, permissions )
+                    if isinstance( library_item, self.model.LibraryDatasetDatasetAssociation ):
+                        # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
+                        # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
+                        # permission.  In this case, we'll reset this permission to the library_item user's private role.
+                        if not library_item.dataset.has_manage_permissions_roles( trans ):
+                            permission = {}
+                            permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = [ trans.app.security_agent.get_private_user_role( library_item.user ) ]
+                            self.set_dataset_permission( library_item.dataset, permissions )
+                        if action == self.permitted_actions.LIBRARY_MANAGE.action and roles:
+                            # Handle the special case when we are setting the LIBRARY_MANAGE_PERMISSION on a
+                            # library_dataset_dataset_association since the roles need to be applied to the
+                            # DATASET_MANAGE_PERMISSIONS permission on the associated dataset.
+                            permissions = {}
+                            permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = roles
+                            self.set_dataset_permission( library_item.dataset, permissions )
         if flush_needed:
             self.sa_session.flush()
     def library_is_public( self, library, contents=False ):
@@ -625,7 +649,8 @@ class GalaxyRBACAgent( RBACAgent ):
             if not self.folder_is_public( sub_folder ):
                 return False
         for library_dataset in folder.datasets:
-            if not self.dataset_is_public( library_dataset.library_dataset_dataset_association.dataset ):
+            ldda = library_dataset.library_dataset_dataset_association
+            if ldda and ldda.dataset and not self.dataset_is_public( ldda.dataset ):
                 return False
         return True
     def make_folder_public( self, folder ):
@@ -748,7 +773,7 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 permissions[ self.get_action( v.action ) ] = in_roles
         return permissions, in_roles, error, msg
-    def copy_library_permissions( self, source_library_item, target_library_item, user=None ):
+    def copy_library_permissions( self, trans, source_library_item, target_library_item, user=None ):
         # Copy all relevant permissions from source.
         permissions = {}
         for role_assoc in source_library_item.actions:
@@ -758,7 +783,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     permissions[role_assoc.action].append( role_assoc.role )
                 else:
                     permissions[role_assoc.action] = [ role_assoc.role ]
-        self.set_all_library_permissions( target_library_item, permissions )
+        self.set_all_library_permissions( trans, target_library_item, permissions )
         if user:
             item_class = None
             for item_class, permission_class in self.library_item_assocs:

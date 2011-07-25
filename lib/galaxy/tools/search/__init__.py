@@ -1,4 +1,5 @@
 from galaxy.eggs import require
+from galaxy.web.framework.helpers import to_unicode
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
     require( "Whoosh" )
@@ -35,12 +36,6 @@ class ToolBoxSearch( object ):
         writer = self.index.writer()
         ## TODO: would also be nice to search section headers.
         for id, tool in self.toolbox.tools_by_id.iteritems():
-            def to_unicode( a_basestr ):
-                if type( a_basestr ) is str:
-                    return unicode( a_basestr, 'utf-8' )
-                else:
-                    return a_basestr
-
             writer.add_document( id=id, title=to_unicode(tool.name), description=to_unicode(tool.description), help=to_unicode(tool.help) )
         writer.commit()
         

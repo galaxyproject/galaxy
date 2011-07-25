@@ -689,7 +689,7 @@
             width : 100%;
             height : 100%;
             z-index : 14000;
-            position : absolute;
+            position : fixed;
             display: none;
         }
         ## If page is displayed in panels, pad from edges for readability.
@@ -708,6 +708,7 @@
 <%namespace file="./grid_common.mako" import="*" />
 
 <%def name="make_grid( grid )">
+    <div class="loading-elt-overlay"></div>
     <table>
         <tr>
             <td width="75%">${self.render_grid_header( grid )}</td>
@@ -769,9 +770,7 @@
         if show_item_checkboxes or multiple_item_ops_exist:
             show_item_checkboxes = True
     %>
-
     <form action="${url()}" method="post" onsubmit="return false;">
-        <div class="loading-elt-overlay"></div>
         <table id="grid-table" class="grid">
             <thead id="grid-table-header">
                 <tr>
@@ -1013,6 +1012,21 @@
                 %endfor
             </td>
         </tr>
+    %endif
+    %if len([o for o in grid.operations if o.global_operation]) > 0:
+    <tr>
+        <td colspan="100">
+            %for operation in grid.operations:
+            %if operation.global_operation:
+                <%
+                    link = operation.global_operation()
+                    href = url( **link )
+                %>
+                <a class="action-button" href="${href}">${operation.label}</a>
+            %endif
+            %endfor
+        </td>
+    </tr>
     %endif
 </%def>
 

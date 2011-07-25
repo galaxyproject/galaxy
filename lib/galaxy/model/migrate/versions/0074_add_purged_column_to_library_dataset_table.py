@@ -7,6 +7,9 @@ from sqlalchemy.orm import *
 from migrate import *
 from migrate.changeset import *
 
+import logging
+log = logging.getLogger( __name__ )
+
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 

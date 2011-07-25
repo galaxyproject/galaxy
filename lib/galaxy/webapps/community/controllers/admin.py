@@ -2,13 +2,15 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
-from common import ToolListGrid, CategoryListGrid, get_category, get_event, get_tool, get_versions
+from galaxy.util import inflector
+from common import get_category, get_repository
+from repository import RepositoryListGrid, CategoryListGrid
 import logging
 log = logging.getLogger( __name__ )
 
 class UserListGrid( grids.Grid ):
     # TODO: move this to an admin_common controller since it is virtually the same
-    # in the galaxy webapp.  NOTE the additional ToolsColumn in this grid though...
+    # in the galaxy webapp.
     class UserLoginColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
             return user.email
@@ -44,9 +46,6 @@ class UserListGrid( grids.Grid ):
             elif user.deleted:
                 return "deleted"
             return ""
-    class ToolsColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, user ):
-            return len( user.tools )
     class EmailColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
@@ -74,10 +73,6 @@ class UserListGrid( grids.Grid ):
         ExternalColumn( "External", attach_popup=False ),
         LastLoginColumn( "Last Login", format=time_ago ),
         StatusColumn( "Status", attach_popup=False ),
-        ToolsColumn( "Uploaded Tools",
-                     link=( lambda item: dict( operation="tools_by_user", id=item.id, webapp="community" ) ),
-                     attach_popup=False,
-                     filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
                      key="email",
@@ -288,91 +283,30 @@ class GroupListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class AdminToolListGrid( ToolListGrid ):
-    class StateColumn( grids.TextColumn ):
-        def get_value( self, trans, grid, tool ):
-            state = tool.state
-            if state == 'approved':
-                state_color = 'ok'
-            elif state == 'rejected':
-                state_color = 'error'
-            elif state == 'archived':
-                state_color = 'upload'
-            else:
-                state_color = state
-            return '<div class="count-box state-color-%s">%s</div>' % ( state_color, state )
-    class ToolStateColumn( grids.StateColumn ):
-        def filter( self, trans, user, query, column_filter ):
-            """Modify query to filter by state."""
-            if column_filter == "All":
-                pass
-            elif column_filter in [ v for k, v in self.model_class.states.items() ]:
-                # Get all of the latest ToolEventAssociation ids
-                tea_ids = [ tea_id_tup[0] for tea_id_tup in trans.sa_session.query( func.max( model.ToolEventAssociation.table.c.id ) ) \
-                                                                            .group_by( model.ToolEventAssociation.table.c.tool_id ) ]
-                # Get all of the Event ids associated with the latest ToolEventAssociation ids
-                event_ids = [ event_id_tup[0] for event_id_tup in trans.sa_session.query( model.ToolEventAssociation.table.c.event_id ) \
-                                                                                  .filter( model.ToolEventAssociation.table.c.id.in_( tea_ids ) ) ]
-                # Filter our query by state and event ids
-                return query.filter( and_( model.Event.table.c.state == column_filter,
-                                           model.Event.table.c.id.in_( event_ids ) ) )
-            return query
-
-    columns = [ col for col in ToolListGrid.columns ]
-    columns.append(
-        StateColumn( "Status",
-                     model_class=model.Tool,
-                     link=( lambda item: dict( operation="tools_by_state", id=item.id, webapp="community" ) ),
-                     attach_popup=False ),
-    )
-    columns.append(
-        # Columns that are valid for filtering but are not visible.
-        ToolStateColumn( "State",
-                         key="state",
-                         model_class=model.Tool,
-                         visible=False,
-                         filterable="advanced" )
-    )
-    operations = [
-        grids.GridOperation( "Edit information",
-                             condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( controller="common", action="edit_tool", cntrller="admin", webapp="community" ) )
-    ]
-
-class AdminCategoryListGrid( CategoryListGrid ):
-    # Override standard filters
-    standard_filters = [
-        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
-        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
-    ]
-
 class ManageCategoryListGrid( CategoryListGrid ):
     columns = [ col for col in CategoryListGrid.columns ]
     # Override the NameColumn to include an Edit link
     columns[ 0 ] = CategoryListGrid.NameColumn( "Name",
-                                                key="name",
+                                                key="Category.name",
                                                 link=( lambda item: dict( operation="Edit", id=item.id, webapp="community" ) ),
                                                 model_class=model.Category,
-                                                attach_popup=False,
-                                                filterable="advanced" )
+                                                attach_popup=False )
     global_actions = [
         grids.GridAction( "Add new category",
                           dict( controller='admin', action='manage_categories', operation='create', webapp="community" ) )
     ]
-    operations = [ grids.GridOperation( "Delete",
-                                        condition=( lambda item: not item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="community", action="mark_category_deleted" ) ),
-                   grids.GridOperation( "Undelete",
-                                        condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="community", action="undelete_category" ) ),
-                   grids.GridOperation( "Purge",
-                                        condition=( lambda item: item.deleted ),
-                                        allow_multiple=True,
-                                        url_args=dict( webapp="community", action="purge_category" ) ) ]
+
+class AdminRepositoryListGrid( RepositoryListGrid ):
+    operations = [ operation for operation in RepositoryListGrid.operations ]
+    operations.append( grids.GridOperation( "Delete",
+                                            allow_multiple=True,
+                                            condition=( lambda item: not item.deleted ),
+                                            async_compatible=False ) )
+    operations.append( grids.GridOperation( "Undelete",
+                                            allow_multiple=True,
+                                            condition=( lambda item: item.deleted ),
+                                            async_compatible=False ) )
+    standard_filters = []
 
 class AdminController( BaseController, Admin ):
     
@@ -380,33 +314,25 @@ class AdminController( BaseController, Admin ):
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     manage_category_list_grid = ManageCategoryListGrid()
-    category_list_grid = AdminCategoryListGrid()
-    tool_list_grid = AdminToolListGrid()
+    repository_list_grid = AdminRepositoryListGrid()
 
     @web.expose
     @web.require_admin
-    def browse_tools( self, trans, **kwd ):
+    def browse_repositories( self, trans, **kwd ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
         # to take this approach because the "-" character is illegal in HTTP requests.
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
-            if operation == "edit_tool":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='edit_tool',
-                                                                  cntrller='admin',
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories',
                                                                   **kwd ) )
-            elif operation == "view_tool":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='view_tool',
-                                                                  cntrller='admin',
+            elif operation == "edit_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='edit_repository',
                                                                   **kwd ) )
-            elif operation == 'tool_history':
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  cntrller='admin',
-                                                                  action='events',
-                                                                  **kwd ) )
-            elif operation == "tools_by_user":
+            elif operation == "repositories_by_user":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
                     if k.startswith( 'f-' ):
@@ -416,25 +342,12 @@ class AdminController( BaseController, Admin ):
                     kwd[ 'f-email' ] = user.email
                     del kwd[ 'user_id' ]
                 else:
-                    # The received id is the tool id, so we need to get the id of the user
-                    # that uploaded the tool.
-                    tool_id = kwd.get( 'id', None )
-                    tool = get_tool( trans, tool_id )
-                    kwd[ 'f-email' ] = tool.user.email
-            elif operation == "tools_by_state":
-                # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
-                    if k.startswith( 'f-' ):
-                        del kwd[ k ]
-                if 'state' in kwd:
-                    # Called from the Admin menu
-                    kwd[ 'f-state' ] = kwd[ 'state' ]
-                else:
-                    # Called from the ToolStateColumn link
-                    tool_id = kwd.get( 'id', None )
-                    tool = get_tool( trans, tool_id )
-                    kwd[ 'f-state' ] = tool.state
-            elif operation == "tools_by_category":
+                    # The received id is the repository id, so we need to get the id of the user
+                    # that uploaded the repository.
+                    repository_id = kwd.get( 'id', None )
+                    repository = get_repository( trans, repository_id )
+                    kwd[ 'f-email' ] = repository.user.email
+            elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
                     if k.startswith( 'f-' ):
@@ -442,26 +355,88 @@ class AdminController( BaseController, Admin ):
                 category_id = kwd.get( 'id', None )
                 category = get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
+            elif operation == "receive email alerts":
+                if kwd[ 'id' ]:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='set_email_alerts',
+                                                                      **kwd ) )
+                else:
+                    del kwd[ 'operation' ]
+            elif operation == 'delete':
+                return self.mark_repository_deleted( trans, **kwd )
+            elif operation == "undelete":
+                return self.undelete_repository( trans, **kwd )
         # Render the list view
-        return self.tool_list_grid( trans, **kwd )
+        return self.repository_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
-    def browse_categories( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation in [ "tools_by_category", "tools_by_state", "tools_by_user" ]:
-                # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
-                    if k.startswith( 'f-' ):
-                        del kwd[ k ]
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='browse_tools',
-                                                                  **kwd ) )
-        # Render the list view
-        return self.category_list_grid( trans, **kwd )
+    def mark_repository_deleted( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            deleted_repositories = ""
+            for repository_id in ids:
+                repository = get_repository( trans, repository_id )
+                if not repository.deleted:
+                    repository.deleted = True
+                    trans.sa_session.add( repository )
+                    trans.sa_session.flush()
+                    count += 1
+                    deleted_repositories += " %s " % repository.name
+            if count:
+                message = "Deleted %d %s: %s" % ( count, inflector.cond_plural( len( ids ), "repository" ), deleted_repositories )
+            else:
+                message = "All selected repositories were already marked deleted."
+        else:
+            message = "No repository ids received for deleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repositories',
+                                                   message=util.sanitize_text( message ),
+                                                   status=status ) )
+    @web.expose
+    @web.require_admin
+    def undelete_repository( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            undeleted_repositories = ""
+            for repository_id in ids:
+                repository = get_repository( trans, repository_id )
+                if repository.deleted:
+                    repository.deleted = False
+                    trans.sa_session.add( repository )
+                    trans.sa_session.flush()
+                    count += 1
+                    undeleted_repositories += " %s" % repository.name
+            if count:
+                message = "Undeleted %d %s: %s" % ( count, inflector.cond_plural( count, "repository" ), undeleted_repositories )
+            else:
+                message = "No selected repositories were marked deleted, so they could not be undeleted."
+        else:
+            message = "No repository ids received for undeleting."
+            status = 'error'
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_repositories',
+                                                   message=util.sanitize_text( message ),
+                                                   status='done' ) )
     @web.expose
     @web.require_admin
     def manage_categories( self, trans, **kwd ):
+        if 'f-free-text-search' in kwd:
+            # Trick to enable searching repository name, description from the CategoryListGrid.
+            # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
+            # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
+            # Since we are searching repositories and not categories, redirect to browse_repositories().
+            return self.browse_repositories( trans, **kwd )
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "create":
@@ -524,140 +499,6 @@ class AdminController( BaseController, Admin ):
                                     status=status )
     @web.expose
     @web.require_admin
-    def set_tool_state( self, trans, state, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        comments = util.restore_text( params.get( 'comments', '' ) )
-        id = params.get( 'id', None )
-        if not id:
-            message = "No tool id received for setting status"
-            status = 'error'
-        else:
-            tool = get_tool( trans, id )
-            if state == trans.app.model.Tool.states.APPROVED:
-                # If we're approving a tool, all previously approved versions must be set to archived
-                for version in get_versions( tool ):
-                    # TODO: get latest approved version instead of all versions
-                    if version != tool and version.is_approved:
-                        # Create an event with state ARCHIVED for the previously approved version of this tool
-                        self.__create_tool_event( trans,
-                                                  version,
-                                                  trans.app.model.Tool.states.ARCHIVED )
-                # Create an event with state APPROVED for this tool
-                self.__create_tool_event( trans, tool, state, comments )
-            elif state == trans.app.model.Tool.states.REJECTED:
-                # If we're rejecting a tool, comments about why are necessary.
-                return trans.fill_template( '/webapps/community/admin/reject_tool.mako',
-                                            tool=tool,
-                                            cntrller='admin' )
-            message = "State of tool '%s' is now %s" % ( tool.name, state )
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='browse_tools',
-                                                   message=message,
-                                                   status=status ) )
-    @web.expose
-    @web.require_admin
-    def reject_tool( self, trans, **kwd ):
-        params = util.Params( kwd )
-        if params.get( 'cancel_reject_button', False ):
-            # Fix up the keyword dict to include params to view the current tool
-            # since that is the page from which we originated.
-            del kwd[ 'cancel_reject_button' ]
-            del kwd[ 'comments' ]
-            kwd[ 'webapp' ] = 'community'
-            kwd[ 'operation' ] = 'view_tool'
-            message = 'Tool rejection cancelled'
-            status = 'done'
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='browse_tools',
-                                                              message=message,
-                                                              status=status,
-                                                              **kwd ) )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              message='No tool id received for rejecting',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        if not trans.app.security_agent.can_approve_or_reject( trans.user, trans.user_is_admin(), 'admin', tool ):
-            return trans.response.send_redirect( web.url_for( controller='admin',
-                                                              action='browse_tools',
-                                                              message='You are not allowed to reject this tool',
-                                                              status='error' ) )
-        # Comments are required when rejecting a tool.
-        comments = util.restore_text( params.get( 'comments', '' ) )
-        if not comments:
-            message = 'The reason for rejection is required when rejecting a tool.'
-            return trans.fill_template( '/webapps/community/admin/reject_tool.mako',
-                                        tool=tool,
-                                        cntrller='admin',
-                                        message=message,
-                                        status='error' )
-        # Create an event with state REJECTED for this tool
-        self.__create_tool_event( trans, tool, trans.app.model.Tool.states.REJECTED, comments )
-        message = 'The tool "%s" has been rejected.' % tool.name
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='browse_tools',
-                                                          operation='tools_by_state',
-                                                          state='rejected',
-                                                          message=message,
-                                                          status='done' ) )
-    def __create_tool_event( self, trans, tool, state, comments='' ):
-        event = trans.model.Event( state, comments )
-        # Flush so we can get an id
-        trans.sa_session.add( event )
-        trans.sa_session.flush()
-        tea = trans.model.ToolEventAssociation( tool, event )
-        trans.sa_session.add( tea )
-        trans.sa_session.flush()
-    @web.expose
-    @web.require_admin
-    def purge_tool( self, trans, **kwd ):
-        # This method completely removes a tool record and all associated foreign key rows
-        # from the database, so it must be used carefully.
-        # This method should only be called for a tool that has previously been deleted.
-        # Purging a deleted tool deletes all of the following from the database:
-        # - ToolCategoryAssociations
-        # - ToolEventAssociations and associated Events
-        # TODO: when we add tagging for tools, we'll have to purge them as well
-        params = util.Params( kwd )
-        id = kwd.get( 'id', None )
-        if not id:
-            message = "No tool ids received for purging"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='browse_tools',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Purged %d tools: " % len( ids )
-        for tool_id in ids:
-            tool = get_tool( trans, tool_id )
-            message += " %s " % tool.name
-            if not tool.deleted:
-                message = "Tool '%s' has not been deleted, so it cannot be purged." % tool.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='browse_tools',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
-            # Delete ToolCategoryAssociations
-            for tca in tool.categories:
-                trans.sa_session.delete( tca )
-            # Delete ToolEventAssociations and associated events
-            for tea in tool.events:
-                event = tea.event
-                trans.sa_session.delete( event )
-                trans.sa_session.delete( tea )
-            # Delete the tool
-            trans.sa_session.delete( tool )
-            trans.sa_session.flush()
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='browse_tools',
-                                                   message=util.sanitize_text( message ),
-                                                   status='done' ) )
-    @web.expose
-    @web.require_admin
     def edit_category( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -698,22 +539,25 @@ class AdminController( BaseController, Admin ):
     @web.expose
     @web.require_admin
     def mark_category_deleted( self, trans, **kwd ):
+        # TODO: We should probably eliminate the Category.deleted column since it really makes no
+        # sense to mark a category as deleted (category names and descriptions can be changed instead).
+        # If we do this, and the following 2 methods can be eliminated.
         params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         id = kwd.get( 'id', None )
-        if not id:
-            message = "No category ids received for deleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='manage_categories',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Deleted %d categories: " % len( ids )
-        for category_id in ids:
-            category = get_category( trans, category_id )
-            category.deleted = True
-            trans.sa_session.add( category )
-            trans.sa_session.flush()
-            message += " %s " % category.name
+        if id:
+            ids = util.listify( id )
+            message = "Deleted %d categories: " % len( ids )
+            for category_id in ids:
+                category = get_category( trans, category_id )
+                category.deleted = True
+                trans.sa_session.add( category )
+                trans.sa_session.flush()
+                message += " %s " % category.name
+        else:
+            message = "No category ids received for deleting."
+            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
@@ -722,30 +566,25 @@ class AdminController( BaseController, Admin ):
     @web.require_admin
     def undelete_category( self, trans, **kwd ):
         params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         id = kwd.get( 'id', None )
-        if not id:
-            message = "No category ids received for undeleting"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='manage_categories',
-                                                       message=message,
-                                                       status='error' ) )
-        ids = util.listify( id )
-        count = 0
-        undeleted_categories = ""
-        for category_id in ids:
-            category = get_category( trans, category_id )
-            if not category.deleted:
-                message = "Category '%s' has not been deleted, so it cannot be undeleted." % category.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='manage_categories',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
-            category.deleted = False
-            trans.sa_session.add( category )
-            trans.sa_session.flush()
-            count += 1
-            undeleted_categories += " %s" % category.name
-        message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
+        if id:
+            ids = util.listify( id )
+            count = 0
+            undeleted_categories = ""
+            for category_id in ids:
+                category = get_category( trans, category_id )
+                if category.deleted:
+                    category.deleted = False
+                    trans.sa_session.add( category )
+                    trans.sa_session.flush()
+                    count += 1
+                    undeleted_categories += " %s" % category.name
+            message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
+        else:
+            message = "No category ids received for undeleting."
+            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
@@ -755,30 +594,28 @@ class AdminController( BaseController, Admin ):
     def purge_category( self, trans, **kwd ):
         # This method should only be called for a Category that has previously been deleted.
         # Purging a deleted Category deletes all of the following from the database:
-        # - ToolCategoryAssociations where category_id == Category.id
+        # - RepoitoryCategoryAssociations where category_id == Category.id
         params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         id = kwd.get( 'id', None )
-        if not id:
-            message = "No category ids received for purging"
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='manage_categories',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        ids = util.listify( id )
-        message = "Purged %d categories: " % len( ids )
-        for category_id in ids:
-            category = get_category( trans, category_id )
-            if not category.deleted:
-                message = "Category '%s' has not been deleted, so it cannot be purged." % category.name
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='manage_categories',
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
-            # Delete ToolCategoryAssociations
-            for tca in category.tools:
-                trans.sa_session.delete( tca )
-            trans.sa_session.flush()
-            message += " %s " % category.name
+        if id:
+            ids = util.listify( id )
+            count = 0
+            purged_categories = ""
+            message = "Purged %d categories: " % len( ids )
+            for category_id in ids:
+                category = get_category( trans, category_id )
+                if category.deleted:
+                    # Delete RepositoryCategoryAssociations
+                    for rca in category.repositories:
+                        trans.sa_session.delete( rca )
+                    trans.sa_session.flush()
+                    purged_categories += " %s " % category.name
+            message = "Purged %d categories: %s" % ( count, purged_categories )
+        else:
+            message = "No category ids received for purging."
+            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),

@@ -169,7 +169,7 @@ class RoleListGrid( grids.Grid ):
     global_actions = [
         grids.GridAction( "Add new role", dict( controller='admin', action='roles', operation='create' ) )
     ]
-    operations = [ grids.GridOperation( "Rename",
+    operations = [ grids.GridOperation( "Edit",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
                                         url_args=dict( webapp="galaxy", action="rename_role" ) ),

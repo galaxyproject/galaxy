@@ -26,18 +26,17 @@
         <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></td>
     </%def>
 
-    ${tab( "tools", "Tools", h.url_for( controller='/tool', action='index', webapp='community' ) )}
+    ${tab( "repositories", "Repositories", h.url_for( controller='/repository', action='index', webapp='community' ) )}
     ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index', webapp='community' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
     
     <td class="tab">
         <a>Help</a>
         <div class="submenu">
         <ul>            
-            <li><a target="galaxy_main" href="${h.url_for( controller='tool', action='help' )}">How to upload, download and install tools</a></li>
             <li><a href="${app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )}">Email comments, bug reports, or suggestions</a></li>
-            <li><a target="_blank" href="${app.config.get( "wiki_url", "http://bitbucket.org/galaxy/galaxy-central/wiki" )}">Galaxy Wiki</a></li>             
+            <li><a target="_blank" href="${app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" )}">Galaxy Wiki</a></li>             
             <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://galaxycast.org" )}">Video tutorials (screencasts)</a></li>
-            <li><a target="_blank" href="${app.config.get( "citation_url", "http://bitbucket.org/galaxy/galaxy-central/wiki/Citations" )}">How to Cite Galaxy</a></li>
+            <li><a target="_blank" href="${app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" )}">How to Cite Galaxy</a></li>
         </ul>
         </div>
     </td>

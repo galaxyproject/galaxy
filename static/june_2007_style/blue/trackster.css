@@ -26,6 +26,7 @@
 .label-track .track-content{background:white;}
 .track-tile{background:white;}
 .track-tile canvas{position:relative;z-index:100;border:solid white;border-width:2px 0px 0px 0px;}
+.tile-message{border-bottom:solid 1px red;text-align:center;color:red;background-color:white;}
 .track.error .track-content{background-color:#ECB4AF;background-image:none;}
 .track.nodata .track-content{background-color:#eee;background-image:none;}
 .track.pending .track-content{background-color:white;background-image:none;}
@@ -47,3 +48,11 @@ input{font:10px verdana;}
 .param-label{float:left;font-weight:bold;padding-top:0.2em;}
 .child-track-icon{background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;width:30px;cursor:move;}
 .track-resize{background:white url('../images/visualization/draggable_vertical.png') no-repeat top center;position:absolute;right:3px;bottom:-4px;width:14px;height:7px;border:solid #999 1px;z-index:100;}
+.bookmark{background:white;border:solid #999 1px;border-right:none;margin:0.5em;margin-right:0;padding:0.5em;}
+.bookmark .position{font-weight:bold;}
+.delete-icon-container{float:right;}
+.icon{display:inline-block;width:16px;height:16px;}
+.icon.more-down{background:url('../images/fugue/arrow-transition-270-bw.png') no-repeat 0px 0px;}
+.icon.more-across{background:url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;}
+.intro{padding:1em;}
+.intro>.action-button{background-color:#CCC;padding:1em;}

@@ -41,13 +41,11 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
-    $(document).ready( function() 
-    {
+    $(document).ready( function() {
         //
         // Set up slug-editing functionality.
         //
-        var on_start = function( text_elt ) 
-        {
+        var on_start = function( text_elt ) {
             // Replace URL with URL text.
             $('#item-url').hide();
             $('#item-url-text').show();
@@ -58,8 +56,7 @@
             });
         };
         
-        var on_finish = function( text_elt ) 
-        {
+        var on_finish = function( text_elt ) {
             // Replace URL text with URL.
             $('#item-url-text').hide();
             $('#item-url').show();
@@ -81,20 +78,17 @@
     ${parent.stylesheets()}
     <style>
         ## Put some whitespace before each section header.
-        h3
-        {
+        h3 {
             margin-top: 2em;
         }
-        input.action-button
-        {
+        input.action-button {
             margin-left: 0;
         }
         ## If page is displayed in panels, pad from edges for readability.
         %if context.get('use_panels'):
-        div#center
-        {
-            padding: 10px;
-        }
+            div#center {
+                padding: 10px;
+            }
         %endif
     </style>
 </%def>
@@ -131,8 +125,8 @@
 
     ## Require that user have a public username before sharing or publishing an item.
     %if trans.get_user().username is None or trans.get_user().username is "":
-        To make a ${item_class_name_lc} accessible via link or publish it, you must create a public username: 
-        <p>
+        <p>To make a ${item_class_name_lc} accessible via link or publish it, you must create a public username:</p>
+        
         <form action="${h.url_for( action='set_public_username', id=trans.security.encode_id( item.id ) )}"     
                 method="POST">
             <div class="form-row">
@@ -181,38 +175,36 @@
         
                     <p>You can:
                     <div>
-                    <form action="${h.url_for( action='sharing', id=trans.security.encode_id( item.id ) )}" 
-                            method="POST">
-                            %if not item.published:
-                                ## Item is importable but not published. User can disable importable or publish.
-                                <input class="action-button" type="submit" name="disable_link_access" value="Disable Access to ${item_class_name} Link">
-                                <div class="toolParamHelp">Disables ${item_class_name_lc}'s link so that it is not accessible.</div>
-                                <br>
-                                <input class="action-button" type="submit" name="publish" value="Publish ${item_class_name}" method="POST">
-                                <div class="toolParamHelp">Publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for( action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
+                    <form action="${h.url_for( action='sharing', id=trans.security.encode_id( item.id ) )}" method="POST">
+                        %if not item.published:
+                            ## Item is importable but not published. User can disable importable or publish.
+                            <input class="action-button" type="submit" name="disable_link_access" value="Disable Access to ${item_class_name} Link">
+                            <div class="toolParamHelp">Disables ${item_class_name_lc}'s link so that it is not accessible.</div>
+                            <br />
+                            <input class="action-button" type="submit" name="publish" value="Publish ${item_class_name}" method="POST">
+                            <div class="toolParamHelp">Publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for( action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
 
-                            <br>
-                            %else: ## item.published == True
-                                ## Item is importable and published. User can unpublish or disable import and unpublish.
-                                <input class="action-button" type="submit" name="unpublish" value="Unpublish ${item_class_name}">
-                                <div class="toolParamHelp">Removes this ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
-                                <br>
-                                <input class="action-button" type="submit" name="disable_link_access_and_unpublish" value="Disable Access to ${item_class_name} via Link and Unpublish">
-                                <div class="toolParamHelp">Disables this ${item_class_name_lc}'s link so that it is not accessible and removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
-                            %endif
-                
+                        <br />
+                        %else: ## item.published == True
+                            ## Item is importable and published. User can unpublish or disable import and unpublish.
+                            <input class="action-button" type="submit" name="unpublish" value="Unpublish ${item_class_name}">
+                            <div class="toolParamHelp">Removes this ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
+                            <br />
+                            <input class="action-button" type="submit" name="disable_link_access_and_unpublish" value="Disable Access to ${item_class_name} via Link and Unpublish">
+                            <div class="toolParamHelp">Disables this ${item_class_name_lc}'s link so that it is not accessible and removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
+                        %endif
                     </form>
                     </div>
    
                 %else:
    
-                    This ${item_class_name_lc} is currently restricted so that only you and the users listed below can access it. You can:
-                    <p>
+                    <p>This ${item_class_name_lc} is currently restricted so that only you and the users listed below can access it. You can:</p>
+                    
                     <form action="${h.url_for( action='sharing', id=trans.security.encode_id(item.id) )}" method="POST">
                         <input class="action-button" type="submit" name="make_accessible_via_link" value="Make ${item_class_name} Accessible via Link">
                         <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the ${item_class_name_lc}.</div>
         
-                        <br>
+                        <br />
                         <input class="action-button" type="submit" name="make_accessible_and_publish" value="Make ${item_class_name} Accessible and Publish" method="POST">
                         <div class="toolParamHelp">Makes the ${item_class_name_lc} accessible via link (see above) and publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for( action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.</div>
                     </form>
@@ -266,13 +258,13 @@
                        href="${h.url_for( action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with a user</span>
                     </a>
-                    <br>
+                    <br />
     
                 %endif
             </div>
         </div>
     %endif
 
-    <p><br><br>
-    <a href=${h.url_for( action="list" )}>Back to ${item_class_plural_name} List</a>
+    <br /><br />
+    <a href="${h.url_for( action="list" )}">Back to ${item_class_plural_name} List</a>
 </%def>

@@ -87,34 +87,26 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def index( self, trans, *args, **kwargs ):
         """ Lists user's saved visualizations. """
-        return self.list( trans, args, kwargs )
+        return self.list( trans, *args, **kwargs )
     
     @web.expose
     @web.require_login()
     def clone(self, trans, id, *args, **kwargs):
-        viz = self.get_visualization( trans, id, check_ownership=False )
+        visualization = self.get_visualization( trans, id, check_ownership=False )
         user = trans.get_user()
-        if viz.user == user:
-            owner = True
-        else:
-            if trans.sa_session.query( model.VisualizationUserShareAssociation ) \
-                    .filter_by( user=user, visualization=viz ).count() == 0:
-                error( "Visualization is not owned by or shared with current user" )
-            owner = False
-        new_viz = model.Visualization()
-        new_viz.title = "Clone of '%s'" % viz.title
-        new_viz.dbkey = viz.dbkey
-        new_viz.type = viz.type
-        new_viz.latest_revision = viz.latest_revision
-        if not owner:
-            new_viz.title += " shared by '%s'" % viz.user.email
-        new_viz.user = user
+        if trans.sa_session.query( model.VisualizationUserShareAssociation ) \
+                    .filter_by( user=user, visualization=visualization ).count() == 0:
+            error( "Visualization is not owned by or shared with current user" )
+            
+        cloned_visualization = visualization.copy( user=trans.user, title="Copy of '%s'" % visualization.title )
+        
         # Persist
         session = trans.sa_session
-        session.add( new_viz )
+        session.add( cloned_visualization )
         session.flush()
+        
         # Display the management page
-        trans.set_message( 'Clone created with name "%s"' % new_viz.title )
+        trans.set_message( 'Copy created with name "%s"' % cloned_visualization.title )
         return self.list( trans )
         
     @web.expose
@@ -202,18 +194,15 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations,
         visualization = self.get_visualization( trans, id, check_ownership=False )
         if visualization.importable == False:
             return trans.show_error_message( "The owner of this visualization has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True )
-        elif visualization.user == trans.user:
-            return trans.show_error_message( "You can't import this visualization because you own it.<br>You can %s" % referer_message, use_panels=True )
         elif visualization.deleted:
             return trans.show_error_message( "You can't import this visualization because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
         else:
-            # Create imported visualization via copy. TODO: Visualizations use datasets -- do we need to check to ensure that
-            # datasets can be imported/viewed and/or copy datasets to user?
-            imported_visualization = model.Visualization()
-            imported_visualization.title = "imported: " + visualization.title
-            imported_visualization.latest_revision = visualization.latest_revision
-            imported_visualization.user = trans.user
-            # Save new visualization.
+            # Create imported visualization via copy. 
+            #   TODO: need to handle custom db keys.
+            
+            imported_visualization = visualization.copy( user=trans.user, title="imported: " + visualization.title )
+            
+            # Persist
             session = trans.sa_session
             session.add( imported_visualization )
             session.flush()

@@ -204,15 +204,16 @@
 				Private ${get_class_display_name( item.__class__ )}
 	        %endif
 			| ${get_item_name( item )}
+			
+            <div style="float: right">
+                ${self.render_item_links( item )}
+            </div>
 	    </div>
     </div>
     
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">        
             <div class="page-body">
-                <div style="float: right">
-                    ${self.render_item_links( item )}
-                </div>
                 <div>
                     ${self.render_item_header( item )}
                 </div>

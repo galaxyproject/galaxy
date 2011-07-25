@@ -1,5 +1,6 @@
-<tool id="tophat" name="Tophat" version="1.2.1">
+<tool id="tophat" name="Tophat for Illumina" version="1.5.0">
     <description>Find splice junctions using RNA-seq data</description>
+    <version_command>tophat --version</version_command>
     <requirements>
         <requirement type="package">tophat</requirement>
     </requirements>
@@ -23,7 +24,7 @@
             --single-paired=$singlePaired.sPaired
 
             ## First input file always required.
-            --input1=$singlePaired.input1
+            --input1=$input1
 
             ## Set params based on whether reads are single-end or paired.
             #if $singlePaired.sPaired == "single":
@@ -144,6 +145,7 @@
             #end if
     </command>
     <inputs>
+        <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
         <conditional name="refGenomeSource">
           <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
             <option value="indexed">Use a built-in index</option>
@@ -151,7 +153,10 @@
           </param>
           <when value="indexed">
             <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-              <options from_data_table="tophat_indexes" />
+              <options from_data_table="tophat_indexes">
+                <filter type="sort_by" column="2"/>
+                <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+              </options>
             </param>
           </when>
           <when value="history">
@@ -164,7 +169,6 @@
               <option value="paired">Paired-end</option>
             </param>
             <when value="single">
-              <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
               <conditional name="sParams">
                 <param name="sSettingsType" type="select" label="TopHat settings to use" help="You can use the default settings or set custom values for any of Tophat's parameters.">
                   <option value="preSet">Use Defaults</option>
@@ -259,7 +263,7 @@
                         <param name="max_coverage_intron" type="integer" value="20000" label="Maximum intron length that may be found during coverage search" />
                     </when>
                     <when value="No" />
-                  </conditional>     
+                  </conditional>
                   <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
@@ -268,8 +272,7 @@
               </conditional>  <!-- sParams -->
             </when>  <!--  single -->
             <when value="paired">
-              <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
-              <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+              <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
               <param name="mate_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs" />
               <conditional name="pParams">
                 <param name="pSettingsType" type="select" label="TopHat settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
@@ -384,7 +387,7 @@
                       ( singlePaired['sParams']['indel_search']['allow_indel_search'] == 'Yes' ) ) or 
                     ( ( 'pParams' in singlePaired ) and ( 'indel_search' in singlePaired['pParams'] ) and 
                       ( singlePaired['pParams']['indel_search']['allow_indel_search'] == 'Yes' ) )
-                ) 
+                )
             </filter>
             <actions>
               <conditional name="refGenomeSource.genomeSource">
@@ -472,48 +475,51 @@
     </outputs>
 
     <tests>
-        <!-- Test single-end reads with pre-built index and preset parameters -->
+        <!-- Test base-space single-end reads with pre-built index and preset parameters -->
         <test>
             <!-- TopHat commands:
-            tophat -o tmp_dir -p 1 /afs/bx.psu.edu/depot/data/genome/test/tophat/tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat -o tmp_dir -p 1 tophat_in1 test-data/tophat_in2.fastqsanger
+            Rename the files in tmp_dir appropriately
             -->
+            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
             <param name="genomeSource" value="indexed" />
             <param name="index" value="tophat_test" />
             <param name="sPaired" value="single" />
-            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
             <param name="sSettingsType" value="preSet" />
             <output name="junctions" file="tophat_out1j.bed" />
             <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" />
         </test>
-        <!-- Test using test data: paired-end reads, index from history. -->
+        <!-- Test using base-space test data: paired-end reads, index from history. -->
         <test>
             <!-- TopHat commands:
             bowtie-build -f test-data/tophat_in1.fasta tophat_in1
             tophat -o tmp_dir -p 1 -r 20 tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            Rename the files in tmp_dir appropriately
             -->
+            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
             <param name="genomeSource" value="history" />
             <param name="ownFile" ftype="fasta" value="tophat_in1.fasta" />
             <param name="sPaired" value="paired" />
-            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger" />
             <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger" />
             <param name="mate_inner_distance" value="20" />
             <param name="pSettingsType" value="preSet" />
             <output name="junctions" file="tophat_out2j.bed" />
             <output name="accepted_hits" file="tophat_out2h.bam" compare="sim_size" />
         </test>
-        <!-- Test single-end reads with user-supplied reference fasta and full parameters -->
+        <!-- Test base-space single-end reads with user-supplied reference fasta and full parameters -->
         <test>
             <!-- Tophat commands:
             bowtie-build -f test-data/tophat_in1.fasta tophat_in1
             tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
             Replace the + with double-dash
+            Rename the files in tmp_dir appropriately
             -->
+            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
             <param name="genomeSource" value="history"/>
             <param name="ownFile" value="tophat_in1.fasta"/>
             <param name="sPaired" value="single"/>
-            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
             <param name="sSettingsType" value="full"/>
-	    <param name="library_type" value="FR Unstranded"/>
+            <param name="library_type" value="FR Unstranded"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
             <param name="min_intron_length" value="70"/>
@@ -525,8 +531,8 @@
             <param name="seg_mismatches" value="2"/>
             <param name="seg_length" value="25"/>
             <param name="allow_indel_search" value="Yes"/>
-	    <param name="max_insertion_length" value="3"/>
-	    <param name="max_deletion_length" value="3"/>
+            <param name="max_insertion_length" value="3"/>
+            <param name="max_deletion_length" value="3"/>
             <param name="use_junctions" value="Yes" />
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
@@ -544,20 +550,21 @@
             <output name="junctions" file="tophat_out3j.bed" />
             <output name="accepted_hits" file="tophat_out3h.bam" compare="sim_size" />
         </test>
-        <!-- Test paired-end reads with user-supplied reference fasta and full parameters -->
+        <!-- Test base-space paired-end reads with user-supplied reference fasta and full parameters -->
         <test>
             <!-- TopHat commands:
-            tophat -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intron 5000 +microexon-search /afs/bx.psu.edu/depot/data/genome/test/tophat/tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            tophat -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intron 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
             Replace the + with double-dash
+            Rename the files in tmp_dir appropriately
             -->
+            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
             <param name="genomeSource" value="indexed"/>
             <param name="index" value="tophat_test"/>
             <param name="sPaired" value="paired"/>
-            <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
             <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger"/>
             <param name="mate_inner_distance" value="20"/>
             <param name="pSettingsType" value="full"/>
-	    <param name="library_type" value="FR Unstranded"/>
+            <param name="library_type" value="FR Unstranded"/>
             <param name="mate_std_dev" value="20"/>
             <param name="anchor_length" value="8"/>
             <param name="splice_mismatches" value="0"/>
@@ -621,7 +628,9 @@ Tophat produces two output files:
 
 .. _BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
 .. _BAM: http://samtools.sourceforge.net/
-    
+
+Two other possible outputs, depending on the options you choose, are insertions and deletions, both of which are in BED format.
+
 -------
 
 **Tophat settings**
@@ -637,13 +646,13 @@ This is a list of implemented Tophat options::
   -r                                This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments 
                                     selected at 300bp, where each end is 50bp, you should set -r to be 200. There is no default, and this parameter 
                                     is required for paired end runs.
-  --mate-std-dev INT	            The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
-  -a/--min-anchor-length INT	    The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction. Note that individual spliced     
+  --mate-std-dev INT                The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
+  -a/--min-anchor-length INT        The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction. Note that individual spliced     
                                     alignments may span a junction with fewer than this many bases on one side. However, every junction involved in spliced alignments is supported by at least one 
-                                    read with this many bases on each side.	 This must be at least 3 and the default is 8.
-  -m/--splice-mismatches INT	    The maximum number of mismatches that may appear in the "anchor" region of a spliced alignment. The default is 0.
-  -i/--min-intron-length INT	    The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart. The default is 70.
-  -I/--max-intron-length INT	    The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read. The default is 500000.
+                                    read with this many bases on each side. This must be at least 3 and the default is 8.
+  -m/--splice-mismatches INT        The maximum number of mismatches that may appear in the "anchor" region of a spliced alignment. The default is 0.
+  -i/--min-intron-length INT        The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart. The default is 70.
+  -I/--max-intron-length INT        The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read. The default is 500000.
   -F/--min-isoform-fraction 0.0-1.0 TopHat filters out junctions supported by too few alignments. Suppose a junction spanning two exons, is supported by S reads. Let the average depth of coverage of 
                                     exon A be D, and assume that it is higher than B. If S / D is less than the minimum isoform fraction, the junction is not reported. A value of zero disables the 
                                     filter. The default is 0.15.
@@ -652,20 +661,20 @@ This is a list of implemented Tophat options::
   -G/--GTF [GTF 2.2 file]           Supply TopHat with a list of gene model annotations. TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping.
   -j/--raw-juncs [juncs file]       Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-], left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive.
   -no-novel-juncs                   Only look for junctions indicated in the supplied GFF file. (ignored without -G)
-  --no-closure-search	            Disables the mate pair closure-based search for junctions. Currently, has no effect - closure search is off by default.
-  --closure-search	            Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (about or less than 50bp)
-  --no-coverage-search	            Disables the coverage based search for junctions.
-  --coverage-search	                Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.
-  --microexon-search	            With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.
-  --butterfly-search	            TopHat will use a slower but potentially more sensitive algorithm to find junctions in addition to its standard search. Consider using this if you expect that your experiment produced a lot of reads from pre-mRNA, that fall within the introns of your transcripts.
-  --segment-mismatches	            Read segments are mapped independently, allowing up to this many mismatches in each segment alignment. The default is 2.
-  --segment-length	            Each read is cut up into segments, each at least this long. These segments are mapped independently. The default is 25.
-  --min-closure-exon	            During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50.
-  --min-closure-intron	            The minimum intron length that may be found during closure search. The default is 50.
-  --max-closure-intron	            The maximum intron length that may be found during closure search. The default is 5000.
-  --min-coverage-intron	            The minimum intron length that may be found during coverage search. The default is 50.
-  --max-coverage-intron	            The maximum intron length that may be found during coverage search. The default is 20000.
-  --min-segment-intron	            The minimum intron length that may be found during split-segment search. The default is 50.
-  --max-segment-intron	            The maximum intron length that may be found during split-segment search. The default is 500000.
+  --no-closure-search               Disables the mate pair closure-based search for junctions. Currently, has no effect - closure search is off by default.
+  --closure-search                  Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (about or less than 50bp)
+  --no-coverage-search              Disables the coverage based search for junctions.
+  --coverage-search                 Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.
+  --microexon-search                With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.
+  --butterfly-search                TopHat will use a slower but potentially more sensitive algorithm to find junctions in addition to its standard search. Consider using this if you expect that your experiment produced a lot of reads from pre-mRNA, that fall within the introns of your transcripts.
+  --segment-mismatches              Read segments are mapped independently, allowing up to this many mismatches in each segment alignment. The default is 2.
+  --segment-length                  Each read is cut up into segments, each at least this long. These segments are mapped independently. The default is 25.
+  --min-closure-exon                During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50.
+  --min-closure-intron              The minimum intron length that may be found during closure search. The default is 50.
+  --max-closure-intron              The maximum intron length that may be found during closure search. The default is 5000.
+  --min-coverage-intron             The minimum intron length that may be found during coverage search. The default is 50.
+  --max-coverage-intron             The maximum intron length that may be found during coverage search. The default is 20000.
+  --min-segment-intron              The minimum intron length that may be found during split-segment search. The default is 50.
+  --max-segment-intron              The maximum intron length that may be found during split-segment search. The default is 500000.
     </help>
 </tool>

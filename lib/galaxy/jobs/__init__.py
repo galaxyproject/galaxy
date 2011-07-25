@@ -229,7 +229,7 @@ class JobQueue( object ):
             return JOB_DELETED
         elif job.state == model.Job.states.ERROR:
             return JOB_ADMIN_DELETED
-        for dataset_assoc in job.input_datasets:
+        for dataset_assoc in job.input_datasets + job.input_library_datasets:
             idata = dataset_assoc.dataset
             if not idata:
                 continue
@@ -271,7 +271,7 @@ class JobQueue( object ):
 
 class JobWrapper( object ):
     """
-    Wraps a 'model.Job' with convience methods for running processes and 
+    Wraps a 'model.Job' with convenience methods for running processes and 
     state management.
     """
     def __init__( self, job, queue ):
@@ -284,6 +284,9 @@ class JobWrapper( object ):
         self.sa_session = self.app.model.context
         self.extra_filenames = []
         self.command_line = None
+        # Tool versioning variables
+        self.version_string_cmd = None
+        self.version_string = ""
         self.galaxy_lib_dir = None
         # With job outputs in the working directory, we need the working
         # directory to be set before prepare is run, or else premature deletion
@@ -311,6 +314,9 @@ class JobWrapper( object ):
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         return param_dict
         
+    def get_version_string_path( self ):
+        return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
+        
     def prepare( self ):
         """
         Prepare the job to run by creating the working directory and the
@@ -330,6 +336,7 @@ class JobWrapper( object ):
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
         
         # Set up output dataset association for export history jobs. Because job 
@@ -388,6 +395,7 @@ class JobWrapper( object ):
             extra_filenames.append( param_filename )
         self.param_dict = param_dict
         self.extra_filenames = extra_filenames
+        self.version_string_cmd = self.tool.version_string_cmd
         return extra_filenames
 
     def fail( self, message, exception=False ):
@@ -424,6 +432,7 @@ class JobWrapper( object ):
                 dataset.blurb = 'tool error'
                 dataset.info = message
                 dataset.set_size()
+                dataset.dataset.set_total_size()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
                 self.sa_session.add( dataset )
@@ -489,6 +498,12 @@ class JobWrapper( object ):
             job.state = job.states.ERROR
         else:
             job.state = job.states.OK
+        if self.version_string_cmd:
+            version_filename = self.get_version_string_path()
+            if os.path.exists(version_filename):
+                self.version_string = "Tool version: %s" % open(version_filename).read()
+                os.unlink(version_filename)
+            
         if self.app.config.outputs_to_working_directory:
             for dataset_path in self.get_output_fnames():
                 try:
@@ -539,7 +554,7 @@ class JobWrapper( object ):
             
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info  = context['stdout'] + context['stderr']
+                dataset.info  = context['stdout'] + context['stderr'] + self.version_string
                 dataset.set_size()
                 if context['stderr']:
                     dataset.blurb = "error"
@@ -613,6 +628,7 @@ class JobWrapper( object ):
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
@@ -629,6 +645,10 @@ class JobWrapper( object ):
                              out_data=out_data, param_dict=param_dict, 
                              tool=self.tool, stdout=stdout, stderr=stderr )
         job.command_line = self.command_line
+
+        # Once datasets are collected, set the total dataset size (includes extra files)
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            dataset_assoc.dataset.dataset.set_total_size()
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_output_fnames() ]:
@@ -660,7 +680,7 @@ class JobWrapper( object ):
     def get_input_fnames( self ):
         job = self.get_job()
         filenames = []
-        for da in job.input_datasets: #da is JobToInputDatasetAssociation object
+        for da in job.input_datasets + job.input_library_datasets: #da is JobToInputDatasetAssociation object
             if da.dataset:
                 filenames.append( da.dataset.file_name )
                 #we will need to stage in metadata file names also
@@ -752,7 +772,10 @@ class JobWrapper( object ):
         sizes = []
         output_paths = self.get_output_fnames()
         for outfile in [ str( o ) for o in output_paths ]:
-            sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            if os.path.exists( outfile ):
+                sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            else:
+                sizes.append( ( outfile, 0 ) )
         return sizes
 
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
@@ -853,9 +876,10 @@ class TaskWrapper(JobWrapper):
         self.tool.handle_unvalidated_param_values( incoming, self.app )
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
-        # DBTODO New method for generating command line for a task?
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+        # DBTODO New method for generating command line for a task?
         # These can be passed on the command line if wanted as $userId $userEmail
         if job.history and job.history.user: # check for anonymous user!
             userId = '%d' % job.history.user.id
@@ -999,7 +1023,10 @@ class TaskWrapper(JobWrapper):
         sizes = []
         output_paths = self.get_output_fnames()
         for outfile in [ str( o ) for o in output_paths ]:
-            sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            if os.path.exists( outfile ):
+                sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            else:
+                sizes.append( ( outfile, 0 ) )
         return sizes
 
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):

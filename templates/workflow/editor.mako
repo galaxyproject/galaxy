@@ -242,13 +242,13 @@
         });
          
         make_popupmenu( $("#workflow-options-button"), {
-             ##"Create New" : create_new_workflow_dialog,
-             "Edit Attributes" : edit_workflow_attributes,
+            "Save" : save_current_workflow,
+            ##"Create New" : create_new_workflow_dialog,
+            "Edit Attributes" : edit_workflow_attributes,
             ##"Edit Workflow Outputs": edit_workflow_outputs,
-             "Layout": layout_editor,
-             "Save" : save_current_workflow,
-             ##"Load a Workflow" : load_workflow,
-             "Close": close_editor
+            "Auto Re-layout": layout_editor,
+            ##"Load a Workflow" : load_workflow,
+            "Close": close_editor
         });
         
         function edit_workflow_outputs(){
@@ -555,8 +555,6 @@
             wf_parm_box.hide();
         }
     }
-    
-    
     
     function show_form_for_tool( text, node ) {
         $('.right-content').hide();
@@ -933,9 +931,9 @@
     </div>
 </%def>
 
-<%def name="overlay()">
+<%def name="overlay(visible=False)">
     ${parent.overlay( "Loading workflow editor...",
-                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>" )}
+                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>", self.overlay_visible )}
 </%def>
 
 <%def name="left_panel()">

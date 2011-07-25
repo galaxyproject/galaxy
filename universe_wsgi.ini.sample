@@ -3,7 +3,7 @@
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
 #
-# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/ProductionServer
+# http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Production%20Server
 #
 
 # Throughout this sample configuration file, except where stated otherwise,
@@ -129,7 +129,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Directory where data used by tools is located, see the samples in that
 # directory and the wiki for help:
-# http://bitbucket.org/galaxy/galaxy-central/wiki/DataIntegration
+# http://wiki.g2.bx.psu.edu/Admin/Data%20Integration
 #tool_data_path = tool-data
 
 # Directory where chrom len files are kept, currently mainly used by trackster
@@ -161,8 +161,15 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy sends mail for various things: Subscribing users to the mailing list
 # if they request it, emailing password resets, notification from the Galaxy
 # Sample Tracking system, and reporting dataset errors.  To do this, it needs
-# to send mail through an SMTP server, which you may define here.
+# to send mail through an SMTP server, which you may define here (host:port).
+# Galaxy will automatically try STARTTLS but will continue upon failure.
 #smtp_server = None
+
+# If your SMTP server requires a username and password, you can provide them
+# here (password in cleartext here, but if your server supports STARTTLS it
+# will be sent over the network encrypted).
+#smtp_username = None
+#smtp_password = None
 
 # On the user registration form, users may choose to join the mailing list.
 # This is the address of the list they'll be subscribed to.
@@ -201,13 +208,13 @@ nglims_config_file = tool-data/nglims.yaml
 #logo_url = /
 
 # The URL linked by the "Galaxy Wiki" link in the "Help" menu.
-#wiki_url = http://bitbucket.org/galaxy/galaxy-central/wiki
+#wiki_url = http://wiki.g2.bx.psu.edu/
 
 # The URL linked by the "Email comments..." link in the "Help" menu.
 #bugs_email = mailto:galaxy-bugs@bx.psu.edu
 
 # The URL linked by the "How to Cite..." link in the "Help" menu.
-#citation_url = http://bitbucket.org/galaxy/galaxy-central/wiki/Citations
+#citation_url = http://wiki.g2.bx.psu.edu/Citing%20Galaxy
 
 # Serve static content, which must be enabled if you're not serving it via a
 # proxy server.  These options should be self explanatory and so are not
@@ -307,7 +314,7 @@ use_interactive = True
 # -- Data Libraries
 
 # These library upload options are described in much more detail in the wiki:
-# http://bitbucket.org/galaxy/galaxy-central/wiki/DataLibraries/UploadingFiles
+# http://wiki.g2.bx.psu.edu/Admin/Data%20Libraries/Uploading%20Library%20Files
 
 # Add an option to the library upload form which allows administrators to
 # upload a directory of files.
@@ -365,7 +372,7 @@ use_interactive = True
 # User authentication can be delegated to an upstream proxy server (usually
 # Apache).  The upstream proxy should set a REMOTE_USER header in the request.
 # Enabling remote user disables regular logins.  For more information, see:
-# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/ApacheProxy
+# http://wiki.g2.bx.psu.edu/Admin/Config/Apache%20Proxy
 #use_remote_user = False
 
 # If use_remote_user is enabled and your external authentication
@@ -381,7 +388,7 @@ use_interactive = True
 # users (email addresses).  These users will have access to the Admin section
 # of the server, and will have access to create users, groups, roles,
 # libraries, and more.  For more information, see:
-# http://bitbucket.org/galaxy/galaxy-central/wiki/Admin/AdminInterface
+# http://wiki.g2.bx.psu.edu/Admin/Interface
 #admin_users = None
 
 # Force everyone to log in (disable anonymous access).
@@ -393,6 +400,11 @@ use_interactive = True
 
 # Allow administrators to delete accounts.
 #allow_user_deletion = False
+
+# Allow users to remove their datasets from disk immediately (otherwise,
+# datasets will be removed after a time period specified by an administrator in
+# the cleanup scripts run via cron)
+#allow_user_dataset_purge = False
 
 # By default, users' data will be public, but setting this to True will cause
 # it to be private.  Does not affect existing users and data, only ones created
@@ -442,7 +454,7 @@ use_interactive = True
 
 # If running multiple Galaxy processes, one can be designated as the job
 # runner.  For more information, see:
-# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/WebApplicationScaling
+# http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Web%20Application%20Scaling
 #enable_job_running = True
 
 # Should jobs be tracked through the database, rather than in memory.
@@ -493,7 +505,7 @@ use_interactive = True
 # Clustering Galaxy is not a straightforward process and requires some
 # pre-configuration.  See the the wiki before attempting to set any of these
 # options:
-# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/Cluster
+# http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Cluster
 
 # Comma-separated list of job runners to start.  local is always started.  If
 # left commented, no jobs will be run on the cluster, even if a cluster URL is

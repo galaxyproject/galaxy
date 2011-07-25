@@ -7,9 +7,9 @@
 <%def name="masthead()">
 
     ## Tab area, fills entire width
-    <div style="position: absolute; top: 0; left: 0; width: 100%; text-align: center">
+    <div style="position: relative; right: -50%; float: left; text-align: center;">
     
-    <table class="tab-group" border="0" cellspacing="0" style="margin: auto;">
+    <table class="tab-group" border="0" cellspacing="0" style="position: relative; right: 50%;">
     <tr>
     
     <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
@@ -107,9 +107,9 @@
     <%
         menu_options = [
                             ['Email comments, bug reports, or suggestions', app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  ) ],
-                            ['Galaxy Wiki', app.config.get( "wiki_url", "http://bitbucket.org/galaxy/galaxy-central/wiki" ), "_blank" ],
+                            ['Galaxy Wiki', app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
                             ['Video tutorials (screencasts)', app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
-                            ['How to Cite Galaxy', app.config.get( "screencasts_url", "http://bitbucket.org/galaxy/galaxy-central/wiki/Citations" ), "_blank" ]
+                            ['How to Cite Galaxy', app.config.get( "screencasts_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
                         ]
         tab( "help", "Help", None, menu_options=menu_options)
     %>

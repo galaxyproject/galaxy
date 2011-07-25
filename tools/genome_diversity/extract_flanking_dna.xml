@@ -3,7 +3,7 @@
 
   <command interpreter="python2.5">
     extract_flanking_dna.py "--input=$input" "--output=$output" "--snps_loc=${GALAXY_DATA_INDEX_DIR}/gd.snps.loc"
-    #if $override_metadata.value == "0":
+    #if $override_metadata.choice == "0":
       "--scaffold_col=${input.metadata.scaffold}" "--pos_col=${input.metadata.pos}" "--species=${input.metadata.species}"
     #else
       "--scaffold_col=$scaf_col" "--pos_col=$pos_col" "--species=$species"
@@ -18,7 +18,7 @@
         <option value="primer3">Primer3 input</option>
     </param>
     <conditional name="override_metadata">
-      <param name="value" type="select" format="integer" label="choose columns">
+      <param name="choice" type="select" format="integer" label="choose columns">
         <option value="0" selected="true">No, get columns from metadata</option>
         <option value="1" >Yes, choose columns</option>
       </param>
@@ -44,17 +44,19 @@
 
   <tests>
     <test>
-      <param name="input" value="gd.sample.wsf"/>
+      <param name="input" value="gd.sample.wsf" ftype="wsf"/>
       <param name="output_format" value="primer3"/>
-      <param name="override_metadata" value="0"/>
-      <output name="output" value="gd.extract_flanking_dna.txt"/>
+      <param name="choice" value="0"/>
+      <output name="output" file="gd.extract_flanking_dna.txt"/>
     </test>
   </tests>
 
   <help>
 **What it does**
 
-  If extracts flanking dna for the SNPs in the dataset.
+  It reports a DNA segment containing each SNP, with up to 200 nucleotides on
+  either side of the SNP position, which is indicated by "n". Fewer nucleotides
+  are reported if the SNP is near an end of the assembled genome fragment.
 
 -----
 

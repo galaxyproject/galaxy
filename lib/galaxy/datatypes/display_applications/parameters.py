@@ -92,6 +92,8 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
             #find target ext
             target_ext, converted_dataset = data.find_conversion_destination( self.formats, converter_safe = True )
             if target_ext and not converted_dataset:
+                if isinstance( data, DisplayDataValueWrapper ):
+                    data = data.value
                 assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, metadata_safe = False )
                 new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
                 new_data.hid = data.hid

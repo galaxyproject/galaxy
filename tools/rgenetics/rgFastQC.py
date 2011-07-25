@@ -123,7 +123,6 @@ class FastQC():
                        sauce = os.path.join(adir,f)
                        dest = os.path.join(self.opts.outputdir,f)
                        shutil.move(sauce,dest)
-                       print 'moved %s to %s' % (sauce,dest)
                 os.rmdir(adir)
 
     

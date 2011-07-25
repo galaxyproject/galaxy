@@ -5,7 +5,7 @@ import pkg_resources;
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -374,20 +374,15 @@ class Tool:
         self.input_translator = root.find( "request_param_translation" )
         if self.input_translator:
             self.input_translator = ToolInputTranslator.from_element( self.input_translator )
-        # Command line (template). Optional for tools that do not invoke a 
-        # local program  
+        # Command line (template). Optional for tools that do not invoke a local program  
         command = root.find("command")
         if command is not None and command.text is not None:
             self.command = command.text.lstrip() # get rid of leading whitespace
-            interpreter  = command.get("interpreter")
-            if interpreter:
-                # TODO: path munging for cluster/dataset server relocatability
-                executable = self.command.split()[0]
-                abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
-                self.command = self.command.replace(executable, abs_executable, 1)
-                self.command = interpreter + " " + self.command
+            # Must pre-pend this AFTER processing the cheetah command template
+            self.interpreter = command.get( "interpreter", None )
         else:
             self.command = ''
+            self.interpreter = None
         # Parameters used to build URL for redirection to external app
         redirect_url_params = root.find( "redirect_url_params" )
         if redirect_url_params is not None and redirect_url_params.text is not None:
@@ -400,6 +395,11 @@ class Tool:
             self.redirect_url_params = ''
         # Short description of the tool
         self.description = util.xml_text(root, "description")
+        # Versioning for tools        
+        self.version_string_cmd = None
+        version_cmd = root.find("version_command")
+        if version_cmd is not None:
+            self.version_string_cmd = version_cmd.text
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
@@ -488,6 +488,8 @@ class Tool:
             self.parse_requirements( requirements_elem )
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible()
+        # Trackster configuration.
+        self.trackster_conf = ( root.find( "trackster_conf" ) is not None )
             
     def parse_inputs( self, root ):
         """
@@ -782,13 +784,14 @@ class Tool:
                             case.inputs = self.parse_input_elem( 
                                 ElementTree.XML( "<when>%s</when>" % case_inputs ), enctypes, context )
                         else:
-                            case.inputs = {}
+                            case.inputs = odict()
                         group.cases.append( case )
                 else:
                     # Should have one child "input" which determines the case
                     input_elem = elem.find( "param" )
                     assert input_elem is not None, "<conditional> must have a child <param>"
                     group.test_param = self.parse_param_elem( input_elem, enctypes, context )
+                    possible_cases = list( group.test_param.legal_values ) #store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
                     group.test_param.refresh_on_change = True
                     # And a set of possible cases
@@ -796,6 +799,16 @@ class Tool:
                         case = ConditionalWhen()
                         case.value = case_elem.get( "value" )
                         case.inputs = self.parse_input_elem( case_elem, enctypes, context )
+                        group.cases.append( case )
+                        try:
+                            possible_cases.remove( case.value )
+                        except:
+                            log.warning( "A when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." % ( group.name, group.test_param.name, case.value ) )
+                    for unspecified_case in possible_cases:
+                        log.warning( "A when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." % ( group.name, group.test_param.name, unspecified_case ) )
+                        case = ConditionalWhen()
+                        case.value = unspecified_case
+                        case.inputs = odict()
                         group.cases.append( case )
                 rval[group.name] = group
             elif elem.tag == "upload_dataset":
@@ -813,6 +826,8 @@ class Tool:
             elif elem.tag == "param":
                 param = self.parse_param_elem( elem, enctypes, context )
                 rval[param.name] = param
+                if hasattr( param, 'data_ref' ):
+                    param.ref_input = context[ param.data_ref ]
         return rval
 
     def parse_param_elem( self, input_elem, enctypes, context ):
@@ -1474,6 +1489,11 @@ class Tool:
                 elif isinstance( input, SelectToolParameter ):
                     input_values[ input.name ] = SelectToolParameterWrapper( 
                         input, input_values[ input.name ], self.app, other_values = param_dict )
+                        
+                elif isinstance( input, LibraryDatasetToolParameter ):
+                    input_values[ input.name ] = LibraryDatasetValueWrapper( 
+                        input, input_values[ input.name ], param_dict )
+                        
                 else:
                     input_values[ input.name ] = InputValueWrapper( 
                         input, input_values[ input.name ], param_dict )
@@ -1599,12 +1619,18 @@ class Tool:
         try:                
             # Substituting parameters into the command
             command_line = fill_template( self.command, context=param_dict )
-            # Remove newlines from command line
-            command_line = command_line.replace( "\n", " " ).replace( "\r", " " )
+            # Remove newlines from command line, and any leading/trailing white space
+            command_line = command_line.replace( "\n", " " ).replace( "\r", " " ).strip()
         except Exception, e:
             # Modify exception message to be more clear
             #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ) )
             raise
+        if self.interpreter:
+            # TODO: path munging for cluster/dataset server relocatability
+            executable = command_line.split()[0]
+            abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
+            command_line = command_line.replace(executable, abs_executable, 1)
+            command_line = self.interpreter + " " + command_line
         return command_line
 
     def build_dependency_shell_commands( self ):
@@ -1880,7 +1906,7 @@ class DataSourceTool( Tool ):
             if isinstance( value, dict ):
                 rval.append( self._prepare_datasource_json_param_dict( value ) )
             elif isinstance( value, list ):
-                rval.append( self._prepare_datasource_json_list( val ) )
+                rval.append( self._prepare_datasource_json_list( value ) )
             else:
                 rval.append( str( value ) )
         return rval
@@ -1890,7 +1916,7 @@ class DataSourceTool( Tool ):
             if isinstance( value, dict ):
                 rval[ key ] = self._prepare_datasource_json_param_dict( value )
             elif isinstance( value, list ):
-                rval[ key ] = self._prepare_datasource_json_list( val )
+                rval[ key ] = self._prepare_datasource_json_list( value )
             else:
                 rval[ key ] = str( value )
         return rval
@@ -2018,6 +2044,32 @@ class RawObjectWrapper( object ):
     def __getattr__( self, key ):
         return getattr( self.obj, key )
 
+class LibraryDatasetValueWrapper( object ):
+    """
+    Wraps an input so that __str__ gives the "param_dict" representation.
+    """
+    def __init__( self, input, value, other_values={} ):
+        self.input = input
+        self.value = value
+        self._other_values = other_values
+    def __str__( self ):
+        return self.value.name
+    def templates( self ):
+        """ Returns JSON dict of templates => data """
+        if not self.value:
+            return None
+        template_data = {}
+        for temp_info in self.value.info_association:
+            template = temp_info.template
+            content = temp_info.info.content
+            tmp_dict = {}
+            for field in template.fields:
+                tmp_dict[field['label']] = content[field['name']]
+            template_data[template.name] = tmp_dict
+        return simplejson.dumps( template_data )
+    def __getattr__( self, key ):
+        return getattr( self.value, key )
+        
 class InputValueWrapper( object ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.

@@ -1,0 +1,56 @@
+<tool id="assembly_stats" name="Assembly Statistics" version="1.0.0">
+  <description>Calculate common measures of assembly quality</description>
+  <command interpreter="python">
+    assembly_stats.py ${wiki} --minContigLength=${minLength} $input1 > $output1
+  </command>
+  <inputs>
+    <param name="input1" format="fasta" type="data" label="Select FASTA file containing contigs"/>
+    <param name="minLength" type="integer" value="0" label="Minimum length of contigs to consider"/>
+    <param name="wiki" type="boolean" 
+      checked="true" value="True"
+      truevalue="--outputFormat=wiki"
+      falsevalue="--noHeader --outputFormat=tsv"
+      label="Human-readable?" />
+  </inputs>
+  <outputs>
+    <data format="tabular" name="output1" label="Assembly statistics for ${on_string}"/>
+  </outputs>
+  <help>
+
+**What it does**
+
+Reports standard measures of *de novo* assembly quality such as 
+number of contigs, sum of contigs, mean contig length, and N50.
+
+**Parameter list**
+
+Minimum length
+    Only include contigs of this size or greater for calculating statistics.
+
+Human-readable?
+    If true, output the statistics in a wiki format which can be read by humans.  If false, output the metrics in a tab-delimited row.
+
+**Output**
+
+Num contigs
+    Total number of contigs in the assembly
+
+Sum of contig lengths
+    Total sum of contig lengths
+
+Maximum contig length
+    Maximum of the contig lengths
+
+Mean contig length
+    Average contig length
+
+N50
+    Contig length at which 50% of the assembly is contained in contigs of this size or greater.
+
+99%
+    Number of contigs accounting for 99% of the observed assembly.
+
+  </help>
+</tool>
+
+

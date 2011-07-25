@@ -465,7 +465,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                           request_id=self.security.encode_id( request1.id ),
                           sample_value_tuples=sample_value_tuples,
                           folder_options=folder_options,
-                          strings_displayed=[ 'Add Samples to Sequencing Request "%s"' % request1.name,
+                          strings_displayed=[ 'Add samples to sequencing request "%s"' % request1.name,
                                               '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
         # check the new sample field values on the request page
@@ -704,7 +704,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.add_samples( cntrller='requests_admin',
                           request_id=self.security.encode_id( request2.id ),
                           sample_value_tuples=sample_value_tuples,
-                          strings_displayed=[ 'Add Samples to Sequencing Request "%s"' % request2.name,
+                          strings_displayed=[ 'Add samples to sequencing request "%s"' % request2.name,
                                               '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
         # Submit the request

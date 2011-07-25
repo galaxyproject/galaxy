@@ -93,10 +93,12 @@ options (listed below) default to 'None' if omitted
             read_name = fields[ int( options.read_col ) - 1 ]
             ref_name  = fields[ int( options.ref_col ) - 1 ]
             
-            if options.prt_all:
-                print '%s\t%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand, line)
-            else:
-                print '%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand)
+	    if not ref_name == '*':
+	    # Do not print lines with unmapped reads that contain '*' instead of chromosome name	    
+		if options.prt_all:	
+		    print '%s\t%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand, line)
+		else:
+		    print '%s\t%s\t%s\t%s' % (ref_name, str(start), str(end+start), strand)
 
 if __name__ == "__main__": main()
 
