@@ -374,15 +374,15 @@ class Tool:
         self.input_translator = root.find( "request_param_translation" )
         if self.input_translator:
             self.input_translator = ToolInputTranslator.from_element( self.input_translator )
-        # Command line (template). Optional for tools that do not invoke a 
-        # local program  
+        # Command line (template). Optional for tools that do not invoke a local program  
         command = root.find("command")
         if command is not None and command.text is not None:
             self.command = command.text.lstrip() # get rid of leading whitespace
+            # Must pre-pend this AFTER processing the cheetah command template
+            self.interpreter = command.get( "interpreter", None )
         else:
             self.command = ''
-        # Must pre-pend this AFTER processing the cheetah command template
-        self.interpreter = command.get("interpreter", None)
+            self.interpreter = None
         # Parameters used to build URL for redirection to external app
         redirect_url_params = root.find( "redirect_url_params" )
         if redirect_url_params is not None and redirect_url_params.text is not None:
@@ -2044,6 +2044,7 @@ class LibraryDatasetValueWrapper( object ):
     def __str__( self ):
         return self.value.name
     def templates( self ):
+        """ Returns JSON dict of templates => data """
         if not self.value:
             return None
         template_data = {}
@@ -2054,7 +2055,7 @@ class LibraryDatasetValueWrapper( object ):
             for field in template.fields:
                 tmp_dict[field['label']] = content[field['name']]
             template_data[template.name] = tmp_dict
-        return template_data
+        return simplejson.dumps( template_data )
     def __getattr__( self, key ):
         return getattr( self.value, key )
         

@@ -931,9 +931,9 @@
     </div>
 </%def>
 
-<%def name="overlay()">
+<%def name="overlay(visible=False)">
     ${parent.overlay( "Loading workflow editor...",
-                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>" )}
+                      "<img src='" + h.url_for('/static/images/yui/rel_interstitial_loading.gif') + "'/>", self.overlay_visible )}
 </%def>
 
 <%def name="left_panel()">

@@ -3,6 +3,13 @@
 
 <%def name="stylesheets()">
     ${h.css( "autocomplete_tagging", "panel_layout", "base", "library" )}
+    <style type="text/css">
+        body, html {
+            overflow: auto;
+            width: auto;
+            height: auto;
+        }
+    </style>
 </%def>
 
 <%def name="javascripts()">

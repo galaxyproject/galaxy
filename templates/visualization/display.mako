@@ -122,6 +122,11 @@
             // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
             //
             $(document).keydown(function(e) {
+                // Do not navigate if arrow keys used in input element.
+                if ($(e.srcElement).is(':input')) {
+                    return;
+                }
+                
                 // Key codes: left == 37, up == 38, right == 39, down == 40
                 switch(e.which) {
                     case 37:

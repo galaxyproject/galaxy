@@ -144,14 +144,14 @@
     <tool file="regVariation/t_test_two_samples.xml" />
     <tool file="regVariation/compute_q_values.xml" />
     <label text="GFF" id="gff" />
-		<tool file="stats/count_gff_features.xml" />
+      <tool file="stats/count_gff_features.xml" />
   </section>
   <!--
   Keep this section commented until all of the tools have functional tests
   <section name="Wavelet Analysis" id="dwt">
     <tool file="discreteWavelet/execute_dwt_IvC_all.xml" />
     <tool file="discreteWavelet/execute_dwt_cor_aVa_perClass.xml" />
-    <tool file="discreteWavelet/execute_dwt_cor_aVb_all.xml" /> 
+    <tool file="discreteWavelet/execute_dwt_cor_aVb_all.xml" />
     <tool file="discreteWavelet/execute_dwt_var_perClass.xml" />
  </section>
  -->
@@ -184,8 +184,8 @@
     <tool file="regVariation/compute_motif_frequencies_for_all_motifs.xml" />
     <tool file="regVariation/categorize_elements_satisfying_criteria.xml" />s
     <tool file="regVariation/draw_stacked_barplots.xml" />
-    <tool file="regVariation/multispecies_MicrosatDataGenerator_interrupted_GALAXY.xml" />    
-    <tool file="regVariation/microsatellite_birthdeath.xml" />        
+    <tool file="regVariation/multispecies_MicrosatDataGenerator_interrupted_GALAXY.xml" />
+    <tool file="regVariation/microsatellite_birthdeath.xml" />
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />
@@ -241,7 +241,7 @@
   </section>
   <section name="NGS: QC and manipulation" id="NGS_QC">
    <label text="FastQC: fastq/sam/bam" id="fastqcsambam" />
-    <tool file="rgenetics/rgFastQC.xml" />         
+    <tool file="rgenetics/rgFastQC.xml" />
    <label text="Illumina fastq" id="illumina" />
     <tool file="fastq/fastq_groomer.xml" />
     <tool file="fastq/fastq_paired_end_splitter.xml" />
@@ -280,21 +280,21 @@
     <tool file="fastx_toolkit/fastx_collapser.xml" />
     <tool file="fastx_toolkit/fastx_renamer.xml" />
     <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
-     <tool file="fastx_toolkit/fastx_trimmer.xml" />  
+     <tool file="fastx_toolkit/fastx_trimmer.xml" />
   </section>
   <section name="NGS: Picard (beta)" id="picard_beta">
     <label text="QC/Metrics for sam/bam" id="qcsambam"/>
     <tool file="picard/picard_BamIndexStats.xml" />
-    <tool file="picard/rgPicardASMetrics.xml" />    
-    <tool file="picard/rgPicardGCBiasMetrics.xml" />     
-    <tool file="picard/rgPicardLibComplexity.xml" />     
+    <tool file="picard/rgPicardASMetrics.xml" />
+    <tool file="picard/rgPicardGCBiasMetrics.xml" />
+    <tool file="picard/rgPicardLibComplexity.xml" />
     <tool file="picard/rgPicardInsertSize.xml" />
     <tool file="picard/rgPicardHsMetrics.xml" />
   <label text="bam/sam Cleaning" id="picard-clean" />
     <tool file="picard/picard_AddOrReplaceReadGroups.xml" />
     <tool file="picard/picard_ReorderSam.xml" />
     <tool file="picard/picard_ReplaceSamHeader.xml" />
-    <tool file="picard/rgPicardFixMate.xml" />          
+    <tool file="picard/rgPicardFixMate.xml" />
     <tool file="picard/rgPicardMarkDups.xml" />
   </section>
   <!--

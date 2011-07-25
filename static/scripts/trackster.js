@@ -807,6 +807,9 @@ extend( View.prototype, {
         }
         view.redraw();
     },
+    /**
+     * Add a track to the view.
+     */
     add_track: function(track) {
         track.view = this;
         track.track_id = this.track_id_counter;
@@ -822,6 +825,9 @@ extend( View.prototype, {
         label_track.view = this;
         this.label_tracks.push(label_track);
     },
+    /**
+     * Remove a track from the view.
+     */
     remove_track: function(track) {
         this.has_changes = true;
         delete this.tracks[this.tracks.indexOf(track)];
@@ -1588,23 +1594,24 @@ extend( TrackConfig.prototype, {
 /**
  * Tiles drawn by tracks.
  */
-var Tile = function(index, resolution, canvas) {
+var Tile = function(index, resolution, canvas, data) {
     this.index = index;
     this.low = index * DENSITY * resolution;
     this.high = (index + 1) * DENSITY * resolution;
     this.resolution = resolution;
     // Wrap element in div for background.
     this.canvas = $("<div class='track-tile'/>").append(canvas);
+    this.data = data;
     this.stale = false;
 };
 
-var SummaryTreeTile = function(index, resolution, canvas, max_val) {
-    Tile.call(this, index, resolution, canvas);
+var SummaryTreeTile = function(index, resolution, canvas, data, max_val) {
+    Tile.call(this, index, resolution, canvas, data);
     this.max_val = max_val;
 };
 
-var FeatureTrackTile = function(index, resolution, canvas, message) {
-    Tile.call(this, index, resolution, canvas);
+var FeatureTrackTile = function(index, resolution, canvas, data, message) {
+    Tile.call(this, index, resolution, canvas, data);
     this.message = message;
 };
 
@@ -2096,13 +2103,17 @@ extend(TiledTrack.prototype, Track.prototype, {
                         filters[f].update_ui_elt();
                     }
 
-                    // Determine if filters are available; this is based on the example feature.
-                    var filters_available = false;
-                    if (track.example_feature) {
-                        for (var f = 0; f < filters.length; f++) {
-                            if (filters[f].applies_to(track.example_feature)) {
-                                filters_available = true;
-                                break;
+                    // Determine if filters are available; this is based on the tiles' data.
+                    var filters_available = false,
+                        example_feature;
+                    for (var i = 0; i < drawn_tiles.length; i++) {
+                        if (drawn_tiles[i].data.length) {
+                            example_feature = drawn_tiles[i].data[0];
+                            for (var f = 0; f < filters.length; f++) {
+                                if (filters[f].applies_to(example_feature)) {
+                                    filters_available = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -2385,7 +2396,7 @@ extend(ReferenceTrack.prototype, TiledTrack.prototype, {
                 var c_start = Math.round(c * w_scale);
                 ctx.fillText(seq[c], c_start + track.left_offset, 10);
             }
-            return new Tile(tile_index, resolution, canvas);
+            return new Tile(tile_index, resolution, canvas, seq);
         }
         this.content_div.css("height", "0px");
     }
@@ -2523,7 +2534,7 @@ extend(LineTrack.prototype, TiledTrack.prototype, {
         var painter = new painters.LinePainter(result.data, tile_low, tile_low + tile_length, this.prefs, this.mode);
         painter.draw(ctx, width, height);
         
-        return new Tile(tile_index, resolution, canvas);
+        return new Tile(tile_index, resolution, canvas, result.data);
     } 
 });
 
@@ -2737,7 +2748,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // TODO: this shouldn't be done at the tile level
             this.container_div.find(".yaxislabel").remove();
             var max_label = $("<div />").addClass('yaxislabel');
-            max_label.text( result.max );
+            max_label.text(result.max);
             max_label.css({ position: "absolute", top: "24px", left: "10px", color: this.prefs.label_color });
             max_label.prependTo(this.container_div);
             // Create canvas
@@ -2760,7 +2771,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // Deal with left_offset by translating
             ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
             painter.draw(ctx, width, required_height);
-            return new SummaryTreeTile(tile_index, resolution, canvas, result.max);
+            return new SummaryTreeTile(tile_index, resolution, canvas, result.data, result.max);
         }
 
         // Start dealing with row-by-row tracks
@@ -2811,16 +2822,12 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         this.container_div.find(".yaxislabel").remove();
         
         if (result.data) {
-            // Set example feature. This is needed so that track can update its UI based on feature attributes.
-            // TODO: use tile data rather than example feature?
-            this.example_feature = (result.data.length ? result.data[0] : undefined);
-
             // Draw features.
             ctx.translate(left_offset, 0);
             painter.draw(ctx, width, required_height, slots);
         }
         
-        return new FeatureTrackTile(tile_index, resolution, canvas, result.message);        
+        return new FeatureTrackTile(tile_index, resolution, canvas, result.data, result.message);        
     }
 });
 
