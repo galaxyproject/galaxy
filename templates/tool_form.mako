@@ -2,12 +2,10 @@
 <%namespace file="/base_panels.mako" import="overlay" />
 
 <%def name="stylesheets()">
-    ${h.css( "autocomplete_tagging", "panel_layout", "base", "library" )}
+    ${h.css( "autocomplete_tagging", "base", "panel_layout", "library" )}
     <style type="text/css">
-        body, html {
-            overflow: auto;
-            width: auto;
-            height: auto;
+        html, body {
+            background-color: #fff;
         }
     </style>
 </%def>

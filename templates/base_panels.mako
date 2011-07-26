@@ -19,6 +19,13 @@
 <%def name="stylesheets()">
     ${h.css('base','panel_layout','jquery.rating')}
     <style type="text/css">
+    body, html {
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+    }
     #center {
         %if not self.has_left_panel:
             left: 0;
