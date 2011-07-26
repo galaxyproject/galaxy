@@ -273,7 +273,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                         }
 
                         // Add track.
-                        tracks.push( {
+                        tracks.push({
                             "track_type": track.get_type(),
                             "name": track.name,
                             "hda_ldda": track.hda_ldda,

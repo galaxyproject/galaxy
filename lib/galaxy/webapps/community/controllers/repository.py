@@ -935,14 +935,22 @@ class RepositoryController( BaseController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, repository_id )
-        tool = load_tool( trans, os.path.abspath( tool_config ) )
-        tool_state = self.__new_state( trans )
-        return trans.fill_template( "/webapps/community/repository/tool_form.mako",
-                                    repository=repository,
-                                    tool=tool,
-                                    tool_state=tool_state,
-                                    message=message,
-                                    status=status )
+        try:
+            tool = load_tool( trans, os.path.abspath( tool_config ) )
+            tool_state = self.__new_state( trans )
+            return trans.fill_template( "/webapps/community/repository/tool_form.mako",
+                                        repository=repository,
+                                        tool=tool,
+                                        tool_state=tool_state,
+                                        message=message,
+                                        status=status )
+        except Exception, e:
+            message = 'Error loading tool: %s.  Click <b>Reset metadata</b> to correct this error.' % str( e )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='manage_repository',
+                                                              id=repository_id,
+                                                              message=message,
+                                                              status='error' ) )
     def __new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will not be initialized
@@ -954,6 +962,27 @@ class RepositoryController( BaseController, ItemRatings ):
         state = DefaultToolState()
         state.inputs = {}
         return state
+    @web.expose
+    def view_tool_metadata( self, trans, repository_id, changeset_revision, tool_id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = get_repository( trans, repository_id )
+        metadata = {}
+        tool = None
+        repository_metadata = get_repository_metadata( trans, repository_id, changeset_revision ).metadata
+        if 'tools' in repository_metadata:
+            for tool_metadata_dict in repository_metadata[ 'tools' ]:
+                if tool_metadata_dict[ 'id' ] == tool_id:
+                    metadata = tool_metadata_dict
+                    tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
+                    break
+        return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
+                                    repository=repository,
+                                    tool=tool,
+                                    metadata=metadata,
+                                    message=message,
+                                    status=status )
     @web.expose
     def download( self, trans, repository_id, file_type, **kwd ):
         # Download an archive of the repository files compressed as zip, gz or bz2.

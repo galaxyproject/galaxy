@@ -123,7 +123,7 @@
         <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
             <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
             <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-            <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>    
+            <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
         </datatype>
         <datatype extension="wsf" type="galaxy.datatypes.wsf:SnpFile" display_in_upload="true"/>
         <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
@@ -274,10 +274,10 @@
     </registration>
     <sniffers>
         <!--
-          The order in which Galaxy attempts to determine data types is 
-          important because some formats are much more loosely defined 
-          than others.  The following list should be the most rigidly 
-          defined format first, followed by next-most rigidly defined, 
+          The order in which Galaxy attempts to determine data types is
+          important because some formats are much more loosely defined
+          than others.  The following list should be the most rigidly
+          defined format first, followed by next-most rigidly defined,
           and so on.
         -->
         <sniffer type="galaxy.datatypes.tabular:Vcf"/>

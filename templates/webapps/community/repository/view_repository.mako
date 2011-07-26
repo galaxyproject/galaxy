@@ -118,7 +118,7 @@
             </div>
         %endif
         <div class="form-row">
-            <label>Version:</label>
+            <label>Revision:</label>
             %if can_view_change_log:
                 <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${repository.revision}</a>
             %else:
@@ -145,20 +145,6 @@
         %endif
     </div>
 </div>
-%if repository.categories:
-    <p/>
-    <div class="toolForm">
-        <div class="toolFormTitle">Categories</div>
-        <div class="toolFormBody">
-            %for rca in repository.categories:
-                <div class="form-row">
-                    ${rca.category.name}
-                </div>
-            %endfor
-            <div style="clear: both"></div>
-        </div>
-    </div>
-%endif
 %if metadata:
     <p/>
     <div class="toolForm">
@@ -183,9 +169,18 @@
                         </tr>
                         %for tool_dict in tool_dicts:
                             <tr>
-                                <td><a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">${tool_dict[ 'name' ]}</a></td>
+                                <td>
+                                    <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${repository.id}-popup">
+                                        <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">
+                                            ${tool_dict[ 'name' ]}
+                                        </a>
+                                    </div>
+                                    <div popupmenu="tool-${repository.id}-popup">
+                                        <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip, tool_id=tool_dict[ 'id' ] )}">View all metadata for this tool</a>
+                                    </div>
+                                </td>
                                 <td>${tool_dict[ 'description' ]}</td>
-                                <td>version: ${tool_dict[ 'version' ]}</td>
+                                <td>${tool_dict[ 'version' ]}</td>
                                 <td>
                                     <%
                                         if 'requirements' in tool_dict:
@@ -239,6 +234,20 @@
                 </div>
                 <div style="clear: both"></div>
             %endif
+        </div>
+    </div>
+%endif
+%if repository.categories:
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Categories</div>
+        <div class="toolFormBody">
+            %for rca in repository.categories:
+                <div class="form-row">
+                    ${rca.category.name}
+                </div>
+            %endfor
+            <div style="clear: both"></div>
         </div>
     </div>
 %endif

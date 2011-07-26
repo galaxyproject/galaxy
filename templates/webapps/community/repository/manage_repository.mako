@@ -120,7 +120,7 @@
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Version:</label>
+                <label>Revision:</label>
                 %if can_view_change_log:
                     <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${repository.revision}</a>
                 %else:
@@ -151,34 +151,6 @@
         </form>
     </div>
 </div>
-<p/>
-<div class="toolForm">
-    <div class="toolFormTitle">Manage categories</div>
-    <div class="toolFormBody">
-        <form name="categories" id="categories" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
-            <div class="form-row">
-                <label>Categories</label>
-                <select name="category_id" multiple>
-                    %for category in categories:
-                        %if category.id in selected_categories:
-                            <option value="${trans.security.encode_id( category.id )}" selected>${category.name}</option>
-                        %else:
-                            <option value="${trans.security.encode_id( category.id )}">${category.name}</option>
-                        %endif
-                    %endfor
-                </select>
-                <div class="toolParamHelp" style="clear: both;">
-                    Multi-select list - hold the appropriate key while clicking to select multiple categories.
-                </div>
-                <div style="clear: both"></div>
-            </div>
-            <div class="form-row">
-                <input type="submit" name="manage_categories_button" value="Save"/>
-            </div>
-        </form>
-    </div>
-</div>
-<p/>
 %if can_set_metadata:
     <p/>
     <div class="toolForm">
@@ -204,7 +176,16 @@
                             </tr>
                             %for tool_dict in tool_dicts:
                                 <tr>
-                                    <td><a href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">${tool_dict[ 'name' ]}</a></td>
+                                    <td>
+                                        <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ]}-popup">
+                                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">
+                                                ${tool_dict[ 'name' ]}
+                                            </a>
+                                        </div>
+                                        <div popupmenu="tool-${tool_dict[ 'id' ]}-popup">
+                                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip, tool_id=tool_dict[ 'id' ] )}">View all metadata for this tool</a>
+                                        </div>
+                                    </td>
                                     <td>${tool_dict[ 'description' ]}</td>
                                     <td>${tool_dict[ 'version' ]}</td>
                                     <td>
@@ -274,6 +255,33 @@
         </div>
     </div>
 %endif
+<p/>
+<div class="toolForm">
+    <div class="toolFormTitle">Manage categories</div>
+    <div class="toolFormBody">
+        <form name="categories" id="categories" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+            <div class="form-row">
+                <label>Categories</label>
+                <select name="category_id" multiple>
+                    %for category in categories:
+                        %if category.id in selected_categories:
+                            <option value="${trans.security.encode_id( category.id )}" selected>${category.name}</option>
+                        %else:
+                            <option value="${trans.security.encode_id( category.id )}">${category.name}</option>
+                        %endif
+                    %endfor
+                </select>
+                <div class="toolParamHelp" style="clear: both;">
+                    Multi-select list - hold the appropriate key while clicking to select multiple categories.
+                </div>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <input type="submit" name="manage_categories_button" value="Save"/>
+            </div>
+        </form>
+    </div>
+</div>
 %if trans.app.config.smtp_server:
     <p/>
     <div class="toolForm">
@@ -330,8 +338,8 @@
         </form>
     </div>
 </div>
-<p/>
 %if repository.ratings:
+    <p/>
     <div class="toolForm">
         <div class="toolFormTitle">Rating</div>
         <div class="toolFormBody">
