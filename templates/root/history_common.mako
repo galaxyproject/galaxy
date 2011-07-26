@@ -39,9 +39,9 @@
         can_edit = not ( data.deleted or data.purged )
     %>
     %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-        <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
+        <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${dataset_id}">
     %else:
-        <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
+        <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${dataset_id}">
     %endif
         
     %if data.deleted or data.purged or data.dataset.purged:
@@ -51,9 +51,9 @@
             %else:
                 This dataset has been deleted. 
                 %if for_editing:
-                    Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" class="historyItemUndelete" id="historyItemUndeleter-${data.id}" target="galaxy_history">here</a> to undelete
+                    Click <a href="${h.url_for( controller='dataset', action='undelete', dataset_id=dataset_id )}" class="historyItemUndelete" id="historyItemUndeleter-${dataset_id}" target="galaxy_history">here</a> to undelete
                     %if trans.app.config.allow_user_dataset_purge:
-                        or <a href="${h.url_for( controller='dataset', action='purge', id=data.id )}" class="historyItemPurge" id="historyItemPurger-${data.id}" target="galaxy_history">here</a> to immediately remove it from disk.
+                        or <a href="${h.url_for( controller='dataset', action='purge', dataset_id=dataset_id )}" class="historyItemPurge" id="historyItemPurger-${dataset_id}" target="galaxy_history">here</a> to immediately remove it from disk.
                     %else:
                         it.
                     %endif
@@ -64,7 +64,7 @@
 
     %if data.visible is False:
         <div class="warningmessagesmall">
-            <strong>This dataset has been hidden. Click <a href="${h.url_for( controller='dataset', action='unhide', id=data.id )}" class="historyItemUnhide" id="historyItemUnhider-${data.id}" target="galaxy_history">here</a> to unhide.</strong>
+            <strong>This dataset has been hidden. Click <a href="${h.url_for( controller='dataset', action='unhide', dataset_id=dataset_id )}" class="historyItemUnhide" id="historyItemUnhider-${dataset_id}" target="galaxy_history">here</a> to unhide.</strong>
         </div>
     %endif
 
@@ -110,13 +110,13 @@
                     %elif data.purged:
                         <span title="Cannot edit attributes of datasets removed from disk" class="icon-button edit_disabled tooltip"></span>
                     %else:
-                        <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
+                        <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" target="galaxy_main"></a>
                     %endif
                 %endif
             %endif
             %if for_editing:
                 %if can_edit:
-                    <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
+                    <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( controller='dataset', action='delete', dataset_id=dataset_id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${dataset_id}"></a>
                 %else:
                     <span title="Dataset is already deleted" class="icon-button delete_disabled tooltip"></span>
                 %endif
@@ -184,7 +184,7 @@
                 <div class="warningmessagesmall" style="margin: 4px 0 4px 0">
                     An error occurred setting the metadata for this dataset.
                     %if can_edit:
-                        You may be able to <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">set it manually or retry auto-detection</a>.
+                        You may be able to <a href="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" target="galaxy_main">set it manually or retry auto-detection</a>.
                     %endif
                 </div>
             %endif
@@ -193,7 +193,7 @@
                 format: <span class="${data.ext}">${data.ext}</span>, 
                 database:
                 %if data.dbkey == '?' and can_edit:
-                    <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">${_(data.dbkey)}</a>
+                    <a href="${h.url_for( controller='dataset', action='edit', dataset_id=dataset_id )}" target="galaxy_main">${_(data.dbkey)}</a>
                 %else:
                     <span class="${data.dbkey}">${_(data.dbkey)}</span>
                 %endif

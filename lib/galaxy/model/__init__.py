@@ -70,6 +70,27 @@ class User( object, APIItem ):
                 if role not in roles:
                     roles.append( role )
         return roles
+    def get_disk_usage( self, nice_size=False ):
+        rval = 0
+        if self.disk_usage is not None:
+            rval = self.disk_usage
+        if nice_size:
+            rval = galaxy.datatypes.data.nice_size( rval )
+        return rval
+    def set_disk_usage( self, bytes ):
+        self.disk_usage = bytes
+    total_disk_usage = property( get_disk_usage, set_disk_usage )
+    def calculate_disk_usage( self ):
+        dataset_ids = []
+        total = 0
+        # this can be a huge number and can run out of memory, so we avoid the mappers
+        db_session = object_session( self )
+        for history in db_session.query( History ).enable_eagerloads( False ).filter_by( user_id=self.id ).yield_per( 1000 ):
+            for hda in db_session.query( HistoryDatasetAssociation ).enable_eagerloads( False ).filter_by( history_id=history.id, purged=False ).yield_per( 1000 ):
+                if not hda.dataset.id in dataset_ids and not hda.dataset.purged and not hda.dataset.library_associations:
+                    dataset_ids.append( hda.dataset.id )
+                    total += hda.dataset.get_total_size()
+        return total
     
 class Job( object ):
     """
@@ -349,7 +370,7 @@ class History( object, UsesAnnotations ):
             self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
         else:
             self.galaxy_sessions.append( association )
-    def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
+    def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid=True, quota=True ):
         if isinstance( dataset, Dataset ):
             dataset = HistoryDatasetAssociation(dataset=dataset)
             object_session( self ).add( dataset )
@@ -367,6 +388,8 @@ class History( object, UsesAnnotations ):
         else:
             if set_hid:
                 dataset.hid = self._next_hid()
+        if quota and self.user:
+            self.user.total_disk_usage += dataset.quota_amount( self.user )
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
@@ -378,6 +401,9 @@ class History( object, UsesAnnotations ):
             name = self.name
         if not target_user:
             target_user = self.user
+        quota = True
+        if target_user == self.user:
+            quota = False
         new_history = History( name=name, user=target_user )
         db_session = object_session( self )
         db_session.add( new_history )
@@ -393,8 +419,8 @@ class History( object, UsesAnnotations ):
             hdas = self.active_datasets
         for hda in hdas:
             # Copy HDA.
-            new_hda = hda.copy( copy_children=True, target_history=new_history )
-            new_history.add_dataset( new_hda, set_hid = False )
+            new_hda = hda.copy( copy_children=True )
+            new_history.add_dataset( new_hda, set_hid = False, quota=quota )
             db_session.add( new_hda )
             db_session.flush()            
             # Copy annotation.
@@ -741,6 +767,10 @@ class DatasetInstance( object ):
     def set_size( self ):
         """Returns the size of the data on disk"""
         return self.dataset.set_size()
+    def get_total_size( self ):
+        return self.dataset.get_total_size()
+    def set_total_size( self ):
+        return self.dataset.set_total_size()
     def has_data( self ):
         """Detects whether there is any data"""
         return self.dataset.has_data()
@@ -922,7 +952,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
-    def copy( self, copy_children = False, parent_id = None, target_history = None ):
+    def copy( self, copy_children = False, parent_id = None ):
         hda = HistoryDatasetAssociation( hid=self.hid, 
                                          name=self.name, 
                                          info=self.info, 
@@ -934,8 +964,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          visible=self.visible, 
                                          deleted=self.deleted, 
                                          parent_id=parent_id, 
-                                         copied_from_history_dataset_association=self,
-                                         history = target_history )
+                                         copied_from_history_dataset_association=self )
         object_session( self ).add( hda )
         object_session( self ).flush()
         hda.set_size()
@@ -1017,6 +1046,26 @@ class HistoryDatasetAssociation( DatasetInstance ):
         return hda_name
     def get_access_roles( self, trans ):
         return self.dataset.get_access_roles( trans )
+    def quota_amount( self, user ):
+        """
+        If the user has multiple instances of this dataset, it will not affect their disk usage statistic.
+        """
+        rval = 0
+        # Anon users are handled just by their single history size.
+        if not user:
+            return rval
+        # Gets an HDA and its children's disk usage, if the user does not already have an association of the same dataset
+        if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
+            for hda in self.dataset.history_associations:
+                if hda.id == self.id:
+                    continue
+                if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
+                    break
+            else:
+                rval += self.get_total_size()
+        for child in self.children:
+            rval += child.get_disk_usage( user )
+        return rval
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):
     def __init__( self, hda=None, user=None, site=None ):
@@ -1467,6 +1516,13 @@ class GalaxySession( object ):
             self.histories.append( GalaxySessionToHistoryAssociation( self, history ) )
         else:
             self.histories.append( association )
+    def get_disk_usage( self ):
+        if self.disk_usage is None:
+            return 0
+        return self.disk_usage
+    def set_disk_usage( self, bytes ):
+        self.disk_usage = bytes
+    total_disk_usage = property( get_disk_usage, set_disk_usage )
     
 class GalaxySessionToHistoryAssociation( object ):
     def __init__( self, galaxy_session, history ):
