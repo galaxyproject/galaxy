@@ -124,7 +124,7 @@ class UploadData( TwillTestCase ):
         self.upload_file( '454Score.png' )
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
-        self.check_history_for_string( "The uploaded file contains inappropriate content" )
+        self.check_history_for_string( "454Score.png" )
     def test_0055_upload_file( self ):
         """Test uploading lped composite datatype file, manually setting the file format"""
         # Logged in as admin_user
