@@ -34,15 +34,27 @@ def safe_bed_file(infile):
     out_handle.close()
     return fname
     
-if len( sys.argv ) != 7:
-    stop_err( "USAGE: prog input out_file1 out_file2 input_dbkey output_dbkey minMatch" )
+if len( sys.argv ) < 9:
+    stop_err( "USAGE: prog input out_file1 out_file2 input_dbkey output_dbkey infile_type minMatch multiple <minChainT> <minChainQ> <minSizeQ>" )
 
 infile = sys.argv[1]
 outfile1 = sys.argv[2]
 outfile2 = sys.argv[3]
 in_dbkey = sys.argv[4]
 mapfilepath = sys.argv[5]
-minMatch = sys.argv[6]
+infile_type = sys.argv[6]
+gff_option = ""
+if infile_type == "gff":
+    gff_option = "-gff "
+minMatch = sys.argv[7]
+multiple = int(sys.argv[8])
+multiple_option = ""
+if multiple:
+    minChainT = sys.argv[9]
+    minChainQ = sys.argv[10]
+    minSizeQ = sys.argv[11]
+    multiple_option = " -multiple -minChainT=%s -minChainQ=%s -minSizeQ=%s " %(minChainT,minChainQ,minSizeQ)
+
 try:
     assert float(minMatch)
 except:
@@ -55,7 +67,8 @@ if not os.path.isfile( mapfilepath ):
     stop_err( "%s mapping is not currently available."  % ( mapfilepath.split('/')[-1].split('.')[0] ) )
 
 safe_infile = safe_bed_file(infile)
-cmd_line = "liftOver -minMatch=" + str(minMatch) + " " + safe_infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null"
+cmd_line = "liftOver " + gff_option + "-minMatch=" + str(minMatch) + multiple_option + " "  + safe_infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null"
+
 try:
     # have to nest try-except in try-finally to handle 2.4
     try:

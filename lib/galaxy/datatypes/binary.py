@@ -18,7 +18,7 @@ import struct
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
-unsniffable_binary_formats = [ 'ab1', 'scf' ]
+unsniffable_binary_formats = [ 'ab1', 'scf', 'h5' ]
 
 class Binary( data.Data ):
     """Binary data"""
@@ -206,7 +206,24 @@ class Bam( Binary ):
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
     def get_track_type( self ):
         return "ReadTrack", {"data": "bai", "index": "summary_tree"}
-    
+
+class H5( Binary ):
+    """Class describing an HDF5 file"""
+    file_ext = "h5"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek  = "Binary h5 file" 
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Binary h5 sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     file_ext = "scf"
@@ -292,7 +309,6 @@ class BigBed(BigWig):
         Binary.__init__( self, **kwd )
         self._magic = 0x8789F2EB
         self._name = "BigBed"
-        
     def get_track_type( self ):
         return "LineTrack", {"data_standalone": "bigbed"}
 
@@ -309,14 +325,12 @@ class TwoBit (Binary):
                 return True
         except IOError:
             return False
-        
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = "Binary TwoBit format nucleotide file"
             dataset.blurb = data.nice_size(dataset.get_size())
         else:
             return super(TwoBit, self).set_peek(dataset, is_multi_byte)
-    
     def display_peek(self, dataset):
         try:
             return dataset.peek

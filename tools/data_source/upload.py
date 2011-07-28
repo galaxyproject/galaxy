@@ -14,7 +14,16 @@ from galaxy.datatypes.binary import *
 from galaxy.datatypes.images import Pdf
 from galaxy.datatypes.registry import Registry
 from galaxy import util
+from galaxy.datatypes.util.image_util import *
 from galaxy.util.json import *
+
+try:
+    import Image as PIL
+except ImportError:
+    try:
+        from PIL import Image as PIL
+    except:
+        PIL = None
 
 try:
     import bz2
@@ -51,16 +60,12 @@ def safe_dict(d):
         return d
 def check_bam( file_path ):
     return Bam().sniff( file_path )
-
 def check_sff( file_path ):
     return Sff().sniff( file_path )
-
 def check_pdf( file_path ):
     return Pdf().sniff( file_path )
-
 def check_bigwig( file_path ):
     return BigWig().sniff( file_path )
-
 def check_bigbed( file_path ):
     return BigBed().sniff( file_path )
 def parse_outputs( args ):
@@ -102,8 +107,16 @@ def add_file( dataset, registry, json_file, output_path ):
             dataset.is_multi_byte = util.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError, e:
             dataset.is_multi_byte = False
+    # Is dataset an image?
+    image = check_image( dataset.path )
+    if image:
+        if not PIL:
+            image = None
+        # get_image_ext() returns None if nor a supported Image type
+        ext = get_image_ext( dataset.path, image )
+        data_type = ext
     # Is dataset content multi-byte?
-    if dataset.is_multi_byte:
+    elif dataset.is_multi_byte:
         data_type = 'multi-byte char'
         ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
     # Is dataset content supported sniffable binary?
@@ -122,7 +135,7 @@ def add_file( dataset, registry, json_file, output_path ):
     elif check_bigbed( dataset.path ):
         ext = 'bigbed'
         data_type = 'bigbed'
-    else:
+    if not data_type:
         # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
         is_gzipped, is_valid = check_gzip( dataset.path )
         if is_gzipped and not is_valid:
@@ -314,7 +327,6 @@ def add_file( dataset, registry, json_file, output_path ):
     if datatype.dataset_content_needs_grooming( output_path ):
         # Groom the dataset content if necessary
         datatype.groom_dataset_content( output_path )
-
 def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         if dataset.composite_files:
             os.mkdir( files_path )
