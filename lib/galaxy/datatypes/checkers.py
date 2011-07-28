@@ -1,4 +1,4 @@
-import os, gzip, re, gzip, zipfile, binascii, bz2
+import os, gzip, re, gzip, zipfile, binascii, bz2, imghdr
 from galaxy import util
 
 try:
