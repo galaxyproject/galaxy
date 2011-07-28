@@ -29,6 +29,14 @@ class WorkflowsAPIController(BaseController):
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
             rval.append(item)
+        for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
+                user=trans.user ).join( 'stored_workflow' ).filter(
+                trans.app.model.StoredWorkflow.deleted == False ).order_by(
+                desc( trans.app.model.StoredWorkflow.update_time ) ).all():
+            item = wf_sa.stored_workflow.get_api_value(value_mapper={'id':trans.security.encode_id})
+            encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+            item['url'] = url_for('workflow', id=encoded_id)
+            rval.append(item)
         return rval
     @web.expose_api
     def show(self, trans, id, **kwd):
