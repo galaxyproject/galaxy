@@ -129,6 +129,7 @@ def expose_api( func ):
                 return "Malformed user id ( %s ) specified, unable to decode." % str( kwargs['run_as'] )
             try:
                 user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
+                trans.api_inherit_admin = trans.user_is_admin()
                 trans.set_user(user)
             except:
                 trans.response.status = 400
@@ -145,13 +146,13 @@ def expose_api( func ):
 
 def require_admin( func ):
     def decorator( self, trans, *args, **kwargs ):
-        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
-        if not admin_users:
-            return trans.show_error_message( "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration." )
-        user = trans.get_user()
-        if not user:
-            return trans.show_error_message( "You must be logged in as an administrator to access this feature." )
-        if not user.email in admin_users:
+        if not trans.user_is_admin():
+            admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+            if not admin_users:
+                return trans.show_error_message( "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration." )
+            user = trans.get_user()
+            if not user:
+                return trans.show_error_message( "You must be logged in as an administrator to access this feature." )
             return trans.show_error_message( "You must be an administrator to access this feature." )
         return func( self, trans, *args, **kwargs )
     return decorator
@@ -214,6 +215,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
+        # Flag indicating whether this is an API call and the API key user is an administrator
+        self.api_inherit_admin = False
     def setup_i18n( self ):
         locales = []
         if 'HTTP_ACCEPT_LANGUAGE' in self.environ:
@@ -605,6 +608,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             roles = []
         return roles
     def user_is_admin( self ):
+        if self.api_inherit_admin:
+            return True
         admin_users = self.app.config.get( "admin_users", "" ).split( "," )
         return self.user and admin_users and self.user.email in admin_users
     def user_can_do_run_as( self ):
