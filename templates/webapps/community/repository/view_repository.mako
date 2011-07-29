@@ -170,12 +170,12 @@
                         %for tool_dict in tool_dicts:
                             <tr>
                                 <td>
-                                    <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${repository.id}-popup">
+                                    <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
                                         <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ] )}">
                                             ${tool_dict[ 'name' ]}
                                         </a>
                                     </div>
-                                    <div popupmenu="tool-${repository.id}-popup">
+                                    <div popupmenu="tool-${tool_dict[ 'id' ].replace( ' ', '_' )}-popup">
                                         <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip, tool_id=tool_dict[ 'id' ] )}">View all metadata for this tool</a>
                                     </div>
                                 </td>

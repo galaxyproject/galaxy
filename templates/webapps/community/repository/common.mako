@@ -50,4 +50,39 @@
                 onActivate: function(dtnode) {
                     var cell = $("#file_contents");
                     var selected_value;
- 
+                     if (dtnode.data.key == 'root') {
+                        selected_value = "${repository.repo_path}/";
+                    } else {
+                        selected_value = dtnode.data.key;
+                    };
+                    if (selected_value.charAt(selected_value.length-1) != '/') {
+                        // Make ajax call
+                        $.ajax( {
+                            type: "POST",
+                            url: "${h.url_for( controller='repository', action='get_file_contents' )}",
+                            dataType: "json",
+                            data: { file_path: selected_value },
+                            success : function ( data ) {
+                                cell.html( '<label>'+data+'</label>' )
+                            }
+                        });
+                    } else {
+                        cell.html( '' );
+                    };
+                },
+            });
+        });
+    </script>
+</%def>
+
+<%def name="render_clone_str( repository )">
+    <%
+        protocol, base = trans.request.base.split( '://' )
+        if trans.user:
+            username = '%s@' % trans.user.username
+        else:
+            username = ''
+        clone_str = '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
+    %>
+    hg clone <a href="${clone_str}">${clone_str}</a>
+</%def>
