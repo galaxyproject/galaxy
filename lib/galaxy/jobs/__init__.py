@@ -560,7 +560,7 @@ class JobWrapper( object ):
                 dataset.set_size()
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    print "===+=== Handing dataset '%s' with name '%s' to object store" % (dataset.id, dataset.file_name)
+                    print "===++=== Job finish method handing dataset '%s' to object store" % dataset.file_name
                     self.app.object_store.update_from_file(dataset.id, create=True)
                 if context['stderr']:
                     dataset.blurb = "error"

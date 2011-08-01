@@ -533,13 +533,12 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        
     def get_file_name( self ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
-            print "Calling get_filename 1", self.object_store
             filename = self.object_store.get_filename( self.id )
-            # print 'getting filename: ', filename
             if not self.object_store.exists( self.id ):
                 # Create directory if it does not exist
                 self.object_store.create( self.id, dir_only=True )
@@ -556,7 +555,6 @@ class Dataset( object ):
     file_name = property( get_file_name, set_file_name )
     @property
     def extra_files_path( self ):
-        print "Calling get_filename 2", self.object_store
         return self.object_store.get_filename( self.id, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id)
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
@@ -1583,15 +1581,8 @@ class MetadataFile( object ):
         assert self.id is not None, "ID must be set before filename used (commit the object)"
         # Ensure the directory structure and the metadata file object exist
         try:
-            # self.history_dataset
-            # print "Dataset.file_path: %s, self.id: %s, self.history_dataset.dataset.object_store: %s" \
-            #     % (Dataset.file_path, self.id, self.history_dataset.dataset.object_store)
             self.history_dataset.dataset.object_store.create( self.id, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
-            print "Calling get_filename 3", self.object_store
             path = self.history_dataset.dataset.object_store.get_filename( self.id, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
-            print "Created metadata file at path: %s" % path
-            self.library_dataset
-            # raise
             return path
         except AttributeError:
             # In case we're not working with the history_dataset

@@ -32,7 +32,7 @@ class UniverseApplication( object ):
         from galaxy.model.migrate.check import create_or_verify_database
         create_or_verify_database( db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
         # Object store manager
-        self.object_store = build_object_store_from_config(self)
+        self.object_store = build_object_store_from_config(self.config)
         # Setup the database engine and ORM
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,
@@ -94,5 +94,6 @@ class UniverseApplication( object ):
         
     def shutdown( self ):
         self.job_manager.shutdown()
+        self.object_store.shutdown()
         if self.heartbeat:
             self.heartbeat.shutdown()

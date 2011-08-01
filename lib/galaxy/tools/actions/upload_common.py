@@ -325,7 +325,6 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, ret
             # Create an empty file immediately
             if not dataset.dataset.external_filename:
                 trans.app.object_store.create( dataset.id )
-                print "---> Upload tool created a folder(?) %s with ID %s? %s" % (dataset.file_name, dataset.id, trans.app.object_store.exists(dataset.id))
                 # open( dataset.file_name, "w" ).close()
     else:
         for i, dataset in enumerate( data_list ):
@@ -333,7 +332,6 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, ret
             # Create an empty file immediately
             if not dataset.dataset.external_filename:
                 trans.app.object_store.create( dataset.id )
-                print "---> Upload tool created a file %s with ID %s? %s" % (dataset.file_name, dataset.id, trans.app.object_store.exists(dataset.id))
                 # open( dataset.file_name, "w" ).close()
     job.state = job.states.NEW
     trans.sa_session.add( job )

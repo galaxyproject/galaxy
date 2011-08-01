@@ -118,7 +118,7 @@ class LocalJobRunner( BaseJobRunner ):
                                          preexec_fn = os.setpgrp )
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
-            log.debug( 'execution of external set_meta finished for job %d' % job_wrapper.job_id )
+            log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
         
         # Finish the job                
         try:

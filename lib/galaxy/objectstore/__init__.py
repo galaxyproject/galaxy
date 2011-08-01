@@ -179,9 +179,9 @@ class DiskObjectStore(ObjectStore):
     Standard Galaxy object store, stores objects in files under a specific
     directory on disk.
     """
-    def __init__(self, app):
+    def __init__(self, config):
         super(DiskObjectStore, self).__init__()
-        self.file_path = app.config.file_path
+        self.file_path = config.file_path
     
     def _get_filename(self, dataset_id, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """Class method that returns the absolute path for the file corresponding
@@ -344,14 +344,14 @@ class S3ObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
-    def __init__(self, app):
+    def __init__(self, config):
         super(S3ObjectStore, self).__init__()
-        self.app = app
-        self.staging_path = self.app.config.file_path
+        self.config = config
+        self.staging_path = self.config.file_path
         self.s3_conn = S3Connection()
-        self.bucket = self._get_bucket(self.app.config.s3_bucket)
-        self.use_rr = self.app.config.use_reduced_redundancy
-        self.cache_size = self.app.config.object_store_cache_size * 1073741824 # Convert GBs to bytes
+        self.bucket = self._get_bucket(self.config.s3_bucket)
+        self.use_rr = self.config.use_reduced_redundancy
+        self.cache_size = self.config.object_store_cache_size * 1073741824 # Convert GBs to bytes
         self.transfer_progress = 0
         # Clean cache only if value is set in universe_wsgi.ini
         if self.cache_size != -1:
@@ -443,13 +443,13 @@ class S3ObjectStore(ObjectStore):
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
         for basedir, dirs, files in os.walk(rel_path):
-            util.umask_fix_perms(basedir, self.app.config.umask, 0777, self.app.config.gid)
+            util.umask_fix_perms(basedir, self.config.umask, 0777, self.config.gid)
             for f in files:
                 path = os.path.join(basedir, f)
                 # Ignore symlinks
                 if os.path.islink(path):
                     continue 
-                util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+                util.umask_fix_perms( path, self.config.umask, 0666, self.config.gid )
     
     def _construct_path(self, dataset_id, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         rel_path = os.path.join(*directory_hash_id(dataset_id))
@@ -594,12 +594,16 @@ class S3ObjectStore(ObjectStore):
             source_file = source_file if source_file else self._get_cache_path(rel_path)
             if os.path.exists(source_file):
                 key = Key(self.bucket, rel_path)
+                if os.path.getsize(source_file) == 0 and key.exists():
+                    log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping." % (source_file, rel_path))
+                    return True
                 if from_string:
                     key.set_contents_from_string(from_string, reduced_redundancy=self.use_rr)
                     log.debug("Pushed data from string '%s' to key '%s'" % (from_string, rel_path))
                 else:
                     start_time = datetime.now()
-                    print "[%s] Pushing cache file '%s' to key '%s'" % (start_time, source_file, rel_path)
+                    # print "Pushing cache file '%s' of size %s bytes to key '%s'" % (source_file, os.path.getsize(source_file), rel_path)
+                    # print "+ Push started at '%s'" % start_time
                     mb_size = os.path.getsize(source_file) / 1e6
                     if mb_size < 60:
                         self.transfer_progress = 0 # Reset transfer progress counter
@@ -607,10 +611,9 @@ class S3ObjectStore(ObjectStore):
                             cb=self._transfer_cb, num_cb=10)
                     else:
                         multipart_upload(self.bucket, key.name, source_file, mb_size, use_rr=self.use_rr)
-                        # self._multipart_upload(key.name, source_file, mb_size)
                     end_time = datetime.now()
-                    print "Push ended at '%s'; it lasted '%s'" % (end_time, end_time-start_time)
-                    log.debug("Pushed cache file '%s' to key '%s'" % (source_file, rel_path))
+                    # print "+ Push ended at   '%s'; %s bytes transfered in %ssec" % (end_time, os.path.getsize(source_file), end_time-start_time)
+                    log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)" % (source_file, rel_path, os.path.getsize(source_file), end_time-start_time))
                 return True
             else:
                 log.error("Tried updating key '%s' from source file '%s', but source file does not exist."
@@ -788,8 +791,9 @@ class S3ObjectStore(ObjectStore):
                 # Copy into cache
                 cache_file = self._get_cache_path(rel_path)
                 try:
-                    # FIXME? Should this be a `move`?
-                    shutil.copy2(source_file, cache_file)
+                    if source_file != cache_file:
+                        # FIXME? Should this be a `move`?
+                        shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)
                 except OSError, ex:
                     log.error("Trouble copying source file '%s' to cache '%s': %s" % (source_file, cache_file, ex))
@@ -823,16 +827,16 @@ class HierarchicalObjectStore(ObjectStore):
         super(HierarchicalObjectStore, self).__init__()
     
 
-def build_object_store_from_config(app):
+def build_object_store_from_config(config):
     """ Depending on the configuration setting, invoke the appropriate object store
     """
-    store = app.config.object_store
+    store = config.object_store
     if store == 'disk':
-        return DiskObjectStore(app=app)
+        return DiskObjectStore(config=config)
     elif store == 's3':
-        os.environ['AWS_ACCESS_KEY_ID'] = app.config.aws_access_key
-        os.environ['AWS_SECRET_ACCESS_KEY'] = app.config.aws_secret_key
-        return S3ObjectStore(app=app)
+        os.environ['AWS_ACCESS_KEY_ID'] = config.aws_access_key
+        os.environ['AWS_SECRET_ACCESS_KEY'] = config.aws_secret_key
+        return S3ObjectStore(config=config)
     elif store == 'hierarchical':
         return HierarchicalObjectStore()
 
