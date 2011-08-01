@@ -656,17 +656,17 @@ class HistoryField( BaseField ):
 class LibraryField( BaseField ):
     def __init__( self, name, value=None, trans=None ):
         self.name = name
-        self.ldda = value
+        self.lddas = value
         self.trans = trans
     def get_html( self, prefix="", disabled=False ):
-        if not self.ldda:
-            ldda = ""
-            text = "Choose a library dataset"
+        if not self.lddas:
+            ldda_ids = ""
+            text = "Select library dataset(s)"
         else:
-            ldda = self.trans.security.encode_id(self.ldda.id)
-            text = self.ldda.name
+            ldda_ids = "||".join( [ self.trans.security.encode_id( ldda.id ) for ldda in self.lddas ] )
+            text = "<br />".join( [ "%s. %s" % (i+1, ldda.name) for i, ldda in enumerate(self.lddas)] )
         return '<a href="javascript:void(0);" class="add-librarydataset">%s</a> \
-                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda), quote=True ) )
+                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda_ids), quote=True ) )
 
     def get_display_text(self):
         if self.ldda:

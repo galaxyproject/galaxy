@@ -79,12 +79,18 @@
                                 hide_modal();
                             },
                             "Select": function() {
+                                var names = [];
+                                var ids = [];
+                                counter = 1;
                                 $('input[name=ldda_ids]:checked').each(function() {
                                     var name = $.trim( $(this).siblings("div").find("a").text() );
                                     var id = $(this).val();
-                                    link.text(name);
-                                    link.siblings("input[type=hidden]").val(id);
+                                    names.push( counter + ". " + name );
+                                    counter += 1;
+                                    ids.push(id);
                                 });
+                                link.html( names.join("<br/>") );
+                                link.siblings("input[type=hidden]").val( ids.join("||") );
                                 hide_modal();
                             }
                         }

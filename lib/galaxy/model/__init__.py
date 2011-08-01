@@ -4,7 +4,9 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-
+import pkg_resources
+pkg_resources.require( "simplejson" )
+import simplejson
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
 from galaxy import util
@@ -1415,6 +1417,22 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             else:
                 return template.get_widgets( trans.user )
         return []
+    def templates_dict( self ):
+        """
+        Returns a dict of template info
+        """
+        template_data = {}
+        for temp_info in self.info_association:
+            template = temp_info.template
+            content = temp_info.info.content
+            tmp_dict = {}
+            for field in template.fields:
+                tmp_dict[field['label']] = content[field['name']]
+            template_data[template.name] = tmp_dict
+        return template_data
+    def templates_json( self ):
+        return simplejson.dumps( self.templates_dict() )
+        
     def get_display_name( self ):
         """
         LibraryDatasetDatasetAssociation name can be either a string or a unicode object.
