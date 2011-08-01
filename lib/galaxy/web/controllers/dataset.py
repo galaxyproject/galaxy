@@ -9,6 +9,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util import inflector
 from galaxy.model.item_attrs import *
 from galaxy.model import LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
+from galaxy.web.framework.helpers import to_unicode
 
 import pkg_resources; 
 pkg_resources.require( "Paste" )
@@ -405,6 +406,188 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             return trans.stream_template_mako( "/dataset/large_file.mako",
                                             truncated_data = open( data.file_name ).read(max_peek_size),
                                             data = data )
+
+    @web.expose
+    def edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
+        """Allows user to modify parameters of an HDA."""
+        message = None
+        status = 'done'
+        refresh_frames = []
+        error = False
+        def __ok_to_edit_metadata( dataset_id ):
+            #prevent modifying metadata when dataset is queued or running as input/output
+            #This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+            for job_to_dataset_association in trans.sa_session.query( self.app.model.JobToInputDatasetAssociation ) \
+                                                              .filter_by( dataset_id=dataset_id ) \
+                                                              .all() \
+                                            + trans.sa_session.query( self.app.model.JobToOutputDatasetAssociation ) \
+                                                              .filter_by( dataset_id=dataset_id ) \
+                                                              .all():
+                if job_to_dataset_association.job.state not in [ job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED ]:
+                    return False
+            return True
+        if hid is not None:
+            history = trans.get_history()
+            # TODO: hid handling
+            data = history.datasets[ int( hid ) - 1 ]
+            id = None
+        elif dataset_id is not None: 
+            id = trans.app.security.decode_id( dataset_id )
+            data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+        else:
+            trans.log_event( "dataset_id and hid are both None, cannot load a dataset to edit" )
+            return trans.show_error_message( "You must provide a history dataset id to edit" )
+        if data is None:
+            trans.log_event( "Problem retrieving dataset (encoded: %s, decoded: %s) with history id %s." % ( str( dataset_id ), str( id ), str( hid ) ) )
+            return trans.show_error_message( "History dataset id is invalid" )
+        if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
+            trans.log_event( "User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)" % ( dataset_id, id ) )
+            # Do not reveal the dataset's existence
+            return trans.show_error_message( "History dataset id is invalid" )
+        current_user_roles = trans.get_current_user_roles()
+        if data.history.user and not data.dataset.has_manage_permissions_roles( trans ):
+            # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
+            # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
+            # permission.  In this case, we'll reset this permission to the hda user's private role.
+            manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
+            permissions = { manage_permissions_action : [ trans.app.security_agent.get_private_user_role( data.history.user ) ] }
+            trans.app.security_agent.set_dataset_permission( data.dataset, permissions )        
+        if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+            if data.state == trans.model.Dataset.states.UPLOAD:
+                return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )
+            params = util.Params( kwd, sanitize=False )
+            if params.change:
+                # The user clicked the Save button on the 'Change data type' form
+                if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
+                    #prevent modifying datatype when dataset is queued or running as input/output
+                    if not __ok_to_edit_metadata( data.id ):
+                        message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
+                        error = True
+                    else:
+                        trans.app.datatypes_registry.change_datatype( data, params.datatype, set_meta = not trans.app.config.set_metadata_externally )
+                        trans.sa_session.flush()
+                        if trans.app.config.set_metadata_externally:
+                            trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
+                        message = "Changed the type of dataset '%s' to %s" % ( to_unicode( data.name ), params.datatype )
+                        refresh_frames=['history']
+                else:
+                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype )
+                    error = True
+            elif params.save:
+                # The user clicked the Save button on the 'Edit Attributes' form
+                data.name  = params.name
+                data.info  = params.info
+                message = ''
+                if __ok_to_edit_metadata( data.id ):
+                    # The following for loop will save all metadata_spec items
+                    for name, spec in data.datatype.metadata_spec.items():
+                        if spec.get("readonly"):
+                            continue
+                        optional = params.get("is_"+name, None)
+                        other = params.get("or_"+name, None)
+                        if optional and optional == 'true':
+                            # optional element... == 'true' actually means it is NOT checked (and therefore omitted)
+                            setattr(data.metadata, name, None)
+                        else:
+                            if other:
+                                setattr( data.metadata, name, other )
+                            else:
+                                setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
+                    data.datatype.after_setting_metadata( data )
+                    # Sanitize annotation before adding it.
+                    if params.annotation:
+                        annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
+                        self.add_item_annotation( trans.sa_session, trans.get_user(), data, annotation )
+                    # If setting metadata previously failed and all required elements have now been set, clear the failed state.
+                    if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
+                        data._state = None
+                    trans.sa_session.flush()
+                    message = "Attributes updated%s" % message
+                    refresh_frames=['history']
+                else:
+                    trans.sa_session.flush()
+                    message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
+                    status = "warning"
+                    refresh_frames=['history']
+            elif params.detect:
+                # The user clicked the Auto-detect button on the 'Edit Attributes' form
+                #prevent modifying metadata when dataset is queued or running as input/output
+                if not __ok_to_edit_metadata( data.id ):
+                    message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
+                    error = True
+                else:
+                    for name, spec in data.metadata.spec.items():
+                        # We need to be careful about the attributes we are resetting
+                        if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
+                            if spec.get( 'default' ):
+                                setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
+                    if trans.app.config.set_metadata_externally:
+                        message = 'Attributes have been queued to be updated'
+                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
+                    else:
+                        message = 'Attributes updated'
+                        data.set_meta()
+                        data.datatype.after_setting_metadata( data )
+                    trans.sa_session.flush()
+                    refresh_frames=['history']
+            elif params.convert_data:
+                target_type = kwd.get("target_type", None)
+                if target_type:
+                    message = data.datatype.convert_dataset(trans, data, target_type)
+                    refresh_frames=['history']
+            elif params.update_roles_button:
+                if not trans.user:
+                    return trans.show_error_message( "You must be logged in if you want to change permissions." )
+                if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
+                    access_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
+                    manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
+                    # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
+                    # need to ensure that they did not associate roles that would cause accessibility problems.
+                    permissions, in_roles, error, message = \
+                    trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, 'root', **kwd )
+                    if error:
+                        # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
+                        permissions[ access_action ] = data.dataset.get_access_roles( trans )
+                        status = 'error'
+                    else:
+                        error = trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
+                        if error:
+                            message += error
+                            status = 'error'
+                        else:
+                            message = 'Your changes completed successfully.'
+                    trans.sa_session.refresh( data.dataset )
+                else:
+                    message = "You are not authorized to change this dataset's permissions"
+                    error = True
+            else:
+                if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
+                    # Copy dbkey into metadata, for backwards compatability
+                    # This looks like it does nothing, but getting the dbkey
+                    # returns the metadata dbkey unless it is None, in which
+                    # case it resorts to the old dbkey.  Setting the dbkey
+                    # sets it properly in the metadata
+                    #### This is likely no longer required, since the dbkey exists entirely within metadata (the old_dbkey field is gone): REMOVE ME?
+                    data.metadata.dbkey = data.dbkey
+            # let's not overwrite the imported datatypes module with the variable datatypes?
+            # the built-in 'id' is overwritten in lots of places as well
+            ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
+            ldatatypes.sort()
+            all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset, 'root' )
+            if error:
+                status = 'error'
+            return trans.fill_template( "/dataset/edit_attributes.mako",
+                                        data=data,
+                                        data_annotation=self.get_item_annotation_str( trans.sa_session, trans.user, data ),
+                                        datatypes=ldatatypes,
+                                        current_user_roles=current_user_roles,
+                                        all_roles=all_roles,
+                                        message=message,
+                                        status=status,
+                                        dataset_id=dataset_id,
+                                        refresh_frames=refresh_frames )
+        else:
+            return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( dataset_id ) )
                         
     @web.expose
     @web.require_login( "see all available datasets" )
@@ -676,111 +859,190 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             return trans.fill_template_mako( "dataset/display_application/display.mako", msg = msg, display_app = display_app, display_link = display_link, refresh = refresh )
         return trans.show_error_message( 'You do not have permission to view this dataset at an external display application.' )
 
-    def _undelete( self, trans, id ):
+    def _delete( self, trans, dataset_id ):
+        message = None
+        status = 'done'
+        id = None
         try:
-            id = int( id )
-        except ValueError, e:
-            return False
-        history = trans.get_history()
-        data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
-        if data and data.undeletable:
+            id = trans.app.security.decode_id( dataset_id )
+            history = trans.get_history()
+            hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+            assert hda, 'Invalid HDA: %s' % id
             # Walk up parent datasets to find the containing history
-            topmost_parent = data
+            topmost_parent = hda
+            while topmost_parent.parent:
+                topmost_parent = topmost_parent.parent
+            assert topmost_parent in trans.history.datasets, "Data does not belong to current history"
+            # Mark deleted and cleanup
+            hda.mark_deleted()
+            hda.clear_associated_files()
+            trans.log_event( "Dataset id %s marked as deleted" % str(id) )
+            if hda.parent_id is None and len( hda.creating_job_associations ) > 0:
+                # Mark associated job for deletion
+                job = hda.creating_job_associations[0].job
+                if job.state in [ self.app.model.Job.states.QUEUED, self.app.model.Job.states.RUNNING, self.app.model.Job.states.NEW ]:
+                    # Are *all* of the job's other output datasets deleted?
+                    if job.check_if_output_datasets_deleted():
+                        job.mark_deleted( self.app.config.get_bool( 'enable_job_running', True ),
+                                          self.app.config.get_bool( 'track_jobs_in_database', False ) )
+                        self.app.job_manager.job_stop_queue.put( job.id )
+            trans.sa_session.flush()
+        except Exception, e:
+            msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
+            log.exception( msg )
+            trans.log_event( msg )
+            message = 'Dataset deletion failed'
+            status = 'error'
+        return ( message, status )
+
+    def _undelete( self, trans, dataset_id ):
+        message = None
+        status = 'done'
+        id = None
+        try:
+            id = trans.app.security.decode_id( dataset_id )
+            history = trans.get_history()
+            hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+            assert hda and hda.undeletable, 'Invalid HDA: %s' % id
+            # Walk up parent datasets to find the containing history
+            topmost_parent = hda
             while topmost_parent.parent:
                 topmost_parent = topmost_parent.parent
             assert topmost_parent in history.datasets, "Data does not belong to current history"
             # Mark undeleted
-            data.mark_undeleted()
+            hda.mark_undeleted()
             trans.sa_session.flush()
             trans.log_event( "Dataset id %s has been undeleted" % str(id) )
-            return True
-        return False
+        except Exception, e:
+            msg = 'HDA undeletion failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
+            log.exception( msg )
+            trans.log_event( msg )
+            message = 'Dataset undeletion failed'
+            status = 'error'
+        return ( message, status )
 
-    def _unhide( self, trans, id ):
+    def _unhide( self, trans, dataset_id ):
         try:
-            id = int( id )
-        except ValueError, e:
+            id = trans.app.security.decode_id( dataset_id )
+        except:
             return False
         history = trans.get_history()
-        data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
-        if data:
+        hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+        if hda:
             # Walk up parent datasets to find the containing history
-            topmost_parent = data
+            topmost_parent = hda
             while topmost_parent.parent:
                 topmost_parent = topmost_parent.parent
             assert topmost_parent in history.datasets, "Data does not belong to current history"
             # Mark undeleted
-            data.mark_unhidden()
+            hda.mark_unhidden()
             trans.sa_session.flush()
             trans.log_event( "Dataset id %s has been unhidden" % str(id) )
             return True
         return False
     
-    def _purge( self, trans, id ):
+    def _purge( self, trans, dataset_id ):
+        message = None
+        status = 'done'
         try:
-            id = int( id )
-        except ValueError, e:
-            return False
-        hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
-        # Invalid HDA or not deleted
-        if not hda or not hda.history or not hda.deleted:
-            return False
-        # If the user is anonymous, make sure the HDA is owned by the current session.
-        if not hda.history.user and trans.galaxy_session.id not in [ s.id for s in hda.history.galaxy_sessions ]:
-            return False
-        # If the user is known, make sure the HDA is owned by the current user.
-        if hda.history.user and hda.history.user != trans.user:
-            return False
-        # HDA is purgeable
-        hda.purged = True
-        trans.sa_session.add( hda )
-        trans.log_event( "HDA id %s has been purged" % hda.id )
-        # Don't delete anything if there are active HDAs or any LDDAs, even if
-        # the LDDAs are deleted.  Let the cleanup scripts get it in the latter
-        # case.
-        if hda.dataset.user_can_purge:
-            try:
-                hda.dataset.full_delete()
-                trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
-                trans.sa_session.add( hda.dataset )
-            except:
-                log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
-        trans.sa_session.flush()
-        return True
+            id = trans.app.security.decode_id( dataset_id )
+            history = trans.get_history()
+            user = trans.get_user()
+            hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+            # Invalid HDA
+            assert hda, 'Invalid history dataset ID'
+            # Walk up parent datasets to find the containing history
+            topmost_parent = hda
+            while topmost_parent.parent:
+                topmost_parent = topmost_parent.parent
+            assert topmost_parent in history.datasets, "Data does not belong to current history"
+            # If the user is anonymous, make sure the HDA is owned by the current session.
+            if not user:
+                assert trans.galaxy_session.id in [ s.id for s in hda.history.galaxy_sessions ], 'Invalid history dataset ID'
+            # If the user is known, make sure the HDA is owned by the current user.
+            else:
+                assert topmost_parent.history.user == trans.user, 'Invalid history dataset ID'
+            # HDA is not deleted
+            assert hda.deleted, 'History dataset is not marked as deleted'
+            # HDA is purgeable
+            # Decrease disk usage first
+            if user:
+                user.total_disk_usage -= hda.quota_amount( user )
+            # Mark purged
+            hda.purged = True
+            trans.sa_session.add( hda )
+            trans.log_event( "HDA id %s has been purged" % hda.id )
+            # Don't delete anything if there are active HDAs or any LDDAs, even if
+            # the LDDAs are deleted.  Let the cleanup scripts get it in the latter
+            # case.
+            if hda.dataset.user_can_purge:
+                try:
+                    hda.dataset.full_delete()
+                    trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                    trans.sa_session.add( hda.dataset )
+                except:
+                    log.exception( 'Unable to purge dataset (%s) on purge of HDA (%s):' % ( hda.dataset.id, hda.id ) )
+            trans.sa_session.flush()
+        except Exception, e:
+            msg = 'HDA purge failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
+            log.exception( msg )
+            trans.log_event( msg )
+            message = 'Dataset removal from disk failed'
+            status = 'error'
+        return ( message, status )
 
     @web.expose
-    def undelete( self, trans, id ):
-        if self._undelete( trans, id ):
-            return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
-        raise Exception( "Error undeleting" )
+    def delete( self, trans, dataset_id, filename, show_deleted_on_refresh = False ):
+        message, status = self._delete( trans, dataset_id )
+        return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted=show_deleted_on_refresh, message=message, status=status ) )
 
     @web.expose
-    def unhide( self, trans, id ):
-        if self._unhide( trans, id ):
+    def delete_async( self, trans, dataset_id, filename ):
+        message, status = self._delete( trans, dataset_id )
+        if status == 'done':
+            return "OK"
+        else:
+            raise Exception( message )
+
+    @web.expose
+    def undelete( self, trans, dataset_id, filename ):
+        message, status = self._undelete( trans, dataset_id )
+        return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True, message=message, status=status ) )
+
+    @web.expose
+    def undelete_async( self, trans, dataset_id, filename ):
+        message, status =self._undelete( trans, dataset_id )
+        if status == 'done':
+            return "OK"
+        else:
+            raise Exception( message )
+    
+    @web.expose
+    def unhide( self, trans, dataset_id, filename ):
+        if self._unhide( trans, dataset_id ):
             return trans.response.send_redirect( web.url_for( controller='root', action='history', show_hidden = True ) )
         raise Exception( "Error unhiding" )
 
     @web.expose
-    def undelete_async( self, trans, id ):
-        if self._undelete( trans, id ):
-            return "OK"
-        raise Exception( "Error undeleting" )
-    
-    @web.expose
-    def purge( self, trans, id ):
-        if not trans.app.config.allow_user_dataset_purge:
-            raise Exception( "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator." )
-        if self._purge( trans, id ):
-            return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted = True ) )
-        raise Exception( "Error removing disk file" )
+    def purge( self, trans, dataset_id, filename, show_deleted_on_refresh = False ):
+        if trans.app.config.allow_user_dataset_purge:
+            message, status = self._purge( trans, dataset_id )
+        else:
+            message = "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator."
+            status = 'error'
+        return trans.response.send_redirect( web.url_for( controller='root', action='history', show_deleted=show_deleted_on_refresh, message=message, status=status ) )
 
     @web.expose
-    def purge_async( self, trans, id ):
-        if not trans.app.config.allow_user_dataset_purge:
-            raise Exception( "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator." )
-        if self._purge( trans, id ):
+    def purge_async( self, trans, dataset_id, filename ):
+        if trans.app.config.allow_user_dataset_purge:
+            message, status = self._purge( trans, dataset_id )
+        else:
+            message = "Removal of datasets by users is not allowed in this Galaxy instance.  Please contact your Galaxy administrator."
+            status = 'error'
+        if status == 'done':
             return "OK"
-        raise Exception( "Error removing disk file" )
+        else:
+            raise Exception( message )
 
     @web.expose
     def show_params( self, trans, dataset_id=None, from_noframe=None, **kwd ):

@@ -22,6 +22,7 @@
             <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller,  webapp='community' )}">${_('Manage your information')}</a></li>
         %endif
     </ul>
+    <p>You are currently using <strong>${trans.user.get_disk_usage( nice_size=True )}</strong> of disk space in this Galaxy instance.</p>
 %else:
     %if not message:
         <p>${n_('You are currently not logged in.')}</p>

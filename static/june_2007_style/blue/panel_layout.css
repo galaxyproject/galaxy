@@ -1,4 +1,3 @@
-body,html{overflow:hidden;margin:0;padding:0;width:100%;height:100%;}
 body{font:75% "Lucida Grande",verdana,arial,helvetica,sans-serif;background:#eee;}
 .unselectable{user-select:none;-moz-user-select:none;-webkit-user-select:none;}
 #background{position:absolute;background:#eee;z-index:-1;top:0;left:0;margin:0;padding:0;width:100%;height:100%;}

@@ -1,34 +1,32 @@
 <tool id="assembly_stats" name="Assembly Statistics" version="1.0.0">
-  <description>Calculate common measures of assembly quality</description>
-  <command interpreter="python">
-    assembly_stats.py ${wiki} --minContigLength=${minLength} $input1 > $output1
-  </command>
-  <inputs>
-    <param name="input1" format="fasta" type="data" label="Select FASTA file containing contigs"/>
-    <param name="minLength" type="integer" value="0" label="Minimum length of contigs to consider"/>
-    <param name="wiki" type="boolean" 
-      checked="true" value="True"
-      truevalue="--outputFormat=wiki"
-      falsevalue="--noHeader --outputFormat=tsv"
-      label="Human-readable?" />
-  </inputs>
-  <outputs>
-    <data format="tabular" name="output1" label="Assembly statistics for ${on_string}"/>
-  </outputs>
-  <help>
+    <description>Calculate common measures of assembly quality</description>
+    <command interpreter="python">
+        assembly_stats.py $input1 $output1 --minContigLength=${minLength}
+    </command>
+    <inputs>
+        <param name="input1" format="fasta" type="data" label="Select FASTA file containing contigs"/>
+        <param name="minLength" type="integer" value="0" label="Minimum length of contigs to consider"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" label="Assembly statistics for ${on_string}"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="3.fasta" ftype="fasta"/>
+            <param name="minLength" value="100"/>
+            <output name="output1" ftype="tabular" file="assembly_stats.tabular" />
+        </test>
+    </tests>
+    <help>
 
 **What it does**
 
-Reports standard measures of *de novo* assembly quality such as 
-number of contigs, sum of contigs, mean contig length, and N50.
+Reports standard measures of *de novo* assembly quality such as number of contigs, sum of contigs, mean contig length, and N50.
 
 **Parameter list**
 
 Minimum length
     Only include contigs of this size or greater for calculating statistics.
-
-Human-readable?
-    If true, output the statistics in a wiki format which can be read by humans.  If false, output the metrics in a tab-delimited row.
 
 **Output**
 
@@ -50,7 +48,7 @@ N50
 99%
     Number of contigs accounting for 99% of the observed assembly.
 
-  </help>
+    </help>
 </tool>
 
 

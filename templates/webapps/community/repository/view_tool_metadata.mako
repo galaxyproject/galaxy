@@ -111,7 +111,7 @@
             </div>
             <div class="form-row">
                 <label>Command:</label>
-                ${tool.command}
+                <pre>${tool.command}</pre>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">

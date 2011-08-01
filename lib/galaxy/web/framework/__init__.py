@@ -471,6 +471,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
            - associate new session with user
            - if old session had a history and it was not associated with a user, associate it with the new session, 
              otherwise associate the current session's history with the user
+           - add the disk usage of the current session to the user's total disk usage
         """
         # Set the previous session
         prev_galaxy_session = self.galaxy_session
@@ -494,6 +495,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     # If the previous galaxy session had a history, associate it with the new
                     # session, but only if it didn't belong to a different user.
                     history = prev_galaxy_session.current_history
+                    if prev_galaxy_session.user is None:
+                        # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already own it.
+                        for hda in history.datasets:
+                            user.total_disk_usage += hda.quota_amount( user )
             elif self.galaxy_session.current_history:
                 history = self.galaxy_session.current_history
             if not history and \

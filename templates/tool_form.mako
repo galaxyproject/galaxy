@@ -2,12 +2,10 @@
 <%namespace file="/base_panels.mako" import="overlay" />
 
 <%def name="stylesheets()">
-    ${h.css( "autocomplete_tagging", "panel_layout", "base", "library" )}
+    ${h.css( "autocomplete_tagging", "base", "panel_layout", "library" )}
     <style type="text/css">
-        body, html {
-            overflow: auto;
-            width: auto;
-            height: auto;
+        html, body {
+            background-color: #fff;
         }
     </style>
 </%def>
@@ -81,12 +79,18 @@
                                 hide_modal();
                             },
                             "Select": function() {
+                                var names = [];
+                                var ids = [];
+                                counter = 1;
                                 $('input[name=ldda_ids]:checked').each(function() {
                                     var name = $.trim( $(this).siblings("div").find("a").text() );
                                     var id = $(this).val();
-                                    link.text(name);
-                                    link.siblings("input[type=hidden]").val(id);
+                                    names.push( counter + ". " + name );
+                                    counter += 1;
+                                    ids.push(id);
                                 });
+                                link.html( names.join("<br/>") );
+                                link.siblings("input[type=hidden]").val( ids.join("||") );
                                 hide_modal();
                             }
                         }

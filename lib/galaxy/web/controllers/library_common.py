@@ -246,12 +246,14 @@ class LibraryCommon( BaseController, UsesFormDefinitions ):
                                                               message=util.sanitize_text( message ),
                                                               status='done' ) )
         roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
+        all_roles = trans.app.security_agent.get_all_roles( trans, cntrller )
         return trans.fill_template( '/library/common/library_permissions.mako',
                                     cntrller=cntrller,
                                     use_panels=use_panels,
                                     library=library,
                                     current_user_roles=current_user_roles,
                                     roles=roles,
+                                    all_roles=all_roles,
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )

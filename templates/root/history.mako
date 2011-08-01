@@ -1,3 +1,5 @@
+<%namespace file="/message.mako" import="render_msg" />
+
 <% _=n_ %>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
@@ -105,6 +107,11 @@ function annotation_handling(parent_elt) {
     });
 };
 
+// Update the message for async operations
+function render_message(message, status) {
+    $("div#message-container").html( "<div class=\"" + status + "message\">" + message + "</div><br/>" );
+}
+
 $(function() {
     var historywrapper = $("div.historyItemWrapper");
     init_history_items(historywrapper);
@@ -115,8 +122,8 @@ $(function() {
             $(this).click( function() {
                 $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
                 $.ajax({
-                    url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { alert( "Delete failed" ); },
+                    url: "${h.url_for( controller='dataset', action='delete_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { render_message( "Dataset deletion failed", "error" ); },
                     success: function(msg) {
                         if (msg === "OK") {
                             %if show_deleted:
@@ -133,7 +140,7 @@ $(function() {
                             %endif
                             $(".tipsy").remove();
                         } else {
-                            alert( "Delete failed" );
+                            render_message( "Dataset deletion failed", "error" );
                         }
                     }
                 });
@@ -175,8 +182,8 @@ $(function() {
             $(this).click( function() {
                 $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
                 $.ajax({
-                    url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { alert( "Undelete failed" ) },
+                    url: "${h.url_for( controller='dataset', action='undelete_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { render_message( "Dataset undeletion failed", "error" ); },
                     success: function() {
                         var to_update = {};
                         to_update[data_id] = "none";
@@ -193,8 +200,8 @@ $(function() {
             $(this).click( function() {
                 $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
                 $.ajax({
-                    url: "${h.url_for( controller='dataset', action='purge_async', id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { alert( "Removal from disk failed" ) },
+                    url: "${h.url_for( controller='dataset', action='purge_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { render_message( "Dataset removal from disk failed", "error" ) },
                     success: function() {
                         var to_update = {};
                         to_update[data_id] = "none";
@@ -286,7 +293,7 @@ $(function() {
     
     // Updater
     updater(
-        ${ h.to_json_string( dict([(data.id, data.state) for data in reversed( datasets ) if data.visible and data.state not in TERMINAL_STATES]) ) }
+        ${ h.to_json_string( dict([(trans.app.security.encode_id(data.id), data.state) for data in reversed( datasets ) if data.visible and data.state not in TERMINAL_STATES]) ) }
     );
     
     // Navigate to a dataset.
@@ -339,11 +346,11 @@ var updater_callback = function ( tracked_datasets ) {
                     if ( val.force_history_refresh ){
                         force_history_refresh = true;
                     }
-                    delete tracked_datasets[ parseInt(id) ];
+                    delete tracked_datasets[id];
                     // When a dataset becomes terminal, check for changes in history disk size
                     check_history_size = true;
                 } else {
-                    tracked_datasets[ parseInt(id) ] = val.state;
+                    tracked_datasets[id] = val.state;
                 }
             });
             if ( force_history_refresh ) {
@@ -486,6 +493,12 @@ div.form-row {
     </div>
 %endif
 
+<div id="message-container">
+    %if message:
+        ${render_msg( message, status )}
+    %endif
+</div>
+
 %if not datasets:
 
     <div class="infomessagesmall" id="emptyHistoryMessage">
@@ -495,7 +508,7 @@ div.form-row {
     ## Render requested datasets, ordered from newest to oldest
     %for data in reversed( datasets ):
         %if data.visible or show_hidden:
-            <div class="historyItemContainer" id="historyItemContainer-${data.id}">
+            <div class="historyItemContainer" id="historyItemContainer-${trans.app.security.encode_id(data.id)}">
                 ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing = True )}
             </div>
         %endif

@@ -50,7 +50,7 @@
                 onActivate: function(dtnode) {
                     var cell = $("#file_contents");
                     var selected_value;
-                    if (dtnode.data.key == 'root') {
+                     if (dtnode.data.key == 'root') {
                         selected_value = "${repository.repo_path}/";
                     } else {
                         selected_value = dtnode.data.key;

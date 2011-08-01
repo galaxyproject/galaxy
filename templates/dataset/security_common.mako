@@ -1,11 +1,11 @@
-<%def name="render_select( current_actions, action_key, action, all_roles )">
+<%def name="render_select( current_actions, action_key, action, roles )">
     <%
         import sets
         in_roles = sets.Set()
         for a in current_actions:
             if a.action == action.action:
                 in_roles.add( a.role )
-        out_roles = filter( lambda x: x not in in_roles, all_roles )
+        out_roles = filter( lambda x: x not in in_roles, roles )
     %>
     <p>
         <b>${action.action}:</b> ${action.description}
@@ -37,7 +37,7 @@
 </%def>
 
 ## Any permission ( e.g., 'DATASET_ACCESS' ) included in the do_not_render param will not be rendered on the page.
-<%def name="render_permission_form( obj, obj_name, form_url, all_roles, do_not_render=[] )">
+<%def name="render_permission_form( obj, obj_name, form_url, roles, do_not_render=[], all_roles=[] )">
     <%
         if isinstance( obj, trans.app.model.User ):
             current_actions = obj.default_permissions
@@ -109,7 +109,14 @@
                 %for k, v in permitted_actions:
                     %if k not in do_not_render:
                         <div class="form-row">
-                            ${render_select( current_actions, k, v, all_roles )}
+                            # LIBRARY_ACCESS is a special case because we need to render all roles instead of
+                            # roles derived from the roles associated with LIBRARY_ACCESS.
+                            <% render_all_roles = k == 'LIBRARY_ACCESS' %>
+                            %if render_all_roles:
+                                ${render_select( current_actions, k, v, all_roles )}
+                            %else:
+                                ${render_select( current_actions, k, v, roles )}
+                            %endif
                         </div>
                     %endif
                 %endfor
