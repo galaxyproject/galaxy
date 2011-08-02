@@ -109,8 +109,8 @@
                 %for k, v in permitted_actions:
                     %if k not in do_not_render:
                         <div class="form-row">
-                            # LIBRARY_ACCESS is a special case because we need to render all roles instead of
-                            # roles derived from the roles associated with LIBRARY_ACCESS.
+                            ## LIBRARY_ACCESS is a special case because we need to render all roles instead of
+                            ## roles derived from the roles associated with LIBRARY_ACCESS.
                             <% render_all_roles = k == 'LIBRARY_ACCESS' %>
                             %if render_all_roles:
                                 ${render_select( current_actions, k, v, all_roles )}
