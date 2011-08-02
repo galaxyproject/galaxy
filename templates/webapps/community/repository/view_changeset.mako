@@ -13,6 +13,7 @@
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_view_change_log = not is_new
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     if can_push:
         browse_label = 'Browse or delete repository files'
     else:
@@ -59,9 +60,11 @@
         %if can_browse_contents:
             <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
         %endif
-        <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-        <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-        <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+        %if can_download:
+            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+        %endif
     </div>
 </ul>
 
@@ -69,18 +72,26 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">${repository.name}</div>
-    <div class="toolFormBody">
-        <div class="form-row">
-            <label>Clone this repository:</label>
-            ${render_clone_str( repository )}
+%if can_download:
+    <div class="toolForm">
+        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormBody">
+            <div class="form-row">
+                <label>Clone this repository:</label>
+                ${render_clone_str( repository )}
+            </div>
         </div>
     </div>
-</div>
-<p/>
+    <p/>
+%endif
 <div class="toolForm">
-    <div class="toolFormTitle">Changeset ${ctx}</div>
+    <%
+        if can_download:
+            title_str = 'Changeset %s' % ctx
+        else:
+            title_str = '%s changeset %s' % ( repository.name, ctx )
+    %>
+    <div class="toolFormTitle">${title_str}</div>
     <div class="toolFormBody">
         <table class="grid">
             %if modified:
@@ -155,14 +166,19 @@
             %endif
             %for diff in diffs:
                 <%
-                    # Read the first line of diff
-                    line = diff.split( '\n' )[0]
+                    # Read at most the first 10 lines of diff to determine the anchor
+                    ctr = 0
+                    lines = diff.split( '\n' )
                     diff = diff.replace( '\n', '<br/>' )
                     anchor_str = ''
-                    for anchor in anchors:
-                        if line.find( anchor ) >= 0:
-                            anchor_str = '<a name="%s">%s</a>' % ( anchor, anchor )
+                    for line in lines:
+                        if ctr > 9:
                             break
+                        for anchor in anchors:
+                            if line.find( anchor ) >= 0:
+                                anchor_str = '<a name="%s">%s</a>' % ( anchor, anchor )
+                                break
+                        ctr += 1
                 %>
                 <tr><td bgcolor="#E0E0E0">${anchor_str}</td></tr>
                 <tr><td>${diff}</td></tr>

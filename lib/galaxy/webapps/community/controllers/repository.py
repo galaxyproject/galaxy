@@ -427,10 +427,12 @@ class RepositoryController( BaseController, ItemRatings ):
         current_working_dir = os.getcwd()
         # Update repository files for browsing.
         update_for_browsing( trans, repository, current_working_dir, commit_message=commit_message )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -506,10 +508,12 @@ class RepositoryController( BaseController, ItemRatings ):
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -550,6 +554,13 @@ class RepositoryController( BaseController, ItemRatings ):
             metadata = repository_metadata.metadata
         else:
             metadata = None
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
+        if is_malicious:
+            if trans.app.security_agent.can_push( trans.user, repository ):
+                message += malicious_error_can_push
+            else:
+                message += malicious_error
+            status = 'error'
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -558,6 +569,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -669,8 +681,17 @@ class RepositoryController( BaseController, ItemRatings ):
         repository_metadata = get_repository_metadata( trans, id, repository.tip )
         if repository_metadata:
             metadata = repository_metadata.metadata
+            is_malicious = repository_metadata.malicious
         else:
             metadata = None
+            is_malicious = False
+        if is_malicious:
+            if trans.app.security_agent.can_push( trans.user, repository ):
+                message += malicious_error_can_push
+            else:
+                message += malicious_error
+            status = 'error'
+        malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
         categories = get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
@@ -688,6 +709,8 @@ class RepositoryController( BaseController, ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
+                                    malicious_check_box=malicious_check_box,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -713,9 +736,11 @@ class RepositoryController( BaseController, ItemRatings ):
                             'parent' : ctx.parents()[0] }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/view_changelog.mako', 
                                     repository=repository,
                                     changesets=changesets,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -740,6 +765,7 @@ class RepositoryController( BaseController, ItemRatings ):
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( self.to_html_escaped( diff ) )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
                                     repository=repository,
                                     ctx=ctx,
@@ -752,6 +778,7 @@ class RepositoryController( BaseController, ItemRatings ):
                                     ignored=ignored,
                                     clean=clean,
                                     diffs=diffs,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -781,12 +808,14 @@ class RepositoryController( BaseController, ItemRatings ):
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
+        is_malicious = change_set_is_malicious( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
                                     repository=repository,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     rra=rra,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose
@@ -829,12 +858,27 @@ class RepositoryController( BaseController, ItemRatings ):
     @web.expose
     @web.require_login( "set repository metadata" )
     def set_metadata( self, trans, id, ctx_str, **kwd ):
-        message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
-        if not message:
-            message = "Metadata for change set revision '%s' has been reset." % str( ctx_str )
+        malicious = kwd.get( 'malicious', '' )
+        if kwd.get( 'malicious_button', False ):
+            repository_metadata = get_repository_metadata( trans, id, ctx_str )
+            malicious_checked = CheckboxField.is_checked( malicious )
+            repository_metadata.malicious = malicious_checked
+            trans.sa_session.add( repository_metadata )
+            trans.sa_session.flush()
+            if malicious_checked:
+                message = "The repository tip has been defined as malicious."
+            else:
+                message = "The repository tip has been defined as <b>not</b> malicious."
+            status = 'done'
+        else:
+            # The set_metadata_button was clicked
+            message, status = set_repository_metadata( trans, id, ctx_str, **kwd )
+            if not message:
+                message = "Metadata for change set revision '%s' has been reset." % str( ctx_str )
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
                                                           id=id,
+                                                          malicious=malicious,
                                                           message=message,
                                                           status=status ) )
     @web.expose
@@ -903,12 +947,14 @@ class RepositoryController( BaseController, ItemRatings ):
                                                                   id=repository_id,
                                                                   message=message,
                                                                   status=status ) )
+        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/add_tool_data_table_entry.mako', 
                                     name_attr=name_attr,
                                     repository=repository,
                                     comment_char=comment_char,
                                     loc_filename=loc_filename,
                                     column_fields=column_fields,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     def __get_column_fields( self, **kwd ):
@@ -938,10 +984,12 @@ class RepositoryController( BaseController, ItemRatings ):
         try:
             tool = load_tool( trans, os.path.abspath( tool_config ) )
             tool_state = self.__new_state( trans )
+            is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
                                         repository=repository,
                                         tool=tool,
                                         tool_state=tool_state,
+                                        is_malicious=is_malicious,
                                         message=message,
                                         status=status )
         except Exception, e:
@@ -977,10 +1025,12 @@ class RepositoryController( BaseController, ItemRatings ):
                     metadata = tool_metadata_dict
                     tool = load_tool( trans, os.path.abspath( metadata[ 'tool_config' ] ) )
                     break
+        is_malicious = change_set_is_malicious( trans, repository_id, repository.tip )
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
                                     metadata=metadata,
+                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
     @web.expose

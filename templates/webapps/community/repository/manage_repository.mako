@@ -8,6 +8,7 @@
     is_new = repository.is_new
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
     can_set_metadata = not is_new
     can_rate = not is_new and trans.user and repository.user != trans.user
@@ -80,6 +81,8 @@
             %endif
             %if can_browse_contents:
                 <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+            %endif
+            %if can_download:
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
@@ -96,10 +99,12 @@
     <div class="toolFormTitle">${repository.name}</div>
     <div class="toolFormBody">
         <form name="edit_repository" id="edit_repository" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
-            <div class="form-row">
-                <label>Clone this repository:</label>
-                ${render_clone_str( repository )}
-            </div>
+            %if can_download:
+                <div class="form-row">
+                    <label>Clone this repository:</label>
+                    ${render_clone_str( repository )}
+                </div>
+            %endif
             <div class="form-row">
                 <label>Name:</label>
                 <input name="repo_name" type="textfield" value="${repo_name}" size="40"/>
@@ -304,7 +309,7 @@
 %endif
 <p/>
 <div class="toolForm">
-    <div class="toolFormTitle">User access</div>
+    <div class="toolFormTitle">Grant authority to upload or push changes</div>
     <div class="toolFormBody">
         <table class="grid">
             <tr>
@@ -390,6 +395,27 @@
                     <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=True )}"><label>Display Reviews</label></a>
                 </div>
             %endif
+        </div>
+    </div>
+%endif
+<p/>
+%if not is_new and trans.user_is_admin():
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Malicious repository tip</div>
+        <div class="toolFormBody">
+            <form name="malicious" id="malicious" action="${h.url_for( controller='repository', action='set_metadata', id=trans.security.encode_id( repository.id ), ctx_str=repository.tip )}" method="post">
+                <div class="form-row">
+                    <label>Define repository tip as malicious:</label>
+                    ${malicious_check_box.get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        Check the box and click <b>Save</b> to define this repository's tip as malicious, restricting it from being download-able.
+                    </div>
+                </div>
+                <div class="form-row">
+                    <input type="submit" name="malicious_button" value="Save"/>
+                </div>
+            </form>
         </div>
     </div>
 %endif

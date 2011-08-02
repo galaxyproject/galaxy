@@ -12,6 +12,7 @@
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_rate = trans.user and repository.user != trans.user
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     if can_push:
         browse_label = 'Browse or delete repository files'
     else:
@@ -55,9 +56,11 @@
         %if can_browse_contents:
             <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
         %endif
-        <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
-        <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-        <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+        %if can_download:
+            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
+        %endif
     </div>
 </ul>
 
@@ -65,18 +68,26 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">${repository.name}</div>
-    <div class="toolFormBody">
-        <div class="form-row">
-            <label>Clone this repository:</label>
-            ${render_clone_str( repository )}
+%if can_download:
+    <div class="toolForm">
+        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormBody">
+            <div class="form-row">
+                <label>Clone this repository:</label>
+                ${render_clone_str( repository )}
+            </div>
         </div>
     </div>
-</div>
-<p/>
+    <p/>
+%endif
 <div class="toolForm">
-    <div class="toolFormTitle">Changesets</div>
+    <%
+        if can_download:
+            title_str = 'Changesets'
+        else:
+            title_str = '%s changesets' % repository.name
+    %>
+    <div class="toolFormTitle">${title_str}</div>
     <% test_date = None %>
     <div class="toolFormBody">
         <table class="grid">

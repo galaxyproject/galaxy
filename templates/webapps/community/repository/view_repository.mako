@@ -9,6 +9,7 @@
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_rate = not is_new and trans.user and repository.user != trans.user
     can_upload = can_push
+    can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
     can_view_change_log = not is_new
     if can_push:
@@ -79,6 +80,8 @@
             %endif
             %if can_browse_contents:
                 <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+            %endif
+            %if can_download:
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='gz' )}">Download as a .tar.gz file</a>
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), file_type='zip' )}">Download as a zip file</a>
@@ -94,10 +97,12 @@
 <div class="toolForm">
     <div class="toolFormTitle">${repository.name}</div>
     <div class="toolFormBody">
-        <div class="form-row">
-            <label>Clone this repository:</label>
-            ${render_clone_str( repository )}
-        </div>
+        %if can_download:
+            <div class="form-row">
+                <label>Clone this repository:</label>
+                ${render_clone_str( repository )}
+            </div>
+        %endif
         <div class="form-row">
             <label>Name:</label>
             %if can_browse_contents:

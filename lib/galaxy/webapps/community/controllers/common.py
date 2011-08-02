@@ -33,6 +33,9 @@ This change alert was sent from the Galaxy tool shed hosted on the server
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
+malicious_error = "  This changeset cannot be downloaded because it potentially produces malicious behavior or contains inappropriate content."
+malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
+
 class ItemRatings( UsesItemRatings ):
     """Overrides rate_item method since we also allow for comments"""
     def rate_item( self, trans, user, item, rating, comment='' ):
@@ -263,6 +266,12 @@ def get_change_set( trans, repo, change_set_revision, **kwd ):
         if str( ctx ) == change_set_revision:
             return ctx
     return None
+def change_set_is_malicious( trans, id, change_set_revision, **kwd ):
+    """Check the malicious flag in repository metadata for a specified change set"""
+    repository_metadata = get_repository_metadata( trans, id, change_set_revision )
+    if repository_metadata:
+        return repository_metadata.malicious
+    return False
 def copy_sample_loc_file( trans, filename ):
     """Copy xxx.loc.sample to ~/tool-data/xxx.loc"""
     sample_loc_file = os.path.split( filename )[1]
