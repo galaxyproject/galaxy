@@ -2021,7 +2021,8 @@ extend(TiledTrack.prototype, Track.prototype, {
         var tile_index = Math.floor( low / resolution / DENSITY );
         // A list of tiles drawn/retrieved.
         var drawn_tiles = [];
-        var tile_count = 0
+        var tile_count = 0;
+        // Draw or fetch and show tiles.
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
             var key = gen_key(width, w_scale, tile_index);
@@ -2029,7 +2030,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             var tile_low = tile_index * DENSITY * this.view.resolution;
             var tile_high = tile_low + DENSITY * this.view.resolution;
             if (!force && cached) {
-                drawn_tiles[drawn_tiles.length] = cached;
+                drawn_tiles.push(cached);
                 this.show_tile(cached, parent_element, w_scale);
             } else {
                 this.delayed_draw(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles);
@@ -2039,128 +2040,14 @@ extend(TiledTrack.prototype, Track.prototype, {
         }
                 
         //
-        // Post-draw actions:
+        // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         //
         var track = this;
         var intervalId = setInterval(function() {
             if (drawn_tiles.length === tile_count) {
                 // All tiles have been drawn.
                 clearInterval(intervalId);
-                
-                // Clear tiles?
-                if (clear_after) {
-                    // Clear out track content in order to show the most recent content.
-                    // Most recent content is the div with children (tiles) most recently appended to track.
-                    // However, do not delete recently-appended empty content as calls to draw() may still be active
-                    // and using these divs.
-                    var track_content = track.content_div.children();
-                    var remove = false;
-                    for (var i = track_content.length-1, len = 0; i >= len; i--) {
-                        var child = $(track_content[i]);
-                        if (remove) {
-                            child.remove();
-                        }
-                        else if (child.children().length !== 0) {
-                            // Found most recent content with tiles: set remove to start removing old elements.
-                            remove = true;
-                        }
-                    }
-                }
-                
-                //
-                // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
-                //
-                // HACK: use track type b/c LineTrack histograms are different; what's needed is different
-                // post-draw actions for different line tracks.
-                if (track instanceof FeatureTrack && track.mode == "Histogram") {
-                    // Get global max.
-                    var global_max = -1;
-                    for (var i = 0; i < drawn_tiles.length; i++) {
-                        var cur_max = drawn_tiles[i].max_val;
-                        if (cur_max > global_max) {
-                            global_max = cur_max;
-                        }
-                    }
-                    
-                    for (var i = 0; i < drawn_tiles.length; i++) {
-                        if (drawn_tiles[i].max_val !== global_max) {
-                            var tile = drawn_tiles[i];
-                            tile.canvas.remove();
-                            track.delayed_draw(true, gen_key(width, w_scale, tile.index), tile.index, 
-                                               tile.resolution, parent_element, w_scale, [], { max: global_max });
-                        }
-                    }
-                }                
-                
-                //
-                // Update filter attributes, UI.
-                //
-
-                // Update filtering UI.
-                if (track.filters_manager) {
-                    var filters = track.filters_manager.filters;
-                    for (var f = 0; f < filters.length; f++) {
-                        filters[f].update_ui_elt();
-                    }
-
-                    // Determine if filters are available; this is based on the tiles' data.
-                    var filters_available = false,
-                        example_feature;
-                    for (var i = 0; i < drawn_tiles.length; i++) {
-                        if (drawn_tiles[i].data.length) {
-                            example_feature = drawn_tiles[i].data[0];
-                            for (var f = 0; f < filters.length; f++) {
-                                if (filters[f].applies_to(example_feature)) {
-                                    filters_available = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    // If filter availability changed, hide filter div if necessary and update menu.
-                    if (track.filters_available !== filters_available) {
-                        track.filters_available = filters_available;
-                        if (!track.filters_available) {
-                            track.filters_div.hide();
-                        }
-                        track.make_name_popup_menu();
-                    }
-                }
-                
-                //
-                // If some tiles have messages, set padding of tiles without messages
-                // so features and rows align.
-                //
-                var messages_to_show = false;
-                for (var tile_index = 0; tile_index < drawn_tiles.length; tile_index++) {
-                    if (drawn_tiles[tile_index].message) {
-                        messages_to_show = true;
-                        break;
-                    }
-                }
-                if (messages_to_show) {
-                    for (var tile_index = 0; tile_index < drawn_tiles.length; tile_index++) {
-                        tile = drawn_tiles[tile_index];
-                        if (!tile.message) {
-                            // Need to align with other tile(s) that have message(s).
-                            tile.canvas.css("padding-top", ERROR_PADDING);
-                        }
-                    }
-                }
-                
-                // Store initial canvas in case we need to use it for overview
-                /* This is completely broken, just saves the first tile it sees
-                   regardless of if it should be the overview
-                if (!track.initial_canvas && !window.G_vmlCanvasManager) {
-                    track.initial_canvas = $(tile_element).clone();
-                    var src_ctx = tile_element.get(0).getContext("2d");
-                    var tgt_ctx = track.initial_canvas.get(0).getContext("2d");
-                    var data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
-                    tgt_ctx.putImageData(data, 0, 0);
-                    track.set_overview();
-                }
-                */                
+                track.postdraw_actions(drawn_tiles, clear_after);       
             }
         }, 50);
              
@@ -2170,7 +2057,51 @@ extend(TiledTrack.prototype, Track.prototype, {
         for (var i = 0; i < this.child_tracks.length; i++) {
             this.child_tracks[i].draw(force, clear_after);
         }
-    }, 
+    },
+    /**
+     * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
+     * drawn/fetched and shown.
+     */
+    postdraw_actions: function(tiles, clear_after) {
+        var track = this;
+                                
+        //
+        // If some tiles have messages, set padding of tiles without messages
+        // so features and rows align.
+        //
+        var messages_to_show = false;
+        for (var tile_index = 0; tile_index < tiles.length; tile_index++) {
+            if (tiles[tile_index].message) {
+                messages_to_show = true;
+                break;
+            }
+        }
+        if (messages_to_show) {
+            for (var tile_index = 0; tile_index < tiles.length; tile_index++) {
+                tile = tiles[tile_index];
+                if (!tile.message) {
+                    // Need to align with other tile(s) that have message(s).
+                    tile.canvas.css("padding-top", ERROR_PADDING);
+                }
+            }
+        }
+        
+        // Store initial canvas in case we need to use it for overview
+        /* This is completely broken, just saves the first tile it sees
+           regardless of if it should be the overview
+        if (!track.initial_canvas && !window.G_vmlCanvasManager) {
+            track.initial_canvas = $(tile_element).clone();
+            var src_ctx = tile_element.get(0).getContext("2d");
+            var tgt_ctx = track.initial_canvas.get(0).getContext("2d");
+            var data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
+            tgt_ctx.putImageData(data, 0, 0);
+            track.set_overview();
+        }
+        */
+    },
+    /**
+     * Do actual tile drawing.
+     */ 
     delayed_draw: function(force, key, tile_index, resolution, parent_element, w_scale, drawn_tiles, more_tile_data) {
         var track = this,
             tile_low = tile_index * DENSITY * resolution,
@@ -2187,7 +2118,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 return;
             }
             track.show_tile(tile, parent_element, w_scale);
-            drawn_tiles[drawn_tiles.length] = tile;
+            drawn_tiles.push(tile);
         };
         // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
         var id = setTimeout(function() {
@@ -2196,7 +2127,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                 var tile = (force ? undefined : track.tile_cache.get(key));
                 if (tile) { 
                     track.show_tile(tile, parent_element, w_scale);
-                    drawn_tiles[drawn_tiles.length] = tile;
+                    drawn_tiles.push(tile);
                 }
                 else {
                     //
@@ -2585,6 +2516,94 @@ var FeatureTrack = function(name, view, hda_ldda, dataset_id, prefs, filters, to
     this.painter = painters.LinkedFeaturePainter;
 };
 extend(FeatureTrack.prototype, TiledTrack.prototype, {
+    /**
+     * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
+     * drawn/fetched and shown.
+     */
+    postdraw_actions: function(tiles, clear_after) {
+        TiledTrack.prototype.postdraw_actions.call(this, tiles, clear_after);
+        
+        var track = this;
+        
+        // Clear tiles?
+        if (clear_after) {
+            // Clear out track content in order to show the most recent content.
+            // Most recent content is the div with children (tiles) most recently appended to track.
+            // However, do not delete recently-appended empty content as calls to draw() may still be active
+            // and using these divs.
+            var track_content = track.content_div.children();
+            var remove = false;
+            for (var i = track_content.length-1, len = 0; i >= len; i--) {
+                var child = $(track_content[i]);
+                if (remove) {
+                    child.remove();
+                }
+                else if (child.children().length !== 0) {
+                    // Found most recent content with tiles: set remove to start removing old elements.
+                    remove = true;
+                }
+            }
+        }
+        
+        //
+        // If mode is Histogram and tiles do not share max, redraw tiles as necessary using new max.
+        //
+        if (track.mode == "Histogram") {
+            // Get global max.
+            var global_max = -1;
+            for (var i = 0; i < tiles.length; i++) {
+                var cur_max = tiles[i].max_val;
+                if (cur_max > global_max) {
+                    global_max = cur_max;
+                }
+            }
+            
+            for (var i = 0; i < tiles.length; i++) {
+                if (tiles[i].max_val !== global_max) {
+                    var tile = tiles[i];
+                    tile.canvas.remove();
+                    track.delayed_draw(true, gen_key(width, w_scale, tile.index), tile.index, 
+                                       tile.resolution, parent_element, w_scale, [], { max: global_max });
+                }
+            }
+        }                
+        
+        //
+        // Update filter attributes, UI.
+        //
+
+        // Update filtering UI.
+        if (track.filters_manager) {
+            var filters = track.filters_manager.filters;
+            for (var f = 0; f < filters.length; f++) {
+                filters[f].update_ui_elt();
+            }
+
+            // Determine if filters are available; this is based on the tiles' data.
+            var filters_available = false,
+                example_feature;
+            for (var i = 0; i < tiles.length; i++) {
+                if (tiles[i].data.length) {
+                    example_feature = tiles[i].data[0];
+                    for (var f = 0; f < filters.length; f++) {
+                        if (filters[f].applies_to(example_feature)) {
+                            filters_available = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If filter availability changed, hide filter div if necessary and update menu.
+            if (track.filters_available !== filters_available) {
+                track.filters_available = filters_available;
+                if (!track.filters_available) {
+                    track.filters_div.hide();
+                }
+                track.make_name_popup_menu();
+            }
+        }
+    },
     update_auto_mode: function( mode ) {
         if ( this.mode == "Auto" ) {
             if ( mode == "no_detail" ) {
