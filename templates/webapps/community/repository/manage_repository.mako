@@ -5,6 +5,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
+    is_admin = trans.user_is_admin()
     is_new = repository.is_new
     can_push = trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
@@ -17,6 +18,7 @@
         browse_label = 'Browse or delete repository files'
     else:
         browse_label = 'Browse repository files'
+    can_set_malicious = metadata and can_set_metadata and is_admin
 %>
 
 <%!
@@ -140,7 +142,7 @@
                 <label>Times downloaded:</label>
                 ${repository.times_downloaded}
             </div>
-            %if trans.user_is_admin():
+            %if is_admin:
                 <div class="form-row">
                     <label>Location:</label>
                     ${repository.repo_path}
@@ -399,7 +401,7 @@
     </div>
 %endif
 <p/>
-%if not is_new and trans.user_is_admin():
+%if can_set_malicious:
     <p/>
     <div class="toolForm">
         <div class="toolFormTitle">Malicious repository tip</div>
