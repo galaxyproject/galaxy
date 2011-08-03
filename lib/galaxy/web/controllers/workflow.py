@@ -400,7 +400,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     def rename_async( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name:
-            stored.name = new_name
+            san_new_name = sanitize_html( new_name )
+            stored.name = san_new_name
+            stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             return stored.name
             
