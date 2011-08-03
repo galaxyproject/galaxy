@@ -117,6 +117,24 @@ def expose_api( func ):
                 return error
         trans.response.set_content_type( "application/json" )
         trans.set_user( provided_key.user )
+# Perform api_run_as processing, possibly changing identity
+        if 'run_as' in kwargs:
+            if not trans.user_can_do_run_as():
+                error_message = 'User does not have permissions to run jobs as another user'
+                return error
+            try:
+                decoded_user_id = trans.security.decode_id( kwargs['run_as'] )
+            except TypeError:
+                trans.response.status = 400
+                return "Malformed user id ( %s ) specified, unable to decode." % str( kwargs['run_as'] )
+            try:
+                user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
+                trans.api_inherit_admin = trans.user_is_admin()
+                trans.set_user(user)
+            except:
+                trans.response.status = 400
+                return "That user does not exist."
+
         if trans.debug:
             return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
         else:
@@ -128,13 +146,13 @@ def expose_api( func ):
 
 def require_admin( func ):
     def decorator( self, trans, *args, **kwargs ):
-        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
-        if not admin_users:
-            return trans.show_error_message( "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration." )
-        user = trans.get_user()
-        if not user:
-            return trans.show_error_message( "You must be logged in as an administrator to access this feature." )
-        if not user.email in admin_users:
+        if not trans.user_is_admin():
+            admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+            if not admin_users:
+                return trans.show_error_message( "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration." )
+            user = trans.get_user()
+            if not user:
+                return trans.show_error_message( "You must be logged in as an administrator to access this feature." )
             return trans.show_error_message( "You must be an administrator to access this feature." )
         return func( self, trans, *args, **kwargs )
     return decorator
@@ -197,6 +215,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
+        # Flag indicating whether this is an API call and the API key user is an administrator
+        self.api_inherit_admin = False
     def setup_i18n( self ):
         locales = []
         if 'HTTP_ACCEPT_LANGUAGE' in self.environ:
@@ -593,8 +613,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             roles = []
         return roles
     def user_is_admin( self ):
+        if self.api_inherit_admin:
+            return True
         admin_users = self.app.config.get( "admin_users", "" ).split( "," )
         return self.user and admin_users and self.user.email in admin_users
+    def user_can_do_run_as( self ):
+        run_as_users = self.app.config.get( "api_allow_run_as", "" ).split( "," )
+        return self.user and run_as_users and self.user.email in run_as_users
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
