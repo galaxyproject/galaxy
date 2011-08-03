@@ -83,7 +83,7 @@
                                 var ids = [];
                                 counter = 1;
                                 $('input[name=ldda_ids]:checked').each(function() {
-                                    var name = $.trim( $(this).siblings("div").find("a").text() );
+                                    var name = $.trim( $(this).siblings("label").text() );
                                     var id = $(this).val();
                                     names.push( counter + ". " + name );
                                     counter += 1;
