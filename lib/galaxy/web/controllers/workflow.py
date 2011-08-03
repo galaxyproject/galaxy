@@ -380,7 +380,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     def rename( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name is not None:
-            stored.name = sanitize_html( new_name )
+            san_new_name = sanitize_html( new_name )
+            stored.name = san_new_name
+            stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             # For current workflows grid:
             trans.set_message ( "Workflow renamed to '%s'." % new_name )
