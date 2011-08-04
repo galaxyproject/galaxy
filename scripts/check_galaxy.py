@@ -200,7 +200,7 @@ class Browser:
         tc.fv("1", "email", user)
         tc.fv("1", "password", pw)
         tc.fv("1", "confirm", pw)
-        tc.submit("Create")
+        tc.submit("Submit")
         tc.code(200)
         if len(tc.get_browser().get_all_forms()) > 0:
             p = userParser()
@@ -271,7 +271,7 @@ class Browser:
         p.feed(tc.browser.get_html())
         dids = p.dids
         for did in dids:
-            self.get("/root/delete?id=%s" % did)
+            self.get("/datasets/%s/delete" % did)
 
     def check_if_logged_in(self):
         self.get("/user?cntrller=user")
@@ -283,15 +283,20 @@ class userParser(htmllib.HTMLParser):
     def __init__(self):
         htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
         self.in_span = False
+        self.in_div = False
         self.no_user = False
         self.bad_pw = False
         self.already_exists = False
     def start_span(self, attrs):
         self.in_span = True
+    def start_div(self, attrs):
+        self.in_div = True
     def end_span(self):
         self.in_span = False
+    def end_div(self):
+        self.in_div = False
     def handle_data(self, data):
-        if self.in_span:
+        if self.in_span or self.in_div:
             if data == "No such user (please note that login is case sensitive)":
                 self.no_user = True
             elif data == "Invalid password":
