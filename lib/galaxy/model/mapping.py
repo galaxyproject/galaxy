@@ -197,6 +197,37 @@ Role.table = Table( "role", metadata,
     Column( "type", String( 40 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
+UserQuotaAssociation.table = Table( "user_quota_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "quota_id", Integer, ForeignKey( "quota.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+GroupQuotaAssociation.table = Table( "group_quota_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "quota_id", Integer, ForeignKey( "quota.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+Quota.table = Table( "quota", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", String( 255 ), index=True, unique=True ),
+    Column( "description", TEXT ),
+    Column( "bytes", Integer ),
+    Column( "operation", String( 8 ) ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+DefaultQuotaAssociation.table = Table( "default_quota_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "type", String( 32 ), index=True, unique=True ),
+    Column( "quota_id", Integer, ForeignKey( "quota.id" ), index=True ) )
+
 DatasetPermissions.table = Table( "dataset_permissions", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1250,6 +1281,21 @@ assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
         role=relation( Role )
     )
 )
+
+assign_mapper( context, Quota, Quota.table,
+    properties=dict( users=relation( UserQuotaAssociation ),
+                     groups=relation( GroupQuotaAssociation ) ) )
+
+assign_mapper( context, UserQuotaAssociation, UserQuotaAssociation.table,
+    properties=dict( user=relation( User, backref="quotas" ),
+                     quota=relation( Quota ) ) )
+
+assign_mapper( context, GroupQuotaAssociation, GroupQuotaAssociation.table,
+    properties=dict( group=relation( Group, backref="quotas" ),
+                     quota=relation( Quota ) ) )
+
+assign_mapper( context, DefaultQuotaAssociation, DefaultQuotaAssociation.table,
+    properties=dict( quota=relation( Quota, backref="default" ) ) )
 
 assign_mapper( context, DatasetPermissions, DatasetPermissions.table,
     properties=dict(

@@ -126,6 +126,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                                                hda_id = hda_id,
                                                show_deleted = show_deleted,
                                                show_hidden=show_hidden,
+                                               over_quota=trans.app.quota_agent.get_percent( trans=trans ) >= 100,
                                                message=message,
                                                status=status )
 
@@ -192,7 +193,25 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
 
     @web.json
     def history_get_disk_size( self, trans ):
-        return trans.history.get_disk_size( nice_size=True )
+        rval = { 'history' : trans.history.get_disk_size( nice_size=True ) }
+        for k, v in self.__user_get_usage( trans ).items():
+            rval['global_' + k] = v
+        return rval
+
+    @web.json
+    def user_get_usage( self, trans ):
+        return self.__user_get_usage( trans )
+
+    def __user_get_usage( self, trans ):
+        usage = trans.app.quota_agent.get_usage( trans )
+        percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage ) 
+        rval = {}
+        if percent is None:
+            rval['usage'] = util.nice_size( usage )
+        else:
+            rval['percent'] = percent
+        return rval
+
 
     ## ---- Dataset display / editing ----------------------------------------
 

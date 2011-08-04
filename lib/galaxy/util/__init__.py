@@ -542,6 +542,32 @@ def nice_size(size):
             return "%.1f %s" % (size, word)
     return '??? bytes'
 
+def size_to_bytes( size ):
+    """
+    Returns a number of bytes if given a reasably formatted string with the size
+    """
+    # Assume input in bytes if we can convert directly to an int
+    try:
+        return int( size )
+    except:
+        pass
+    # Otherwise it must have non-numeric characters
+    size_re = re.compile( '([\d\.]+)\s*([tgmk]b?|b|bytes?)$' )
+    size_match = re.match( size_re, size.lower() )
+    assert size_match is not None
+    size = float( size_match.group(1) )
+    multiple = size_match.group(2)
+    if multiple.startswith( 't' ):
+        return int( size * 1024**4 )
+    elif multiple.startswith( 'g' ):
+        return int( size * 1024**3 )
+    elif multiple.startswith( 'm' ):
+        return int( size * 1024**2 )
+    elif multiple.startswith( 'k' ):
+        return int( size * 1024 )
+    elif multiple.startswith( 'b' ):
+        return int( size )
+
 def send_mail( frm, to, subject, body, config ):
     """
     Sends an email.

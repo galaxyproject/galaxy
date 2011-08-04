@@ -268,8 +268,121 @@ class GroupListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
+class QuotaListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, quota ):
+            return quota.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, quota ):
+            if quota.description:
+                return quota.description
+            return ''
+    class AmountColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, quota ):
+            return quota.operation + quota.display_amount
+    class StatusColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, quota ):
+            if quota.deleted:
+                return "deleted"
+            elif quota.default:
+                return "<strong>default for %s users</strong>" % quota.default[0].type
+            return ""
+    class UsersColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, quota ):
+            if quota.users:
+                return len( quota.users )
+            return 0
+    class GroupsColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, quota ):
+            if quota.groups:
+                return len( quota.groups )
+            return 0
+
+    # Grid definition
+    webapp = "galaxy"
+    title = "Quotas"
+    model_class = model.Quota
+    template='/admin/quota/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        NameColumn( "Name",
+                    key="name",
+                    link=( lambda item: dict( operation="Manage users and groups", id=item.id, webapp="galaxy" ) if not item.default else dict( operation="Change amount", id=item.id, webapp="galaxy" ) ),
+                    model_class=model.Quota,
+                    attach_popup=True,
+                    filterable="advanced" ),
+        DescriptionColumn( "Description",
+                           key='description',
+                           model_class=model.Quota,
+                           attach_popup=False,
+                           filterable="advanced" ),
+        AmountColumn( "Amount",
+                    key='amount',
+                    model_class=model.Quota,
+                    attach_popup=False,
+                    filterable="advanced" ),
+        UsersColumn( "Users", attach_popup=False ),
+        GroupsColumn( "Groups", attach_popup=False ),
+        StatusColumn( "Status", attach_popup=False ),
+        # Columns that are valid for filtering but are not visible.
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    global_actions = [
+        grids.GridAction( "Add new quota", dict( controller='admin', action='quotas', operation='create' ) )
+    ]
+    operations = [ grids.GridOperation( "Rename",
+                                        condition=( lambda item: not item.deleted ),
+                                        allow_multiple=False,
+                                        url_args=dict( webapp="galaxy", action="rename_quota" ) ),
+                   grids.GridOperation( "Change amount",
+                                        condition=( lambda item: not item.deleted ),
+                                        allow_multiple=False,
+                                        url_args=dict( webapp="galaxy", action="edit_quota" ) ),
+                   grids.GridOperation( "Manage users and groups",
+                                        condition=( lambda item: not item.default ),
+                                        allow_multiple=False,
+                                        url_args=dict( webapp="galaxy", action="manage_users_and_groups_for_quota" ) ),
+                   grids.GridOperation( "Set as different type of default",
+                                        condition=( lambda item: item.default ),
+                                        allow_multiple=False,
+                                        url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
+                   grids.GridOperation( "Set as default",
+                                        condition=( lambda item: not item.default ),
+                                        allow_multiple=False,
+                                        url_args=dict( webapp="galaxy", action="set_quota_default" ) ),
+                   grids.GridOperation( "Unset as default",
+                                        condition=( lambda item: item.default ),
+                                        allow_multiple=False,
+                                        url_args=dict( webapp="galaxy", action="unset_quota_default" ) ),
+                   grids.GridOperation( "Delete",
+                                        condition=( lambda item: not item.deleted and not item.default ),
+                                        allow_multiple=True,
+                                        url_args=dict( webapp="galaxy", action="mark_quota_deleted" ) ),
+                   grids.GridOperation( "Undelete",
+                                        condition=( lambda item: item.deleted ),
+                                        allow_multiple=True,
+                                        url_args=dict( webapp="galaxy", action="undelete_quota" ) ),
+                   grids.GridOperation( "Purge",
+                                        condition=( lambda item: item.deleted ),
+                                        allow_multiple=True,
+                                        url_args=dict( webapp="galaxy", action="purge_quota" ) ) ]
+    standard_filters = [
+        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+
 class AdminGalaxy( BaseController, Admin ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
+    quota_list_grid = QuotaListGrid()

@@ -936,7 +936,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistory, UsesHistor
             assert topmost_parent in history.datasets, "Data does not belong to current history"
             # If the user is anonymous, make sure the HDA is owned by the current session.
             if not user:
-                assert trans.galaxy_session.id in [ s.id for s in hda.history.galaxy_sessions ], 'Invalid history dataset ID'
+                assert trans.galaxy_session.current_history_id == trans.history.id, 'Invalid history dataset ID'
             # If the user is known, make sure the HDA is owned by the current user.
             else:
                 assert topmost_parent.history.user == trans.user, 'Invalid history dataset ID'

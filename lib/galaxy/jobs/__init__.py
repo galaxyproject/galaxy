@@ -203,7 +203,7 @@ class JobQueue( object ):
                 elif job_state == JOB_DELETED:
                     log.info( "job %d deleted by user while still queued" % job.id )
                 elif job_state == JOB_ADMIN_DELETED:
-                    job.info( "job %d deleted by admin while still queued" % job.id )
+                    log.info( "job %d deleted by admin while still queued" % job.id )
                 else:
                     log.error( "unknown job state '%s' for job %d" % ( job_state, job.id ) )
                     if not self.track_jobs_in_database:
@@ -229,6 +229,15 @@ class JobQueue( object ):
             return JOB_DELETED
         elif job.state == model.Job.states.ERROR:
             return JOB_ADMIN_DELETED
+        elif self.app.config.enable_quotas:
+            quota = self.app.quota_agent.get_quota( job.user )
+            if quota is not None:
+                try:
+                    usage = self.app.quota_agent.get_usage( user=job.user, history=job.history )
+                    if usage > quota:
+                        return JOB_WAIT
+                except AssertionError, e:
+                    pass # No history, should not happen with an anon user
         for dataset_assoc in job.input_datasets + job.input_library_datasets:
             idata = dataset_assoc.dataset
             if not idata:

@@ -483,6 +483,53 @@ class Role( object, APIItem ):
         self.type = type
         self.deleted = deleted
 
+class UserQuotaAssociation( object ):
+    def __init__( self, user, quota ):
+        self.user = user
+        self.quota = quota
+
+class GroupQuotaAssociation( object ):
+    def __init__( self, group, quota ):
+        self.group = group
+        self.quota = quota
+
+class Quota( object ):
+    valid_operations = ( '+', '-', '=' )
+    def __init__( self, name="", description="", amount=0, operation="=" ):
+        self.name = name
+        self.description = description
+        if amount is None:
+            self.bytes = -1
+        else:
+            self.bytes = amount
+        self.operation = operation
+    def get_amount( self ):
+        if self.bytes == -1:
+            return None
+        return self.bytes
+    def set_amount( self, amount ):
+        if amount is None:
+            self.bytes = -1
+        else:
+            self.bytes = amount
+    amount = property( get_amount, set_amount )
+    @property
+    def display_amount( self ):
+        if self.bytes == -1:
+            return "unlimited"
+        else:
+            return util.nice_size( self.bytes )
+
+class DefaultQuotaAssociation( Quota ):
+    types = Bunch(
+        UNREGISTERED = 'unregistered',
+        REGISTERED = 'registered'
+    )
+    def __init__( self, type, quota ):
+        assert type in self.types.__dict__.values(), 'Invalid type'
+        self.type = type
+        self.quota = quota
+
 class DatasetPermissions( object ):
     def __init__( self, action, dataset, role ):
         self.action = action

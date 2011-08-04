@@ -7,6 +7,7 @@ from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
 import galaxy.security
+import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.sample_tracking import external_service_types
@@ -57,6 +58,11 @@ class UniverseApplication( object ):
         #Load security policy
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
+        # Load quota management
+        if self.config.enable_quotas:
+            self.quota_agent = galaxy.quota.QuotaAgent( self.model )
+        else:
+            self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )
         # Heartbeat and memdump for thread / heap profiling
         self.heartbeat = None
         self.memdump = None

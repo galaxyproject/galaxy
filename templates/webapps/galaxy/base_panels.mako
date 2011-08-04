@@ -3,6 +3,11 @@
 ## Default title
 <%def name="title()">Galaxy</%def>
 
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${h.js( "jquery.tipsy" )}
+</%def>
+
 ## Masthead
 <%def name="masthead()">
 
@@ -171,6 +176,46 @@
             <span class='brand'>/ ${app.config.brand}</span>
         %endif
         </a>
+    </div>
+
+    ## Quota meter
+    <%
+        bar_style = "quota-meter-bar"
+        usage = 0
+        percent = 0
+        quota = None
+        try:
+            usage = trans.app.quota_agent.get_usage( trans=trans )
+            quota = trans.app.quota_agent.get_quota( trans.user )
+            percent = trans.app.quota_agent.get_percent( usage=usage, quota=quota )
+            if percent is not None:
+                if percent >= 100:
+                    bar_style += " quota-meter-bar-error"
+                elif percent >= 85:
+                    bar_style += " quota-meter-bar-warn"
+            else:
+                percent = 0
+        except AssertionError:
+            pass # Probably no history yet
+        tooltip = None
+        if not trans.user and quota and trans.app.config.allow_user_creation:
+            if trans.app.quota_agent.default_registered_quota is None or trans.app.quota_agent.default_unregistered_quota < trans.app.quota_agent.default_registered_quota:
+                tooltip = "Your disk quota is %s.  You can increase your quota by registering a Galaxy account." % util.nice_size( quota )
+    %>
+
+    <div class="quota-meter-container">
+        %if tooltip:
+        <div id="quota-meter" class="quota-meter tooltip" title="${tooltip}">
+        %else:
+        <div id="quota-meter" class="quota-meter">
+        %endif
+            <div id="quota-meter-bar" class="${bar_style}" style="width: ${percent}px;"></div>
+            %if quota is not None:
+                <div id="quota-meter-text" class="quota-meter-text">Using ${percent}%</div>
+            %else:
+                <div id="quota-meter-text" class="quota-meter-text">Using ${util.nice_size( usage )}</div>
+            %endif
+        </div>
     </div>
     
 </%def>

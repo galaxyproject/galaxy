@@ -454,6 +454,9 @@ use_interactive = True
 # users in the help text.
 #ftp_upload_site = None
 
+# Enable enforcement of quotas.  Quotas can be set from the Admin interface.
+#enable_quotas = False
+
 # -- Job Execution
 
 # If running multiple Galaxy processes, one can be designated as the job
