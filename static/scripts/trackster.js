@@ -263,11 +263,10 @@ extend(DataManager.prototype, Cache.prototype, {
     /**
      * Load data from server; returns AJAX object so that use of Deferred is possible.
      */
-    load_data: function(low, high, resolution, extra_params) {
+    load_data: function(low, high, mode, resolution, extra_params) {
         // Setup data request params.
         var 
             chrom = this.track.view.chrom,
-            mode = this.track.mode,
             params = {"chrom": chrom, "low": low, "high": high, "mode": mode, 
                       "resolution": resolution, "dataset_id" : this.track.dataset_id, 
                       "hda_ldda": this.track.hda_ldda};
@@ -292,7 +291,7 @@ extend(DataManager.prototype, Cache.prototype, {
     /**
      * Get track data.
      */
-    get_data: function(low, high, resolution, extra_params) {
+    get_data: function(low, high, mode, resolution, extra_params) {
         // Debugging:
         //console.log("get_data", low, high, mode);
         /*
@@ -303,9 +302,7 @@ extend(DataManager.prototype, Cache.prototype, {
         */
         
         // Look for entry and return if found.
-        var 
-            mode = this.track.mode,
-            entry = this.get_data_from_cache(low, high, mode);
+        var entry = this.get_data_from_cache(low, high, mode);
         if (entry) { return entry; }
 
         //
@@ -342,7 +339,7 @@ extend(DataManager.prototype, Cache.prototype, {
                 
         // Load data from server. The deferred is immediately saved until the
         // data is ready, it then replaces itself with the actual data
-        entry = this.load_data(low, high, resolution, extra_params);
+        entry = this.load_data(low, high, mode, resolution, extra_params);
         this.set_data(low, high, mode, entry);
         return entry
     },
@@ -353,13 +350,11 @@ extend(DataManager.prototype, Cache.prototype, {
     /**
      * Gets more data for a region using either a depth-first or a breadth-first approach.
      */
-    get_more_data: function(low, high, resolution, extra_params, req_type) {
+    get_more_data: function(low, high, mode, resolution, extra_params, req_type) {
         //
         // Get current data from cache and mark as stale.
         //
-        var 
-            mode = this.track.mode,
-            cur_data = this.get_data_from_cache(low, high, mode);
+        var cur_data = this.get_data_from_cache(low, high, mode);
         if (!cur_data) {
             console.log("ERROR: no current data for: ", this.track, low, high, resolution, extra_params);
             return;
@@ -386,7 +381,7 @@ extend(DataManager.prototype, Cache.prototype, {
         //
         var 
             data_manager = this,
-            new_data_request = this.load_data(query_low, high, resolution, extra_params)
+            new_data_request = this.load_data(query_low, high, mode, resolution, extra_params)
             new_data_available = $.Deferred();
         // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
         // is all data, not just new data.
@@ -520,7 +515,7 @@ extend( View.prototype, {
         };
         this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.nav_controls);
         this.location_span = $("<span/>").addClass("location").appendTo(this.nav_controls);
-        this.location_span.bind("click", function() {
+        this.location_span.click(function() {
             view.location_span.hide();
             view.chrom_select.hide();
             view.nav_input.val(view.chrom + ":" + view.low + "-" + view.high);
@@ -555,7 +550,7 @@ extend( View.prototype, {
         */
         
         // Blur tool/filter inputs when user clicks on content div.
-        this.content_div.bind("click", function( e ) {
+        this.content_div.click(function( e ) {
             $(this).find("input").trigger("blur"); 
         });
 
@@ -574,14 +569,8 @@ extend( View.prototype, {
             view.move_delta(-delta_chrom);
         });
         
-        this.overview_close.bind("click", function() {
-            for (var track_id = 0, len = view.tracks.length; track_id < len; track_id++) {
-                view.tracks[track_id].is_overview = false;
-            }
-            $(this).siblings().filter("canvas").remove();
-            $(this).parent().css("height", view.overview_box.height());
-            view.overview_highlight.hide();
-            $(this).hide();
+        this.overview_close.click(function() {
+            view.reset_overview();
         });
         
         // Dragging in the viewport scrolls
@@ -919,12 +908,38 @@ extend( View.prototype, {
         this.nav_container.width( this.container.width() );
         this.redraw();
     },
+    /** Show a track in the overview. */
+    set_overview: function(track) {
+        // Get data and draw tile.
+        $.when(track.get_overview_tile()).then(function(tile) {
+            // Update UI.
+            view.overview_viewport.find(".track-tile").remove();
+            view.overview_close.show();
+            view.overview_viewport.append(tile.canvas);
+            view.overview_highlight.show().height(tile.canvas.height());
+            view.overview_viewport.height(tile.canvas.height() + view.overview_box.height());
+            view.resize_window();
+            
+            // TODO: Update view state.
+            
+            // TODO: Update track state.
+            
+        });
+    },
+    /** Close and reset overview. */
     reset_overview: function() {
-        this.overview_viewport.find("canvas").remove();
+        // Update UI.
+        this.overview_viewport.find(".track-tile").remove();
         this.overview_viewport.height(this.default_overview_height);
         this.overview_box.height(this.default_overview_height);
         this.overview_close.hide();
         this.overview_highlight.hide();
+        view.resize_window();
+        
+        // TODO: Update view state.
+        
+        
+        // TODO: Update track state.
     }
 });
 
@@ -965,7 +980,7 @@ var Tool = function(track, tool_dict) {
     // Disable dragging, clicking, double clicking on div so that actions on slider do not impact viz.
     this.parent_div.bind("drag", function(e) {
         e.stopPropagation();
-    }).bind("click", function(e) {
+    }).click(function(e) {
         e.stopPropagation();
     }).bind("dblclick", function(e) {
         e.stopPropagation();
@@ -1334,7 +1349,7 @@ var FiltersManager = function(track, filters_list) {
     // Disable dragging, double clicking, keys on div so that actions on slider do not impact viz.
     this.parent_div.bind("drag", function(e) {
         e.stopPropagation();
-    }).bind("click", function(e) {
+    }).click(function(e) {
         e.stopPropagation();
     }).bind("dblclick", function(e) {
         e.stopPropagation();
@@ -1719,7 +1734,7 @@ extend(Track.prototype, {
                 track.content_div.text(DATA_ERROR);
                 if (result.message) {
                     var track_id = track.view.tracks.indexOf(track);
-                    var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").bind("click", function() {
+                    var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").click(function() {
                         show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
                     });
                     track.content_div.append(error_link);
@@ -1850,24 +1865,6 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     }
     
     this.make_name_popup_menu();
-    
-    /*
-    if (track.overview_check_div === undefined) {
-        track.overview_check_div = $("<div class='right-float' />").css("margin-top", "-3px").appendTo(track.header_div);
-        track.overview_check = $("<input type='checkbox' class='overview_check' />").appendTo(track.overview_check_div);
-        track.overview_check.bind("click", function() {
-            var curr = this;
-            view.overview_viewport.find("canvas").remove();
-            track.set_overview();
-            $(".overview_check").each(function() {
-                if (this !== curr) {
-                    $(this).attr("checked", false);
-                }
-            });
-        });
-        track.overview_check_div.append( $("<label />").text("Overview") );
-    }
-    */
 };
 extend(TiledTrack.prototype, Track.prototype, {
     /**
@@ -1889,6 +1886,13 @@ extend(TiledTrack.prototype, Track.prototype, {
         var track = this;
         
         var track_dropdown = {};
+        
+        //
+        // Make track overview option.
+        //
+        track_dropdown["Set as overview"] = function() {
+            track.view.set_overview(track);
+        };
         
         //
         // Edit config option.
@@ -1914,17 +1918,6 @@ extend(TiledTrack.prototype, Track.prototype, {
                 "OK": ok_fn
             });
         };
-        /*
-        track_dropdown["Set as overview"] = function() {
-            view.overview_viewport.find("canvas").remove();
-            track.is_overview = true;
-            track.set_overview();
-            for (var track_id in view.tracks) {
-                if (view.tracks[track_id] !== track) {
-                    view.tracks[track_id].is_overview = false;
-                }
-            }
-        };*/
 
         //
         // Show/hide filters option.
@@ -1992,6 +1985,26 @@ extend(TiledTrack.prototype, Track.prototype, {
         };
         
         make_popupmenu(track.name_div, track_dropdown);
+    },
+    /**
+     * Returns a jQuery Deferred object that resolves to a Tile with track's overview.
+     * TODO: this should be the approach used when drawing any tile so that tile drawing is not blocking.
+     */
+    get_overview_tile: function() {
+        var 
+            track = this;
+            view = track.view,
+            resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) )),
+            // w_scale units are pixels per base.
+            w_scale = view.container.width() / (view.max_high - view.max_low),
+            overview_tile = $.Deferred();
+        $.when(track.data_manager.get_data(view.max_low, view.max_high, "Auto", resolution, track.data_url_extra_params)).then(function(overview_data) {
+            // TODO: save resolution in data cache key.
+            var tile = track.draw_tile(overview_data, resolution, null, w_scale, null, true);
+            overview_tile.resolve(tile);
+        });
+        
+        return overview_tile;
     },
     /**
      * Draw track. It is possible to force a redraw rather than use cached tiles and/or clear old 
@@ -2084,20 +2097,7 @@ extend(TiledTrack.prototype, Track.prototype, {
                     tile.canvas.css("padding-top", ERROR_PADDING);
                 }
             }
-        }
-        
-        // Store initial canvas in case we need to use it for overview
-        /* This is completely broken, just saves the first tile it sees
-           regardless of if it should be the overview
-        if (!track.initial_canvas && !window.G_vmlCanvasManager) {
-            track.initial_canvas = $(tile_element).clone();
-            var src_ctx = tile_element.get(0).getContext("2d");
-            var tgt_ctx = track.initial_canvas.get(0).getContext("2d");
-            var data = src_ctx.getImageData(0, 0, src_ctx.canvas.width, src_ctx.canvas.height);
-            tgt_ctx.putImageData(data, 0, 0);
-            track.set_overview();
-        }
-        */
+        }        
     },
     /**
      * Do actual tile drawing.
@@ -2133,11 +2133,11 @@ extend(TiledTrack.prototype, Track.prototype, {
                     //
                     // Really draw tile: get data, seq data if available, and draw tile.
                     //
-                    $.when(track.data_manager.get_data(tile_low, tile_high, resolution, track.data_url_extra_params)).then(function(tile_data) {
+                    $.when(track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, track.data_url_extra_params)).then(function(tile_data) {
                         extend(tile_data, more_tile_data);
                         // If sequence data needed, get that and draw. Otherwise draw.
                         if (view.reference_track && w_scale > view.canvas_manager.char_width_px) {
-                            $.when(view.reference_track.data_manager.get_data(tile_low, tile_high, resolution, 
+                            $.when(view.reference_track.data_manager.get_data(tile_low, tile_high, track.mode, resolution, 
                                                                                 view.reference_track.data_url_extra_params)).then(function(seq_data) {
                                 draw_and_show_tile(id, tile_data, resolution, tile_index, parent_element, w_scale, seq_data);
                             });
@@ -2215,18 +2215,6 @@ extend(TiledTrack.prototype, Track.prototype, {
         track.content_div.css("height", track.max_height + "px");
         parent_element.children().css("height", track.max_height + "px");        
     }, 
-    // Set track as the overview track in the visualization.
-    set_overview: function() {
-        var view = this.view;
-        
-        if (this.initial_canvas && this.is_overview) {
-            view.overview_close.show();
-            view.overview_viewport.append(this.initial_canvas);
-            view.overview_highlight.show().height(this.initial_canvas.height());
-            view.overview_viewport.height(this.initial_canvas.height() + view.overview_box.height());
-        }
-        $(window).trigger("resize");
-    },
     /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
      */
@@ -2719,8 +2707,14 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
     },
     /**
      * Draw FeatureTrack tile.
+     * @param result result from server
+     * @param resolution view resolution
+     * @param tile_index index of tile to be drawn
+     * @param w_scale base pairs per pixel
+     * @param ref_seq reference sequence data
+     * @param no_offsets set to true when offsets should not be used, such as for overview tile
      */
-    draw_tile: function(result, resolution, tile_index, w_scale, ref_seq) {
+    draw_tile: function(result, resolution, tile_index, w_scale, ref_seq, no_offsets) {
         var track = this,
             tile_low = tile_index * DENSITY * resolution,
             tile_high = (tile_index + 1) * DENSITY * resolution,
@@ -2774,7 +2768,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             var canvas = this.view.canvas_manager.new_canvas();
             canvas.width = width + left_offset;
             // Extra padding at top of summary tree
-            canvas.height = required_height + SUMMARY_TREE_TOP_PADDING;
+            canvas.height = required_height + (!no_offsets ? SUMMARY_TREE_TOP_PADDING : 0);
             
             // Get summary tree data if necessary and set max if there is one.
             if (result.dataset_type != "summary_tree") {
@@ -2787,8 +2781,10 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
             // Paint summary tree into canvas
             var painter = new painters.SummaryTreePainter(result, tile_low, tile_high, this.prefs);
             var ctx = canvas.getContext("2d");
-            // Deal with left_offset by translating
-            ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
+            // Deal with left_offset by translating.
+            if (!no_offsets) {
+                ctx.translate(left_offset, SUMMARY_TREE_TOP_PADDING);
+            }
             painter.draw(ctx, width, required_height);
             return new SummaryTreeTile(tile_index, resolution, canvas, result.data, result.max);
         }
@@ -2842,7 +2838,9 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
         
         if (result.data) {
             // Draw features.
-            ctx.translate(left_offset, 0);
+            if (!no_offsets) {
+                ctx.translate(left_offset, 0);
+            }
             painter.draw(ctx, width, required_height, slots);
         }
         
