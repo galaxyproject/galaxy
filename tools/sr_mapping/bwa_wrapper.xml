@@ -127,7 +127,7 @@
         <conditional name="readGroup">
           <param name="specReadGroup" type="select" label="Specify the read group for this file? (samse/sampe -r)">
             <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option value="no" selected="True">No</option>
           </param>
           <when value="yes">
             <param name="rgid" type="text" size="25" label="Read group identiﬁer (ID). Each @RG line must have a unique ID. The value of ID is used in the RG 
