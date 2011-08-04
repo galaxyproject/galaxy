@@ -153,13 +153,13 @@
 %if metadata:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Repository metadata</div>
+        <div class="toolFormTitle">Preview tools and inspect metadata</div>
         <div class="toolFormBody">
             %if 'tools' in metadata:
                 <div class="form-row">
                     <table width="100%">
                         <tr bgcolor="#D8D8D8" width="100%">
-                            <td><label>Tools:</label></td>
+                            <td><b>Tools</b><i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i></td>
                         </tr>
                     </table>
                 </div>
@@ -215,7 +215,7 @@
                 <div class="form-row">
                     <table width="100%">
                         <tr bgcolor="#D8D8D8" width="100%">
-                            <td><label>Workflows:</label></td>
+                            <td><b>Workflows</b></td>
                         </tr>
                     </table>
                 </div>

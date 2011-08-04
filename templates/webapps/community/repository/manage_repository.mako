@@ -161,14 +161,14 @@
 %if can_set_metadata:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Repository metadata</div>
+        <div class="toolFormTitle">Preview tools and inspect metadata</div>
         <div class="toolFormBody">
             %if metadata:
                 %if 'tools' in metadata:
                     <div class="form-row">
                         <table width="100%">
                             <tr bgcolor="#D8D8D8" width="100%">
-                                <td><label>Tools:</label></td>
+                                <td><b>Tools</b><i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i></td>
                             </tr>
                         </table>
                     </div>
@@ -224,7 +224,7 @@
                     <div class="form-row">
                         <table width="100%">
                             <tr bgcolor="#D8D8D8" width="100%">
-                                <td><label>Workflows:</label></td>
+                                <td><b>Workflows</b></td>
                             </tr>
                         </table>
                     </div>
@@ -311,7 +311,7 @@
 %endif
 <p/>
 <div class="toolForm">
-    <div class="toolFormTitle">Grant authority to upload or push changes</div>
+    <div class="toolFormTitle">Grant authority to make changes</div>
     <div class="toolFormBody">
         <table class="grid">
             <tr>
@@ -335,7 +335,7 @@
                 <label>Username:</label>
                 ${allow_push_select_field.get_html()}
                 <div class="toolParamHelp" style="clear: both;">
-                    Multi-select usernames to grant permission to push to this repository
+                    Multi-select usernames to grant permission to make changes to this repository
                 </div>
                 <div style="clear: both"></div>
             </div>
