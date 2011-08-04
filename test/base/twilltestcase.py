@@ -728,6 +728,10 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
         data = self.last_page()
         file( temp_name, 'wb' ).write( data )
+        if self.keepOutdir > '':
+            ofn = os.path.join(self.keepOutdir,base_name)
+            shutil.copy(temp_name,ofn)
+            log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
         try:
             # have to nest try-except in try-finally to handle 2.4
             try:
