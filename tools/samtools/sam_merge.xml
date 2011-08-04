@@ -4,9 +4,9 @@
     <requirement type="package">picard</requirement>
   </requirements>
   <command>
-   java -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MERGE_SEQUENCE_DICTIONARIES=$mergeSD OUTPUT=$output1 INPUT=$input1 INPUT=$input2 
+java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MSD=$mergeSD VALIDATION_STRINGENCY=LENIENT O=$output1 I=$input1 I=$input2 
       #for $i in $inputs
-        INPUT=${i.input}
+        I=${i.input}
       #end for 
     2&gt; $outlog
   </command>
