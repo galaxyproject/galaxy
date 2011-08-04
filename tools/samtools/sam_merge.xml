@@ -36,7 +36,7 @@ java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MSD=$mer
       <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
       <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
       <output name="output1" file="sam_merge_out1.bam" ftype="bam" />
-      <output name="outlog" file="sam_merge_out1.log" ftype="txt" lines_diff="8"/>
+      <output name="outlog" file="sam_merge_out1.log" ftype="txt" lines_diff="10"/>
     </test>
     <test>
       <param name="title" value="test2" />
@@ -45,7 +45,7 @@ java -Xmx2G -jar ${GALAXY_DATA_INDEX_DIR}/shared/jars/MergeSamFiles.jar MSD=$mer
       <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
       <param name="input" value="sam_merge_in3.bam" ftype="bam" />
       <output name="output1" file="sam_merge_out2.bam" ftype="bam" />
-      <output name="outlog" file="sam_merge_out2.log" ftype="txt" lines_diff="8"/>
+      <output name="outlog" file="sam_merge_out2.log" ftype="txt" lines_diff="10"/>
     </test>
   </tests>
   <help>
