@@ -220,7 +220,8 @@ def set_repository_metadata( trans, id, change_set_revision, **kwd ):
                         try:
                             full_path = os.path.abspath( os.path.join( root, name ) )
                             tool = load_tool( trans, full_path )
-                            flush_needed, metadata_dict = set_tool_metadata( trans, id, change_set_revision, root, name, tool, metadata_dict  )
+                            if tool is not None:
+                                flush_needed, metadata_dict = set_tool_metadata( trans, id, change_set_revision, root, name, tool, metadata_dict  )
                         except Exception, e:
                             invalid_files.append( ( name, str( e ) ) )
                     # Find all exported workflows
