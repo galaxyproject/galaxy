@@ -549,7 +549,7 @@ class RepositoryController( BaseController, ItemRatings ):
                 trans.sa_session.flush()
         checked = alerts_checked or ( user and user.email in email_alerts )
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
-        repository_metadata = get_repository_metadata( trans, id, repository.tip )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, repository.tip )
         if repository_metadata:
             metadata = repository_metadata.metadata
         else:
@@ -678,7 +678,7 @@ class RepositoryController( BaseController, ItemRatings ):
         allow_push_select_field = self.__build_allow_push_select_field( trans, current_allow_push_list )
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
-        repository_metadata = get_repository_metadata( trans, id, repository.tip )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, repository.tip )
         if repository_metadata:
             metadata = repository_metadata.metadata
             is_malicious = repository_metadata.malicious
@@ -860,7 +860,7 @@ class RepositoryController( BaseController, ItemRatings ):
     def set_metadata( self, trans, id, ctx_str, **kwd ):
         malicious = kwd.get( 'malicious', '' )
         if kwd.get( 'malicious_button', False ):
-            repository_metadata = get_repository_metadata( trans, id, ctx_str )
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, ctx_str )
             malicious_checked = CheckboxField.is_checked( malicious )
             repository_metadata.malicious = malicious_checked
             trans.sa_session.add( repository_metadata )
@@ -1018,7 +1018,7 @@ class RepositoryController( BaseController, ItemRatings ):
         repository = get_repository( trans, repository_id )
         metadata = {}
         tool = None
-        repository_metadata = get_repository_metadata( trans, repository_id, changeset_revision ).metadata
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision ).metadata
         if 'tools' in repository_metadata:
             for tool_metadata_dict in repository_metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
