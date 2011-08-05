@@ -199,7 +199,7 @@ class Params:
     >>> par.symbols            # replaces unknown symbols with X
     ['alpha', '__lt____gt__', 'XrmXX!']
     >>> par.flatten()          # flattening to a list
-    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmXX!')]
+    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmX__pd__!')]
     """
     
     # is NEVER_SANITIZE required now that sanitizing for tool parameters can be controlled on a per parameter basis and occurs via InputValueWrappers?
