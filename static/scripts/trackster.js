@@ -418,6 +418,8 @@ extend(DataManager.prototype, Cache.prototype, {
      */
     // TODO: use chrom in key so that (a) data is not thrown away when changing chroms and (b)
     // manager does not need to be cleared when changing chroms.
+    // TODO: use resolution in key b/c summary tree data is dependent on resolution -- is this 
+    // necessary, i.e. will resolution change but not low/high/mode?
     gen_key: function(low, high, mode) {
         var key = low + "_" + high + "_" + mode;
         return key;
@@ -920,10 +922,13 @@ extend( View.prototype, {
             view.overview_viewport.height(tile.canvas.height() + view.overview_box.height());
             view.resize_window();
             
-            // TODO: Update view state.
-            
-            // TODO: Update track state.
-            
+            // Update view, track states.
+            if (view.overview_track) {
+                console.log("view has overview track");
+                view.overview_track.set_is_overview(false);
+            }
+            view.overview_track = track;
+            track.set_is_overview(true);
         });
     },
     /** Close and reset overview. */
@@ -936,10 +941,12 @@ extend( View.prototype, {
         this.overview_highlight.hide();
         view.resize_window();
         
-        // TODO: Update view state.
-        
-        
-        // TODO: Update track state.
+        // Update view, track states.
+        if (view.overview_track) {
+            console.log("view has overview track");
+            view.overview_track.set_is_overview(false);
+        }
+        view.overview_track = null;
     }
 });
 
@@ -1794,6 +1801,7 @@ var TiledTrack = function(filters_list, tool_dict, parent_track) {
     this.filters_available = false;
     this.filters_visible = false;
     this.tool = (tool_dict !== undefined && obj_length(tool_dict) > 0 ? new Tool(this, tool_dict) : undefined);
+    this.is_overview = false;
     
     //
     // TODO: Right now there is only the notion of a parent track and multiple child tracks. However, 
@@ -1890,8 +1898,13 @@ extend(TiledTrack.prototype, Track.prototype, {
         //
         // Make track overview option.
         //
-        track_dropdown["Set as overview"] = function() {
-            track.view.set_overview(track);
+        track_dropdown[(this.is_overview ? "Hide overview" : "Set as overview")] = function() {
+            if (track.is_overview) {
+                track.view.reset_overview();
+            }
+            else {
+                track.view.set_overview(track);
+            }
         };
         
         //
@@ -1987,6 +2000,13 @@ extend(TiledTrack.prototype, Track.prototype, {
         make_popupmenu(track.name_div, track_dropdown);
     },
     /**
+     * Set track's overview status.
+     */
+    set_is_overview: function(is_overview) {
+        this.is_overview = is_overview;
+        this.make_name_popup_menu();
+    },
+    /**
      * Returns a jQuery Deferred object that resolves to a Tile with track's overview.
      * TODO: this should be the approach used when drawing any tile so that tile drawing is not blocking.
      */
@@ -1995,16 +2015,29 @@ extend(TiledTrack.prototype, Track.prototype, {
             track = this;
             view = track.view,
             resolution = Math.pow(RESOLUTION, Math.ceil( Math.log( (view.max_high - view.max_low) / DENSITY ) / Math.log(RESOLUTION) )),
+            view_width = view.container.width(),
             // w_scale units are pixels per base.
-            w_scale = view.container.width() / (view.max_high - view.max_low),
+            w_scale =  view_width / (view.max_high - view.max_low),
             overview_tile = $.Deferred();
         $.when(track.data_manager.get_data(view.max_low, view.max_high, "Auto", resolution, track.data_url_extra_params)).then(function(overview_data) {
-            // TODO: save resolution in data cache key.
-            var tile = track.draw_tile(overview_data, resolution, null, w_scale, null, true);
+            var 
+                key = track._gen_tile_cache_key(view_width, w_scale, 0),
+                tile = track.tile_cache.get(key);
+            if (!tile) {
+                tile = track.draw_tile(overview_data, resolution, null, w_scale, null, true);
+                track.tile_cache.set(key, tile);
+            }
             overview_tile.resolve(tile);
         });
         
         return overview_tile;
+    },
+    /**
+     * Generate a key for the tile cache.
+     * TODO: create a TileCache object (like DataCache) and generate key internally.
+     */
+    _gen_tile_cache_key: function(width, w_scale, tile_index) { 
+        return width + '_' + w_scale + '_' + tile_index;
     },
     /**
      * Draw track. It is possible to force a redraw rather than use cached tiles and/or clear old 
@@ -2022,10 +2055,7 @@ extend(TiledTrack.prototype, Track.prototype, {
             // w_scale units are pixels per base.
             w_scale = width / range,
             resolution = this.view.resolution,
-            parent_element = $("<div style='position: relative;'></div>"),
-            gen_key = function(width, w_scale, tile_index) { 
-                return width + '_' + w_scale + '_' + tile_index;
-            };
+            parent_element = $("<div style='position: relative;'></div>");
         
         if (!clear_after) { this.content_div.children().remove(); }
         this.content_div.append( parent_element );
@@ -2038,7 +2068,7 @@ extend(TiledTrack.prototype, Track.prototype, {
         // Draw or fetch and show tiles.
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
-            var key = gen_key(width, w_scale, tile_index);
+            var key = this._gen_tile_cache_key(width, w_scale, tile_index);
             var cached = this.tile_cache.get(key);
             var tile_low = tile_index * DENSITY * this.view.resolution;
             var tile_high = tile_low + DENSITY * this.view.resolution;
@@ -2550,7 +2580,7 @@ extend(FeatureTrack.prototype, TiledTrack.prototype, {
                 if (tiles[i].max_val !== global_max) {
                     var tile = tiles[i];
                     tile.canvas.remove();
-                    track.delayed_draw(true, gen_key(width, w_scale, tile.index), tile.index, 
+                    track.delayed_draw(true, track._gen_tile_cache_key(width, w_scale, tile.index), tile.index, 
                                        tile.resolution, parent_element, w_scale, [], { max: global_max });
                 }
             }

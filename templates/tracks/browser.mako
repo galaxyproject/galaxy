@@ -165,7 +165,22 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
         %if config:
             var callback;
             %if 'viewport' in config:
-                var callback = function() { view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} ); }
+                var callback = function() { 
+                    view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} );
+                    // Set overview.
+                    %if 'viewport' in config and 'overview' in config['viewport'] and config['viewport']['overview']:
+
+                    var 
+                        overview_track_name = "${config['viewport']['overview']}",
+                        overview_track;
+                    for (var i = 0; i < view.tracks.length; i++) {
+                        if (view.tracks[i].name == overview_track_name) {
+                            view.set_overview(view.tracks[i]);
+                            break;
+                        }
+                    }
+                    %endif
+                }
             %endif
             view = new View( $("#browser-container"), "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}", callback );
             view.editor = true;
@@ -194,7 +209,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                 parent_obj.add_track(track);
             }
             init();
-            
+                        
             // Load bookmarks.
             var bookmarks = JSON.parse('${ h.to_json_string( config.get('bookmarks') ) }'),
                 bookmark;
@@ -257,7 +272,7 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                     // Show saving dialog box
                     show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
 
-                    // Save all tracks.
+                    // Save tracks.
                     var tracks = [];
                     $(".viewport-container .track").each(function () {
                         // ID has form track_<main_track_id>_<child_track_id>
@@ -282,8 +297,8 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                             "is_child": (child_id ? true : false )
                         });
                     });
-
-                    // Save all bookmarks.
+                    
+                    // Save bookmarks.
                     var bookmarks = [];
                     $(".bookmark").each(function() { 
                         bookmarks[bookmarks.length] = {
@@ -292,9 +307,10 @@ ${h.js( "galaxy.base", "galaxy.panels", "json2", "jquery", "jstorage", "jquery.e
                         };
                     });
 
+                    var overview_track_name = (view.overview_track ? view.overview_track.name : null);
                     var payload = { 
                         'tracks': tracks, 
-                        'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high },
+                        'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
                         'bookmarks': bookmarks
                     };
 
